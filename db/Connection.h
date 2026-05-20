@@ -1,0 +1,27 @@
+#pragma once
+
+#include <mysql/mysql.h>
+
+#include <ctime>
+#include <string>
+
+class Connection {
+public:
+    Connection();
+    ~Connection();
+
+    bool connect(const std::string &ip, unsigned short port, const std::string &user,
+                 const std::string &password, const std::string &dbname);
+
+    bool update(const std::string &sql);
+    MYSQL_RES *query(const std::string &sql);
+
+    void refreshAliveTime();
+    clock_t getAlieTime() const;
+
+    MYSQL *raw() const { return _conn; }
+
+private:
+    MYSQL *_conn = nullptr;
+    clock_t _alivetime = 0;
+};

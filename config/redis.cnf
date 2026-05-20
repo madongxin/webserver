@@ -1,0 +1,5 @@
+ip=127.0.0.1
+port=6379
+password=5Bi/aC6+Fsw1HnLSgHu+eVwX
+session_ttl_sec=7200
+session_ttl_long_sec=86400

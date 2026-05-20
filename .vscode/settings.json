@@ -1,0 +1,26 @@
+{
+  "files.watcherExclude": {
+    "**/CMakeFiles/**": true,
+    "**/build/**": true,
+    "**/out/**": true,
+    "**/.cache/**": true,
+    "**/perf.data": true,
+    "**/perf.data.old": true,
+    "**/core.*": true,
+    "**/*.log": true,
+    "**/.git/objects/**": true
+  },
+  "search.exclude": {
+    "**/CMakeFiles": true,
+    "**/build": true,
+    "**/out": true,
+    "**/perf.data*": true,
+    "**/core.*": true,
+    "**/*.log": true
+  },
+  "C_Cpp.files.exclude": {
+    "**/CMakeFiles/**": true,
+    "**/build/**": true,
+    "**/out/**": true
+  }
+}

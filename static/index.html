@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <title>CppWebServer</title>
+</head>
+<body>
+  <h2>CppWebServer</h2>
+  <ul>
+    <li><a href="/monitor">监控曲线 /monitor</a></li>
+    <li><a href="/metrics">Prometheus /metrics</a></li>
+    <li><a href="/fileserver">文件服务 /fileserver</a></li>
+    <li><a href="/gm">GM 控制台 /gm</a>（需先 <a href="/login">登录</a> demo/demo）</li>
+  </ul>
+  <form action="/login" method="post">
+    <label>username <input name="username" value="demo"/></label>
+    <label>password <input name="password" type="password" value="demo"/></label>
+    <button type="submit">登录</button>
+  </form>
+</body>
+</html>

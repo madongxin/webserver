@@ -1,0 +1,310 @@
+#include "GameLogic.h"
+
+#ifdef WEBSERVER_ENABLE_REDIS
+#include "SessionStore.h"
+#endif
+#ifdef WEBSERVER_ENABLE_MYSQL
+#include "ConnectionPool.h"
+#include "PlayerItemPersistQueue.h"
+#endif
+
+#include "Logging.h"
+
+#include <chrono>
+#include <sstream>
+
+namespace {
+
+int64_t NowMs() {
+    using namespace std::chrono;
+    return duration_cast<milliseconds>(steady_clock::now().time_since_epoch()).count();
+}
+
+}  // namespace
+
+GameLogic &GameLogic::Instance() {
+    static GameLogic g;
+    return g;
+}
+
+void GameLogic::EnsurePlayer(uint64_t player_id) {
+    if (inventory_.count(player_id) == 0) {
+        auto &inv = inventory_[player_id];
+        inv[1001] = 10;
+        inv[1002] = 5;
+    }
+    if (skill_cd_until_ms_.count(player_id) == 0)
+        skill_cd_until_ms_[player_id] = {};
+}
+
+bool GameLogic::HandleConsumeItem(const game::ConsumeItemReq &req, game::GameResponse *rsp) {
+    LOG_INFO << "[consume_item] recv player_id=" << req.player_id() << " item_id=" << req.item_id()
+             << " count=" << req.count();
+    std::lock_guard<std::mutex> lk(mu_);
+    EnsurePlayer(req.player_id());
+    auto &inv = inventory_[req.player_id()];
+    if (req.count() == 0) {
+        rsp->set_ok(false);
+        rsp->set_message("count must be > 0");
+        LOG_WARN << "[consume_item] reject player_id=" << req.player_id() << " reason=count_zero";
+        return false;
+    }
+    if (inv[req.item_id()] < req.count()) {
+        rsp->set_ok(false);
+        std::ostringstream os;
+        os << "not enough item " << req.item_id() << ", have " << inv[req.item_id()];
+        rsp->set_message(os.str());
+        auto *body = rsp->mutable_consume_item();
+        body->set_ok(false);
+        body->set_message(rsp->message());
+        body->set_remain_count(inv[req.item_id()]);
+        LOG_WARN << "[consume_item] fail player_id=" << req.player_id() << " item_id=" << req.item_id()
+                 << " have=" << inv[req.item_id()] << " need=" << req.count();
+        return false;
+    }
+    inv[req.item_id()] -= req.count();
+    rsp->set_ok(true);
+    rsp->set_message("item consumed");
+    auto *body = rsp->mutable_consume_item();
+    body->set_ok(true);
+    body->set_message("ok");
+    body->set_remain_count(inv[req.item_id()]);
+    LOG_INFO << "[consume_item] ok player_id=" << req.player_id() << " item_id=" << req.item_id()
+             << " remain=" << inv[req.item_id()];
+    return true;
+}
+
+bool GameLogic::HandleReleaseSkill(const game::ReleaseSkillReq &req, game::GameResponse *rsp) {
+    LOG_INFO << "[release_skill] recv player_id=" << req.player_id() << " skill_id=" << req.skill_id()
+             << " target=(" << req.target_x() << "," << req.target_y() << ")";
+    std::lock_guard<std::mutex> lk(mu_);
+    EnsurePlayer(req.player_id());
+    const int64_t now = NowMs();
+    auto &cds = skill_cd_until_ms_[req.player_id()];
+    if (cds[req.skill_id()] > now) {
+        const uint32_t left = static_cast<uint32_t>(cds[req.skill_id()] - now);
+        rsp->set_ok(false);
+        rsp->set_message("skill on cooldown");
+        auto *body = rsp->mutable_release_skill();
+        body->set_ok(false);
+        body->set_message("cooldown");
+        body->set_cooldown_ms(left);
+        LOG_WARN << "[release_skill] cooldown player_id=" << req.player_id()
+                 << " skill_id=" << req.skill_id() << " left_ms=" << left;
+        return false;
+    }
+    const int64_t cd = (req.skill_id() == 2001) ? 3000 : 1500;
+    cds[req.skill_id()] = now + cd;
+    std::ostringstream os;
+    os << "skill " << req.skill_id() << " cast at (" << req.target_x() << "," << req.target_y()
+       << ")";
+    rsp->set_ok(true);
+    rsp->set_message(os.str());
+    auto *body = rsp->mutable_release_skill();
+    body->set_ok(true);
+    body->set_message("cast ok");
+    body->set_cooldown_ms(static_cast<uint32_t>(cd));
+    LOG_INFO << "[release_skill] ok player_id=" << req.player_id() << " skill_id=" << req.skill_id()
+             << " cooldown_ms=" << cd << " " << os.str();
+    return true;
+}
+
+bool GameLogic::HandleGrantItem(const game::GrantItemReq &req, game::GameResponse *rsp) {
+    LOG_INFO << "[grant_item] recv player_id=" << req.player_id() << " item_id=" << req.item_id()
+             << " count=" << req.count();
+    auto *body = rsp->mutable_grant_item();
+    if (req.player_id() == 0 || req.item_id() == 0 || req.count() == 0) {
+        rsp->set_ok(false);
+        rsp->set_message("invalid player_id, item_id or count");
+        body->set_ok(false);
+        body->set_message(rsp->message());
+        return false;
+    }
+    if (req.item_id() > 0xFFFFFFFFu) {
+        rsp->set_ok(false);
+        rsp->set_message("item_id too large");
+        body->set_ok(false);
+        body->set_message(rsp->message());
+        return false;
+    }
+    const uint32_t item_id = static_cast<uint32_t>(req.item_id());
+
+    std::lock_guard<std::mutex> lk(mu_);
+    EnsurePlayer(req.player_id());
+    auto &inv = inventory_[req.player_id()];
+    inv[item_id] += req.count();
+
+#ifdef WEBSERVER_ENABLE_MYSQL
+    if (!ConnectionPool::getconnectionPool()->isInitialized()) {
+        rsp->set_ok(false);
+        rsp->set_message("mysql pool not initialized");
+        body->set_ok(false);
+        body->set_message(rsp->message());
+        return false;
+    }
+    PendingPlayerItem pending;
+    pending.player_id = req.player_id();
+    pending.item_id = req.item_id();
+    pending.count = req.count();
+    pending.expire_time_sec = req.expire_time_sec();
+    pending.extra_data = req.extra_data();
+    PlayerItemPersistQueue::Instance().Enqueue(pending);
+    PlayerItemPersistQueue::Instance().MarkOnline(req.player_id());
+#else
+    rsp->set_ok(false);
+    rsp->set_message("mysql not enabled");
+    body->set_ok(false);
+    body->set_message(rsp->message());
+    return false;
+#endif
+
+    rsp->set_ok(true);
+    rsp->set_message("item granted (queued, persist every 5min)");
+    body->set_ok(true);
+    body->set_message("queued");
+    body->set_instance_id(0);
+    body->set_bag_total(inv[item_id]);
+    LOG_INFO << "[grant_item] ok player_id=" << req.player_id() << " item_id=" << item_id
+             << " bag_total=" << inv[item_id] << " (db queued)";
+    return true;
+}
+
+bool GameLogic::RequireSessionToken(const game::GameRequest &req, uint64_t player_id,
+                                    game::GameResponse *rsp) {
+#ifdef WEBSERVER_ENABLE_REDIS
+    if (!SessionStore::Instance().Available())
+        return true;
+    std::string err;
+    if (!SessionStore::Instance().ValidateToken(player_id, req.session_token(), &err)) {
+        rsp->set_ok(false);
+        rsp->set_message(err);
+        return false;
+    }
+#else
+    (void)req;
+    (void)player_id;
+    (void)rsp;
+#endif
+    return true;
+}
+
+bool GameLogic::HandleLogin(const game::LoginReq &req, game::GameResponse *rsp) {
+#ifdef WEBSERVER_ENABLE_REDIS
+    auto *body = rsp->mutable_login();
+    SessionStore::Instance().Login(req, body);
+    rsp->set_ok(body->ok());
+    rsp->set_message(body->message());
+    if (body->ok()) {
+#ifdef WEBSERVER_ENABLE_MYSQL
+        PlayerItemPersistQueue::Instance().MarkOnline(req.player_id());
+#endif
+    }
+    return body->ok();
+#else
+    (void)req;
+    rsp->set_ok(false);
+    rsp->set_message("redis not enabled");
+    return false;
+#endif
+}
+
+bool GameLogic::HandleValidateSession(const game::ValidateSessionReq &req, game::GameResponse *rsp) {
+#ifdef WEBSERVER_ENABLE_REDIS
+    auto *body = rsp->mutable_validate_session();
+    SessionStore::Instance().Validate(req, body);
+    rsp->set_ok(body->ok());
+    rsp->set_message(body->message());
+    return body->ok();
+#else
+    (void)req;
+    rsp->set_ok(false);
+    rsp->set_message("redis not enabled");
+    return false;
+#endif
+}
+
+bool GameLogic::HandleCheckOnline(const game::CheckOnlineReq &req, game::GameResponse *rsp) {
+#ifdef WEBSERVER_ENABLE_REDIS
+    auto *body = rsp->mutable_check_online();
+    SessionStore::Instance().CheckOnline(req, body);
+    rsp->set_ok(body->ok());
+    rsp->set_message(body->message());
+    return body->ok();
+#else
+    (void)req;
+    rsp->set_ok(false);
+    rsp->set_message("redis not enabled");
+    return false;
+#endif
+}
+
+bool GameLogic::HandleLogout(const game::LogoutReq &req, game::GameResponse *rsp) {
+#ifdef WEBSERVER_ENABLE_REDIS
+    auto *body = rsp->mutable_logout();
+    SessionStore::Instance().Logout(req, body);
+    rsp->set_ok(body->ok());
+    rsp->set_message(body->message());
+    if (body->ok()) {
+#ifdef WEBSERVER_ENABLE_MYSQL
+        PlayerItemPersistQueue::Instance().MarkOffline(req.player_id());
+#endif
+    }
+    return body->ok();
+#else
+    (void)req;
+    rsp->set_ok(false);
+    rsp->set_message("redis not enabled");
+    return false;
+#endif
+}
+
+bool GameLogic::Handle(const game::GameRequest &req, game::GameResponse *rsp) {
+    if (!rsp)
+        return false;
+    rsp->Clear();
+    rsp->set_seq(req.seq());
+    switch (req.body_case()) {
+        case game::GameRequest::kLogin:
+            return HandleLogin(req.login(), rsp);
+        case game::GameRequest::kValidateSession:
+            return HandleValidateSession(req.validate_session(), rsp);
+        case game::GameRequest::kCheckOnline:
+            return HandleCheckOnline(req.check_online(), rsp);
+        case game::GameRequest::kLogout:
+            return HandleLogout(req.logout(), rsp);
+        case game::GameRequest::kConsumeItem:
+            LOG_INFO << "[game] dispatch consume_item seq=" << req.seq();
+            if (!RequireSessionToken(req, req.consume_item().player_id(), rsp)) {
+                LOG_WARN << "[consume_item] session rejected seq=" << req.seq() << " msg="
+                         << rsp->message();
+                return false;
+            }
+#ifdef WEBSERVER_ENABLE_MYSQL
+            PlayerItemPersistQueue::Instance().MarkOnline(req.consume_item().player_id());
+#endif
+            return HandleConsumeItem(req.consume_item(), rsp);
+        case game::GameRequest::kReleaseSkill:
+            LOG_INFO << "[game] dispatch release_skill seq=" << req.seq();
+            if (!RequireSessionToken(req, req.release_skill().player_id(), rsp)) {
+                LOG_WARN << "[release_skill] session rejected seq=" << req.seq() << " msg="
+                         << rsp->message();
+                return false;
+            }
+#ifdef WEBSERVER_ENABLE_MYSQL
+            PlayerItemPersistQueue::Instance().MarkOnline(req.release_skill().player_id());
+#endif
+            return HandleReleaseSkill(req.release_skill(), rsp);
+        case game::GameRequest::kGrantItem:
+            LOG_INFO << "[game] dispatch grant_item seq=" << req.seq();
+            if (!RequireSessionToken(req, req.grant_item().player_id(), rsp)) {
+                LOG_WARN << "[grant_item] session rejected seq=" << req.seq() << " msg="
+                         << rsp->message();
+                return false;
+            }
+            return HandleGrantItem(req.grant_item(), rsp);
+        default:
+            rsp->set_ok(false);
+            rsp->set_message("unknown or empty request body");
+            return false;
+    }
+}

@@ -1,0 +1,125 @@
+syntax = "proto3";
+
+package game;
+
+message LoginReq {
+  uint64 player_id = 1;
+  string device_id = 2;
+  uint32 server_id = 3;
+  uint32 ttl_sec = 4;
+  bool kick_other_device = 5;
+}
+
+message LoginRsp {
+  bool ok = 1;
+  string message = 2;
+  string token = 3;
+  uint32 server_id = 4;
+  int64 login_time_sec = 5;
+  bool kicked_previous = 6;
+}
+
+message ValidateSessionReq {
+  uint64 player_id = 1;
+  string token = 2;
+}
+
+message ValidateSessionRsp {
+  bool ok = 1;
+  string message = 2;
+  bool valid = 3;
+  bool online = 4;
+  uint32 server_id = 5;
+  string device_id = 6;
+  int64 login_time_sec = 7;
+}
+
+message CheckOnlineReq {
+  uint64 player_id = 1;
+}
+
+message CheckOnlineRsp {
+  bool ok = 1;
+  string message = 2;
+  bool online = 3;
+}
+
+message LogoutReq {
+  uint64 player_id = 1;
+  string token = 2;
+}
+
+message LogoutRsp {
+  bool ok = 1;
+  string message = 2;
+}
+
+message ConsumeItemReq {
+  uint64 player_id = 1;
+  uint32 item_id = 2;
+  uint32 count = 3;
+}
+
+message ConsumeItemRsp {
+  bool ok = 1;
+  string message = 2;
+  uint32 remain_count = 3;
+}
+
+message ReleaseSkillReq {
+  uint64 player_id = 1;
+  uint32 skill_id = 2;
+  float target_x = 3;
+  float target_y = 4;
+}
+
+message ReleaseSkillRsp {
+  bool ok = 1;
+  string message = 2;
+  uint32 cooldown_ms = 3;
+}
+
+// 客户端随机/指定道具发放，服务端写入内存背包并落库 player_item
+message GrantItemReq {
+  uint64 player_id = 1;
+  uint64 item_id = 2;
+  uint32 count = 3;
+  string extra_data = 4;
+  int64 expire_time_sec = 5;
+}
+
+message GrantItemRsp {
+  bool ok = 1;
+  string message = 2;
+  uint64 instance_id = 3;
+  uint32 bag_total = 4;
+}
+
+message GameRequest {
+  uint64 seq = 1;
+  string session_token = 2;
+  oneof body {
+    ConsumeItemReq consume_item = 10;
+    ReleaseSkillReq release_skill = 11;
+    GrantItemReq grant_item = 12;
+    LoginReq login = 20;
+    ValidateSessionReq validate_session = 21;
+    CheckOnlineReq check_online = 22;
+    LogoutReq logout = 23;
+  }
+}
+
+message GameResponse {
+  uint64 seq = 1;
+  bool ok = 2;
+  string message = 3;
+  oneof body {
+    ConsumeItemRsp consume_item = 10;
+    ReleaseSkillRsp release_skill = 11;
+    GrantItemRsp grant_item = 12;
+    LoginRsp login = 20;
+    ValidateSessionRsp validate_session = 21;
+    CheckOnlineRsp check_online = 22;
+    LogoutRsp logout = 23;
+  }
+}

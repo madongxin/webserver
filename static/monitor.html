@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>CppWebServer 监控</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <style>
+    :root {
+      --bg: #f4f6f8;
+      --card: #fff;
+      --border: #e0e4e8;
+      --text: #1a1a1a;
+      --muted: #5f6368;
+      --ok: #137333;
+      --ok-bg: #e6f7ed;
+      --err: #c5221f;
+      --err-bg: #fce8e6;
+      --na-bg: #f1f3f4;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      font-size: 14px;
+    }
+    .dashboard {
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 20px 16px 40px;
+    }
+    h1 { margin: 0 0 4px; font-size: 22px; }
+    .subtitle { color: var(--muted); margin: 0 0 16px; font-size: 13px; }
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px 16px;
+      align-items: center;
+      margin-bottom: 20px;
+      padding: 12px 14px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+    }
+    .toolbar label { color: var(--muted); font-size: 13px; }
+    .toolbar input, .toolbar select {
+      padding: 4px 8px;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+    }
+    .toolbar button {
+      padding: 6px 14px;
+      border: none;
+      border-radius: 4px;
+      background: #1a73e8;
+      color: #fff;
+      cursor: pointer;
+    }
+    .toolbar button:hover { background: #1557b0; }
+    .status-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 10px;
+      margin-bottom: 24px;
+    }
+    .status-pill {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px 14px;
+      text-align: center;
+    }
+    .status-pill .name { font-size: 12px; color: var(--muted); margin-bottom: 4px; }
+    .status-pill .value { font-size: 15px; font-weight: 600; }
+    .status-pill.ok .value { color: var(--ok); }
+    .status-pill.err .value { color: var(--err); }
+    .status-pill.na .value { color: var(--muted); }
+    .module {
+      margin-bottom: 28px;
+    }
+    .module > h2 {
+      font-size: 16px;
+      margin: 0 0 12px;
+      padding-bottom: 6px;
+      border-bottom: 2px solid #1a73e8;
+      display: inline-block;
+    }
+    .module-desc {
+      color: var(--muted);
+      font-size: 12px;
+      margin: -6px 0 12px;
+    }
+    .charts {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+    }
+    @media (max-width: 768px) {
+      .charts { grid-template-columns: 1fr; }
+    }
+    .chart-box {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px 12px 6px;
+    }
+    .chart-box h3 {
+      margin: 0 0 6px;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--muted);
+    }
+    .chart-box canvas { width: 100% !important; height: 160px !important; }
+    .err-msg {
+      color: var(--err);
+      font-size: 12px;
+      padding: 8px;
+      display: none;
+    }
+    a { color: #1a73e8; }
+  </style>
+</head>
+<body>
+  <div class="dashboard">
+    <h1>CppWebServer 监控</h1>
+    <p class="subtitle">单页展示 HTTP、游戏网关、Redis、MySQL 与各进程指标 · Prometheus job + 本机 Watchdog</p>
+
+    <div class="toolbar">
+      <label>Prometheus job <input id="job" type="text" value="cpp-webserver" size="16"></label>
+      <label>时间范围 <select id="hours">
+        <option value="1">1 小时</option>
+        <option value="3">3 小时</option>
+        <option value="6">6 小时</option>
+        <option value="24">24 小时</option>
+      </select></label>
+      <label>步长(秒) <input id="step" type="number" value="60" min="15" max="300" style="width:56px"></label>
+      <label>自动刷新(秒) <input id="refresh" type="number" value="30" min="0" max="600" style="width:56px"></label>
+      <button type="button" id="btnRefresh">立即刷新</button>
+      <span id="lastUpdate" style="color:var(--muted);font-size:12px"></span>
+    </div>
+
+    <div class="status-row" id="statusRow">
+      <div class="status-pill na" data-mod="http"><div class="name">HTTP 服务</div><div class="value">—</div></div>
+      <div class="status-pill na" data-mod="game"><div class="name">游戏 Protobuf TCP</div><div class="value">—</div></div>
+      <div class="status-pill na" data-mod="redis"><div class="name">Redis 会话</div><div class="value">—</div></div>
+      <div class="status-pill na" data-mod="mysql"><div class="name">MySQL 连接池</div><div class="value">—</div></div>
+    </div>
+
+    <div id="promErr" class="err-msg"></div>
+
+    <section class="module">
+      <h2>模块一 · 进程资源 (Prometheus)</h2>
+      <p class="module-desc">由 Prometheus 抓取 <code>/metrics</code>，需配置 scrape job 与上方 job 名一致</p>
+      <div class="charts" id="promCharts"></div>
+    </section>
+
+    <section class="module">
+      <h2>模块二 · 线程状态 (Prometheus)</h2>
+      <p class="module-desc"><code>webserver_os_threads</code> 按 /proc 状态分组的线程数</p>
+      <div class="charts">
+        <div class="chart-box" style="grid-column: 1 / -1">
+          <h3>OS 线程 (按 state)</h3>
+          <canvas id="chartThreads"></canvas>
+        </div>
+      </div>
+    </section>
+
+    <section class="module">
+      <h2>模块三 · 本机采样 (Watchdog)</h2>
+      <p class="module-desc">服务端每 5 秒采样，不依赖 Prometheus</p>
+      <div class="charts">
+        <div class="chart-box"><h3>RSS (KB)</h3><canvas id="wdRss"></canvas></div>
+        <div class="chart-box"><h3>打开 FD 数</h3><canvas id="wdFds"></canvas></div>
+        <div class="chart-box"><h3>TCP 发送队列 (字节)</h3><canvas id="wdTcpSend"></canvas></div>
+        <div class="chart-box"><h3>TCP 接收队列 (字节)</h3><canvas id="wdTcpRecv"></canvas></div>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    const params = new URLSearchParams(location.search);
+    const charts = {};
+    const COLORS = ['#36a2eb', '#ff6384', '#4bc0c0', '#ff9f40', '#9966ff', '#c9cbcf'];
+
+    function cfg() {
+      return {
+        job: document.getElementById('job').value.trim() || 'cpp-webserver',
+        hours: parseInt(document.getElementById('hours').value, 10) || 1,
+        step: parseInt(document.getElementById('step').value, 10) || 60,
+      };
+    }
+
+    function syncUrl() {
+      const c = cfg();
+      const p = new URLSearchParams();
+      p.set('job', c.job);
+      p.set('hours', String(c.hours));
+      history.replaceState(null, '', '?' + p.toString());
+    }
+
+    function applyParamsFromUrl() {
+      if (params.get('job')) document.getElementById('job').value = params.get('job');
+      if (params.get('hours')) document.getElementById('hours').value = params.get('hours');
+    }
+
+    function setStatus(mod, text, ok) {
+      const el = document.querySelector(`.status-pill[data-mod="${mod}"]`);
+      if (!el) return;
+      el.className = 'status-pill ' + (ok === null ? 'na' : ok ? 'ok' : 'err');
+      el.querySelector('.value').textContent = text;
+    }
+
+    async function fetchJson(url) {
+      try {
+        const r = await fetch(url);
+        if (!r.ok) return null;
+        return await r.json();
+      } catch {
+        return null;
+      }
+    }
+
+    async function refreshStatus() {
+      const health = await fetchJson('/api/health');
+      setStatus('http', health?.status === 'ok' ? '正常' : '异常', health?.status === 'ok');
+
+      const game = await fetchJson('/api/game/status');
+      if (game === null) {
+        setStatus('game', '未启用', null);
+      } else if (game.enabled && game.port > 0) {
+        setStatus('game', '端口 ' + game.port, true);
+      } else {
+        setStatus('game', '未启动', false);
+      }
+
+      const redis = await fetchJson('/api/redis/status');
+      if (redis === null) {
+        setStatus('redis', '未编译', null);
+      } else if (!redis.enabled) {
+        setStatus('redis', '未启用', null);
+      } else {
+        setStatus('redis', redis.available ? '已连接' : '不可用', redis.available);
+      }
+
+      const db = await fetchJson('/api/db/ping');
+      if (db === null) {
+        setStatus('mysql', '未编译', null);
+      } else if (!db.ok) {
+        setStatus('mysql', '未初始化', false);
+      } else {
+        let txt = (db.dbname || 'metrics') + ' · 每10s落库';
+        if (db.row_count != null) txt += ' · ' + db.row_count + ' 行';
+        if (db.last_ts_unix) {
+          const age = Math.floor(Date.now() / 1000) - db.last_ts_unix;
+          txt += age > 30 ? ' · 写入停滞' + age + 's' : ' · 正常';
+        }
+        setStatus('mysql', txt, db.last_ts_unix && (Date.now() / 1000 - db.last_ts_unix) < 30);
+      }
+    }
+
+    async function queryRange(promql) {
+      const c = cfg();
+      const end = Math.floor(Date.now() / 1000);
+      const start = end - c.hours * 3600;
+      const url = `/api/prometheus/query_range?q=${encodeURIComponent(promql)}&start=${start}&end=${end}&step=${c.step}`;
+      const r = await fetch(url);
+      if (!r.ok) throw new Error('Prometheus 代理 ' + r.status);
+      const j = await r.json();
+      if (j.status === 'error') throw new Error(j.error || 'query failed');
+      return j.data?.result || [];
+    }
+
+    function seriesToChartData(result) {
+      if (!result.length) return { labels: [], datasets: [] };
+      const labels = (result[0].values || []).map(x =>
+        new Date(x[0] * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
+      const datasets = result.map((s, i) => {
+        const state = s.metric?.state;
+        const label = state ? `state=${state}` : (s.metric?.__name__ || 'value');
+        return {
+          label,
+          data: (s.values || []).map(x => parseFloat(x[1])),
+          borderColor: COLORS[i % COLORS.length],
+          backgroundColor: 'transparent',
+          tension: 0.2,
+          pointRadius: 0,
+          borderWidth: 1.5,
+        };
+      });
+      return { labels, datasets };
+    }
+
+    function upsertChart(canvasId, label, chartData) {
+      const canvas = document.getElementById(canvasId);
+      if (!canvas) return;
+      if (charts[canvasId]) {
+        charts[canvasId].data = chartData;
+        charts[canvasId].update('none');
+        return;
+      }
+      charts[canvasId] = new Chart(canvas, {
+        type: 'line',
+        data: chartData,
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          animation: false,
+          plugins: { legend: { display: chartData.datasets.length > 1, position: 'top', labels: { boxWidth: 10, font: { size: 10 } } } },
+          scales: {
+            x: { ticks: { maxTicksLimit: 8, font: { size: 10 } } },
+            y: { ticks: { font: { size: 10 } } },
+          },
+        },
+      });
+    }
+
+    const PROM_PANELS = [
+      { id: 'pCpu', title: 'CPU 使用率', promql: j => `rate(process_cpu_seconds_total{job="${j}"}[1m])` },
+      { id: 'pRss', title: '常驻内存 RSS', promql: j => `process_resident_memory_bytes{job="${j}"}` },
+      { id: 'pFds', title: '打开文件描述符', promql: j => `process_open_fds{job="${j}"}` },
+      { id: 'pTick', title: 'EventLoop 上次耗时 (s)', promql: j => `webserver_eventloop_tick_seconds{job="${j}"}` },
+      { id: 'pPeak', title: 'EventLoop 峰值耗时 (s)', promql: j => `webserver_eventloop_tick_peak_seconds{job="${j}"}` },
+      { id: 'pThr', title: '进程线程总数', promql: j => `process_threads{job="${j}"}` },
+    ];
+
+    function ensurePromChartBoxes() {
+      const root = document.getElementById('promCharts');
+      if (root.children.length) return;
+      PROM_PANELS.forEach(p => {
+        const box = document.createElement('div');
+        box.className = 'chart-box';
+        box.innerHTML = `<h3>${p.title}</h3><canvas id="${p.id}"></canvas>`;
+        root.appendChild(box);
+      });
+    }
+
+    async function refreshPrometheus() {
+      const errEl = document.getElementById('promErr');
+      errEl.style.display = 'none';
+      ensurePromChartBoxes();
+      const job = cfg().job;
+      try {
+        for (const p of PROM_PANELS) {
+          const result = await queryRange(p.promql(job));
+          upsertChart(p.id, p.title, seriesToChartData(result));
+        }
+        const thResult = await queryRange(`webserver_os_threads{job="${job}"}`);
+        upsertChart('chartThreads', 'threads', seriesToChartData(thResult));
+      } catch (e) {
+        errEl.textContent = 'Prometheus 图表加载失败: ' + e.message + '（请确认 Prometheus 已配置并可通过代理访问）';
+        errEl.style.display = 'block';
+      }
+    }
+
+    async function refreshWatchdog() {
+      const j = await fetchJson('/api/stats?history=120');
+      const hist = j?.history || [];
+      if (!hist.length) return;
+      const labels = hist.map(p => new Date(p.t * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
+      const mk = (key, canvasId, title) => {
+        upsertChart(canvasId, title, {
+          labels,
+          datasets: [{ label: title, data: hist.map(p => p[key]), borderColor: '#4bc0c0', tension: 0.2, pointRadius: 0, borderWidth: 1.5 }],
+        });
+      };
+      mk('rss_kb', 'wdRss', 'RSS KB');
+      mk('fds', 'wdFds', 'FD');
+      mk('tcp_send_q', 'wdTcpSend', 'TCP send');
+      mk('tcp_recv_q', 'wdTcpRecv', 'TCP recv');
+    }
+
+    async function refreshAll() {
+      syncUrl();
+      await Promise.all([refreshStatus(), refreshPrometheus(), refreshWatchdog()]);
+      document.getElementById('lastUpdate').textContent =
+        '更新于 ' + new Date().toLocaleTimeString();
+    }
+
+    let timer = null;
+    function scheduleAutoRefresh() {
+      if (timer) clearInterval(timer);
+      const sec = parseInt(document.getElementById('refresh').value, 10);
+      if (sec > 0) timer = setInterval(refreshAll, sec * 1000);
+    }
+
+    document.getElementById('btnRefresh').addEventListener('click', refreshAll);
+    ['job', 'hours', 'step'].forEach(id => {
+      document.getElementById(id).addEventListener('change', refreshAll);
+    });
+    document.getElementById('refresh').addEventListener('change', scheduleAutoRefresh);
+
+    applyParamsFromUrl();
+    refreshAll();
+    scheduleAutoRefresh();
+  </script>
+</body>
+</html>
