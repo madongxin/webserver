@@ -1,0 +1,15 @@
+CompileFlags:
+  Add:
+    - -std=c++14
+    - -DWEBSERVER_ENABLE_MYSQL
+    - -DWEBSERVER_ENABLE_GAME_PROTOBUF
+    - -DWEBSERVER_ENABLE_REDIS
+  Remove:
+    - -Werror
+
+Index:
+  Background: Build
+
+Diagnostics:
+  UnusedIncludes: None
+  MissingIncludes: None

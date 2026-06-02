@@ -2,6 +2,9 @@
 cmake_minimum_required(VERSION 3.10)
 project(WebServer)
 
+# 供 Cursor/VS Code（Microsoft C++、clangd）跳转定义/实现
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON CACHE BOOL "Export compile_commands.json for IDE" FORCE)
+
 include_directories(
     /usr/include
     base
@@ -99,4 +102,13 @@ if(ENABLE_GAME_PROTOBUF AND ENABLE_REDIS)
   target_compile_definitions(webserver PRIVATE WEBSERVER_ENABLE_REDIS)
   target_include_directories(webserver PRIVATE ${HIREDIS_INCLUDE_DIR})
   target_link_libraries(webserver ${HIREDIS_LIB})
+endif()
+
+# 每次 build 时同步到项目根，便于 clangd 默认扫描 ${workspaceFolder}
+if(CMAKE_EXPORT_COMPILE_COMMANDS)
+  add_custom_target(ide_compile_commands ALL
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+      "${CMAKE_BINARY_DIR}/compile_commands.json"
+      "${CMAKE_SOURCE_DIR}/compile_commands.json"
+    COMMENT "Sync compile_commands.json to project root for IDE")
 endif()

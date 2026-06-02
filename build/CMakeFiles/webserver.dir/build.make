@@ -447,10 +447,80 @@ CMakeFiles/webserver.dir/log/Logging.cpp.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/webserver.dir/log/Logging.cpp.s"
 	g++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /root/projects/CppWebServer/log/Logging.cpp -o CMakeFiles/webserver.dir/log/Logging.cpp.s
 
+CMakeFiles/webserver.dir/db/Connection.cpp.o: CMakeFiles/webserver.dir/flags.make
+CMakeFiles/webserver.dir/db/Connection.cpp.o: /root/projects/CppWebServer/db/Connection.cpp
+CMakeFiles/webserver.dir/db/Connection.cpp.o: CMakeFiles/webserver.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/root/projects/CppWebServer/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_28) "Building CXX object CMakeFiles/webserver.dir/db/Connection.cpp.o"
+	g++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/webserver.dir/db/Connection.cpp.o -MF CMakeFiles/webserver.dir/db/Connection.cpp.o.d -o CMakeFiles/webserver.dir/db/Connection.cpp.o -c /root/projects/CppWebServer/db/Connection.cpp
+
+CMakeFiles/webserver.dir/db/Connection.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/webserver.dir/db/Connection.cpp.i"
+	g++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /root/projects/CppWebServer/db/Connection.cpp > CMakeFiles/webserver.dir/db/Connection.cpp.i
+
+CMakeFiles/webserver.dir/db/Connection.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/webserver.dir/db/Connection.cpp.s"
+	g++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /root/projects/CppWebServer/db/Connection.cpp -o CMakeFiles/webserver.dir/db/Connection.cpp.s
+
+CMakeFiles/webserver.dir/db/ConnectionPool.cpp.o: CMakeFiles/webserver.dir/flags.make
+CMakeFiles/webserver.dir/db/ConnectionPool.cpp.o: /root/projects/CppWebServer/db/ConnectionPool.cpp
+CMakeFiles/webserver.dir/db/ConnectionPool.cpp.o: CMakeFiles/webserver.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/root/projects/CppWebServer/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_29) "Building CXX object CMakeFiles/webserver.dir/db/ConnectionPool.cpp.o"
+	g++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/webserver.dir/db/ConnectionPool.cpp.o -MF CMakeFiles/webserver.dir/db/ConnectionPool.cpp.o.d -o CMakeFiles/webserver.dir/db/ConnectionPool.cpp.o -c /root/projects/CppWebServer/db/ConnectionPool.cpp
+
+CMakeFiles/webserver.dir/db/ConnectionPool.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/webserver.dir/db/ConnectionPool.cpp.i"
+	g++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /root/projects/CppWebServer/db/ConnectionPool.cpp > CMakeFiles/webserver.dir/db/ConnectionPool.cpp.i
+
+CMakeFiles/webserver.dir/db/ConnectionPool.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/webserver.dir/db/ConnectionPool.cpp.s"
+	g++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /root/projects/CppWebServer/db/ConnectionPool.cpp -o CMakeFiles/webserver.dir/db/ConnectionPool.cpp.s
+
+CMakeFiles/webserver.dir/db/MetricsDbWriter.cpp.o: CMakeFiles/webserver.dir/flags.make
+CMakeFiles/webserver.dir/db/MetricsDbWriter.cpp.o: /root/projects/CppWebServer/db/MetricsDbWriter.cpp
+CMakeFiles/webserver.dir/db/MetricsDbWriter.cpp.o: CMakeFiles/webserver.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/root/projects/CppWebServer/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_30) "Building CXX object CMakeFiles/webserver.dir/db/MetricsDbWriter.cpp.o"
+	g++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/webserver.dir/db/MetricsDbWriter.cpp.o -MF CMakeFiles/webserver.dir/db/MetricsDbWriter.cpp.o.d -o CMakeFiles/webserver.dir/db/MetricsDbWriter.cpp.o -c /root/projects/CppWebServer/db/MetricsDbWriter.cpp
+
+CMakeFiles/webserver.dir/db/MetricsDbWriter.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/webserver.dir/db/MetricsDbWriter.cpp.i"
+	g++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /root/projects/CppWebServer/db/MetricsDbWriter.cpp > CMakeFiles/webserver.dir/db/MetricsDbWriter.cpp.i
+
+CMakeFiles/webserver.dir/db/MetricsDbWriter.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/webserver.dir/db/MetricsDbWriter.cpp.s"
+	g++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /root/projects/CppWebServer/db/MetricsDbWriter.cpp -o CMakeFiles/webserver.dir/db/MetricsDbWriter.cpp.s
+
+CMakeFiles/webserver.dir/db/PlayerItemStore.cpp.o: CMakeFiles/webserver.dir/flags.make
+CMakeFiles/webserver.dir/db/PlayerItemStore.cpp.o: /root/projects/CppWebServer/db/PlayerItemStore.cpp
+CMakeFiles/webserver.dir/db/PlayerItemStore.cpp.o: CMakeFiles/webserver.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/root/projects/CppWebServer/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_31) "Building CXX object CMakeFiles/webserver.dir/db/PlayerItemStore.cpp.o"
+	g++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/webserver.dir/db/PlayerItemStore.cpp.o -MF CMakeFiles/webserver.dir/db/PlayerItemStore.cpp.o.d -o CMakeFiles/webserver.dir/db/PlayerItemStore.cpp.o -c /root/projects/CppWebServer/db/PlayerItemStore.cpp
+
+CMakeFiles/webserver.dir/db/PlayerItemStore.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/webserver.dir/db/PlayerItemStore.cpp.i"
+	g++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /root/projects/CppWebServer/db/PlayerItemStore.cpp > CMakeFiles/webserver.dir/db/PlayerItemStore.cpp.i
+
+CMakeFiles/webserver.dir/db/PlayerItemStore.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/webserver.dir/db/PlayerItemStore.cpp.s"
+	g++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /root/projects/CppWebServer/db/PlayerItemStore.cpp -o CMakeFiles/webserver.dir/db/PlayerItemStore.cpp.s
+
+CMakeFiles/webserver.dir/db/PlayerItemPersistQueue.cpp.o: CMakeFiles/webserver.dir/flags.make
+CMakeFiles/webserver.dir/db/PlayerItemPersistQueue.cpp.o: /root/projects/CppWebServer/db/PlayerItemPersistQueue.cpp
+CMakeFiles/webserver.dir/db/PlayerItemPersistQueue.cpp.o: CMakeFiles/webserver.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/root/projects/CppWebServer/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_32) "Building CXX object CMakeFiles/webserver.dir/db/PlayerItemPersistQueue.cpp.o"
+	g++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/webserver.dir/db/PlayerItemPersistQueue.cpp.o -MF CMakeFiles/webserver.dir/db/PlayerItemPersistQueue.cpp.o.d -o CMakeFiles/webserver.dir/db/PlayerItemPersistQueue.cpp.o -c /root/projects/CppWebServer/db/PlayerItemPersistQueue.cpp
+
+CMakeFiles/webserver.dir/db/PlayerItemPersistQueue.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/webserver.dir/db/PlayerItemPersistQueue.cpp.i"
+	g++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /root/projects/CppWebServer/db/PlayerItemPersistQueue.cpp > CMakeFiles/webserver.dir/db/PlayerItemPersistQueue.cpp.i
+
+CMakeFiles/webserver.dir/db/PlayerItemPersistQueue.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/webserver.dir/db/PlayerItemPersistQueue.cpp.s"
+	g++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /root/projects/CppWebServer/db/PlayerItemPersistQueue.cpp -o CMakeFiles/webserver.dir/db/PlayerItemPersistQueue.cpp.s
+
 CMakeFiles/webserver.dir/game/game.pb.cc.o: CMakeFiles/webserver.dir/flags.make
 CMakeFiles/webserver.dir/game/game.pb.cc.o: /root/projects/CppWebServer/game/game.pb.cc
 CMakeFiles/webserver.dir/game/game.pb.cc.o: CMakeFiles/webserver.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/root/projects/CppWebServer/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_28) "Building CXX object CMakeFiles/webserver.dir/game/game.pb.cc.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/root/projects/CppWebServer/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_33) "Building CXX object CMakeFiles/webserver.dir/game/game.pb.cc.o"
 	g++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/webserver.dir/game/game.pb.cc.o -MF CMakeFiles/webserver.dir/game/game.pb.cc.o.d -o CMakeFiles/webserver.dir/game/game.pb.cc.o -c /root/projects/CppWebServer/game/game.pb.cc
 
 CMakeFiles/webserver.dir/game/game.pb.cc.i: cmake_force
@@ -464,7 +534,7 @@ CMakeFiles/webserver.dir/game/game.pb.cc.s: cmake_force
 CMakeFiles/webserver.dir/game/ProtoFraming.cpp.o: CMakeFiles/webserver.dir/flags.make
 CMakeFiles/webserver.dir/game/ProtoFraming.cpp.o: /root/projects/CppWebServer/game/ProtoFraming.cpp
 CMakeFiles/webserver.dir/game/ProtoFraming.cpp.o: CMakeFiles/webserver.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/root/projects/CppWebServer/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_29) "Building CXX object CMakeFiles/webserver.dir/game/ProtoFraming.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/root/projects/CppWebServer/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_34) "Building CXX object CMakeFiles/webserver.dir/game/ProtoFraming.cpp.o"
 	g++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/webserver.dir/game/ProtoFraming.cpp.o -MF CMakeFiles/webserver.dir/game/ProtoFraming.cpp.o.d -o CMakeFiles/webserver.dir/game/ProtoFraming.cpp.o -c /root/projects/CppWebServer/game/ProtoFraming.cpp
 
 CMakeFiles/webserver.dir/game/ProtoFraming.cpp.i: cmake_force
@@ -478,7 +548,7 @@ CMakeFiles/webserver.dir/game/ProtoFraming.cpp.s: cmake_force
 CMakeFiles/webserver.dir/game/GameLogic.cpp.o: CMakeFiles/webserver.dir/flags.make
 CMakeFiles/webserver.dir/game/GameLogic.cpp.o: /root/projects/CppWebServer/game/GameLogic.cpp
 CMakeFiles/webserver.dir/game/GameLogic.cpp.o: CMakeFiles/webserver.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/root/projects/CppWebServer/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_30) "Building CXX object CMakeFiles/webserver.dir/game/GameLogic.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/root/projects/CppWebServer/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_35) "Building CXX object CMakeFiles/webserver.dir/game/GameLogic.cpp.o"
 	g++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/webserver.dir/game/GameLogic.cpp.o -MF CMakeFiles/webserver.dir/game/GameLogic.cpp.o.d -o CMakeFiles/webserver.dir/game/GameLogic.cpp.o -c /root/projects/CppWebServer/game/GameLogic.cpp
 
 CMakeFiles/webserver.dir/game/GameLogic.cpp.i: cmake_force
@@ -492,7 +562,7 @@ CMakeFiles/webserver.dir/game/GameLogic.cpp.s: cmake_force
 CMakeFiles/webserver.dir/game/GameService.cpp.o: CMakeFiles/webserver.dir/flags.make
 CMakeFiles/webserver.dir/game/GameService.cpp.o: /root/projects/CppWebServer/game/GameService.cpp
 CMakeFiles/webserver.dir/game/GameService.cpp.o: CMakeFiles/webserver.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/root/projects/CppWebServer/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_31) "Building CXX object CMakeFiles/webserver.dir/game/GameService.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/root/projects/CppWebServer/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_36) "Building CXX object CMakeFiles/webserver.dir/game/GameService.cpp.o"
 	g++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/webserver.dir/game/GameService.cpp.o -MF CMakeFiles/webserver.dir/game/GameService.cpp.o.d -o CMakeFiles/webserver.dir/game/GameService.cpp.o -c /root/projects/CppWebServer/game/GameService.cpp
 
 CMakeFiles/webserver.dir/game/GameService.cpp.i: cmake_force
@@ -506,7 +576,7 @@ CMakeFiles/webserver.dir/game/GameService.cpp.s: cmake_force
 CMakeFiles/webserver.dir/game/GameTcpGateway.cpp.o: CMakeFiles/webserver.dir/flags.make
 CMakeFiles/webserver.dir/game/GameTcpGateway.cpp.o: /root/projects/CppWebServer/game/GameTcpGateway.cpp
 CMakeFiles/webserver.dir/game/GameTcpGateway.cpp.o: CMakeFiles/webserver.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/root/projects/CppWebServer/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_32) "Building CXX object CMakeFiles/webserver.dir/game/GameTcpGateway.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/root/projects/CppWebServer/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_37) "Building CXX object CMakeFiles/webserver.dir/game/GameTcpGateway.cpp.o"
 	g++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/webserver.dir/game/GameTcpGateway.cpp.o -MF CMakeFiles/webserver.dir/game/GameTcpGateway.cpp.o.d -o CMakeFiles/webserver.dir/game/GameTcpGateway.cpp.o -c /root/projects/CppWebServer/game/GameTcpGateway.cpp
 
 CMakeFiles/webserver.dir/game/GameTcpGateway.cpp.i: cmake_force
@@ -520,7 +590,7 @@ CMakeFiles/webserver.dir/game/GameTcpGateway.cpp.s: cmake_force
 CMakeFiles/webserver.dir/redis/RedisClient.cpp.o: CMakeFiles/webserver.dir/flags.make
 CMakeFiles/webserver.dir/redis/RedisClient.cpp.o: /root/projects/CppWebServer/redis/RedisClient.cpp
 CMakeFiles/webserver.dir/redis/RedisClient.cpp.o: CMakeFiles/webserver.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/root/projects/CppWebServer/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_33) "Building CXX object CMakeFiles/webserver.dir/redis/RedisClient.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/root/projects/CppWebServer/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_38) "Building CXX object CMakeFiles/webserver.dir/redis/RedisClient.cpp.o"
 	g++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/webserver.dir/redis/RedisClient.cpp.o -MF CMakeFiles/webserver.dir/redis/RedisClient.cpp.o.d -o CMakeFiles/webserver.dir/redis/RedisClient.cpp.o -c /root/projects/CppWebServer/redis/RedisClient.cpp
 
 CMakeFiles/webserver.dir/redis/RedisClient.cpp.i: cmake_force
@@ -534,7 +604,7 @@ CMakeFiles/webserver.dir/redis/RedisClient.cpp.s: cmake_force
 CMakeFiles/webserver.dir/game/SessionStore.cpp.o: CMakeFiles/webserver.dir/flags.make
 CMakeFiles/webserver.dir/game/SessionStore.cpp.o: /root/projects/CppWebServer/game/SessionStore.cpp
 CMakeFiles/webserver.dir/game/SessionStore.cpp.o: CMakeFiles/webserver.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/root/projects/CppWebServer/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_34) "Building CXX object CMakeFiles/webserver.dir/game/SessionStore.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/root/projects/CppWebServer/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_39) "Building CXX object CMakeFiles/webserver.dir/game/SessionStore.cpp.o"
 	g++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/webserver.dir/game/SessionStore.cpp.o -MF CMakeFiles/webserver.dir/game/SessionStore.cpp.o.d -o CMakeFiles/webserver.dir/game/SessionStore.cpp.o -c /root/projects/CppWebServer/game/SessionStore.cpp
 
 CMakeFiles/webserver.dir/game/SessionStore.cpp.i: cmake_force
@@ -574,6 +644,11 @@ webserver_OBJECTS = \
 "CMakeFiles/webserver.dir/log/LogFile.cpp.o" \
 "CMakeFiles/webserver.dir/log/LogStream.cpp.o" \
 "CMakeFiles/webserver.dir/log/Logging.cpp.o" \
+"CMakeFiles/webserver.dir/db/Connection.cpp.o" \
+"CMakeFiles/webserver.dir/db/ConnectionPool.cpp.o" \
+"CMakeFiles/webserver.dir/db/MetricsDbWriter.cpp.o" \
+"CMakeFiles/webserver.dir/db/PlayerItemStore.cpp.o" \
+"CMakeFiles/webserver.dir/db/PlayerItemPersistQueue.cpp.o" \
 "CMakeFiles/webserver.dir/game/game.pb.cc.o" \
 "CMakeFiles/webserver.dir/game/ProtoFraming.cpp.o" \
 "CMakeFiles/webserver.dir/game/GameLogic.cpp.o" \
@@ -612,6 +687,11 @@ test/webserver: CMakeFiles/webserver.dir/log/AsyncLogging.cpp.o
 test/webserver: CMakeFiles/webserver.dir/log/LogFile.cpp.o
 test/webserver: CMakeFiles/webserver.dir/log/LogStream.cpp.o
 test/webserver: CMakeFiles/webserver.dir/log/Logging.cpp.o
+test/webserver: CMakeFiles/webserver.dir/db/Connection.cpp.o
+test/webserver: CMakeFiles/webserver.dir/db/ConnectionPool.cpp.o
+test/webserver: CMakeFiles/webserver.dir/db/MetricsDbWriter.cpp.o
+test/webserver: CMakeFiles/webserver.dir/db/PlayerItemStore.cpp.o
+test/webserver: CMakeFiles/webserver.dir/db/PlayerItemPersistQueue.cpp.o
 test/webserver: CMakeFiles/webserver.dir/game/game.pb.cc.o
 test/webserver: CMakeFiles/webserver.dir/game/ProtoFraming.cpp.o
 test/webserver: CMakeFiles/webserver.dir/game/GameLogic.cpp.o
@@ -620,12 +700,14 @@ test/webserver: CMakeFiles/webserver.dir/game/GameTcpGateway.cpp.o
 test/webserver: CMakeFiles/webserver.dir/redis/RedisClient.cpp.o
 test/webserver: CMakeFiles/webserver.dir/game/SessionStore.cpp.o
 test/webserver: CMakeFiles/webserver.dir/build.make
+test/webserver: /usr/lib64/mysql/libmysqlclient.so
 test/webserver: /usr/lib64/libprotobuf.so
 test/webserver: /usr/lib64/libhiredis.so
+test/webserver: /usr/lib64/mysql/libmysqlclient.so
 test/webserver: /usr/lib64/libprotobuf.so
 test/webserver: /usr/lib64/libhiredis.so
 test/webserver: CMakeFiles/webserver.dir/link.txt
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --bold --progress-dir=/root/projects/CppWebServer/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_35) "Linking CXX executable test/webserver"
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --bold --progress-dir=/root/projects/CppWebServer/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_40) "Linking CXX executable test/webserver"
 	$(CMAKE_COMMAND) -E cmake_link_script CMakeFiles/webserver.dir/link.txt --verbose=$(VERBOSE)
 
 # Rule to build all files generated by this target.

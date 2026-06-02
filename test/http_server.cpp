@@ -551,6 +551,7 @@ int main(int argc, char *argv[]) {
     if (ConnectionPool::getconnectionPool()->isInitialized()) {
         MetricsDbWriter::Instance().StartPeriodic(&loop, 10.0);
         PlayerItemStore::Instance().EnsureTable();
+        // 道具落库：在线玩家每 300s 批量刷盘；登出时由 GameLogic 立即 FlushPlayer
         PlayerItemPersistQueue::Instance().StartPeriodic(&loop, 300.0);
     } else {
         LOG_WARN << "MySQL pool not initialized (config/mysql.cnf)";
@@ -569,6 +570,7 @@ int main(int argc, char *argv[]) {
     server.SetThreadNums(size);
 #ifdef WEBSERVER_ENABLE_GAME_PROTOBUF
     {
+        // 游戏端口独立线程：TcpServer -> OnMessage -> 拆帧 -> GameService -> GameLogic
         auto *gw = new GameTcpGateway("0.0.0.0", game_port);
         gw->StartInBackground();
         LOG_INFO << "Game protobuf TCP " << game_port << " (HTTP " << port << ")";

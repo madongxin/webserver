@@ -28,6 +28,7 @@ GameLogic &GameLogic::Instance() {
 }
 
 void GameLogic::EnsurePlayer(uint64_t player_id) {
+    // 演示用初始背包；grant_item 会在此基础上累加，consume_item 从此扣减
     if (inventory_.count(player_id) == 0) {
         auto &inv = inventory_[player_id];
         inv[1001] = 10;
@@ -109,6 +110,10 @@ bool GameLogic::HandleReleaseSkill(const game::ReleaseSkillReq &req, game::GameR
     return true;
 }
 
+// 道具发放业务：
+//   1) 校验参数并更新内存 inventory_（与 consume_item 同一套聚合背包）
+//   2) 构造 PendingPlayerItem 入队，由 PlayerItemPersistQueue 每 5 分钟或 logout 写入 player_item
+//   3) 响应 instance_id=0 表示尚未落库；bag_total 为当前内存中该道具总数
 bool GameLogic::HandleGrantItem(const game::GrantItemReq &req, game::GameResponse *rsp) {
     LOG_INFO << "[grant_item] recv player_id=" << req.player_id() << " item_id=" << req.item_id()
              << " count=" << req.count();
@@ -129,6 +134,7 @@ bool GameLogic::HandleGrantItem(const game::GrantItemReq &req, game::GameRespons
     }
     const uint32_t item_id = static_cast<uint32_t>(req.item_id());
 
+    // 先改内存，保证客户端下一次 consume 能立刻读到新数量
     std::lock_guard<std::mutex> lk(mu_);
     EnsurePlayer(req.player_id());
     auto &inv = inventory_[req.player_id()];
@@ -142,6 +148,7 @@ bool GameLogic::HandleGrantItem(const game::GrantItemReq &req, game::GameRespons
         body->set_message(rsp->message());
         return false;
     }
+    // 异步落库：不阻塞 RPC 线程连接 MySQL
     PendingPlayerItem pending;
     pending.player_id = req.player_id();
     pending.item_id = req.item_id();
@@ -196,6 +203,7 @@ bool GameLogic::HandleLogin(const game::LoginReq &req, game::GameResponse *rsp) 
     rsp->set_message(body->message());
     if (body->ok()) {
 #ifdef WEBSERVER_ENABLE_MYSQL
+        // 登录成功：参与「在线玩家 5 分钟刷盘」判定（与 grant_item 的 Enqueue 配合）
         PlayerItemPersistQueue::Instance().MarkOnline(req.player_id());
 #endif
     }
@@ -246,6 +254,7 @@ bool GameLogic::HandleLogout(const game::LogoutReq &req, game::GameResponse *rsp
     rsp->set_message(body->message());
     if (body->ok()) {
 #ifdef WEBSERVER_ENABLE_MYSQL
+        // 登出：FlushPlayer 立即把该玩家队列写入 player_item，不等待 300s 定时器
         PlayerItemPersistQueue::Instance().MarkOffline(req.player_id());
 #endif
     }
@@ -258,11 +267,16 @@ bool GameLogic::HandleLogout(const game::LogoutReq &req, game::GameResponse *rsp
 #endif
 }
 
+/**
+ * GameService::HandleFrame 解析出 GameRequest 后的统一入口。
+ * 根据 req.body_case()（protobuf oneof）路由到具体 Handler；
+ * 游戏类接口（consume / skill / grant）会先 RequireSessionToken 校验 session_token。
+ */
 bool GameLogic::Handle(const game::GameRequest &req, game::GameResponse *rsp) {
     if (!rsp)
         return false;
     rsp->Clear();
-    rsp->set_seq(req.seq());
+    rsp->set_seq(req.seq());  // 与请求 seq 对齐，便于客户端匹配异步响应
     switch (req.body_case()) {
         case game::GameRequest::kLogin:
             return HandleLogin(req.login(), rsp);

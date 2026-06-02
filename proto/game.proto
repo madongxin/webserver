@@ -79,20 +79,22 @@ message ReleaseSkillRsp {
   uint32 cooldown_ms = 3;
 }
 
-// 客户端随机/指定道具发放，服务端写入内存背包并落库 player_item
+// ---------- 道具发放（grant_item）----------
+// 流程：客户端发 GrantItemReq -> GameLogic 立刻改内存背包 -> 入 PlayerItemPersistQueue
+//       -> 每 5 分钟或登出时 INSERT player_item
 message GrantItemReq {
-  uint64 player_id = 1;
-  uint64 item_id = 2;
-  uint32 count = 3;
-  string extra_data = 4;
-  int64 expire_time_sec = 5;
+  uint64 player_id = 1;       // 玩家 ID
+  uint64 item_id = 2;         // 道具配置 ID（客户端可随机，如 1001~1004）
+  uint32 count = 3;           // 发放数量
+  string extra_data = 4;      // JSON，如 {"source":"client_random"}；空则服务端默认
+  int64 expire_time_sec = 5;  // 过期 Unix 秒；0 表示不过期（DB 为 NULL）
 }
 
 message GrantItemRsp {
   bool ok = 1;
   string message = 2;
-  uint64 instance_id = 3;
-  uint32 bag_total = 4;
+  uint64 instance_id = 3;     // 队列入库时为 0；即时 Insert 时为 DB 自增 id
+  uint32 bag_total = 4;       // 内存背包该 item_id 聚合数量（非 player_item 行数）
 }
 
 message GameRequest {

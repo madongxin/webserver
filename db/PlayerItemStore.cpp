@@ -1,3 +1,8 @@
+/**
+ * @file PlayerItemStore.cpp
+ * @brief player_item 表的 DDL 与 INSERT 实现
+ */
+
 #include "PlayerItemStore.h"
 
 #include "ConnectionPool.h"
@@ -13,6 +18,7 @@ namespace {
 
 std::mutex g_mu;
 
+/** 转义 SQL 字符串中的 \ 和 '，防止拼接注入 */
 std::string SqlEscape(const std::string &s) {
     std::string out;
     out.reserve(s.size() + 8);
@@ -45,6 +51,7 @@ bool PlayerItemStore::EnsureTable() {
     if (!conn)
         return false;
 
+    // 每条发放记录一行；id 为道具实例唯一 ID，非配置表 item_id
     const char *sql =
         "CREATE TABLE IF NOT EXISTS player_item ("
         "id BIGINT AUTO_INCREMENT PRIMARY KEY,"
@@ -90,6 +97,7 @@ bool PlayerItemStore::Insert(uint64_t player_id, uint64_t item_id, uint32_t coun
     if (!conn->update(sql.str()))
         return false;
 
+    // 取 AUTO_INCREMENT，作为 GrantItemRsp.instance_id（队列入库时客户端多为 0）
     MYSQL_RES *res = conn->query("SELECT LAST_INSERT_ID() AS id");
     if (!res)
         return false;

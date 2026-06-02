@@ -54,4 +54,5 @@ set(CMAKE_MAKEFILE_PRODUCTS
 # Dependency information for all targets:
 set(CMAKE_DEPEND_INFO_FILES
   "CMakeFiles/webserver.dir/DependInfo.cmake"
+  "CMakeFiles/ide_compile_commands.dir/DependInfo.cmake"
   )

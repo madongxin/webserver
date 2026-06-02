@@ -1,4 +1,16 @@
 #pragma once
+
+/**
+ * @file EventLoop.h
+ * @brief 事件循环：单线程 reactor 核心（epoll + 定时器 + 跨线程任务队列）
+ *
+ * 每个 IO 线程一个 EventLoop，线程内：
+ *   Loop() -> epoll_wait -> 分发 Channel::HandleEvent -> DoToDoList()
+ *
+ * 跨线程安全接口：
+ *   QueueOneFunc / RunOneFunc：其他线程向本 loop 投递任务（经 eventfd 唤醒）
+ */
+
 #include "common.h"
 
 #include <memory>
@@ -6,39 +18,38 @@
 #include <thread>
 #include <functional>
 #include <vector>
+
 class Epoller;
 class TimerQueue;
 class TimeStamp;
-class EventLoop
-{
+
+class EventLoop {
 public:
     DISALLOW_COPY_AND_MOVE(EventLoop);
     EventLoop();
     ~EventLoop();
-    
+
+    /** 阻塞运行：poll -> 处理 IO -> 执行 to_do_list_ */
     void Loop();
     void UpdateChannel(Channel *ch);
     void DeleteChannel(Channel *ch);
 
-    // 定时器功能，
-    void RunAt(TimeStamp timestamp, std::function<void()> const & cb);
-    void RunAfter(double wait_time, std::function < void()>const & cb);
-    void RunEvery(double interval, std::function<void()> const & cb);
+    void RunAt(TimeStamp timestamp, std::function<void()> const &cb);
+    void RunAfter(double wait_time, std::function<void()> const &cb);
+    void RunEvery(double interval, std::function<void()> const &cb);
 
-
-    // 运行队列中的任务
+    /** 本轮 poll 结束后执行队列中的 functor */
     void DoToDoList();
 
-    // 将任务添加到队列中。当loop完成polling后运行
-    void QueueOneFunc(std::function<void()> fn); 
+    /** 将任务加入 to_do_list_；非本线程则 write eventfd 唤醒 */
+    void QueueOneFunc(std::function<void()> fn);
 
-    // 如果由创建本Loop的线程调用，则立即执行fn任务
-    // 否则，将fn加入到队列中，等待之后运行
+    /** 本线程则立即执行，否则等价于 QueueOneFunc */
     void RunOneFunc(std::function<void()> fn);
-    
-    // 判断调用该函数的是不是当前的线程，即是不是创建当前Loop的线程。
+
     bool IsInLoopThread();
 
+    /** eventfd 可读：消费计数并 DoToDoList */
     void HandleRead();
 
 private:

@@ -1,3 +1,8 @@
+/**
+ * @file PlayerItemPersistQueue.cpp
+ * @brief 道具落库队列：入队、定时刷在线玩家、登出即时刷
+ */
+
 #include "PlayerItemPersistQueue.h"
 
 #include "ConnectionPool.h"
@@ -11,13 +16,6 @@
 
 #include <mutex>
 #include <thread>
-#include <vector>
-
-namespace {
-
-constexpr double kDefaultFlushIntervalSec = 300.0;
-
-}  // namespace
 
 PlayerItemPersistQueue &PlayerItemPersistQueue::Instance() {
     static PlayerItemPersistQueue g;
@@ -46,6 +44,7 @@ void PlayerItemPersistQueue::MarkOnline(uint64_t player_id) {
 void PlayerItemPersistQueue::MarkOffline(uint64_t player_id) {
     if (player_id == 0)
         return;
+    // 登出不等待 5 分钟，避免道具只存在于内存/队列
     FlushPlayer(player_id);
     std::lock_guard<std::mutex> lk(mu_);
     online_local_.erase(player_id);
@@ -68,6 +67,7 @@ size_t PlayerItemPersistQueue::QueueSize() const {
 }
 
 void PlayerItemPersistQueue::OnFlushTick() {
+    // 避免阻塞 EventLoop：刷盘在后台线程执行
     std::thread([this]() { FlushOnlinePlayers(); }).detach();
 }
 
@@ -76,6 +76,7 @@ void PlayerItemPersistQueue::FlushOnlinePlayers() {
         return;
     PlayerItemStore::Instance().EnsureTable();
 
+    // 将队列拆成 to_flush（在线）与 keep（离线）；离线项继续留在 queue_ 直到玩家再次上线
     std::deque<PendingPlayerItem> to_flush;
     std::deque<PendingPlayerItem> keep;
     {
@@ -83,6 +84,7 @@ void PlayerItemPersistQueue::FlushOnlinePlayers() {
         for (const auto &e : queue_) {
             bool online = false;
 #ifdef WEBSERVER_ENABLE_REDIS
+            // Redis 有 game:session:{uid} 则以 SessionStore 为准；否则用 grant/login 写入的 online_local_
             if (SessionStore::Instance().Available())
                 online = SessionStore::Instance().IsPlayerOnline(e.player_id);
             else
@@ -107,6 +109,7 @@ void PlayerItemPersistQueue::FlushOnlinePlayers() {
             ++ok;
         } else {
             ++fail;
+            // INSERT 失败则重新入队，下次定时或登出再试
             std::lock_guard<std::mutex> lk(mu_);
             queue_.push_back(e);
         }
@@ -115,6 +118,7 @@ void PlayerItemPersistQueue::FlushOnlinePlayers() {
              << " ok=" << ok << " fail=" << fail << " remain_queue=" << QueueSize();
 }
 
+/** 登出或 MarkOffline：将该玩家在 queue_ 中的全部待写记录立即 INSERT */
 void PlayerItemPersistQueue::FlushPlayer(uint64_t player_id) {
     if (player_id == 0 || !ConnectionPool::getconnectionPool()->isInitialized())
         return;

@@ -129,6 +129,19 @@ webserver/fast:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/webserver.dir/build.make CMakeFiles/webserver.dir/build
 .PHONY : webserver/fast
 
+#=============================================================================
+# Target rules for targets named ide_compile_commands
+
+# Build rule for target.
+ide_compile_commands: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 ide_compile_commands
+.PHONY : ide_compile_commands
+
+# fast build rule for target.
+ide_compile_commands/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/ide_compile_commands.dir/build.make CMakeFiles/ide_compile_commands.dir/build
+.PHONY : ide_compile_commands/fast
+
 base/CurrentThread.o: base/CurrentThread.cpp.o
 .PHONY : base/CurrentThread.o
 
@@ -296,6 +309,126 @@ base/ResourceWatchdog.s: base/ResourceWatchdog.cpp.s
 base/ResourceWatchdog.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/webserver.dir/build.make CMakeFiles/webserver.dir/base/ResourceWatchdog.cpp.s
 .PHONY : base/ResourceWatchdog.cpp.s
+
+db/Connection.o: db/Connection.cpp.o
+.PHONY : db/Connection.o
+
+# target to build an object file
+db/Connection.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/webserver.dir/build.make CMakeFiles/webserver.dir/db/Connection.cpp.o
+.PHONY : db/Connection.cpp.o
+
+db/Connection.i: db/Connection.cpp.i
+.PHONY : db/Connection.i
+
+# target to preprocess a source file
+db/Connection.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/webserver.dir/build.make CMakeFiles/webserver.dir/db/Connection.cpp.i
+.PHONY : db/Connection.cpp.i
+
+db/Connection.s: db/Connection.cpp.s
+.PHONY : db/Connection.s
+
+# target to generate assembly for a file
+db/Connection.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/webserver.dir/build.make CMakeFiles/webserver.dir/db/Connection.cpp.s
+.PHONY : db/Connection.cpp.s
+
+db/ConnectionPool.o: db/ConnectionPool.cpp.o
+.PHONY : db/ConnectionPool.o
+
+# target to build an object file
+db/ConnectionPool.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/webserver.dir/build.make CMakeFiles/webserver.dir/db/ConnectionPool.cpp.o
+.PHONY : db/ConnectionPool.cpp.o
+
+db/ConnectionPool.i: db/ConnectionPool.cpp.i
+.PHONY : db/ConnectionPool.i
+
+# target to preprocess a source file
+db/ConnectionPool.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/webserver.dir/build.make CMakeFiles/webserver.dir/db/ConnectionPool.cpp.i
+.PHONY : db/ConnectionPool.cpp.i
+
+db/ConnectionPool.s: db/ConnectionPool.cpp.s
+.PHONY : db/ConnectionPool.s
+
+# target to generate assembly for a file
+db/ConnectionPool.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/webserver.dir/build.make CMakeFiles/webserver.dir/db/ConnectionPool.cpp.s
+.PHONY : db/ConnectionPool.cpp.s
+
+db/MetricsDbWriter.o: db/MetricsDbWriter.cpp.o
+.PHONY : db/MetricsDbWriter.o
+
+# target to build an object file
+db/MetricsDbWriter.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/webserver.dir/build.make CMakeFiles/webserver.dir/db/MetricsDbWriter.cpp.o
+.PHONY : db/MetricsDbWriter.cpp.o
+
+db/MetricsDbWriter.i: db/MetricsDbWriter.cpp.i
+.PHONY : db/MetricsDbWriter.i
+
+# target to preprocess a source file
+db/MetricsDbWriter.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/webserver.dir/build.make CMakeFiles/webserver.dir/db/MetricsDbWriter.cpp.i
+.PHONY : db/MetricsDbWriter.cpp.i
+
+db/MetricsDbWriter.s: db/MetricsDbWriter.cpp.s
+.PHONY : db/MetricsDbWriter.s
+
+# target to generate assembly for a file
+db/MetricsDbWriter.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/webserver.dir/build.make CMakeFiles/webserver.dir/db/MetricsDbWriter.cpp.s
+.PHONY : db/MetricsDbWriter.cpp.s
+
+db/PlayerItemPersistQueue.o: db/PlayerItemPersistQueue.cpp.o
+.PHONY : db/PlayerItemPersistQueue.o
+
+# target to build an object file
+db/PlayerItemPersistQueue.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/webserver.dir/build.make CMakeFiles/webserver.dir/db/PlayerItemPersistQueue.cpp.o
+.PHONY : db/PlayerItemPersistQueue.cpp.o
+
+db/PlayerItemPersistQueue.i: db/PlayerItemPersistQueue.cpp.i
+.PHONY : db/PlayerItemPersistQueue.i
+
+# target to preprocess a source file
+db/PlayerItemPersistQueue.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/webserver.dir/build.make CMakeFiles/webserver.dir/db/PlayerItemPersistQueue.cpp.i
+.PHONY : db/PlayerItemPersistQueue.cpp.i
+
+db/PlayerItemPersistQueue.s: db/PlayerItemPersistQueue.cpp.s
+.PHONY : db/PlayerItemPersistQueue.s
+
+# target to generate assembly for a file
+db/PlayerItemPersistQueue.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/webserver.dir/build.make CMakeFiles/webserver.dir/db/PlayerItemPersistQueue.cpp.s
+.PHONY : db/PlayerItemPersistQueue.cpp.s
+
+db/PlayerItemStore.o: db/PlayerItemStore.cpp.o
+.PHONY : db/PlayerItemStore.o
+
+# target to build an object file
+db/PlayerItemStore.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/webserver.dir/build.make CMakeFiles/webserver.dir/db/PlayerItemStore.cpp.o
+.PHONY : db/PlayerItemStore.cpp.o
+
+db/PlayerItemStore.i: db/PlayerItemStore.cpp.i
+.PHONY : db/PlayerItemStore.i
+
+# target to preprocess a source file
+db/PlayerItemStore.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/webserver.dir/build.make CMakeFiles/webserver.dir/db/PlayerItemStore.cpp.i
+.PHONY : db/PlayerItemStore.cpp.i
+
+db/PlayerItemStore.s: db/PlayerItemStore.cpp.s
+.PHONY : db/PlayerItemStore.s
+
+# target to generate assembly for a file
+db/PlayerItemStore.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/webserver.dir/build.make CMakeFiles/webserver.dir/db/PlayerItemStore.cpp.s
+.PHONY : db/PlayerItemStore.cpp.s
 
 game/GameLogic.o: game/GameLogic.cpp.o
 .PHONY : game/GameLogic.o
@@ -953,6 +1086,7 @@ help:
 	@echo "... depend"
 	@echo "... edit_cache"
 	@echo "... rebuild_cache"
+	@echo "... ide_compile_commands"
 	@echo "... webserver"
 	@echo "... base/CurrentThread.o"
 	@echo "... base/CurrentThread.i"
@@ -975,6 +1109,21 @@ help:
 	@echo "... base/ResourceWatchdog.o"
 	@echo "... base/ResourceWatchdog.i"
 	@echo "... base/ResourceWatchdog.s"
+	@echo "... db/Connection.o"
+	@echo "... db/Connection.i"
+	@echo "... db/Connection.s"
+	@echo "... db/ConnectionPool.o"
+	@echo "... db/ConnectionPool.i"
+	@echo "... db/ConnectionPool.s"
+	@echo "... db/MetricsDbWriter.o"
+	@echo "... db/MetricsDbWriter.i"
+	@echo "... db/MetricsDbWriter.s"
+	@echo "... db/PlayerItemPersistQueue.o"
+	@echo "... db/PlayerItemPersistQueue.i"
+	@echo "... db/PlayerItemPersistQueue.s"
+	@echo "... db/PlayerItemStore.o"
+	@echo "... db/PlayerItemStore.i"
+	@echo "... db/PlayerItemStore.s"
 	@echo "... game/GameLogic.o"
 	@echo "... game/GameLogic.i"
 	@echo "... game/GameLogic.s"

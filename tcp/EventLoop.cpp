@@ -1,3 +1,8 @@
+/**
+ * @file EventLoop.cpp
+ * @brief 事件循环：poll -> HandleEvent -> 跨线程任务；eventfd 用于唤醒
+ */
+
 #include "EventLoop.h"
 
 #include "Channel.h"
@@ -26,6 +31,8 @@ EventLoop::EventLoop() : calling_functors_(false), tid_(CurrentThread::tid()) {
     }
     poller_ = std::make_unique<Epoller>();
     timer_queue_ = std::make_unique<TimerQueue>(this);
+
+    // 跨线程 QueueOneFunc 时 write eventfd，使 epoll_wait 返回并执行 DoToDoList
     wakeup_fd_ = ::eventfd(0, EFD_NONBLOCK | EFD_CLOEXEC);
     wakeup_channel_ = std::make_unique<Channel>(wakeup_fd_, this);
     wakeup_channel_->set_read_callback(std::bind(&EventLoop::HandleRead, this));
@@ -43,24 +50,21 @@ void EventLoop::Loop() {
     while (true) {
         using clock = std::chrono::steady_clock;
         const auto t0 = clock::now();
+
         const std::vector<Channel *> active = poller_->Poll(10000);
         for (Channel *ch : active)
             ch->HandleEvent();
-        DoToDoList();
+
+        DoToDoList();  // 含 TimerQueue 投递的任务、TcpServer 跨线程关闭等
+
         const auto t1 = clock::now();
-        const double sec =
-            std::chrono::duration<double>(t1 - t0).count();
-        EventLoopMetrics::RecordTick(sec);
+        EventLoopMetrics::RecordTick(
+            std::chrono::duration<double>(t1 - t0).count());
     }
 }
 
-void EventLoop::UpdateChannel(Channel *ch) {
-    poller_->UpdateChannel(ch);
-}
-
-void EventLoop::DeleteChannel(Channel *ch) {
-    poller_->DeleteChannel(ch);
-}
+void EventLoop::UpdateChannel(Channel *ch) { poller_->UpdateChannel(ch); }
+void EventLoop::DeleteChannel(Channel *ch) { poller_->DeleteChannel(ch); }
 
 void EventLoop::RunAt(TimeStamp timestamp, std::function<void()> const &cb) {
     timer_queue_->AddTimer(timestamp, cb, 0.0);
@@ -93,9 +97,7 @@ void EventLoop::RunOneFunc(std::function<void()> fn) {
         QueueOneFunc(std::move(fn));
 }
 
-bool EventLoop::IsInLoopThread() {
-    return tid_ == CurrentThread::tid();
-}
+bool EventLoop::IsInLoopThread() { return tid_ == CurrentThread::tid(); }
 
 void EventLoop::DoToDoList() {
     std::vector<std::function<void()>> functors;

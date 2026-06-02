@@ -3,7 +3,7 @@
 ip=127.0.0.1
 port=3306
 username=root
-password=your_password
+password=mdx1989MDX!
 dbname=metrics
 initSize=3
 maxSize=32
