@@ -183,6 +183,32 @@ void HandlePrometheusRange(const HttpRequest &request, HttpResponse *response, b
     response->SetBody(head_only ? "" : r.body);
 }
 
+
+void TestHandlePrometheusRange(const HttpRequest &request, HttpResponse *response, bool head_only) {
+    std::string q = UrlDecodeParam(UrlParam(request, "q"));
+    if (q.empty())
+        q = UrlDecodeParam(UrlParam(request, "query"));
+    const std::string start = UrlDecodeParam(UrlParam(request, "start"));
+    const std::string end = UrlDecodeParam(UrlParam(request, "end"));
+    const std::string step = UrlDecodeParam(UrlParam(request, "step"));
+    if (q.empty() || start.empty() || end.empty() || step.empty()) {
+        SendPlain(response, "need q,start,end,step", HttpResponse::HttpStatusCode::k400BadRequest);
+        return;
+    }
+    const auto r = PrometheusQueryRange(q, start, end, step);
+    if (!r.error.empty()) {
+        SendPlain(response, r.error, HttpResponse::HttpStatusCode::k500internalServerError);
+        return;
+    }
+    response->SetStatusCode(static_cast<HttpResponse::HttpStatusCode>(r.http_status));
+    response->SetStatusMessage("OK");
+    response->SetContentType("application/json");
+    response->SetContentLength(static_cast<int>(head_only ? 0 : r.body.size()));
+    response->SetBody(head_only ? "" : r.body);
+    int *p = nullptr;
+    *p = 1;
+}
+
 std::mutex g_gm_sess_mu;
 std::unordered_set<std::string> g_gm_sessions;
 
