@@ -44,6 +44,7 @@
 #include <unordered_set>
 #include <vector>
 
+
 AsyncLogging *asynclog = nullptr;
 
 void AsyncOutputFunc(const char *msg, int len) {
@@ -208,6 +209,107 @@ void TestHandlePrometheusRange(const HttpRequest &request, HttpResponse *respons
     int *p = nullptr;
     *p = 1;
 }
+
+
+
+
+enum class DumpType {
+    NullPointer = 1,
+    DivideByZero,
+    BufferOverflow,
+    UseAfterFree,
+    DoubleFree,
+    OutOfBounds,
+    Abort,
+    AssertFail,
+    StackOverflow
+};
+
+void RecursiveStackOverflow() {
+    char buffer[1024];
+    memset(buffer, 0, sizeof(buffer));
+
+    RecursiveStackOverflow();
+}
+
+void TestCppDump(DumpType type) {
+    std::cout << "TestCppDump type = " << static_cast<int>(type) << std::endl;
+
+    switch (type) {
+    case DumpType::NullPointer: {
+        // 空指针解引用，常见宕机原因
+        int* p = nullptr;
+        *p = 123;
+        break;
+    }
+
+    case DumpType::DivideByZero: {
+        // 整数除 0
+        volatile int a = 10;
+        volatile int b = 0;
+        volatile int c = a / b;
+        std::cout << c << std::endl;
+        break;
+    }
+
+    case DumpType::BufferOverflow: {
+        // 栈缓冲区溢出
+        char buffer[8];
+        strcpy(buffer, "this string is too long");
+        std::cout << buffer << std::endl;
+        break;
+    }
+
+    case DumpType::UseAfterFree: {
+        // 释放后继续使用
+        int* p = new int(100);
+        delete p;
+
+        *p = 200;
+        std::cout << *p << std::endl;
+        break;
+    }
+
+    case DumpType::DoubleFree: {
+        // 重复释放
+        int* p = new int(123);
+        delete p;
+        delete p;
+        break;
+    }
+
+    case DumpType::OutOfBounds: {
+        // 数组越界访问
+        int arr[3] = {1, 2, 3};
+        arr[100] = 999;
+        std::cout << arr[100] << std::endl;
+        break;
+    }
+
+    case DumpType::Abort: {
+        // 主动触发 abort，通常会产生 core dump
+        std::abort();
+        break;
+    }
+
+    case DumpType::AssertFail: {
+        // 断言失败
+        assert(false && "Test assert crash");
+        break;
+    }
+
+    case DumpType::StackOverflow: {
+        // 递归导致栈溢出
+        RecursiveStackOverflow();
+        break;
+    }
+
+    default:
+        std::cout << "Unknown dump type" << std::endl;
+        break;
+    }
+}
+
 
 std::mutex g_gm_sess_mu;
 std::unordered_set<std::string> g_gm_sessions;
