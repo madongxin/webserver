@@ -10,6 +10,12 @@
 #include "Logging.h"
 #include "TcpConnection.h"
 #include <cassert>
+#include <cstdio>
+#include <unordered_map>
+
+namespace {
+std::unordered_map<int, char *> s_conn_peer_notes;
+}
 
 TcpServer::TcpServer(EventLoop *loop, const char *ip, const int port)
     : main_reactor_(loop), next_conn_id_(1) {
@@ -28,6 +34,10 @@ void TcpServer::Start() {
 
 void TcpServer::HandleNewConnection(int fd) {
   assert(fd != -1);
+
+  auto *note = new char[128];
+  std::snprintf(note, 128, "id=%d", next_conn_id_);
+  s_conn_peer_notes.emplace(fd, note);
 
   EventLoop *sub_reactor = thread_pool_->nextloop();
 
