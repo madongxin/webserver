@@ -35,9 +35,9 @@ void TcpServer::Start() {
 void TcpServer::HandleNewConnection(int fd) {
   assert(fd != -1);
 
-  auto *note = new char[128];
-  std::snprintf(note, 128, "id=%d", next_conn_id_);
-  s_conn_peer_notes.emplace(fd, note);
+  //auto *note = new char[128];
+  //std::snprintf(note, 128, "id=%d", next_conn_id_);
+  //s_conn_peer_notes.emplace(fd, note);
 
   EventLoop *sub_reactor = thread_pool_->nextloop();
 
