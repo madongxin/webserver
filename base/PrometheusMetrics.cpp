@@ -30,6 +30,14 @@ std::string BuildPrometheusMetricsText() {
        << "# TYPE webserver_eventloop_tick_peak_seconds gauge\n"
        << "webserver_eventloop_tick_peak_seconds " << m.eventloop_tick_peak_sec << "\n\n";
 
+    os << "# HELP webserver_logic_handle_seconds Last GameLogic::Handle duration.\n"
+       << "# TYPE webserver_logic_handle_seconds gauge\n"
+       << "webserver_logic_handle_seconds " << m.logic_handle_sec << "\n\n";
+
+    os << "# HELP webserver_logic_handle_peak_seconds Peak GameLogic::Handle duration.\n"
+       << "# TYPE webserver_logic_handle_peak_seconds gauge\n"
+       << "webserver_logic_handle_peak_seconds " << m.logic_handle_peak_sec << "\n\n";
+
     os << "# HELP process_threads OS thread count.\n"
        << "# TYPE process_threads gauge\n"
        << "process_threads " << m.threads << "\n\n";

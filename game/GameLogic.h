@@ -14,6 +14,13 @@ public:
     /** 按 oneof body 分发到各 HandleXxx；填充 GameResponse（含 seq） */
     bool Handle(const game::GameRequest &req, game::GameResponse *rsp);
 
+    /** 邮件领取等：查询内存背包聚合数量 */
+    uint32_t GetItemCount(uint64_t player_id, uint32_t item_id);
+    /** 邮件领取事务提交后同步增加内存背包 */
+    bool ApplyItemReward(uint64_t player_id, uint32_t item_id, uint32_t count);
+    /** 事务失败时回退内存（尽力而为） */
+    bool RollbackItemReward(uint64_t player_id, uint32_t item_id, uint32_t count);
+
 private:
     GameLogic() = default;
     bool HandleConsumeItem(const game::ConsumeItemReq &req, game::GameResponse *rsp);

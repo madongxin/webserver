@@ -1,6 +1,7 @@
 #include "ProcessMetricsSnapshot.h"
 
 #include "EventLoopMetrics.h"
+#include "LogicMetrics.h"
 #include "ProcSelfStats.h"
 
 #include <ctime>
@@ -79,6 +80,8 @@ bool FillProcessMetricsSnapshot(ProcessMetricsSnapshot *out) {
     (void)ReadCpuSeconds(&out->cpu_seconds_total);
     out->eventloop_tick_sec = EventLoopMetrics::LastTickSeconds();
     out->eventloop_tick_peak_sec = EventLoopMetrics::PeakTickSeconds();
+    out->logic_handle_sec = LogicMetrics::LastHandleSeconds();
+    out->logic_handle_peak_sec = LogicMetrics::PeakHandleSeconds();
     out->thread_states_json = CollectThreadStatesJson();
     return true;
 }

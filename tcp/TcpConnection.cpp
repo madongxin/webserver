@@ -108,9 +108,8 @@ void TcpConnection::Send(const char *msg, int len){
     int remaining = len;
     int send_size = 0;
 
-    // 如果此时send_buf_中没有数据，则可以先尝试发送数据
-    if (send_buf_->readablebytes() == 0 ||
-        send_buf_->writablebytes() >= len) {
+    // 如果此时send_buf_中没有数据，则可以先尝试发送数据， 
+    if (send_buf_->readablebytes() == 0){
         // 强制转换类型，方便remaining操作
         send_size = static_cast<int>(write(connfd_, msg, len));
 
@@ -130,7 +129,7 @@ void TcpConnection::Send(const char *msg, int len){
     // 将剩余的数据加入到send_buf中，等待后续发送。
     assert(remaining <= len);
     if(remaining > 0){
-        send_buf_->Append(msg, remaining);
+        send_buf_->Append(msg + send_size, remaining);
 
         // 到达这一步时
         // 1. 还没有监听写事件，在此时进行了监听

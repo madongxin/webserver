@@ -97,6 +97,236 @@ message GrantItemRsp {
   uint32 bag_total = 4;       // 内存背包该 item_id 聚合数量（非 player_item 行数）
 }
 
+// ======================== 邮件系统（Protobuf RPC，非 REST）========================
+
+message MailAttachmentDto {
+  uint32 slot_index = 1;
+  string asset_type = 2;   // ITEM（首期）
+  uint64 asset_id = 3;
+  uint32 count = 4;
+  string bind_type = 5;
+  string payload = 6;
+  string claim_state = 7;
+}
+
+message MailBrief {
+  uint64 mail_id = 1;
+  string category = 2;
+  int32 priority = 3;
+  string title = 4;
+  string sender_name = 5;
+  string read_state = 6;
+  string visible_state = 7;
+  string attachment_state = 8;
+  bool has_attachment = 9;
+  bool is_favorite = 10;
+  int64 sent_at = 11;
+  int64 expire_at = 12;
+  int64 row_version = 13;
+}
+
+message MailDetail {
+  MailBrief brief = 1;
+  string body = 2;
+  repeated MailAttachmentDto attachments = 3;
+  repeated string allowed_actions = 4;
+}
+
+message MailboxSummaryReq {
+  uint64 player_id = 1;
+}
+
+message MailboxSummaryRsp {
+  bool ok = 1;
+  string message = 2;
+  string error_code = 3;
+  uint32 unread_system = 4;
+  uint32 unread_activity = 5;
+  uint32 unread_social = 6;
+  uint32 unread_trade = 7;
+  uint32 unclaimed_attachment = 8;
+  uint32 expiring_soon = 9;
+  uint32 current_count = 10;
+  uint32 max_capacity = 11;
+  int64 mailbox_version = 12;
+  int64 server_time_utc = 13;
+}
+
+message MailListReq {
+  uint64 player_id = 1;
+  string category = 2;
+  bool unread = 3;
+  bool has_attachment = 4;
+  bool unclaimed = 5;
+  bool expiring_soon = 6;
+  bool favorite = 7;
+  string keyword = 8;
+  string cursor = 9;
+  int32 limit = 10;
+}
+
+message MailListRsp {
+  bool ok = 1;
+  string message = 2;
+  string error_code = 3;
+  repeated MailBrief mails = 4;
+  string next_cursor = 5;
+  int64 mailbox_version = 6;
+  int64 server_time_utc = 7;
+}
+
+message MailGetReq {
+  uint64 player_id = 1;
+  uint64 mail_id = 2;
+}
+
+message MailGetRsp {
+  bool ok = 1;
+  string message = 2;
+  string error_code = 3;
+  MailDetail mail = 4;
+  int64 mailbox_version = 5;
+  int64 server_time_utc = 6;
+}
+
+message MailReadReq {
+  uint64 player_id = 1;
+  uint64 mail_id = 2;
+  string idempotency_key = 3;
+}
+
+message MailReadRsp {
+  bool ok = 1;
+  string message = 2;
+  string error_code = 3;
+  int64 read_at = 4;
+  int64 mailbox_version = 5;
+  int64 server_time_utc = 6;
+}
+
+message MailClaimReq {
+  uint64 player_id = 1;
+  uint64 mail_id = 2;
+  string idempotency_key = 3;
+  string trace_id = 4;
+}
+
+message MailClaimResult {
+  uint64 mail_id = 1;
+  bool ok = 2;
+  string error_code = 3;
+  string message = 4;
+  string attachment_state = 5;
+}
+
+message MailClaimRsp {
+  bool ok = 1;
+  string message = 2;
+  string error_code = 3;
+  MailClaimResult result = 4;
+  int64 mailbox_version = 5;
+  int64 server_time_utc = 6;
+}
+
+message MailBatchClaimReq {
+  uint64 player_id = 1;
+  repeated uint64 mail_ids = 2;
+  string idempotency_key_prefix = 3;
+  string trace_id = 4;
+}
+
+message MailBatchClaimRsp {
+  bool ok = 1;
+  string message = 2;
+  string error_code = 3;
+  repeated MailClaimResult results = 4;
+  int64 mailbox_version = 5;
+  int64 server_time_utc = 6;
+}
+
+message MailFavoriteReq {
+  uint64 player_id = 1;
+  uint64 mail_id = 2;
+  bool favorite = 3;
+  string idempotency_key = 4;
+}
+
+message MailFavoriteRsp {
+  bool ok = 1;
+  string message = 2;
+  string error_code = 3;
+  bool is_favorite = 4;
+  int64 mailbox_version = 5;
+  int64 server_time_utc = 6;
+}
+
+message MailBatchReadReq {
+  uint64 player_id = 1;
+  repeated uint64 mail_ids = 2;
+  string idempotency_key = 3;
+}
+
+message MailBatchReadRsp {
+  bool ok = 1;
+  string message = 2;
+  string error_code = 3;
+  uint32 success_count = 4;
+  int64 mailbox_version = 5;
+  int64 server_time_utc = 6;
+}
+
+message MailBatchDeleteReq {
+  uint64 player_id = 1;
+  repeated uint64 mail_ids = 2;
+  string idempotency_key = 3;
+}
+
+message MailBatchDeleteRsp {
+  bool ok = 1;
+  string message = 2;
+  string error_code = 3;
+  uint32 success_count = 4;
+  repeated uint64 failed_mail_ids = 5;
+  int64 mailbox_version = 6;
+  int64 server_time_utc = 7;
+}
+
+message MailDeliverAttachment {
+  string asset_type = 1;
+  uint64 asset_id = 2;
+  uint32 count = 3;
+  string bind_type = 4;
+  string payload = 5;
+}
+
+message MailDeliverReq {
+  string source_system = 1;
+  string business_key = 2;
+  string receiver_type = 3;  // ROLE|ACCOUNT；首期 ROLE
+  uint64 receiver_id = 4;
+  string template_id = 5;
+  int32 template_version = 6;
+  string category = 7;
+  int32 priority = 8;
+  string sender_name = 9;
+  string title = 10;
+  string body = 11;
+  repeated MailDeliverAttachment attachments = 12;
+  int64 send_at = 13;
+  int64 expire_at = 14;
+  string trace_id = 15;
+  string session_token_override = 16;  // 预留；玩法内调可不填
+}
+
+message MailDeliverRsp {
+  bool ok = 1;
+  string message = 2;
+  string error_code = 3;
+  uint64 mail_id = 4;
+  bool idempotent_hit = 5;
+  int64 server_time_utc = 6;
+}
+
 message GameRequest {
   uint64 seq = 1;
   string session_token = 2;
@@ -108,6 +338,16 @@ message GameRequest {
     ValidateSessionReq validate_session = 21;
     CheckOnlineReq check_online = 22;
     LogoutReq logout = 23;
+    MailboxSummaryReq mailbox_summary = 30;
+    MailListReq mail_list = 31;
+    MailGetReq mail_get = 32;
+    MailReadReq mail_read = 33;
+    MailClaimReq mail_claim = 34;
+    MailBatchClaimReq mail_batch_claim = 35;
+    MailFavoriteReq mail_favorite = 36;
+    MailBatchReadReq mail_batch_read = 37;
+    MailBatchDeleteReq mail_batch_delete = 38;
+    MailDeliverReq mail_deliver = 39;
   }
 }
 
@@ -123,5 +363,15 @@ message GameResponse {
     ValidateSessionRsp validate_session = 21;
     CheckOnlineRsp check_online = 22;
     LogoutRsp logout = 23;
+    MailboxSummaryRsp mailbox_summary = 30;
+    MailListRsp mail_list = 31;
+    MailGetRsp mail_get = 32;
+    MailReadRsp mail_read = 33;
+    MailClaimRsp mail_claim = 34;
+    MailBatchClaimRsp mail_batch_claim = 35;
+    MailFavoriteRsp mail_favorite = 36;
+    MailBatchReadRsp mail_batch_read = 37;
+    MailBatchDeleteRsp mail_batch_delete = 38;
+    MailDeliverRsp mail_deliver = 39;
   }
 }

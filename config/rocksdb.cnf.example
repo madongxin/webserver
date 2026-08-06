@@ -1,0 +1,5 @@
+# 复制为 config/rocksdb.cnf 后按环境修改
+# cmake -DENABLE_ROCKSDB=ON . && make
+# 依赖：librocksdb（本机可装到 /usr/local）
+db_path=../data/rocksdb
+create_if_missing=1

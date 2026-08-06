@@ -1,10 +1,13 @@
 #include "GameLogic.h"
 
+#include "LogicMetrics.h"
+
 #ifdef WEBSERVER_ENABLE_REDIS
 #include "SessionStore.h"
 #endif
 #ifdef WEBSERVER_ENABLE_MYSQL
 #include "ConnectionPool.h"
+#include "MailService.h"
 #include "PlayerItemPersistQueue.h"
 #endif
 
@@ -36,6 +39,32 @@ void GameLogic::EnsurePlayer(uint64_t player_id) {
     }
     if (skill_cd_until_ms_.count(player_id) == 0)
         skill_cd_until_ms_[player_id] = {};
+}
+
+uint32_t GameLogic::GetItemCount(uint64_t player_id, uint32_t item_id) {
+    std::lock_guard<std::mutex> lk(mu_);
+    EnsurePlayer(player_id);
+    return inventory_[player_id][item_id];
+}
+
+bool GameLogic::ApplyItemReward(uint64_t player_id, uint32_t item_id, uint32_t count) {
+    if (count == 0)
+        return false;
+    std::lock_guard<std::mutex> lk(mu_);
+    EnsurePlayer(player_id);
+    inventory_[player_id][item_id] += count;
+    return true;
+}
+
+bool GameLogic::RollbackItemReward(uint64_t player_id, uint32_t item_id, uint32_t count) {
+    std::lock_guard<std::mutex> lk(mu_);
+    EnsurePlayer(player_id);
+    auto &n = inventory_[player_id][item_id];
+    if (n < count)
+        n = 0;
+    else
+        n -= count;
+    return true;
 }
 
 bool GameLogic::HandleConsumeItem(const game::ConsumeItemReq &req, game::GameResponse *rsp) {
@@ -273,6 +302,15 @@ bool GameLogic::HandleLogout(const game::LogoutReq &req, game::GameResponse *rsp
  * 游戏类接口（consume / skill / grant）会先 RequireSessionToken 校验 session_token。
  */
 bool GameLogic::Handle(const game::GameRequest &req, game::GameResponse *rsp) {
+    struct LogicHandleTimer {
+        std::chrono::steady_clock::time_point t0{std::chrono::steady_clock::now()};
+        ~LogicHandleTimer() {
+            const auto t1 = std::chrono::steady_clock::now();
+            LogicMetrics::RecordHandle(
+                std::chrono::duration<double>(t1 - t0).count());
+        }
+    } timer;
+
     if (!rsp)
         return false;
     rsp->Clear();
@@ -316,6 +354,49 @@ bool GameLogic::Handle(const game::GameRequest &req, game::GameResponse *rsp) {
                 return false;
             }
             return HandleGrantItem(req.grant_item(), rsp);
+#ifdef WEBSERVER_ENABLE_MYSQL
+        case game::GameRequest::kMailboxSummary:
+            if (!RequireSessionToken(req, req.mailbox_summary().player_id(), rsp))
+                return false;
+            return MailService::Instance().HandleMailboxSummary(req.mailbox_summary(), rsp);
+        case game::GameRequest::kMailList:
+            if (!RequireSessionToken(req, req.mail_list().player_id(), rsp))
+                return false;
+            return MailService::Instance().HandleMailList(req.mail_list(), rsp);
+        case game::GameRequest::kMailGet:
+            if (!RequireSessionToken(req, req.mail_get().player_id(), rsp))
+                return false;
+            return MailService::Instance().HandleMailGet(req.mail_get(), rsp);
+        case game::GameRequest::kMailRead:
+            if (!RequireSessionToken(req, req.mail_read().player_id(), rsp))
+                return false;
+            return MailService::Instance().HandleMailRead(req.mail_read(), rsp);
+        case game::GameRequest::kMailClaim:
+            if (!RequireSessionToken(req, req.mail_claim().player_id(), rsp))
+                return false;
+            return MailService::Instance().HandleMailClaim(req.mail_claim(), rsp);
+        case game::GameRequest::kMailBatchClaim:
+            if (!RequireSessionToken(req, req.mail_batch_claim().player_id(), rsp))
+                return false;
+            return MailService::Instance().HandleMailBatchClaim(req.mail_batch_claim(), rsp);
+        case game::GameRequest::kMailFavorite:
+            if (!RequireSessionToken(req, req.mail_favorite().player_id(), rsp))
+                return false;
+            return MailService::Instance().HandleMailFavorite(req.mail_favorite(), rsp);
+        case game::GameRequest::kMailBatchRead:
+            if (!RequireSessionToken(req, req.mail_batch_read().player_id(), rsp))
+                return false;
+            return MailService::Instance().HandleMailBatchRead(req.mail_batch_read(), rsp);
+        case game::GameRequest::kMailBatchDelete:
+            if (!RequireSessionToken(req, req.mail_batch_delete().player_id(), rsp))
+                return false;
+            return MailService::Instance().HandleMailBatchDelete(req.mail_batch_delete(), rsp);
+        case game::GameRequest::kMailDeliver:
+            // TCP 投递仅作联调：校验 session 属于 receiver；正式玩法请调 MailService::Deliver
+            if (!RequireSessionToken(req, req.mail_deliver().receiver_id(), rsp))
+                return false;
+            return MailService::Instance().HandleMailDeliver(req.mail_deliver(), rsp);
+#endif
         default:
             rsp->set_ok(false);
             rsp->set_message("unknown or empty request body");

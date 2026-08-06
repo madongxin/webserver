@@ -1,0 +1,3 @@
+# RocksDB 本地 KV 配置
+db_path=../data/rocksdb
+create_if_missing=1

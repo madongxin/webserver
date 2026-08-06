@@ -12,6 +12,8 @@ struct ProcessMetricsSnapshot {
     int threads = -1;
     double eventloop_tick_sec = 0.0;
     double eventloop_tick_peak_sec = 0.0;
+    double logic_handle_sec = 0.0;
+    double logic_handle_peak_sec = 0.0;
     std::string thread_states_json;
     uint64_t tcp_send_queue_bytes = 0;
     uint64_t tcp_recv_queue_bytes = 0;

@@ -1,0 +1,5 @@
+# 复制为 config/brpc.cnf
+# cmake -DENABLE_BRPC=ON . && make
+# 与 HTTP / Game TCP 并存：默认 HTTP 8080、Game TCP 8081、brpc 8181
+listen_addr=0.0.0.0:8181
+idle_timeout_sec=30

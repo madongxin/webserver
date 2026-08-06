@@ -1,0 +1,12 @@
+syntax = "proto3";
+
+package kvdemo;
+
+// Demo：本地 RocksDB 持久化的玩家快照（与 MySQL 邮件/道具表无关）
+message PlayerSnapshot {
+  uint64 player_id = 1;
+  string nickname = 2;
+  int32 level = 3;
+  int64 updated_at_sec = 4;
+  map<string, int32> attrs = 5;
+}

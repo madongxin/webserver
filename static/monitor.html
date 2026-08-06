@@ -322,6 +322,8 @@
       { id: 'pFds', title: '打开文件描述符', promql: j => `process_open_fds{job="${j}"}` },
       { id: 'pTick', title: 'EventLoop 上次耗时 (s)', promql: j => `webserver_eventloop_tick_seconds{job="${j}"}` },
       { id: 'pPeak', title: 'EventLoop 峰值耗时 (s)', promql: j => `webserver_eventloop_tick_peak_seconds{job="${j}"}` },
+      { id: 'pLogic', title: 'GameLogic 上次耗时 (s)', promql: j => `webserver_logic_handle_seconds{job="${j}"}` },
+      { id: 'pLogicPeak', title: 'GameLogic 峰值耗时 (s)', promql: j => `webserver_logic_handle_peak_seconds{job="${j}"}` },
       { id: 'pThr', title: '进程线程总数', promql: j => `process_threads{job="${j}"}` },
     ];
 

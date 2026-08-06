@@ -12,17 +12,29 @@
 #include "ResourceWatchdog.h"
 #include "WebServerPaths.h"
 
+#include <memory>
+
 #ifdef WEBSERVER_ENABLE_MYSQL
 #include "ConnectionPool.h"
 #include "MetricsDbWriter.h"
 #include "PlayerItemPersistQueue.h"
 #include "PlayerItemStore.h"
+#ifdef WEBSERVER_ENABLE_GAME_PROTOBUF
+#include "MailExpireScanner.h"
+#include "MailService.h"
+#endif
 #endif
 #ifdef WEBSERVER_ENABLE_GAME_PROTOBUF
 #include "GameTcpGateway.h"
 #endif
 #ifdef WEBSERVER_ENABLE_REDIS
 #include "SessionStore.h"
+#endif
+#ifdef WEBSERVER_ENABLE_ROCKSDB
+#include "DemoKvStore.h"
+#endif
+#ifdef WEBSERVER_ENABLE_BRPC
+#include "BrpcGameServer.h"
 #endif
 
 #include <algorithm>
@@ -185,6 +197,7 @@ void HandlePrometheusRange(const HttpRequest &request, HttpResponse *response, b
 }
 
 
+#if 0  // 故意崩溃样例（未接入路由）；保留备查，避免 -Werror 阻断正式构建
 void TestHandlePrometheusRange(const HttpRequest &request, HttpResponse *response, bool head_only) {
     std::string q = UrlDecodeParam(UrlParam(request, "q"));
     if (q.empty())
@@ -209,9 +222,6 @@ void TestHandlePrometheusRange(const HttpRequest &request, HttpResponse *respons
     int *p = nullptr;
     *p = 1;
 }
-
-
-
 
 enum class DumpType {
     NullPointer = 1,
@@ -309,7 +319,7 @@ void TestCppDump(DumpType type) {
         break;
     }
 }
-
+#endif  // 故意崩溃样例
 
 std::mutex g_gm_sess_mu;
 std::unordered_set<std::string> g_gm_sessions;
@@ -541,6 +551,72 @@ void HttpResponseCallback(const HttpRequest &request, HttpResponse *response) {
         SendJson(response, j);
         return;
     }
+#ifdef WEBSERVER_ENABLE_GAME_PROTOBUF
+    if (url == "/api/gm/mail/deliver" && request.method() == HttpRequest::Method::kPost) {
+        const std::string sid = GmSidFromRequest(request);
+        if (!GmSessionValid(sid)) {
+            Json::Value e;
+            e["ok"] = false;
+            e["error_code"] = "PERMISSION_DENIED";
+            e["message"] = "gm_session_invalid";
+            SendJson(response, e, HttpResponse::HttpStatusCode::k403Forbidden);
+            return;
+        }
+        Json::Value root;
+        Json::CharReaderBuilder b;
+        std::string errs;
+        const std::string &body = request.body();
+        std::unique_ptr<Json::CharReader> reader(b.newCharReader());
+        Json::Value out;
+        if (!reader->parse(body.data(), body.data() + body.size(), &root, &errs)) {
+            out["ok"] = false;
+            out["error_code"] = "INVALID_ARGUMENT";
+            out["message"] = "invalid json: " + errs;
+            SendJson(response, out, HttpResponse::HttpStatusCode::k400BadRequest);
+            return;
+        }
+        mail::DeliverRequest d;
+        d.source_system = root.get("source_system", "gm").asString();
+        d.business_key = root.get("business_key", "").asString();
+        d.receiver_type = root.get("receiver_type", "ROLE").asString();
+        d.receiver_id = root.get("receiver_id", 0).asUInt64();
+        d.template_id = root.get("template_id", "").asString();
+        d.template_version = root.get("template_version", 1).asInt();
+        d.category = root.get("category", "SYSTEM").asString();
+        d.priority = root.get("priority", 0).asInt();
+        d.sender_name = root.get("sender_name", "GM").asString();
+        d.title = root.get("title", "").asString();
+        d.body = root.get("body", "").asString();
+        d.send_at = root.get("send_at", 0).asInt64();
+        d.expire_at = root.get("expire_at", 0).asInt64();
+        d.trace_id = root.get("trace_id", sid).asString();
+        if (root.isMember("attachments") && root["attachments"].isArray()) {
+            for (const auto &ja : root["attachments"]) {
+                mail::DeliverAttachment a;
+                a.asset_type = ja.get("asset_type", "ITEM").asString();
+                a.asset_id = ja.get("asset_id", 0).asUInt64();
+                a.count = ja.get("count", 0).asUInt();
+                a.bind_type = ja.get("bind_type", "NONE").asString();
+                a.payload = ja.get("payload", "").asString();
+                d.attachments.push_back(a);
+            }
+        }
+        uint64_t mail_id = 0;
+        std::string ec, msg;
+        const bool ok = MailService::Instance().Deliver(d, &mail_id, &ec, &msg);
+        out["ok"] = ok;
+        out["error_code"] = ec;
+        out["message"] = msg;
+        out["mail_id"] = static_cast<Json::UInt64>(mail_id);
+        out["idempotent_hit"] = ok && msg.find("idempotent") != std::string::npos;
+        LOG_INFO << "GM mail deliver actor_sid=" << sid.substr(0, 8)
+                 << " receiver=" << d.receiver_id << " mail_id=" << mail_id << " ok=" << ok
+                 << " code=" << ec;
+        SendJson(response, out, ok ? HttpResponse::HttpStatusCode::k200K
+                                   : HttpResponse::HttpStatusCode::k400BadRequest);
+        return;
+    }
+#endif
 #endif
     if (url == "/api/health") {
         Json::Value j;
@@ -681,6 +757,12 @@ int main(int argc, char *argv[]) {
         PlayerItemStore::Instance().EnsureTable();
         // 道具落库：在线玩家每 300s 批量刷盘；登出时由 GameLogic 立即 FlushPlayer
         PlayerItemPersistQueue::Instance().StartPeriodic(&loop, 300.0);
+#ifdef WEBSERVER_ENABLE_GAME_PROTOBUF
+        if (MailService::Instance().Init())
+            MailExpireScanner::Instance().StartPeriodic(&loop, 0.0);
+        else
+            LOG_WARN << "MailService init failed";
+#endif
     } else {
         LOG_WARN << "MySQL pool not initialized (config/mysql.cnf)";
     }
@@ -688,6 +770,10 @@ int main(int argc, char *argv[]) {
 #ifdef WEBSERVER_ENABLE_REDIS
     if (!SessionStore::Instance().InitFromConfig())
         LOG_WARN << "Redis session disabled (config/redis.cnf)";
+#endif
+#ifdef WEBSERVER_ENABLE_ROCKSDB
+    if (!DemoKvStore::Instance().InitFromConfig())
+        LOG_WARN << "RocksDB demo KV disabled (config/rocksdb.cnf)";
 #endif
     ResourceWatchdog::Instance().StartPeriodic(&loop, 5.0);
 
@@ -703,6 +789,11 @@ int main(int argc, char *argv[]) {
         gw->StartInBackground();
         LOG_INFO << "Game protobuf TCP " << game_port << " (HTTP " << port << ")";
     }
+#endif
+#ifdef WEBSERVER_ENABLE_BRPC
+    // 双栈：brpc 与 GameTcpGateway 并存；失败不阻断 HTTP
+    if (!BrpcGameServer::Instance().StartFromConfig())
+        LOG_WARN << "brpc MailBrpcService disabled (config/brpc.cnf or bind failed)";
 #endif
     server.start();
     return 0;

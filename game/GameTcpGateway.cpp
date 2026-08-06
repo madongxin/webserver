@@ -40,6 +40,8 @@ GameTcpGateway::~GameTcpGateway() {
 }
 
 void GameTcpGateway::StartInBackground() {
+    // 独立线程运行 std::thread
+    // 在后台线程启动 Run()，内部阻塞在 EventLoop::Loop
     thread_ = std::thread([this]() { Run(); });
 }
 

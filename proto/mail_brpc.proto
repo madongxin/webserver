@@ -1,0 +1,80 @@
+syntax = "proto3";
+
+package mailrpc;
+
+import "game.proto";
+
+// brpc 使用 protobuf GenericService 生成可注册的 Service / Stub
+option cc_generic_services = true;
+
+// ---------------------------------------------------------------------------
+// 鉴权包装：TCP 栈里 session_token 在 GameRequest 上；brpc 无外层信封，故显式携带
+// ---------------------------------------------------------------------------
+
+message AuthedMailboxSummaryReq {
+  string session_token = 1;
+  game.MailboxSummaryReq req = 2;
+}
+
+message AuthedMailListReq {
+  string session_token = 1;
+  game.MailListReq req = 2;
+}
+
+message AuthedMailGetReq {
+  string session_token = 1;
+  game.MailGetReq req = 2;
+}
+
+message AuthedMailReadReq {
+  string session_token = 1;
+  game.MailReadReq req = 2;
+}
+
+message AuthedMailClaimReq {
+  string session_token = 1;
+  game.MailClaimReq req = 2;
+}
+
+message AuthedMailBatchClaimReq {
+  string session_token = 1;
+  game.MailBatchClaimReq req = 2;
+}
+
+message AuthedMailFavoriteReq {
+  string session_token = 1;
+  game.MailFavoriteReq req = 2;
+}
+
+message AuthedMailBatchReadReq {
+  string session_token = 1;
+  game.MailBatchReadReq req = 2;
+}
+
+message AuthedMailBatchDeleteReq {
+  string session_token = 1;
+  game.MailBatchDeleteReq req = 2;
+}
+
+message AuthedMailDeliverReq {
+  string session_token = 1;
+  game.MailDeliverReq req = 2;
+}
+
+// ---------------------------------------------------------------------------
+// 双栈邮件 / 登录 RPC（业务实现复用 MailService + SessionStore）
+// ---------------------------------------------------------------------------
+
+service MailBrpcService {
+  rpc Login(game.LoginReq) returns (game.LoginRsp);
+  rpc MailboxSummary(AuthedMailboxSummaryReq) returns (game.MailboxSummaryRsp);
+  rpc MailList(AuthedMailListReq) returns (game.MailListRsp);
+  rpc MailGet(AuthedMailGetReq) returns (game.MailGetRsp);
+  rpc MailRead(AuthedMailReadReq) returns (game.MailReadRsp);
+  rpc MailClaim(AuthedMailClaimReq) returns (game.MailClaimRsp);
+  rpc MailBatchClaim(AuthedMailBatchClaimReq) returns (game.MailBatchClaimRsp);
+  rpc MailFavorite(AuthedMailFavoriteReq) returns (game.MailFavoriteRsp);
+  rpc MailBatchRead(AuthedMailBatchReadReq) returns (game.MailBatchReadRsp);
+  rpc MailBatchDelete(AuthedMailBatchDeleteReq) returns (game.MailBatchDeleteRsp);
+  rpc MailDeliver(AuthedMailDeliverReq) returns (game.MailDeliverRsp);
+}

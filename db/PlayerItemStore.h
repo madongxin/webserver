@@ -32,6 +32,14 @@ public:
     bool Insert(uint64_t player_id, uint64_t item_id, uint32_t count, int64_t expire_time_sec,
                 const std::string &extra_data, uint64_t *instance_id);
 
+    /**
+     * 在已有连接上 INSERT（用于邮件领取等事务；不单独取连接）。
+     * @param conn 非空且调用方负责事务边界
+     */
+    bool InsertOnConnection(class Connection *conn, uint64_t player_id, uint64_t item_id,
+                            uint32_t count, int64_t expire_time_sec, const std::string &extra_data,
+                            uint64_t *instance_id);
+
 private:
     PlayerItemStore() = default;
     bool available_ = false;
