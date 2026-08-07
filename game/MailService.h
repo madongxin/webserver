@@ -5,7 +5,8 @@
  * @brief 邮件业务：投递、列表、已读、领取、容量、过期
  *
  * 玩家侧由 GameLogic 分发；投递可供本进程玩法直接调用。
- * 领取走同步事务 + PlayerItemStore::InsertOnConnection，不走异步队列。
+ * 领取经 GameDB（AsyncMysqlGameDbRepository）异步事务 + 幂等 + outbox；
+ * 提交成功后再改内存背包。
  */
 
 #include "MailTypes.h"

@@ -9,7 +9,7 @@
 #include "EventLoop.h"
 #include "Logging.h"
 #include "TimeStamp.h"
-#include "WebServerPaths.h"
+#include "GameMeshPaths.h"
 #include <arpa/inet.h>
 #include <functional>
 #include <iostream>
@@ -119,7 +119,7 @@ void HttpServer::onRequest(const TcpConnectionPtr &conn, const HttpRequest &requ
 
         std::string filedata = filemessage.substr(begin_index, end_index - begin_index);
         // 写入文件
-        std::ofstream ofs(WebServerPaths::FilesRoot() + "/" + filename,
+        std::ofstream ofs(GameMeshPaths::FilesRoot() + "/" + filename,
                           std::ios::out | std::ios::app | std::ios::binary);
         ofs.write(filedata.data(), filedata.size());
         ofs.close();

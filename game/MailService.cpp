@@ -1,14 +1,17 @@
 #include "MailService.h"
 
+#include "AsyncMysqlGameDbRepository.h"
 #include "Connection.h"
+#include "GameDbRepository.h"
+#include "GameLogic.h"
+#include "IGameDbRepository.h"
 #include "Logging.h"
 #include "MailConfig.h"
 #include "MailStore.h"
-#include "PlayerItemStore.h"
-#include "GameLogic.h"
 
 #include <algorithm>
 #include <chrono>
+#include <future>
 #include <sstream>
 
 namespace {
@@ -34,8 +37,18 @@ bool MailService::Init() {
         ready_ = false;
         return false;
     }
+    // 独立 GameDB 时由 Bootstrap 先 Set(BrpcGameDbRepository)；否则起本地 AsyncMysql
+    if (!GameDbRepository::Get()) {
+        if (!AsyncMysqlGameDbRepository::Instance().started())
+            AsyncMysqlGameDbRepository::Instance().Start(2);
+    }
+    if (!GameDbRepository::Get()) {
+        LOG_WARN << "MailService: GameDB not available";
+        ready_ = false;
+        return false;
+    }
     ready_ = true;
-    LOG_INFO << "MailService: ready";
+    LOG_INFO << "MailService: ready (GameDB claim path)";
     return true;
 }
 
@@ -563,208 +576,40 @@ bool MailService::ClaimOne(uint64_t player_id, uint64_t mail_id, const std::stri
         result->set_message("idempotency_key required");
         return false;
     }
-    MailOpLogRow existed;
-    if (MailStore::Instance().FindOpByIdempotency(idempotency_key, &existed)) {
-        result->set_ok(existed.result_code == mail::err::kOk ||
-                       existed.result_code == mail::err::kAlreadyClaimed);
-        result->set_error_code(existed.result_code);
-        result->set_message("idempotent");
-        result->set_attachment_state(existed.result_code == mail::err::kOk ? "CLAIMED" : "");
-        return result->ok();
-    }
-
-    auto conn = MailStore::Instance().GetConnection();
-    if (!conn) {
+    auto *repo = GameDbRepository::Get();
+    if (!repo) {
         result->set_error_code(mail::err::kInternal);
-        result->set_message("db");
-        return false;
-    }
-    const int64_t now = NowUtc();
-    if (!MailStore::Instance().Begin(conn.get())) {
-        result->set_error_code(mail::err::kInternal);
-        result->set_message("begin");
-        return false;
-    }
-    mail::MailInstanceRow row;
-    if (!MailStore::Instance().LoadMailForUpdate(conn.get(), mail_id, &row)) {
-        MailStore::Instance().Rollback(conn.get());
-        result->set_error_code(mail::err::kMailNotFound);
-        result->set_message("not found");
-        return false;
-    }
-    if (row.receiver_id != player_id) {
-        MailStore::Instance().Rollback(conn.get());
-        result->set_error_code(mail::err::kPermissionDenied);
-        result->set_message("denied");
-        return false;
-    }
-    if (mail::IsExpiredAt(row.expire_at, now) || row.visible_state == "EXPIRED") {
-        row.visible_state = "EXPIRED";
-        row.updated_at = now;
-        row.row_version += 1;
-        MailStore::Instance().UpdateMailRow(conn.get(), row);
-        MailStore::Instance().Commit(conn.get());
-        result->set_error_code(mail::err::kMailExpired);
-        result->set_message("expired");
-        return false;
-    }
-    if (row.visible_state == "REVOKED") {
-        MailStore::Instance().Rollback(conn.get());
-        result->set_error_code(mail::err::kMailRevoked);
-        result->set_message("revoked");
-        return false;
-    }
-    if (row.visible_state != "ACTIVE") {
-        MailStore::Instance().Rollback(conn.get());
-        result->set_error_code(mail::err::kInvalidState);
-        result->set_message("not active");
-        return false;
-    }
-    if (row.attachment_state == "CLAIMED") {
-        MailOpLogRow op;
-        op.mail_id = mail_id;
-        op.actor_id = player_id;
-        op.operation_type = "CLAIM";
-        op.idempotency_key = idempotency_key;
-        op.before_state = "{\"attachment\":\"CLAIMED\"}";
-        op.after_state = "{\"attachment\":\"CLAIMED\"}";
-        op.result_code = mail::err::kAlreadyClaimed;
-        op.trace_id = trace_id;
-        op.created_at = now;
-        MailStore::Instance().InsertOpLog(conn.get(), op);
-        MailStore::Instance().Commit(conn.get());
-        result->set_ok(true);
-        result->set_error_code(mail::err::kAlreadyClaimed);
-        result->set_message("already claimed");
-        result->set_attachment_state("CLAIMED");
-        return true;
-    }
-    if (row.attachment_state == "CLAIMING") {
-        MailStore::Instance().Rollback(conn.get());
-        result->set_error_code(mail::err::kClaimInProgress);
-        result->set_message("claiming");
-        return false;
-    }
-    if (row.attachment_state != "UNCLAIMED") {
-        MailStore::Instance().Rollback(conn.get());
-        result->set_error_code(mail::err::kInvalidAttachment);
-        result->set_message("no claimable attachment");
-        return false;
-    }
-    if (!mail::CanTransitAttachment(mail::AttachmentState::kUnclaimed,
-                                    mail::AttachmentState::kClaiming)) {
-        MailStore::Instance().Rollback(conn.get());
-        result->set_error_code(mail::err::kInvalidState);
-        result->set_message("illegal transition");
+        result->set_message("gamedb unavailable");
         return false;
     }
 
-    row.attachment_state = "CLAIMING";
-    row.updated_at = now;
-    row.row_version += 1;
-    if (!MailStore::Instance().UpdateMailRow(conn.get(), row) ||
-        !MailStore::Instance().UpdateAttachmentsClaimState(conn.get(), mail_id, "CLAIMING")) {
-        MailStore::Instance().Rollback(conn.get());
-        result->set_error_code(mail::err::kInternal);
-        result->set_message("mark claiming failed");
-        return false;
-    }
+    GameDbMailClaimRequest db_req;
+    db_req.player_id = player_id;
+    db_req.mail_id = mail_id;
+    db_req.idempotency_key = idempotency_key;
+    db_req.trace_id = trace_id;
+    db_req.inventory_soft_cap = kInventorySoftCap;
+    GameLogic::Instance().CopyInventory(player_id, &db_req.bag_snapshot);
 
-    std::vector<mail::MailAttachmentRow> atts;
-    if (!MailStore::Instance().LoadAttachmentsForUpdate(conn.get(), mail_id, &atts) || atts.empty()) {
-        MailStore::Instance().Rollback(conn.get());
-        result->set_error_code(mail::err::kInvalidAttachment);
-        result->set_message("attachments missing");
-        return false;
-    }
+    // SQL 在 GameDB worker / 独立 GameDB 进程；此处同步等待
+    std::promise<GameDbMailClaimResult> prom;
+    auto fut = prom.get_future();
+    repo->ClaimMailAttachmentsAsync(std::move(db_req),
+                                    [&prom](GameDbMailClaimResult r) { prom.set_value(std::move(r)); });
+    GameDbMailClaimResult db_rsp = fut.get();
 
-    // dry-run：首期仅校验 ITEM 与软上限
-    for (const auto &a : atts) {
-        if (a.asset_type != "ITEM" || a.asset_id == 0 || a.count == 0) {
-            MailStore::Instance().Rollback(conn.get());
-            result->set_error_code(mail::err::kInvalidAttachment);
-            result->set_message("invalid asset");
-            return false;
-        }
-        if (a.asset_id > 0xFFFFFFFFu) {
-            MailStore::Instance().Rollback(conn.get());
-            result->set_error_code(mail::err::kInvalidAttachment);
-            result->set_message("asset_id too large");
-            return false;
-        }
-        const uint32_t cur =
-            GameLogic::Instance().GetItemCount(player_id, static_cast<uint32_t>(a.asset_id));
-        if (static_cast<int64_t>(cur) + a.count > kInventorySoftCap) {
-            MailStore::Instance().Rollback(conn.get());
-            result->set_error_code(mail::err::kInventoryFull);
-            result->set_message("inventory soft cap");
-            return false;
-        }
-    }
+    result->set_ok(db_rsp.ok);
+    result->set_error_code(db_rsp.error_code);
+    result->set_message(db_rsp.message);
+    result->set_attachment_state(db_rsp.attachment_state);
 
-    std::ostringstream tx;
-    tx << "mail:" << mail_id << ":" << now;
-    const std::string asset_tx = tx.str();
-    for (const auto &a : atts) {
-        uint64_t instance_id = 0;
-        std::ostringstream extra;
-        extra << "{\"source\":\"mail_claim\",\"mail_id\":" << mail_id
-              << ",\"tx\":\"" << asset_tx << "\"}";
-        if (!PlayerItemStore::Instance().InsertOnConnection(conn.get(), player_id, a.asset_id,
-                                                            a.count, 0, extra.str(), &instance_id)) {
-            MailStore::Instance().Rollback(conn.get());
-            result->set_error_code(mail::err::kAssetTransactionFailed);
-            result->set_message("asset insert failed");
-            return false;
-        }
+    if (db_rsp.should_apply_memory) {
+        for (const auto &g : db_rsp.grants)
+            GameLogic::Instance().ApplyItemReward(player_id, static_cast<uint32_t>(g.asset_id),
+                                                  g.count);
+        BumpVersion(player_id);
     }
-
-    row.attachment_state = "CLAIMED";
-    if (row.read_state != "READ") {
-        row.read_state = "READ";
-        row.read_at = now;
-    }
-    row.updated_at = now;
-    row.row_version += 1;
-    if (!MailStore::Instance().UpdateMailRow(conn.get(), row) ||
-        !MailStore::Instance().UpdateAttachmentsClaimed(conn.get(), mail_id, asset_tx, now)) {
-        MailStore::Instance().Rollback(conn.get());
-        result->set_error_code(mail::err::kInternal);
-        result->set_message("finalize claim failed");
-        return false;
-    }
-
-    MailOpLogRow op;
-    op.mail_id = mail_id;
-    op.actor_id = player_id;
-    op.operation_type = "CLAIM";
-    op.idempotency_key = idempotency_key;
-    op.before_state = "{\"attachment\":\"UNCLAIMED\"}";
-    op.after_state = "{\"attachment\":\"CLAIMED\",\"tx\":\"" + asset_tx + "\"}";
-    op.result_code = mail::err::kOk;
-    op.trace_id = trace_id;
-    op.created_at = now;
-    if (!MailStore::Instance().InsertOpLog(conn.get(), op)) {
-        MailStore::Instance().Rollback(conn.get());
-        result->set_error_code(mail::err::kInternal);
-        result->set_message("op log failed");
-        return false;
-    }
-    if (!MailStore::Instance().Commit(conn.get())) {
-        MailStore::Instance().Rollback(conn.get());
-        result->set_error_code(mail::err::kInternal);
-        result->set_message("commit failed");
-        return false;
-    }
-    // 事务成功后再改内存背包，避免回滚导致“库无货、内存有货”
-    for (const auto &a : atts)
-        GameLogic::Instance().ApplyItemReward(player_id, static_cast<uint32_t>(a.asset_id), a.count);
-    BumpVersion(player_id);
-    result->set_ok(true);
-    result->set_error_code(mail::err::kOk);
-    result->set_message("claimed");
-    result->set_attachment_state("CLAIMED");
-    return true;
+    return db_rsp.ok;
 }
 
 bool MailService::HandleMailClaim(const game::MailClaimReq &req, game::GameResponse *rsp) {

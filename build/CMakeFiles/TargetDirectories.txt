@@ -1,4 +1,0 @@
-/root/projects/CppWebServer/build/CMakeFiles/webserver.dir
-/root/projects/CppWebServer/build/CMakeFiles/ide_compile_commands.dir
-/root/projects/CppWebServer/build/CMakeFiles/edit_cache.dir
-/root/projects/CppWebServer/build/CMakeFiles/rebuild_cache.dir

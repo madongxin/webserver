@@ -1,0 +1,17 @@
+# Gateway → GameLogic / World / Session 静态路由（阶段 2/5/6/7）
+# logic_addrs 与 logic_instance_ids 一一对应；无地图绑定时仍可用 player_id % N
+# 进图后按 MapPlacement.owner → ChannelForInstance
+# 邮件/聊天/好友 → world_addrs（WorldForward）
+# Login/Reconnect/Bind → session_addrs（独立 Session；空则网关本地 Redis SessionStore）
+logic_addrs=127.0.0.1:8201,127.0.0.1:8202
+logic_instance_ids=gl-0,gl-1
+world_addrs=127.0.0.1:8301
+session_addrs=127.0.0.1:8401
+gamedb_addrs=127.0.0.1:8501
+# 例：http://127.0.0.1:2379 ；空=仅静态
+etcd_endpoints=
+rpc_timeout_ms=3000
+ssl_enable=0
+# ssl_cert=/path/client.crt
+# ssl_key=/path/client.key
+# ssl_ca=/path/ca.crt

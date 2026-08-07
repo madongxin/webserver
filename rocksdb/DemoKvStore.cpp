@@ -8,7 +8,7 @@
 #include "Logging.h"
 #include "RocksDbClient.h"
 #include "RocksDbConfigPath.h"
-#include "WebServerPaths.h"
+#include "GameMeshPaths.h"
 
 #include <cerrno>
 #include <cstdio>
@@ -57,7 +57,7 @@ std::string ResolveDbPath(const std::string &configured) {
         return configured;
     // ResolveProjectSubdir 依赖 realpath，目标目录不存在时会失败；先解析项目根再拼相对路径
     std::string project_root;
-    if (WebServerPaths::ResolveProjectSubdir("config", &project_root)) {
+    if (GameMeshPaths::ResolveProjectSubdir("config", &project_root)) {
         // .../config -> 项目根
         const auto slash = project_root.rfind('/');
         if (slash != std::string::npos)

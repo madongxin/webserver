@@ -54,6 +54,8 @@ void TcpServer::HandleClose(const std::shared_ptr<TcpConnection> &conn) {
 void TcpServer::HandleCloseInLoop(const std::shared_ptr<TcpConnection> &conn) {
   LOG_INFO << "TcpServer::HandleCloseInLoop - Remove connection [id#"
            << conn->id() << "-fd#" << conn->fd() << "]";
+  if (on_disconnect_)
+    on_disconnect_(conn);
   auto it = connectionsMap_.find(conn->fd());
   assert(it != connectionsMap_.end());
   connectionsMap_.erase(it);
@@ -70,6 +72,11 @@ void TcpServer::set_connection_callback(
 void TcpServer::set_message_callback(
     std::function<void(const std::shared_ptr<TcpConnection> &)> const &fn) {
   on_message_ = std::move(fn);
+}
+
+void TcpServer::set_disconnect_callback(
+    std::function<void(const std::shared_ptr<TcpConnection> &)> const &fn) {
+  on_disconnect_ = std::move(fn);
 }
 
 void TcpServer::SetThreadNums(int thread_nums) {

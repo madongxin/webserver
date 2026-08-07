@@ -1,6 +1,6 @@
 #pragma once
 
-#include "WebServerPaths.h"
+#include "GameMeshPaths.h"
 
 #include <string>
 
@@ -12,7 +12,7 @@ inline const std::string &MailCnf() {
     if (!once) {
         once = true;
         std::string resolved;
-        if (WebServerPaths::ResolveProjectSubdir("config/mail.cnf", &resolved))
+        if (GameMeshPaths::ResolveProjectSubdir("config/mail.cnf", &resolved))
             path = std::move(resolved);
     }
     return path;

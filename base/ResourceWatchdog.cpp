@@ -182,7 +182,7 @@ Json::Value ResourceWatchdog::AnalyzeTrends() const {
 
     root["alerts"] = alerts;
     root["compare_shell"] =
-        "top -p $(pidof webserver); pmap -x $(pidof webserver) | tail; "
-        "grep -E 'VmRSS|VmSize|Threads' /proc/$(pidof webserver)/status; ls /proc/$(pidof webserver)/fd | wc -l";
+        "top -p $(pidof server); pmap -x $(pidof server) | tail; "
+        "grep -E 'VmRSS|VmSize|Threads' /proc/$(pidof server)/status; ls /proc/$(pidof server)/fd | wc -l";
     return root;
 }

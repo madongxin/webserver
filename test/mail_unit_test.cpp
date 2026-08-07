@@ -1,6 +1,6 @@
 /**
  * 邮件状态机 / 过期判定单元测试（无 gtest，手工断言可执行文件）
- * 构建：随 webserver 同编译选项单独 add_executable，或：
+ * 构建：随 server 同编译选项单独 add_executable，或：
  *   g++ -std=c++14 -Igame -Ibase test/mail_unit_test.cpp game/MailTypes.cpp -o build/test/mail_unit_test
  */
 

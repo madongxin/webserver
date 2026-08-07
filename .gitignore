@@ -1,89 +1,57 @@
-# CMake build files
+# Build / CMake
 build/
+out/
 CMakeFiles/
 CMakeCache.txt
 cmake_install.cmake
+Makefile
 compile_commands.json
 
-# Make / compiled output
+# Compiled artifacts
 *.o
-*.out
 *.a
 *.so
 *.dylib
 *.dll
 *.exe
-out/
 
-# Logs
+# IDE / index
+.vscode/
+.idea/
+.cache/
+.clangd/
+
+# Logs & runtime
 *.log
 log/*.log
+run/
+data/rocksdb/
 
-# Crash dumps / sanitizer reports
+# Crash / sanitizer / perf
 core
 core.*
 core.webserver.*
 asan_report-*
 asan-report-*
-
-# Performance data
 perf.data
 perf.data.old
 
-# Private keys / certificates
+# Private keys / certs
 *.pem
 *.key
 id_rsa
 id_rsa.pub
 id_ed25519
 id_ed25519.pub
-mxd1989MDX
-mxd1989MDX.pub
+mdx1989MDX
+mdx1989MDX.pub
 y
 y.pub
 
-# Env / secrets
+# Env / local secrets (keep *.cnf.example tracked)
 .env
 .env.*
 config/*.secret
 config/*.local
-
-# IDE
-.vscode/
-.idea/
-
-# OS
-.DS_Store
-Thumbs.db
-
-# crash dump
-core
-core.*
-core.webserver.*
-
-# logs
-*.log
-
-# perf
-perf.data
-perf.data.old
-
-# build files
-build/
-CMakeFiles/
-CMakeCache.txt
-cmake_install.cmake
-compile_commands.json
-out/
-
-# private keys
-*.pem
-*.key
-mxd1989MDX
-mxd1989MDX.pub
-y
-y.pub
-
-core
-core.*
-core.webserver.*
+config/*.cnf
+!config/*.cnf.example

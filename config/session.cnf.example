@@ -1,0 +1,6 @@
+# 复制为 config/session.cnf 后按环境修改
+listen_addr=0.0.0.0:8401
+idle_timeout_sec=30
+logic_instance_ids=gl-0,gl-1
+gamedb_addrs=127.0.0.1:8501,127.0.0.1:8502
+ssl_enable=0

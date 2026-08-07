@@ -1,0 +1,5 @@
+# 复制为 config/gamedb.cnf 后按环境修改
+listen_addr=0.0.0.0:8501
+idle_timeout_sec=30
+nats_url=
+ssl_enable=0

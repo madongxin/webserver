@@ -1,0 +1,71 @@
+syntax = "proto3";
+
+package glrpc;
+
+option cc_generic_services = true;
+
+// GameLogic 只处理已认证玩家与游戏命令；不接收账号密码或原始登录凭证。
+
+message BindPlayerRequest {
+  uint64 request_id = 1;
+  uint64 player_id = 2;
+  string session_id = 3;
+  string fence_token = 4;
+  string gamelogic_instance_id = 5;
+  uint64 map_instance_id = 6;
+  uint64 map_owner_epoch = 7;
+  uint64 route_version = 8;
+  string gateway_instance_id = 9;
+  string idempotency_key = 10;
+  string trace_context = 11;
+}
+
+message BindPlayerResponse {
+  bool ok = 1;
+  string message = 2;
+  string error_code = 3;
+  // PlayerReady 摘要（兼容外网可再包装为 GameResponse）
+  uint32 bag_item_kinds = 4;
+}
+
+message UnbindPlayerRequest {
+  uint64 player_id = 1;
+  string session_id = 2;
+  string fence_token = 3;
+  string reason = 4;
+  string idempotency_key = 5;
+}
+
+message UnbindPlayerResponse {
+  bool ok = 1;
+  string message = 2;
+}
+
+message ClientCommand {
+  uint64 request_id = 1;
+  uint64 player_id = 2;
+  string session_id = 3;
+  string fence_token = 4;
+  string gamelogic_instance_id = 5;
+  uint64 map_instance_id = 6;
+  uint64 map_owner_epoch = 7;
+  uint64 client_seq = 8;
+  string message_type = 9;
+  bytes payload = 10;          // 通常为 game.GameRequest 去头序列化体
+  string trace_context = 11;
+  string idempotency_key = 12;
+}
+
+message CommandResult {
+  bool ok = 1;
+  string message = 2;
+  string error_code = 3;
+  bytes response_frame = 4;    // [len][GameResponse]，Gateway 可直送客户端
+  uint64 server_seq = 5;
+}
+
+service GameLogicService {
+  rpc BindPlayer(BindPlayerRequest) returns (BindPlayerResponse);
+  rpc Dispatch(ClientCommand) returns (CommandResult);
+  rpc UnbindPlayer(UnbindPlayerRequest) returns (UnbindPlayerResponse);
+}

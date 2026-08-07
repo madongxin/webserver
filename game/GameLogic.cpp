@@ -1,14 +1,22 @@
 #include "GameLogic.h"
 
+#include "ForwardMetaContext.h"
 #include "LogicMetrics.h"
+#include "MapInstanceRegistry.h"
+#include "MapPlacement.h"
 
 #ifdef WEBSERVER_ENABLE_REDIS
 #include "SessionStore.h"
+#ifdef WEBSERVER_ENABLE_BRPC
+#include "SessionRpcClient.h"
+#endif
 #endif
 #ifdef WEBSERVER_ENABLE_MYSQL
 #include "ConnectionPool.h"
 #include "MailService.h"
+#include "PlayerAccountStore.h"
 #include "PlayerItemPersistQueue.h"
+#include "PlayerItemStore.h"
 #endif
 
 #include "Logging.h"
@@ -31,12 +39,26 @@ GameLogic &GameLogic::Instance() {
 }
 
 void GameLogic::EnsurePlayer(uint64_t player_id) {
-    // 演示用初始背包；grant_item 会在此基础上累加，consume_item 从此扣减
-    if (inventory_.count(player_id) == 0) {
-        auto &inv = inventory_[player_id];
-        inv[1001] = 10;
-        inv[1002] = 5;
+    if (inventory_.count(player_id) != 0) {
+        if (skill_cd_until_ms_.count(player_id) == 0)
+            skill_cd_until_ms_[player_id] = {};
+        return;
     }
+    auto &inv = inventory_[player_id];
+#ifdef WEBSERVER_ENABLE_MYSQL
+    std::map<uint32_t, uint32_t> loaded;
+    if (PlayerItemStore::Instance().LoadInventoryAggregate(player_id, &loaded) && !loaded.empty()) {
+        inv = std::move(loaded);
+        LOG_INFO << "EnsurePlayer loaded bag from DB player_id=" << player_id
+                 << " kinds=" << inv.size();
+    } else {
+        // 新号或无存档：空背包（注册后靠 grant/mail 获得）
+        inv.clear();
+    }
+#else
+    inv[1001] = 10;
+    inv[1002] = 5;
+#endif
     if (skill_cd_until_ms_.count(player_id) == 0)
         skill_cd_until_ms_[player_id] = {};
 }
@@ -45,6 +67,16 @@ uint32_t GameLogic::GetItemCount(uint64_t player_id, uint32_t item_id) {
     std::lock_guard<std::mutex> lk(mu_);
     EnsurePlayer(player_id);
     return inventory_[player_id][item_id];
+}
+
+void GameLogic::CopyInventory(uint64_t player_id, std::unordered_map<uint32_t, uint32_t> *out) {
+    if (!out)
+        return;
+    out->clear();
+    std::lock_guard<std::mutex> lk(mu_);
+    EnsurePlayer(player_id);
+    for (const auto &kv : inventory_[player_id])
+        (*out)[kv.first] = kv.second;
 }
 
 bool GameLogic::ApplyItemReward(uint64_t player_id, uint32_t item_id, uint32_t count) {
@@ -208,9 +240,19 @@ bool GameLogic::HandleGrantItem(const game::GrantItemReq &req, game::GameRespons
 bool GameLogic::RequireSessionToken(const game::GameRequest &req, uint64_t player_id,
                                     game::GameResponse *rsp) {
 #ifdef WEBSERVER_ENABLE_REDIS
+    std::string err;
+#ifdef WEBSERVER_ENABLE_BRPC
+    if (SessionRpcClient::Instance().ready()) {
+        if (!SessionRpcClient::Instance().ValidateToken(player_id, req.session_token(), &err)) {
+            rsp->set_ok(false);
+            rsp->set_message(err.empty() ? "session invalid" : err);
+            return false;
+        }
+        return true;
+    }
+#endif
     if (!SessionStore::Instance().Available())
         return true;
-    std::string err;
     if (!SessionStore::Instance().ValidateToken(player_id, req.session_token(), &err)) {
         rsp->set_ok(false);
         rsp->set_message(err);
@@ -225,14 +267,48 @@ bool GameLogic::RequireSessionToken(const game::GameRequest &req, uint64_t playe
 }
 
 bool GameLogic::HandleLogin(const game::LoginReq &req, game::GameResponse *rsp) {
-#ifdef WEBSERVER_ENABLE_REDIS
+    (void)req;
     auto *body = rsp->mutable_login();
-    SessionStore::Instance().Login(req, body);
+    body->set_ok(false);
+    body->set_message("login must be orchestrated by Gateway via Auth+Session; GameLogic rejects credentials");
+    rsp->set_ok(false);
+    rsp->set_message(body->message());
+    LOG_WARN << "HandleLogin rejected: GameLogic no longer performs Auth/Session Login RPC";
+    return false;
+}
+
+void GameLogic::BindAuthenticatedPlayer(uint64_t player_id) {
+    std::lock_guard<std::mutex> lk(mu_);
+    EnsurePlayer(player_id);
+#ifdef WEBSERVER_ENABLE_MYSQL
+    PlayerItemPersistQueue::Instance().MarkOnline(player_id);
+#endif
+}
+
+bool GameLogic::FlushBag(uint64_t player_id, const std::string &reason) {
+    game::FlushBagReq req;
+    req.set_player_id(player_id);
+    req.set_reason(reason);
+    game::GameResponse rsp;
+    return HandleFlushBag(req, &rsp);
+}
+
+bool GameLogic::HandleReconnect(const game::ReconnectReq &req, game::GameResponse *rsp) {
+#ifdef WEBSERVER_ENABLE_REDIS
+    auto *body = rsp->mutable_reconnect();
+#ifdef WEBSERVER_ENABLE_BRPC
+    if (SessionRpcClient::Instance().ready()) {
+        if (!SessionRpcClient::Instance().Reconnect(req, body)) {
+            body->set_ok(false);
+            body->set_message("session rpc failed");
+        }
+    } else
+#endif
+        SessionStore::Instance().Reconnect(req, body);
     rsp->set_ok(body->ok());
     rsp->set_message(body->message());
     if (body->ok()) {
 #ifdef WEBSERVER_ENABLE_MYSQL
-        // 登录成功：参与「在线玩家 5 分钟刷盘」判定（与 grant_item 的 Enqueue 配合）
         PlayerItemPersistQueue::Instance().MarkOnline(req.player_id());
 #endif
     }
@@ -278,14 +354,24 @@ bool GameLogic::HandleCheckOnline(const game::CheckOnlineReq &req, game::GameRes
 bool GameLogic::HandleLogout(const game::LogoutReq &req, game::GameResponse *rsp) {
 #ifdef WEBSERVER_ENABLE_REDIS
     auto *body = rsp->mutable_logout();
-    SessionStore::Instance().Logout(req, body);
+#ifdef WEBSERVER_ENABLE_BRPC
+    if (SessionRpcClient::Instance().ready()) {
+        if (!SessionRpcClient::Instance().Logout(req, body)) {
+            body->set_ok(false);
+            body->set_message("session rpc failed");
+        }
+    } else
+#endif
+        SessionStore::Instance().Logout(req, body);
     rsp->set_ok(body->ok());
     rsp->set_message(body->message());
     if (body->ok()) {
 #ifdef WEBSERVER_ENABLE_MYSQL
-        // 登出：FlushPlayer 立即把该玩家队列写入 player_item，不等待 300s 定时器
         PlayerItemPersistQueue::Instance().MarkOffline(req.player_id());
 #endif
+        std::lock_guard<std::mutex> lk(mu_);
+        inventory_.erase(req.player_id());
+        skill_cd_until_ms_.erase(req.player_id());
     }
     return body->ok();
 #else
@@ -294,6 +380,189 @@ bool GameLogic::HandleLogout(const game::LogoutReq &req, game::GameResponse *rsp
     rsp->set_message("redis not enabled");
     return false;
 #endif
+}
+
+bool GameLogic::HandleRegister(const game::RegisterReq &req, game::GameResponse *rsp) {
+#ifdef WEBSERVER_ENABLE_MYSQL
+    auto *body = rsp->mutable_register_();
+    uint64_t player_id = 0;
+    std::string err;
+    if (!PlayerAccountStore::Instance().Register(req.device_id(), req.display_name(), &player_id,
+                                                 &err)) {
+        body->set_ok(false);
+        body->set_message(err.empty() ? "register failed" : err);
+        rsp->set_ok(false);
+        rsp->set_message(body->message());
+        return false;
+    }
+    body->set_ok(true);
+    body->set_message("ok");
+    body->set_player_id(player_id);
+    rsp->set_ok(true);
+    rsp->set_message("ok");
+    LOG_INFO << "Register ok player_id=" << player_id << " device=" << req.device_id();
+    return true;
+#else
+    (void)req;
+    rsp->set_ok(false);
+    rsp->set_message("mysql not enabled");
+    return false;
+#endif
+}
+
+bool GameLogic::HandleFlushBag(const game::FlushBagReq &req, game::GameResponse *rsp) {
+#ifdef WEBSERVER_ENABLE_MYSQL
+    auto *body = rsp->mutable_flush_bag();
+    PlayerItemPersistQueue::Instance().MarkOffline(req.player_id());
+    body->set_ok(true);
+    body->set_message(req.reason().empty() ? "flushed" : req.reason());
+    rsp->set_ok(true);
+    rsp->set_message(body->message());
+    LOG_INFO << "FlushBag player_id=" << req.player_id() << " reason=" << req.reason();
+    return true;
+#else
+    (void)req;
+    rsp->set_ok(false);
+    rsp->set_message("mysql not enabled");
+    return false;
+#endif
+}
+
+bool GameLogic::HandleEnterMap(const game::EnterMapReq &req, game::GameResponse *rsp) {
+    auto *body = rsp->mutable_enter_map();
+    body->set_ok(false);
+    if (req.player_id() == 0 || req.map_template_id() == 0) {
+        body->set_message("invalid player or template");
+        rsp->set_ok(false);
+        rsp->set_message(body->message());
+        return false;
+    }
+
+    MapPlacementRecord place;
+    const ForwardRouteMeta *meta = ForwardMetaContext::Get();
+    if (meta && meta->map_instance_id != 0) {
+        if (!meta->gamelogic_instance_id.empty() &&
+            meta->gamelogic_instance_id != MapInstanceRegistry::Instance().local_instance_id()) {
+            body->set_message("wrong logic owner");
+            rsp->set_ok(false);
+            rsp->set_message(body->message());
+            return false;
+        }
+        place.map_instance_id = meta->map_instance_id;
+        place.owner_epoch = meta->owner_epoch;
+        place.route_version = meta->route_version;
+        place.owner_gamelogic_id = meta->gamelogic_instance_id;
+        place.map_template_id = req.map_template_id();
+        place.realm_id = req.realm_id();
+    } else {
+        if (MapPlacement::Instance().owners().empty())
+            MapPlacement::Instance().ConfigureOwners({MapInstanceRegistry::Instance().local_instance_id()});
+        if (!MapPlacement::Instance().ResolveOrAllocate(req.realm_id(), req.map_template_id(),
+                                                       req.map_instance_id(), &place)) {
+            body->set_message("placement failed");
+            rsp->set_ok(false);
+            rsp->set_message(body->message());
+            return false;
+        }
+        // 单进程：只认本地 owner
+        if (place.owner_gamelogic_id != MapInstanceRegistry::Instance().local_instance_id()) {
+            body->set_message("owner not local");
+            rsp->set_ok(false);
+            rsp->set_message(body->message());
+            return false;
+        }
+    }
+
+    if (!MapInstanceRegistry::Instance().Claim(place.map_instance_id, place.map_template_id,
+                                               place.owner_epoch)) {
+        body->set_message("claim rejected");
+        rsp->set_ok(false);
+        rsp->set_message(body->message());
+        return false;
+    }
+    MapInstanceRegistry::Instance().AddPlayer(place.map_instance_id, req.player_id());
+
+    body->set_ok(true);
+    body->set_message("entered");
+    body->set_map_template_id(place.map_template_id);
+    body->set_map_instance_id(place.map_instance_id);
+    body->set_gamelogic_instance_id(MapInstanceRegistry::Instance().local_instance_id());
+    body->set_owner_epoch(place.owner_epoch);
+    body->set_route_version(place.route_version);
+    rsp->set_ok(true);
+    rsp->set_message("entered");
+    LOG_INFO << "[enter_map] player=" << req.player_id() << " map=" << place.map_instance_id
+             << " epoch=" << place.owner_epoch
+             << " gl=" << MapInstanceRegistry::Instance().local_instance_id();
+    return true;
+}
+
+bool GameLogic::HandleLeaveMap(const game::LeaveMapReq &req, game::GameResponse *rsp) {
+    auto *body = rsp->mutable_leave_map();
+    body->set_ok(false);
+    if (req.map_instance_id() == 0 ||
+        !MapInstanceRegistry::Instance().PlayerOnMap(req.map_instance_id(), req.player_id())) {
+        body->set_message("not on map");
+        rsp->set_ok(false);
+        rsp->set_message(body->message());
+        return false;
+    }
+    MapInstanceRegistry::Instance().RemovePlayer(req.map_instance_id(), req.player_id());
+    body->set_ok(true);
+    body->set_message("left");
+    rsp->set_ok(true);
+    rsp->set_message("left");
+    return true;
+}
+
+bool GameLogic::HandleMapPing(const game::MapPingReq &req, game::GameResponse *rsp) {
+    auto *body = rsp->mutable_map_ping();
+    body->set_ok(false);
+    const ForwardRouteMeta *meta = ForwardMetaContext::Get();
+    if (meta && meta->map_instance_id != 0) {
+        if (!MapInstanceRegistry::Instance().AcceptWrite(meta->map_instance_id, meta->owner_epoch)) {
+            body->set_message("stale_owner_epoch");
+            rsp->set_ok(false);
+            rsp->set_message(body->message());
+            return false;
+        }
+    }
+    if (!MapInstanceRegistry::Instance().PlayerOnMap(req.map_instance_id(), req.player_id())) {
+        body->set_message("not on map");
+        rsp->set_ok(false);
+        rsp->set_message(body->message());
+        return false;
+    }
+    body->set_ok(true);
+    body->set_message("pong");
+    body->set_owner_epoch(MapInstanceRegistry::Instance().Epoch(req.map_instance_id()));
+    body->set_player_count(MapInstanceRegistry::Instance().PlayerCount(req.map_instance_id()));
+    body->set_gamelogic_instance_id(MapInstanceRegistry::Instance().local_instance_id());
+    rsp->set_ok(true);
+    rsp->set_message("pong");
+    return true;
+}
+
+bool GameLogic::HandleChatSend(const game::ChatSendReq &req, game::GameResponse *rsp) {
+    (void)req;
+    auto *body = rsp->mutable_chat_send();
+    body->set_ok(false);
+    body->set_error_code("NOT_IMPLEMENTED");
+    body->set_message("chat stub: world module boundary only");
+    rsp->set_ok(false);
+    rsp->set_message(body->message());
+    return false;
+}
+
+bool GameLogic::HandleFriendList(const game::FriendListReq &req, game::GameResponse *rsp) {
+    (void)req;
+    auto *body = rsp->mutable_friend_list();
+    body->set_ok(false);
+    body->set_error_code("NOT_IMPLEMENTED");
+    body->set_message("friend stub: world module boundary only");
+    rsp->set_ok(false);
+    rsp->set_message(body->message());
+    return false;
 }
 
 /**
@@ -318,12 +587,18 @@ bool GameLogic::Handle(const game::GameRequest &req, game::GameResponse *rsp) {
     switch (req.body_case()) {
         case game::GameRequest::kLogin:
             return HandleLogin(req.login(), rsp);
+        case game::GameRequest::kReconnect:
+            return HandleReconnect(req.reconnect(), rsp);
         case game::GameRequest::kValidateSession:
             return HandleValidateSession(req.validate_session(), rsp);
         case game::GameRequest::kCheckOnline:
             return HandleCheckOnline(req.check_online(), rsp);
         case game::GameRequest::kLogout:
             return HandleLogout(req.logout(), rsp);
+        case game::GameRequest::kRegister:
+            return HandleRegister(req.register_(), rsp);
+        case game::GameRequest::kFlushBag:
+            return HandleFlushBag(req.flush_bag(), rsp);
         case game::GameRequest::kConsumeItem:
             LOG_INFO << "[game] dispatch consume_item seq=" << req.seq();
             if (!RequireSessionToken(req, req.consume_item().player_id(), rsp)) {
@@ -354,6 +629,26 @@ bool GameLogic::Handle(const game::GameRequest &req, game::GameResponse *rsp) {
                 return false;
             }
             return HandleGrantItem(req.grant_item(), rsp);
+        case game::GameRequest::kEnterMap:
+            if (!RequireSessionToken(req, req.enter_map().player_id(), rsp))
+                return false;
+            return HandleEnterMap(req.enter_map(), rsp);
+        case game::GameRequest::kLeaveMap:
+            if (!RequireSessionToken(req, req.leave_map().player_id(), rsp))
+                return false;
+            return HandleLeaveMap(req.leave_map(), rsp);
+        case game::GameRequest::kMapPing:
+            if (!RequireSessionToken(req, req.map_ping().player_id(), rsp))
+                return false;
+            return HandleMapPing(req.map_ping(), rsp);
+        case game::GameRequest::kChatSend:
+            if (!RequireSessionToken(req, req.chat_send().player_id(), rsp))
+                return false;
+            return HandleChatSend(req.chat_send(), rsp);
+        case game::GameRequest::kFriendList:
+            if (!RequireSessionToken(req, req.friend_list().player_id(), rsp))
+                return false;
+            return HandleFriendList(req.friend_list(), rsp);
 #ifdef WEBSERVER_ENABLE_MYSQL
         case game::GameRequest::kMailboxSummary:
             if (!RequireSessionToken(req, req.mailbox_summary().player_id(), rsp))

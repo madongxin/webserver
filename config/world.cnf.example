@@ -1,0 +1,3 @@
+# World 中控 WorldForward 监听（阶段 6）
+listen_addr=0.0.0.0:8301
+idle_timeout_sec=30

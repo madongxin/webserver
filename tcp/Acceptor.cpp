@@ -45,7 +45,7 @@ void Acceptor::Bind(const char *ip, const int port) {
     if (::bind(listenfd_, reinterpret_cast<struct sockaddr *>(&addr), sizeof(addr)) == -1) {
         LOG_FATAL << "Failed to Bind [" << ip << ":" << port << "] errno=" << errno << " "
                   << strerror(errno)
-                  << " (port in use? stop old webserver: pkill -f build/test/webserver)";
+                  << " (port in use? stop old server: pkill -f build/test/server)";
     }
 }
 

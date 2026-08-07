@@ -1,6 +1,6 @@
 
 cmake_minimum_required(VERSION 3.10)
-project(WebServer)
+project(GameMesh)
 
 # 供 Cursor/VS Code（Microsoft C++、clangd）跳转定义/实现
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON CACHE BOOL "Export compile_commands.json for IDE" FORCE)
@@ -16,6 +16,9 @@ include_directories(
     db
     redis
     rocksdb
+    runtime
+    runtime/discovery
+    apps
 )
 
 option(ENABLE_MYSQL "Build MySQL connection pool (libmysqlclient)" ON)
@@ -66,7 +69,17 @@ if(ENABLE_GAME_PROTOBUF)
     game/ProtoFraming.cpp
     game/GameLogic.cpp
     game/GameService.cpp
-    game/GameTcpGateway.cpp)
+    game/GameTcpGateway.cpp
+    game/GatewayConnRegistry.cpp
+    runtime/PlayerSerialQueue.cpp
+    runtime/InProcessTransport.cpp
+    runtime/TcpReplySink.cpp
+    runtime/GameRequestPlayerId.cpp
+    runtime/GameRequestTransport.cpp
+    runtime/MapPlacement.cpp
+    runtime/MapInstanceRegistry.cpp
+    runtime/ForwardMetaContext.cpp
+    runtime/MessageRoute.cpp)
   if(ENABLE_MYSQL)
     list(APPEND SRC_GAME
       game/MailTypes.cpp
@@ -99,7 +112,9 @@ if(ENABLE_MYSQL)
     message(FATAL_ERROR "ENABLE_MYSQL=ON but mysql client not found.")
   endif()
   list(APPEND SRC_DB db/Connection.cpp db/ConnectionPool.cpp db/MetricsDbWriter.cpp
-              db/PlayerItemStore.cpp db/PlayerItemPersistQueue.cpp)
+              db/PlayerItemStore.cpp db/PlayerItemPersistQueue.cpp
+              db/GameDbRepository.cpp db/GameDbOutbox.cpp db/AsyncMysqlGameDbRepository.cpp db/PlayerAccountStore.cpp
+              runtime/discovery/NatsThinClient.cpp)
   message(STATUS "MySQL pool: include=${MYSQL_INCLUDE_DIR} lib=${MYSQL_CLIENT_LIB}")
 endif()
 
@@ -138,37 +153,109 @@ if(ENABLE_BRPC)
   if(NOT BRPC_INCLUDE_DIR OR NOT BRPC_LIB)
     message(FATAL_ERROR "ENABLE_BRPC=ON but brpc not found. Install to /usr/local (libbrpc).")
   endif()
-  if(NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/game/brpc/mail_brpc.pb.cc")
-    message(FATAL_ERROR "Run: protoc -I proto --cpp_out=game/brpc proto/mail_brpc.proto")
+  if(NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/runtime/brpc/forward.pb.cc")
+    message(FATAL_ERROR "Run: protoc -I proto --cpp_out=runtime/brpc proto/forward.proto")
+  endif()
+  if(NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/runtime/brpc/session.pb.cc")
+    message(FATAL_ERROR "Run: protoc -I proto --cpp_out=runtime/brpc proto/session.proto")
+  endif()
+  if(NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/runtime/brpc/auth.pb.cc")
+    message(FATAL_ERROR "Run: protoc -I proto --cpp_out=runtime/brpc proto/auth.proto")
+  endif()
+  if(NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/runtime/brpc/gamelogic_rpc.pb.cc")
+    message(FATAL_ERROR "Run: protoc -I proto --cpp_out=runtime/brpc proto/gamelogic_rpc.proto")
+  endif()
+  if(NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/runtime/brpc/gateway_push.pb.cc")
+    message(FATAL_ERROR "Run: protoc -I proto --cpp_out=runtime/brpc proto/gateway_push.proto")
+  endif()
+  if(NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/runtime/brpc/gamedb.pb.cc")
+    message(FATAL_ERROR "Run: protoc -I proto --cpp_out=runtime/brpc proto/gamedb.proto")
   endif()
   list(APPEND SRC_BRPC
     game/brpc/mail_brpc.pb.cc
     game/brpc/MailBrpcServiceImpl.cpp
-    game/brpc/BrpcGameServer.cpp)
+    game/brpc/BrpcGameServer.cpp
+    runtime/brpc/forward.pb.cc
+    runtime/brpc/BrpcChannelManager.cpp
+    runtime/brpc/BrpcTransport.cpp
+    runtime/brpc/GameLogicForwardServiceImpl.cpp
+    runtime/brpc/GameLogicServiceImpl.cpp
+    runtime/brpc/GameLogicBrpcServer.cpp
+    runtime/brpc/WorldForwardServiceImpl.cpp
+    runtime/brpc/WorldBrpcServer.cpp
+    runtime/brpc/session.pb.cc
+    runtime/brpc/auth.pb.cc
+    runtime/brpc/AuthServiceImpl.cpp
+    runtime/brpc/AuthTokenStore.cpp
+    runtime/brpc/SessionServiceImpl.cpp
+    runtime/brpc/SessionBrpcServer.cpp
+    runtime/brpc/SessionRpcClient.cpp
+    runtime/brpc/GatewayAuthClients.cpp
+    runtime/brpc/GatewayLoginOrchestrator.cpp
+    runtime/brpc/gamelogic_rpc.pb.cc
+    runtime/brpc/gateway_push.pb.cc
+    runtime/brpc/GatewayPushServer.cpp
+    runtime/brpc/GatewayPushClient.cpp
+    runtime/brpc/GameLogicPush.cpp
+    runtime/brpc/gamedb.pb.cc
+    runtime/brpc/GameDbServiceImpl.cpp
+    runtime/brpc/GameDbBrpcServer.cpp
+    db/BrpcGameDbRepository.cpp
+    runtime/discovery/EtcdDiscovery.cpp
+    runtime/discovery/IServiceRegistry.cpp)
   set(BRPC_LINK_LIBS ${BRPC_LIB} ${GFLAGS_LIB} ${LEVELDB_LIB} ${OPENSSL_SSL_LIB} ${ZLIB_LIB} dl)
   message(STATUS "brpc: include=${BRPC_INCLUDE_DIR} lib=${BRPC_LIB}")
 endif()
 
-add_executable(webserver test/http_server.cpp ${SRC_LIST1} ${SRC_LIST2} ${SRC_LIST3} ${SRC_LIST4} ${SRC_LIST5} ${SRC_DB} ${SRC_GAME} ${SRC_REDIS} ${SRC_ROCKSDB} ${SRC_BRPC})
-target_include_directories(webserver PRIVATE ${OPENSSL_INCLUDE_DIR})
-target_link_libraries(webserver ${CMAKE_THREAD_LIBS_INIT} ${JSONCPP_LIBRARIES} ${OPENSSL_CRYPTO_LIB})
+set(SRC_BOOTSTRAP apps/ServerBootstrap.cpp)
+set(GAMEMESH_COMMON_SRCS
+  ${SRC_LIST1} ${SRC_LIST2} ${SRC_LIST3} ${SRC_LIST4} ${SRC_LIST5}
+  ${SRC_DB} ${SRC_GAME} ${SRC_REDIS} ${SRC_ROCKSDB} ${SRC_BRPC} ${SRC_BOOTSTRAP})
 
-if(ENABLE_MYSQL)
-  target_compile_definitions(webserver PRIVATE WEBSERVER_ENABLE_MYSQL)
-  target_include_directories(webserver PRIVATE ${MYSQL_INCLUDE_DIR})
-  target_link_libraries(webserver ${MYSQL_CLIENT_LIB})
-endif()
+function(gamemesh_apply_target_options tgt)
+  target_include_directories(${tgt} PRIVATE ${OPENSSL_INCLUDE_DIR})
+  target_link_libraries(${tgt} ${CMAKE_THREAD_LIBS_INIT} ${JSONCPP_LIBRARIES} ${OPENSSL_CRYPTO_LIB})
+  if(ENABLE_MYSQL)
+    target_compile_definitions(${tgt} PRIVATE WEBSERVER_ENABLE_MYSQL)
+    target_include_directories(${tgt} PRIVATE ${MYSQL_INCLUDE_DIR})
+    target_link_libraries(${tgt} ${MYSQL_CLIENT_LIB})
+  endif()
+  if(ENABLE_GAME_PROTOBUF)
+    target_compile_definitions(${tgt} PRIVATE WEBSERVER_ENABLE_GAME_PROTOBUF)
+    target_include_directories(${tgt} PRIVATE ${Protobuf_INCLUDE_DIRS} game)
+    target_link_libraries(${tgt} ${Protobuf_LIBRARIES})
+  endif()
+  if(ENABLE_GAME_PROTOBUF AND ENABLE_REDIS)
+    target_compile_definitions(${tgt} PRIVATE WEBSERVER_ENABLE_REDIS)
+    target_include_directories(${tgt} PRIVATE ${HIREDIS_INCLUDE_DIR})
+    target_link_libraries(${tgt} ${HIREDIS_LIB})
+  endif()
+  if(ENABLE_ROCKSDB)
+    target_compile_definitions(${tgt} PRIVATE WEBSERVER_ENABLE_ROCKSDB)
+    target_include_directories(${tgt} PRIVATE ${ROCKSDB_INCLUDE_DIR} ${Protobuf_INCLUDE_DIRS} rocksdb)
+    target_link_libraries(${tgt} ${ROCKSDB_LIB} ${Protobuf_LIBRARIES})
+  endif()
+  if(ENABLE_BRPC)
+    target_compile_definitions(${tgt} PRIVATE WEBSERVER_ENABLE_BRPC)
+    target_include_directories(${tgt} PRIVATE ${BRPC_INCLUDE_DIR} game/brpc runtime/brpc runtime/discovery)
+    target_link_libraries(${tgt} ${BRPC_LINK_LIBS})
+  endif()
+endfunction()
 
-if(ENABLE_GAME_PROTOBUF)
-  target_compile_definitions(webserver PRIVATE WEBSERVER_ENABLE_GAME_PROTOBUF)
-  target_include_directories(webserver PRIVATE ${Protobuf_INCLUDE_DIRS} game)
-  target_link_libraries(webserver ${Protobuf_LIBRARIES})
-endif()
+add_executable(server test/http_server.cpp ${GAMEMESH_COMMON_SRCS})
+gamemesh_apply_target_options(server)
 
-if(ENABLE_GAME_PROTOBUF AND ENABLE_REDIS)
-  target_compile_definitions(webserver PRIVATE WEBSERVER_ENABLE_REDIS)
-  target_include_directories(webserver PRIVATE ${HIREDIS_INCLUDE_DIR})
-  target_link_libraries(webserver ${HIREDIS_LIB})
+if(ENABLE_BRPC)
+  add_executable(gateway apps/gateway_main.cpp ${GAMEMESH_COMMON_SRCS})
+  add_executable(gamelogic apps/gamelogic_main.cpp ${GAMEMESH_COMMON_SRCS})
+  add_executable(world apps/world_main.cpp ${GAMEMESH_COMMON_SRCS})
+  add_executable(session apps/session_main.cpp ${GAMEMESH_COMMON_SRCS})
+  add_executable(gamedb apps/gamedb_main.cpp ${GAMEMESH_COMMON_SRCS})
+  gamemesh_apply_target_options(gateway)
+  gamemesh_apply_target_options(gamelogic)
+  gamemesh_apply_target_options(world)
+  gamemesh_apply_target_options(session)
+  gamemesh_apply_target_options(gamedb)
 endif()
 
 if(ENABLE_ROCKSDB)
@@ -176,19 +263,29 @@ if(ENABLE_ROCKSDB)
   set_source_files_properties(
     rocksdb/RocksDbClient.cpp rocksdb/DemoKvStore.cpp
     PROPERTIES COMPILE_FLAGS "-std=c++17")
-  target_compile_definitions(webserver PRIVATE WEBSERVER_ENABLE_ROCKSDB)
-  target_include_directories(webserver PRIVATE ${ROCKSDB_INCLUDE_DIR} ${Protobuf_INCLUDE_DIRS} rocksdb)
-  target_link_libraries(webserver ${ROCKSDB_LIB} ${Protobuf_LIBRARIES})
 endif()
 
 if(ENABLE_BRPC)
   # brpc::Server 等类型 over-aligned，需 -faligned-new
   set_source_files_properties(
     game/brpc/BrpcGameServer.cpp game/brpc/MailBrpcServiceImpl.cpp
+    runtime/brpc/GameLogicBrpcServer.cpp runtime/brpc/GameLogicForwardServiceImpl.cpp
+    runtime/brpc/GameLogicServiceImpl.cpp
+    runtime/brpc/WorldBrpcServer.cpp runtime/brpc/WorldForwardServiceImpl.cpp
+    runtime/brpc/BrpcTransport.cpp runtime/brpc/BrpcChannelManager.cpp
+    runtime/brpc/SessionBrpcServer.cpp runtime/brpc/SessionServiceImpl.cpp
+    runtime/brpc/SessionRpcClient.cpp
+    runtime/brpc/AuthServiceImpl.cpp
+    runtime/brpc/AuthTokenStore.cpp
+    runtime/brpc/GatewayAuthClients.cpp
+    runtime/brpc/GatewayLoginOrchestrator.cpp
+    runtime/brpc/GatewayPushServer.cpp
+    runtime/brpc/GatewayPushClient.cpp
+    runtime/brpc/GameLogicPush.cpp
+    runtime/brpc/GameDbBrpcServer.cpp runtime/brpc/GameDbServiceImpl.cpp
+    db/BrpcGameDbRepository.cpp
+    apps/ServerBootstrap.cpp
     PROPERTIES COMPILE_FLAGS "-faligned-new")
-  target_compile_definitions(webserver PRIVATE WEBSERVER_ENABLE_BRPC)
-  target_include_directories(webserver PRIVATE ${BRPC_INCLUDE_DIR} game/brpc)
-  target_link_libraries(webserver ${BRPC_LINK_LIBS})
 endif()
 
 # 邮件状态机单元测试（无第三方测试框架）
@@ -206,12 +303,99 @@ if(ENABLE_BRPC)
   target_link_libraries(mail_brpc_client
     ${CMAKE_THREAD_LIBS_INIT} ${Protobuf_LIBRARIES} ${BRPC_LINK_LIBS} ${OPENSSL_CRYPTO_LIB})
   target_compile_options(mail_brpc_client PRIVATE -faligned-new)
+
+  add_executable(game_tcp_smoke_client
+    client/game_tcp_smoke_client.cpp
+    game/ProtoFraming.cpp
+    game/game.pb.cc)
+  target_include_directories(game_tcp_smoke_client PRIVATE
+    ${Protobuf_INCLUDE_DIRS} game)
+  target_link_libraries(game_tcp_smoke_client
+    ${CMAKE_THREAD_LIBS_INIT} ${Protobuf_LIBRARIES})
 endif()
 
 # 流式文件哈希测试
 add_executable(file_hash_test test/file_hash_test.cpp base/FileHash.cpp)
 target_include_directories(file_hash_test PRIVATE base ${OPENSSL_INCLUDE_DIR})
 target_link_libraries(file_hash_test ${OPENSSL_CRYPTO_LIB})
+
+# 阶段 1：player 串行队列有序性
+add_executable(player_serial_queue_test
+  test/player_serial_queue_test.cpp
+  runtime/PlayerSerialQueue.cpp
+  base/CurrentThread.cpp
+  log/Logging.cpp
+  log/LogStream.cpp
+  log/LogFile.cpp
+  log/AsyncLogging.cpp)
+target_include_directories(player_serial_queue_test PRIVATE runtime base log timer)
+target_link_libraries(player_serial_queue_test ${CMAKE_THREAD_LIBS_INIT})
+
+# 阶段 5：MapPlacement + epoch 栅栏（无 AOI/Tick）
+add_executable(map_placement_test
+  test/map_placement_test.cpp
+  runtime/MapPlacement.cpp
+  runtime/MapInstanceRegistry.cpp
+  base/CurrentThread.cpp
+  log/Logging.cpp
+  log/LogStream.cpp
+  log/LogFile.cpp
+  log/AsyncLogging.cpp)
+target_include_directories(map_placement_test PRIVATE runtime base log timer)
+target_link_libraries(map_placement_test ${CMAKE_THREAD_LIBS_INIT})
+
+# 阶段 6：消息类型 → World / Logic 路由分类
+if(ENABLE_GAME_PROTOBUF)
+  add_executable(message_route_test
+    test/message_route_test.cpp
+    runtime/MessageRoute.cpp
+    game/game.pb.cc)
+  target_compile_definitions(message_route_test PRIVATE WEBSERVER_ENABLE_GAME_PROTOBUF)
+  target_include_directories(message_route_test PRIVATE
+    ${Protobuf_INCLUDE_DIRS} runtime game)
+  target_link_libraries(message_route_test ${Protobuf_LIBRARIES})
+
+  add_executable(auth_session_boundary_test
+    test/auth_session_boundary_test.cpp
+    game/GameLogic.cpp
+    game/GatewayConnRegistry.cpp
+    game/game.pb.cc
+    runtime/MessageRoute.cpp
+    runtime/ForwardMetaContext.cpp
+    runtime/MapInstanceRegistry.cpp
+    runtime/MapPlacement.cpp
+    runtime/discovery/IServiceRegistry.cpp
+    runtime/discovery/EtcdDiscovery.cpp
+    base/LogicMetrics.cpp
+    base/CurrentThread.cpp
+    log/Logging.cpp
+    log/LogStream.cpp
+    log/LogFile.cpp
+    log/AsyncLogging.cpp)
+  target_compile_definitions(auth_session_boundary_test PRIVATE WEBSERVER_ENABLE_GAME_PROTOBUF)
+  target_include_directories(auth_session_boundary_test PRIVATE
+    ${Protobuf_INCLUDE_DIRS} runtime game runtime/discovery base log timer)
+  target_link_libraries(auth_session_boundary_test ${Protobuf_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
+endif()
+
+# 阶段 3：Session 状态机（需 Redis）
+if(ENABLE_GAME_PROTOBUF AND ENABLE_REDIS)
+  add_executable(session_store_test
+    test/session_store_test.cpp
+    game/SessionStore.cpp
+    game/game.pb.cc
+    redis/RedisClient.cpp
+    base/CurrentThread.cpp
+    log/Logging.cpp
+    log/LogStream.cpp
+    log/LogFile.cpp
+    log/AsyncLogging.cpp)
+  target_compile_definitions(session_store_test PRIVATE WEBSERVER_ENABLE_REDIS)
+  target_include_directories(session_store_test PRIVATE
+    game redis base log timer ${HIREDIS_INCLUDE_DIR} ${Protobuf_INCLUDE_DIRS})
+  target_link_libraries(session_store_test
+    ${CMAKE_THREAD_LIBS_INIT} ${HIREDIS_LIB} ${Protobuf_LIBRARIES})
+endif()
 
 # RocksDB Demo KV 测试（需 ENABLE_ROCKSDB=ON）
 if(ENABLE_ROCKSDB)
@@ -236,8 +420,7 @@ endif()
 
 # 邮件领取并发集成测试（需 MySQL）
 if(ENABLE_MYSQL AND ENABLE_GAME_PROTOBUF)
-  add_executable(mail_claim_integration_test
-    test/mail_claim_integration_test.cpp
+  set(SRC_GAMEDB_MAIL_TEST
     game/MailTypes.cpp
     game/MailConfig.cpp
     game/MailStore.cpp
@@ -248,11 +431,24 @@ if(ENABLE_MYSQL AND ENABLE_GAME_PROTOBUF)
     db/ConnectionPool.cpp
     db/PlayerItemStore.cpp
     db/PlayerItemPersistQueue.cpp
+    db/GameDbRepository.cpp
+    db/GameDbOutbox.cpp
+    db/AsyncMysqlGameDbRepository.cpp
+    db/PlayerAccountStore.cpp
+    runtime/discovery/NatsThinClient.cpp
+    runtime/MapPlacement.cpp
+    runtime/MapInstanceRegistry.cpp
+    runtime/ForwardMetaContext.cpp
+    runtime/MessageRoute.cpp
     ${SRC_LIST1}
     ${SRC_LIST2}
     ${SRC_LIST3}
     ${SRC_LIST4}
     ${SRC_LIST5})
+
+  add_executable(mail_claim_integration_test
+    test/mail_claim_integration_test.cpp
+    ${SRC_GAMEDB_MAIL_TEST})
   if(ENABLE_REDIS)
     target_sources(mail_claim_integration_test PRIVATE redis/RedisClient.cpp game/SessionStore.cpp)
     target_compile_definitions(mail_claim_integration_test PRIVATE WEBSERVER_ENABLE_REDIS)
@@ -262,9 +458,29 @@ if(ENABLE_MYSQL AND ENABLE_GAME_PROTOBUF)
   target_compile_definitions(mail_claim_integration_test PRIVATE
     WEBSERVER_ENABLE_MYSQL WEBSERVER_ENABLE_GAME_PROTOBUF)
   target_include_directories(mail_claim_integration_test PRIVATE
-    ${MYSQL_INCLUDE_DIR} ${Protobuf_INCLUDE_DIRS} game db redis base tcp log timer http)
+    ${MYSQL_INCLUDE_DIR} ${Protobuf_INCLUDE_DIRS} game db redis base tcp log timer http runtime
+    runtime/discovery)
   target_include_directories(mail_claim_integration_test PRIVATE ${OPENSSL_INCLUDE_DIR})
   target_link_libraries(mail_claim_integration_test
+    ${CMAKE_THREAD_LIBS_INIT} ${MYSQL_CLIENT_LIB} ${Protobuf_LIBRARIES} ${JSONCPP_LIBRARIES}
+    ${OPENSSL_CRYPTO_LIB})
+
+  add_executable(gamedb_mail_claim_test
+    test/gamedb_mail_claim_test.cpp
+    ${SRC_GAMEDB_MAIL_TEST})
+  if(ENABLE_REDIS)
+    target_sources(gamedb_mail_claim_test PRIVATE redis/RedisClient.cpp game/SessionStore.cpp)
+    target_compile_definitions(gamedb_mail_claim_test PRIVATE WEBSERVER_ENABLE_REDIS)
+    target_include_directories(gamedb_mail_claim_test PRIVATE ${HIREDIS_INCLUDE_DIR})
+    target_link_libraries(gamedb_mail_claim_test ${HIREDIS_LIB})
+  endif()
+  target_compile_definitions(gamedb_mail_claim_test PRIVATE
+    WEBSERVER_ENABLE_MYSQL WEBSERVER_ENABLE_GAME_PROTOBUF)
+  target_include_directories(gamedb_mail_claim_test PRIVATE
+    ${MYSQL_INCLUDE_DIR} ${Protobuf_INCLUDE_DIRS} game db redis base tcp log timer http runtime
+    runtime/discovery)
+  target_include_directories(gamedb_mail_claim_test PRIVATE ${OPENSSL_INCLUDE_DIR})
+  target_link_libraries(gamedb_mail_claim_test
     ${CMAKE_THREAD_LIBS_INIT} ${MYSQL_CLIENT_LIB} ${Protobuf_LIBRARIES} ${JSONCPP_LIBRARIES}
     ${OPENSSL_CRYPTO_LIB})
 endif()

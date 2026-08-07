@@ -13,6 +13,7 @@
 
 #include <cstdio>
 #include <mutex>
+#include <map>
 #include <sstream>
 
 namespace {
@@ -144,4 +145,32 @@ bool PlayerItemStore::InsertOnConnection(Connection *conn, uint64_t player_id, u
     *instance_id = static_cast<uint64_t>(std::strtoull(row[0], nullptr, 10));
     mysql_free_result(res);
     return *instance_id > 0;
+}
+
+bool PlayerItemStore::LoadInventoryAggregate(uint64_t player_id, std::map<uint32_t, uint32_t> *out) {
+    if (!out || player_id == 0)
+        return false;
+    out->clear();
+    if (!EnsureTable())
+        return false;
+    auto conn = ConnectionPool::getconnectionPool()->getConnection();
+    if (!conn)
+        return false;
+    std::ostringstream sql;
+    sql << "SELECT item_id, SUM(count) FROM player_item WHERE player_id=" << player_id
+        << " AND (expire_time IS NULL OR expire_time > NOW()) GROUP BY item_id";
+    MYSQL_RES *res = conn->query(sql.str());
+    if (!res)
+        return false;
+    MYSQL_ROW row;
+    while ((row = mysql_fetch_row(res)) != nullptr) {
+        if (!row[0] || !row[1])
+            continue;
+        const uint32_t item_id = static_cast<uint32_t>(std::strtoul(row[0], nullptr, 10));
+        const uint32_t count = static_cast<uint32_t>(std::strtoul(row[1], nullptr, 10));
+        if (item_id > 0 && count > 0)
+            (*out)[item_id] = count;
+    }
+    mysql_free_result(res);
+    return true;
 }

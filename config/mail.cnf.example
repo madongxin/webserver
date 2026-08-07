@@ -1,0 +1,9 @@
+# 复制为 config/mail.cnf 后按环境修改
+mailbox_capacity=100
+mailbox_overflow=120
+default_expire_days=30
+page_size_default=20
+batch_op_max=20
+favorite_max=50
+protect_hours=24
+expire_scan_interval_sec=60

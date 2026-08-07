@@ -1,0 +1,56 @@
+syntax = "proto3";
+
+package gdb;
+
+option cc_generic_services = true;
+
+message GrantedItem {
+  uint64 asset_id = 1;
+  uint32 count = 2;
+}
+
+message BagEntry {
+  uint32 item_id = 1;
+  uint32 count = 2;
+}
+
+message ClaimMailReq {
+  uint64 player_id = 1;
+  uint64 mail_id = 2;
+  string idempotency_key = 3;
+  string trace_id = 4;
+  int64 inventory_soft_cap = 5;
+  repeated BagEntry bag_snapshot = 6;
+}
+
+message ClaimMailRsp {
+  bool ok = 1;
+  bool idempotent_hit = 2;
+  bool should_apply_memory = 3;
+  string error_code = 4;
+  string message = 5;
+  string attachment_state = 6;
+  int64 mail_row_version = 7;
+  repeated GrantedItem grants = 8;
+}
+
+message LookupAccountReq {
+  uint64 player_id = 1;
+  string device_id = 2;
+}
+
+message LookupAccountRsp {
+  bool ok = 1;
+  string message = 2;
+  string error_code = 3;
+  bool exists = 4;
+  bool banned = 5;
+  uint64 account_id = 6;
+  uint64 player_id = 7;
+}
+
+service GameDbService {
+  rpc ClaimMailAttachments(ClaimMailReq) returns (ClaimMailRsp);
+  /** Auth 账号查询（持久化层；不经 GameLogic） */
+  rpc LookupAccount(LookupAccountReq) returns (LookupAccountRsp);
+}

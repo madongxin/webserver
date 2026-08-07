@@ -13,12 +13,14 @@
  *        -> 调用 message_callback（即本类的 OnMessage）
  *   4. OnMessage：把本次 read_buf_ 追加到「按连接 id 的流式缓冲」g_stream_buf
  *   5. 循环 ProtoFraming::TryDecodeOneFrame，拆出完整一帧 payload
- *   6. gameproto::HandleFrame：反序列化 GameRequest -> GameLogic -> 编码响应帧
- *   7. TcpConnection::Send 把响应写回客户端（可能先 write，剩余进 send_buf_ 等 EPOLLOUT）
+ *   6. 按 player_id 投递 PlayerSerialQueue（InProcessTransport）
+ *   7. 业务线程：GameService::HandleFrame -> ReplySink 回投连接所属 EventLoop -> Send
  *
  * 协议：4 字节大端长度 + protobuf 序列化的 GameRequest / GameResponse（见 ProtoFraming）
  *
  * 注意：网关运行在独立 std::thread 中（StartInBackground），与 HTTP 主 EventLoop 分离。
+ * 阶段 1：IO 线程不再同步跑 GameLogic。
+ * 阶段 3：Login/Reconnect 绑定 conn↔player；断线 MarkDisconnected（宽限重连）。
  */
 
 #include <memory>

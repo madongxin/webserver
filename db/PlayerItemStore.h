@@ -11,6 +11,7 @@
  */
 
 #include <cstdint>
+#include <map>
 #include <string>
 
 class PlayerItemStore {
@@ -39,6 +40,9 @@ public:
     bool InsertOnConnection(class Connection *conn, uint64_t player_id, uint64_t item_id,
                             uint32_t count, int64_t expire_time_sec, const std::string &extra_data,
                             uint64_t *instance_id);
+
+    /** 从 player_item 聚合加载背包 item_id -> count；无行则 out 为空且返回 true */
+    bool LoadInventoryAggregate(uint64_t player_id, std::map<uint32_t, uint32_t> *out);
 
 private:
     PlayerItemStore() = default;

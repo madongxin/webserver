@@ -22,29 +22,29 @@ std::string BuildPrometheusMetricsText() {
        << "# TYPE process_open_fds gauge\n"
        << "process_open_fds " << m.open_fds << "\n\n";
 
-    os << "# HELP webserver_eventloop_tick_seconds Last event loop iteration duration.\n"
-       << "# TYPE webserver_eventloop_tick_seconds gauge\n"
-       << "webserver_eventloop_tick_seconds " << m.eventloop_tick_sec << "\n\n";
+    os << "# HELP gamemesh_eventloop_tick_seconds Last event loop iteration duration.\n"
+       << "# TYPE gamemesh_eventloop_tick_seconds gauge\n"
+       << "gamemesh_eventloop_tick_seconds " << m.eventloop_tick_sec << "\n\n";
 
-    os << "# HELP webserver_eventloop_tick_peak_seconds Peak event loop iteration duration.\n"
-       << "# TYPE webserver_eventloop_tick_peak_seconds gauge\n"
-       << "webserver_eventloop_tick_peak_seconds " << m.eventloop_tick_peak_sec << "\n\n";
+    os << "# HELP gamemesh_eventloop_tick_peak_seconds Peak event loop iteration duration.\n"
+       << "# TYPE gamemesh_eventloop_tick_peak_seconds gauge\n"
+       << "gamemesh_eventloop_tick_peak_seconds " << m.eventloop_tick_peak_sec << "\n\n";
 
-    os << "# HELP webserver_logic_handle_seconds Last GameLogic::Handle duration.\n"
-       << "# TYPE webserver_logic_handle_seconds gauge\n"
-       << "webserver_logic_handle_seconds " << m.logic_handle_sec << "\n\n";
+    os << "# HELP gamemesh_logic_handle_seconds Last GameLogic::Handle duration.\n"
+       << "# TYPE gamemesh_logic_handle_seconds gauge\n"
+       << "gamemesh_logic_handle_seconds " << m.logic_handle_sec << "\n\n";
 
-    os << "# HELP webserver_logic_handle_peak_seconds Peak GameLogic::Handle duration.\n"
-       << "# TYPE webserver_logic_handle_peak_seconds gauge\n"
-       << "webserver_logic_handle_peak_seconds " << m.logic_handle_peak_sec << "\n\n";
+    os << "# HELP gamemesh_logic_handle_peak_seconds Peak GameLogic::Handle duration.\n"
+       << "# TYPE gamemesh_logic_handle_peak_seconds gauge\n"
+       << "gamemesh_logic_handle_peak_seconds " << m.logic_handle_peak_sec << "\n\n";
 
     os << "# HELP process_threads OS thread count.\n"
        << "# TYPE process_threads gauge\n"
        << "process_threads " << m.threads << "\n\n";
 
     if (!m.thread_states_json.empty() && m.thread_states_json != "{}") {
-        os << "# HELP webserver_os_threads Threads by /proc state letter.\n"
-           << "# TYPE webserver_os_threads gauge\n";
+        os << "# HELP gamemesh_os_threads Threads by /proc state letter.\n"
+           << "# TYPE gamemesh_os_threads gauge\n";
         for (std::size_t i = 0; i < m.thread_states_json.size(); ++i) {
             if (m.thread_states_json[i] == '"') {
                 const char state = m.thread_states_json[i + 1];
@@ -52,7 +52,7 @@ std::string BuildPrometheusMetricsText() {
                 std::size_t end = m.thread_states_json.find_first_of(",}", colon);
                 if (colon != std::string::npos && end != std::string::npos) {
                     const int cnt = std::atoi(m.thread_states_json.c_str() + colon + 1);
-                    os << "webserver_os_threads{state=\"" << state << "\"} " << cnt << "\n";
+                    os << "gamemesh_os_threads{state=\"" << state << "\"} " << cnt << "\n";
                 }
             }
         }

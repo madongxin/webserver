@@ -88,6 +88,9 @@ public:
 
     void set_connection_callback(std::function<void(const std::shared_ptr<TcpConnection> &)> const &fn);
     void set_message_callback(std::function<void(const std::shared_ptr<TcpConnection> &)> const &fn);
+    /** 连接从 map 移除前调用（主 reactor 线程） */
+    void set_disconnect_callback(
+        std::function<void(const std::shared_ptr<TcpConnection> &)> const &fn);
 
     /** 子线程连接关闭时回调；再投递到主 loop 删 map */
     inline void HandleClose(const std::shared_ptr<TcpConnection> &);
@@ -109,4 +112,5 @@ private:
 
     std::function<void(const std::shared_ptr<TcpConnection> &)> on_connect_;
     std::function<void(const std::shared_ptr<TcpConnection> &)> on_message_;
+    std::function<void(const std::shared_ptr<TcpConnection> &)> on_disconnect_;
 };

@@ -1,3 +1,0 @@
-/root/projects/CppWebServer/CMakeFiles/webserver.dir
-/root/projects/CppWebServer/CMakeFiles/edit_cache.dir
-/root/projects/CppWebServer/CMakeFiles/rebuild_cache.dir

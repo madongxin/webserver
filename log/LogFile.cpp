@@ -13,7 +13,7 @@ LogFile::LogFile(const char* filepath)
         fp_ = ::fopen(default_path.c_str(), "a+");
     }
     if (!fp_) {
-        fp_ = ::fopen("/tmp/cppwebserver.log", "a+");
+        fp_ = ::fopen("/tmp/gamemesh.log", "a+");
     }
 }
 

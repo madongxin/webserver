@@ -1,0 +1,6 @@
+time=2026-08-07T11:55:48+08:00
+base_url=http://127.0.0.1:18080
+git=73c8778
+git_dirty=52
+host=iZbp16j6p8zkjffa1jwfbtZ
+uname=Linux iZbp16j6p8zkjffa1jwfbtZ 5.10.134-19.al8.x86_64 #1 SMP Wed May 21 15:02:59 CST 2025 x86_64 x86_64 x86_64 GNU/Linux

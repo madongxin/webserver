@@ -1,0 +1,141 @@
+syntax = "proto3";
+
+package sess;
+
+option cc_generic_services = true;
+
+import "game.proto";
+
+// Session/Router：在线会话、顶号、Gateway 绑定、断线重连与 Logic 路由。
+// Auth 负责认证；Session 不接收账号密码。
+
+message ValidateTokenReq {
+  uint64 player_id = 1;
+  string token = 2;  // fence_token
+}
+
+message ValidateTokenRsp {
+  bool ok = 1;
+  string message = 2;
+}
+
+message BindConnectionReq {
+  uint64 player_id = 1;
+  string token = 2;
+  string gateway_id = 3;
+  int32 connection_id = 4;
+}
+
+message BindConnectionRsp {
+  bool ok = 1;
+  string message = 2;
+}
+
+message MarkDisconnectedReq {
+  uint64 player_id = 1;
+  string token = 2;
+  uint64 generation = 3;
+}
+
+message MarkDisconnectedRsp {
+  bool ok = 1;
+  string message = 2;
+}
+
+message AcquireSessionRequest {
+  uint64 account_id = 1;
+  uint64 player_id = 2;
+  string device_id = 3;
+  uint32 server_id = 4;
+  uint32 ttl_sec = 5;
+  bool kick_other_device = 6;
+  string gateway_instance_id = 7;
+  // 可选：由 Gateway/Registry 建议的 Logic；空则 Session 按 player_id % N 分配
+  string preferred_gamelogic_instance_id = 8;
+}
+
+message AcquireSessionResponse {
+  bool ok = 1;
+  string message = 2;
+  string error_code = 3;
+  string session_id = 4;
+  string fence_token = 5;
+  uint64 generation = 6;
+  string gamelogic_instance_id = 7;
+  uint64 map_instance_id = 8;
+  uint64 map_owner_epoch = 9;
+  uint64 route_version = 10;
+  bool kicked_previous = 11;
+  int64 login_time_sec = 12;
+  uint32 server_id = 13;
+}
+
+message MarkDisconnectedRequest {
+  uint64 player_id = 1;
+  string session_id = 2;
+  string fence_token = 3;
+  uint64 generation = 4;
+}
+
+message MarkDisconnectedResponse {
+  bool ok = 1;
+  string message = 2;
+}
+
+message ReconnectRequest {
+  uint64 player_id = 1;
+  string session_id = 2;
+  string reconnect_ticket = 3;  // 通常为旧 fence_token
+  string gateway_instance_id = 4;
+  uint64 last_server_seq = 5;
+}
+
+message ReconnectResponse {
+  bool ok = 1;
+  string message = 2;
+  string session_id = 3;
+  string fence_token = 4;
+  uint64 generation = 5;
+  string gamelogic_instance_id = 6;
+  uint64 map_instance_id = 7;
+  uint64 map_owner_epoch = 8;
+  uint64 route_version = 9;
+}
+
+message LogoutRequest {
+  uint64 player_id = 1;
+  string session_id = 2;
+  string fence_token = 3;
+}
+
+message LogoutResponse {
+  bool ok = 1;
+  string message = 2;
+}
+
+message KickRequest {
+  uint64 player_id = 1;
+  string reason = 2;
+}
+
+message KickResponse {
+  bool ok = 1;
+  string message = 2;
+}
+
+service SessionService {
+  // --- 新边界（Gateway 编排）---
+  rpc AcquireSession(AcquireSessionRequest) returns (AcquireSessionResponse);
+  rpc MarkDisconnectedV2(MarkDisconnectedRequest) returns (MarkDisconnectedResponse);
+  rpc ReconnectV2(ReconnectRequest) returns (ReconnectResponse);
+  rpc LogoutV2(LogoutRequest) returns (LogoutResponse);
+  rpc Kick(KickRequest) returns (KickResponse);
+
+  // --- 兼容旧 RPC（内部转调；GameLogic 不应再调 Login）---
+  rpc Login(game.LoginReq) returns (game.LoginRsp);
+  rpc Reconnect(game.ReconnectReq) returns (game.ReconnectRsp);
+  rpc Logout(game.LogoutReq) returns (game.LogoutRsp);
+  rpc ValidateToken(ValidateTokenReq) returns (ValidateTokenRsp);
+  rpc BindConnection(BindConnectionReq) returns (BindConnectionRsp);
+  rpc MarkDisconnected(MarkDisconnectedReq) returns (MarkDisconnectedRsp);
+}

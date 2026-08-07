@@ -1,0 +1,59 @@
+syntax = "proto3";
+
+package auth;
+
+option cc_generic_services = true;
+
+// Login/Auth：账号认证与 Token 校验；不创建在线 Session，不分配 GameLogic 路由。
+// 与 Session 可同进程部署（session 二进制），逻辑与 proto 分离。
+
+message LoginRequest {
+  uint64 player_id = 1;
+  string device_id = 2;
+  uint32 server_id = 3;
+  string client_version = 4;
+  // 预留：密码/第三方凭证仅在 Auth 侧消费，永不转发 GameLogic
+  string credential = 5;
+}
+
+message LoginResponse {
+  bool ok = 1;
+  string message = 2;
+  string error_code = 3;
+  uint64 account_id = 4;
+  uint64 player_id = 5;
+  bool banned = 6;
+  // Redis 颁发的 access_token（与 Session fence_token 分离；不表示已 AcquireSession）
+  string access_token = 7;
+  string refresh_token = 8;
+}
+
+message VerifyTokenRequest {
+  uint64 player_id = 1;
+  string access_token = 2;
+}
+
+message VerifyTokenResponse {
+  bool ok = 1;
+  string message = 2;
+  uint64 account_id = 3;
+  uint64 player_id = 4;
+}
+
+message RefreshTokenRequest {
+  uint64 player_id = 1;
+  string refresh_token = 2;
+}
+
+message RefreshTokenResponse {
+  bool ok = 1;
+  string message = 2;
+  string access_token = 3;
+  string refresh_token = 4;
+}
+
+service AuthService {
+  rpc Login(LoginRequest) returns (LoginResponse);
+  rpc VerifyToken(VerifyTokenRequest) returns (VerifyTokenResponse);
+  rpc RefreshToken(RefreshTokenRequest) returns (RefreshTokenResponse);
+}

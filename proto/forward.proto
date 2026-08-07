@@ -1,0 +1,43 @@
+syntax = "proto3";
+
+package fwd;
+
+// Gateway → GameLogic 内网转发（阶段 2）
+option cc_generic_services = true;
+
+message ForwardMeta {
+  uint64 player_id = 1;
+  int32 connection_id = 2;
+  uint64 request_id = 3;
+  uint64 generation = 4;
+  // 阶段 5：地图 Placement 路由元数据（Gateway 填写，Logic 校验 epoch）
+  uint64 map_instance_id = 5;
+  uint64 owner_epoch = 6;
+  uint64 route_version = 7;
+  string gamelogic_instance_id = 8;
+  // Gateway 可信会话字段（不信任客户端自报）
+  string session_id = 9;
+  string fence_token = 10;
+}
+
+message ForwardReq {
+  ForwardMeta meta = 1;
+  // 已去掉长度头的 GameRequest 序列化体
+  bytes request_payload = 2;
+}
+
+message ForwardRsp {
+  bool ok = 1;
+  string message = 2;
+  // 完整外网响应帧：[4 字节长度][GameResponse]，Gateway 可直接 Send
+  bytes response_frame = 3;
+}
+
+service GameLogicForward {
+  rpc Forward(ForwardReq) returns (ForwardRsp);
+}
+
+// 阶段 6：Gateway → World 中控（邮件/聊天/好友等全局业务，无战斗 Tick）
+service WorldForward {
+  rpc Forward(ForwardReq) returns (ForwardRsp);
+}

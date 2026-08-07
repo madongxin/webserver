@@ -3,7 +3,7 @@
  * @brief RocksDB DemoKvStore 冒烟测试：Save -> Load -> Remove
  *
  * 用法：./rocksdb_demo_test [db_path]
- * 默认使用 /tmp/cppwebserver_rocksdb_demo_test
+ * 默认使用 /tmp/gamemesh_rocksdb_demo_test
  */
 
 #include "DemoKvStore.h"
@@ -27,7 +27,7 @@ int main(int argc, char *argv[]) {
     Logger::setLogLevel(Logger::INFO);
 
     const std::string db_path =
-        (argc >= 2) ? argv[1] : "/tmp/cppwebserver_rocksdb_demo_test";
+        (argc >= 2) ? argv[1] : "/tmp/gamemesh_rocksdb_demo_test";
 
     auto &store = DemoKvStore::Instance();
     if (!store.InitWithPath(db_path, true)) {

@@ -1,0 +1,33 @@
+syntax = "proto3";
+
+package gwpush;
+
+option cc_generic_services = true;
+
+// GameLogic → Gateway 主动推送；Gateway 按 session_id 查当前连接，不依赖旧 connection_id。
+
+message PushMessage {
+  uint64 player_id = 1;
+  string session_id = 2;
+  uint64 server_seq = 3;
+  string message_type = 4;
+  bytes payload = 5;       // 通常已是外网帧或 GameResponse body
+  bool reliable = 6;
+  bool coalescable = 7;
+}
+
+message PushBatchRequest {
+  string gateway_instance_id = 1;
+  repeated PushMessage messages = 2;
+}
+
+message PushBatchResponse {
+  bool ok = 1;
+  string message = 2;
+  uint32 accepted = 3;
+  uint32 rejected = 4;
+}
+
+service GatewayPushService {
+  rpc PushBatch(PushBatchRequest) returns (PushBatchResponse);
+}

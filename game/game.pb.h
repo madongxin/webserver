@@ -36,7 +36,7 @@ namespace protobuf_game_2eproto {
 struct TableStruct {
   static const ::google::protobuf::internal::ParseTableField entries[];
   static const ::google::protobuf::internal::AuxillaryParseTableField aux[];
-  static const ::google::protobuf::internal::ParseTable schema[41];
+  static const ::google::protobuf::internal::ParseTable schema[57];
   static const ::google::protobuf::internal::FieldMetadata field_metadata[];
   static const ::google::protobuf::internal::SerializationTable serialization_table[];
   static const ::google::protobuf::uint32 offsets[];
@@ -46,6 +46,10 @@ void InitDefaultsLoginReqImpl();
 void InitDefaultsLoginReq();
 void InitDefaultsLoginRspImpl();
 void InitDefaultsLoginRsp();
+void InitDefaultsReconnectReqImpl();
+void InitDefaultsReconnectReq();
+void InitDefaultsReconnectRspImpl();
+void InitDefaultsReconnectRsp();
 void InitDefaultsValidateSessionReqImpl();
 void InitDefaultsValidateSessionReq();
 void InitDefaultsValidateSessionRspImpl();
@@ -58,6 +62,14 @@ void InitDefaultsLogoutReqImpl();
 void InitDefaultsLogoutReq();
 void InitDefaultsLogoutRspImpl();
 void InitDefaultsLogoutRsp();
+void InitDefaultsRegisterReqImpl();
+void InitDefaultsRegisterReq();
+void InitDefaultsRegisterRspImpl();
+void InitDefaultsRegisterRsp();
+void InitDefaultsFlushBagReqImpl();
+void InitDefaultsFlushBagReq();
+void InitDefaultsFlushBagRspImpl();
+void InitDefaultsFlushBagRsp();
 void InitDefaultsConsumeItemReqImpl();
 void InitDefaultsConsumeItemReq();
 void InitDefaultsConsumeItemRspImpl();
@@ -120,6 +132,26 @@ void InitDefaultsMailDeliverReqImpl();
 void InitDefaultsMailDeliverReq();
 void InitDefaultsMailDeliverRspImpl();
 void InitDefaultsMailDeliverRsp();
+void InitDefaultsEnterMapReqImpl();
+void InitDefaultsEnterMapReq();
+void InitDefaultsEnterMapRspImpl();
+void InitDefaultsEnterMapRsp();
+void InitDefaultsLeaveMapReqImpl();
+void InitDefaultsLeaveMapReq();
+void InitDefaultsLeaveMapRspImpl();
+void InitDefaultsLeaveMapRsp();
+void InitDefaultsMapPingReqImpl();
+void InitDefaultsMapPingReq();
+void InitDefaultsMapPingRspImpl();
+void InitDefaultsMapPingRsp();
+void InitDefaultsChatSendReqImpl();
+void InitDefaultsChatSendReq();
+void InitDefaultsChatSendRspImpl();
+void InitDefaultsChatSendRsp();
+void InitDefaultsFriendListReqImpl();
+void InitDefaultsFriendListReq();
+void InitDefaultsFriendListRspImpl();
+void InitDefaultsFriendListRsp();
 void InitDefaultsGameRequestImpl();
 void InitDefaultsGameRequest();
 void InitDefaultsGameResponseImpl();
@@ -127,12 +159,18 @@ void InitDefaultsGameResponse();
 inline void InitDefaults() {
   InitDefaultsLoginReq();
   InitDefaultsLoginRsp();
+  InitDefaultsReconnectReq();
+  InitDefaultsReconnectRsp();
   InitDefaultsValidateSessionReq();
   InitDefaultsValidateSessionRsp();
   InitDefaultsCheckOnlineReq();
   InitDefaultsCheckOnlineRsp();
   InitDefaultsLogoutReq();
   InitDefaultsLogoutRsp();
+  InitDefaultsRegisterReq();
+  InitDefaultsRegisterRsp();
+  InitDefaultsFlushBagReq();
+  InitDefaultsFlushBagRsp();
   InitDefaultsConsumeItemReq();
   InitDefaultsConsumeItemRsp();
   InitDefaultsReleaseSkillReq();
@@ -164,11 +202,27 @@ inline void InitDefaults() {
   InitDefaultsMailDeliverAttachment();
   InitDefaultsMailDeliverReq();
   InitDefaultsMailDeliverRsp();
+  InitDefaultsEnterMapReq();
+  InitDefaultsEnterMapRsp();
+  InitDefaultsLeaveMapReq();
+  InitDefaultsLeaveMapRsp();
+  InitDefaultsMapPingReq();
+  InitDefaultsMapPingRsp();
+  InitDefaultsChatSendReq();
+  InitDefaultsChatSendRsp();
+  InitDefaultsFriendListReq();
+  InitDefaultsFriendListRsp();
   InitDefaultsGameRequest();
   InitDefaultsGameResponse();
 }
 }  // namespace protobuf_game_2eproto
 namespace game {
+class ChatSendReq;
+class ChatSendReqDefaultTypeInternal;
+extern ChatSendReqDefaultTypeInternal _ChatSendReq_default_instance_;
+class ChatSendRsp;
+class ChatSendRspDefaultTypeInternal;
+extern ChatSendRspDefaultTypeInternal _ChatSendRsp_default_instance_;
 class CheckOnlineReq;
 class CheckOnlineReqDefaultTypeInternal;
 extern CheckOnlineReqDefaultTypeInternal _CheckOnlineReq_default_instance_;
@@ -181,6 +235,24 @@ extern ConsumeItemReqDefaultTypeInternal _ConsumeItemReq_default_instance_;
 class ConsumeItemRsp;
 class ConsumeItemRspDefaultTypeInternal;
 extern ConsumeItemRspDefaultTypeInternal _ConsumeItemRsp_default_instance_;
+class EnterMapReq;
+class EnterMapReqDefaultTypeInternal;
+extern EnterMapReqDefaultTypeInternal _EnterMapReq_default_instance_;
+class EnterMapRsp;
+class EnterMapRspDefaultTypeInternal;
+extern EnterMapRspDefaultTypeInternal _EnterMapRsp_default_instance_;
+class FlushBagReq;
+class FlushBagReqDefaultTypeInternal;
+extern FlushBagReqDefaultTypeInternal _FlushBagReq_default_instance_;
+class FlushBagRsp;
+class FlushBagRspDefaultTypeInternal;
+extern FlushBagRspDefaultTypeInternal _FlushBagRsp_default_instance_;
+class FriendListReq;
+class FriendListReqDefaultTypeInternal;
+extern FriendListReqDefaultTypeInternal _FriendListReq_default_instance_;
+class FriendListRsp;
+class FriendListRspDefaultTypeInternal;
+extern FriendListRspDefaultTypeInternal _FriendListRsp_default_instance_;
 class GameRequest;
 class GameRequestDefaultTypeInternal;
 extern GameRequestDefaultTypeInternal _GameRequest_default_instance_;
@@ -193,6 +265,12 @@ extern GrantItemReqDefaultTypeInternal _GrantItemReq_default_instance_;
 class GrantItemRsp;
 class GrantItemRspDefaultTypeInternal;
 extern GrantItemRspDefaultTypeInternal _GrantItemRsp_default_instance_;
+class LeaveMapReq;
+class LeaveMapReqDefaultTypeInternal;
+extern LeaveMapReqDefaultTypeInternal _LeaveMapReq_default_instance_;
+class LeaveMapRsp;
+class LeaveMapRspDefaultTypeInternal;
+extern LeaveMapRspDefaultTypeInternal _LeaveMapRsp_default_instance_;
 class LoginReq;
 class LoginReqDefaultTypeInternal;
 extern LoginReqDefaultTypeInternal _LoginReq_default_instance_;
@@ -280,6 +358,24 @@ extern MailboxSummaryReqDefaultTypeInternal _MailboxSummaryReq_default_instance_
 class MailboxSummaryRsp;
 class MailboxSummaryRspDefaultTypeInternal;
 extern MailboxSummaryRspDefaultTypeInternal _MailboxSummaryRsp_default_instance_;
+class MapPingReq;
+class MapPingReqDefaultTypeInternal;
+extern MapPingReqDefaultTypeInternal _MapPingReq_default_instance_;
+class MapPingRsp;
+class MapPingRspDefaultTypeInternal;
+extern MapPingRspDefaultTypeInternal _MapPingRsp_default_instance_;
+class ReconnectReq;
+class ReconnectReqDefaultTypeInternal;
+extern ReconnectReqDefaultTypeInternal _ReconnectReq_default_instance_;
+class ReconnectRsp;
+class ReconnectRspDefaultTypeInternal;
+extern ReconnectRspDefaultTypeInternal _ReconnectRsp_default_instance_;
+class RegisterReq;
+class RegisterReqDefaultTypeInternal;
+extern RegisterReqDefaultTypeInternal _RegisterReq_default_instance_;
+class RegisterRsp;
+class RegisterRspDefaultTypeInternal;
+extern RegisterRspDefaultTypeInternal _RegisterRsp_default_instance_;
 class ReleaseSkillReq;
 class ReleaseSkillReqDefaultTypeInternal;
 extern ReleaseSkillReqDefaultTypeInternal _ReleaseSkillReq_default_instance_;
@@ -542,6 +638,20 @@ class LoginRsp : public ::google::protobuf::Message /* @@protoc_insertion_point(
   ::std::string* release_token();
   void set_allocated_token(::std::string* token);
 
+  // string session_id = 7;
+  void clear_session_id();
+  static const int kSessionIdFieldNumber = 7;
+  const ::std::string& session_id() const;
+  void set_session_id(const ::std::string& value);
+  #if LANG_CXX11
+  void set_session_id(::std::string&& value);
+  #endif
+  void set_session_id(const char* value);
+  void set_session_id(const char* value, size_t size);
+  ::std::string* mutable_session_id();
+  ::std::string* release_session_id();
+  void set_allocated_session_id(::std::string* session_id);
+
   // bool ok = 1;
   void clear_ok();
   static const int kOkFieldNumber = 1;
@@ -566,19 +676,314 @@ class LoginRsp : public ::google::protobuf::Message /* @@protoc_insertion_point(
   ::google::protobuf::int64 login_time_sec() const;
   void set_login_time_sec(::google::protobuf::int64 value);
 
+  // uint64 generation = 8;
+  void clear_generation();
+  static const int kGenerationFieldNumber = 8;
+  ::google::protobuf::uint64 generation() const;
+  void set_generation(::google::protobuf::uint64 value);
+
   // @@protoc_insertion_point(class_scope:game.LoginRsp)
  private:
 
   ::google::protobuf::internal::InternalMetadataWithArena _internal_metadata_;
   ::google::protobuf::internal::ArenaStringPtr message_;
   ::google::protobuf::internal::ArenaStringPtr token_;
+  ::google::protobuf::internal::ArenaStringPtr session_id_;
   bool ok_;
   bool kicked_previous_;
   ::google::protobuf::uint32 server_id_;
   ::google::protobuf::int64 login_time_sec_;
+  ::google::protobuf::uint64 generation_;
   mutable int _cached_size_;
   friend struct ::protobuf_game_2eproto::TableStruct;
   friend void ::protobuf_game_2eproto::InitDefaultsLoginRspImpl();
+};
+// -------------------------------------------------------------------
+
+class ReconnectReq : public ::google::protobuf::Message /* @@protoc_insertion_point(class_definition:game.ReconnectReq) */ {
+ public:
+  ReconnectReq();
+  virtual ~ReconnectReq();
+
+  ReconnectReq(const ReconnectReq& from);
+
+  inline ReconnectReq& operator=(const ReconnectReq& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  #if LANG_CXX11
+  ReconnectReq(ReconnectReq&& from) noexcept
+    : ReconnectReq() {
+    *this = ::std::move(from);
+  }
+
+  inline ReconnectReq& operator=(ReconnectReq&& from) noexcept {
+    if (GetArenaNoVirtual() == from.GetArenaNoVirtual()) {
+      if (this != &from) InternalSwap(&from);
+    } else {
+      CopyFrom(from);
+    }
+    return *this;
+  }
+  #endif
+  static const ::google::protobuf::Descriptor* descriptor();
+  static const ReconnectReq& default_instance();
+
+  static void InitAsDefaultInstance();  // FOR INTERNAL USE ONLY
+  static inline const ReconnectReq* internal_default_instance() {
+    return reinterpret_cast<const ReconnectReq*>(
+               &_ReconnectReq_default_instance_);
+  }
+  static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
+    2;
+
+  void Swap(ReconnectReq* other);
+  friend void swap(ReconnectReq& a, ReconnectReq& b) {
+    a.Swap(&b);
+  }
+
+  // implements Message ----------------------------------------------
+
+  inline ReconnectReq* New() const PROTOBUF_FINAL { return New(NULL); }
+
+  ReconnectReq* New(::google::protobuf::Arena* arena) const PROTOBUF_FINAL;
+  void CopyFrom(const ::google::protobuf::Message& from) PROTOBUF_FINAL;
+  void MergeFrom(const ::google::protobuf::Message& from) PROTOBUF_FINAL;
+  void CopyFrom(const ReconnectReq& from);
+  void MergeFrom(const ReconnectReq& from);
+  void Clear() PROTOBUF_FINAL;
+  bool IsInitialized() const PROTOBUF_FINAL;
+
+  size_t ByteSizeLong() const PROTOBUF_FINAL;
+  bool MergePartialFromCodedStream(
+      ::google::protobuf::io::CodedInputStream* input) PROTOBUF_FINAL;
+  void SerializeWithCachedSizes(
+      ::google::protobuf::io::CodedOutputStream* output) const PROTOBUF_FINAL;
+  ::google::protobuf::uint8* InternalSerializeWithCachedSizesToArray(
+      bool deterministic, ::google::protobuf::uint8* target) const PROTOBUF_FINAL;
+  int GetCachedSize() const PROTOBUF_FINAL { return _cached_size_; }
+  private:
+  void SharedCtor();
+  void SharedDtor();
+  void SetCachedSize(int size) const PROTOBUF_FINAL;
+  void InternalSwap(ReconnectReq* other);
+  private:
+  inline ::google::protobuf::Arena* GetArenaNoVirtual() const {
+    return NULL;
+  }
+  inline void* MaybeArenaPtr() const {
+    return NULL;
+  }
+  public:
+
+  ::google::protobuf::Metadata GetMetadata() const PROTOBUF_FINAL;
+
+  // nested types ----------------------------------------------------
+
+  // accessors -------------------------------------------------------
+
+  // string session_id = 2;
+  void clear_session_id();
+  static const int kSessionIdFieldNumber = 2;
+  const ::std::string& session_id() const;
+  void set_session_id(const ::std::string& value);
+  #if LANG_CXX11
+  void set_session_id(::std::string&& value);
+  #endif
+  void set_session_id(const char* value);
+  void set_session_id(const char* value, size_t size);
+  ::std::string* mutable_session_id();
+  ::std::string* release_session_id();
+  void set_allocated_session_id(::std::string* session_id);
+
+  // string reconnect_ticket = 3;
+  void clear_reconnect_ticket();
+  static const int kReconnectTicketFieldNumber = 3;
+  const ::std::string& reconnect_ticket() const;
+  void set_reconnect_ticket(const ::std::string& value);
+  #if LANG_CXX11
+  void set_reconnect_ticket(::std::string&& value);
+  #endif
+  void set_reconnect_ticket(const char* value);
+  void set_reconnect_ticket(const char* value, size_t size);
+  ::std::string* mutable_reconnect_ticket();
+  ::std::string* release_reconnect_ticket();
+  void set_allocated_reconnect_ticket(::std::string* reconnect_ticket);
+
+  // uint64 player_id = 1;
+  void clear_player_id();
+  static const int kPlayerIdFieldNumber = 1;
+  ::google::protobuf::uint64 player_id() const;
+  void set_player_id(::google::protobuf::uint64 value);
+
+  // uint64 last_server_seq = 4;
+  void clear_last_server_seq();
+  static const int kLastServerSeqFieldNumber = 4;
+  ::google::protobuf::uint64 last_server_seq() const;
+  void set_last_server_seq(::google::protobuf::uint64 value);
+
+  // @@protoc_insertion_point(class_scope:game.ReconnectReq)
+ private:
+
+  ::google::protobuf::internal::InternalMetadataWithArena _internal_metadata_;
+  ::google::protobuf::internal::ArenaStringPtr session_id_;
+  ::google::protobuf::internal::ArenaStringPtr reconnect_ticket_;
+  ::google::protobuf::uint64 player_id_;
+  ::google::protobuf::uint64 last_server_seq_;
+  mutable int _cached_size_;
+  friend struct ::protobuf_game_2eproto::TableStruct;
+  friend void ::protobuf_game_2eproto::InitDefaultsReconnectReqImpl();
+};
+// -------------------------------------------------------------------
+
+class ReconnectRsp : public ::google::protobuf::Message /* @@protoc_insertion_point(class_definition:game.ReconnectRsp) */ {
+ public:
+  ReconnectRsp();
+  virtual ~ReconnectRsp();
+
+  ReconnectRsp(const ReconnectRsp& from);
+
+  inline ReconnectRsp& operator=(const ReconnectRsp& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  #if LANG_CXX11
+  ReconnectRsp(ReconnectRsp&& from) noexcept
+    : ReconnectRsp() {
+    *this = ::std::move(from);
+  }
+
+  inline ReconnectRsp& operator=(ReconnectRsp&& from) noexcept {
+    if (GetArenaNoVirtual() == from.GetArenaNoVirtual()) {
+      if (this != &from) InternalSwap(&from);
+    } else {
+      CopyFrom(from);
+    }
+    return *this;
+  }
+  #endif
+  static const ::google::protobuf::Descriptor* descriptor();
+  static const ReconnectRsp& default_instance();
+
+  static void InitAsDefaultInstance();  // FOR INTERNAL USE ONLY
+  static inline const ReconnectRsp* internal_default_instance() {
+    return reinterpret_cast<const ReconnectRsp*>(
+               &_ReconnectRsp_default_instance_);
+  }
+  static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
+    3;
+
+  void Swap(ReconnectRsp* other);
+  friend void swap(ReconnectRsp& a, ReconnectRsp& b) {
+    a.Swap(&b);
+  }
+
+  // implements Message ----------------------------------------------
+
+  inline ReconnectRsp* New() const PROTOBUF_FINAL { return New(NULL); }
+
+  ReconnectRsp* New(::google::protobuf::Arena* arena) const PROTOBUF_FINAL;
+  void CopyFrom(const ::google::protobuf::Message& from) PROTOBUF_FINAL;
+  void MergeFrom(const ::google::protobuf::Message& from) PROTOBUF_FINAL;
+  void CopyFrom(const ReconnectRsp& from);
+  void MergeFrom(const ReconnectRsp& from);
+  void Clear() PROTOBUF_FINAL;
+  bool IsInitialized() const PROTOBUF_FINAL;
+
+  size_t ByteSizeLong() const PROTOBUF_FINAL;
+  bool MergePartialFromCodedStream(
+      ::google::protobuf::io::CodedInputStream* input) PROTOBUF_FINAL;
+  void SerializeWithCachedSizes(
+      ::google::protobuf::io::CodedOutputStream* output) const PROTOBUF_FINAL;
+  ::google::protobuf::uint8* InternalSerializeWithCachedSizesToArray(
+      bool deterministic, ::google::protobuf::uint8* target) const PROTOBUF_FINAL;
+  int GetCachedSize() const PROTOBUF_FINAL { return _cached_size_; }
+  private:
+  void SharedCtor();
+  void SharedDtor();
+  void SetCachedSize(int size) const PROTOBUF_FINAL;
+  void InternalSwap(ReconnectRsp* other);
+  private:
+  inline ::google::protobuf::Arena* GetArenaNoVirtual() const {
+    return NULL;
+  }
+  inline void* MaybeArenaPtr() const {
+    return NULL;
+  }
+  public:
+
+  ::google::protobuf::Metadata GetMetadata() const PROTOBUF_FINAL;
+
+  // nested types ----------------------------------------------------
+
+  // accessors -------------------------------------------------------
+
+  // string message = 2;
+  void clear_message();
+  static const int kMessageFieldNumber = 2;
+  const ::std::string& message() const;
+  void set_message(const ::std::string& value);
+  #if LANG_CXX11
+  void set_message(::std::string&& value);
+  #endif
+  void set_message(const char* value);
+  void set_message(const char* value, size_t size);
+  ::std::string* mutable_message();
+  ::std::string* release_message();
+  void set_allocated_message(::std::string* message);
+
+  // string token = 3;
+  void clear_token();
+  static const int kTokenFieldNumber = 3;
+  const ::std::string& token() const;
+  void set_token(const ::std::string& value);
+  #if LANG_CXX11
+  void set_token(::std::string&& value);
+  #endif
+  void set_token(const char* value);
+  void set_token(const char* value, size_t size);
+  ::std::string* mutable_token();
+  ::std::string* release_token();
+  void set_allocated_token(::std::string* token);
+
+  // string session_id = 4;
+  void clear_session_id();
+  static const int kSessionIdFieldNumber = 4;
+  const ::std::string& session_id() const;
+  void set_session_id(const ::std::string& value);
+  #if LANG_CXX11
+  void set_session_id(::std::string&& value);
+  #endif
+  void set_session_id(const char* value);
+  void set_session_id(const char* value, size_t size);
+  ::std::string* mutable_session_id();
+  ::std::string* release_session_id();
+  void set_allocated_session_id(::std::string* session_id);
+
+  // uint64 generation = 5;
+  void clear_generation();
+  static const int kGenerationFieldNumber = 5;
+  ::google::protobuf::uint64 generation() const;
+  void set_generation(::google::protobuf::uint64 value);
+
+  // bool ok = 1;
+  void clear_ok();
+  static const int kOkFieldNumber = 1;
+  bool ok() const;
+  void set_ok(bool value);
+
+  // @@protoc_insertion_point(class_scope:game.ReconnectRsp)
+ private:
+
+  ::google::protobuf::internal::InternalMetadataWithArena _internal_metadata_;
+  ::google::protobuf::internal::ArenaStringPtr message_;
+  ::google::protobuf::internal::ArenaStringPtr token_;
+  ::google::protobuf::internal::ArenaStringPtr session_id_;
+  ::google::protobuf::uint64 generation_;
+  bool ok_;
+  mutable int _cached_size_;
+  friend struct ::protobuf_game_2eproto::TableStruct;
+  friend void ::protobuf_game_2eproto::InitDefaultsReconnectRspImpl();
 };
 // -------------------------------------------------------------------
 
@@ -617,7 +1022,7 @@ class ValidateSessionReq : public ::google::protobuf::Message /* @@protoc_insert
                &_ValidateSessionReq_default_instance_);
   }
   static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
-    2;
+    4;
 
   void Swap(ValidateSessionReq* other);
   friend void swap(ValidateSessionReq& a, ValidateSessionReq& b) {
@@ -731,7 +1136,7 @@ class ValidateSessionRsp : public ::google::protobuf::Message /* @@protoc_insert
                &_ValidateSessionRsp_default_instance_);
   }
   static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
-    3;
+    5;
 
   void Swap(ValidateSessionRsp* other);
   friend void swap(ValidateSessionRsp& a, ValidateSessionRsp& b) {
@@ -888,7 +1293,7 @@ class CheckOnlineReq : public ::google::protobuf::Message /* @@protoc_insertion_
                &_CheckOnlineReq_default_instance_);
   }
   static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
-    4;
+    6;
 
   void Swap(CheckOnlineReq* other);
   friend void swap(CheckOnlineReq& a, CheckOnlineReq& b) {
@@ -987,7 +1392,7 @@ class CheckOnlineRsp : public ::google::protobuf::Message /* @@protoc_insertion_
                &_CheckOnlineRsp_default_instance_);
   }
   static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
-    5;
+    7;
 
   void Swap(CheckOnlineRsp* other);
   friend void swap(CheckOnlineRsp& a, CheckOnlineRsp& b) {
@@ -1108,7 +1513,7 @@ class LogoutReq : public ::google::protobuf::Message /* @@protoc_insertion_point
                &_LogoutReq_default_instance_);
   }
   static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
-    6;
+    8;
 
   void Swap(LogoutReq* other);
   friend void swap(LogoutReq& a, LogoutReq& b) {
@@ -1222,7 +1627,7 @@ class LogoutRsp : public ::google::protobuf::Message /* @@protoc_insertion_point
                &_LogoutRsp_default_instance_);
   }
   static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
-    7;
+    9;
 
   void Swap(LogoutRsp* other);
   friend void swap(LogoutRsp& a, LogoutRsp& b) {
@@ -1301,6 +1706,477 @@ class LogoutRsp : public ::google::protobuf::Message /* @@protoc_insertion_point
 };
 // -------------------------------------------------------------------
 
+class RegisterReq : public ::google::protobuf::Message /* @@protoc_insertion_point(class_definition:game.RegisterReq) */ {
+ public:
+  RegisterReq();
+  virtual ~RegisterReq();
+
+  RegisterReq(const RegisterReq& from);
+
+  inline RegisterReq& operator=(const RegisterReq& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  #if LANG_CXX11
+  RegisterReq(RegisterReq&& from) noexcept
+    : RegisterReq() {
+    *this = ::std::move(from);
+  }
+
+  inline RegisterReq& operator=(RegisterReq&& from) noexcept {
+    if (GetArenaNoVirtual() == from.GetArenaNoVirtual()) {
+      if (this != &from) InternalSwap(&from);
+    } else {
+      CopyFrom(from);
+    }
+    return *this;
+  }
+  #endif
+  static const ::google::protobuf::Descriptor* descriptor();
+  static const RegisterReq& default_instance();
+
+  static void InitAsDefaultInstance();  // FOR INTERNAL USE ONLY
+  static inline const RegisterReq* internal_default_instance() {
+    return reinterpret_cast<const RegisterReq*>(
+               &_RegisterReq_default_instance_);
+  }
+  static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
+    10;
+
+  void Swap(RegisterReq* other);
+  friend void swap(RegisterReq& a, RegisterReq& b) {
+    a.Swap(&b);
+  }
+
+  // implements Message ----------------------------------------------
+
+  inline RegisterReq* New() const PROTOBUF_FINAL { return New(NULL); }
+
+  RegisterReq* New(::google::protobuf::Arena* arena) const PROTOBUF_FINAL;
+  void CopyFrom(const ::google::protobuf::Message& from) PROTOBUF_FINAL;
+  void MergeFrom(const ::google::protobuf::Message& from) PROTOBUF_FINAL;
+  void CopyFrom(const RegisterReq& from);
+  void MergeFrom(const RegisterReq& from);
+  void Clear() PROTOBUF_FINAL;
+  bool IsInitialized() const PROTOBUF_FINAL;
+
+  size_t ByteSizeLong() const PROTOBUF_FINAL;
+  bool MergePartialFromCodedStream(
+      ::google::protobuf::io::CodedInputStream* input) PROTOBUF_FINAL;
+  void SerializeWithCachedSizes(
+      ::google::protobuf::io::CodedOutputStream* output) const PROTOBUF_FINAL;
+  ::google::protobuf::uint8* InternalSerializeWithCachedSizesToArray(
+      bool deterministic, ::google::protobuf::uint8* target) const PROTOBUF_FINAL;
+  int GetCachedSize() const PROTOBUF_FINAL { return _cached_size_; }
+  private:
+  void SharedCtor();
+  void SharedDtor();
+  void SetCachedSize(int size) const PROTOBUF_FINAL;
+  void InternalSwap(RegisterReq* other);
+  private:
+  inline ::google::protobuf::Arena* GetArenaNoVirtual() const {
+    return NULL;
+  }
+  inline void* MaybeArenaPtr() const {
+    return NULL;
+  }
+  public:
+
+  ::google::protobuf::Metadata GetMetadata() const PROTOBUF_FINAL;
+
+  // nested types ----------------------------------------------------
+
+  // accessors -------------------------------------------------------
+
+  // string device_id = 1;
+  void clear_device_id();
+  static const int kDeviceIdFieldNumber = 1;
+  const ::std::string& device_id() const;
+  void set_device_id(const ::std::string& value);
+  #if LANG_CXX11
+  void set_device_id(::std::string&& value);
+  #endif
+  void set_device_id(const char* value);
+  void set_device_id(const char* value, size_t size);
+  ::std::string* mutable_device_id();
+  ::std::string* release_device_id();
+  void set_allocated_device_id(::std::string* device_id);
+
+  // string display_name = 2;
+  void clear_display_name();
+  static const int kDisplayNameFieldNumber = 2;
+  const ::std::string& display_name() const;
+  void set_display_name(const ::std::string& value);
+  #if LANG_CXX11
+  void set_display_name(::std::string&& value);
+  #endif
+  void set_display_name(const char* value);
+  void set_display_name(const char* value, size_t size);
+  ::std::string* mutable_display_name();
+  ::std::string* release_display_name();
+  void set_allocated_display_name(::std::string* display_name);
+
+  // @@protoc_insertion_point(class_scope:game.RegisterReq)
+ private:
+
+  ::google::protobuf::internal::InternalMetadataWithArena _internal_metadata_;
+  ::google::protobuf::internal::ArenaStringPtr device_id_;
+  ::google::protobuf::internal::ArenaStringPtr display_name_;
+  mutable int _cached_size_;
+  friend struct ::protobuf_game_2eproto::TableStruct;
+  friend void ::protobuf_game_2eproto::InitDefaultsRegisterReqImpl();
+};
+// -------------------------------------------------------------------
+
+class RegisterRsp : public ::google::protobuf::Message /* @@protoc_insertion_point(class_definition:game.RegisterRsp) */ {
+ public:
+  RegisterRsp();
+  virtual ~RegisterRsp();
+
+  RegisterRsp(const RegisterRsp& from);
+
+  inline RegisterRsp& operator=(const RegisterRsp& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  #if LANG_CXX11
+  RegisterRsp(RegisterRsp&& from) noexcept
+    : RegisterRsp() {
+    *this = ::std::move(from);
+  }
+
+  inline RegisterRsp& operator=(RegisterRsp&& from) noexcept {
+    if (GetArenaNoVirtual() == from.GetArenaNoVirtual()) {
+      if (this != &from) InternalSwap(&from);
+    } else {
+      CopyFrom(from);
+    }
+    return *this;
+  }
+  #endif
+  static const ::google::protobuf::Descriptor* descriptor();
+  static const RegisterRsp& default_instance();
+
+  static void InitAsDefaultInstance();  // FOR INTERNAL USE ONLY
+  static inline const RegisterRsp* internal_default_instance() {
+    return reinterpret_cast<const RegisterRsp*>(
+               &_RegisterRsp_default_instance_);
+  }
+  static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
+    11;
+
+  void Swap(RegisterRsp* other);
+  friend void swap(RegisterRsp& a, RegisterRsp& b) {
+    a.Swap(&b);
+  }
+
+  // implements Message ----------------------------------------------
+
+  inline RegisterRsp* New() const PROTOBUF_FINAL { return New(NULL); }
+
+  RegisterRsp* New(::google::protobuf::Arena* arena) const PROTOBUF_FINAL;
+  void CopyFrom(const ::google::protobuf::Message& from) PROTOBUF_FINAL;
+  void MergeFrom(const ::google::protobuf::Message& from) PROTOBUF_FINAL;
+  void CopyFrom(const RegisterRsp& from);
+  void MergeFrom(const RegisterRsp& from);
+  void Clear() PROTOBUF_FINAL;
+  bool IsInitialized() const PROTOBUF_FINAL;
+
+  size_t ByteSizeLong() const PROTOBUF_FINAL;
+  bool MergePartialFromCodedStream(
+      ::google::protobuf::io::CodedInputStream* input) PROTOBUF_FINAL;
+  void SerializeWithCachedSizes(
+      ::google::protobuf::io::CodedOutputStream* output) const PROTOBUF_FINAL;
+  ::google::protobuf::uint8* InternalSerializeWithCachedSizesToArray(
+      bool deterministic, ::google::protobuf::uint8* target) const PROTOBUF_FINAL;
+  int GetCachedSize() const PROTOBUF_FINAL { return _cached_size_; }
+  private:
+  void SharedCtor();
+  void SharedDtor();
+  void SetCachedSize(int size) const PROTOBUF_FINAL;
+  void InternalSwap(RegisterRsp* other);
+  private:
+  inline ::google::protobuf::Arena* GetArenaNoVirtual() const {
+    return NULL;
+  }
+  inline void* MaybeArenaPtr() const {
+    return NULL;
+  }
+  public:
+
+  ::google::protobuf::Metadata GetMetadata() const PROTOBUF_FINAL;
+
+  // nested types ----------------------------------------------------
+
+  // accessors -------------------------------------------------------
+
+  // string message = 2;
+  void clear_message();
+  static const int kMessageFieldNumber = 2;
+  const ::std::string& message() const;
+  void set_message(const ::std::string& value);
+  #if LANG_CXX11
+  void set_message(::std::string&& value);
+  #endif
+  void set_message(const char* value);
+  void set_message(const char* value, size_t size);
+  ::std::string* mutable_message();
+  ::std::string* release_message();
+  void set_allocated_message(::std::string* message);
+
+  // uint64 player_id = 3;
+  void clear_player_id();
+  static const int kPlayerIdFieldNumber = 3;
+  ::google::protobuf::uint64 player_id() const;
+  void set_player_id(::google::protobuf::uint64 value);
+
+  // bool ok = 1;
+  void clear_ok();
+  static const int kOkFieldNumber = 1;
+  bool ok() const;
+  void set_ok(bool value);
+
+  // @@protoc_insertion_point(class_scope:game.RegisterRsp)
+ private:
+
+  ::google::protobuf::internal::InternalMetadataWithArena _internal_metadata_;
+  ::google::protobuf::internal::ArenaStringPtr message_;
+  ::google::protobuf::uint64 player_id_;
+  bool ok_;
+  mutable int _cached_size_;
+  friend struct ::protobuf_game_2eproto::TableStruct;
+  friend void ::protobuf_game_2eproto::InitDefaultsRegisterRspImpl();
+};
+// -------------------------------------------------------------------
+
+class FlushBagReq : public ::google::protobuf::Message /* @@protoc_insertion_point(class_definition:game.FlushBagReq) */ {
+ public:
+  FlushBagReq();
+  virtual ~FlushBagReq();
+
+  FlushBagReq(const FlushBagReq& from);
+
+  inline FlushBagReq& operator=(const FlushBagReq& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  #if LANG_CXX11
+  FlushBagReq(FlushBagReq&& from) noexcept
+    : FlushBagReq() {
+    *this = ::std::move(from);
+  }
+
+  inline FlushBagReq& operator=(FlushBagReq&& from) noexcept {
+    if (GetArenaNoVirtual() == from.GetArenaNoVirtual()) {
+      if (this != &from) InternalSwap(&from);
+    } else {
+      CopyFrom(from);
+    }
+    return *this;
+  }
+  #endif
+  static const ::google::protobuf::Descriptor* descriptor();
+  static const FlushBagReq& default_instance();
+
+  static void InitAsDefaultInstance();  // FOR INTERNAL USE ONLY
+  static inline const FlushBagReq* internal_default_instance() {
+    return reinterpret_cast<const FlushBagReq*>(
+               &_FlushBagReq_default_instance_);
+  }
+  static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
+    12;
+
+  void Swap(FlushBagReq* other);
+  friend void swap(FlushBagReq& a, FlushBagReq& b) {
+    a.Swap(&b);
+  }
+
+  // implements Message ----------------------------------------------
+
+  inline FlushBagReq* New() const PROTOBUF_FINAL { return New(NULL); }
+
+  FlushBagReq* New(::google::protobuf::Arena* arena) const PROTOBUF_FINAL;
+  void CopyFrom(const ::google::protobuf::Message& from) PROTOBUF_FINAL;
+  void MergeFrom(const ::google::protobuf::Message& from) PROTOBUF_FINAL;
+  void CopyFrom(const FlushBagReq& from);
+  void MergeFrom(const FlushBagReq& from);
+  void Clear() PROTOBUF_FINAL;
+  bool IsInitialized() const PROTOBUF_FINAL;
+
+  size_t ByteSizeLong() const PROTOBUF_FINAL;
+  bool MergePartialFromCodedStream(
+      ::google::protobuf::io::CodedInputStream* input) PROTOBUF_FINAL;
+  void SerializeWithCachedSizes(
+      ::google::protobuf::io::CodedOutputStream* output) const PROTOBUF_FINAL;
+  ::google::protobuf::uint8* InternalSerializeWithCachedSizesToArray(
+      bool deterministic, ::google::protobuf::uint8* target) const PROTOBUF_FINAL;
+  int GetCachedSize() const PROTOBUF_FINAL { return _cached_size_; }
+  private:
+  void SharedCtor();
+  void SharedDtor();
+  void SetCachedSize(int size) const PROTOBUF_FINAL;
+  void InternalSwap(FlushBagReq* other);
+  private:
+  inline ::google::protobuf::Arena* GetArenaNoVirtual() const {
+    return NULL;
+  }
+  inline void* MaybeArenaPtr() const {
+    return NULL;
+  }
+  public:
+
+  ::google::protobuf::Metadata GetMetadata() const PROTOBUF_FINAL;
+
+  // nested types ----------------------------------------------------
+
+  // accessors -------------------------------------------------------
+
+  // string reason = 2;
+  void clear_reason();
+  static const int kReasonFieldNumber = 2;
+  const ::std::string& reason() const;
+  void set_reason(const ::std::string& value);
+  #if LANG_CXX11
+  void set_reason(::std::string&& value);
+  #endif
+  void set_reason(const char* value);
+  void set_reason(const char* value, size_t size);
+  ::std::string* mutable_reason();
+  ::std::string* release_reason();
+  void set_allocated_reason(::std::string* reason);
+
+  // uint64 player_id = 1;
+  void clear_player_id();
+  static const int kPlayerIdFieldNumber = 1;
+  ::google::protobuf::uint64 player_id() const;
+  void set_player_id(::google::protobuf::uint64 value);
+
+  // @@protoc_insertion_point(class_scope:game.FlushBagReq)
+ private:
+
+  ::google::protobuf::internal::InternalMetadataWithArena _internal_metadata_;
+  ::google::protobuf::internal::ArenaStringPtr reason_;
+  ::google::protobuf::uint64 player_id_;
+  mutable int _cached_size_;
+  friend struct ::protobuf_game_2eproto::TableStruct;
+  friend void ::protobuf_game_2eproto::InitDefaultsFlushBagReqImpl();
+};
+// -------------------------------------------------------------------
+
+class FlushBagRsp : public ::google::protobuf::Message /* @@protoc_insertion_point(class_definition:game.FlushBagRsp) */ {
+ public:
+  FlushBagRsp();
+  virtual ~FlushBagRsp();
+
+  FlushBagRsp(const FlushBagRsp& from);
+
+  inline FlushBagRsp& operator=(const FlushBagRsp& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  #if LANG_CXX11
+  FlushBagRsp(FlushBagRsp&& from) noexcept
+    : FlushBagRsp() {
+    *this = ::std::move(from);
+  }
+
+  inline FlushBagRsp& operator=(FlushBagRsp&& from) noexcept {
+    if (GetArenaNoVirtual() == from.GetArenaNoVirtual()) {
+      if (this != &from) InternalSwap(&from);
+    } else {
+      CopyFrom(from);
+    }
+    return *this;
+  }
+  #endif
+  static const ::google::protobuf::Descriptor* descriptor();
+  static const FlushBagRsp& default_instance();
+
+  static void InitAsDefaultInstance();  // FOR INTERNAL USE ONLY
+  static inline const FlushBagRsp* internal_default_instance() {
+    return reinterpret_cast<const FlushBagRsp*>(
+               &_FlushBagRsp_default_instance_);
+  }
+  static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
+    13;
+
+  void Swap(FlushBagRsp* other);
+  friend void swap(FlushBagRsp& a, FlushBagRsp& b) {
+    a.Swap(&b);
+  }
+
+  // implements Message ----------------------------------------------
+
+  inline FlushBagRsp* New() const PROTOBUF_FINAL { return New(NULL); }
+
+  FlushBagRsp* New(::google::protobuf::Arena* arena) const PROTOBUF_FINAL;
+  void CopyFrom(const ::google::protobuf::Message& from) PROTOBUF_FINAL;
+  void MergeFrom(const ::google::protobuf::Message& from) PROTOBUF_FINAL;
+  void CopyFrom(const FlushBagRsp& from);
+  void MergeFrom(const FlushBagRsp& from);
+  void Clear() PROTOBUF_FINAL;
+  bool IsInitialized() const PROTOBUF_FINAL;
+
+  size_t ByteSizeLong() const PROTOBUF_FINAL;
+  bool MergePartialFromCodedStream(
+      ::google::protobuf::io::CodedInputStream* input) PROTOBUF_FINAL;
+  void SerializeWithCachedSizes(
+      ::google::protobuf::io::CodedOutputStream* output) const PROTOBUF_FINAL;
+  ::google::protobuf::uint8* InternalSerializeWithCachedSizesToArray(
+      bool deterministic, ::google::protobuf::uint8* target) const PROTOBUF_FINAL;
+  int GetCachedSize() const PROTOBUF_FINAL { return _cached_size_; }
+  private:
+  void SharedCtor();
+  void SharedDtor();
+  void SetCachedSize(int size) const PROTOBUF_FINAL;
+  void InternalSwap(FlushBagRsp* other);
+  private:
+  inline ::google::protobuf::Arena* GetArenaNoVirtual() const {
+    return NULL;
+  }
+  inline void* MaybeArenaPtr() const {
+    return NULL;
+  }
+  public:
+
+  ::google::protobuf::Metadata GetMetadata() const PROTOBUF_FINAL;
+
+  // nested types ----------------------------------------------------
+
+  // accessors -------------------------------------------------------
+
+  // string message = 2;
+  void clear_message();
+  static const int kMessageFieldNumber = 2;
+  const ::std::string& message() const;
+  void set_message(const ::std::string& value);
+  #if LANG_CXX11
+  void set_message(::std::string&& value);
+  #endif
+  void set_message(const char* value);
+  void set_message(const char* value, size_t size);
+  ::std::string* mutable_message();
+  ::std::string* release_message();
+  void set_allocated_message(::std::string* message);
+
+  // bool ok = 1;
+  void clear_ok();
+  static const int kOkFieldNumber = 1;
+  bool ok() const;
+  void set_ok(bool value);
+
+  // @@protoc_insertion_point(class_scope:game.FlushBagRsp)
+ private:
+
+  ::google::protobuf::internal::InternalMetadataWithArena _internal_metadata_;
+  ::google::protobuf::internal::ArenaStringPtr message_;
+  bool ok_;
+  mutable int _cached_size_;
+  friend struct ::protobuf_game_2eproto::TableStruct;
+  friend void ::protobuf_game_2eproto::InitDefaultsFlushBagRspImpl();
+};
+// -------------------------------------------------------------------
+
 class ConsumeItemReq : public ::google::protobuf::Message /* @@protoc_insertion_point(class_definition:game.ConsumeItemReq) */ {
  public:
   ConsumeItemReq();
@@ -1336,7 +2212,7 @@ class ConsumeItemReq : public ::google::protobuf::Message /* @@protoc_insertion_
                &_ConsumeItemReq_default_instance_);
   }
   static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
-    8;
+    14;
 
   void Swap(ConsumeItemReq* other);
   friend void swap(ConsumeItemReq& a, ConsumeItemReq& b) {
@@ -1449,7 +2325,7 @@ class ConsumeItemRsp : public ::google::protobuf::Message /* @@protoc_insertion_
                &_ConsumeItemRsp_default_instance_);
   }
   static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
-    9;
+    15;
 
   void Swap(ConsumeItemRsp* other);
   friend void swap(ConsumeItemRsp& a, ConsumeItemRsp& b) {
@@ -1570,7 +2446,7 @@ class ReleaseSkillReq : public ::google::protobuf::Message /* @@protoc_insertion
                &_ReleaseSkillReq_default_instance_);
   }
   static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
-    10;
+    16;
 
   void Swap(ReleaseSkillReq* other);
   friend void swap(ReleaseSkillReq& a, ReleaseSkillReq& b) {
@@ -1690,7 +2566,7 @@ class ReleaseSkillRsp : public ::google::protobuf::Message /* @@protoc_insertion
                &_ReleaseSkillRsp_default_instance_);
   }
   static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
-    11;
+    17;
 
   void Swap(ReleaseSkillRsp* other);
   friend void swap(ReleaseSkillRsp& a, ReleaseSkillRsp& b) {
@@ -1811,7 +2687,7 @@ class GrantItemReq : public ::google::protobuf::Message /* @@protoc_insertion_po
                &_GrantItemReq_default_instance_);
   }
   static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
-    12;
+    18;
 
   void Swap(GrantItemReq* other);
   friend void swap(GrantItemReq& a, GrantItemReq& b) {
@@ -1946,7 +2822,7 @@ class GrantItemRsp : public ::google::protobuf::Message /* @@protoc_insertion_po
                &_GrantItemRsp_default_instance_);
   }
   static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
-    13;
+    19;
 
   void Swap(GrantItemRsp* other);
   friend void swap(GrantItemRsp& a, GrantItemRsp& b) {
@@ -2074,7 +2950,7 @@ class MailAttachmentDto : public ::google::protobuf::Message /* @@protoc_inserti
                &_MailAttachmentDto_default_instance_);
   }
   static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
-    14;
+    20;
 
   void Swap(MailAttachmentDto* other);
   friend void swap(MailAttachmentDto& a, MailAttachmentDto& b) {
@@ -2247,7 +3123,7 @@ class MailBrief : public ::google::protobuf::Message /* @@protoc_insertion_point
                &_MailBrief_default_instance_);
   }
   static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
-    15;
+    21;
 
   void Swap(MailBrief* other);
   friend void swap(MailBrief& a, MailBrief& b) {
@@ -2478,7 +3354,7 @@ class MailDetail : public ::google::protobuf::Message /* @@protoc_insertion_poin
                &_MailDetail_default_instance_);
   }
   static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
-    16;
+    22;
 
   void Swap(MailDetail* other);
   friend void swap(MailDetail& a, MailDetail& b) {
@@ -2631,7 +3507,7 @@ class MailboxSummaryReq : public ::google::protobuf::Message /* @@protoc_inserti
                &_MailboxSummaryReq_default_instance_);
   }
   static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
-    17;
+    23;
 
   void Swap(MailboxSummaryReq* other);
   friend void swap(MailboxSummaryReq& a, MailboxSummaryReq& b) {
@@ -2730,7 +3606,7 @@ class MailboxSummaryRsp : public ::google::protobuf::Message /* @@protoc_inserti
                &_MailboxSummaryRsp_default_instance_);
   }
   static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
-    18;
+    24;
 
   void Swap(MailboxSummaryRsp* other);
   friend void swap(MailboxSummaryRsp& a, MailboxSummaryRsp& b) {
@@ -2929,7 +3805,7 @@ class MailListReq : public ::google::protobuf::Message /* @@protoc_insertion_poi
                &_MailListReq_default_instance_);
   }
   static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
-    19;
+    25;
 
   void Swap(MailListReq* other);
   friend void swap(MailListReq& a, MailListReq& b) {
@@ -3115,7 +3991,7 @@ class MailListRsp : public ::google::protobuf::Message /* @@protoc_insertion_poi
                &_MailListRsp_default_instance_);
   }
   static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
-    20;
+    26;
 
   void Swap(MailListRsp* other);
   friend void swap(MailListRsp& a, MailListRsp& b) {
@@ -3286,7 +4162,7 @@ class MailGetReq : public ::google::protobuf::Message /* @@protoc_insertion_poin
                &_MailGetReq_default_instance_);
   }
   static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
-    21;
+    27;
 
   void Swap(MailGetReq* other);
   friend void swap(MailGetReq& a, MailGetReq& b) {
@@ -3392,7 +4268,7 @@ class MailGetRsp : public ::google::protobuf::Message /* @@protoc_insertion_poin
                &_MailGetRsp_default_instance_);
   }
   static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
-    22;
+    28;
 
   void Swap(MailGetRsp* other);
   friend void swap(MailGetRsp& a, MailGetRsp& b) {
@@ -3545,7 +4421,7 @@ class MailReadReq : public ::google::protobuf::Message /* @@protoc_insertion_poi
                &_MailReadReq_default_instance_);
   }
   static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
-    23;
+    29;
 
   void Swap(MailReadReq* other);
   friend void swap(MailReadReq& a, MailReadReq& b) {
@@ -3666,7 +4542,7 @@ class MailReadRsp : public ::google::protobuf::Message /* @@protoc_insertion_poi
                &_MailReadRsp_default_instance_);
   }
   static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
-    24;
+    30;
 
   void Swap(MailReadRsp* other);
   friend void swap(MailReadRsp& a, MailReadRsp& b) {
@@ -3816,7 +4692,7 @@ class MailClaimReq : public ::google::protobuf::Message /* @@protoc_insertion_po
                &_MailClaimReq_default_instance_);
   }
   static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
-    25;
+    31;
 
   void Swap(MailClaimReq* other);
   friend void swap(MailClaimReq& a, MailClaimReq& b) {
@@ -3952,7 +4828,7 @@ class MailClaimResult : public ::google::protobuf::Message /* @@protoc_insertion
                &_MailClaimResult_default_instance_);
   }
   static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
-    26;
+    32;
 
   void Swap(MailClaimResult* other);
   friend void swap(MailClaimResult& a, MailClaimResult& b) {
@@ -4103,7 +4979,7 @@ class MailClaimRsp : public ::google::protobuf::Message /* @@protoc_insertion_po
                &_MailClaimRsp_default_instance_);
   }
   static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
-    27;
+    33;
 
   void Swap(MailClaimRsp* other);
   friend void swap(MailClaimRsp& a, MailClaimRsp& b) {
@@ -4256,7 +5132,7 @@ class MailBatchClaimReq : public ::google::protobuf::Message /* @@protoc_inserti
                &_MailBatchClaimReq_default_instance_);
   }
   static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
-    28;
+    34;
 
   void Swap(MailBatchClaimReq* other);
   friend void swap(MailBatchClaimReq& a, MailBatchClaimReq& b) {
@@ -4399,7 +5275,7 @@ class MailBatchClaimRsp : public ::google::protobuf::Message /* @@protoc_inserti
                &_MailBatchClaimRsp_default_instance_);
   }
   static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
-    29;
+    35;
 
   void Swap(MailBatchClaimRsp* other);
   friend void swap(MailBatchClaimRsp& a, MailBatchClaimRsp& b) {
@@ -4555,7 +5431,7 @@ class MailFavoriteReq : public ::google::protobuf::Message /* @@protoc_insertion
                &_MailFavoriteReq_default_instance_);
   }
   static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
-    30;
+    36;
 
   void Swap(MailFavoriteReq* other);
   friend void swap(MailFavoriteReq& a, MailFavoriteReq& b) {
@@ -4683,7 +5559,7 @@ class MailFavoriteRsp : public ::google::protobuf::Message /* @@protoc_insertion
                &_MailFavoriteRsp_default_instance_);
   }
   static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
-    31;
+    37;
 
   void Swap(MailFavoriteRsp* other);
   friend void swap(MailFavoriteRsp& a, MailFavoriteRsp& b) {
@@ -4833,7 +5709,7 @@ class MailBatchReadReq : public ::google::protobuf::Message /* @@protoc_insertio
                &_MailBatchReadReq_default_instance_);
   }
   static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
-    32;
+    38;
 
   void Swap(MailBatchReadReq* other);
   friend void swap(MailBatchReadReq& a, MailBatchReadReq& b) {
@@ -4961,7 +5837,7 @@ class MailBatchReadRsp : public ::google::protobuf::Message /* @@protoc_insertio
                &_MailBatchReadRsp_default_instance_);
   }
   static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
-    33;
+    39;
 
   void Swap(MailBatchReadRsp* other);
   friend void swap(MailBatchReadRsp& a, MailBatchReadRsp& b) {
@@ -5111,7 +5987,7 @@ class MailBatchDeleteReq : public ::google::protobuf::Message /* @@protoc_insert
                &_MailBatchDeleteReq_default_instance_);
   }
   static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
-    34;
+    40;
 
   void Swap(MailBatchDeleteReq* other);
   friend void swap(MailBatchDeleteReq& a, MailBatchDeleteReq& b) {
@@ -5239,7 +6115,7 @@ class MailBatchDeleteRsp : public ::google::protobuf::Message /* @@protoc_insert
                &_MailBatchDeleteRsp_default_instance_);
   }
   static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
-    35;
+    41;
 
   void Swap(MailBatchDeleteRsp* other);
   friend void swap(MailBatchDeleteRsp& a, MailBatchDeleteRsp& b) {
@@ -5403,7 +6279,7 @@ class MailDeliverAttachment : public ::google::protobuf::Message /* @@protoc_ins
                &_MailDeliverAttachment_default_instance_);
   }
   static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
-    36;
+    42;
 
   void Swap(MailDeliverAttachment* other);
   friend void swap(MailDeliverAttachment& a, MailDeliverAttachment& b) {
@@ -5554,7 +6430,7 @@ class MailDeliverReq : public ::google::protobuf::Message /* @@protoc_insertion_
                &_MailDeliverReq_default_instance_);
   }
   static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
-    37;
+    43;
 
   void Swap(MailDeliverReq* other);
   friend void swap(MailDeliverReq& a, MailDeliverReq& b) {
@@ -5844,7 +6720,7 @@ class MailDeliverRsp : public ::google::protobuf::Message /* @@protoc_insertion_
                &_MailDeliverRsp_default_instance_);
   }
   static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
-    38;
+    44;
 
   void Swap(MailDeliverRsp* other);
   friend void swap(MailDeliverRsp& a, MailDeliverRsp& b) {
@@ -5959,6 +6835,1238 @@ class MailDeliverRsp : public ::google::protobuf::Message /* @@protoc_insertion_
 };
 // -------------------------------------------------------------------
 
+class EnterMapReq : public ::google::protobuf::Message /* @@protoc_insertion_point(class_definition:game.EnterMapReq) */ {
+ public:
+  EnterMapReq();
+  virtual ~EnterMapReq();
+
+  EnterMapReq(const EnterMapReq& from);
+
+  inline EnterMapReq& operator=(const EnterMapReq& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  #if LANG_CXX11
+  EnterMapReq(EnterMapReq&& from) noexcept
+    : EnterMapReq() {
+    *this = ::std::move(from);
+  }
+
+  inline EnterMapReq& operator=(EnterMapReq&& from) noexcept {
+    if (GetArenaNoVirtual() == from.GetArenaNoVirtual()) {
+      if (this != &from) InternalSwap(&from);
+    } else {
+      CopyFrom(from);
+    }
+    return *this;
+  }
+  #endif
+  static const ::google::protobuf::Descriptor* descriptor();
+  static const EnterMapReq& default_instance();
+
+  static void InitAsDefaultInstance();  // FOR INTERNAL USE ONLY
+  static inline const EnterMapReq* internal_default_instance() {
+    return reinterpret_cast<const EnterMapReq*>(
+               &_EnterMapReq_default_instance_);
+  }
+  static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
+    45;
+
+  void Swap(EnterMapReq* other);
+  friend void swap(EnterMapReq& a, EnterMapReq& b) {
+    a.Swap(&b);
+  }
+
+  // implements Message ----------------------------------------------
+
+  inline EnterMapReq* New() const PROTOBUF_FINAL { return New(NULL); }
+
+  EnterMapReq* New(::google::protobuf::Arena* arena) const PROTOBUF_FINAL;
+  void CopyFrom(const ::google::protobuf::Message& from) PROTOBUF_FINAL;
+  void MergeFrom(const ::google::protobuf::Message& from) PROTOBUF_FINAL;
+  void CopyFrom(const EnterMapReq& from);
+  void MergeFrom(const EnterMapReq& from);
+  void Clear() PROTOBUF_FINAL;
+  bool IsInitialized() const PROTOBUF_FINAL;
+
+  size_t ByteSizeLong() const PROTOBUF_FINAL;
+  bool MergePartialFromCodedStream(
+      ::google::protobuf::io::CodedInputStream* input) PROTOBUF_FINAL;
+  void SerializeWithCachedSizes(
+      ::google::protobuf::io::CodedOutputStream* output) const PROTOBUF_FINAL;
+  ::google::protobuf::uint8* InternalSerializeWithCachedSizesToArray(
+      bool deterministic, ::google::protobuf::uint8* target) const PROTOBUF_FINAL;
+  int GetCachedSize() const PROTOBUF_FINAL { return _cached_size_; }
+  private:
+  void SharedCtor();
+  void SharedDtor();
+  void SetCachedSize(int size) const PROTOBUF_FINAL;
+  void InternalSwap(EnterMapReq* other);
+  private:
+  inline ::google::protobuf::Arena* GetArenaNoVirtual() const {
+    return NULL;
+  }
+  inline void* MaybeArenaPtr() const {
+    return NULL;
+  }
+  public:
+
+  ::google::protobuf::Metadata GetMetadata() const PROTOBUF_FINAL;
+
+  // nested types ----------------------------------------------------
+
+  // accessors -------------------------------------------------------
+
+  // uint64 player_id = 1;
+  void clear_player_id();
+  static const int kPlayerIdFieldNumber = 1;
+  ::google::protobuf::uint64 player_id() const;
+  void set_player_id(::google::protobuf::uint64 value);
+
+  // uint64 map_template_id = 3;
+  void clear_map_template_id();
+  static const int kMapTemplateIdFieldNumber = 3;
+  ::google::protobuf::uint64 map_template_id() const;
+  void set_map_template_id(::google::protobuf::uint64 value);
+
+  // uint64 map_instance_id = 4;
+  void clear_map_instance_id();
+  static const int kMapInstanceIdFieldNumber = 4;
+  ::google::protobuf::uint64 map_instance_id() const;
+  void set_map_instance_id(::google::protobuf::uint64 value);
+
+  // uint32 realm_id = 2;
+  void clear_realm_id();
+  static const int kRealmIdFieldNumber = 2;
+  ::google::protobuf::uint32 realm_id() const;
+  void set_realm_id(::google::protobuf::uint32 value);
+
+  // @@protoc_insertion_point(class_scope:game.EnterMapReq)
+ private:
+
+  ::google::protobuf::internal::InternalMetadataWithArena _internal_metadata_;
+  ::google::protobuf::uint64 player_id_;
+  ::google::protobuf::uint64 map_template_id_;
+  ::google::protobuf::uint64 map_instance_id_;
+  ::google::protobuf::uint32 realm_id_;
+  mutable int _cached_size_;
+  friend struct ::protobuf_game_2eproto::TableStruct;
+  friend void ::protobuf_game_2eproto::InitDefaultsEnterMapReqImpl();
+};
+// -------------------------------------------------------------------
+
+class EnterMapRsp : public ::google::protobuf::Message /* @@protoc_insertion_point(class_definition:game.EnterMapRsp) */ {
+ public:
+  EnterMapRsp();
+  virtual ~EnterMapRsp();
+
+  EnterMapRsp(const EnterMapRsp& from);
+
+  inline EnterMapRsp& operator=(const EnterMapRsp& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  #if LANG_CXX11
+  EnterMapRsp(EnterMapRsp&& from) noexcept
+    : EnterMapRsp() {
+    *this = ::std::move(from);
+  }
+
+  inline EnterMapRsp& operator=(EnterMapRsp&& from) noexcept {
+    if (GetArenaNoVirtual() == from.GetArenaNoVirtual()) {
+      if (this != &from) InternalSwap(&from);
+    } else {
+      CopyFrom(from);
+    }
+    return *this;
+  }
+  #endif
+  static const ::google::protobuf::Descriptor* descriptor();
+  static const EnterMapRsp& default_instance();
+
+  static void InitAsDefaultInstance();  // FOR INTERNAL USE ONLY
+  static inline const EnterMapRsp* internal_default_instance() {
+    return reinterpret_cast<const EnterMapRsp*>(
+               &_EnterMapRsp_default_instance_);
+  }
+  static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
+    46;
+
+  void Swap(EnterMapRsp* other);
+  friend void swap(EnterMapRsp& a, EnterMapRsp& b) {
+    a.Swap(&b);
+  }
+
+  // implements Message ----------------------------------------------
+
+  inline EnterMapRsp* New() const PROTOBUF_FINAL { return New(NULL); }
+
+  EnterMapRsp* New(::google::protobuf::Arena* arena) const PROTOBUF_FINAL;
+  void CopyFrom(const ::google::protobuf::Message& from) PROTOBUF_FINAL;
+  void MergeFrom(const ::google::protobuf::Message& from) PROTOBUF_FINAL;
+  void CopyFrom(const EnterMapRsp& from);
+  void MergeFrom(const EnterMapRsp& from);
+  void Clear() PROTOBUF_FINAL;
+  bool IsInitialized() const PROTOBUF_FINAL;
+
+  size_t ByteSizeLong() const PROTOBUF_FINAL;
+  bool MergePartialFromCodedStream(
+      ::google::protobuf::io::CodedInputStream* input) PROTOBUF_FINAL;
+  void SerializeWithCachedSizes(
+      ::google::protobuf::io::CodedOutputStream* output) const PROTOBUF_FINAL;
+  ::google::protobuf::uint8* InternalSerializeWithCachedSizesToArray(
+      bool deterministic, ::google::protobuf::uint8* target) const PROTOBUF_FINAL;
+  int GetCachedSize() const PROTOBUF_FINAL { return _cached_size_; }
+  private:
+  void SharedCtor();
+  void SharedDtor();
+  void SetCachedSize(int size) const PROTOBUF_FINAL;
+  void InternalSwap(EnterMapRsp* other);
+  private:
+  inline ::google::protobuf::Arena* GetArenaNoVirtual() const {
+    return NULL;
+  }
+  inline void* MaybeArenaPtr() const {
+    return NULL;
+  }
+  public:
+
+  ::google::protobuf::Metadata GetMetadata() const PROTOBUF_FINAL;
+
+  // nested types ----------------------------------------------------
+
+  // accessors -------------------------------------------------------
+
+  // string message = 2;
+  void clear_message();
+  static const int kMessageFieldNumber = 2;
+  const ::std::string& message() const;
+  void set_message(const ::std::string& value);
+  #if LANG_CXX11
+  void set_message(::std::string&& value);
+  #endif
+  void set_message(const char* value);
+  void set_message(const char* value, size_t size);
+  ::std::string* mutable_message();
+  ::std::string* release_message();
+  void set_allocated_message(::std::string* message);
+
+  // string gamelogic_instance_id = 5;
+  void clear_gamelogic_instance_id();
+  static const int kGamelogicInstanceIdFieldNumber = 5;
+  const ::std::string& gamelogic_instance_id() const;
+  void set_gamelogic_instance_id(const ::std::string& value);
+  #if LANG_CXX11
+  void set_gamelogic_instance_id(::std::string&& value);
+  #endif
+  void set_gamelogic_instance_id(const char* value);
+  void set_gamelogic_instance_id(const char* value, size_t size);
+  ::std::string* mutable_gamelogic_instance_id();
+  ::std::string* release_gamelogic_instance_id();
+  void set_allocated_gamelogic_instance_id(::std::string* gamelogic_instance_id);
+
+  // uint64 map_template_id = 3;
+  void clear_map_template_id();
+  static const int kMapTemplateIdFieldNumber = 3;
+  ::google::protobuf::uint64 map_template_id() const;
+  void set_map_template_id(::google::protobuf::uint64 value);
+
+  // uint64 map_instance_id = 4;
+  void clear_map_instance_id();
+  static const int kMapInstanceIdFieldNumber = 4;
+  ::google::protobuf::uint64 map_instance_id() const;
+  void set_map_instance_id(::google::protobuf::uint64 value);
+
+  // uint64 owner_epoch = 6;
+  void clear_owner_epoch();
+  static const int kOwnerEpochFieldNumber = 6;
+  ::google::protobuf::uint64 owner_epoch() const;
+  void set_owner_epoch(::google::protobuf::uint64 value);
+
+  // uint64 route_version = 7;
+  void clear_route_version();
+  static const int kRouteVersionFieldNumber = 7;
+  ::google::protobuf::uint64 route_version() const;
+  void set_route_version(::google::protobuf::uint64 value);
+
+  // bool ok = 1;
+  void clear_ok();
+  static const int kOkFieldNumber = 1;
+  bool ok() const;
+  void set_ok(bool value);
+
+  // @@protoc_insertion_point(class_scope:game.EnterMapRsp)
+ private:
+
+  ::google::protobuf::internal::InternalMetadataWithArena _internal_metadata_;
+  ::google::protobuf::internal::ArenaStringPtr message_;
+  ::google::protobuf::internal::ArenaStringPtr gamelogic_instance_id_;
+  ::google::protobuf::uint64 map_template_id_;
+  ::google::protobuf::uint64 map_instance_id_;
+  ::google::protobuf::uint64 owner_epoch_;
+  ::google::protobuf::uint64 route_version_;
+  bool ok_;
+  mutable int _cached_size_;
+  friend struct ::protobuf_game_2eproto::TableStruct;
+  friend void ::protobuf_game_2eproto::InitDefaultsEnterMapRspImpl();
+};
+// -------------------------------------------------------------------
+
+class LeaveMapReq : public ::google::protobuf::Message /* @@protoc_insertion_point(class_definition:game.LeaveMapReq) */ {
+ public:
+  LeaveMapReq();
+  virtual ~LeaveMapReq();
+
+  LeaveMapReq(const LeaveMapReq& from);
+
+  inline LeaveMapReq& operator=(const LeaveMapReq& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  #if LANG_CXX11
+  LeaveMapReq(LeaveMapReq&& from) noexcept
+    : LeaveMapReq() {
+    *this = ::std::move(from);
+  }
+
+  inline LeaveMapReq& operator=(LeaveMapReq&& from) noexcept {
+    if (GetArenaNoVirtual() == from.GetArenaNoVirtual()) {
+      if (this != &from) InternalSwap(&from);
+    } else {
+      CopyFrom(from);
+    }
+    return *this;
+  }
+  #endif
+  static const ::google::protobuf::Descriptor* descriptor();
+  static const LeaveMapReq& default_instance();
+
+  static void InitAsDefaultInstance();  // FOR INTERNAL USE ONLY
+  static inline const LeaveMapReq* internal_default_instance() {
+    return reinterpret_cast<const LeaveMapReq*>(
+               &_LeaveMapReq_default_instance_);
+  }
+  static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
+    47;
+
+  void Swap(LeaveMapReq* other);
+  friend void swap(LeaveMapReq& a, LeaveMapReq& b) {
+    a.Swap(&b);
+  }
+
+  // implements Message ----------------------------------------------
+
+  inline LeaveMapReq* New() const PROTOBUF_FINAL { return New(NULL); }
+
+  LeaveMapReq* New(::google::protobuf::Arena* arena) const PROTOBUF_FINAL;
+  void CopyFrom(const ::google::protobuf::Message& from) PROTOBUF_FINAL;
+  void MergeFrom(const ::google::protobuf::Message& from) PROTOBUF_FINAL;
+  void CopyFrom(const LeaveMapReq& from);
+  void MergeFrom(const LeaveMapReq& from);
+  void Clear() PROTOBUF_FINAL;
+  bool IsInitialized() const PROTOBUF_FINAL;
+
+  size_t ByteSizeLong() const PROTOBUF_FINAL;
+  bool MergePartialFromCodedStream(
+      ::google::protobuf::io::CodedInputStream* input) PROTOBUF_FINAL;
+  void SerializeWithCachedSizes(
+      ::google::protobuf::io::CodedOutputStream* output) const PROTOBUF_FINAL;
+  ::google::protobuf::uint8* InternalSerializeWithCachedSizesToArray(
+      bool deterministic, ::google::protobuf::uint8* target) const PROTOBUF_FINAL;
+  int GetCachedSize() const PROTOBUF_FINAL { return _cached_size_; }
+  private:
+  void SharedCtor();
+  void SharedDtor();
+  void SetCachedSize(int size) const PROTOBUF_FINAL;
+  void InternalSwap(LeaveMapReq* other);
+  private:
+  inline ::google::protobuf::Arena* GetArenaNoVirtual() const {
+    return NULL;
+  }
+  inline void* MaybeArenaPtr() const {
+    return NULL;
+  }
+  public:
+
+  ::google::protobuf::Metadata GetMetadata() const PROTOBUF_FINAL;
+
+  // nested types ----------------------------------------------------
+
+  // accessors -------------------------------------------------------
+
+  // uint64 player_id = 1;
+  void clear_player_id();
+  static const int kPlayerIdFieldNumber = 1;
+  ::google::protobuf::uint64 player_id() const;
+  void set_player_id(::google::protobuf::uint64 value);
+
+  // uint64 map_instance_id = 2;
+  void clear_map_instance_id();
+  static const int kMapInstanceIdFieldNumber = 2;
+  ::google::protobuf::uint64 map_instance_id() const;
+  void set_map_instance_id(::google::protobuf::uint64 value);
+
+  // @@protoc_insertion_point(class_scope:game.LeaveMapReq)
+ private:
+
+  ::google::protobuf::internal::InternalMetadataWithArena _internal_metadata_;
+  ::google::protobuf::uint64 player_id_;
+  ::google::protobuf::uint64 map_instance_id_;
+  mutable int _cached_size_;
+  friend struct ::protobuf_game_2eproto::TableStruct;
+  friend void ::protobuf_game_2eproto::InitDefaultsLeaveMapReqImpl();
+};
+// -------------------------------------------------------------------
+
+class LeaveMapRsp : public ::google::protobuf::Message /* @@protoc_insertion_point(class_definition:game.LeaveMapRsp) */ {
+ public:
+  LeaveMapRsp();
+  virtual ~LeaveMapRsp();
+
+  LeaveMapRsp(const LeaveMapRsp& from);
+
+  inline LeaveMapRsp& operator=(const LeaveMapRsp& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  #if LANG_CXX11
+  LeaveMapRsp(LeaveMapRsp&& from) noexcept
+    : LeaveMapRsp() {
+    *this = ::std::move(from);
+  }
+
+  inline LeaveMapRsp& operator=(LeaveMapRsp&& from) noexcept {
+    if (GetArenaNoVirtual() == from.GetArenaNoVirtual()) {
+      if (this != &from) InternalSwap(&from);
+    } else {
+      CopyFrom(from);
+    }
+    return *this;
+  }
+  #endif
+  static const ::google::protobuf::Descriptor* descriptor();
+  static const LeaveMapRsp& default_instance();
+
+  static void InitAsDefaultInstance();  // FOR INTERNAL USE ONLY
+  static inline const LeaveMapRsp* internal_default_instance() {
+    return reinterpret_cast<const LeaveMapRsp*>(
+               &_LeaveMapRsp_default_instance_);
+  }
+  static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
+    48;
+
+  void Swap(LeaveMapRsp* other);
+  friend void swap(LeaveMapRsp& a, LeaveMapRsp& b) {
+    a.Swap(&b);
+  }
+
+  // implements Message ----------------------------------------------
+
+  inline LeaveMapRsp* New() const PROTOBUF_FINAL { return New(NULL); }
+
+  LeaveMapRsp* New(::google::protobuf::Arena* arena) const PROTOBUF_FINAL;
+  void CopyFrom(const ::google::protobuf::Message& from) PROTOBUF_FINAL;
+  void MergeFrom(const ::google::protobuf::Message& from) PROTOBUF_FINAL;
+  void CopyFrom(const LeaveMapRsp& from);
+  void MergeFrom(const LeaveMapRsp& from);
+  void Clear() PROTOBUF_FINAL;
+  bool IsInitialized() const PROTOBUF_FINAL;
+
+  size_t ByteSizeLong() const PROTOBUF_FINAL;
+  bool MergePartialFromCodedStream(
+      ::google::protobuf::io::CodedInputStream* input) PROTOBUF_FINAL;
+  void SerializeWithCachedSizes(
+      ::google::protobuf::io::CodedOutputStream* output) const PROTOBUF_FINAL;
+  ::google::protobuf::uint8* InternalSerializeWithCachedSizesToArray(
+      bool deterministic, ::google::protobuf::uint8* target) const PROTOBUF_FINAL;
+  int GetCachedSize() const PROTOBUF_FINAL { return _cached_size_; }
+  private:
+  void SharedCtor();
+  void SharedDtor();
+  void SetCachedSize(int size) const PROTOBUF_FINAL;
+  void InternalSwap(LeaveMapRsp* other);
+  private:
+  inline ::google::protobuf::Arena* GetArenaNoVirtual() const {
+    return NULL;
+  }
+  inline void* MaybeArenaPtr() const {
+    return NULL;
+  }
+  public:
+
+  ::google::protobuf::Metadata GetMetadata() const PROTOBUF_FINAL;
+
+  // nested types ----------------------------------------------------
+
+  // accessors -------------------------------------------------------
+
+  // string message = 2;
+  void clear_message();
+  static const int kMessageFieldNumber = 2;
+  const ::std::string& message() const;
+  void set_message(const ::std::string& value);
+  #if LANG_CXX11
+  void set_message(::std::string&& value);
+  #endif
+  void set_message(const char* value);
+  void set_message(const char* value, size_t size);
+  ::std::string* mutable_message();
+  ::std::string* release_message();
+  void set_allocated_message(::std::string* message);
+
+  // bool ok = 1;
+  void clear_ok();
+  static const int kOkFieldNumber = 1;
+  bool ok() const;
+  void set_ok(bool value);
+
+  // @@protoc_insertion_point(class_scope:game.LeaveMapRsp)
+ private:
+
+  ::google::protobuf::internal::InternalMetadataWithArena _internal_metadata_;
+  ::google::protobuf::internal::ArenaStringPtr message_;
+  bool ok_;
+  mutable int _cached_size_;
+  friend struct ::protobuf_game_2eproto::TableStruct;
+  friend void ::protobuf_game_2eproto::InitDefaultsLeaveMapRspImpl();
+};
+// -------------------------------------------------------------------
+
+class MapPingReq : public ::google::protobuf::Message /* @@protoc_insertion_point(class_definition:game.MapPingReq) */ {
+ public:
+  MapPingReq();
+  virtual ~MapPingReq();
+
+  MapPingReq(const MapPingReq& from);
+
+  inline MapPingReq& operator=(const MapPingReq& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  #if LANG_CXX11
+  MapPingReq(MapPingReq&& from) noexcept
+    : MapPingReq() {
+    *this = ::std::move(from);
+  }
+
+  inline MapPingReq& operator=(MapPingReq&& from) noexcept {
+    if (GetArenaNoVirtual() == from.GetArenaNoVirtual()) {
+      if (this != &from) InternalSwap(&from);
+    } else {
+      CopyFrom(from);
+    }
+    return *this;
+  }
+  #endif
+  static const ::google::protobuf::Descriptor* descriptor();
+  static const MapPingReq& default_instance();
+
+  static void InitAsDefaultInstance();  // FOR INTERNAL USE ONLY
+  static inline const MapPingReq* internal_default_instance() {
+    return reinterpret_cast<const MapPingReq*>(
+               &_MapPingReq_default_instance_);
+  }
+  static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
+    49;
+
+  void Swap(MapPingReq* other);
+  friend void swap(MapPingReq& a, MapPingReq& b) {
+    a.Swap(&b);
+  }
+
+  // implements Message ----------------------------------------------
+
+  inline MapPingReq* New() const PROTOBUF_FINAL { return New(NULL); }
+
+  MapPingReq* New(::google::protobuf::Arena* arena) const PROTOBUF_FINAL;
+  void CopyFrom(const ::google::protobuf::Message& from) PROTOBUF_FINAL;
+  void MergeFrom(const ::google::protobuf::Message& from) PROTOBUF_FINAL;
+  void CopyFrom(const MapPingReq& from);
+  void MergeFrom(const MapPingReq& from);
+  void Clear() PROTOBUF_FINAL;
+  bool IsInitialized() const PROTOBUF_FINAL;
+
+  size_t ByteSizeLong() const PROTOBUF_FINAL;
+  bool MergePartialFromCodedStream(
+      ::google::protobuf::io::CodedInputStream* input) PROTOBUF_FINAL;
+  void SerializeWithCachedSizes(
+      ::google::protobuf::io::CodedOutputStream* output) const PROTOBUF_FINAL;
+  ::google::protobuf::uint8* InternalSerializeWithCachedSizesToArray(
+      bool deterministic, ::google::protobuf::uint8* target) const PROTOBUF_FINAL;
+  int GetCachedSize() const PROTOBUF_FINAL { return _cached_size_; }
+  private:
+  void SharedCtor();
+  void SharedDtor();
+  void SetCachedSize(int size) const PROTOBUF_FINAL;
+  void InternalSwap(MapPingReq* other);
+  private:
+  inline ::google::protobuf::Arena* GetArenaNoVirtual() const {
+    return NULL;
+  }
+  inline void* MaybeArenaPtr() const {
+    return NULL;
+  }
+  public:
+
+  ::google::protobuf::Metadata GetMetadata() const PROTOBUF_FINAL;
+
+  // nested types ----------------------------------------------------
+
+  // accessors -------------------------------------------------------
+
+  // uint64 player_id = 1;
+  void clear_player_id();
+  static const int kPlayerIdFieldNumber = 1;
+  ::google::protobuf::uint64 player_id() const;
+  void set_player_id(::google::protobuf::uint64 value);
+
+  // uint64 map_instance_id = 2;
+  void clear_map_instance_id();
+  static const int kMapInstanceIdFieldNumber = 2;
+  ::google::protobuf::uint64 map_instance_id() const;
+  void set_map_instance_id(::google::protobuf::uint64 value);
+
+  // @@protoc_insertion_point(class_scope:game.MapPingReq)
+ private:
+
+  ::google::protobuf::internal::InternalMetadataWithArena _internal_metadata_;
+  ::google::protobuf::uint64 player_id_;
+  ::google::protobuf::uint64 map_instance_id_;
+  mutable int _cached_size_;
+  friend struct ::protobuf_game_2eproto::TableStruct;
+  friend void ::protobuf_game_2eproto::InitDefaultsMapPingReqImpl();
+};
+// -------------------------------------------------------------------
+
+class MapPingRsp : public ::google::protobuf::Message /* @@protoc_insertion_point(class_definition:game.MapPingRsp) */ {
+ public:
+  MapPingRsp();
+  virtual ~MapPingRsp();
+
+  MapPingRsp(const MapPingRsp& from);
+
+  inline MapPingRsp& operator=(const MapPingRsp& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  #if LANG_CXX11
+  MapPingRsp(MapPingRsp&& from) noexcept
+    : MapPingRsp() {
+    *this = ::std::move(from);
+  }
+
+  inline MapPingRsp& operator=(MapPingRsp&& from) noexcept {
+    if (GetArenaNoVirtual() == from.GetArenaNoVirtual()) {
+      if (this != &from) InternalSwap(&from);
+    } else {
+      CopyFrom(from);
+    }
+    return *this;
+  }
+  #endif
+  static const ::google::protobuf::Descriptor* descriptor();
+  static const MapPingRsp& default_instance();
+
+  static void InitAsDefaultInstance();  // FOR INTERNAL USE ONLY
+  static inline const MapPingRsp* internal_default_instance() {
+    return reinterpret_cast<const MapPingRsp*>(
+               &_MapPingRsp_default_instance_);
+  }
+  static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
+    50;
+
+  void Swap(MapPingRsp* other);
+  friend void swap(MapPingRsp& a, MapPingRsp& b) {
+    a.Swap(&b);
+  }
+
+  // implements Message ----------------------------------------------
+
+  inline MapPingRsp* New() const PROTOBUF_FINAL { return New(NULL); }
+
+  MapPingRsp* New(::google::protobuf::Arena* arena) const PROTOBUF_FINAL;
+  void CopyFrom(const ::google::protobuf::Message& from) PROTOBUF_FINAL;
+  void MergeFrom(const ::google::protobuf::Message& from) PROTOBUF_FINAL;
+  void CopyFrom(const MapPingRsp& from);
+  void MergeFrom(const MapPingRsp& from);
+  void Clear() PROTOBUF_FINAL;
+  bool IsInitialized() const PROTOBUF_FINAL;
+
+  size_t ByteSizeLong() const PROTOBUF_FINAL;
+  bool MergePartialFromCodedStream(
+      ::google::protobuf::io::CodedInputStream* input) PROTOBUF_FINAL;
+  void SerializeWithCachedSizes(
+      ::google::protobuf::io::CodedOutputStream* output) const PROTOBUF_FINAL;
+  ::google::protobuf::uint8* InternalSerializeWithCachedSizesToArray(
+      bool deterministic, ::google::protobuf::uint8* target) const PROTOBUF_FINAL;
+  int GetCachedSize() const PROTOBUF_FINAL { return _cached_size_; }
+  private:
+  void SharedCtor();
+  void SharedDtor();
+  void SetCachedSize(int size) const PROTOBUF_FINAL;
+  void InternalSwap(MapPingRsp* other);
+  private:
+  inline ::google::protobuf::Arena* GetArenaNoVirtual() const {
+    return NULL;
+  }
+  inline void* MaybeArenaPtr() const {
+    return NULL;
+  }
+  public:
+
+  ::google::protobuf::Metadata GetMetadata() const PROTOBUF_FINAL;
+
+  // nested types ----------------------------------------------------
+
+  // accessors -------------------------------------------------------
+
+  // string message = 2;
+  void clear_message();
+  static const int kMessageFieldNumber = 2;
+  const ::std::string& message() const;
+  void set_message(const ::std::string& value);
+  #if LANG_CXX11
+  void set_message(::std::string&& value);
+  #endif
+  void set_message(const char* value);
+  void set_message(const char* value, size_t size);
+  ::std::string* mutable_message();
+  ::std::string* release_message();
+  void set_allocated_message(::std::string* message);
+
+  // string gamelogic_instance_id = 5;
+  void clear_gamelogic_instance_id();
+  static const int kGamelogicInstanceIdFieldNumber = 5;
+  const ::std::string& gamelogic_instance_id() const;
+  void set_gamelogic_instance_id(const ::std::string& value);
+  #if LANG_CXX11
+  void set_gamelogic_instance_id(::std::string&& value);
+  #endif
+  void set_gamelogic_instance_id(const char* value);
+  void set_gamelogic_instance_id(const char* value, size_t size);
+  ::std::string* mutable_gamelogic_instance_id();
+  ::std::string* release_gamelogic_instance_id();
+  void set_allocated_gamelogic_instance_id(::std::string* gamelogic_instance_id);
+
+  // bool ok = 1;
+  void clear_ok();
+  static const int kOkFieldNumber = 1;
+  bool ok() const;
+  void set_ok(bool value);
+
+  // uint32 player_count = 4;
+  void clear_player_count();
+  static const int kPlayerCountFieldNumber = 4;
+  ::google::protobuf::uint32 player_count() const;
+  void set_player_count(::google::protobuf::uint32 value);
+
+  // uint64 owner_epoch = 3;
+  void clear_owner_epoch();
+  static const int kOwnerEpochFieldNumber = 3;
+  ::google::protobuf::uint64 owner_epoch() const;
+  void set_owner_epoch(::google::protobuf::uint64 value);
+
+  // @@protoc_insertion_point(class_scope:game.MapPingRsp)
+ private:
+
+  ::google::protobuf::internal::InternalMetadataWithArena _internal_metadata_;
+  ::google::protobuf::internal::ArenaStringPtr message_;
+  ::google::protobuf::internal::ArenaStringPtr gamelogic_instance_id_;
+  bool ok_;
+  ::google::protobuf::uint32 player_count_;
+  ::google::protobuf::uint64 owner_epoch_;
+  mutable int _cached_size_;
+  friend struct ::protobuf_game_2eproto::TableStruct;
+  friend void ::protobuf_game_2eproto::InitDefaultsMapPingRspImpl();
+};
+// -------------------------------------------------------------------
+
+class ChatSendReq : public ::google::protobuf::Message /* @@protoc_insertion_point(class_definition:game.ChatSendReq) */ {
+ public:
+  ChatSendReq();
+  virtual ~ChatSendReq();
+
+  ChatSendReq(const ChatSendReq& from);
+
+  inline ChatSendReq& operator=(const ChatSendReq& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  #if LANG_CXX11
+  ChatSendReq(ChatSendReq&& from) noexcept
+    : ChatSendReq() {
+    *this = ::std::move(from);
+  }
+
+  inline ChatSendReq& operator=(ChatSendReq&& from) noexcept {
+    if (GetArenaNoVirtual() == from.GetArenaNoVirtual()) {
+      if (this != &from) InternalSwap(&from);
+    } else {
+      CopyFrom(from);
+    }
+    return *this;
+  }
+  #endif
+  static const ::google::protobuf::Descriptor* descriptor();
+  static const ChatSendReq& default_instance();
+
+  static void InitAsDefaultInstance();  // FOR INTERNAL USE ONLY
+  static inline const ChatSendReq* internal_default_instance() {
+    return reinterpret_cast<const ChatSendReq*>(
+               &_ChatSendReq_default_instance_);
+  }
+  static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
+    51;
+
+  void Swap(ChatSendReq* other);
+  friend void swap(ChatSendReq& a, ChatSendReq& b) {
+    a.Swap(&b);
+  }
+
+  // implements Message ----------------------------------------------
+
+  inline ChatSendReq* New() const PROTOBUF_FINAL { return New(NULL); }
+
+  ChatSendReq* New(::google::protobuf::Arena* arena) const PROTOBUF_FINAL;
+  void CopyFrom(const ::google::protobuf::Message& from) PROTOBUF_FINAL;
+  void MergeFrom(const ::google::protobuf::Message& from) PROTOBUF_FINAL;
+  void CopyFrom(const ChatSendReq& from);
+  void MergeFrom(const ChatSendReq& from);
+  void Clear() PROTOBUF_FINAL;
+  bool IsInitialized() const PROTOBUF_FINAL;
+
+  size_t ByteSizeLong() const PROTOBUF_FINAL;
+  bool MergePartialFromCodedStream(
+      ::google::protobuf::io::CodedInputStream* input) PROTOBUF_FINAL;
+  void SerializeWithCachedSizes(
+      ::google::protobuf::io::CodedOutputStream* output) const PROTOBUF_FINAL;
+  ::google::protobuf::uint8* InternalSerializeWithCachedSizesToArray(
+      bool deterministic, ::google::protobuf::uint8* target) const PROTOBUF_FINAL;
+  int GetCachedSize() const PROTOBUF_FINAL { return _cached_size_; }
+  private:
+  void SharedCtor();
+  void SharedDtor();
+  void SetCachedSize(int size) const PROTOBUF_FINAL;
+  void InternalSwap(ChatSendReq* other);
+  private:
+  inline ::google::protobuf::Arena* GetArenaNoVirtual() const {
+    return NULL;
+  }
+  inline void* MaybeArenaPtr() const {
+    return NULL;
+  }
+  public:
+
+  ::google::protobuf::Metadata GetMetadata() const PROTOBUF_FINAL;
+
+  // nested types ----------------------------------------------------
+
+  // accessors -------------------------------------------------------
+
+  // string channel = 2;
+  void clear_channel();
+  static const int kChannelFieldNumber = 2;
+  const ::std::string& channel() const;
+  void set_channel(const ::std::string& value);
+  #if LANG_CXX11
+  void set_channel(::std::string&& value);
+  #endif
+  void set_channel(const char* value);
+  void set_channel(const char* value, size_t size);
+  ::std::string* mutable_channel();
+  ::std::string* release_channel();
+  void set_allocated_channel(::std::string* channel);
+
+  // string text = 3;
+  void clear_text();
+  static const int kTextFieldNumber = 3;
+  const ::std::string& text() const;
+  void set_text(const ::std::string& value);
+  #if LANG_CXX11
+  void set_text(::std::string&& value);
+  #endif
+  void set_text(const char* value);
+  void set_text(const char* value, size_t size);
+  ::std::string* mutable_text();
+  ::std::string* release_text();
+  void set_allocated_text(::std::string* text);
+
+  // uint64 player_id = 1;
+  void clear_player_id();
+  static const int kPlayerIdFieldNumber = 1;
+  ::google::protobuf::uint64 player_id() const;
+  void set_player_id(::google::protobuf::uint64 value);
+
+  // @@protoc_insertion_point(class_scope:game.ChatSendReq)
+ private:
+
+  ::google::protobuf::internal::InternalMetadataWithArena _internal_metadata_;
+  ::google::protobuf::internal::ArenaStringPtr channel_;
+  ::google::protobuf::internal::ArenaStringPtr text_;
+  ::google::protobuf::uint64 player_id_;
+  mutable int _cached_size_;
+  friend struct ::protobuf_game_2eproto::TableStruct;
+  friend void ::protobuf_game_2eproto::InitDefaultsChatSendReqImpl();
+};
+// -------------------------------------------------------------------
+
+class ChatSendRsp : public ::google::protobuf::Message /* @@protoc_insertion_point(class_definition:game.ChatSendRsp) */ {
+ public:
+  ChatSendRsp();
+  virtual ~ChatSendRsp();
+
+  ChatSendRsp(const ChatSendRsp& from);
+
+  inline ChatSendRsp& operator=(const ChatSendRsp& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  #if LANG_CXX11
+  ChatSendRsp(ChatSendRsp&& from) noexcept
+    : ChatSendRsp() {
+    *this = ::std::move(from);
+  }
+
+  inline ChatSendRsp& operator=(ChatSendRsp&& from) noexcept {
+    if (GetArenaNoVirtual() == from.GetArenaNoVirtual()) {
+      if (this != &from) InternalSwap(&from);
+    } else {
+      CopyFrom(from);
+    }
+    return *this;
+  }
+  #endif
+  static const ::google::protobuf::Descriptor* descriptor();
+  static const ChatSendRsp& default_instance();
+
+  static void InitAsDefaultInstance();  // FOR INTERNAL USE ONLY
+  static inline const ChatSendRsp* internal_default_instance() {
+    return reinterpret_cast<const ChatSendRsp*>(
+               &_ChatSendRsp_default_instance_);
+  }
+  static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
+    52;
+
+  void Swap(ChatSendRsp* other);
+  friend void swap(ChatSendRsp& a, ChatSendRsp& b) {
+    a.Swap(&b);
+  }
+
+  // implements Message ----------------------------------------------
+
+  inline ChatSendRsp* New() const PROTOBUF_FINAL { return New(NULL); }
+
+  ChatSendRsp* New(::google::protobuf::Arena* arena) const PROTOBUF_FINAL;
+  void CopyFrom(const ::google::protobuf::Message& from) PROTOBUF_FINAL;
+  void MergeFrom(const ::google::protobuf::Message& from) PROTOBUF_FINAL;
+  void CopyFrom(const ChatSendRsp& from);
+  void MergeFrom(const ChatSendRsp& from);
+  void Clear() PROTOBUF_FINAL;
+  bool IsInitialized() const PROTOBUF_FINAL;
+
+  size_t ByteSizeLong() const PROTOBUF_FINAL;
+  bool MergePartialFromCodedStream(
+      ::google::protobuf::io::CodedInputStream* input) PROTOBUF_FINAL;
+  void SerializeWithCachedSizes(
+      ::google::protobuf::io::CodedOutputStream* output) const PROTOBUF_FINAL;
+  ::google::protobuf::uint8* InternalSerializeWithCachedSizesToArray(
+      bool deterministic, ::google::protobuf::uint8* target) const PROTOBUF_FINAL;
+  int GetCachedSize() const PROTOBUF_FINAL { return _cached_size_; }
+  private:
+  void SharedCtor();
+  void SharedDtor();
+  void SetCachedSize(int size) const PROTOBUF_FINAL;
+  void InternalSwap(ChatSendRsp* other);
+  private:
+  inline ::google::protobuf::Arena* GetArenaNoVirtual() const {
+    return NULL;
+  }
+  inline void* MaybeArenaPtr() const {
+    return NULL;
+  }
+  public:
+
+  ::google::protobuf::Metadata GetMetadata() const PROTOBUF_FINAL;
+
+  // nested types ----------------------------------------------------
+
+  // accessors -------------------------------------------------------
+
+  // string message = 2;
+  void clear_message();
+  static const int kMessageFieldNumber = 2;
+  const ::std::string& message() const;
+  void set_message(const ::std::string& value);
+  #if LANG_CXX11
+  void set_message(::std::string&& value);
+  #endif
+  void set_message(const char* value);
+  void set_message(const char* value, size_t size);
+  ::std::string* mutable_message();
+  ::std::string* release_message();
+  void set_allocated_message(::std::string* message);
+
+  // string error_code = 3;
+  void clear_error_code();
+  static const int kErrorCodeFieldNumber = 3;
+  const ::std::string& error_code() const;
+  void set_error_code(const ::std::string& value);
+  #if LANG_CXX11
+  void set_error_code(::std::string&& value);
+  #endif
+  void set_error_code(const char* value);
+  void set_error_code(const char* value, size_t size);
+  ::std::string* mutable_error_code();
+  ::std::string* release_error_code();
+  void set_allocated_error_code(::std::string* error_code);
+
+  // bool ok = 1;
+  void clear_ok();
+  static const int kOkFieldNumber = 1;
+  bool ok() const;
+  void set_ok(bool value);
+
+  // @@protoc_insertion_point(class_scope:game.ChatSendRsp)
+ private:
+
+  ::google::protobuf::internal::InternalMetadataWithArena _internal_metadata_;
+  ::google::protobuf::internal::ArenaStringPtr message_;
+  ::google::protobuf::internal::ArenaStringPtr error_code_;
+  bool ok_;
+  mutable int _cached_size_;
+  friend struct ::protobuf_game_2eproto::TableStruct;
+  friend void ::protobuf_game_2eproto::InitDefaultsChatSendRspImpl();
+};
+// -------------------------------------------------------------------
+
+class FriendListReq : public ::google::protobuf::Message /* @@protoc_insertion_point(class_definition:game.FriendListReq) */ {
+ public:
+  FriendListReq();
+  virtual ~FriendListReq();
+
+  FriendListReq(const FriendListReq& from);
+
+  inline FriendListReq& operator=(const FriendListReq& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  #if LANG_CXX11
+  FriendListReq(FriendListReq&& from) noexcept
+    : FriendListReq() {
+    *this = ::std::move(from);
+  }
+
+  inline FriendListReq& operator=(FriendListReq&& from) noexcept {
+    if (GetArenaNoVirtual() == from.GetArenaNoVirtual()) {
+      if (this != &from) InternalSwap(&from);
+    } else {
+      CopyFrom(from);
+    }
+    return *this;
+  }
+  #endif
+  static const ::google::protobuf::Descriptor* descriptor();
+  static const FriendListReq& default_instance();
+
+  static void InitAsDefaultInstance();  // FOR INTERNAL USE ONLY
+  static inline const FriendListReq* internal_default_instance() {
+    return reinterpret_cast<const FriendListReq*>(
+               &_FriendListReq_default_instance_);
+  }
+  static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
+    53;
+
+  void Swap(FriendListReq* other);
+  friend void swap(FriendListReq& a, FriendListReq& b) {
+    a.Swap(&b);
+  }
+
+  // implements Message ----------------------------------------------
+
+  inline FriendListReq* New() const PROTOBUF_FINAL { return New(NULL); }
+
+  FriendListReq* New(::google::protobuf::Arena* arena) const PROTOBUF_FINAL;
+  void CopyFrom(const ::google::protobuf::Message& from) PROTOBUF_FINAL;
+  void MergeFrom(const ::google::protobuf::Message& from) PROTOBUF_FINAL;
+  void CopyFrom(const FriendListReq& from);
+  void MergeFrom(const FriendListReq& from);
+  void Clear() PROTOBUF_FINAL;
+  bool IsInitialized() const PROTOBUF_FINAL;
+
+  size_t ByteSizeLong() const PROTOBUF_FINAL;
+  bool MergePartialFromCodedStream(
+      ::google::protobuf::io::CodedInputStream* input) PROTOBUF_FINAL;
+  void SerializeWithCachedSizes(
+      ::google::protobuf::io::CodedOutputStream* output) const PROTOBUF_FINAL;
+  ::google::protobuf::uint8* InternalSerializeWithCachedSizesToArray(
+      bool deterministic, ::google::protobuf::uint8* target) const PROTOBUF_FINAL;
+  int GetCachedSize() const PROTOBUF_FINAL { return _cached_size_; }
+  private:
+  void SharedCtor();
+  void SharedDtor();
+  void SetCachedSize(int size) const PROTOBUF_FINAL;
+  void InternalSwap(FriendListReq* other);
+  private:
+  inline ::google::protobuf::Arena* GetArenaNoVirtual() const {
+    return NULL;
+  }
+  inline void* MaybeArenaPtr() const {
+    return NULL;
+  }
+  public:
+
+  ::google::protobuf::Metadata GetMetadata() const PROTOBUF_FINAL;
+
+  // nested types ----------------------------------------------------
+
+  // accessors -------------------------------------------------------
+
+  // uint64 player_id = 1;
+  void clear_player_id();
+  static const int kPlayerIdFieldNumber = 1;
+  ::google::protobuf::uint64 player_id() const;
+  void set_player_id(::google::protobuf::uint64 value);
+
+  // @@protoc_insertion_point(class_scope:game.FriendListReq)
+ private:
+
+  ::google::protobuf::internal::InternalMetadataWithArena _internal_metadata_;
+  ::google::protobuf::uint64 player_id_;
+  mutable int _cached_size_;
+  friend struct ::protobuf_game_2eproto::TableStruct;
+  friend void ::protobuf_game_2eproto::InitDefaultsFriendListReqImpl();
+};
+// -------------------------------------------------------------------
+
+class FriendListRsp : public ::google::protobuf::Message /* @@protoc_insertion_point(class_definition:game.FriendListRsp) */ {
+ public:
+  FriendListRsp();
+  virtual ~FriendListRsp();
+
+  FriendListRsp(const FriendListRsp& from);
+
+  inline FriendListRsp& operator=(const FriendListRsp& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  #if LANG_CXX11
+  FriendListRsp(FriendListRsp&& from) noexcept
+    : FriendListRsp() {
+    *this = ::std::move(from);
+  }
+
+  inline FriendListRsp& operator=(FriendListRsp&& from) noexcept {
+    if (GetArenaNoVirtual() == from.GetArenaNoVirtual()) {
+      if (this != &from) InternalSwap(&from);
+    } else {
+      CopyFrom(from);
+    }
+    return *this;
+  }
+  #endif
+  static const ::google::protobuf::Descriptor* descriptor();
+  static const FriendListRsp& default_instance();
+
+  static void InitAsDefaultInstance();  // FOR INTERNAL USE ONLY
+  static inline const FriendListRsp* internal_default_instance() {
+    return reinterpret_cast<const FriendListRsp*>(
+               &_FriendListRsp_default_instance_);
+  }
+  static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
+    54;
+
+  void Swap(FriendListRsp* other);
+  friend void swap(FriendListRsp& a, FriendListRsp& b) {
+    a.Swap(&b);
+  }
+
+  // implements Message ----------------------------------------------
+
+  inline FriendListRsp* New() const PROTOBUF_FINAL { return New(NULL); }
+
+  FriendListRsp* New(::google::protobuf::Arena* arena) const PROTOBUF_FINAL;
+  void CopyFrom(const ::google::protobuf::Message& from) PROTOBUF_FINAL;
+  void MergeFrom(const ::google::protobuf::Message& from) PROTOBUF_FINAL;
+  void CopyFrom(const FriendListRsp& from);
+  void MergeFrom(const FriendListRsp& from);
+  void Clear() PROTOBUF_FINAL;
+  bool IsInitialized() const PROTOBUF_FINAL;
+
+  size_t ByteSizeLong() const PROTOBUF_FINAL;
+  bool MergePartialFromCodedStream(
+      ::google::protobuf::io::CodedInputStream* input) PROTOBUF_FINAL;
+  void SerializeWithCachedSizes(
+      ::google::protobuf::io::CodedOutputStream* output) const PROTOBUF_FINAL;
+  ::google::protobuf::uint8* InternalSerializeWithCachedSizesToArray(
+      bool deterministic, ::google::protobuf::uint8* target) const PROTOBUF_FINAL;
+  int GetCachedSize() const PROTOBUF_FINAL { return _cached_size_; }
+  private:
+  void SharedCtor();
+  void SharedDtor();
+  void SetCachedSize(int size) const PROTOBUF_FINAL;
+  void InternalSwap(FriendListRsp* other);
+  private:
+  inline ::google::protobuf::Arena* GetArenaNoVirtual() const {
+    return NULL;
+  }
+  inline void* MaybeArenaPtr() const {
+    return NULL;
+  }
+  public:
+
+  ::google::protobuf::Metadata GetMetadata() const PROTOBUF_FINAL;
+
+  // nested types ----------------------------------------------------
+
+  // accessors -------------------------------------------------------
+
+  // string message = 2;
+  void clear_message();
+  static const int kMessageFieldNumber = 2;
+  const ::std::string& message() const;
+  void set_message(const ::std::string& value);
+  #if LANG_CXX11
+  void set_message(::std::string&& value);
+  #endif
+  void set_message(const char* value);
+  void set_message(const char* value, size_t size);
+  ::std::string* mutable_message();
+  ::std::string* release_message();
+  void set_allocated_message(::std::string* message);
+
+  // string error_code = 3;
+  void clear_error_code();
+  static const int kErrorCodeFieldNumber = 3;
+  const ::std::string& error_code() const;
+  void set_error_code(const ::std::string& value);
+  #if LANG_CXX11
+  void set_error_code(::std::string&& value);
+  #endif
+  void set_error_code(const char* value);
+  void set_error_code(const char* value, size_t size);
+  ::std::string* mutable_error_code();
+  ::std::string* release_error_code();
+  void set_allocated_error_code(::std::string* error_code);
+
+  // bool ok = 1;
+  void clear_ok();
+  static const int kOkFieldNumber = 1;
+  bool ok() const;
+  void set_ok(bool value);
+
+  // @@protoc_insertion_point(class_scope:game.FriendListRsp)
+ private:
+
+  ::google::protobuf::internal::InternalMetadataWithArena _internal_metadata_;
+  ::google::protobuf::internal::ArenaStringPtr message_;
+  ::google::protobuf::internal::ArenaStringPtr error_code_;
+  bool ok_;
+  mutable int _cached_size_;
+  friend struct ::protobuf_game_2eproto::TableStruct;
+  friend void ::protobuf_game_2eproto::InitDefaultsFriendListRspImpl();
+};
+// -------------------------------------------------------------------
+
 class GameRequest : public ::google::protobuf::Message /* @@protoc_insertion_point(class_definition:game.GameRequest) */ {
  public:
   GameRequest();
@@ -5996,6 +8104,9 @@ class GameRequest : public ::google::protobuf::Message /* @@protoc_insertion_poi
     kValidateSession = 21,
     kCheckOnline = 22,
     kLogout = 23,
+    kReconnect = 24,
+    kRegister = 25,
+    kFlushBag = 26,
     kMailboxSummary = 30,
     kMailList = 31,
     kMailGet = 32,
@@ -6006,6 +8117,11 @@ class GameRequest : public ::google::protobuf::Message /* @@protoc_insertion_poi
     kMailBatchRead = 37,
     kMailBatchDelete = 38,
     kMailDeliver = 39,
+    kEnterMap = 40,
+    kLeaveMap = 41,
+    kMapPing = 42,
+    kChatSend = 50,
+    kFriendList = 51,
     BODY_NOT_SET = 0,
   };
 
@@ -6015,7 +8131,7 @@ class GameRequest : public ::google::protobuf::Message /* @@protoc_insertion_poi
                &_GameRequest_default_instance_);
   }
   static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
-    39;
+    55;
 
   void Swap(GameRequest* other);
   friend void swap(GameRequest& a, GameRequest& b) {
@@ -6145,6 +8261,33 @@ class GameRequest : public ::google::protobuf::Message /* @@protoc_insertion_poi
   ::game::LogoutReq* mutable_logout();
   void set_allocated_logout(::game::LogoutReq* logout);
 
+  // .game.ReconnectReq reconnect = 24;
+  bool has_reconnect() const;
+  void clear_reconnect();
+  static const int kReconnectFieldNumber = 24;
+  const ::game::ReconnectReq& reconnect() const;
+  ::game::ReconnectReq* release_reconnect();
+  ::game::ReconnectReq* mutable_reconnect();
+  void set_allocated_reconnect(::game::ReconnectReq* reconnect);
+
+  // .game.RegisterReq register = 25;
+  bool has_register_() const;
+  void clear_register_();
+  static const int kRegisterFieldNumber = 25;
+  const ::game::RegisterReq& register_() const;
+  ::game::RegisterReq* release_register_();
+  ::game::RegisterReq* mutable_register_();
+  void set_allocated_register_(::game::RegisterReq* register_);
+
+  // .game.FlushBagReq flush_bag = 26;
+  bool has_flush_bag() const;
+  void clear_flush_bag();
+  static const int kFlushBagFieldNumber = 26;
+  const ::game::FlushBagReq& flush_bag() const;
+  ::game::FlushBagReq* release_flush_bag();
+  ::game::FlushBagReq* mutable_flush_bag();
+  void set_allocated_flush_bag(::game::FlushBagReq* flush_bag);
+
   // .game.MailboxSummaryReq mailbox_summary = 30;
   bool has_mailbox_summary() const;
   void clear_mailbox_summary();
@@ -6235,6 +8378,51 @@ class GameRequest : public ::google::protobuf::Message /* @@protoc_insertion_poi
   ::game::MailDeliverReq* mutable_mail_deliver();
   void set_allocated_mail_deliver(::game::MailDeliverReq* mail_deliver);
 
+  // .game.EnterMapReq enter_map = 40;
+  bool has_enter_map() const;
+  void clear_enter_map();
+  static const int kEnterMapFieldNumber = 40;
+  const ::game::EnterMapReq& enter_map() const;
+  ::game::EnterMapReq* release_enter_map();
+  ::game::EnterMapReq* mutable_enter_map();
+  void set_allocated_enter_map(::game::EnterMapReq* enter_map);
+
+  // .game.LeaveMapReq leave_map = 41;
+  bool has_leave_map() const;
+  void clear_leave_map();
+  static const int kLeaveMapFieldNumber = 41;
+  const ::game::LeaveMapReq& leave_map() const;
+  ::game::LeaveMapReq* release_leave_map();
+  ::game::LeaveMapReq* mutable_leave_map();
+  void set_allocated_leave_map(::game::LeaveMapReq* leave_map);
+
+  // .game.MapPingReq map_ping = 42;
+  bool has_map_ping() const;
+  void clear_map_ping();
+  static const int kMapPingFieldNumber = 42;
+  const ::game::MapPingReq& map_ping() const;
+  ::game::MapPingReq* release_map_ping();
+  ::game::MapPingReq* mutable_map_ping();
+  void set_allocated_map_ping(::game::MapPingReq* map_ping);
+
+  // .game.ChatSendReq chat_send = 50;
+  bool has_chat_send() const;
+  void clear_chat_send();
+  static const int kChatSendFieldNumber = 50;
+  const ::game::ChatSendReq& chat_send() const;
+  ::game::ChatSendReq* release_chat_send();
+  ::game::ChatSendReq* mutable_chat_send();
+  void set_allocated_chat_send(::game::ChatSendReq* chat_send);
+
+  // .game.FriendListReq friend_list = 51;
+  bool has_friend_list() const;
+  void clear_friend_list();
+  static const int kFriendListFieldNumber = 51;
+  const ::game::FriendListReq& friend_list() const;
+  ::game::FriendListReq* release_friend_list();
+  ::game::FriendListReq* mutable_friend_list();
+  void set_allocated_friend_list(::game::FriendListReq* friend_list);
+
   BodyCase body_case() const;
   // @@protoc_insertion_point(class_scope:game.GameRequest)
  private:
@@ -6245,6 +8433,9 @@ class GameRequest : public ::google::protobuf::Message /* @@protoc_insertion_poi
   void set_has_validate_session();
   void set_has_check_online();
   void set_has_logout();
+  void set_has_reconnect();
+  void set_has_register_();
+  void set_has_flush_bag();
   void set_has_mailbox_summary();
   void set_has_mail_list();
   void set_has_mail_get();
@@ -6255,6 +8446,11 @@ class GameRequest : public ::google::protobuf::Message /* @@protoc_insertion_poi
   void set_has_mail_batch_read();
   void set_has_mail_batch_delete();
   void set_has_mail_deliver();
+  void set_has_enter_map();
+  void set_has_leave_map();
+  void set_has_map_ping();
+  void set_has_chat_send();
+  void set_has_friend_list();
 
   inline bool has_body() const;
   void clear_body();
@@ -6272,6 +8468,9 @@ class GameRequest : public ::google::protobuf::Message /* @@protoc_insertion_poi
     ::game::ValidateSessionReq* validate_session_;
     ::game::CheckOnlineReq* check_online_;
     ::game::LogoutReq* logout_;
+    ::game::ReconnectReq* reconnect_;
+    ::game::RegisterReq* register__;
+    ::game::FlushBagReq* flush_bag_;
     ::game::MailboxSummaryReq* mailbox_summary_;
     ::game::MailListReq* mail_list_;
     ::game::MailGetReq* mail_get_;
@@ -6282,6 +8481,11 @@ class GameRequest : public ::google::protobuf::Message /* @@protoc_insertion_poi
     ::game::MailBatchReadReq* mail_batch_read_;
     ::game::MailBatchDeleteReq* mail_batch_delete_;
     ::game::MailDeliverReq* mail_deliver_;
+    ::game::EnterMapReq* enter_map_;
+    ::game::LeaveMapReq* leave_map_;
+    ::game::MapPingReq* map_ping_;
+    ::game::ChatSendReq* chat_send_;
+    ::game::FriendListReq* friend_list_;
   } body_;
   mutable int _cached_size_;
   ::google::protobuf::uint32 _oneof_case_[1];
@@ -6328,6 +8532,9 @@ class GameResponse : public ::google::protobuf::Message /* @@protoc_insertion_po
     kValidateSession = 21,
     kCheckOnline = 22,
     kLogout = 23,
+    kReconnect = 24,
+    kRegister = 25,
+    kFlushBag = 26,
     kMailboxSummary = 30,
     kMailList = 31,
     kMailGet = 32,
@@ -6338,6 +8545,11 @@ class GameResponse : public ::google::protobuf::Message /* @@protoc_insertion_po
     kMailBatchRead = 37,
     kMailBatchDelete = 38,
     kMailDeliver = 39,
+    kEnterMap = 40,
+    kLeaveMap = 41,
+    kMapPing = 42,
+    kChatSend = 50,
+    kFriendList = 51,
     BODY_NOT_SET = 0,
   };
 
@@ -6347,7 +8559,7 @@ class GameResponse : public ::google::protobuf::Message /* @@protoc_insertion_po
                &_GameResponse_default_instance_);
   }
   static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
-    40;
+    56;
 
   void Swap(GameResponse* other);
   friend void swap(GameResponse& a, GameResponse& b) {
@@ -6483,6 +8695,33 @@ class GameResponse : public ::google::protobuf::Message /* @@protoc_insertion_po
   ::game::LogoutRsp* mutable_logout();
   void set_allocated_logout(::game::LogoutRsp* logout);
 
+  // .game.ReconnectRsp reconnect = 24;
+  bool has_reconnect() const;
+  void clear_reconnect();
+  static const int kReconnectFieldNumber = 24;
+  const ::game::ReconnectRsp& reconnect() const;
+  ::game::ReconnectRsp* release_reconnect();
+  ::game::ReconnectRsp* mutable_reconnect();
+  void set_allocated_reconnect(::game::ReconnectRsp* reconnect);
+
+  // .game.RegisterRsp register = 25;
+  bool has_register_() const;
+  void clear_register_();
+  static const int kRegisterFieldNumber = 25;
+  const ::game::RegisterRsp& register_() const;
+  ::game::RegisterRsp* release_register_();
+  ::game::RegisterRsp* mutable_register_();
+  void set_allocated_register_(::game::RegisterRsp* register_);
+
+  // .game.FlushBagRsp flush_bag = 26;
+  bool has_flush_bag() const;
+  void clear_flush_bag();
+  static const int kFlushBagFieldNumber = 26;
+  const ::game::FlushBagRsp& flush_bag() const;
+  ::game::FlushBagRsp* release_flush_bag();
+  ::game::FlushBagRsp* mutable_flush_bag();
+  void set_allocated_flush_bag(::game::FlushBagRsp* flush_bag);
+
   // .game.MailboxSummaryRsp mailbox_summary = 30;
   bool has_mailbox_summary() const;
   void clear_mailbox_summary();
@@ -6573,6 +8812,51 @@ class GameResponse : public ::google::protobuf::Message /* @@protoc_insertion_po
   ::game::MailDeliverRsp* mutable_mail_deliver();
   void set_allocated_mail_deliver(::game::MailDeliverRsp* mail_deliver);
 
+  // .game.EnterMapRsp enter_map = 40;
+  bool has_enter_map() const;
+  void clear_enter_map();
+  static const int kEnterMapFieldNumber = 40;
+  const ::game::EnterMapRsp& enter_map() const;
+  ::game::EnterMapRsp* release_enter_map();
+  ::game::EnterMapRsp* mutable_enter_map();
+  void set_allocated_enter_map(::game::EnterMapRsp* enter_map);
+
+  // .game.LeaveMapRsp leave_map = 41;
+  bool has_leave_map() const;
+  void clear_leave_map();
+  static const int kLeaveMapFieldNumber = 41;
+  const ::game::LeaveMapRsp& leave_map() const;
+  ::game::LeaveMapRsp* release_leave_map();
+  ::game::LeaveMapRsp* mutable_leave_map();
+  void set_allocated_leave_map(::game::LeaveMapRsp* leave_map);
+
+  // .game.MapPingRsp map_ping = 42;
+  bool has_map_ping() const;
+  void clear_map_ping();
+  static const int kMapPingFieldNumber = 42;
+  const ::game::MapPingRsp& map_ping() const;
+  ::game::MapPingRsp* release_map_ping();
+  ::game::MapPingRsp* mutable_map_ping();
+  void set_allocated_map_ping(::game::MapPingRsp* map_ping);
+
+  // .game.ChatSendRsp chat_send = 50;
+  bool has_chat_send() const;
+  void clear_chat_send();
+  static const int kChatSendFieldNumber = 50;
+  const ::game::ChatSendRsp& chat_send() const;
+  ::game::ChatSendRsp* release_chat_send();
+  ::game::ChatSendRsp* mutable_chat_send();
+  void set_allocated_chat_send(::game::ChatSendRsp* chat_send);
+
+  // .game.FriendListRsp friend_list = 51;
+  bool has_friend_list() const;
+  void clear_friend_list();
+  static const int kFriendListFieldNumber = 51;
+  const ::game::FriendListRsp& friend_list() const;
+  ::game::FriendListRsp* release_friend_list();
+  ::game::FriendListRsp* mutable_friend_list();
+  void set_allocated_friend_list(::game::FriendListRsp* friend_list);
+
   BodyCase body_case() const;
   // @@protoc_insertion_point(class_scope:game.GameResponse)
  private:
@@ -6583,6 +8867,9 @@ class GameResponse : public ::google::protobuf::Message /* @@protoc_insertion_po
   void set_has_validate_session();
   void set_has_check_online();
   void set_has_logout();
+  void set_has_reconnect();
+  void set_has_register_();
+  void set_has_flush_bag();
   void set_has_mailbox_summary();
   void set_has_mail_list();
   void set_has_mail_get();
@@ -6593,6 +8880,11 @@ class GameResponse : public ::google::protobuf::Message /* @@protoc_insertion_po
   void set_has_mail_batch_read();
   void set_has_mail_batch_delete();
   void set_has_mail_deliver();
+  void set_has_enter_map();
+  void set_has_leave_map();
+  void set_has_map_ping();
+  void set_has_chat_send();
+  void set_has_friend_list();
 
   inline bool has_body() const;
   void clear_body();
@@ -6611,6 +8903,9 @@ class GameResponse : public ::google::protobuf::Message /* @@protoc_insertion_po
     ::game::ValidateSessionRsp* validate_session_;
     ::game::CheckOnlineRsp* check_online_;
     ::game::LogoutRsp* logout_;
+    ::game::ReconnectRsp* reconnect_;
+    ::game::RegisterRsp* register__;
+    ::game::FlushBagRsp* flush_bag_;
     ::game::MailboxSummaryRsp* mailbox_summary_;
     ::game::MailListRsp* mail_list_;
     ::game::MailGetRsp* mail_get_;
@@ -6621,6 +8916,11 @@ class GameResponse : public ::google::protobuf::Message /* @@protoc_insertion_po
     ::game::MailBatchReadRsp* mail_batch_read_;
     ::game::MailBatchDeleteRsp* mail_batch_delete_;
     ::game::MailDeliverRsp* mail_deliver_;
+    ::game::EnterMapRsp* enter_map_;
+    ::game::LeaveMapRsp* leave_map_;
+    ::game::MapPingRsp* map_ping_;
+    ::game::ChatSendRsp* chat_send_;
+    ::game::FriendListRsp* friend_list_;
   } body_;
   mutable int _cached_size_;
   ::google::protobuf::uint32 _oneof_case_[1];
@@ -6912,6 +9212,402 @@ inline void LoginRsp::set_kicked_previous(bool value) {
   
   kicked_previous_ = value;
   // @@protoc_insertion_point(field_set:game.LoginRsp.kicked_previous)
+}
+
+// string session_id = 7;
+inline void LoginRsp::clear_session_id() {
+  session_id_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline const ::std::string& LoginRsp::session_id() const {
+  // @@protoc_insertion_point(field_get:game.LoginRsp.session_id)
+  return session_id_.GetNoArena();
+}
+inline void LoginRsp::set_session_id(const ::std::string& value) {
+  
+  session_id_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), value);
+  // @@protoc_insertion_point(field_set:game.LoginRsp.session_id)
+}
+#if LANG_CXX11
+inline void LoginRsp::set_session_id(::std::string&& value) {
+  
+  session_id_.SetNoArena(
+    &::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::move(value));
+  // @@protoc_insertion_point(field_set_rvalue:game.LoginRsp.session_id)
+}
+#endif
+inline void LoginRsp::set_session_id(const char* value) {
+  GOOGLE_DCHECK(value != NULL);
+  
+  session_id_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::string(value));
+  // @@protoc_insertion_point(field_set_char:game.LoginRsp.session_id)
+}
+inline void LoginRsp::set_session_id(const char* value, size_t size) {
+  
+  session_id_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(),
+      ::std::string(reinterpret_cast<const char*>(value), size));
+  // @@protoc_insertion_point(field_set_pointer:game.LoginRsp.session_id)
+}
+inline ::std::string* LoginRsp::mutable_session_id() {
+  
+  // @@protoc_insertion_point(field_mutable:game.LoginRsp.session_id)
+  return session_id_.MutableNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline ::std::string* LoginRsp::release_session_id() {
+  // @@protoc_insertion_point(field_release:game.LoginRsp.session_id)
+  
+  return session_id_.ReleaseNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline void LoginRsp::set_allocated_session_id(::std::string* session_id) {
+  if (session_id != NULL) {
+    
+  } else {
+    
+  }
+  session_id_.SetAllocatedNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), session_id);
+  // @@protoc_insertion_point(field_set_allocated:game.LoginRsp.session_id)
+}
+
+// uint64 generation = 8;
+inline void LoginRsp::clear_generation() {
+  generation_ = GOOGLE_ULONGLONG(0);
+}
+inline ::google::protobuf::uint64 LoginRsp::generation() const {
+  // @@protoc_insertion_point(field_get:game.LoginRsp.generation)
+  return generation_;
+}
+inline void LoginRsp::set_generation(::google::protobuf::uint64 value) {
+  
+  generation_ = value;
+  // @@protoc_insertion_point(field_set:game.LoginRsp.generation)
+}
+
+// -------------------------------------------------------------------
+
+// ReconnectReq
+
+// uint64 player_id = 1;
+inline void ReconnectReq::clear_player_id() {
+  player_id_ = GOOGLE_ULONGLONG(0);
+}
+inline ::google::protobuf::uint64 ReconnectReq::player_id() const {
+  // @@protoc_insertion_point(field_get:game.ReconnectReq.player_id)
+  return player_id_;
+}
+inline void ReconnectReq::set_player_id(::google::protobuf::uint64 value) {
+  
+  player_id_ = value;
+  // @@protoc_insertion_point(field_set:game.ReconnectReq.player_id)
+}
+
+// string session_id = 2;
+inline void ReconnectReq::clear_session_id() {
+  session_id_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline const ::std::string& ReconnectReq::session_id() const {
+  // @@protoc_insertion_point(field_get:game.ReconnectReq.session_id)
+  return session_id_.GetNoArena();
+}
+inline void ReconnectReq::set_session_id(const ::std::string& value) {
+  
+  session_id_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), value);
+  // @@protoc_insertion_point(field_set:game.ReconnectReq.session_id)
+}
+#if LANG_CXX11
+inline void ReconnectReq::set_session_id(::std::string&& value) {
+  
+  session_id_.SetNoArena(
+    &::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::move(value));
+  // @@protoc_insertion_point(field_set_rvalue:game.ReconnectReq.session_id)
+}
+#endif
+inline void ReconnectReq::set_session_id(const char* value) {
+  GOOGLE_DCHECK(value != NULL);
+  
+  session_id_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::string(value));
+  // @@protoc_insertion_point(field_set_char:game.ReconnectReq.session_id)
+}
+inline void ReconnectReq::set_session_id(const char* value, size_t size) {
+  
+  session_id_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(),
+      ::std::string(reinterpret_cast<const char*>(value), size));
+  // @@protoc_insertion_point(field_set_pointer:game.ReconnectReq.session_id)
+}
+inline ::std::string* ReconnectReq::mutable_session_id() {
+  
+  // @@protoc_insertion_point(field_mutable:game.ReconnectReq.session_id)
+  return session_id_.MutableNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline ::std::string* ReconnectReq::release_session_id() {
+  // @@protoc_insertion_point(field_release:game.ReconnectReq.session_id)
+  
+  return session_id_.ReleaseNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline void ReconnectReq::set_allocated_session_id(::std::string* session_id) {
+  if (session_id != NULL) {
+    
+  } else {
+    
+  }
+  session_id_.SetAllocatedNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), session_id);
+  // @@protoc_insertion_point(field_set_allocated:game.ReconnectReq.session_id)
+}
+
+// string reconnect_ticket = 3;
+inline void ReconnectReq::clear_reconnect_ticket() {
+  reconnect_ticket_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline const ::std::string& ReconnectReq::reconnect_ticket() const {
+  // @@protoc_insertion_point(field_get:game.ReconnectReq.reconnect_ticket)
+  return reconnect_ticket_.GetNoArena();
+}
+inline void ReconnectReq::set_reconnect_ticket(const ::std::string& value) {
+  
+  reconnect_ticket_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), value);
+  // @@protoc_insertion_point(field_set:game.ReconnectReq.reconnect_ticket)
+}
+#if LANG_CXX11
+inline void ReconnectReq::set_reconnect_ticket(::std::string&& value) {
+  
+  reconnect_ticket_.SetNoArena(
+    &::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::move(value));
+  // @@protoc_insertion_point(field_set_rvalue:game.ReconnectReq.reconnect_ticket)
+}
+#endif
+inline void ReconnectReq::set_reconnect_ticket(const char* value) {
+  GOOGLE_DCHECK(value != NULL);
+  
+  reconnect_ticket_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::string(value));
+  // @@protoc_insertion_point(field_set_char:game.ReconnectReq.reconnect_ticket)
+}
+inline void ReconnectReq::set_reconnect_ticket(const char* value, size_t size) {
+  
+  reconnect_ticket_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(),
+      ::std::string(reinterpret_cast<const char*>(value), size));
+  // @@protoc_insertion_point(field_set_pointer:game.ReconnectReq.reconnect_ticket)
+}
+inline ::std::string* ReconnectReq::mutable_reconnect_ticket() {
+  
+  // @@protoc_insertion_point(field_mutable:game.ReconnectReq.reconnect_ticket)
+  return reconnect_ticket_.MutableNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline ::std::string* ReconnectReq::release_reconnect_ticket() {
+  // @@protoc_insertion_point(field_release:game.ReconnectReq.reconnect_ticket)
+  
+  return reconnect_ticket_.ReleaseNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline void ReconnectReq::set_allocated_reconnect_ticket(::std::string* reconnect_ticket) {
+  if (reconnect_ticket != NULL) {
+    
+  } else {
+    
+  }
+  reconnect_ticket_.SetAllocatedNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), reconnect_ticket);
+  // @@protoc_insertion_point(field_set_allocated:game.ReconnectReq.reconnect_ticket)
+}
+
+// uint64 last_server_seq = 4;
+inline void ReconnectReq::clear_last_server_seq() {
+  last_server_seq_ = GOOGLE_ULONGLONG(0);
+}
+inline ::google::protobuf::uint64 ReconnectReq::last_server_seq() const {
+  // @@protoc_insertion_point(field_get:game.ReconnectReq.last_server_seq)
+  return last_server_seq_;
+}
+inline void ReconnectReq::set_last_server_seq(::google::protobuf::uint64 value) {
+  
+  last_server_seq_ = value;
+  // @@protoc_insertion_point(field_set:game.ReconnectReq.last_server_seq)
+}
+
+// -------------------------------------------------------------------
+
+// ReconnectRsp
+
+// bool ok = 1;
+inline void ReconnectRsp::clear_ok() {
+  ok_ = false;
+}
+inline bool ReconnectRsp::ok() const {
+  // @@protoc_insertion_point(field_get:game.ReconnectRsp.ok)
+  return ok_;
+}
+inline void ReconnectRsp::set_ok(bool value) {
+  
+  ok_ = value;
+  // @@protoc_insertion_point(field_set:game.ReconnectRsp.ok)
+}
+
+// string message = 2;
+inline void ReconnectRsp::clear_message() {
+  message_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline const ::std::string& ReconnectRsp::message() const {
+  // @@protoc_insertion_point(field_get:game.ReconnectRsp.message)
+  return message_.GetNoArena();
+}
+inline void ReconnectRsp::set_message(const ::std::string& value) {
+  
+  message_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), value);
+  // @@protoc_insertion_point(field_set:game.ReconnectRsp.message)
+}
+#if LANG_CXX11
+inline void ReconnectRsp::set_message(::std::string&& value) {
+  
+  message_.SetNoArena(
+    &::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::move(value));
+  // @@protoc_insertion_point(field_set_rvalue:game.ReconnectRsp.message)
+}
+#endif
+inline void ReconnectRsp::set_message(const char* value) {
+  GOOGLE_DCHECK(value != NULL);
+  
+  message_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::string(value));
+  // @@protoc_insertion_point(field_set_char:game.ReconnectRsp.message)
+}
+inline void ReconnectRsp::set_message(const char* value, size_t size) {
+  
+  message_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(),
+      ::std::string(reinterpret_cast<const char*>(value), size));
+  // @@protoc_insertion_point(field_set_pointer:game.ReconnectRsp.message)
+}
+inline ::std::string* ReconnectRsp::mutable_message() {
+  
+  // @@protoc_insertion_point(field_mutable:game.ReconnectRsp.message)
+  return message_.MutableNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline ::std::string* ReconnectRsp::release_message() {
+  // @@protoc_insertion_point(field_release:game.ReconnectRsp.message)
+  
+  return message_.ReleaseNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline void ReconnectRsp::set_allocated_message(::std::string* message) {
+  if (message != NULL) {
+    
+  } else {
+    
+  }
+  message_.SetAllocatedNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), message);
+  // @@protoc_insertion_point(field_set_allocated:game.ReconnectRsp.message)
+}
+
+// string token = 3;
+inline void ReconnectRsp::clear_token() {
+  token_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline const ::std::string& ReconnectRsp::token() const {
+  // @@protoc_insertion_point(field_get:game.ReconnectRsp.token)
+  return token_.GetNoArena();
+}
+inline void ReconnectRsp::set_token(const ::std::string& value) {
+  
+  token_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), value);
+  // @@protoc_insertion_point(field_set:game.ReconnectRsp.token)
+}
+#if LANG_CXX11
+inline void ReconnectRsp::set_token(::std::string&& value) {
+  
+  token_.SetNoArena(
+    &::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::move(value));
+  // @@protoc_insertion_point(field_set_rvalue:game.ReconnectRsp.token)
+}
+#endif
+inline void ReconnectRsp::set_token(const char* value) {
+  GOOGLE_DCHECK(value != NULL);
+  
+  token_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::string(value));
+  // @@protoc_insertion_point(field_set_char:game.ReconnectRsp.token)
+}
+inline void ReconnectRsp::set_token(const char* value, size_t size) {
+  
+  token_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(),
+      ::std::string(reinterpret_cast<const char*>(value), size));
+  // @@protoc_insertion_point(field_set_pointer:game.ReconnectRsp.token)
+}
+inline ::std::string* ReconnectRsp::mutable_token() {
+  
+  // @@protoc_insertion_point(field_mutable:game.ReconnectRsp.token)
+  return token_.MutableNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline ::std::string* ReconnectRsp::release_token() {
+  // @@protoc_insertion_point(field_release:game.ReconnectRsp.token)
+  
+  return token_.ReleaseNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline void ReconnectRsp::set_allocated_token(::std::string* token) {
+  if (token != NULL) {
+    
+  } else {
+    
+  }
+  token_.SetAllocatedNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), token);
+  // @@protoc_insertion_point(field_set_allocated:game.ReconnectRsp.token)
+}
+
+// string session_id = 4;
+inline void ReconnectRsp::clear_session_id() {
+  session_id_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline const ::std::string& ReconnectRsp::session_id() const {
+  // @@protoc_insertion_point(field_get:game.ReconnectRsp.session_id)
+  return session_id_.GetNoArena();
+}
+inline void ReconnectRsp::set_session_id(const ::std::string& value) {
+  
+  session_id_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), value);
+  // @@protoc_insertion_point(field_set:game.ReconnectRsp.session_id)
+}
+#if LANG_CXX11
+inline void ReconnectRsp::set_session_id(::std::string&& value) {
+  
+  session_id_.SetNoArena(
+    &::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::move(value));
+  // @@protoc_insertion_point(field_set_rvalue:game.ReconnectRsp.session_id)
+}
+#endif
+inline void ReconnectRsp::set_session_id(const char* value) {
+  GOOGLE_DCHECK(value != NULL);
+  
+  session_id_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::string(value));
+  // @@protoc_insertion_point(field_set_char:game.ReconnectRsp.session_id)
+}
+inline void ReconnectRsp::set_session_id(const char* value, size_t size) {
+  
+  session_id_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(),
+      ::std::string(reinterpret_cast<const char*>(value), size));
+  // @@protoc_insertion_point(field_set_pointer:game.ReconnectRsp.session_id)
+}
+inline ::std::string* ReconnectRsp::mutable_session_id() {
+  
+  // @@protoc_insertion_point(field_mutable:game.ReconnectRsp.session_id)
+  return session_id_.MutableNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline ::std::string* ReconnectRsp::release_session_id() {
+  // @@protoc_insertion_point(field_release:game.ReconnectRsp.session_id)
+  
+  return session_id_.ReleaseNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline void ReconnectRsp::set_allocated_session_id(::std::string* session_id) {
+  if (session_id != NULL) {
+    
+  } else {
+    
+  }
+  session_id_.SetAllocatedNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), session_id);
+  // @@protoc_insertion_point(field_set_allocated:game.ReconnectRsp.session_id)
+}
+
+// uint64 generation = 5;
+inline void ReconnectRsp::clear_generation() {
+  generation_ = GOOGLE_ULONGLONG(0);
+}
+inline ::google::protobuf::uint64 ReconnectRsp::generation() const {
+  // @@protoc_insertion_point(field_get:game.ReconnectRsp.generation)
+  return generation_;
+}
+inline void ReconnectRsp::set_generation(::google::protobuf::uint64 value) {
+  
+  generation_ = value;
+  // @@protoc_insertion_point(field_set:game.ReconnectRsp.generation)
 }
 
 // -------------------------------------------------------------------
@@ -7408,6 +10104,343 @@ inline void LogoutRsp::set_allocated_message(::std::string* message) {
   }
   message_.SetAllocatedNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), message);
   // @@protoc_insertion_point(field_set_allocated:game.LogoutRsp.message)
+}
+
+// -------------------------------------------------------------------
+
+// RegisterReq
+
+// string device_id = 1;
+inline void RegisterReq::clear_device_id() {
+  device_id_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline const ::std::string& RegisterReq::device_id() const {
+  // @@protoc_insertion_point(field_get:game.RegisterReq.device_id)
+  return device_id_.GetNoArena();
+}
+inline void RegisterReq::set_device_id(const ::std::string& value) {
+  
+  device_id_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), value);
+  // @@protoc_insertion_point(field_set:game.RegisterReq.device_id)
+}
+#if LANG_CXX11
+inline void RegisterReq::set_device_id(::std::string&& value) {
+  
+  device_id_.SetNoArena(
+    &::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::move(value));
+  // @@protoc_insertion_point(field_set_rvalue:game.RegisterReq.device_id)
+}
+#endif
+inline void RegisterReq::set_device_id(const char* value) {
+  GOOGLE_DCHECK(value != NULL);
+  
+  device_id_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::string(value));
+  // @@protoc_insertion_point(field_set_char:game.RegisterReq.device_id)
+}
+inline void RegisterReq::set_device_id(const char* value, size_t size) {
+  
+  device_id_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(),
+      ::std::string(reinterpret_cast<const char*>(value), size));
+  // @@protoc_insertion_point(field_set_pointer:game.RegisterReq.device_id)
+}
+inline ::std::string* RegisterReq::mutable_device_id() {
+  
+  // @@protoc_insertion_point(field_mutable:game.RegisterReq.device_id)
+  return device_id_.MutableNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline ::std::string* RegisterReq::release_device_id() {
+  // @@protoc_insertion_point(field_release:game.RegisterReq.device_id)
+  
+  return device_id_.ReleaseNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline void RegisterReq::set_allocated_device_id(::std::string* device_id) {
+  if (device_id != NULL) {
+    
+  } else {
+    
+  }
+  device_id_.SetAllocatedNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), device_id);
+  // @@protoc_insertion_point(field_set_allocated:game.RegisterReq.device_id)
+}
+
+// string display_name = 2;
+inline void RegisterReq::clear_display_name() {
+  display_name_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline const ::std::string& RegisterReq::display_name() const {
+  // @@protoc_insertion_point(field_get:game.RegisterReq.display_name)
+  return display_name_.GetNoArena();
+}
+inline void RegisterReq::set_display_name(const ::std::string& value) {
+  
+  display_name_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), value);
+  // @@protoc_insertion_point(field_set:game.RegisterReq.display_name)
+}
+#if LANG_CXX11
+inline void RegisterReq::set_display_name(::std::string&& value) {
+  
+  display_name_.SetNoArena(
+    &::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::move(value));
+  // @@protoc_insertion_point(field_set_rvalue:game.RegisterReq.display_name)
+}
+#endif
+inline void RegisterReq::set_display_name(const char* value) {
+  GOOGLE_DCHECK(value != NULL);
+  
+  display_name_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::string(value));
+  // @@protoc_insertion_point(field_set_char:game.RegisterReq.display_name)
+}
+inline void RegisterReq::set_display_name(const char* value, size_t size) {
+  
+  display_name_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(),
+      ::std::string(reinterpret_cast<const char*>(value), size));
+  // @@protoc_insertion_point(field_set_pointer:game.RegisterReq.display_name)
+}
+inline ::std::string* RegisterReq::mutable_display_name() {
+  
+  // @@protoc_insertion_point(field_mutable:game.RegisterReq.display_name)
+  return display_name_.MutableNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline ::std::string* RegisterReq::release_display_name() {
+  // @@protoc_insertion_point(field_release:game.RegisterReq.display_name)
+  
+  return display_name_.ReleaseNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline void RegisterReq::set_allocated_display_name(::std::string* display_name) {
+  if (display_name != NULL) {
+    
+  } else {
+    
+  }
+  display_name_.SetAllocatedNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), display_name);
+  // @@protoc_insertion_point(field_set_allocated:game.RegisterReq.display_name)
+}
+
+// -------------------------------------------------------------------
+
+// RegisterRsp
+
+// bool ok = 1;
+inline void RegisterRsp::clear_ok() {
+  ok_ = false;
+}
+inline bool RegisterRsp::ok() const {
+  // @@protoc_insertion_point(field_get:game.RegisterRsp.ok)
+  return ok_;
+}
+inline void RegisterRsp::set_ok(bool value) {
+  
+  ok_ = value;
+  // @@protoc_insertion_point(field_set:game.RegisterRsp.ok)
+}
+
+// string message = 2;
+inline void RegisterRsp::clear_message() {
+  message_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline const ::std::string& RegisterRsp::message() const {
+  // @@protoc_insertion_point(field_get:game.RegisterRsp.message)
+  return message_.GetNoArena();
+}
+inline void RegisterRsp::set_message(const ::std::string& value) {
+  
+  message_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), value);
+  // @@protoc_insertion_point(field_set:game.RegisterRsp.message)
+}
+#if LANG_CXX11
+inline void RegisterRsp::set_message(::std::string&& value) {
+  
+  message_.SetNoArena(
+    &::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::move(value));
+  // @@protoc_insertion_point(field_set_rvalue:game.RegisterRsp.message)
+}
+#endif
+inline void RegisterRsp::set_message(const char* value) {
+  GOOGLE_DCHECK(value != NULL);
+  
+  message_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::string(value));
+  // @@protoc_insertion_point(field_set_char:game.RegisterRsp.message)
+}
+inline void RegisterRsp::set_message(const char* value, size_t size) {
+  
+  message_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(),
+      ::std::string(reinterpret_cast<const char*>(value), size));
+  // @@protoc_insertion_point(field_set_pointer:game.RegisterRsp.message)
+}
+inline ::std::string* RegisterRsp::mutable_message() {
+  
+  // @@protoc_insertion_point(field_mutable:game.RegisterRsp.message)
+  return message_.MutableNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline ::std::string* RegisterRsp::release_message() {
+  // @@protoc_insertion_point(field_release:game.RegisterRsp.message)
+  
+  return message_.ReleaseNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline void RegisterRsp::set_allocated_message(::std::string* message) {
+  if (message != NULL) {
+    
+  } else {
+    
+  }
+  message_.SetAllocatedNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), message);
+  // @@protoc_insertion_point(field_set_allocated:game.RegisterRsp.message)
+}
+
+// uint64 player_id = 3;
+inline void RegisterRsp::clear_player_id() {
+  player_id_ = GOOGLE_ULONGLONG(0);
+}
+inline ::google::protobuf::uint64 RegisterRsp::player_id() const {
+  // @@protoc_insertion_point(field_get:game.RegisterRsp.player_id)
+  return player_id_;
+}
+inline void RegisterRsp::set_player_id(::google::protobuf::uint64 value) {
+  
+  player_id_ = value;
+  // @@protoc_insertion_point(field_set:game.RegisterRsp.player_id)
+}
+
+// -------------------------------------------------------------------
+
+// FlushBagReq
+
+// uint64 player_id = 1;
+inline void FlushBagReq::clear_player_id() {
+  player_id_ = GOOGLE_ULONGLONG(0);
+}
+inline ::google::protobuf::uint64 FlushBagReq::player_id() const {
+  // @@protoc_insertion_point(field_get:game.FlushBagReq.player_id)
+  return player_id_;
+}
+inline void FlushBagReq::set_player_id(::google::protobuf::uint64 value) {
+  
+  player_id_ = value;
+  // @@protoc_insertion_point(field_set:game.FlushBagReq.player_id)
+}
+
+// string reason = 2;
+inline void FlushBagReq::clear_reason() {
+  reason_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline const ::std::string& FlushBagReq::reason() const {
+  // @@protoc_insertion_point(field_get:game.FlushBagReq.reason)
+  return reason_.GetNoArena();
+}
+inline void FlushBagReq::set_reason(const ::std::string& value) {
+  
+  reason_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), value);
+  // @@protoc_insertion_point(field_set:game.FlushBagReq.reason)
+}
+#if LANG_CXX11
+inline void FlushBagReq::set_reason(::std::string&& value) {
+  
+  reason_.SetNoArena(
+    &::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::move(value));
+  // @@protoc_insertion_point(field_set_rvalue:game.FlushBagReq.reason)
+}
+#endif
+inline void FlushBagReq::set_reason(const char* value) {
+  GOOGLE_DCHECK(value != NULL);
+  
+  reason_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::string(value));
+  // @@protoc_insertion_point(field_set_char:game.FlushBagReq.reason)
+}
+inline void FlushBagReq::set_reason(const char* value, size_t size) {
+  
+  reason_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(),
+      ::std::string(reinterpret_cast<const char*>(value), size));
+  // @@protoc_insertion_point(field_set_pointer:game.FlushBagReq.reason)
+}
+inline ::std::string* FlushBagReq::mutable_reason() {
+  
+  // @@protoc_insertion_point(field_mutable:game.FlushBagReq.reason)
+  return reason_.MutableNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline ::std::string* FlushBagReq::release_reason() {
+  // @@protoc_insertion_point(field_release:game.FlushBagReq.reason)
+  
+  return reason_.ReleaseNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline void FlushBagReq::set_allocated_reason(::std::string* reason) {
+  if (reason != NULL) {
+    
+  } else {
+    
+  }
+  reason_.SetAllocatedNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), reason);
+  // @@protoc_insertion_point(field_set_allocated:game.FlushBagReq.reason)
+}
+
+// -------------------------------------------------------------------
+
+// FlushBagRsp
+
+// bool ok = 1;
+inline void FlushBagRsp::clear_ok() {
+  ok_ = false;
+}
+inline bool FlushBagRsp::ok() const {
+  // @@protoc_insertion_point(field_get:game.FlushBagRsp.ok)
+  return ok_;
+}
+inline void FlushBagRsp::set_ok(bool value) {
+  
+  ok_ = value;
+  // @@protoc_insertion_point(field_set:game.FlushBagRsp.ok)
+}
+
+// string message = 2;
+inline void FlushBagRsp::clear_message() {
+  message_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline const ::std::string& FlushBagRsp::message() const {
+  // @@protoc_insertion_point(field_get:game.FlushBagRsp.message)
+  return message_.GetNoArena();
+}
+inline void FlushBagRsp::set_message(const ::std::string& value) {
+  
+  message_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), value);
+  // @@protoc_insertion_point(field_set:game.FlushBagRsp.message)
+}
+#if LANG_CXX11
+inline void FlushBagRsp::set_message(::std::string&& value) {
+  
+  message_.SetNoArena(
+    &::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::move(value));
+  // @@protoc_insertion_point(field_set_rvalue:game.FlushBagRsp.message)
+}
+#endif
+inline void FlushBagRsp::set_message(const char* value) {
+  GOOGLE_DCHECK(value != NULL);
+  
+  message_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::string(value));
+  // @@protoc_insertion_point(field_set_char:game.FlushBagRsp.message)
+}
+inline void FlushBagRsp::set_message(const char* value, size_t size) {
+  
+  message_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(),
+      ::std::string(reinterpret_cast<const char*>(value), size));
+  // @@protoc_insertion_point(field_set_pointer:game.FlushBagRsp.message)
+}
+inline ::std::string* FlushBagRsp::mutable_message() {
+  
+  // @@protoc_insertion_point(field_mutable:game.FlushBagRsp.message)
+  return message_.MutableNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline ::std::string* FlushBagRsp::release_message() {
+  // @@protoc_insertion_point(field_release:game.FlushBagRsp.message)
+  
+  return message_.ReleaseNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline void FlushBagRsp::set_allocated_message(::std::string* message) {
+  if (message != NULL) {
+    
+  } else {
+    
+  }
+  message_.SetAllocatedNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), message);
+  // @@protoc_insertion_point(field_set_allocated:game.FlushBagRsp.message)
 }
 
 // -------------------------------------------------------------------
@@ -12734,6 +15767,923 @@ inline void MailDeliverRsp::set_server_time_utc(::google::protobuf::int64 value)
 
 // -------------------------------------------------------------------
 
+// EnterMapReq
+
+// uint64 player_id = 1;
+inline void EnterMapReq::clear_player_id() {
+  player_id_ = GOOGLE_ULONGLONG(0);
+}
+inline ::google::protobuf::uint64 EnterMapReq::player_id() const {
+  // @@protoc_insertion_point(field_get:game.EnterMapReq.player_id)
+  return player_id_;
+}
+inline void EnterMapReq::set_player_id(::google::protobuf::uint64 value) {
+  
+  player_id_ = value;
+  // @@protoc_insertion_point(field_set:game.EnterMapReq.player_id)
+}
+
+// uint32 realm_id = 2;
+inline void EnterMapReq::clear_realm_id() {
+  realm_id_ = 0u;
+}
+inline ::google::protobuf::uint32 EnterMapReq::realm_id() const {
+  // @@protoc_insertion_point(field_get:game.EnterMapReq.realm_id)
+  return realm_id_;
+}
+inline void EnterMapReq::set_realm_id(::google::protobuf::uint32 value) {
+  
+  realm_id_ = value;
+  // @@protoc_insertion_point(field_set:game.EnterMapReq.realm_id)
+}
+
+// uint64 map_template_id = 3;
+inline void EnterMapReq::clear_map_template_id() {
+  map_template_id_ = GOOGLE_ULONGLONG(0);
+}
+inline ::google::protobuf::uint64 EnterMapReq::map_template_id() const {
+  // @@protoc_insertion_point(field_get:game.EnterMapReq.map_template_id)
+  return map_template_id_;
+}
+inline void EnterMapReq::set_map_template_id(::google::protobuf::uint64 value) {
+  
+  map_template_id_ = value;
+  // @@protoc_insertion_point(field_set:game.EnterMapReq.map_template_id)
+}
+
+// uint64 map_instance_id = 4;
+inline void EnterMapReq::clear_map_instance_id() {
+  map_instance_id_ = GOOGLE_ULONGLONG(0);
+}
+inline ::google::protobuf::uint64 EnterMapReq::map_instance_id() const {
+  // @@protoc_insertion_point(field_get:game.EnterMapReq.map_instance_id)
+  return map_instance_id_;
+}
+inline void EnterMapReq::set_map_instance_id(::google::protobuf::uint64 value) {
+  
+  map_instance_id_ = value;
+  // @@protoc_insertion_point(field_set:game.EnterMapReq.map_instance_id)
+}
+
+// -------------------------------------------------------------------
+
+// EnterMapRsp
+
+// bool ok = 1;
+inline void EnterMapRsp::clear_ok() {
+  ok_ = false;
+}
+inline bool EnterMapRsp::ok() const {
+  // @@protoc_insertion_point(field_get:game.EnterMapRsp.ok)
+  return ok_;
+}
+inline void EnterMapRsp::set_ok(bool value) {
+  
+  ok_ = value;
+  // @@protoc_insertion_point(field_set:game.EnterMapRsp.ok)
+}
+
+// string message = 2;
+inline void EnterMapRsp::clear_message() {
+  message_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline const ::std::string& EnterMapRsp::message() const {
+  // @@protoc_insertion_point(field_get:game.EnterMapRsp.message)
+  return message_.GetNoArena();
+}
+inline void EnterMapRsp::set_message(const ::std::string& value) {
+  
+  message_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), value);
+  // @@protoc_insertion_point(field_set:game.EnterMapRsp.message)
+}
+#if LANG_CXX11
+inline void EnterMapRsp::set_message(::std::string&& value) {
+  
+  message_.SetNoArena(
+    &::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::move(value));
+  // @@protoc_insertion_point(field_set_rvalue:game.EnterMapRsp.message)
+}
+#endif
+inline void EnterMapRsp::set_message(const char* value) {
+  GOOGLE_DCHECK(value != NULL);
+  
+  message_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::string(value));
+  // @@protoc_insertion_point(field_set_char:game.EnterMapRsp.message)
+}
+inline void EnterMapRsp::set_message(const char* value, size_t size) {
+  
+  message_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(),
+      ::std::string(reinterpret_cast<const char*>(value), size));
+  // @@protoc_insertion_point(field_set_pointer:game.EnterMapRsp.message)
+}
+inline ::std::string* EnterMapRsp::mutable_message() {
+  
+  // @@protoc_insertion_point(field_mutable:game.EnterMapRsp.message)
+  return message_.MutableNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline ::std::string* EnterMapRsp::release_message() {
+  // @@protoc_insertion_point(field_release:game.EnterMapRsp.message)
+  
+  return message_.ReleaseNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline void EnterMapRsp::set_allocated_message(::std::string* message) {
+  if (message != NULL) {
+    
+  } else {
+    
+  }
+  message_.SetAllocatedNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), message);
+  // @@protoc_insertion_point(field_set_allocated:game.EnterMapRsp.message)
+}
+
+// uint64 map_template_id = 3;
+inline void EnterMapRsp::clear_map_template_id() {
+  map_template_id_ = GOOGLE_ULONGLONG(0);
+}
+inline ::google::protobuf::uint64 EnterMapRsp::map_template_id() const {
+  // @@protoc_insertion_point(field_get:game.EnterMapRsp.map_template_id)
+  return map_template_id_;
+}
+inline void EnterMapRsp::set_map_template_id(::google::protobuf::uint64 value) {
+  
+  map_template_id_ = value;
+  // @@protoc_insertion_point(field_set:game.EnterMapRsp.map_template_id)
+}
+
+// uint64 map_instance_id = 4;
+inline void EnterMapRsp::clear_map_instance_id() {
+  map_instance_id_ = GOOGLE_ULONGLONG(0);
+}
+inline ::google::protobuf::uint64 EnterMapRsp::map_instance_id() const {
+  // @@protoc_insertion_point(field_get:game.EnterMapRsp.map_instance_id)
+  return map_instance_id_;
+}
+inline void EnterMapRsp::set_map_instance_id(::google::protobuf::uint64 value) {
+  
+  map_instance_id_ = value;
+  // @@protoc_insertion_point(field_set:game.EnterMapRsp.map_instance_id)
+}
+
+// string gamelogic_instance_id = 5;
+inline void EnterMapRsp::clear_gamelogic_instance_id() {
+  gamelogic_instance_id_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline const ::std::string& EnterMapRsp::gamelogic_instance_id() const {
+  // @@protoc_insertion_point(field_get:game.EnterMapRsp.gamelogic_instance_id)
+  return gamelogic_instance_id_.GetNoArena();
+}
+inline void EnterMapRsp::set_gamelogic_instance_id(const ::std::string& value) {
+  
+  gamelogic_instance_id_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), value);
+  // @@protoc_insertion_point(field_set:game.EnterMapRsp.gamelogic_instance_id)
+}
+#if LANG_CXX11
+inline void EnterMapRsp::set_gamelogic_instance_id(::std::string&& value) {
+  
+  gamelogic_instance_id_.SetNoArena(
+    &::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::move(value));
+  // @@protoc_insertion_point(field_set_rvalue:game.EnterMapRsp.gamelogic_instance_id)
+}
+#endif
+inline void EnterMapRsp::set_gamelogic_instance_id(const char* value) {
+  GOOGLE_DCHECK(value != NULL);
+  
+  gamelogic_instance_id_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::string(value));
+  // @@protoc_insertion_point(field_set_char:game.EnterMapRsp.gamelogic_instance_id)
+}
+inline void EnterMapRsp::set_gamelogic_instance_id(const char* value, size_t size) {
+  
+  gamelogic_instance_id_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(),
+      ::std::string(reinterpret_cast<const char*>(value), size));
+  // @@protoc_insertion_point(field_set_pointer:game.EnterMapRsp.gamelogic_instance_id)
+}
+inline ::std::string* EnterMapRsp::mutable_gamelogic_instance_id() {
+  
+  // @@protoc_insertion_point(field_mutable:game.EnterMapRsp.gamelogic_instance_id)
+  return gamelogic_instance_id_.MutableNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline ::std::string* EnterMapRsp::release_gamelogic_instance_id() {
+  // @@protoc_insertion_point(field_release:game.EnterMapRsp.gamelogic_instance_id)
+  
+  return gamelogic_instance_id_.ReleaseNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline void EnterMapRsp::set_allocated_gamelogic_instance_id(::std::string* gamelogic_instance_id) {
+  if (gamelogic_instance_id != NULL) {
+    
+  } else {
+    
+  }
+  gamelogic_instance_id_.SetAllocatedNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), gamelogic_instance_id);
+  // @@protoc_insertion_point(field_set_allocated:game.EnterMapRsp.gamelogic_instance_id)
+}
+
+// uint64 owner_epoch = 6;
+inline void EnterMapRsp::clear_owner_epoch() {
+  owner_epoch_ = GOOGLE_ULONGLONG(0);
+}
+inline ::google::protobuf::uint64 EnterMapRsp::owner_epoch() const {
+  // @@protoc_insertion_point(field_get:game.EnterMapRsp.owner_epoch)
+  return owner_epoch_;
+}
+inline void EnterMapRsp::set_owner_epoch(::google::protobuf::uint64 value) {
+  
+  owner_epoch_ = value;
+  // @@protoc_insertion_point(field_set:game.EnterMapRsp.owner_epoch)
+}
+
+// uint64 route_version = 7;
+inline void EnterMapRsp::clear_route_version() {
+  route_version_ = GOOGLE_ULONGLONG(0);
+}
+inline ::google::protobuf::uint64 EnterMapRsp::route_version() const {
+  // @@protoc_insertion_point(field_get:game.EnterMapRsp.route_version)
+  return route_version_;
+}
+inline void EnterMapRsp::set_route_version(::google::protobuf::uint64 value) {
+  
+  route_version_ = value;
+  // @@protoc_insertion_point(field_set:game.EnterMapRsp.route_version)
+}
+
+// -------------------------------------------------------------------
+
+// LeaveMapReq
+
+// uint64 player_id = 1;
+inline void LeaveMapReq::clear_player_id() {
+  player_id_ = GOOGLE_ULONGLONG(0);
+}
+inline ::google::protobuf::uint64 LeaveMapReq::player_id() const {
+  // @@protoc_insertion_point(field_get:game.LeaveMapReq.player_id)
+  return player_id_;
+}
+inline void LeaveMapReq::set_player_id(::google::protobuf::uint64 value) {
+  
+  player_id_ = value;
+  // @@protoc_insertion_point(field_set:game.LeaveMapReq.player_id)
+}
+
+// uint64 map_instance_id = 2;
+inline void LeaveMapReq::clear_map_instance_id() {
+  map_instance_id_ = GOOGLE_ULONGLONG(0);
+}
+inline ::google::protobuf::uint64 LeaveMapReq::map_instance_id() const {
+  // @@protoc_insertion_point(field_get:game.LeaveMapReq.map_instance_id)
+  return map_instance_id_;
+}
+inline void LeaveMapReq::set_map_instance_id(::google::protobuf::uint64 value) {
+  
+  map_instance_id_ = value;
+  // @@protoc_insertion_point(field_set:game.LeaveMapReq.map_instance_id)
+}
+
+// -------------------------------------------------------------------
+
+// LeaveMapRsp
+
+// bool ok = 1;
+inline void LeaveMapRsp::clear_ok() {
+  ok_ = false;
+}
+inline bool LeaveMapRsp::ok() const {
+  // @@protoc_insertion_point(field_get:game.LeaveMapRsp.ok)
+  return ok_;
+}
+inline void LeaveMapRsp::set_ok(bool value) {
+  
+  ok_ = value;
+  // @@protoc_insertion_point(field_set:game.LeaveMapRsp.ok)
+}
+
+// string message = 2;
+inline void LeaveMapRsp::clear_message() {
+  message_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline const ::std::string& LeaveMapRsp::message() const {
+  // @@protoc_insertion_point(field_get:game.LeaveMapRsp.message)
+  return message_.GetNoArena();
+}
+inline void LeaveMapRsp::set_message(const ::std::string& value) {
+  
+  message_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), value);
+  // @@protoc_insertion_point(field_set:game.LeaveMapRsp.message)
+}
+#if LANG_CXX11
+inline void LeaveMapRsp::set_message(::std::string&& value) {
+  
+  message_.SetNoArena(
+    &::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::move(value));
+  // @@protoc_insertion_point(field_set_rvalue:game.LeaveMapRsp.message)
+}
+#endif
+inline void LeaveMapRsp::set_message(const char* value) {
+  GOOGLE_DCHECK(value != NULL);
+  
+  message_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::string(value));
+  // @@protoc_insertion_point(field_set_char:game.LeaveMapRsp.message)
+}
+inline void LeaveMapRsp::set_message(const char* value, size_t size) {
+  
+  message_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(),
+      ::std::string(reinterpret_cast<const char*>(value), size));
+  // @@protoc_insertion_point(field_set_pointer:game.LeaveMapRsp.message)
+}
+inline ::std::string* LeaveMapRsp::mutable_message() {
+  
+  // @@protoc_insertion_point(field_mutable:game.LeaveMapRsp.message)
+  return message_.MutableNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline ::std::string* LeaveMapRsp::release_message() {
+  // @@protoc_insertion_point(field_release:game.LeaveMapRsp.message)
+  
+  return message_.ReleaseNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline void LeaveMapRsp::set_allocated_message(::std::string* message) {
+  if (message != NULL) {
+    
+  } else {
+    
+  }
+  message_.SetAllocatedNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), message);
+  // @@protoc_insertion_point(field_set_allocated:game.LeaveMapRsp.message)
+}
+
+// -------------------------------------------------------------------
+
+// MapPingReq
+
+// uint64 player_id = 1;
+inline void MapPingReq::clear_player_id() {
+  player_id_ = GOOGLE_ULONGLONG(0);
+}
+inline ::google::protobuf::uint64 MapPingReq::player_id() const {
+  // @@protoc_insertion_point(field_get:game.MapPingReq.player_id)
+  return player_id_;
+}
+inline void MapPingReq::set_player_id(::google::protobuf::uint64 value) {
+  
+  player_id_ = value;
+  // @@protoc_insertion_point(field_set:game.MapPingReq.player_id)
+}
+
+// uint64 map_instance_id = 2;
+inline void MapPingReq::clear_map_instance_id() {
+  map_instance_id_ = GOOGLE_ULONGLONG(0);
+}
+inline ::google::protobuf::uint64 MapPingReq::map_instance_id() const {
+  // @@protoc_insertion_point(field_get:game.MapPingReq.map_instance_id)
+  return map_instance_id_;
+}
+inline void MapPingReq::set_map_instance_id(::google::protobuf::uint64 value) {
+  
+  map_instance_id_ = value;
+  // @@protoc_insertion_point(field_set:game.MapPingReq.map_instance_id)
+}
+
+// -------------------------------------------------------------------
+
+// MapPingRsp
+
+// bool ok = 1;
+inline void MapPingRsp::clear_ok() {
+  ok_ = false;
+}
+inline bool MapPingRsp::ok() const {
+  // @@protoc_insertion_point(field_get:game.MapPingRsp.ok)
+  return ok_;
+}
+inline void MapPingRsp::set_ok(bool value) {
+  
+  ok_ = value;
+  // @@protoc_insertion_point(field_set:game.MapPingRsp.ok)
+}
+
+// string message = 2;
+inline void MapPingRsp::clear_message() {
+  message_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline const ::std::string& MapPingRsp::message() const {
+  // @@protoc_insertion_point(field_get:game.MapPingRsp.message)
+  return message_.GetNoArena();
+}
+inline void MapPingRsp::set_message(const ::std::string& value) {
+  
+  message_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), value);
+  // @@protoc_insertion_point(field_set:game.MapPingRsp.message)
+}
+#if LANG_CXX11
+inline void MapPingRsp::set_message(::std::string&& value) {
+  
+  message_.SetNoArena(
+    &::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::move(value));
+  // @@protoc_insertion_point(field_set_rvalue:game.MapPingRsp.message)
+}
+#endif
+inline void MapPingRsp::set_message(const char* value) {
+  GOOGLE_DCHECK(value != NULL);
+  
+  message_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::string(value));
+  // @@protoc_insertion_point(field_set_char:game.MapPingRsp.message)
+}
+inline void MapPingRsp::set_message(const char* value, size_t size) {
+  
+  message_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(),
+      ::std::string(reinterpret_cast<const char*>(value), size));
+  // @@protoc_insertion_point(field_set_pointer:game.MapPingRsp.message)
+}
+inline ::std::string* MapPingRsp::mutable_message() {
+  
+  // @@protoc_insertion_point(field_mutable:game.MapPingRsp.message)
+  return message_.MutableNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline ::std::string* MapPingRsp::release_message() {
+  // @@protoc_insertion_point(field_release:game.MapPingRsp.message)
+  
+  return message_.ReleaseNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline void MapPingRsp::set_allocated_message(::std::string* message) {
+  if (message != NULL) {
+    
+  } else {
+    
+  }
+  message_.SetAllocatedNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), message);
+  // @@protoc_insertion_point(field_set_allocated:game.MapPingRsp.message)
+}
+
+// uint64 owner_epoch = 3;
+inline void MapPingRsp::clear_owner_epoch() {
+  owner_epoch_ = GOOGLE_ULONGLONG(0);
+}
+inline ::google::protobuf::uint64 MapPingRsp::owner_epoch() const {
+  // @@protoc_insertion_point(field_get:game.MapPingRsp.owner_epoch)
+  return owner_epoch_;
+}
+inline void MapPingRsp::set_owner_epoch(::google::protobuf::uint64 value) {
+  
+  owner_epoch_ = value;
+  // @@protoc_insertion_point(field_set:game.MapPingRsp.owner_epoch)
+}
+
+// uint32 player_count = 4;
+inline void MapPingRsp::clear_player_count() {
+  player_count_ = 0u;
+}
+inline ::google::protobuf::uint32 MapPingRsp::player_count() const {
+  // @@protoc_insertion_point(field_get:game.MapPingRsp.player_count)
+  return player_count_;
+}
+inline void MapPingRsp::set_player_count(::google::protobuf::uint32 value) {
+  
+  player_count_ = value;
+  // @@protoc_insertion_point(field_set:game.MapPingRsp.player_count)
+}
+
+// string gamelogic_instance_id = 5;
+inline void MapPingRsp::clear_gamelogic_instance_id() {
+  gamelogic_instance_id_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline const ::std::string& MapPingRsp::gamelogic_instance_id() const {
+  // @@protoc_insertion_point(field_get:game.MapPingRsp.gamelogic_instance_id)
+  return gamelogic_instance_id_.GetNoArena();
+}
+inline void MapPingRsp::set_gamelogic_instance_id(const ::std::string& value) {
+  
+  gamelogic_instance_id_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), value);
+  // @@protoc_insertion_point(field_set:game.MapPingRsp.gamelogic_instance_id)
+}
+#if LANG_CXX11
+inline void MapPingRsp::set_gamelogic_instance_id(::std::string&& value) {
+  
+  gamelogic_instance_id_.SetNoArena(
+    &::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::move(value));
+  // @@protoc_insertion_point(field_set_rvalue:game.MapPingRsp.gamelogic_instance_id)
+}
+#endif
+inline void MapPingRsp::set_gamelogic_instance_id(const char* value) {
+  GOOGLE_DCHECK(value != NULL);
+  
+  gamelogic_instance_id_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::string(value));
+  // @@protoc_insertion_point(field_set_char:game.MapPingRsp.gamelogic_instance_id)
+}
+inline void MapPingRsp::set_gamelogic_instance_id(const char* value, size_t size) {
+  
+  gamelogic_instance_id_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(),
+      ::std::string(reinterpret_cast<const char*>(value), size));
+  // @@protoc_insertion_point(field_set_pointer:game.MapPingRsp.gamelogic_instance_id)
+}
+inline ::std::string* MapPingRsp::mutable_gamelogic_instance_id() {
+  
+  // @@protoc_insertion_point(field_mutable:game.MapPingRsp.gamelogic_instance_id)
+  return gamelogic_instance_id_.MutableNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline ::std::string* MapPingRsp::release_gamelogic_instance_id() {
+  // @@protoc_insertion_point(field_release:game.MapPingRsp.gamelogic_instance_id)
+  
+  return gamelogic_instance_id_.ReleaseNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline void MapPingRsp::set_allocated_gamelogic_instance_id(::std::string* gamelogic_instance_id) {
+  if (gamelogic_instance_id != NULL) {
+    
+  } else {
+    
+  }
+  gamelogic_instance_id_.SetAllocatedNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), gamelogic_instance_id);
+  // @@protoc_insertion_point(field_set_allocated:game.MapPingRsp.gamelogic_instance_id)
+}
+
+// -------------------------------------------------------------------
+
+// ChatSendReq
+
+// uint64 player_id = 1;
+inline void ChatSendReq::clear_player_id() {
+  player_id_ = GOOGLE_ULONGLONG(0);
+}
+inline ::google::protobuf::uint64 ChatSendReq::player_id() const {
+  // @@protoc_insertion_point(field_get:game.ChatSendReq.player_id)
+  return player_id_;
+}
+inline void ChatSendReq::set_player_id(::google::protobuf::uint64 value) {
+  
+  player_id_ = value;
+  // @@protoc_insertion_point(field_set:game.ChatSendReq.player_id)
+}
+
+// string channel = 2;
+inline void ChatSendReq::clear_channel() {
+  channel_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline const ::std::string& ChatSendReq::channel() const {
+  // @@protoc_insertion_point(field_get:game.ChatSendReq.channel)
+  return channel_.GetNoArena();
+}
+inline void ChatSendReq::set_channel(const ::std::string& value) {
+  
+  channel_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), value);
+  // @@protoc_insertion_point(field_set:game.ChatSendReq.channel)
+}
+#if LANG_CXX11
+inline void ChatSendReq::set_channel(::std::string&& value) {
+  
+  channel_.SetNoArena(
+    &::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::move(value));
+  // @@protoc_insertion_point(field_set_rvalue:game.ChatSendReq.channel)
+}
+#endif
+inline void ChatSendReq::set_channel(const char* value) {
+  GOOGLE_DCHECK(value != NULL);
+  
+  channel_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::string(value));
+  // @@protoc_insertion_point(field_set_char:game.ChatSendReq.channel)
+}
+inline void ChatSendReq::set_channel(const char* value, size_t size) {
+  
+  channel_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(),
+      ::std::string(reinterpret_cast<const char*>(value), size));
+  // @@protoc_insertion_point(field_set_pointer:game.ChatSendReq.channel)
+}
+inline ::std::string* ChatSendReq::mutable_channel() {
+  
+  // @@protoc_insertion_point(field_mutable:game.ChatSendReq.channel)
+  return channel_.MutableNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline ::std::string* ChatSendReq::release_channel() {
+  // @@protoc_insertion_point(field_release:game.ChatSendReq.channel)
+  
+  return channel_.ReleaseNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline void ChatSendReq::set_allocated_channel(::std::string* channel) {
+  if (channel != NULL) {
+    
+  } else {
+    
+  }
+  channel_.SetAllocatedNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), channel);
+  // @@protoc_insertion_point(field_set_allocated:game.ChatSendReq.channel)
+}
+
+// string text = 3;
+inline void ChatSendReq::clear_text() {
+  text_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline const ::std::string& ChatSendReq::text() const {
+  // @@protoc_insertion_point(field_get:game.ChatSendReq.text)
+  return text_.GetNoArena();
+}
+inline void ChatSendReq::set_text(const ::std::string& value) {
+  
+  text_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), value);
+  // @@protoc_insertion_point(field_set:game.ChatSendReq.text)
+}
+#if LANG_CXX11
+inline void ChatSendReq::set_text(::std::string&& value) {
+  
+  text_.SetNoArena(
+    &::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::move(value));
+  // @@protoc_insertion_point(field_set_rvalue:game.ChatSendReq.text)
+}
+#endif
+inline void ChatSendReq::set_text(const char* value) {
+  GOOGLE_DCHECK(value != NULL);
+  
+  text_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::string(value));
+  // @@protoc_insertion_point(field_set_char:game.ChatSendReq.text)
+}
+inline void ChatSendReq::set_text(const char* value, size_t size) {
+  
+  text_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(),
+      ::std::string(reinterpret_cast<const char*>(value), size));
+  // @@protoc_insertion_point(field_set_pointer:game.ChatSendReq.text)
+}
+inline ::std::string* ChatSendReq::mutable_text() {
+  
+  // @@protoc_insertion_point(field_mutable:game.ChatSendReq.text)
+  return text_.MutableNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline ::std::string* ChatSendReq::release_text() {
+  // @@protoc_insertion_point(field_release:game.ChatSendReq.text)
+  
+  return text_.ReleaseNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline void ChatSendReq::set_allocated_text(::std::string* text) {
+  if (text != NULL) {
+    
+  } else {
+    
+  }
+  text_.SetAllocatedNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), text);
+  // @@protoc_insertion_point(field_set_allocated:game.ChatSendReq.text)
+}
+
+// -------------------------------------------------------------------
+
+// ChatSendRsp
+
+// bool ok = 1;
+inline void ChatSendRsp::clear_ok() {
+  ok_ = false;
+}
+inline bool ChatSendRsp::ok() const {
+  // @@protoc_insertion_point(field_get:game.ChatSendRsp.ok)
+  return ok_;
+}
+inline void ChatSendRsp::set_ok(bool value) {
+  
+  ok_ = value;
+  // @@protoc_insertion_point(field_set:game.ChatSendRsp.ok)
+}
+
+// string message = 2;
+inline void ChatSendRsp::clear_message() {
+  message_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline const ::std::string& ChatSendRsp::message() const {
+  // @@protoc_insertion_point(field_get:game.ChatSendRsp.message)
+  return message_.GetNoArena();
+}
+inline void ChatSendRsp::set_message(const ::std::string& value) {
+  
+  message_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), value);
+  // @@protoc_insertion_point(field_set:game.ChatSendRsp.message)
+}
+#if LANG_CXX11
+inline void ChatSendRsp::set_message(::std::string&& value) {
+  
+  message_.SetNoArena(
+    &::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::move(value));
+  // @@protoc_insertion_point(field_set_rvalue:game.ChatSendRsp.message)
+}
+#endif
+inline void ChatSendRsp::set_message(const char* value) {
+  GOOGLE_DCHECK(value != NULL);
+  
+  message_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::string(value));
+  // @@protoc_insertion_point(field_set_char:game.ChatSendRsp.message)
+}
+inline void ChatSendRsp::set_message(const char* value, size_t size) {
+  
+  message_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(),
+      ::std::string(reinterpret_cast<const char*>(value), size));
+  // @@protoc_insertion_point(field_set_pointer:game.ChatSendRsp.message)
+}
+inline ::std::string* ChatSendRsp::mutable_message() {
+  
+  // @@protoc_insertion_point(field_mutable:game.ChatSendRsp.message)
+  return message_.MutableNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline ::std::string* ChatSendRsp::release_message() {
+  // @@protoc_insertion_point(field_release:game.ChatSendRsp.message)
+  
+  return message_.ReleaseNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline void ChatSendRsp::set_allocated_message(::std::string* message) {
+  if (message != NULL) {
+    
+  } else {
+    
+  }
+  message_.SetAllocatedNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), message);
+  // @@protoc_insertion_point(field_set_allocated:game.ChatSendRsp.message)
+}
+
+// string error_code = 3;
+inline void ChatSendRsp::clear_error_code() {
+  error_code_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline const ::std::string& ChatSendRsp::error_code() const {
+  // @@protoc_insertion_point(field_get:game.ChatSendRsp.error_code)
+  return error_code_.GetNoArena();
+}
+inline void ChatSendRsp::set_error_code(const ::std::string& value) {
+  
+  error_code_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), value);
+  // @@protoc_insertion_point(field_set:game.ChatSendRsp.error_code)
+}
+#if LANG_CXX11
+inline void ChatSendRsp::set_error_code(::std::string&& value) {
+  
+  error_code_.SetNoArena(
+    &::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::move(value));
+  // @@protoc_insertion_point(field_set_rvalue:game.ChatSendRsp.error_code)
+}
+#endif
+inline void ChatSendRsp::set_error_code(const char* value) {
+  GOOGLE_DCHECK(value != NULL);
+  
+  error_code_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::string(value));
+  // @@protoc_insertion_point(field_set_char:game.ChatSendRsp.error_code)
+}
+inline void ChatSendRsp::set_error_code(const char* value, size_t size) {
+  
+  error_code_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(),
+      ::std::string(reinterpret_cast<const char*>(value), size));
+  // @@protoc_insertion_point(field_set_pointer:game.ChatSendRsp.error_code)
+}
+inline ::std::string* ChatSendRsp::mutable_error_code() {
+  
+  // @@protoc_insertion_point(field_mutable:game.ChatSendRsp.error_code)
+  return error_code_.MutableNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline ::std::string* ChatSendRsp::release_error_code() {
+  // @@protoc_insertion_point(field_release:game.ChatSendRsp.error_code)
+  
+  return error_code_.ReleaseNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline void ChatSendRsp::set_allocated_error_code(::std::string* error_code) {
+  if (error_code != NULL) {
+    
+  } else {
+    
+  }
+  error_code_.SetAllocatedNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), error_code);
+  // @@protoc_insertion_point(field_set_allocated:game.ChatSendRsp.error_code)
+}
+
+// -------------------------------------------------------------------
+
+// FriendListReq
+
+// uint64 player_id = 1;
+inline void FriendListReq::clear_player_id() {
+  player_id_ = GOOGLE_ULONGLONG(0);
+}
+inline ::google::protobuf::uint64 FriendListReq::player_id() const {
+  // @@protoc_insertion_point(field_get:game.FriendListReq.player_id)
+  return player_id_;
+}
+inline void FriendListReq::set_player_id(::google::protobuf::uint64 value) {
+  
+  player_id_ = value;
+  // @@protoc_insertion_point(field_set:game.FriendListReq.player_id)
+}
+
+// -------------------------------------------------------------------
+
+// FriendListRsp
+
+// bool ok = 1;
+inline void FriendListRsp::clear_ok() {
+  ok_ = false;
+}
+inline bool FriendListRsp::ok() const {
+  // @@protoc_insertion_point(field_get:game.FriendListRsp.ok)
+  return ok_;
+}
+inline void FriendListRsp::set_ok(bool value) {
+  
+  ok_ = value;
+  // @@protoc_insertion_point(field_set:game.FriendListRsp.ok)
+}
+
+// string message = 2;
+inline void FriendListRsp::clear_message() {
+  message_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline const ::std::string& FriendListRsp::message() const {
+  // @@protoc_insertion_point(field_get:game.FriendListRsp.message)
+  return message_.GetNoArena();
+}
+inline void FriendListRsp::set_message(const ::std::string& value) {
+  
+  message_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), value);
+  // @@protoc_insertion_point(field_set:game.FriendListRsp.message)
+}
+#if LANG_CXX11
+inline void FriendListRsp::set_message(::std::string&& value) {
+  
+  message_.SetNoArena(
+    &::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::move(value));
+  // @@protoc_insertion_point(field_set_rvalue:game.FriendListRsp.message)
+}
+#endif
+inline void FriendListRsp::set_message(const char* value) {
+  GOOGLE_DCHECK(value != NULL);
+  
+  message_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::string(value));
+  // @@protoc_insertion_point(field_set_char:game.FriendListRsp.message)
+}
+inline void FriendListRsp::set_message(const char* value, size_t size) {
+  
+  message_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(),
+      ::std::string(reinterpret_cast<const char*>(value), size));
+  // @@protoc_insertion_point(field_set_pointer:game.FriendListRsp.message)
+}
+inline ::std::string* FriendListRsp::mutable_message() {
+  
+  // @@protoc_insertion_point(field_mutable:game.FriendListRsp.message)
+  return message_.MutableNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline ::std::string* FriendListRsp::release_message() {
+  // @@protoc_insertion_point(field_release:game.FriendListRsp.message)
+  
+  return message_.ReleaseNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline void FriendListRsp::set_allocated_message(::std::string* message) {
+  if (message != NULL) {
+    
+  } else {
+    
+  }
+  message_.SetAllocatedNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), message);
+  // @@protoc_insertion_point(field_set_allocated:game.FriendListRsp.message)
+}
+
+// string error_code = 3;
+inline void FriendListRsp::clear_error_code() {
+  error_code_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline const ::std::string& FriendListRsp::error_code() const {
+  // @@protoc_insertion_point(field_get:game.FriendListRsp.error_code)
+  return error_code_.GetNoArena();
+}
+inline void FriendListRsp::set_error_code(const ::std::string& value) {
+  
+  error_code_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), value);
+  // @@protoc_insertion_point(field_set:game.FriendListRsp.error_code)
+}
+#if LANG_CXX11
+inline void FriendListRsp::set_error_code(::std::string&& value) {
+  
+  error_code_.SetNoArena(
+    &::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::move(value));
+  // @@protoc_insertion_point(field_set_rvalue:game.FriendListRsp.error_code)
+}
+#endif
+inline void FriendListRsp::set_error_code(const char* value) {
+  GOOGLE_DCHECK(value != NULL);
+  
+  error_code_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::string(value));
+  // @@protoc_insertion_point(field_set_char:game.FriendListRsp.error_code)
+}
+inline void FriendListRsp::set_error_code(const char* value, size_t size) {
+  
+  error_code_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(),
+      ::std::string(reinterpret_cast<const char*>(value), size));
+  // @@protoc_insertion_point(field_set_pointer:game.FriendListRsp.error_code)
+}
+inline ::std::string* FriendListRsp::mutable_error_code() {
+  
+  // @@protoc_insertion_point(field_mutable:game.FriendListRsp.error_code)
+  return error_code_.MutableNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline ::std::string* FriendListRsp::release_error_code() {
+  // @@protoc_insertion_point(field_release:game.FriendListRsp.error_code)
+  
+  return error_code_.ReleaseNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline void FriendListRsp::set_allocated_error_code(::std::string* error_code) {
+  if (error_code != NULL) {
+    
+  } else {
+    
+  }
+  error_code_.SetAllocatedNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), error_code);
+  // @@protoc_insertion_point(field_set_allocated:game.FriendListRsp.error_code)
+}
+
+// -------------------------------------------------------------------
+
 // GameRequest
 
 // uint64 seq = 1;
@@ -13081,6 +17031,126 @@ inline ::game::LogoutReq* GameRequest::mutable_logout() {
   }
   // @@protoc_insertion_point(field_mutable:game.GameRequest.logout)
   return body_.logout_;
+}
+
+// .game.ReconnectReq reconnect = 24;
+inline bool GameRequest::has_reconnect() const {
+  return body_case() == kReconnect;
+}
+inline void GameRequest::set_has_reconnect() {
+  _oneof_case_[0] = kReconnect;
+}
+inline void GameRequest::clear_reconnect() {
+  if (has_reconnect()) {
+    delete body_.reconnect_;
+    clear_has_body();
+  }
+}
+inline ::game::ReconnectReq* GameRequest::release_reconnect() {
+  // @@protoc_insertion_point(field_release:game.GameRequest.reconnect)
+  if (has_reconnect()) {
+    clear_has_body();
+      ::game::ReconnectReq* temp = body_.reconnect_;
+    body_.reconnect_ = NULL;
+    return temp;
+  } else {
+    return NULL;
+  }
+}
+inline const ::game::ReconnectReq& GameRequest::reconnect() const {
+  // @@protoc_insertion_point(field_get:game.GameRequest.reconnect)
+  return has_reconnect()
+      ? *body_.reconnect_
+      : *reinterpret_cast< ::game::ReconnectReq*>(&::game::_ReconnectReq_default_instance_);
+}
+inline ::game::ReconnectReq* GameRequest::mutable_reconnect() {
+  if (!has_reconnect()) {
+    clear_body();
+    set_has_reconnect();
+    body_.reconnect_ = new ::game::ReconnectReq;
+  }
+  // @@protoc_insertion_point(field_mutable:game.GameRequest.reconnect)
+  return body_.reconnect_;
+}
+
+// .game.RegisterReq register = 25;
+inline bool GameRequest::has_register_() const {
+  return body_case() == kRegister;
+}
+inline void GameRequest::set_has_register_() {
+  _oneof_case_[0] = kRegister;
+}
+inline void GameRequest::clear_register_() {
+  if (has_register_()) {
+    delete body_.register__;
+    clear_has_body();
+  }
+}
+inline ::game::RegisterReq* GameRequest::release_register_() {
+  // @@protoc_insertion_point(field_release:game.GameRequest.register)
+  if (has_register_()) {
+    clear_has_body();
+      ::game::RegisterReq* temp = body_.register__;
+    body_.register__ = NULL;
+    return temp;
+  } else {
+    return NULL;
+  }
+}
+inline const ::game::RegisterReq& GameRequest::register_() const {
+  // @@protoc_insertion_point(field_get:game.GameRequest.register)
+  return has_register_()
+      ? *body_.register__
+      : *reinterpret_cast< ::game::RegisterReq*>(&::game::_RegisterReq_default_instance_);
+}
+inline ::game::RegisterReq* GameRequest::mutable_register_() {
+  if (!has_register_()) {
+    clear_body();
+    set_has_register_();
+    body_.register__ = new ::game::RegisterReq;
+  }
+  // @@protoc_insertion_point(field_mutable:game.GameRequest.register)
+  return body_.register__;
+}
+
+// .game.FlushBagReq flush_bag = 26;
+inline bool GameRequest::has_flush_bag() const {
+  return body_case() == kFlushBag;
+}
+inline void GameRequest::set_has_flush_bag() {
+  _oneof_case_[0] = kFlushBag;
+}
+inline void GameRequest::clear_flush_bag() {
+  if (has_flush_bag()) {
+    delete body_.flush_bag_;
+    clear_has_body();
+  }
+}
+inline ::game::FlushBagReq* GameRequest::release_flush_bag() {
+  // @@protoc_insertion_point(field_release:game.GameRequest.flush_bag)
+  if (has_flush_bag()) {
+    clear_has_body();
+      ::game::FlushBagReq* temp = body_.flush_bag_;
+    body_.flush_bag_ = NULL;
+    return temp;
+  } else {
+    return NULL;
+  }
+}
+inline const ::game::FlushBagReq& GameRequest::flush_bag() const {
+  // @@protoc_insertion_point(field_get:game.GameRequest.flush_bag)
+  return has_flush_bag()
+      ? *body_.flush_bag_
+      : *reinterpret_cast< ::game::FlushBagReq*>(&::game::_FlushBagReq_default_instance_);
+}
+inline ::game::FlushBagReq* GameRequest::mutable_flush_bag() {
+  if (!has_flush_bag()) {
+    clear_body();
+    set_has_flush_bag();
+    body_.flush_bag_ = new ::game::FlushBagReq;
+  }
+  // @@protoc_insertion_point(field_mutable:game.GameRequest.flush_bag)
+  return body_.flush_bag_;
 }
 
 // .game.MailboxSummaryReq mailbox_summary = 30;
@@ -13483,6 +17553,206 @@ inline ::game::MailDeliverReq* GameRequest::mutable_mail_deliver() {
   return body_.mail_deliver_;
 }
 
+// .game.EnterMapReq enter_map = 40;
+inline bool GameRequest::has_enter_map() const {
+  return body_case() == kEnterMap;
+}
+inline void GameRequest::set_has_enter_map() {
+  _oneof_case_[0] = kEnterMap;
+}
+inline void GameRequest::clear_enter_map() {
+  if (has_enter_map()) {
+    delete body_.enter_map_;
+    clear_has_body();
+  }
+}
+inline ::game::EnterMapReq* GameRequest::release_enter_map() {
+  // @@protoc_insertion_point(field_release:game.GameRequest.enter_map)
+  if (has_enter_map()) {
+    clear_has_body();
+      ::game::EnterMapReq* temp = body_.enter_map_;
+    body_.enter_map_ = NULL;
+    return temp;
+  } else {
+    return NULL;
+  }
+}
+inline const ::game::EnterMapReq& GameRequest::enter_map() const {
+  // @@protoc_insertion_point(field_get:game.GameRequest.enter_map)
+  return has_enter_map()
+      ? *body_.enter_map_
+      : *reinterpret_cast< ::game::EnterMapReq*>(&::game::_EnterMapReq_default_instance_);
+}
+inline ::game::EnterMapReq* GameRequest::mutable_enter_map() {
+  if (!has_enter_map()) {
+    clear_body();
+    set_has_enter_map();
+    body_.enter_map_ = new ::game::EnterMapReq;
+  }
+  // @@protoc_insertion_point(field_mutable:game.GameRequest.enter_map)
+  return body_.enter_map_;
+}
+
+// .game.LeaveMapReq leave_map = 41;
+inline bool GameRequest::has_leave_map() const {
+  return body_case() == kLeaveMap;
+}
+inline void GameRequest::set_has_leave_map() {
+  _oneof_case_[0] = kLeaveMap;
+}
+inline void GameRequest::clear_leave_map() {
+  if (has_leave_map()) {
+    delete body_.leave_map_;
+    clear_has_body();
+  }
+}
+inline ::game::LeaveMapReq* GameRequest::release_leave_map() {
+  // @@protoc_insertion_point(field_release:game.GameRequest.leave_map)
+  if (has_leave_map()) {
+    clear_has_body();
+      ::game::LeaveMapReq* temp = body_.leave_map_;
+    body_.leave_map_ = NULL;
+    return temp;
+  } else {
+    return NULL;
+  }
+}
+inline const ::game::LeaveMapReq& GameRequest::leave_map() const {
+  // @@protoc_insertion_point(field_get:game.GameRequest.leave_map)
+  return has_leave_map()
+      ? *body_.leave_map_
+      : *reinterpret_cast< ::game::LeaveMapReq*>(&::game::_LeaveMapReq_default_instance_);
+}
+inline ::game::LeaveMapReq* GameRequest::mutable_leave_map() {
+  if (!has_leave_map()) {
+    clear_body();
+    set_has_leave_map();
+    body_.leave_map_ = new ::game::LeaveMapReq;
+  }
+  // @@protoc_insertion_point(field_mutable:game.GameRequest.leave_map)
+  return body_.leave_map_;
+}
+
+// .game.MapPingReq map_ping = 42;
+inline bool GameRequest::has_map_ping() const {
+  return body_case() == kMapPing;
+}
+inline void GameRequest::set_has_map_ping() {
+  _oneof_case_[0] = kMapPing;
+}
+inline void GameRequest::clear_map_ping() {
+  if (has_map_ping()) {
+    delete body_.map_ping_;
+    clear_has_body();
+  }
+}
+inline ::game::MapPingReq* GameRequest::release_map_ping() {
+  // @@protoc_insertion_point(field_release:game.GameRequest.map_ping)
+  if (has_map_ping()) {
+    clear_has_body();
+      ::game::MapPingReq* temp = body_.map_ping_;
+    body_.map_ping_ = NULL;
+    return temp;
+  } else {
+    return NULL;
+  }
+}
+inline const ::game::MapPingReq& GameRequest::map_ping() const {
+  // @@protoc_insertion_point(field_get:game.GameRequest.map_ping)
+  return has_map_ping()
+      ? *body_.map_ping_
+      : *reinterpret_cast< ::game::MapPingReq*>(&::game::_MapPingReq_default_instance_);
+}
+inline ::game::MapPingReq* GameRequest::mutable_map_ping() {
+  if (!has_map_ping()) {
+    clear_body();
+    set_has_map_ping();
+    body_.map_ping_ = new ::game::MapPingReq;
+  }
+  // @@protoc_insertion_point(field_mutable:game.GameRequest.map_ping)
+  return body_.map_ping_;
+}
+
+// .game.ChatSendReq chat_send = 50;
+inline bool GameRequest::has_chat_send() const {
+  return body_case() == kChatSend;
+}
+inline void GameRequest::set_has_chat_send() {
+  _oneof_case_[0] = kChatSend;
+}
+inline void GameRequest::clear_chat_send() {
+  if (has_chat_send()) {
+    delete body_.chat_send_;
+    clear_has_body();
+  }
+}
+inline ::game::ChatSendReq* GameRequest::release_chat_send() {
+  // @@protoc_insertion_point(field_release:game.GameRequest.chat_send)
+  if (has_chat_send()) {
+    clear_has_body();
+      ::game::ChatSendReq* temp = body_.chat_send_;
+    body_.chat_send_ = NULL;
+    return temp;
+  } else {
+    return NULL;
+  }
+}
+inline const ::game::ChatSendReq& GameRequest::chat_send() const {
+  // @@protoc_insertion_point(field_get:game.GameRequest.chat_send)
+  return has_chat_send()
+      ? *body_.chat_send_
+      : *reinterpret_cast< ::game::ChatSendReq*>(&::game::_ChatSendReq_default_instance_);
+}
+inline ::game::ChatSendReq* GameRequest::mutable_chat_send() {
+  if (!has_chat_send()) {
+    clear_body();
+    set_has_chat_send();
+    body_.chat_send_ = new ::game::ChatSendReq;
+  }
+  // @@protoc_insertion_point(field_mutable:game.GameRequest.chat_send)
+  return body_.chat_send_;
+}
+
+// .game.FriendListReq friend_list = 51;
+inline bool GameRequest::has_friend_list() const {
+  return body_case() == kFriendList;
+}
+inline void GameRequest::set_has_friend_list() {
+  _oneof_case_[0] = kFriendList;
+}
+inline void GameRequest::clear_friend_list() {
+  if (has_friend_list()) {
+    delete body_.friend_list_;
+    clear_has_body();
+  }
+}
+inline ::game::FriendListReq* GameRequest::release_friend_list() {
+  // @@protoc_insertion_point(field_release:game.GameRequest.friend_list)
+  if (has_friend_list()) {
+    clear_has_body();
+      ::game::FriendListReq* temp = body_.friend_list_;
+    body_.friend_list_ = NULL;
+    return temp;
+  } else {
+    return NULL;
+  }
+}
+inline const ::game::FriendListReq& GameRequest::friend_list() const {
+  // @@protoc_insertion_point(field_get:game.GameRequest.friend_list)
+  return has_friend_list()
+      ? *body_.friend_list_
+      : *reinterpret_cast< ::game::FriendListReq*>(&::game::_FriendListReq_default_instance_);
+}
+inline ::game::FriendListReq* GameRequest::mutable_friend_list() {
+  if (!has_friend_list()) {
+    clear_body();
+    set_has_friend_list();
+    body_.friend_list_ = new ::game::FriendListReq;
+  }
+  // @@protoc_insertion_point(field_mutable:game.GameRequest.friend_list)
+  return body_.friend_list_;
+}
+
 inline bool GameRequest::has_body() const {
   return body_case() != BODY_NOT_SET;
 }
@@ -13855,6 +18125,126 @@ inline ::game::LogoutRsp* GameResponse::mutable_logout() {
   }
   // @@protoc_insertion_point(field_mutable:game.GameResponse.logout)
   return body_.logout_;
+}
+
+// .game.ReconnectRsp reconnect = 24;
+inline bool GameResponse::has_reconnect() const {
+  return body_case() == kReconnect;
+}
+inline void GameResponse::set_has_reconnect() {
+  _oneof_case_[0] = kReconnect;
+}
+inline void GameResponse::clear_reconnect() {
+  if (has_reconnect()) {
+    delete body_.reconnect_;
+    clear_has_body();
+  }
+}
+inline ::game::ReconnectRsp* GameResponse::release_reconnect() {
+  // @@protoc_insertion_point(field_release:game.GameResponse.reconnect)
+  if (has_reconnect()) {
+    clear_has_body();
+      ::game::ReconnectRsp* temp = body_.reconnect_;
+    body_.reconnect_ = NULL;
+    return temp;
+  } else {
+    return NULL;
+  }
+}
+inline const ::game::ReconnectRsp& GameResponse::reconnect() const {
+  // @@protoc_insertion_point(field_get:game.GameResponse.reconnect)
+  return has_reconnect()
+      ? *body_.reconnect_
+      : *reinterpret_cast< ::game::ReconnectRsp*>(&::game::_ReconnectRsp_default_instance_);
+}
+inline ::game::ReconnectRsp* GameResponse::mutable_reconnect() {
+  if (!has_reconnect()) {
+    clear_body();
+    set_has_reconnect();
+    body_.reconnect_ = new ::game::ReconnectRsp;
+  }
+  // @@protoc_insertion_point(field_mutable:game.GameResponse.reconnect)
+  return body_.reconnect_;
+}
+
+// .game.RegisterRsp register = 25;
+inline bool GameResponse::has_register_() const {
+  return body_case() == kRegister;
+}
+inline void GameResponse::set_has_register_() {
+  _oneof_case_[0] = kRegister;
+}
+inline void GameResponse::clear_register_() {
+  if (has_register_()) {
+    delete body_.register__;
+    clear_has_body();
+  }
+}
+inline ::game::RegisterRsp* GameResponse::release_register_() {
+  // @@protoc_insertion_point(field_release:game.GameResponse.register)
+  if (has_register_()) {
+    clear_has_body();
+      ::game::RegisterRsp* temp = body_.register__;
+    body_.register__ = NULL;
+    return temp;
+  } else {
+    return NULL;
+  }
+}
+inline const ::game::RegisterRsp& GameResponse::register_() const {
+  // @@protoc_insertion_point(field_get:game.GameResponse.register)
+  return has_register_()
+      ? *body_.register__
+      : *reinterpret_cast< ::game::RegisterRsp*>(&::game::_RegisterRsp_default_instance_);
+}
+inline ::game::RegisterRsp* GameResponse::mutable_register_() {
+  if (!has_register_()) {
+    clear_body();
+    set_has_register_();
+    body_.register__ = new ::game::RegisterRsp;
+  }
+  // @@protoc_insertion_point(field_mutable:game.GameResponse.register)
+  return body_.register__;
+}
+
+// .game.FlushBagRsp flush_bag = 26;
+inline bool GameResponse::has_flush_bag() const {
+  return body_case() == kFlushBag;
+}
+inline void GameResponse::set_has_flush_bag() {
+  _oneof_case_[0] = kFlushBag;
+}
+inline void GameResponse::clear_flush_bag() {
+  if (has_flush_bag()) {
+    delete body_.flush_bag_;
+    clear_has_body();
+  }
+}
+inline ::game::FlushBagRsp* GameResponse::release_flush_bag() {
+  // @@protoc_insertion_point(field_release:game.GameResponse.flush_bag)
+  if (has_flush_bag()) {
+    clear_has_body();
+      ::game::FlushBagRsp* temp = body_.flush_bag_;
+    body_.flush_bag_ = NULL;
+    return temp;
+  } else {
+    return NULL;
+  }
+}
+inline const ::game::FlushBagRsp& GameResponse::flush_bag() const {
+  // @@protoc_insertion_point(field_get:game.GameResponse.flush_bag)
+  return has_flush_bag()
+      ? *body_.flush_bag_
+      : *reinterpret_cast< ::game::FlushBagRsp*>(&::game::_FlushBagRsp_default_instance_);
+}
+inline ::game::FlushBagRsp* GameResponse::mutable_flush_bag() {
+  if (!has_flush_bag()) {
+    clear_body();
+    set_has_flush_bag();
+    body_.flush_bag_ = new ::game::FlushBagRsp;
+  }
+  // @@protoc_insertion_point(field_mutable:game.GameResponse.flush_bag)
+  return body_.flush_bag_;
 }
 
 // .game.MailboxSummaryRsp mailbox_summary = 30;
@@ -14257,6 +18647,206 @@ inline ::game::MailDeliverRsp* GameResponse::mutable_mail_deliver() {
   return body_.mail_deliver_;
 }
 
+// .game.EnterMapRsp enter_map = 40;
+inline bool GameResponse::has_enter_map() const {
+  return body_case() == kEnterMap;
+}
+inline void GameResponse::set_has_enter_map() {
+  _oneof_case_[0] = kEnterMap;
+}
+inline void GameResponse::clear_enter_map() {
+  if (has_enter_map()) {
+    delete body_.enter_map_;
+    clear_has_body();
+  }
+}
+inline ::game::EnterMapRsp* GameResponse::release_enter_map() {
+  // @@protoc_insertion_point(field_release:game.GameResponse.enter_map)
+  if (has_enter_map()) {
+    clear_has_body();
+      ::game::EnterMapRsp* temp = body_.enter_map_;
+    body_.enter_map_ = NULL;
+    return temp;
+  } else {
+    return NULL;
+  }
+}
+inline const ::game::EnterMapRsp& GameResponse::enter_map() const {
+  // @@protoc_insertion_point(field_get:game.GameResponse.enter_map)
+  return has_enter_map()
+      ? *body_.enter_map_
+      : *reinterpret_cast< ::game::EnterMapRsp*>(&::game::_EnterMapRsp_default_instance_);
+}
+inline ::game::EnterMapRsp* GameResponse::mutable_enter_map() {
+  if (!has_enter_map()) {
+    clear_body();
+    set_has_enter_map();
+    body_.enter_map_ = new ::game::EnterMapRsp;
+  }
+  // @@protoc_insertion_point(field_mutable:game.GameResponse.enter_map)
+  return body_.enter_map_;
+}
+
+// .game.LeaveMapRsp leave_map = 41;
+inline bool GameResponse::has_leave_map() const {
+  return body_case() == kLeaveMap;
+}
+inline void GameResponse::set_has_leave_map() {
+  _oneof_case_[0] = kLeaveMap;
+}
+inline void GameResponse::clear_leave_map() {
+  if (has_leave_map()) {
+    delete body_.leave_map_;
+    clear_has_body();
+  }
+}
+inline ::game::LeaveMapRsp* GameResponse::release_leave_map() {
+  // @@protoc_insertion_point(field_release:game.GameResponse.leave_map)
+  if (has_leave_map()) {
+    clear_has_body();
+      ::game::LeaveMapRsp* temp = body_.leave_map_;
+    body_.leave_map_ = NULL;
+    return temp;
+  } else {
+    return NULL;
+  }
+}
+inline const ::game::LeaveMapRsp& GameResponse::leave_map() const {
+  // @@protoc_insertion_point(field_get:game.GameResponse.leave_map)
+  return has_leave_map()
+      ? *body_.leave_map_
+      : *reinterpret_cast< ::game::LeaveMapRsp*>(&::game::_LeaveMapRsp_default_instance_);
+}
+inline ::game::LeaveMapRsp* GameResponse::mutable_leave_map() {
+  if (!has_leave_map()) {
+    clear_body();
+    set_has_leave_map();
+    body_.leave_map_ = new ::game::LeaveMapRsp;
+  }
+  // @@protoc_insertion_point(field_mutable:game.GameResponse.leave_map)
+  return body_.leave_map_;
+}
+
+// .game.MapPingRsp map_ping = 42;
+inline bool GameResponse::has_map_ping() const {
+  return body_case() == kMapPing;
+}
+inline void GameResponse::set_has_map_ping() {
+  _oneof_case_[0] = kMapPing;
+}
+inline void GameResponse::clear_map_ping() {
+  if (has_map_ping()) {
+    delete body_.map_ping_;
+    clear_has_body();
+  }
+}
+inline ::game::MapPingRsp* GameResponse::release_map_ping() {
+  // @@protoc_insertion_point(field_release:game.GameResponse.map_ping)
+  if (has_map_ping()) {
+    clear_has_body();
+      ::game::MapPingRsp* temp = body_.map_ping_;
+    body_.map_ping_ = NULL;
+    return temp;
+  } else {
+    return NULL;
+  }
+}
+inline const ::game::MapPingRsp& GameResponse::map_ping() const {
+  // @@protoc_insertion_point(field_get:game.GameResponse.map_ping)
+  return has_map_ping()
+      ? *body_.map_ping_
+      : *reinterpret_cast< ::game::MapPingRsp*>(&::game::_MapPingRsp_default_instance_);
+}
+inline ::game::MapPingRsp* GameResponse::mutable_map_ping() {
+  if (!has_map_ping()) {
+    clear_body();
+    set_has_map_ping();
+    body_.map_ping_ = new ::game::MapPingRsp;
+  }
+  // @@protoc_insertion_point(field_mutable:game.GameResponse.map_ping)
+  return body_.map_ping_;
+}
+
+// .game.ChatSendRsp chat_send = 50;
+inline bool GameResponse::has_chat_send() const {
+  return body_case() == kChatSend;
+}
+inline void GameResponse::set_has_chat_send() {
+  _oneof_case_[0] = kChatSend;
+}
+inline void GameResponse::clear_chat_send() {
+  if (has_chat_send()) {
+    delete body_.chat_send_;
+    clear_has_body();
+  }
+}
+inline ::game::ChatSendRsp* GameResponse::release_chat_send() {
+  // @@protoc_insertion_point(field_release:game.GameResponse.chat_send)
+  if (has_chat_send()) {
+    clear_has_body();
+      ::game::ChatSendRsp* temp = body_.chat_send_;
+    body_.chat_send_ = NULL;
+    return temp;
+  } else {
+    return NULL;
+  }
+}
+inline const ::game::ChatSendRsp& GameResponse::chat_send() const {
+  // @@protoc_insertion_point(field_get:game.GameResponse.chat_send)
+  return has_chat_send()
+      ? *body_.chat_send_
+      : *reinterpret_cast< ::game::ChatSendRsp*>(&::game::_ChatSendRsp_default_instance_);
+}
+inline ::game::ChatSendRsp* GameResponse::mutable_chat_send() {
+  if (!has_chat_send()) {
+    clear_body();
+    set_has_chat_send();
+    body_.chat_send_ = new ::game::ChatSendRsp;
+  }
+  // @@protoc_insertion_point(field_mutable:game.GameResponse.chat_send)
+  return body_.chat_send_;
+}
+
+// .game.FriendListRsp friend_list = 51;
+inline bool GameResponse::has_friend_list() const {
+  return body_case() == kFriendList;
+}
+inline void GameResponse::set_has_friend_list() {
+  _oneof_case_[0] = kFriendList;
+}
+inline void GameResponse::clear_friend_list() {
+  if (has_friend_list()) {
+    delete body_.friend_list_;
+    clear_has_body();
+  }
+}
+inline ::game::FriendListRsp* GameResponse::release_friend_list() {
+  // @@protoc_insertion_point(field_release:game.GameResponse.friend_list)
+  if (has_friend_list()) {
+    clear_has_body();
+      ::game::FriendListRsp* temp = body_.friend_list_;
+    body_.friend_list_ = NULL;
+    return temp;
+  } else {
+    return NULL;
+  }
+}
+inline const ::game::FriendListRsp& GameResponse::friend_list() const {
+  // @@protoc_insertion_point(field_get:game.GameResponse.friend_list)
+  return has_friend_list()
+      ? *body_.friend_list_
+      : *reinterpret_cast< ::game::FriendListRsp*>(&::game::_FriendListRsp_default_instance_);
+}
+inline ::game::FriendListRsp* GameResponse::mutable_friend_list() {
+  if (!has_friend_list()) {
+    clear_body();
+    set_has_friend_list();
+    body_.friend_list_ = new ::game::FriendListRsp;
+  }
+  // @@protoc_insertion_point(field_mutable:game.GameResponse.friend_list)
+  return body_.friend_list_;
+}
+
 inline bool GameResponse::has_body() const {
   return body_case() != BODY_NOT_SET;
 }
@@ -14269,6 +18859,38 @@ inline GameResponse::BodyCase GameResponse::body_case() const {
 #ifdef __GNUC__
   #pragma GCC diagnostic pop
 #endif  // __GNUC__
+// -------------------------------------------------------------------
+
+// -------------------------------------------------------------------
+
+// -------------------------------------------------------------------
+
+// -------------------------------------------------------------------
+
+// -------------------------------------------------------------------
+
+// -------------------------------------------------------------------
+
+// -------------------------------------------------------------------
+
+// -------------------------------------------------------------------
+
+// -------------------------------------------------------------------
+
+// -------------------------------------------------------------------
+
+// -------------------------------------------------------------------
+
+// -------------------------------------------------------------------
+
+// -------------------------------------------------------------------
+
+// -------------------------------------------------------------------
+
+// -------------------------------------------------------------------
+
+// -------------------------------------------------------------------
+
 // -------------------------------------------------------------------
 
 // -------------------------------------------------------------------

@@ -75,7 +75,7 @@ bool MetricsDbWriter::EnsureTable() {
     if (!conn)
         return false;
     const char *sql =
-        "CREATE TABLE IF NOT EXISTS webserver_metrics ("
+        "CREATE TABLE IF NOT EXISTS gamemesh_metrics ("
         "id BIGINT AUTO_INCREMENT PRIMARY KEY,"
         "ts_unix BIGINT NOT NULL,"
         "cpu_seconds_total DOUBLE,"
@@ -93,7 +93,7 @@ bool MetricsDbWriter::EnsureTable() {
     const bool ok = conn->update(sql);
     if (ok && !logged_ready) {
         logged_ready = true;
-        LOG_INFO << "MetricsDbWriter: table webserver_metrics ready";
+        LOG_INFO << "MetricsDbWriter: table gamemesh_metrics ready";
     }
     return ok;
 }
@@ -111,7 +111,7 @@ bool MetricsDbWriter::InsertSnapshot() {
         m.thread_states_json.empty() ? "{}" : m.thread_states_json;
 
     std::ostringstream sql;
-    sql << "INSERT INTO webserver_metrics ("
+    sql << "INSERT INTO gamemesh_metrics ("
            "ts_unix,cpu_seconds_total,rss_bytes,vm_size_bytes,open_fds,process_threads,"
            "eventloop_tick_sec,eventloop_tick_peak_sec,thread_states_json,"
            "tcp_send_queue_bytes,tcp_recv_queue_bytes) VALUES ("
