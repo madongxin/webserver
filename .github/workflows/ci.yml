@@ -1,0 +1,36 @@
+name: ci
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+    services:
+      redis:
+        image: redis:7
+        ports: ["6379:6379"]
+    steps:
+      - uses: actions/checkout@v4
+      - name: deps
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y g++ cmake protobuf-compiler libprotobuf-dev \
+            libssl-dev libjsoncpp-dev libhiredis-dev libmysqlclient-dev \
+            libgflags-dev libleveldb-dev zlib1g-dev
+          # brpc 可能缺失时仅编非 brpc 子集；有 brpc 则全量
+          if ! pkg-config --exists brpc 2>/dev/null && [[ ! -f /usr/local/include/brpc/server.h ]]; then
+            echo "WARN: brpc not installed; ENABLE_BRPC may fail — install brpc for full CI"
+          fi
+      - name: bootstrap
+        run: ./scripts/bootstrap.sh || true
+      - name: build Debug
+        run: ./scripts/build.sh Debug
+      - name: unit
+        run: ./scripts/test_unit.sh
+      - name: reactor
+        run: ./scripts/test_reactor.sh
+      - name: password hash
+        run: ./build/test/password_hash_test
+      - name: integration (redis)
+        run: ./scripts/test_integration.sh

@@ -1,9 +1,28 @@
 #include "SessionServiceImpl.h"
 
 #include "Logging.h"
+#include "PlacementStore.h"
 #include "SessionStore.h"
 
 #include <brpc/controller.h>
+
+namespace {
+
+void FillPlacementPb(const PlacementRecord &r, sess::PlacementRecord *pb) {
+    if (!pb)
+        return;
+    pb->set_realm_id(r.realm_id);
+    pb->set_map_template_id(r.map_template_id);
+    pb->set_map_instance_id(r.map_instance_id);
+    pb->set_owner_logic_server_id(r.owner_logic_server_id);
+    pb->set_owner_epoch(r.owner_epoch);
+    pb->set_route_version(r.route_version);
+    pb->set_state(PlacementStore::StateToString(r.state));
+    pb->set_updated_at(r.updated_at);
+    pb->set_lease_until(r.lease_until);
+}
+
+}  // namespace
 
 void SessionServiceImpl::AcquireSession(::google::protobuf::RpcController *controller,
                                         const ::sess::AcquireSessionRequest *request,
@@ -62,15 +81,22 @@ void SessionServiceImpl::ReconnectV2(::google::protobuf::RpcController *controll
     legacy.set_reconnect_ticket(request->reconnect_ticket());
     legacy.set_last_server_seq(request->last_server_seq());
     game::ReconnectRsp legacy_rsp;
-    SessionStore::Instance().Reconnect(legacy, &legacy_rsp);
-    response->set_ok(legacy_rsp.ok());
+    SessionRecord route;
+    const bool ok = SessionStore::Instance().Reconnect(legacy, &legacy_rsp, &route);
+    response->set_ok(ok && legacy_rsp.ok());
     response->set_message(legacy_rsp.message());
     response->set_session_id(legacy_rsp.session_id());
     response->set_fence_token(legacy_rsp.token());
     response->set_generation(legacy_rsp.generation());
-    if (legacy_rsp.ok() && !request->gateway_instance_id().empty()) {
-        SessionStore::Instance().BindConnection(request->player_id(), legacy_rsp.token(),
-                                                request->gateway_instance_id(), 0);
+    if (response->ok()) {
+        response->set_gamelogic_instance_id(route.gamelogic_instance_id);
+        response->set_map_instance_id(route.map_instance_id);
+        response->set_map_owner_epoch(route.map_owner_epoch);
+        response->set_route_version(route.route_version);
+        if (!request->gateway_instance_id().empty()) {
+            SessionStore::Instance().BindConnection(request->player_id(), legacy_rsp.token(),
+                                                    request->gateway_instance_id(), 0);
+        }
     }
 }
 
@@ -97,6 +123,112 @@ void SessionServiceImpl::Kick(::google::protobuf::RpcController *controller,
     response->set_ok(false);
     response->set_message(std::string("kick deferred: ") + request->reason());
     LOG_WARN << "Kick stub player_id=" << request->player_id() << " reason=" << request->reason();
+}
+
+void SessionServiceImpl::ResolveOrCreateMap(::google::protobuf::RpcController *controller,
+                                            const ::sess::ResolveOrCreateMapRequest *request,
+                                            ::sess::ResolveOrCreateMapResponse *response,
+                                            ::google::protobuf::Closure *done) {
+    (void)controller;
+    brpc::ClosureGuard done_guard(done);
+    response->Clear();
+    ResolveOrCreateInput in;
+    in.realm_id = request->realm_id();
+    in.map_template_id = request->map_template_id();
+    in.map_instance_id = request->map_instance_id();
+    in.preferred_owner = request->preferred_owner();
+    in.force_new = request->force_new();
+    ResolveOrCreateResult out;
+    PlacementStore::Instance().ResolveOrCreate(in, &out);
+    response->set_ok(out.ok);
+    response->set_message(out.message);
+    response->set_error_code(out.error_code);
+    if (out.ok)
+        FillPlacementPb(out.placement, response->mutable_placement());
+}
+
+void SessionServiceImpl::GetPlacement(::google::protobuf::RpcController *controller,
+                                      const ::sess::GetPlacementRequest *request,
+                                      ::sess::GetPlacementResponse *response,
+                                      ::google::protobuf::Closure *done) {
+    (void)controller;
+    brpc::ClosureGuard done_guard(done);
+    response->Clear();
+    PlacementRecord rec;
+    const bool ok = PlacementStore::Instance().Get(request->map_instance_id(), &rec);
+    response->set_ok(ok);
+    response->set_message(ok ? "ok" : "not found");
+    if (ok)
+        FillPlacementPb(rec, response->mutable_placement());
+}
+
+void SessionServiceImpl::MigrateMap(::google::protobuf::RpcController *controller,
+                                    const ::sess::MigrateMapRequest *request,
+                                    ::sess::MigrateMapResponse *response,
+                                    ::google::protobuf::Closure *done) {
+    (void)controller;
+    brpc::ClosureGuard done_guard(done);
+    response->Clear();
+    PlacementRecord rec;
+    std::string err;
+    const bool ok = PlacementStore::Instance().Migrate(
+        request->map_instance_id(), request->new_owner_logic_server_id(), request->expect_epoch(),
+        request->idempotency_key(), &rec, &err);
+    response->set_ok(ok);
+    response->set_message(ok ? "ok" : err);
+    response->set_error_code(ok ? "" : "MIGRATE_FAILED");
+    if (ok)
+        FillPlacementPb(rec, response->mutable_placement());
+}
+
+void SessionServiceImpl::MarkRecovering(::google::protobuf::RpcController *controller,
+                                        const ::sess::MarkRecoveringRequest *request,
+                                        ::sess::MarkRecoveringResponse *response,
+                                        ::google::protobuf::Closure *done) {
+    (void)controller;
+    brpc::ClosureGuard done_guard(done);
+    response->Clear();
+    PlacementRecord rec;
+    const bool ok =
+        PlacementStore::Instance().MarkRecovering(request->map_instance_id(), request->reason(), &rec);
+    response->set_ok(ok);
+    response->set_message(ok ? "recovering" : "failed");
+    if (ok)
+        FillPlacementPb(rec, response->mutable_placement());
+}
+
+void SessionServiceImpl::HeartbeatOwner(::google::protobuf::RpcController *controller,
+                                        const ::sess::HeartbeatOwnerRequest *request,
+                                        ::sess::HeartbeatOwnerResponse *response,
+                                        ::google::protobuf::Closure *done) {
+    (void)controller;
+    brpc::ClosureGuard done_guard(done);
+    response->Clear();
+    int64_t lease_until = 0;
+    const bool ok = PlacementStore::Instance().Heartbeat(
+        request->map_instance_id(), request->owner_logic_server_id(), request->owner_epoch(),
+        request->lease_sec(), &lease_until);
+    response->set_ok(ok);
+    response->set_message(ok ? "ok" : "rejected");
+    response->set_lease_until(lease_until);
+}
+
+void SessionServiceImpl::UpdatePlayerRoute(::google::protobuf::RpcController *controller,
+                                           const ::sess::UpdatePlayerRouteRequest *request,
+                                           ::sess::UpdatePlayerRouteResponse *response,
+                                           ::google::protobuf::Closure *done) {
+    (void)controller;
+    brpc::ClosureGuard done_guard(done);
+    response->Clear();
+    uint64_t rv = 0;
+    std::string err;
+    const bool ok = SessionStore::Instance().UpdatePlayerRoute(
+        request->player_id(), request->fence_token(), request->gamelogic_instance_id(),
+        request->map_instance_id(), request->map_owner_epoch(), request->route_version(),
+        request->gateway_instance_id(), request->push_endpoint(), &rv, &err);
+    response->set_ok(ok);
+    response->set_message(ok ? "ok" : err);
+    response->set_route_version(rv);
 }
 
 void SessionServiceImpl::Login(::google::protobuf::RpcController *controller,

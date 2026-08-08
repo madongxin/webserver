@@ -79,6 +79,7 @@ detect_advertise_host() {
 }
 
 ADVERTISE_HOST="$(detect_advertise_host)"
+export GAMEMESH_ADVERTISE_HOST="${GAMEMESH_ADVERTISE_HOST:-$ADVERTISE_HOST}"
 
 backup_cnf() {
   local f="$1"
@@ -129,12 +130,15 @@ printf '%s\n' \
   "nats_url=" \
   "ssl_enable=0" >"$GAMEDB_CNF"
 
+PUSH_G0=$((GAME_G0 + 100))
+PUSH_G1=$((GAME_G1 + 100))
 printf '%s\n' \
   "listen_addr=0.0.0.0:${LOGIC0}" \
   "idle_timeout_sec=30" \
   "instance_id=gl-0" \
   "session_addrs=127.0.0.1:${SESSION}" \
   "gamedb_addrs=127.0.0.1:${GAMEDB0},127.0.0.1:${GAMEDB1}" \
+  "gateway_push_addrs=gw-${GAME_G0}=${GAMEMESH_ADVERTISE_HOST}:${PUSH_G0},gw-${GAME_G1}=${GAMEMESH_ADVERTISE_HOST}:${PUSH_G1}" \
   "ssl_enable=0" >"$LOGIC_CNF"
 
 run_role() {
@@ -151,41 +155,43 @@ run_role() {
 
 : >"$RUN_DIR/pids"
 
+wait_log() {
+  local label="$1" file="$2" pattern="$3" timeout_sec="${4:-40}"
+  local waited=0
+  while (( waited < timeout_sec * 2 )); do
+    if [[ -f "$file" ]] && grep -qE "$pattern" "$file" 2>/dev/null; then
+      echo "  ready $label"
+      return 0
+    fi
+    sleep 0.5
+    waited=$((waited + 1))
+  done
+  echo "ERROR: $label 未在 ${timeout_sec}s 内就绪，请看 $file"
+  return 1
+}
+
 echo "== GameMesh formal start (2×gw + 2×logic + 2×gamedb + world + session) =="
 run_role "$SESSION_BIN" session    "$RUN_DIR/logs/session.log" "$HTTP_S"  "$SESSION"
 run_role "$GAMEDB_BIN"  gamedb0    "$RUN_DIR/logs/gamedb0.log" "$HTTP_D0" "$GAMEDB0"
 run_role "$GAMEDB_BIN"  gamedb1    "$RUN_DIR/logs/gamedb1.log" "$HTTP_D1" "$GAMEDB1"
-sleep 1
+wait_log session "$RUN_DIR/logs/session.log" \
+  'SessionBrpcServer\(\+Auth\) listening|SessionBrpcServer listening|role=session'
+wait_log gamedb0 "$RUN_DIR/logs/gamedb0.log" 'GameDbBrpcServer listening|role=gamedb'
+wait_log gamedb1 "$RUN_DIR/logs/gamedb1.log" 'GameDbBrpcServer listening|role=gamedb'
+
 run_role "$WORLD_BIN"   world      "$RUN_DIR/logs/world.log"   "$HTTP_W"
 run_role "$LOGIC_BIN"   gamelogic0 "$RUN_DIR/logs/logic0.log"  "$HTTP_L0" "$LOGIC0"
 run_role "$LOGIC_BIN"   gamelogic1 "$RUN_DIR/logs/logic1.log"  "$HTTP_L1" "$LOGIC1"
-sleep 1
+wait_log world "$RUN_DIR/logs/world.log" 'WorldBrpcServer listening|role=world'
+wait_log gamelogic0 "$RUN_DIR/logs/logic0.log" 'GameLogicBrpcServer listening|role=gamelogic'
+wait_log gamelogic1 "$RUN_DIR/logs/logic1.log" 'GameLogicBrpcServer listening|role=gamelogic'
+
 run_role "$GW_BIN"      gateway0   "$RUN_DIR/logs/gw0.log"     "$HTTP_G0" "$GAME_G0"
 run_role "$GW_BIN"      gateway1   "$RUN_DIR/logs/gw1.log"     "$HTTP_G1" "$GAME_G1"
-sleep 2
-
-fail=0
-check_log() {
-  local label="$1" file="$2" pattern="$3"
-  if ! grep -qE "$pattern" "$file" 2>/dev/null; then
-    echo "WARN: $label 未就绪，请看 $file"
-    fail=1
-  fi
-}
-
-check_log session    "$RUN_DIR/logs/session.log" 'SessionBrpcServer\(\+Auth\) listening|SessionBrpcServer listening|role=session'
-check_log gamedb0    "$RUN_DIR/logs/gamedb0.log" 'GameDbBrpcServer listening|role=gamedb'
-check_log gamedb1    "$RUN_DIR/logs/gamedb1.log" 'GameDbBrpcServer listening|role=gamedb'
-check_log world      "$RUN_DIR/logs/world.log"   'WorldBrpcServer listening|role=world'
-check_log gamelogic0 "$RUN_DIR/logs/logic0.log"  'GameLogicBrpcServer listening|role=gamelogic'
-check_log gamelogic1 "$RUN_DIR/logs/logic1.log"  'GameLogicBrpcServer listening|role=gamelogic'
-check_log gateway0   "$RUN_DIR/logs/gw0.log"     'GameTcpGateway ready|Game protobuf TCP'
-check_log gateway1   "$RUN_DIR/logs/gw1.log"     'GameTcpGateway ready|Game protobuf TCP'
-check_log gw0_push   "$RUN_DIR/logs/gw0.log"     'GatewayPushServer listening'
-check_log gw1_push   "$RUN_DIR/logs/gw1.log"     'GatewayPushServer listening'
-
-PUSH_G0=$((GAME_G0 + 100))
-PUSH_G1=$((GAME_G1 + 100))
+wait_log gateway0 "$RUN_DIR/logs/gw0.log" 'GameTcpGateway ready|Game protobuf TCP'
+wait_log gateway1 "$RUN_DIR/logs/gw1.log" 'GameTcpGateway ready|Game protobuf TCP'
+wait_log gw0_push "$RUN_DIR/logs/gw0.log" 'GatewayPushServer listening'
+wait_log gw1_push "$RUN_DIR/logs/gw1.log" 'GatewayPushServer listening'
 
 cat >"$RUN_DIR/CLIENT.txt" <<EOF
 # Windows / 测试客户端连接信息（GameMesh Gateway ×2）
@@ -216,8 +222,4 @@ echo "连接信息: $RUN_DIR/CLIENT.txt"
 echo "日志目录: $RUN_DIR/logs/"
 echo "停止命令: ./scripts/stop_formal.sh  或  ./scripts/stop_local.sh"
 echo
-if [[ "$fail" -ne 0 ]]; then
-  echo "部分角色可能未就绪，请检查上方 WARN 与日志。"
-  exit 1
-fi
 echo "全部角色已后台启动。"

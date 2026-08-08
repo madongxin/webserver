@@ -47,6 +47,9 @@ public:
     bool Migrate(uint64_t map_instance_id, const std::string &new_owner,
                  MapPlacementRecord *out);
 
+    /** 用权威 Placement 刷新本地缓存（非事实源） */
+    void UpsertCache(const MapPlacementRecord &rec);
+
     void ClearForTest();
 
 private:

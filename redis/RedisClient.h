@@ -47,6 +47,7 @@
 
 #include <map>
 #include <string>
+#include <vector>
 
 class RedisClient {
 public:
@@ -108,6 +109,13 @@ public:
      * @return false 未连接、fields 为 nullptr 或回复格式异常
      */
     bool HGetAll(const std::string &key, std::map<std::string, std::string> *fields);
+
+    /**
+     * EVAL script numkeys key [key ...] arg [arg ...]
+     * 期望回复为字符串数组（或单字符串 / 整数，统一转为 out 元素）。
+     */
+    bool Eval(const std::string &script, const std::vector<std::string> &keys,
+              const std::vector<std::string> &args, std::vector<std::string> *out);
 
 private:
     /**

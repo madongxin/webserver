@@ -13,10 +13,11 @@
 
 #include "common.h"
 
+#include <atomic>
+#include <functional>
 #include <memory>
 #include <mutex>
 #include <thread>
-#include <functional>
 #include <vector>
 
 class Epoller;
@@ -31,6 +32,8 @@ public:
 
     /** 阻塞运行：poll -> 处理 IO -> 执行 to_do_list_ */
     void Loop();
+    /** 请求退出 Loop（可跨线程调用） */
+    void Quit();
     void UpdateChannel(Channel *ch);
     void DeleteChannel(Channel *ch);
 
@@ -61,6 +64,7 @@ private:
     std::unique_ptr<Channel> wakeup_channel_;
 
     bool calling_functors_;
+    std::atomic<bool> quit_;
     pid_t tid_;
 
     std::unique_ptr<TimerQueue> timer_queue_;

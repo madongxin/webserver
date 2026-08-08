@@ -6,7 +6,7 @@
 /** 业务侧会话句柄（阶段 3 fence + 阶段 5 地图路由） */
 struct SessionHandle {
     uint64_t player_id = 0;
-    int connection_id = 0;
+    uint64_t connection_id = 0;
     uint64_t generation = 0;
     std::string session_id;
     std::string fence_token;

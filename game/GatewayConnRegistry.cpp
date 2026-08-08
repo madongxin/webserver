@@ -5,7 +5,7 @@ GatewayConnRegistry &GatewayConnRegistry::Instance() {
     return g;
 }
 
-void GatewayConnRegistry::Remember(int connection_id, Bind bind) {
+void GatewayConnRegistry::Remember(uint64_t connection_id, Bind bind) {
     std::lock_guard<std::mutex> lk(mu_);
     auto it = by_conn_.find(connection_id);
     if (it != by_conn_.end()) {
@@ -22,7 +22,7 @@ void GatewayConnRegistry::Remember(int connection_id, Bind bind) {
     by_conn_[connection_id] = std::move(bind);
 }
 
-void GatewayConnRegistry::Forget(int connection_id) {
+void GatewayConnRegistry::Forget(uint64_t connection_id) {
     std::lock_guard<std::mutex> lk(mu_);
     auto it = by_conn_.find(connection_id);
     if (it == by_conn_.end())
@@ -47,7 +47,7 @@ bool GatewayConnRegistry::FindBySession(const std::string &session_id, Bind *out
     return true;
 }
 
-bool GatewayConnRegistry::FindByConnection(int connection_id, Bind *out) {
+bool GatewayConnRegistry::FindByConnection(uint64_t connection_id, Bind *out) {
     std::lock_guard<std::mutex> lk(mu_);
     auto it = by_conn_.find(connection_id);
     if (it == by_conn_.end())

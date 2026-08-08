@@ -29,11 +29,13 @@ public:
 
     void EnableRead();
     void EnableWrite();
+    void DisableWrite();
     void EnableET();
 
     int fd() const;
     short listen_events() const;
     short ready_events() const;
+    bool IsWriting() const;
 
     bool IsInEpoll() const;
     void SetInEpoll(bool in = true);

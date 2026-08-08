@@ -171,7 +171,7 @@ void AddDescriptorsImpl() {
   InitDefaults();
   static const char descriptor[] GOOGLE_PROTOBUF_ATTRIBUTE_SECTION_VARIABLE(protodesc_cold) = {
       "\n\rforward.proto\022\003fwd\"\354\001\n\013ForwardMeta\022\021\n\t"
-      "player_id\030\001 \001(\004\022\025\n\rconnection_id\030\002 \001(\005\022\022"
+      "player_id\030\001 \001(\004\022\025\n\rconnection_id\030\002 \001(\004\022\022"
       "\n\nrequest_id\030\003 \001(\004\022\022\n\ngeneration\030\004 \001(\004\022\027"
       "\n\017map_instance_id\030\005 \001(\004\022\023\n\013owner_epoch\030\006"
       " \001(\004\022\025\n\rroute_version\030\007 \001(\004\022\035\n\025gamelogic"
@@ -247,8 +247,8 @@ ForwardMeta::ForwardMeta(const ForwardMeta& from)
     fence_token_.AssignWithDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), from.fence_token_);
   }
   ::memcpy(&player_id_, &from.player_id_,
-    static_cast<size_t>(reinterpret_cast<char*>(&connection_id_) -
-    reinterpret_cast<char*>(&player_id_)) + sizeof(connection_id_));
+    static_cast<size_t>(reinterpret_cast<char*>(&route_version_) -
+    reinterpret_cast<char*>(&player_id_)) + sizeof(route_version_));
   // @@protoc_insertion_point(copy_constructor:fwd.ForwardMeta)
 }
 
@@ -257,8 +257,8 @@ void ForwardMeta::SharedCtor() {
   session_id_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
   fence_token_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
   ::memset(&player_id_, 0, static_cast<size_t>(
-      reinterpret_cast<char*>(&connection_id_) -
-      reinterpret_cast<char*>(&player_id_)) + sizeof(connection_id_));
+      reinterpret_cast<char*>(&route_version_) -
+      reinterpret_cast<char*>(&player_id_)) + sizeof(route_version_));
   _cached_size_ = 0;
 }
 
@@ -306,8 +306,8 @@ void ForwardMeta::Clear() {
   session_id_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
   fence_token_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
   ::memset(&player_id_, 0, static_cast<size_t>(
-      reinterpret_cast<char*>(&connection_id_) -
-      reinterpret_cast<char*>(&player_id_)) + sizeof(connection_id_));
+      reinterpret_cast<char*>(&route_version_) -
+      reinterpret_cast<char*>(&player_id_)) + sizeof(route_version_));
   _internal_metadata_.Clear();
 }
 
@@ -335,13 +335,13 @@ bool ForwardMeta::MergePartialFromCodedStream(
         break;
       }
 
-      // int32 connection_id = 2;
+      // uint64 connection_id = 2;
       case 2: {
         if (static_cast< ::google::protobuf::uint8>(tag) ==
             static_cast< ::google::protobuf::uint8>(16u /* 16 & 0xFF */)) {
 
           DO_((::google::protobuf::internal::WireFormatLite::ReadPrimitive<
-                   ::google::protobuf::int32, ::google::protobuf::internal::WireFormatLite::TYPE_INT32>(
+                   ::google::protobuf::uint64, ::google::protobuf::internal::WireFormatLite::TYPE_UINT64>(
                  input, &connection_id_)));
         } else {
           goto handle_unusual;
@@ -498,9 +498,9 @@ void ForwardMeta::SerializeWithCachedSizes(
     ::google::protobuf::internal::WireFormatLite::WriteUInt64(1, this->player_id(), output);
   }
 
-  // int32 connection_id = 2;
+  // uint64 connection_id = 2;
   if (this->connection_id() != 0) {
-    ::google::protobuf::internal::WireFormatLite::WriteInt32(2, this->connection_id(), output);
+    ::google::protobuf::internal::WireFormatLite::WriteUInt64(2, this->connection_id(), output);
   }
 
   // uint64 request_id = 3;
@@ -577,9 +577,9 @@ void ForwardMeta::SerializeWithCachedSizes(
     target = ::google::protobuf::internal::WireFormatLite::WriteUInt64ToArray(1, this->player_id(), target);
   }
 
-  // int32 connection_id = 2;
+  // uint64 connection_id = 2;
   if (this->connection_id() != 0) {
-    target = ::google::protobuf::internal::WireFormatLite::WriteInt32ToArray(2, this->connection_id(), target);
+    target = ::google::protobuf::internal::WireFormatLite::WriteUInt64ToArray(2, this->connection_id(), target);
   }
 
   // uint64 request_id = 3;
@@ -685,6 +685,13 @@ size_t ForwardMeta::ByteSizeLong() const {
         this->player_id());
   }
 
+  // uint64 connection_id = 2;
+  if (this->connection_id() != 0) {
+    total_size += 1 +
+      ::google::protobuf::internal::WireFormatLite::UInt64Size(
+        this->connection_id());
+  }
+
   // uint64 request_id = 3;
   if (this->request_id() != 0) {
     total_size += 1 +
@@ -718,13 +725,6 @@ size_t ForwardMeta::ByteSizeLong() const {
     total_size += 1 +
       ::google::protobuf::internal::WireFormatLite::UInt64Size(
         this->route_version());
-  }
-
-  // int32 connection_id = 2;
-  if (this->connection_id() != 0) {
-    total_size += 1 +
-      ::google::protobuf::internal::WireFormatLite::Int32Size(
-        this->connection_id());
   }
 
   int cached_size = ::google::protobuf::internal::ToCachedSize(total_size);
@@ -771,6 +771,9 @@ void ForwardMeta::MergeFrom(const ForwardMeta& from) {
   if (from.player_id() != 0) {
     set_player_id(from.player_id());
   }
+  if (from.connection_id() != 0) {
+    set_connection_id(from.connection_id());
+  }
   if (from.request_id() != 0) {
     set_request_id(from.request_id());
   }
@@ -785,9 +788,6 @@ void ForwardMeta::MergeFrom(const ForwardMeta& from) {
   }
   if (from.route_version() != 0) {
     set_route_version(from.route_version());
-  }
-  if (from.connection_id() != 0) {
-    set_connection_id(from.connection_id());
   }
 }
 
@@ -819,12 +819,12 @@ void ForwardMeta::InternalSwap(ForwardMeta* other) {
   session_id_.Swap(&other->session_id_);
   fence_token_.Swap(&other->fence_token_);
   swap(player_id_, other->player_id_);
+  swap(connection_id_, other->connection_id_);
   swap(request_id_, other->request_id_);
   swap(generation_, other->generation_);
   swap(map_instance_id_, other->map_instance_id_);
   swap(owner_epoch_, other->owner_epoch_);
   swap(route_version_, other->route_version_);
-  swap(connection_id_, other->connection_id_);
   _internal_metadata_.Swap(&other->_internal_metadata_);
   swap(_cached_size_, other->_cached_size_);
 }

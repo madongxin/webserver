@@ -23,7 +23,7 @@ namespace {
 thread_local EventLoop *t_loopInThisThread = nullptr;
 }  // namespace
 
-EventLoop::EventLoop() : calling_functors_(false), tid_(CurrentThread::tid()) {
+EventLoop::EventLoop() : calling_functors_(false), quit_(false), tid_(CurrentThread::tid()) {
     if (t_loopInThisThread) {
         LOG_FATAL << "Another EventLoop exists in this thread";
     } else {
@@ -47,11 +47,12 @@ EventLoop::~EventLoop() {
 }
 
 void EventLoop::Loop() {
-    while (true) {
+    quit_ = false;
+    while (!quit_) {
         using clock = std::chrono::steady_clock;
         const auto t0 = clock::now();
 
-        const std::vector<Channel *> active = poller_->Poll(10000);
+        const std::vector<Channel *> active = poller_->Poll(1000);
         for (Channel *ch : active)
             ch->HandleEvent();
 
@@ -60,6 +61,15 @@ void EventLoop::Loop() {
         const auto t1 = clock::now();
         EventLoopMetrics::RecordTick(
             std::chrono::duration<double>(t1 - t0).count());
+    }
+}
+
+void EventLoop::Quit() {
+    quit_ = true;
+    if (!IsInLoopThread()) {
+        uint64_t one = 1;
+        ssize_t n = ::write(wakeup_fd_, &one, sizeof(one));
+        (void)n;
     }
 }
 

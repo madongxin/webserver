@@ -6,19 +6,22 @@
 #include "HttpContext.h"
 #include "TimeStamp.h"
 #include "Logging.h"
-#include <thread>
 #include <memory>
 #include <unistd.h>
-#include <assert.h>
-#include <iostream>
+#include <cassert>
+#include <cstring>
 #include <sys/socket.h>
 #include <sys/sendfile.h>
 
-
-TcpConnection::TcpConnection(EventLoop *loop, int connfd, int connid): connfd_(connfd), connid_(connid), loop_(loop){
-
-    if (loop != nullptr)
-    {
+TcpConnection::TcpConnection(EventLoop *loop, int connfd, uint64_t connid)
+    : connfd_(connfd),
+      connid_(connid),
+      state_(ConnectionState::Invalid),
+      loop_(loop),
+      max_read_buf_bytes_(static_cast<size_t>(kDefaultMaxReadBufBytes)),
+      max_send_buf_bytes_(static_cast<size_t>(kDefaultMaxSendBufBytes)),
+      force_closed_for_backpressure_(false) {
+    if (loop != nullptr) {
         channel_ = std::make_unique<Channel>(connfd, loop);
         channel_->EnableET();
         channel_->set_read_callback(std::bind(&TcpConnection::HandleMessage, this));
@@ -29,191 +32,199 @@ TcpConnection::TcpConnection(EventLoop *loop, int connfd, int connid): connfd_(c
     context_ = std::make_unique<HttpContext>();
 }
 
-TcpConnection::~TcpConnection(){
-    //loop_->DeleteChannel(channel_.get());
+TcpConnection::~TcpConnection() {
     ::close(connfd_);
 }
 
-void TcpConnection::ConnectionEstablished(){
+void TcpConnection::ConnectionEstablished() {
     state_ = ConnectionState::Connected;
     channel_->Tie(shared_from_this());
     channel_->EnableRead();
-    if (on_connect_){
+    if (on_connect_) {
         on_connect_(shared_from_this());
     }
 }
 
-void TcpConnection::ConnectionDestructor(){
-    //std::cout << std::this_thread::get_id() << " TcpConnection::ConnectionDestructor" << std::endl;
-    // 将该操作从析构处，移植该处，增加性能，因为在析构前，当前`TcpConnection`已经相当于关闭了。
-    // 已经可以将其从loop处离开。
+void TcpConnection::ConnectionDestructor() {
+    proto_stream_.clear();
+    read_buf_->RetrieveAll();
+    send_buf_->RetrieveAll();
+    if (channel_ && channel_->IsWriting())
+        channel_->DisableWrite();
     loop_->DeleteChannel(channel_.get());
 }
 
-void TcpConnection::set_connection_callback(std::function<void(const std::shared_ptr<TcpConnection> &)> const &fn){
+void TcpConnection::set_connection_callback(
+    std::function<void(const std::shared_ptr<TcpConnection> &)> const &fn) {
     on_connect_ = std::move(fn);
 }
-void TcpConnection::set_close_callback(std::function<void(const std::shared_ptr<TcpConnection> &)> const &fn) { 
-    on_close_ = std::move(fn); 
+void TcpConnection::set_close_callback(
+    std::function<void(const std::shared_ptr<TcpConnection> &)> const &fn) {
+    on_close_ = std::move(fn);
 }
-void TcpConnection::set_message_callback(std::function<void(const std::shared_ptr<TcpConnection> &)> const &fn) { 
+void TcpConnection::set_message_callback(
+    std::function<void(const std::shared_ptr<TcpConnection> &)> const &fn) {
     on_message_ = std::move(fn);
 }
 
-
 void TcpConnection::HandleClose() {
-    //std::cout << std::this_thread::get_id() << " TcpConnection::HandleClose" << std::endl;
-    if (state_ != ConnectionState::Disconected)
-    {
+    if (state_ != ConnectionState::Disconected) {
         state_ = ConnectionState::Disconected;
-        if(on_close_){
+        proto_stream_.clear();
+        if (channel_ && channel_->IsWriting())
+            channel_->DisableWrite();
+        if (on_close_) {
             on_close_(shared_from_this());
         }
     }
 }
 
-void TcpConnection::HandleMessage(){
+void TcpConnection::CloseForBackpressure(const char *reason) {
+    force_closed_for_backpressure_ = true;
+    LOG_WARN << "TcpConnection close for backpressure id#" << connid_ << " fd#" << connfd_ << " "
+             << (reason ? reason : "");
+    HandleClose();
+}
+
+void TcpConnection::HandleMessage() {
     Read();
-    if (on_message_)
-    {
+    if (state_ == ConnectionState::Disconected)
+        return;
+    if (on_message_) {
         on_message_(shared_from_this());
     }
 }
 
-
-void TcpConnection::HandleWrite(){
-
-    LOG_INFO << "TcpConnection::HandlWrite";
+void TcpConnection::HandleWrite() {
     WriteNonBlocking();
 }
 
 EventLoop *TcpConnection::loop() const { return loop_; }
 int TcpConnection::fd() const { return connfd_; }
-int TcpConnection::id() const { return connid_; }
+uint64_t TcpConnection::id() const { return connid_; }
 TcpConnection::ConnectionState TcpConnection::state() const { return state_; }
-Buffer *TcpConnection::read_buf(){ return read_buf_.get(); }
+Buffer *TcpConnection::read_buf() { return read_buf_.get(); }
 Buffer *TcpConnection::send_buf() { return send_buf_.get(); }
+std::string &TcpConnection::proto_stream() { return proto_stream_; }
+void TcpConnection::set_max_read_buf_bytes(size_t n) { max_read_buf_bytes_ = n; }
+void TcpConnection::set_max_send_buf_bytes(size_t n) { max_send_buf_bytes_ = n; }
+size_t TcpConnection::max_read_buf_bytes() const { return max_read_buf_bytes_; }
+size_t TcpConnection::max_send_buf_bytes() const { return max_send_buf_bytes_; }
+bool TcpConnection::force_closed_for_backpressure() const {
+    return force_closed_for_backpressure_;
+}
+bool TcpConnection::IsWriting() const { return channel_ && channel_->IsWriting(); }
 
-void TcpConnection::Send(const std::string &msg){
+void TcpConnection::Send(const std::string &msg) {
     Send(msg.data(), static_cast<int>(msg.size()));
 }
 
-void TcpConnection::Send(const char *msg){
+void TcpConnection::Send(const char *msg) {
     Send(msg, static_cast<int>(strlen(msg)));
-} 
+}
 
-
-void TcpConnection::Send(const char *msg, int len){
+void TcpConnection::Send(const char *msg, int len) {
+    if (state_ != ConnectionState::Connected || !msg || len < 0)
+        return;
 
     int remaining = len;
     int send_size = 0;
 
-    // 如果此时send_buf_中没有数据，则可以先尝试发送数据， 
-    if (send_buf_->readablebytes() == 0){
-        // 强制转换类型，方便remaining操作
-        send_size = static_cast<int>(write(connfd_, msg, len));
-
-        if(send_size >= 0){
-            // 说明发送了部分数据
+    if (send_buf_->readablebytes() == 0) {
+        send_size = static_cast<int>(::write(connfd_, msg, static_cast<size_t>(len)));
+        if (send_size >= 0) {
             remaining -= send_size;
-        }else if((send_size == -1) && 
-                    ((errno == EAGAIN) || (errno == EWOULDBLOCK))){
-            // 说明此时TCP缓冲区是慢的，没有办法写入，什么都不做
-            send_size = 0;// 说明实际上没有发送数据
-        }
-        else{
-            LOG_ERROR << "TcpConnection::Send - TcpConnection Send ERROR";
+        } else if (errno == EINTR) {
+            send_size = 0;
+        } else if (errno == EAGAIN || errno == EWOULDBLOCK) {
+            send_size = 0;
+        } else {
+            LOG_ERROR << "TcpConnection::Send write error id#" << connid_;
+            HandleClose();
             return;
         }
     }
-    // 将剩余的数据加入到send_buf中，等待后续发送。
-    assert(remaining <= len);
-    if(remaining > 0){
-        send_buf_->Append(msg + send_size, remaining);
 
-        // 到达这一步时
-        // 1. 还没有监听写事件，在此时进行了监听
-        // 2. 监听了写事件，并且已经触发了，此时再次监听，强制触发一次，如果强制触发失败，仍然可以等待后续TCP缓冲区可写。
+    assert(remaining <= len);
+    if (remaining > 0) {
+        if (static_cast<size_t>(send_buf_->readablebytes()) + static_cast<size_t>(remaining) >
+            max_send_buf_bytes_) {
+            CloseForBackpressure("send_queue_limit");
+            return;
+        }
+        send_buf_->Append(msg + send_size, remaining);
         channel_->EnableWrite();
     }
 }
 
-void TcpConnection::Read()
-{
-    ReadNonBlocking();
-}
+void TcpConnection::Read() { ReadNonBlocking(); }
 
-void TcpConnection::Write(){
-    WriteNonBlocking();
-}
+void TcpConnection::Write() { WriteNonBlocking(); }
 
-
-void TcpConnection::ReadNonBlocking(){
+void TcpConnection::ReadNonBlocking() {
     char buf[1024];
-    while(true){
-        memset(buf, 0, sizeof(buf));
-        ssize_t bytes_read = read(connfd_, buf, sizeof(buf));
-        if(bytes_read > 0){
-            read_buf_->Append(buf, bytes_read);
-        }else if(bytes_read == -1 && errno == EINTR){
-            //std::cout << "continue reading" << std::endl;
+    while (true) {
+        ssize_t bytes_read = ::read(connfd_, buf, sizeof(buf));
+        if (bytes_read > 0) {
+            read_buf_->Append(buf, static_cast<int>(bytes_read));
+            if (static_cast<size_t>(read_buf_->readablebytes()) > max_read_buf_bytes_) {
+                CloseForBackpressure("read_buf_limit");
+                break;
+            }
+        } else if (bytes_read == -1 && errno == EINTR) {
             continue;
-        }else if((bytes_read == -1) && (
-            (errno == EAGAIN) || (errno == EWOULDBLOCK))){
+        } else if (bytes_read == -1 && (errno == EAGAIN || errno == EWOULDBLOCK)) {
             break;
-        }else if (bytes_read == 0){//
+        } else if (bytes_read == 0) {
             HandleClose();
             break;
-        }else{
+        } else {
             HandleClose();
             break;
         }
     }
 }
 
-void TcpConnection::WriteNonBlocking(){
-    int remaining = send_buf_->readablebytes();
-    int send_size = static_cast<int>(write(connfd_, send_buf_->Peek(), remaining));
-    if((send_size == -1) && 
-                ((errno == EAGAIN) || (errno == EWOULDBLOCK))){
-        // 说明此时TCP缓冲区是满的，没有办法写入，什么都不做 
-        // 主要是防止，在Send时write后监听EPOLLOUT，但是TCP缓冲区还是满的，
-        send_size = 0;
+void TcpConnection::WriteNonBlocking() {
+    while (send_buf_->readablebytes() > 0) {
+        const int remaining = send_buf_->readablebytes();
+        const ssize_t send_size =
+            ::write(connfd_, send_buf_->Peek(), static_cast<size_t>(remaining));
+        if (send_size > 0) {
+            send_buf_->Retrieve(static_cast<int>(send_size));
+            continue;
+        }
+        if (send_size == -1 && errno == EINTR)
+            continue;
+        if (send_size == -1 && (errno == EAGAIN || errno == EWOULDBLOCK)) {
+            break;
+        }
+        LOG_ERROR << "TcpConnection::WriteNonBlocking error id#" << connid_;
+        HandleClose();
+        return;
     }
-    else if (send_size == -1){
-        LOG_ERROR << "TcpConnection::Send - TcpConnection Send ERROR";
+    if (send_buf_->readablebytes() == 0 && channel_->IsWriting()) {
+        channel_->DisableWrite();
     }
-
-    remaining -= send_size;
-    send_buf_->Retrieve(send_size);
 }
 
 HttpContext *TcpConnection::context() const { return context_.get(); }
 
 TimeStamp TcpConnection::timestamp() const { return timestamp_; }
-void TcpConnection::UpdateTimeStamp(TimeStamp now){
-    timestamp_ = now;
-}
+void TcpConnection::UpdateTimeStamp(TimeStamp now) { timestamp_ = now; }
 
-void TcpConnection::SendFile(int filefd, int size){
+void TcpConnection::SendFile(int filefd, int size) {
     ssize_t send_size = 0;
     ssize_t data_size = static_cast<ssize_t>(size);
-    // 一次性把文件写完，虽然肯定不行。
-    while(send_size < data_size){
-
-        ssize_t bytes_write = sendfile(connfd_, filefd, (off_t *)&send_size, data_size - send_size);
-
-        if (bytes_write == -1)
-        {
-            if ((errno == EAGAIN) || (errno == EWOULDBLOCK)){
+    while (send_size < data_size) {
+        ssize_t bytes_write =
+            sendfile(connfd_, filefd, (off_t *)&send_size, static_cast<size_t>(data_size - send_size));
+        if (bytes_write == -1) {
+            if (errno == EAGAIN || errno == EWOULDBLOCK || errno == EINTR) {
                 continue;
-            }else{
-                //continue;
-                break;
             }
+            break;
         }
         send_size += bytes_write;
     }
 }
-
-

@@ -24,6 +24,8 @@ public:
     void Stop();
     bool running() const { return running_; }
     const std::string &listen_addr() const { return listen_addr_; }
+    void set_gateway_instance_id(const std::string &id) { gateway_instance_id_ = id; }
+    const std::string &gateway_instance_id() const { return gateway_instance_id_; }
 
 private:
     GatewayPushServer() = default;
@@ -31,5 +33,6 @@ private:
     std::unique_ptr<brpc::Server> server_;
     std::unique_ptr<GatewayPushServiceImpl> service_;
     std::string listen_addr_;
+    std::string gateway_instance_id_;
     bool running_ = false;
 };

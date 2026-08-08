@@ -51,11 +51,13 @@ bool GatewayAuthClients::InitLogicChannels(const std::vector<std::string> &logic
 }
 
 brpc::Channel *GatewayAuthClients::LogicChannel(const std::string &id) {
+    // fail-closed：未知 logic_server_id 绝不回退到首节点
+    if (id.empty())
+        return nullptr;
     auto it = logic_channels_.find(id);
     if (it != logic_channels_.end())
         return it->second.get();
-    if (!logic_channels_.empty())
-        return logic_channels_.begin()->second.get();
+    LOG_ERROR << "GatewayAuthClients: unknown logic_server_id=" << id;
     return nullptr;
 }
 
@@ -68,6 +70,15 @@ bool GatewayAuthClients::AuthLogin(const auth::LoginRequest &req, auth::LoginRes
     return !cntl.Failed();
 }
 
+bool GatewayAuthClients::AuthRegister(const auth::RegisterRequest &req, auth::RegisterResponse *rsp) {
+    if (!session_channel_ || !rsp)
+        return false;
+    auth::AuthService_Stub stub(session_channel_.get());
+    brpc::Controller cntl;
+    stub.Register(&cntl, &req, rsp, nullptr);
+    return !cntl.Failed();
+}
+
 bool GatewayAuthClients::AcquireSession(const sess::AcquireSessionRequest &req,
                                         sess::AcquireSessionResponse *rsp) {
     if (!session_channel_ || !rsp)
@@ -75,6 +86,25 @@ bool GatewayAuthClients::AcquireSession(const sess::AcquireSessionRequest &req,
     sess::SessionService_Stub stub(session_channel_.get());
     brpc::Controller cntl;
     stub.AcquireSession(&cntl, &req, rsp, nullptr);
+    return !cntl.Failed();
+}
+
+bool GatewayAuthClients::ReconnectV2(const sess::ReconnectRequest &req,
+                                     sess::ReconnectResponse *rsp) {
+    if (!session_channel_ || !rsp)
+        return false;
+    sess::SessionService_Stub stub(session_channel_.get());
+    brpc::Controller cntl;
+    stub.ReconnectV2(&cntl, &req, rsp, nullptr);
+    return !cntl.Failed();
+}
+
+bool GatewayAuthClients::LogoutV2(const sess::LogoutRequest &req, sess::LogoutResponse *rsp) {
+    if (!session_channel_ || !rsp)
+        return false;
+    sess::SessionService_Stub stub(session_channel_.get());
+    brpc::Controller cntl;
+    stub.LogoutV2(&cntl, &req, rsp, nullptr);
     return !cntl.Failed();
 }
 

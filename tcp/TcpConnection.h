@@ -14,6 +14,7 @@
 
 #include "common.h"
 
+#include <cstdint>
 #include <functional>
 #include <memory>
 #include <string>
@@ -32,7 +33,7 @@ public:
 
     DISALLOW_COPY_AND_MOVE(TcpConnection);
 
-    TcpConnection(EventLoop *loop, int connfd, int connid);
+    TcpConnection(EventLoop *loop, int connfd, uint64_t connid);
     ~TcpConnection();
 
     void ConnectionEstablished();
@@ -44,6 +45,14 @@ public:
 
     Buffer *read_buf();
     Buffer *send_buf();
+    /** 应用层帧流缓冲（如 ProtoFraming），随连接生命周期清理 */
+    std::string &proto_stream();
+
+    void set_max_read_buf_bytes(size_t n);
+    void set_max_send_buf_bytes(size_t n);
+    size_t max_read_buf_bytes() const;
+    size_t max_send_buf_bytes() const;
+    bool force_closed_for_backpressure() const;
 
     void Read();
     void Write();
@@ -62,21 +71,27 @@ public:
     ConnectionState state() const;
     EventLoop *loop() const;
     int fd() const;
-    int id() const;
+    uint64_t id() const;
     HttpContext *context() const;
+    bool IsWriting() const;
 
     TimeStamp timestamp() const;
     void UpdateTimeStamp(TimeStamp now);
 
 private:
     int connfd_;
-    int connid_;
+    uint64_t connid_;
     ConnectionState state_;
     EventLoop *loop_;
 
     std::unique_ptr<Channel> channel_;
     std::unique_ptr<Buffer> read_buf_;
     std::unique_ptr<Buffer> send_buf_;
+    std::string proto_stream_;
+
+    size_t max_read_buf_bytes_;
+    size_t max_send_buf_bytes_;
+    bool force_closed_for_backpressure_;
 
     std::function<void(const std::shared_ptr<TcpConnection> &)> on_close_;
     std::function<void(const std::shared_ptr<TcpConnection> &)> on_message_;
@@ -84,6 +99,7 @@ private:
 
     void ReadNonBlocking();
     void WriteNonBlocking();
+    void CloseForBackpressure(const char *reason);
 
     std::unique_ptr<HttpContext> context_;
     TimeStamp timestamp_;

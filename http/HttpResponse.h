@@ -18,7 +18,8 @@ class HttpResponse{
             k400BadRequest = 400,
             k403Forbidden = 403,
             k404NotFound = 404,
-            k500internalServerError = 500
+            k500internalServerError = 500,
+            k503ServiceUnavailable = 503
         };
 
         enum HttpBodyType

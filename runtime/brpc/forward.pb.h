@@ -200,6 +200,12 @@ class ForwardMeta : public ::google::protobuf::Message /* @@protoc_insertion_poi
   ::google::protobuf::uint64 player_id() const;
   void set_player_id(::google::protobuf::uint64 value);
 
+  // uint64 connection_id = 2;
+  void clear_connection_id();
+  static const int kConnectionIdFieldNumber = 2;
+  ::google::protobuf::uint64 connection_id() const;
+  void set_connection_id(::google::protobuf::uint64 value);
+
   // uint64 request_id = 3;
   void clear_request_id();
   static const int kRequestIdFieldNumber = 3;
@@ -230,12 +236,6 @@ class ForwardMeta : public ::google::protobuf::Message /* @@protoc_insertion_poi
   ::google::protobuf::uint64 route_version() const;
   void set_route_version(::google::protobuf::uint64 value);
 
-  // int32 connection_id = 2;
-  void clear_connection_id();
-  static const int kConnectionIdFieldNumber = 2;
-  ::google::protobuf::int32 connection_id() const;
-  void set_connection_id(::google::protobuf::int32 value);
-
   // @@protoc_insertion_point(class_scope:fwd.ForwardMeta)
  private:
 
@@ -244,12 +244,12 @@ class ForwardMeta : public ::google::protobuf::Message /* @@protoc_insertion_poi
   ::google::protobuf::internal::ArenaStringPtr session_id_;
   ::google::protobuf::internal::ArenaStringPtr fence_token_;
   ::google::protobuf::uint64 player_id_;
+  ::google::protobuf::uint64 connection_id_;
   ::google::protobuf::uint64 request_id_;
   ::google::protobuf::uint64 generation_;
   ::google::protobuf::uint64 map_instance_id_;
   ::google::protobuf::uint64 owner_epoch_;
   ::google::protobuf::uint64 route_version_;
-  ::google::protobuf::int32 connection_id_;
   mutable int _cached_size_;
   friend struct ::protobuf_forward_2eproto::TableStruct;
   friend void ::protobuf_forward_2eproto::InitDefaultsForwardMetaImpl();
@@ -643,15 +643,15 @@ inline void ForwardMeta::set_player_id(::google::protobuf::uint64 value) {
   // @@protoc_insertion_point(field_set:fwd.ForwardMeta.player_id)
 }
 
-// int32 connection_id = 2;
+// uint64 connection_id = 2;
 inline void ForwardMeta::clear_connection_id() {
-  connection_id_ = 0;
+  connection_id_ = GOOGLE_ULONGLONG(0);
 }
-inline ::google::protobuf::int32 ForwardMeta::connection_id() const {
+inline ::google::protobuf::uint64 ForwardMeta::connection_id() const {
   // @@protoc_insertion_point(field_get:fwd.ForwardMeta.connection_id)
   return connection_id_;
 }
-inline void ForwardMeta::set_connection_id(::google::protobuf::int32 value) {
+inline void ForwardMeta::set_connection_id(::google::protobuf::uint64 value) {
   
   connection_id_ = value;
   // @@protoc_insertion_point(field_set:fwd.ForwardMeta.connection_id)

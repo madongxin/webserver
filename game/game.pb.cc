@@ -1624,6 +1624,7 @@ const ::google::protobuf::uint32 TableStruct::offsets[] GOOGLE_PROTOBUF_ATTRIBUT
   GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::game::LoginReq, server_id_),
   GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::game::LoginReq, ttl_sec_),
   GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::game::LoginReq, kick_other_device_),
+  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::game::LoginReq, credential_),
   ~0u,  // no _has_bits_
   GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::game::LoginRsp, _internal_metadata_),
   ~0u,  // no _extensions_
@@ -1710,6 +1711,7 @@ const ::google::protobuf::uint32 TableStruct::offsets[] GOOGLE_PROTOBUF_ATTRIBUT
   ~0u,  // no _weak_field_map_
   GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::game::RegisterReq, device_id_),
   GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::game::RegisterReq, display_name_),
+  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::game::RegisterReq, password_),
   ~0u,  // no _has_bits_
   GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::game::RegisterRsp, _internal_metadata_),
   ~0u,  // no _extensions_
@@ -2214,62 +2216,62 @@ const ::google::protobuf::uint32 TableStruct::offsets[] GOOGLE_PROTOBUF_ATTRIBUT
 };
 static const ::google::protobuf::internal::MigrationSchema schemas[] GOOGLE_PROTOBUF_ATTRIBUTE_SECTION_VARIABLE(protodesc_cold) = {
   { 0, -1, sizeof(::game::LoginReq)},
-  { 10, -1, sizeof(::game::LoginRsp)},
-  { 23, -1, sizeof(::game::ReconnectReq)},
-  { 32, -1, sizeof(::game::ReconnectRsp)},
-  { 42, -1, sizeof(::game::ValidateSessionReq)},
-  { 49, -1, sizeof(::game::ValidateSessionRsp)},
-  { 61, -1, sizeof(::game::CheckOnlineReq)},
-  { 67, -1, sizeof(::game::CheckOnlineRsp)},
-  { 75, -1, sizeof(::game::LogoutReq)},
-  { 82, -1, sizeof(::game::LogoutRsp)},
-  { 89, -1, sizeof(::game::RegisterReq)},
-  { 96, -1, sizeof(::game::RegisterRsp)},
-  { 104, -1, sizeof(::game::FlushBagReq)},
-  { 111, -1, sizeof(::game::FlushBagRsp)},
-  { 118, -1, sizeof(::game::ConsumeItemReq)},
-  { 126, -1, sizeof(::game::ConsumeItemRsp)},
-  { 134, -1, sizeof(::game::ReleaseSkillReq)},
-  { 143, -1, sizeof(::game::ReleaseSkillRsp)},
-  { 151, -1, sizeof(::game::GrantItemReq)},
-  { 161, -1, sizeof(::game::GrantItemRsp)},
-  { 170, -1, sizeof(::game::MailAttachmentDto)},
-  { 182, -1, sizeof(::game::MailBrief)},
-  { 200, -1, sizeof(::game::MailDetail)},
-  { 209, -1, sizeof(::game::MailboxSummaryReq)},
-  { 215, -1, sizeof(::game::MailboxSummaryRsp)},
-  { 233, -1, sizeof(::game::MailListReq)},
-  { 248, -1, sizeof(::game::MailListRsp)},
-  { 260, -1, sizeof(::game::MailGetReq)},
-  { 267, -1, sizeof(::game::MailGetRsp)},
-  { 278, -1, sizeof(::game::MailReadReq)},
-  { 286, -1, sizeof(::game::MailReadRsp)},
-  { 297, -1, sizeof(::game::MailClaimReq)},
-  { 306, -1, sizeof(::game::MailClaimResult)},
-  { 316, -1, sizeof(::game::MailClaimRsp)},
-  { 327, -1, sizeof(::game::MailBatchClaimReq)},
-  { 336, -1, sizeof(::game::MailBatchClaimRsp)},
-  { 347, -1, sizeof(::game::MailFavoriteReq)},
-  { 356, -1, sizeof(::game::MailFavoriteRsp)},
-  { 367, -1, sizeof(::game::MailBatchReadReq)},
-  { 375, -1, sizeof(::game::MailBatchReadRsp)},
-  { 386, -1, sizeof(::game::MailBatchDeleteReq)},
-  { 394, -1, sizeof(::game::MailBatchDeleteRsp)},
-  { 406, -1, sizeof(::game::MailDeliverAttachment)},
-  { 416, -1, sizeof(::game::MailDeliverReq)},
-  { 437, -1, sizeof(::game::MailDeliverRsp)},
-  { 448, -1, sizeof(::game::EnterMapReq)},
-  { 457, -1, sizeof(::game::EnterMapRsp)},
-  { 469, -1, sizeof(::game::LeaveMapReq)},
-  { 476, -1, sizeof(::game::LeaveMapRsp)},
-  { 483, -1, sizeof(::game::MapPingReq)},
-  { 490, -1, sizeof(::game::MapPingRsp)},
-  { 500, -1, sizeof(::game::ChatSendReq)},
-  { 508, -1, sizeof(::game::ChatSendRsp)},
-  { 516, -1, sizeof(::game::FriendListReq)},
-  { 522, -1, sizeof(::game::FriendListRsp)},
-  { 530, -1, sizeof(::game::GameRequest)},
-  { 563, -1, sizeof(::game::GameResponse)},
+  { 11, -1, sizeof(::game::LoginRsp)},
+  { 24, -1, sizeof(::game::ReconnectReq)},
+  { 33, -1, sizeof(::game::ReconnectRsp)},
+  { 43, -1, sizeof(::game::ValidateSessionReq)},
+  { 50, -1, sizeof(::game::ValidateSessionRsp)},
+  { 62, -1, sizeof(::game::CheckOnlineReq)},
+  { 68, -1, sizeof(::game::CheckOnlineRsp)},
+  { 76, -1, sizeof(::game::LogoutReq)},
+  { 83, -1, sizeof(::game::LogoutRsp)},
+  { 90, -1, sizeof(::game::RegisterReq)},
+  { 98, -1, sizeof(::game::RegisterRsp)},
+  { 106, -1, sizeof(::game::FlushBagReq)},
+  { 113, -1, sizeof(::game::FlushBagRsp)},
+  { 120, -1, sizeof(::game::ConsumeItemReq)},
+  { 128, -1, sizeof(::game::ConsumeItemRsp)},
+  { 136, -1, sizeof(::game::ReleaseSkillReq)},
+  { 145, -1, sizeof(::game::ReleaseSkillRsp)},
+  { 153, -1, sizeof(::game::GrantItemReq)},
+  { 163, -1, sizeof(::game::GrantItemRsp)},
+  { 172, -1, sizeof(::game::MailAttachmentDto)},
+  { 184, -1, sizeof(::game::MailBrief)},
+  { 202, -1, sizeof(::game::MailDetail)},
+  { 211, -1, sizeof(::game::MailboxSummaryReq)},
+  { 217, -1, sizeof(::game::MailboxSummaryRsp)},
+  { 235, -1, sizeof(::game::MailListReq)},
+  { 250, -1, sizeof(::game::MailListRsp)},
+  { 262, -1, sizeof(::game::MailGetReq)},
+  { 269, -1, sizeof(::game::MailGetRsp)},
+  { 280, -1, sizeof(::game::MailReadReq)},
+  { 288, -1, sizeof(::game::MailReadRsp)},
+  { 299, -1, sizeof(::game::MailClaimReq)},
+  { 308, -1, sizeof(::game::MailClaimResult)},
+  { 318, -1, sizeof(::game::MailClaimRsp)},
+  { 329, -1, sizeof(::game::MailBatchClaimReq)},
+  { 338, -1, sizeof(::game::MailBatchClaimRsp)},
+  { 349, -1, sizeof(::game::MailFavoriteReq)},
+  { 358, -1, sizeof(::game::MailFavoriteRsp)},
+  { 369, -1, sizeof(::game::MailBatchReadReq)},
+  { 377, -1, sizeof(::game::MailBatchReadRsp)},
+  { 388, -1, sizeof(::game::MailBatchDeleteReq)},
+  { 396, -1, sizeof(::game::MailBatchDeleteRsp)},
+  { 408, -1, sizeof(::game::MailDeliverAttachment)},
+  { 418, -1, sizeof(::game::MailDeliverReq)},
+  { 439, -1, sizeof(::game::MailDeliverRsp)},
+  { 450, -1, sizeof(::game::EnterMapReq)},
+  { 459, -1, sizeof(::game::EnterMapRsp)},
+  { 471, -1, sizeof(::game::LeaveMapReq)},
+  { 478, -1, sizeof(::game::LeaveMapRsp)},
+  { 485, -1, sizeof(::game::MapPingReq)},
+  { 492, -1, sizeof(::game::MapPingRsp)},
+  { 502, -1, sizeof(::game::ChatSendReq)},
+  { 510, -1, sizeof(::game::ChatSendRsp)},
+  { 518, -1, sizeof(::game::FriendListReq)},
+  { 524, -1, sizeof(::game::FriendListRsp)},
+  { 532, -1, sizeof(::game::GameRequest)},
+  { 565, -1, sizeof(::game::GameResponse)},
 };
 
 static ::google::protobuf::Message const * const file_default_instances[] = {
@@ -2354,218 +2356,219 @@ void protobuf_RegisterTypes(const ::std::string&) {
 void AddDescriptorsImpl() {
   InitDefaults();
   static const char descriptor[] GOOGLE_PROTOBUF_ATTRIBUTE_SECTION_VARIABLE(protodesc_cold) = {
-      "\n\ngame.proto\022\004game\"o\n\010LoginReq\022\021\n\tplayer"
-      "_id\030\001 \001(\004\022\021\n\tdevice_id\030\002 \001(\t\022\021\n\tserver_i"
-      "d\030\003 \001(\r\022\017\n\007ttl_sec\030\004 \001(\r\022\031\n\021kick_other_d"
-      "evice\030\005 \001(\010\"\242\001\n\010LoginRsp\022\n\n\002ok\030\001 \001(\010\022\017\n\007"
-      "message\030\002 \001(\t\022\r\n\005token\030\003 \001(\t\022\021\n\tserver_i"
-      "d\030\004 \001(\r\022\026\n\016login_time_sec\030\005 \001(\003\022\027\n\017kicke"
-      "d_previous\030\006 \001(\010\022\022\n\nsession_id\030\007 \001(\t\022\022\n\n"
-      "generation\030\010 \001(\004\"h\n\014ReconnectReq\022\021\n\tplay"
-      "er_id\030\001 \001(\004\022\022\n\nsession_id\030\002 \001(\t\022\030\n\020recon"
-      "nect_ticket\030\003 \001(\t\022\027\n\017last_server_seq\030\004 \001"
-      "(\004\"b\n\014ReconnectRsp\022\n\n\002ok\030\001 \001(\010\022\017\n\007messag"
-      "e\030\002 \001(\t\022\r\n\005token\030\003 \001(\t\022\022\n\nsession_id\030\004 \001"
-      "(\t\022\022\n\ngeneration\030\005 \001(\004\"6\n\022ValidateSessio"
-      "nReq\022\021\n\tplayer_id\030\001 \001(\004\022\r\n\005token\030\002 \001(\t\"\216"
-      "\001\n\022ValidateSessionRsp\022\n\n\002ok\030\001 \001(\010\022\017\n\007mes"
-      "sage\030\002 \001(\t\022\r\n\005valid\030\003 \001(\010\022\016\n\006online\030\004 \001("
-      "\010\022\021\n\tserver_id\030\005 \001(\r\022\021\n\tdevice_id\030\006 \001(\t\022"
-      "\026\n\016login_time_sec\030\007 \001(\003\"#\n\016CheckOnlineRe"
-      "q\022\021\n\tplayer_id\030\001 \001(\004\"=\n\016CheckOnlineRsp\022\n"
-      "\n\002ok\030\001 \001(\010\022\017\n\007message\030\002 \001(\t\022\016\n\006online\030\003 "
-      "\001(\010\"-\n\tLogoutReq\022\021\n\tplayer_id\030\001 \001(\004\022\r\n\005t"
-      "oken\030\002 \001(\t\"(\n\tLogoutRsp\022\n\n\002ok\030\001 \001(\010\022\017\n\007m"
-      "essage\030\002 \001(\t\"6\n\013RegisterReq\022\021\n\tdevice_id"
-      "\030\001 \001(\t\022\024\n\014display_name\030\002 \001(\t\"=\n\013Register"
-      "Rsp\022\n\n\002ok\030\001 \001(\010\022\017\n\007message\030\002 \001(\t\022\021\n\tplay"
-      "er_id\030\003 \001(\004\"0\n\013FlushBagReq\022\021\n\tplayer_id\030"
-      "\001 \001(\004\022\016\n\006reason\030\002 \001(\t\"*\n\013FlushBagRsp\022\n\n\002"
-      "ok\030\001 \001(\010\022\017\n\007message\030\002 \001(\t\"C\n\016ConsumeItem"
-      "Req\022\021\n\tplayer_id\030\001 \001(\004\022\017\n\007item_id\030\002 \001(\r\022"
-      "\r\n\005count\030\003 \001(\r\"C\n\016ConsumeItemRsp\022\n\n\002ok\030\001"
-      " \001(\010\022\017\n\007message\030\002 \001(\t\022\024\n\014remain_count\030\003 "
-      "\001(\r\"Z\n\017ReleaseSkillReq\022\021\n\tplayer_id\030\001 \001("
-      "\004\022\020\n\010skill_id\030\002 \001(\r\022\020\n\010target_x\030\003 \001(\002\022\020\n"
-      "\010target_y\030\004 \001(\002\"C\n\017ReleaseSkillRsp\022\n\n\002ok"
-      "\030\001 \001(\010\022\017\n\007message\030\002 \001(\t\022\023\n\013cooldown_ms\030\003"
-      " \001(\r\"n\n\014GrantItemReq\022\021\n\tplayer_id\030\001 \001(\004\022"
-      "\017\n\007item_id\030\002 \001(\004\022\r\n\005count\030\003 \001(\r\022\022\n\nextra"
-      "_data\030\004 \001(\t\022\027\n\017expire_time_sec\030\005 \001(\003\"S\n\014"
-      "GrantItemRsp\022\n\n\002ok\030\001 \001(\010\022\017\n\007message\030\002 \001("
-      "\t\022\023\n\013instance_id\030\003 \001(\004\022\021\n\tbag_total\030\004 \001("
-      "\r\"\225\001\n\021MailAttachmentDto\022\022\n\nslot_index\030\001 "
-      "\001(\r\022\022\n\nasset_type\030\002 \001(\t\022\020\n\010asset_id\030\003 \001("
-      "\004\022\r\n\005count\030\004 \001(\r\022\021\n\tbind_type\030\005 \001(\t\022\017\n\007p"
-      "ayload\030\006 \001(\t\022\023\n\013claim_state\030\007 \001(\t\"\217\002\n\tMa"
-      "ilBrief\022\017\n\007mail_id\030\001 \001(\004\022\020\n\010category\030\002 \001"
-      "(\t\022\020\n\010priority\030\003 \001(\005\022\r\n\005title\030\004 \001(\t\022\023\n\013s"
-      "ender_name\030\005 \001(\t\022\022\n\nread_state\030\006 \001(\t\022\025\n\r"
-      "visible_state\030\007 \001(\t\022\030\n\020attachment_state\030"
-      "\010 \001(\t\022\026\n\016has_attachment\030\t \001(\010\022\023\n\013is_favo"
-      "rite\030\n \001(\010\022\017\n\007sent_at\030\013 \001(\003\022\021\n\texpire_at"
-      "\030\014 \001(\003\022\023\n\013row_version\030\r \001(\003\"\201\001\n\nMailDeta"
-      "il\022\036\n\005brief\030\001 \001(\0132\017.game.MailBrief\022\014\n\004bo"
-      "dy\030\002 \001(\t\022,\n\013attachments\030\003 \003(\0132\027.game.Mai"
-      "lAttachmentDto\022\027\n\017allowed_actions\030\004 \003(\t\""
-      "&\n\021MailboxSummaryReq\022\021\n\tplayer_id\030\001 \001(\004\""
-      "\265\002\n\021MailboxSummaryRsp\022\n\n\002ok\030\001 \001(\010\022\017\n\007mes"
-      "sage\030\002 \001(\t\022\022\n\nerror_code\030\003 \001(\t\022\025\n\runread"
-      "_system\030\004 \001(\r\022\027\n\017unread_activity\030\005 \001(\r\022\025"
-      "\n\runread_social\030\006 \001(\r\022\024\n\014unread_trade\030\007 "
-      "\001(\r\022\034\n\024unclaimed_attachment\030\010 \001(\r\022\025\n\rexp"
-      "iring_soon\030\t \001(\r\022\025\n\rcurrent_count\030\n \001(\r\022"
-      "\024\n\014max_capacity\030\013 \001(\r\022\027\n\017mailbox_version"
-      "\030\014 \001(\003\022\027\n\017server_time_utc\030\r \001(\003\"\306\001\n\013Mail"
-      "ListReq\022\021\n\tplayer_id\030\001 \001(\004\022\020\n\010category\030\002"
-      " \001(\t\022\016\n\006unread\030\003 \001(\010\022\026\n\016has_attachment\030\004"
-      " \001(\010\022\021\n\tunclaimed\030\005 \001(\010\022\025\n\rexpiring_soon"
-      "\030\006 \001(\010\022\020\n\010favorite\030\007 \001(\010\022\017\n\007keyword\030\010 \001("
-      "\t\022\016\n\006cursor\030\t \001(\t\022\r\n\005limit\030\n \001(\005\"\245\001\n\013Mai"
-      "lListRsp\022\n\n\002ok\030\001 \001(\010\022\017\n\007message\030\002 \001(\t\022\022\n"
-      "\nerror_code\030\003 \001(\t\022\036\n\005mails\030\004 \003(\0132\017.game."
-      "MailBrief\022\023\n\013next_cursor\030\005 \001(\t\022\027\n\017mailbo"
-      "x_version\030\006 \001(\003\022\027\n\017server_time_utc\030\007 \001(\003"
-      "\"0\n\nMailGetReq\022\021\n\tplayer_id\030\001 \001(\004\022\017\n\007mai"
-      "l_id\030\002 \001(\004\"\217\001\n\nMailGetRsp\022\n\n\002ok\030\001 \001(\010\022\017\n"
-      "\007message\030\002 \001(\t\022\022\n\nerror_code\030\003 \001(\t\022\036\n\004ma"
-      "il\030\004 \001(\0132\020.game.MailDetail\022\027\n\017mailbox_ve"
-      "rsion\030\005 \001(\003\022\027\n\017server_time_utc\030\006 \001(\003\"J\n\013"
-      "MailReadReq\022\021\n\tplayer_id\030\001 \001(\004\022\017\n\007mail_i"
-      "d\030\002 \001(\004\022\027\n\017idempotency_key\030\003 \001(\t\"\201\001\n\013Mai"
-      "lReadRsp\022\n\n\002ok\030\001 \001(\010\022\017\n\007message\030\002 \001(\t\022\022\n"
-      "\nerror_code\030\003 \001(\t\022\017\n\007read_at\030\004 \001(\003\022\027\n\017ma"
+      "\n\ngame.proto\022\004game\"\203\001\n\010LoginReq\022\021\n\tplaye"
+      "r_id\030\001 \001(\004\022\021\n\tdevice_id\030\002 \001(\t\022\021\n\tserver_"
+      "id\030\003 \001(\r\022\017\n\007ttl_sec\030\004 \001(\r\022\031\n\021kick_other_"
+      "device\030\005 \001(\010\022\022\n\ncredential\030\006 \001(\t\"\242\001\n\010Log"
+      "inRsp\022\n\n\002ok\030\001 \001(\010\022\017\n\007message\030\002 \001(\t\022\r\n\005to"
+      "ken\030\003 \001(\t\022\021\n\tserver_id\030\004 \001(\r\022\026\n\016login_ti"
+      "me_sec\030\005 \001(\003\022\027\n\017kicked_previous\030\006 \001(\010\022\022\n"
+      "\nsession_id\030\007 \001(\t\022\022\n\ngeneration\030\010 \001(\004\"h\n"
+      "\014ReconnectReq\022\021\n\tplayer_id\030\001 \001(\004\022\022\n\nsess"
+      "ion_id\030\002 \001(\t\022\030\n\020reconnect_ticket\030\003 \001(\t\022\027"
+      "\n\017last_server_seq\030\004 \001(\004\"b\n\014ReconnectRsp\022"
+      "\n\n\002ok\030\001 \001(\010\022\017\n\007message\030\002 \001(\t\022\r\n\005token\030\003 "
+      "\001(\t\022\022\n\nsession_id\030\004 \001(\t\022\022\n\ngeneration\030\005 "
+      "\001(\004\"6\n\022ValidateSessionReq\022\021\n\tplayer_id\030\001"
+      " \001(\004\022\r\n\005token\030\002 \001(\t\"\216\001\n\022ValidateSessionR"
+      "sp\022\n\n\002ok\030\001 \001(\010\022\017\n\007message\030\002 \001(\t\022\r\n\005valid"
+      "\030\003 \001(\010\022\016\n\006online\030\004 \001(\010\022\021\n\tserver_id\030\005 \001("
+      "\r\022\021\n\tdevice_id\030\006 \001(\t\022\026\n\016login_time_sec\030\007"
+      " \001(\003\"#\n\016CheckOnlineReq\022\021\n\tplayer_id\030\001 \001("
+      "\004\"=\n\016CheckOnlineRsp\022\n\n\002ok\030\001 \001(\010\022\017\n\007messa"
+      "ge\030\002 \001(\t\022\016\n\006online\030\003 \001(\010\"-\n\tLogoutReq\022\021\n"
+      "\tplayer_id\030\001 \001(\004\022\r\n\005token\030\002 \001(\t\"(\n\tLogou"
+      "tRsp\022\n\n\002ok\030\001 \001(\010\022\017\n\007message\030\002 \001(\t\"H\n\013Reg"
+      "isterReq\022\021\n\tdevice_id\030\001 \001(\t\022\024\n\014display_n"
+      "ame\030\002 \001(\t\022\020\n\010password\030\003 \001(\t\"=\n\013RegisterR"
+      "sp\022\n\n\002ok\030\001 \001(\010\022\017\n\007message\030\002 \001(\t\022\021\n\tplaye"
+      "r_id\030\003 \001(\004\"0\n\013FlushBagReq\022\021\n\tplayer_id\030\001"
+      " \001(\004\022\016\n\006reason\030\002 \001(\t\"*\n\013FlushBagRsp\022\n\n\002o"
+      "k\030\001 \001(\010\022\017\n\007message\030\002 \001(\t\"C\n\016ConsumeItemR"
+      "eq\022\021\n\tplayer_id\030\001 \001(\004\022\017\n\007item_id\030\002 \001(\r\022\r"
+      "\n\005count\030\003 \001(\r\"C\n\016ConsumeItemRsp\022\n\n\002ok\030\001 "
+      "\001(\010\022\017\n\007message\030\002 \001(\t\022\024\n\014remain_count\030\003 \001"
+      "(\r\"Z\n\017ReleaseSkillReq\022\021\n\tplayer_id\030\001 \001(\004"
+      "\022\020\n\010skill_id\030\002 \001(\r\022\020\n\010target_x\030\003 \001(\002\022\020\n\010"
+      "target_y\030\004 \001(\002\"C\n\017ReleaseSkillRsp\022\n\n\002ok\030"
+      "\001 \001(\010\022\017\n\007message\030\002 \001(\t\022\023\n\013cooldown_ms\030\003 "
+      "\001(\r\"n\n\014GrantItemReq\022\021\n\tplayer_id\030\001 \001(\004\022\017"
+      "\n\007item_id\030\002 \001(\004\022\r\n\005count\030\003 \001(\r\022\022\n\nextra_"
+      "data\030\004 \001(\t\022\027\n\017expire_time_sec\030\005 \001(\003\"S\n\014G"
+      "rantItemRsp\022\n\n\002ok\030\001 \001(\010\022\017\n\007message\030\002 \001(\t"
+      "\022\023\n\013instance_id\030\003 \001(\004\022\021\n\tbag_total\030\004 \001(\r"
+      "\"\225\001\n\021MailAttachmentDto\022\022\n\nslot_index\030\001 \001"
+      "(\r\022\022\n\nasset_type\030\002 \001(\t\022\020\n\010asset_id\030\003 \001(\004"
+      "\022\r\n\005count\030\004 \001(\r\022\021\n\tbind_type\030\005 \001(\t\022\017\n\007pa"
+      "yload\030\006 \001(\t\022\023\n\013claim_state\030\007 \001(\t\"\217\002\n\tMai"
+      "lBrief\022\017\n\007mail_id\030\001 \001(\004\022\020\n\010category\030\002 \001("
+      "\t\022\020\n\010priority\030\003 \001(\005\022\r\n\005title\030\004 \001(\t\022\023\n\013se"
+      "nder_name\030\005 \001(\t\022\022\n\nread_state\030\006 \001(\t\022\025\n\rv"
+      "isible_state\030\007 \001(\t\022\030\n\020attachment_state\030\010"
+      " \001(\t\022\026\n\016has_attachment\030\t \001(\010\022\023\n\013is_favor"
+      "ite\030\n \001(\010\022\017\n\007sent_at\030\013 \001(\003\022\021\n\texpire_at\030"
+      "\014 \001(\003\022\023\n\013row_version\030\r \001(\003\"\201\001\n\nMailDetai"
+      "l\022\036\n\005brief\030\001 \001(\0132\017.game.MailBrief\022\014\n\004bod"
+      "y\030\002 \001(\t\022,\n\013attachments\030\003 \003(\0132\027.game.Mail"
+      "AttachmentDto\022\027\n\017allowed_actions\030\004 \003(\t\"&"
+      "\n\021MailboxSummaryReq\022\021\n\tplayer_id\030\001 \001(\004\"\265"
+      "\002\n\021MailboxSummaryRsp\022\n\n\002ok\030\001 \001(\010\022\017\n\007mess"
+      "age\030\002 \001(\t\022\022\n\nerror_code\030\003 \001(\t\022\025\n\runread_"
+      "system\030\004 \001(\r\022\027\n\017unread_activity\030\005 \001(\r\022\025\n"
+      "\runread_social\030\006 \001(\r\022\024\n\014unread_trade\030\007 \001"
+      "(\r\022\034\n\024unclaimed_attachment\030\010 \001(\r\022\025\n\rexpi"
+      "ring_soon\030\t \001(\r\022\025\n\rcurrent_count\030\n \001(\r\022\024"
+      "\n\014max_capacity\030\013 \001(\r\022\027\n\017mailbox_version\030"
+      "\014 \001(\003\022\027\n\017server_time_utc\030\r \001(\003\"\306\001\n\013MailL"
+      "istReq\022\021\n\tplayer_id\030\001 \001(\004\022\020\n\010category\030\002 "
+      "\001(\t\022\016\n\006unread\030\003 \001(\010\022\026\n\016has_attachment\030\004 "
+      "\001(\010\022\021\n\tunclaimed\030\005 \001(\010\022\025\n\rexpiring_soon\030"
+      "\006 \001(\010\022\020\n\010favorite\030\007 \001(\010\022\017\n\007keyword\030\010 \001(\t"
+      "\022\016\n\006cursor\030\t \001(\t\022\r\n\005limit\030\n \001(\005\"\245\001\n\013Mail"
+      "ListRsp\022\n\n\002ok\030\001 \001(\010\022\017\n\007message\030\002 \001(\t\022\022\n\n"
+      "error_code\030\003 \001(\t\022\036\n\005mails\030\004 \003(\0132\017.game.M"
+      "ailBrief\022\023\n\013next_cursor\030\005 \001(\t\022\027\n\017mailbox"
+      "_version\030\006 \001(\003\022\027\n\017server_time_utc\030\007 \001(\003\""
+      "0\n\nMailGetReq\022\021\n\tplayer_id\030\001 \001(\004\022\017\n\007mail"
+      "_id\030\002 \001(\004\"\217\001\n\nMailGetRsp\022\n\n\002ok\030\001 \001(\010\022\017\n\007"
+      "message\030\002 \001(\t\022\022\n\nerror_code\030\003 \001(\t\022\036\n\004mai"
+      "l\030\004 \001(\0132\020.game.MailDetail\022\027\n\017mailbox_ver"
+      "sion\030\005 \001(\003\022\027\n\017server_time_utc\030\006 \001(\003\"J\n\013M"
+      "ailReadReq\022\021\n\tplayer_id\030\001 \001(\004\022\017\n\007mail_id"
+      "\030\002 \001(\004\022\027\n\017idempotency_key\030\003 \001(\t\"\201\001\n\013Mail"
+      "ReadRsp\022\n\n\002ok\030\001 \001(\010\022\017\n\007message\030\002 \001(\t\022\022\n\n"
+      "error_code\030\003 \001(\t\022\017\n\007read_at\030\004 \001(\003\022\027\n\017mai"
+      "lbox_version\030\005 \001(\003\022\027\n\017server_time_utc\030\006 "
+      "\001(\003\"]\n\014MailClaimReq\022\021\n\tplayer_id\030\001 \001(\004\022\017"
+      "\n\007mail_id\030\002 \001(\004\022\027\n\017idempotency_key\030\003 \001(\t"
+      "\022\020\n\010trace_id\030\004 \001(\t\"m\n\017MailClaimResult\022\017\n"
+      "\007mail_id\030\001 \001(\004\022\n\n\002ok\030\002 \001(\010\022\022\n\nerror_code"
+      "\030\003 \001(\t\022\017\n\007message\030\004 \001(\t\022\030\n\020attachment_st"
+      "ate\030\005 \001(\t\"\230\001\n\014MailClaimRsp\022\n\n\002ok\030\001 \001(\010\022\017"
+      "\n\007message\030\002 \001(\t\022\022\n\nerror_code\030\003 \001(\t\022%\n\006r"
+      "esult\030\004 \001(\0132\025.game.MailClaimResult\022\027\n\017ma"
       "ilbox_version\030\005 \001(\003\022\027\n\017server_time_utc\030\006"
-      " \001(\003\"]\n\014MailClaimReq\022\021\n\tplayer_id\030\001 \001(\004\022"
-      "\017\n\007mail_id\030\002 \001(\004\022\027\n\017idempotency_key\030\003 \001("
-      "\t\022\020\n\010trace_id\030\004 \001(\t\"m\n\017MailClaimResult\022\017"
-      "\n\007mail_id\030\001 \001(\004\022\n\n\002ok\030\002 \001(\010\022\022\n\nerror_cod"
-      "e\030\003 \001(\t\022\017\n\007message\030\004 \001(\t\022\030\n\020attachment_s"
-      "tate\030\005 \001(\t\"\230\001\n\014MailClaimRsp\022\n\n\002ok\030\001 \001(\010\022"
-      "\017\n\007message\030\002 \001(\t\022\022\n\nerror_code\030\003 \001(\t\022%\n\006"
-      "result\030\004 \001(\0132\025.game.MailClaimResult\022\027\n\017m"
-      "ailbox_version\030\005 \001(\003\022\027\n\017server_time_utc\030"
-      "\006 \001(\003\"j\n\021MailBatchClaimReq\022\021\n\tplayer_id\030"
-      "\001 \001(\004\022\020\n\010mail_ids\030\002 \003(\004\022\036\n\026idempotency_k"
-      "ey_prefix\030\003 \001(\t\022\020\n\010trace_id\030\004 \001(\t\"\236\001\n\021Ma"
-      "ilBatchClaimRsp\022\n\n\002ok\030\001 \001(\010\022\017\n\007message\030\002"
-      " \001(\t\022\022\n\nerror_code\030\003 \001(\t\022&\n\007results\030\004 \003("
-      "\0132\025.game.MailClaimResult\022\027\n\017mailbox_vers"
-      "ion\030\005 \001(\003\022\027\n\017server_time_utc\030\006 \001(\003\"`\n\017Ma"
-      "ilFavoriteReq\022\021\n\tplayer_id\030\001 \001(\004\022\017\n\007mail"
-      "_id\030\002 \001(\004\022\020\n\010favorite\030\003 \001(\010\022\027\n\017idempoten"
-      "cy_key\030\004 \001(\t\"\211\001\n\017MailFavoriteRsp\022\n\n\002ok\030\001"
-      " \001(\010\022\017\n\007message\030\002 \001(\t\022\022\n\nerror_code\030\003 \001("
-      "\t\022\023\n\013is_favorite\030\004 \001(\010\022\027\n\017mailbox_versio"
-      "n\030\005 \001(\003\022\027\n\017server_time_utc\030\006 \001(\003\"P\n\020Mail"
-      "BatchReadReq\022\021\n\tplayer_id\030\001 \001(\004\022\020\n\010mail_"
-      "ids\030\002 \003(\004\022\027\n\017idempotency_key\030\003 \001(\t\"\214\001\n\020M"
-      "ailBatchReadRsp\022\n\n\002ok\030\001 \001(\010\022\017\n\007message\030\002"
-      " \001(\t\022\022\n\nerror_code\030\003 \001(\t\022\025\n\rsuccess_coun"
-      "t\030\004 \001(\r\022\027\n\017mailbox_version\030\005 \001(\003\022\027\n\017serv"
-      "er_time_utc\030\006 \001(\003\"R\n\022MailBatchDeleteReq\022"
-      "\021\n\tplayer_id\030\001 \001(\004\022\020\n\010mail_ids\030\002 \003(\004\022\027\n\017"
-      "idempotency_key\030\003 \001(\t\"\247\001\n\022MailBatchDelet"
-      "eRsp\022\n\n\002ok\030\001 \001(\010\022\017\n\007message\030\002 \001(\t\022\022\n\nerr"
-      "or_code\030\003 \001(\t\022\025\n\rsuccess_count\030\004 \001(\r\022\027\n\017"
-      "failed_mail_ids\030\005 \003(\004\022\027\n\017mailbox_version"
-      "\030\006 \001(\003\022\027\n\017server_time_utc\030\007 \001(\003\"p\n\025MailD"
-      "eliverAttachment\022\022\n\nasset_type\030\001 \001(\t\022\020\n\010"
-      "asset_id\030\002 \001(\004\022\r\n\005count\030\003 \001(\r\022\021\n\tbind_ty"
-      "pe\030\004 \001(\t\022\017\n\007payload\030\005 \001(\t\"\366\002\n\016MailDelive"
-      "rReq\022\025\n\rsource_system\030\001 \001(\t\022\024\n\014business_"
-      "key\030\002 \001(\t\022\025\n\rreceiver_type\030\003 \001(\t\022\023\n\013rece"
-      "iver_id\030\004 \001(\004\022\023\n\013template_id\030\005 \001(\t\022\030\n\020te"
-      "mplate_version\030\006 \001(\005\022\020\n\010category\030\007 \001(\t\022\020"
-      "\n\010priority\030\010 \001(\005\022\023\n\013sender_name\030\t \001(\t\022\r\n"
-      "\005title\030\n \001(\t\022\014\n\004body\030\013 \001(\t\0220\n\013attachment"
-      "s\030\014 \003(\0132\033.game.MailDeliverAttachment\022\017\n\007"
-      "send_at\030\r \001(\003\022\021\n\texpire_at\030\016 \001(\003\022\020\n\010trac"
-      "e_id\030\017 \001(\t\022\036\n\026session_token_override\030\020 \001"
-      "(\t\"\203\001\n\016MailDeliverRsp\022\n\n\002ok\030\001 \001(\010\022\017\n\007mes"
-      "sage\030\002 \001(\t\022\022\n\nerror_code\030\003 \001(\t\022\017\n\007mail_i"
-      "d\030\004 \001(\004\022\026\n\016idempotent_hit\030\005 \001(\010\022\027\n\017serve"
-      "r_time_utc\030\006 \001(\003\"d\n\013EnterMapReq\022\021\n\tplaye"
-      "r_id\030\001 \001(\004\022\020\n\010realm_id\030\002 \001(\r\022\027\n\017map_temp"
-      "late_id\030\003 \001(\004\022\027\n\017map_instance_id\030\004 \001(\004\"\247"
-      "\001\n\013EnterMapRsp\022\n\n\002ok\030\001 \001(\010\022\017\n\007message\030\002 "
-      "\001(\t\022\027\n\017map_template_id\030\003 \001(\004\022\027\n\017map_inst"
-      "ance_id\030\004 \001(\004\022\035\n\025gamelogic_instance_id\030\005"
-      " \001(\t\022\023\n\013owner_epoch\030\006 \001(\004\022\025\n\rroute_versi"
-      "on\030\007 \001(\004\"9\n\013LeaveMapReq\022\021\n\tplayer_id\030\001 \001"
-      "(\004\022\027\n\017map_instance_id\030\002 \001(\004\"*\n\013LeaveMapR"
-      "sp\022\n\n\002ok\030\001 \001(\010\022\017\n\007message\030\002 \001(\t\"8\n\nMapPi"
-      "ngReq\022\021\n\tplayer_id\030\001 \001(\004\022\027\n\017map_instance"
-      "_id\030\002 \001(\004\"s\n\nMapPingRsp\022\n\n\002ok\030\001 \001(\010\022\017\n\007m"
-      "essage\030\002 \001(\t\022\023\n\013owner_epoch\030\003 \001(\004\022\024\n\014pla"
-      "yer_count\030\004 \001(\r\022\035\n\025gamelogic_instance_id"
-      "\030\005 \001(\t\"\?\n\013ChatSendReq\022\021\n\tplayer_id\030\001 \001(\004"
-      "\022\017\n\007channel\030\002 \001(\t\022\014\n\004text\030\003 \001(\t\">\n\013ChatS"
-      "endRsp\022\n\n\002ok\030\001 \001(\010\022\017\n\007message\030\002 \001(\t\022\022\n\ne"
-      "rror_code\030\003 \001(\t\"\"\n\rFriendListReq\022\021\n\tplay"
-      "er_id\030\001 \001(\004\"@\n\rFriendListRsp\022\n\n\002ok\030\001 \001(\010"
-      "\022\017\n\007message\030\002 \001(\t\022\022\n\nerror_code\030\003 \001(\t\"\374\010"
-      "\n\013GameRequest\022\013\n\003seq\030\001 \001(\004\022\025\n\rsession_to"
-      "ken\030\002 \001(\t\022,\n\014consume_item\030\n \001(\0132\024.game.C"
-      "onsumeItemReqH\000\022.\n\rrelease_skill\030\013 \001(\0132\025"
-      ".game.ReleaseSkillReqH\000\022(\n\ngrant_item\030\014 "
-      "\001(\0132\022.game.GrantItemReqH\000\022\037\n\005login\030\024 \001(\013"
-      "2\016.game.LoginReqH\000\0224\n\020validate_session\030\025"
-      " \001(\0132\030.game.ValidateSessionReqH\000\022,\n\014chec"
-      "k_online\030\026 \001(\0132\024.game.CheckOnlineReqH\000\022!"
-      "\n\006logout\030\027 \001(\0132\017.game.LogoutReqH\000\022\'\n\trec"
-      "onnect\030\030 \001(\0132\022.game.ReconnectReqH\000\022%\n\010re"
-      "gister\030\031 \001(\0132\021.game.RegisterReqH\000\022&\n\tflu"
-      "sh_bag\030\032 \001(\0132\021.game.FlushBagReqH\000\0222\n\017mai"
-      "lbox_summary\030\036 \001(\0132\027.game.MailboxSummary"
-      "ReqH\000\022&\n\tmail_list\030\037 \001(\0132\021.game.MailList"
-      "ReqH\000\022$\n\010mail_get\030  \001(\0132\020.game.MailGetRe"
-      "qH\000\022&\n\tmail_read\030! \001(\0132\021.game.MailReadRe"
-      "qH\000\022(\n\nmail_claim\030\" \001(\0132\022.game.MailClaim"
-      "ReqH\000\0223\n\020mail_batch_claim\030# \001(\0132\027.game.M"
-      "ailBatchClaimReqH\000\022.\n\rmail_favorite\030$ \001("
-      "\0132\025.game.MailFavoriteReqH\000\0221\n\017mail_batch"
-      "_read\030% \001(\0132\026.game.MailBatchReadReqH\000\0225\n"
-      "\021mail_batch_delete\030& \001(\0132\030.game.MailBatc"
-      "hDeleteReqH\000\022,\n\014mail_deliver\030\' \001(\0132\024.gam"
-      "e.MailDeliverReqH\000\022&\n\tenter_map\030( \001(\0132\021."
-      "game.EnterMapReqH\000\022&\n\tleave_map\030) \001(\0132\021."
-      "game.LeaveMapReqH\000\022$\n\010map_ping\030* \001(\0132\020.g"
-      "ame.MapPingReqH\000\022&\n\tchat_send\0302 \001(\0132\021.ga"
-      "me.ChatSendReqH\000\022*\n\013friend_list\0303 \001(\0132\023."
-      "game.FriendListReqH\000B\006\n\004body\"\203\t\n\014GameRes"
-      "ponse\022\013\n\003seq\030\001 \001(\004\022\n\n\002ok\030\002 \001(\010\022\017\n\007messag"
-      "e\030\003 \001(\t\022,\n\014consume_item\030\n \001(\0132\024.game.Con"
-      "sumeItemRspH\000\022.\n\rrelease_skill\030\013 \001(\0132\025.g"
-      "ame.ReleaseSkillRspH\000\022(\n\ngrant_item\030\014 \001("
-      "\0132\022.game.GrantItemRspH\000\022\037\n\005login\030\024 \001(\0132\016"
-      ".game.LoginRspH\000\0224\n\020validate_session\030\025 \001"
-      "(\0132\030.game.ValidateSessionRspH\000\022,\n\014check_"
-      "online\030\026 \001(\0132\024.game.CheckOnlineRspH\000\022!\n\006"
-      "logout\030\027 \001(\0132\017.game.LogoutRspH\000\022\'\n\trecon"
-      "nect\030\030 \001(\0132\022.game.ReconnectRspH\000\022%\n\010regi"
-      "ster\030\031 \001(\0132\021.game.RegisterRspH\000\022&\n\tflush"
-      "_bag\030\032 \001(\0132\021.game.FlushBagRspH\000\0222\n\017mailb"
-      "ox_summary\030\036 \001(\0132\027.game.MailboxSummaryRs"
-      "pH\000\022&\n\tmail_list\030\037 \001(\0132\021.game.MailListRs"
-      "pH\000\022$\n\010mail_get\030  \001(\0132\020.game.MailGetRspH"
-      "\000\022&\n\tmail_read\030! \001(\0132\021.game.MailReadRspH"
-      "\000\022(\n\nmail_claim\030\" \001(\0132\022.game.MailClaimRs"
-      "pH\000\0223\n\020mail_batch_claim\030# \001(\0132\027.game.Mai"
-      "lBatchClaimRspH\000\022.\n\rmail_favorite\030$ \001(\0132"
-      "\025.game.MailFavoriteRspH\000\0221\n\017mail_batch_r"
-      "ead\030% \001(\0132\026.game.MailBatchReadRspH\000\0225\n\021m"
-      "ail_batch_delete\030& \001(\0132\030.game.MailBatchD"
-      "eleteRspH\000\022,\n\014mail_deliver\030\' \001(\0132\024.game."
-      "MailDeliverRspH\000\022&\n\tenter_map\030( \001(\0132\021.ga"
-      "me.EnterMapRspH\000\022&\n\tleave_map\030) \001(\0132\021.ga"
-      "me.LeaveMapRspH\000\022$\n\010map_ping\030* \001(\0132\020.gam"
-      "e.MapPingRspH\000\022&\n\tchat_send\0302 \001(\0132\021.game"
-      ".ChatSendRspH\000\022*\n\013friend_list\0303 \001(\0132\023.ga"
-      "me.FriendListRspH\000B\006\n\004bodyb\006proto3"
+      " \001(\003\"j\n\021MailBatchClaimReq\022\021\n\tplayer_id\030\001"
+      " \001(\004\022\020\n\010mail_ids\030\002 \003(\004\022\036\n\026idempotency_ke"
+      "y_prefix\030\003 \001(\t\022\020\n\010trace_id\030\004 \001(\t\"\236\001\n\021Mai"
+      "lBatchClaimRsp\022\n\n\002ok\030\001 \001(\010\022\017\n\007message\030\002 "
+      "\001(\t\022\022\n\nerror_code\030\003 \001(\t\022&\n\007results\030\004 \003(\013"
+      "2\025.game.MailClaimResult\022\027\n\017mailbox_versi"
+      "on\030\005 \001(\003\022\027\n\017server_time_utc\030\006 \001(\003\"`\n\017Mai"
+      "lFavoriteReq\022\021\n\tplayer_id\030\001 \001(\004\022\017\n\007mail_"
+      "id\030\002 \001(\004\022\020\n\010favorite\030\003 \001(\010\022\027\n\017idempotenc"
+      "y_key\030\004 \001(\t\"\211\001\n\017MailFavoriteRsp\022\n\n\002ok\030\001 "
+      "\001(\010\022\017\n\007message\030\002 \001(\t\022\022\n\nerror_code\030\003 \001(\t"
+      "\022\023\n\013is_favorite\030\004 \001(\010\022\027\n\017mailbox_version"
+      "\030\005 \001(\003\022\027\n\017server_time_utc\030\006 \001(\003\"P\n\020MailB"
+      "atchReadReq\022\021\n\tplayer_id\030\001 \001(\004\022\020\n\010mail_i"
+      "ds\030\002 \003(\004\022\027\n\017idempotency_key\030\003 \001(\t\"\214\001\n\020Ma"
+      "ilBatchReadRsp\022\n\n\002ok\030\001 \001(\010\022\017\n\007message\030\002 "
+      "\001(\t\022\022\n\nerror_code\030\003 \001(\t\022\025\n\rsuccess_count"
+      "\030\004 \001(\r\022\027\n\017mailbox_version\030\005 \001(\003\022\027\n\017serve"
+      "r_time_utc\030\006 \001(\003\"R\n\022MailBatchDeleteReq\022\021"
+      "\n\tplayer_id\030\001 \001(\004\022\020\n\010mail_ids\030\002 \003(\004\022\027\n\017i"
+      "dempotency_key\030\003 \001(\t\"\247\001\n\022MailBatchDelete"
+      "Rsp\022\n\n\002ok\030\001 \001(\010\022\017\n\007message\030\002 \001(\t\022\022\n\nerro"
+      "r_code\030\003 \001(\t\022\025\n\rsuccess_count\030\004 \001(\r\022\027\n\017f"
+      "ailed_mail_ids\030\005 \003(\004\022\027\n\017mailbox_version\030"
+      "\006 \001(\003\022\027\n\017server_time_utc\030\007 \001(\003\"p\n\025MailDe"
+      "liverAttachment\022\022\n\nasset_type\030\001 \001(\t\022\020\n\010a"
+      "sset_id\030\002 \001(\004\022\r\n\005count\030\003 \001(\r\022\021\n\tbind_typ"
+      "e\030\004 \001(\t\022\017\n\007payload\030\005 \001(\t\"\366\002\n\016MailDeliver"
+      "Req\022\025\n\rsource_system\030\001 \001(\t\022\024\n\014business_k"
+      "ey\030\002 \001(\t\022\025\n\rreceiver_type\030\003 \001(\t\022\023\n\013recei"
+      "ver_id\030\004 \001(\004\022\023\n\013template_id\030\005 \001(\t\022\030\n\020tem"
+      "plate_version\030\006 \001(\005\022\020\n\010category\030\007 \001(\t\022\020\n"
+      "\010priority\030\010 \001(\005\022\023\n\013sender_name\030\t \001(\t\022\r\n\005"
+      "title\030\n \001(\t\022\014\n\004body\030\013 \001(\t\0220\n\013attachments"
+      "\030\014 \003(\0132\033.game.MailDeliverAttachment\022\017\n\007s"
+      "end_at\030\r \001(\003\022\021\n\texpire_at\030\016 \001(\003\022\020\n\010trace"
+      "_id\030\017 \001(\t\022\036\n\026session_token_override\030\020 \001("
+      "\t\"\203\001\n\016MailDeliverRsp\022\n\n\002ok\030\001 \001(\010\022\017\n\007mess"
+      "age\030\002 \001(\t\022\022\n\nerror_code\030\003 \001(\t\022\017\n\007mail_id"
+      "\030\004 \001(\004\022\026\n\016idempotent_hit\030\005 \001(\010\022\027\n\017server"
+      "_time_utc\030\006 \001(\003\"d\n\013EnterMapReq\022\021\n\tplayer"
+      "_id\030\001 \001(\004\022\020\n\010realm_id\030\002 \001(\r\022\027\n\017map_templ"
+      "ate_id\030\003 \001(\004\022\027\n\017map_instance_id\030\004 \001(\004\"\247\001"
+      "\n\013EnterMapRsp\022\n\n\002ok\030\001 \001(\010\022\017\n\007message\030\002 \001"
+      "(\t\022\027\n\017map_template_id\030\003 \001(\004\022\027\n\017map_insta"
+      "nce_id\030\004 \001(\004\022\035\n\025gamelogic_instance_id\030\005 "
+      "\001(\t\022\023\n\013owner_epoch\030\006 \001(\004\022\025\n\rroute_versio"
+      "n\030\007 \001(\004\"9\n\013LeaveMapReq\022\021\n\tplayer_id\030\001 \001("
+      "\004\022\027\n\017map_instance_id\030\002 \001(\004\"*\n\013LeaveMapRs"
+      "p\022\n\n\002ok\030\001 \001(\010\022\017\n\007message\030\002 \001(\t\"8\n\nMapPin"
+      "gReq\022\021\n\tplayer_id\030\001 \001(\004\022\027\n\017map_instance_"
+      "id\030\002 \001(\004\"s\n\nMapPingRsp\022\n\n\002ok\030\001 \001(\010\022\017\n\007me"
+      "ssage\030\002 \001(\t\022\023\n\013owner_epoch\030\003 \001(\004\022\024\n\014play"
+      "er_count\030\004 \001(\r\022\035\n\025gamelogic_instance_id\030"
+      "\005 \001(\t\"\?\n\013ChatSendReq\022\021\n\tplayer_id\030\001 \001(\004\022"
+      "\017\n\007channel\030\002 \001(\t\022\014\n\004text\030\003 \001(\t\">\n\013ChatSe"
+      "ndRsp\022\n\n\002ok\030\001 \001(\010\022\017\n\007message\030\002 \001(\t\022\022\n\ner"
+      "ror_code\030\003 \001(\t\"\"\n\rFriendListReq\022\021\n\tplaye"
+      "r_id\030\001 \001(\004\"@\n\rFriendListRsp\022\n\n\002ok\030\001 \001(\010\022"
+      "\017\n\007message\030\002 \001(\t\022\022\n\nerror_code\030\003 \001(\t\"\374\010\n"
+      "\013GameRequest\022\013\n\003seq\030\001 \001(\004\022\025\n\rsession_tok"
+      "en\030\002 \001(\t\022,\n\014consume_item\030\n \001(\0132\024.game.Co"
+      "nsumeItemReqH\000\022.\n\rrelease_skill\030\013 \001(\0132\025."
+      "game.ReleaseSkillReqH\000\022(\n\ngrant_item\030\014 \001"
+      "(\0132\022.game.GrantItemReqH\000\022\037\n\005login\030\024 \001(\0132"
+      "\016.game.LoginReqH\000\0224\n\020validate_session\030\025 "
+      "\001(\0132\030.game.ValidateSessionReqH\000\022,\n\014check"
+      "_online\030\026 \001(\0132\024.game.CheckOnlineReqH\000\022!\n"
+      "\006logout\030\027 \001(\0132\017.game.LogoutReqH\000\022\'\n\treco"
+      "nnect\030\030 \001(\0132\022.game.ReconnectReqH\000\022%\n\010reg"
+      "ister\030\031 \001(\0132\021.game.RegisterReqH\000\022&\n\tflus"
+      "h_bag\030\032 \001(\0132\021.game.FlushBagReqH\000\0222\n\017mail"
+      "box_summary\030\036 \001(\0132\027.game.MailboxSummaryR"
+      "eqH\000\022&\n\tmail_list\030\037 \001(\0132\021.game.MailListR"
+      "eqH\000\022$\n\010mail_get\030  \001(\0132\020.game.MailGetReq"
+      "H\000\022&\n\tmail_read\030! \001(\0132\021.game.MailReadReq"
+      "H\000\022(\n\nmail_claim\030\" \001(\0132\022.game.MailClaimR"
+      "eqH\000\0223\n\020mail_batch_claim\030# \001(\0132\027.game.Ma"
+      "ilBatchClaimReqH\000\022.\n\rmail_favorite\030$ \001(\013"
+      "2\025.game.MailFavoriteReqH\000\0221\n\017mail_batch_"
+      "read\030% \001(\0132\026.game.MailBatchReadReqH\000\0225\n\021"
+      "mail_batch_delete\030& \001(\0132\030.game.MailBatch"
+      "DeleteReqH\000\022,\n\014mail_deliver\030\' \001(\0132\024.game"
+      ".MailDeliverReqH\000\022&\n\tenter_map\030( \001(\0132\021.g"
+      "ame.EnterMapReqH\000\022&\n\tleave_map\030) \001(\0132\021.g"
+      "ame.LeaveMapReqH\000\022$\n\010map_ping\030* \001(\0132\020.ga"
+      "me.MapPingReqH\000\022&\n\tchat_send\0302 \001(\0132\021.gam"
+      "e.ChatSendReqH\000\022*\n\013friend_list\0303 \001(\0132\023.g"
+      "ame.FriendListReqH\000B\006\n\004body\"\203\t\n\014GameResp"
+      "onse\022\013\n\003seq\030\001 \001(\004\022\n\n\002ok\030\002 \001(\010\022\017\n\007message"
+      "\030\003 \001(\t\022,\n\014consume_item\030\n \001(\0132\024.game.Cons"
+      "umeItemRspH\000\022.\n\rrelease_skill\030\013 \001(\0132\025.ga"
+      "me.ReleaseSkillRspH\000\022(\n\ngrant_item\030\014 \001(\013"
+      "2\022.game.GrantItemRspH\000\022\037\n\005login\030\024 \001(\0132\016."
+      "game.LoginRspH\000\0224\n\020validate_session\030\025 \001("
+      "\0132\030.game.ValidateSessionRspH\000\022,\n\014check_o"
+      "nline\030\026 \001(\0132\024.game.CheckOnlineRspH\000\022!\n\006l"
+      "ogout\030\027 \001(\0132\017.game.LogoutRspH\000\022\'\n\treconn"
+      "ect\030\030 \001(\0132\022.game.ReconnectRspH\000\022%\n\010regis"
+      "ter\030\031 \001(\0132\021.game.RegisterRspH\000\022&\n\tflush_"
+      "bag\030\032 \001(\0132\021.game.FlushBagRspH\000\0222\n\017mailbo"
+      "x_summary\030\036 \001(\0132\027.game.MailboxSummaryRsp"
+      "H\000\022&\n\tmail_list\030\037 \001(\0132\021.game.MailListRsp"
+      "H\000\022$\n\010mail_get\030  \001(\0132\020.game.MailGetRspH\000"
+      "\022&\n\tmail_read\030! \001(\0132\021.game.MailReadRspH\000"
+      "\022(\n\nmail_claim\030\" \001(\0132\022.game.MailClaimRsp"
+      "H\000\0223\n\020mail_batch_claim\030# \001(\0132\027.game.Mail"
+      "BatchClaimRspH\000\022.\n\rmail_favorite\030$ \001(\0132\025"
+      ".game.MailFavoriteRspH\000\0221\n\017mail_batch_re"
+      "ad\030% \001(\0132\026.game.MailBatchReadRspH\000\0225\n\021ma"
+      "il_batch_delete\030& \001(\0132\030.game.MailBatchDe"
+      "leteRspH\000\022,\n\014mail_deliver\030\' \001(\0132\024.game.M"
+      "ailDeliverRspH\000\022&\n\tenter_map\030( \001(\0132\021.gam"
+      "e.EnterMapRspH\000\022&\n\tleave_map\030) \001(\0132\021.gam"
+      "e.LeaveMapRspH\000\022$\n\010map_ping\030* \001(\0132\020.game"
+      ".MapPingRspH\000\022&\n\tchat_send\0302 \001(\0132\021.game."
+      "ChatSendRspH\000\022*\n\013friend_list\0303 \001(\0132\023.gam"
+      "e.FriendListRspH\000B\006\n\004bodyb\006proto3"
   };
   ::google::protobuf::DescriptorPool::InternalAddGeneratedFile(
-      descriptor, 8354);
+      descriptor, 8393);
   ::google::protobuf::MessageFactory::InternalRegisterGeneratedFile(
     "game.proto", &protobuf_RegisterTypes);
 }
@@ -2593,6 +2596,7 @@ const int LoginReq::kDeviceIdFieldNumber;
 const int LoginReq::kServerIdFieldNumber;
 const int LoginReq::kTtlSecFieldNumber;
 const int LoginReq::kKickOtherDeviceFieldNumber;
+const int LoginReq::kCredentialFieldNumber;
 #endif  // !defined(_MSC_VER) || _MSC_VER >= 1900
 
 LoginReq::LoginReq()
@@ -2612,6 +2616,10 @@ LoginReq::LoginReq(const LoginReq& from)
   if (from.device_id().size() > 0) {
     device_id_.AssignWithDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), from.device_id_);
   }
+  credential_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  if (from.credential().size() > 0) {
+    credential_.AssignWithDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), from.credential_);
+  }
   ::memcpy(&player_id_, &from.player_id_,
     static_cast<size_t>(reinterpret_cast<char*>(&kick_other_device_) -
     reinterpret_cast<char*>(&player_id_)) + sizeof(kick_other_device_));
@@ -2620,6 +2628,7 @@ LoginReq::LoginReq(const LoginReq& from)
 
 void LoginReq::SharedCtor() {
   device_id_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  credential_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
   ::memset(&player_id_, 0, static_cast<size_t>(
       reinterpret_cast<char*>(&kick_other_device_) -
       reinterpret_cast<char*>(&player_id_)) + sizeof(kick_other_device_));
@@ -2633,6 +2642,7 @@ LoginReq::~LoginReq() {
 
 void LoginReq::SharedDtor() {
   device_id_.DestroyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  credential_.DestroyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
 }
 
 void LoginReq::SetCachedSize(int size) const {
@@ -2665,6 +2675,7 @@ void LoginReq::Clear() {
   (void) cached_has_bits;
 
   device_id_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  credential_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
   ::memset(&player_id_, 0, static_cast<size_t>(
       reinterpret_cast<char*>(&kick_other_device_) -
       reinterpret_cast<char*>(&player_id_)) + sizeof(kick_other_device_));
@@ -2753,6 +2764,22 @@ bool LoginReq::MergePartialFromCodedStream(
         break;
       }
 
+      // string credential = 6;
+      case 6: {
+        if (static_cast< ::google::protobuf::uint8>(tag) ==
+            static_cast< ::google::protobuf::uint8>(50u /* 50 & 0xFF */)) {
+          DO_(::google::protobuf::internal::WireFormatLite::ReadString(
+                input, this->mutable_credential()));
+          DO_(::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+            this->credential().data(), static_cast<int>(this->credential().length()),
+            ::google::protobuf::internal::WireFormatLite::PARSE,
+            "game.LoginReq.credential"));
+        } else {
+          goto handle_unusual;
+        }
+        break;
+      }
+
       default: {
       handle_unusual:
         if (tag == 0) {
@@ -2809,6 +2836,16 @@ void LoginReq::SerializeWithCachedSizes(
     ::google::protobuf::internal::WireFormatLite::WriteBool(5, this->kick_other_device(), output);
   }
 
+  // string credential = 6;
+  if (this->credential().size() > 0) {
+    ::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+      this->credential().data(), static_cast<int>(this->credential().length()),
+      ::google::protobuf::internal::WireFormatLite::SERIALIZE,
+      "game.LoginReq.credential");
+    ::google::protobuf::internal::WireFormatLite::WriteStringMaybeAliased(
+      6, this->credential(), output);
+  }
+
   if ((_internal_metadata_.have_unknown_fields() &&  ::google::protobuf::internal::GetProto3PreserveUnknownsDefault())) {
     ::google::protobuf::internal::WireFormat::SerializeUnknownFields(
         (::google::protobuf::internal::GetProto3PreserveUnknownsDefault()   ? _internal_metadata_.unknown_fields()   : _internal_metadata_.default_instance()), output);
@@ -2854,6 +2891,17 @@ void LoginReq::SerializeWithCachedSizes(
     target = ::google::protobuf::internal::WireFormatLite::WriteBoolToArray(5, this->kick_other_device(), target);
   }
 
+  // string credential = 6;
+  if (this->credential().size() > 0) {
+    ::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+      this->credential().data(), static_cast<int>(this->credential().length()),
+      ::google::protobuf::internal::WireFormatLite::SERIALIZE,
+      "game.LoginReq.credential");
+    target =
+      ::google::protobuf::internal::WireFormatLite::WriteStringToArray(
+        6, this->credential(), target);
+  }
+
   if ((_internal_metadata_.have_unknown_fields() &&  ::google::protobuf::internal::GetProto3PreserveUnknownsDefault())) {
     target = ::google::protobuf::internal::WireFormat::SerializeUnknownFieldsToArray(
         (::google::protobuf::internal::GetProto3PreserveUnknownsDefault()   ? _internal_metadata_.unknown_fields()   : _internal_metadata_.default_instance()), target);
@@ -2876,6 +2924,13 @@ size_t LoginReq::ByteSizeLong() const {
     total_size += 1 +
       ::google::protobuf::internal::WireFormatLite::StringSize(
         this->device_id());
+  }
+
+  // string credential = 6;
+  if (this->credential().size() > 0) {
+    total_size += 1 +
+      ::google::protobuf::internal::WireFormatLite::StringSize(
+        this->credential());
   }
 
   // uint64 player_id = 1;
@@ -2937,6 +2992,10 @@ void LoginReq::MergeFrom(const LoginReq& from) {
 
     device_id_.AssignWithDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), from.device_id_);
   }
+  if (from.credential().size() > 0) {
+
+    credential_.AssignWithDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), from.credential_);
+  }
   if (from.player_id() != 0) {
     set_player_id(from.player_id());
   }
@@ -2976,6 +3035,7 @@ void LoginReq::Swap(LoginReq* other) {
 void LoginReq::InternalSwap(LoginReq* other) {
   using std::swap;
   device_id_.Swap(&other->device_id_);
+  credential_.Swap(&other->credential_);
   swap(player_id_, other->player_id_);
   swap(server_id_, other->server_id_);
   swap(ttl_sec_, other->ttl_sec_);
@@ -6345,6 +6405,7 @@ void RegisterReq::InitAsDefaultInstance() {
 #if !defined(_MSC_VER) || _MSC_VER >= 1900
 const int RegisterReq::kDeviceIdFieldNumber;
 const int RegisterReq::kDisplayNameFieldNumber;
+const int RegisterReq::kPasswordFieldNumber;
 #endif  // !defined(_MSC_VER) || _MSC_VER >= 1900
 
 RegisterReq::RegisterReq()
@@ -6368,12 +6429,17 @@ RegisterReq::RegisterReq(const RegisterReq& from)
   if (from.display_name().size() > 0) {
     display_name_.AssignWithDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), from.display_name_);
   }
+  password_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  if (from.password().size() > 0) {
+    password_.AssignWithDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), from.password_);
+  }
   // @@protoc_insertion_point(copy_constructor:game.RegisterReq)
 }
 
 void RegisterReq::SharedCtor() {
   device_id_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
   display_name_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  password_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
   _cached_size_ = 0;
 }
 
@@ -6385,6 +6451,7 @@ RegisterReq::~RegisterReq() {
 void RegisterReq::SharedDtor() {
   device_id_.DestroyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
   display_name_.DestroyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  password_.DestroyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
 }
 
 void RegisterReq::SetCachedSize(int size) const {
@@ -6418,6 +6485,7 @@ void RegisterReq::Clear() {
 
   device_id_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
   display_name_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  password_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
   _internal_metadata_.Clear();
 }
 
@@ -6457,6 +6525,22 @@ bool RegisterReq::MergePartialFromCodedStream(
             this->display_name().data(), static_cast<int>(this->display_name().length()),
             ::google::protobuf::internal::WireFormatLite::PARSE,
             "game.RegisterReq.display_name"));
+        } else {
+          goto handle_unusual;
+        }
+        break;
+      }
+
+      // string password = 3;
+      case 3: {
+        if (static_cast< ::google::protobuf::uint8>(tag) ==
+            static_cast< ::google::protobuf::uint8>(26u /* 26 & 0xFF */)) {
+          DO_(::google::protobuf::internal::WireFormatLite::ReadString(
+                input, this->mutable_password()));
+          DO_(::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+            this->password().data(), static_cast<int>(this->password().length()),
+            ::google::protobuf::internal::WireFormatLite::PARSE,
+            "game.RegisterReq.password"));
         } else {
           goto handle_unusual;
         }
@@ -6509,6 +6593,16 @@ void RegisterReq::SerializeWithCachedSizes(
       2, this->display_name(), output);
   }
 
+  // string password = 3;
+  if (this->password().size() > 0) {
+    ::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+      this->password().data(), static_cast<int>(this->password().length()),
+      ::google::protobuf::internal::WireFormatLite::SERIALIZE,
+      "game.RegisterReq.password");
+    ::google::protobuf::internal::WireFormatLite::WriteStringMaybeAliased(
+      3, this->password(), output);
+  }
+
   if ((_internal_metadata_.have_unknown_fields() &&  ::google::protobuf::internal::GetProto3PreserveUnknownsDefault())) {
     ::google::protobuf::internal::WireFormat::SerializeUnknownFields(
         (::google::protobuf::internal::GetProto3PreserveUnknownsDefault()   ? _internal_metadata_.unknown_fields()   : _internal_metadata_.default_instance()), output);
@@ -6545,6 +6639,17 @@ void RegisterReq::SerializeWithCachedSizes(
         2, this->display_name(), target);
   }
 
+  // string password = 3;
+  if (this->password().size() > 0) {
+    ::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+      this->password().data(), static_cast<int>(this->password().length()),
+      ::google::protobuf::internal::WireFormatLite::SERIALIZE,
+      "game.RegisterReq.password");
+    target =
+      ::google::protobuf::internal::WireFormatLite::WriteStringToArray(
+        3, this->password(), target);
+  }
+
   if ((_internal_metadata_.have_unknown_fields() &&  ::google::protobuf::internal::GetProto3PreserveUnknownsDefault())) {
     target = ::google::protobuf::internal::WireFormat::SerializeUnknownFieldsToArray(
         (::google::protobuf::internal::GetProto3PreserveUnknownsDefault()   ? _internal_metadata_.unknown_fields()   : _internal_metadata_.default_instance()), target);
@@ -6574,6 +6679,13 @@ size_t RegisterReq::ByteSizeLong() const {
     total_size += 1 +
       ::google::protobuf::internal::WireFormatLite::StringSize(
         this->display_name());
+  }
+
+  // string password = 3;
+  if (this->password().size() > 0) {
+    total_size += 1 +
+      ::google::protobuf::internal::WireFormatLite::StringSize(
+        this->password());
   }
 
   int cached_size = ::google::protobuf::internal::ToCachedSize(total_size);
@@ -6613,6 +6725,10 @@ void RegisterReq::MergeFrom(const RegisterReq& from) {
 
     display_name_.AssignWithDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), from.display_name_);
   }
+  if (from.password().size() > 0) {
+
+    password_.AssignWithDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), from.password_);
+  }
 }
 
 void RegisterReq::CopyFrom(const ::google::protobuf::Message& from) {
@@ -6641,6 +6757,7 @@ void RegisterReq::InternalSwap(RegisterReq* other) {
   using std::swap;
   device_id_.Swap(&other->device_id_);
   display_name_.Swap(&other->display_name_);
+  password_.Swap(&other->password_);
   _internal_metadata_.Swap(&other->_internal_metadata_);
   swap(_cached_size_, other->_cached_size_);
 }

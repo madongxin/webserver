@@ -23,7 +23,7 @@ message BindConnectionReq {
   uint64 player_id = 1;
   string token = 2;
   string gateway_id = 3;
-  int32 connection_id = 4;
+  uint64 connection_id = 4;
 }
 
 message BindConnectionRsp {
@@ -123,6 +123,99 @@ message KickResponse {
   string message = 2;
 }
 
+// --- Placement（阶段 2；模块在 Session 进程，边界清晰可拆）---
+message PlacementRecord {
+  uint32 realm_id = 1;
+  uint64 map_template_id = 2;
+  uint64 map_instance_id = 3;
+  string owner_logic_server_id = 4;
+  uint64 owner_epoch = 5;
+  uint64 route_version = 6;
+  string state = 7;  // CREATING/READY/FROZEN/MIGRATING/RECOVERING/CLOSED
+  int64 updated_at = 8;
+  int64 lease_until = 9;
+}
+
+message ResolveOrCreateMapRequest {
+  uint32 realm_id = 1;
+  uint64 map_template_id = 2;
+  uint64 map_instance_id = 3;  // 0=按 realm+template 解析/创建权威实例
+  string preferred_owner = 4;
+  bool force_new = 5;          // true=总是新建独立实例（不走 template 索引）
+}
+
+message ResolveOrCreateMapResponse {
+  bool ok = 1;
+  string message = 2;
+  string error_code = 3;
+  PlacementRecord placement = 4;
+}
+
+message GetPlacementRequest {
+  uint64 map_instance_id = 1;
+}
+
+message GetPlacementResponse {
+  bool ok = 1;
+  string message = 2;
+  PlacementRecord placement = 3;
+}
+
+message MigrateMapRequest {
+  uint64 map_instance_id = 1;
+  string new_owner_logic_server_id = 2;
+  string idempotency_key = 3;
+  uint64 expect_epoch = 4;  // 0=不校验
+}
+
+message MigrateMapResponse {
+  bool ok = 1;
+  string message = 2;
+  string error_code = 3;
+  PlacementRecord placement = 4;
+}
+
+message MarkRecoveringRequest {
+  uint64 map_instance_id = 1;
+  string reason = 2;
+}
+
+message MarkRecoveringResponse {
+  bool ok = 1;
+  string message = 2;
+  PlacementRecord placement = 3;
+}
+
+message HeartbeatOwnerRequest {
+  uint64 map_instance_id = 1;
+  string owner_logic_server_id = 2;
+  uint64 owner_epoch = 3;
+  uint32 lease_sec = 4;
+}
+
+message HeartbeatOwnerResponse {
+  bool ok = 1;
+  string message = 2;
+  int64 lease_until = 3;
+}
+
+message UpdatePlayerRouteRequest {
+  uint64 player_id = 1;
+  string fence_token = 2;
+  string gamelogic_instance_id = 3;
+  uint64 map_instance_id = 4;
+  uint64 map_owner_epoch = 5;
+  uint64 route_version = 6;  // 期望新版本；0=自动 +1
+  string gateway_instance_id = 7;
+  string push_endpoint = 8;
+}
+
+message UpdatePlayerRouteResponse {
+  bool ok = 1;
+  string message = 2;
+  uint64 route_version = 3;
+}
+
 service SessionService {
   // --- 新边界（Gateway 编排）---
   rpc AcquireSession(AcquireSessionRequest) returns (AcquireSessionResponse);
@@ -130,6 +223,14 @@ service SessionService {
   rpc ReconnectV2(ReconnectRequest) returns (ReconnectResponse);
   rpc LogoutV2(LogoutRequest) returns (LogoutResponse);
   rpc Kick(KickRequest) returns (KickResponse);
+
+  // --- Placement ---
+  rpc ResolveOrCreateMap(ResolveOrCreateMapRequest) returns (ResolveOrCreateMapResponse);
+  rpc GetPlacement(GetPlacementRequest) returns (GetPlacementResponse);
+  rpc MigrateMap(MigrateMapRequest) returns (MigrateMapResponse);
+  rpc MarkRecovering(MarkRecoveringRequest) returns (MarkRecoveringResponse);
+  rpc HeartbeatOwner(HeartbeatOwnerRequest) returns (HeartbeatOwnerResponse);
+  rpc UpdatePlayerRoute(UpdatePlayerRouteRequest) returns (UpdatePlayerRouteResponse);
 
   // --- 兼容旧 RPC（内部转调；GameLogic 不应再调 Login）---
   rpc Login(game.LoginReq) returns (game.LoginRsp);

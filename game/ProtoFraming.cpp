@@ -19,21 +19,29 @@ bool EncodeFrame(const std::string &payload, std::string *out) {
     return true;
 }
 
-bool TryDecodeOneFrame(std::string *buffer, std::string *payload) {
-    if (!buffer || !payload || buffer->size() < 4)
-        return false;
+FrameDecodeResult DecodeOneFrame(std::string *buffer, std::string *payload) {
+    if (!buffer || !payload)
+        return FrameDecodeResult::Invalid;
+    if (buffer->size() < 4)
+        return FrameDecodeResult::Incomplete;
 
-    // 读 4 字节长度（大端）
     uint32_t be = 0;
     std::memcpy(&be, buffer->data(), 4);
     const uint32_t len = ntohl(be);
 
-    if (len == 0 || len > kMaxFrameSize || buffer->size() < 4u + len)
-        return false;  // 半包：等下次 OnMessage 再 append 后重试
+    if (len == 0 || len > kMaxFrameSize)
+        return FrameDecodeResult::Invalid;
+
+    if (buffer->size() < 4u + len)
+        return FrameDecodeResult::Incomplete;
 
     payload->assign(buffer->data() + 4, len);
     buffer->erase(0, 4 + len);
-    return true;
+    return FrameDecodeResult::Complete;
+}
+
+bool TryDecodeOneFrame(std::string *buffer, std::string *payload) {
+    return DecodeOneFrame(buffer, payload) == FrameDecodeResult::Complete;
 }
 
 }  // namespace gameproto

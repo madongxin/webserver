@@ -18,6 +18,7 @@ message BindPlayerRequest {
   string gateway_instance_id = 9;
   string idempotency_key = 10;
   string trace_context = 11;
+  uint64 generation = 12;
 }
 
 message BindPlayerResponse {
@@ -54,6 +55,10 @@ message ClientCommand {
   bytes payload = 10;          // 通常为 game.GameRequest 去头序列化体
   string trace_context = 11;
   string idempotency_key = 12;
+  uint64 generation = 13;
+  uint64 route_version = 14;
+  int32 deadline_ms = 15;
+  string trace_id = 16;
 }
 
 message CommandResult {

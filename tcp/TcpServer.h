@@ -66,10 +66,11 @@
  */
 
 #include "common.h"
+#include <cstdint>
 #include <functional>
 #include <map>
-#include <vector>
 #include <memory>
+#include <vector>
 
 class EventLoop;
 class TcpConnection;
@@ -104,7 +105,8 @@ public:
 
 private:
     EventLoop *main_reactor_;
-    int next_conn_id_;
+    /** 进程内单调递增，绝不回绕到小整数复用 */
+    uint64_t next_conn_id_;
 
     std::unique_ptr<EventLoopThreadPool> thread_pool_;
     std::unique_ptr<Acceptor> acceptor_;

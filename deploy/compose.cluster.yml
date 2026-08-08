@@ -1,0 +1,72 @@
+# 最小集群拓扑（需本机已构建二进制挂载，或先 docker build）
+# 2×gateway 2×session 2×gamelogic 1×world 2×gamedb + redis + mysql
+version: "3.8"
+services:
+  mysql:
+    image: mysql:8.0
+    environment:
+      MYSQL_ROOT_PASSWORD: gamemesh
+      MYSQL_DATABASE: gamemesh
+    ports: ["3306:3306"]
+  redis:
+    image: redis:7
+    ports: ["6379:6379"]
+  session0:
+    image: gamemesh:local
+    network_mode: host
+    environment:
+      GAMEMESH_FORMAL: "1"
+      GAMEMESH_ADVERTISE_HOST: "127.0.0.1"
+      GAMEMESH_HTTP_BIND: "127.0.0.1"
+    command: ["/opt/gamemesh/session", "8093", "8401"]
+    depends_on: [mysql, redis]
+  session1:
+    image: gamemesh:local
+    network_mode: host
+    environment:
+      GAMEMESH_FORMAL: "1"
+      GAMEMESH_HTTP_BIND: "127.0.0.1"
+    command: ["/opt/gamemesh/session", "8096", "8402"]
+    depends_on: [mysql, redis]
+  gamedb0:
+    image: gamemesh:local
+    network_mode: host
+    command: ["/opt/gamemesh/gamedb", "8094", "8501"]
+    depends_on: [mysql]
+  gamedb1:
+    image: gamemesh:local
+    network_mode: host
+    command: ["/opt/gamemesh/gamedb", "8095", "8502"]
+    depends_on: [mysql]
+  world:
+    image: gamemesh:local
+    network_mode: host
+    command: ["/opt/gamemesh/world", "8092"]
+    depends_on: [gamedb0]
+  gamelogic0:
+    image: gamemesh:local
+    network_mode: host
+    command: ["/opt/gamemesh/gamelogic", "8090", "8201"]
+    depends_on: [session0, gamedb0]
+  gamelogic1:
+    image: gamemesh:local
+    network_mode: host
+    command: ["/opt/gamemesh/gamelogic", "8091", "8202"]
+    depends_on: [session0, gamedb0]
+  gateway0:
+    image: gamemesh:local
+    network_mode: host
+    environment:
+      GAMEMESH_FORMAL: "1"
+      GAMEMESH_HTTP_BIND: "127.0.0.1"
+      GAMEMESH_ADVERTISE_HOST: "127.0.0.1"
+    command: ["/opt/gamemesh/gateway", "8080", "8081"]
+    depends_on: [session0, gamelogic0, gamelogic1]
+  gateway1:
+    image: gamemesh:local
+    network_mode: host
+    environment:
+      GAMEMESH_FORMAL: "1"
+      GAMEMESH_HTTP_BIND: "127.0.0.1"
+    command: ["/opt/gamemesh/gateway", "8082", "8083"]
+    depends_on: [session0, gamelogic0]

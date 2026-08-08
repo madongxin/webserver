@@ -21,13 +21,14 @@ struct BoundPlayer {
     uint64_t map_instance_id = 0;
     uint64_t map_owner_epoch = 0;
     uint64_t route_version = 0;
+    uint64_t generation = 0;
 };
 
 std::mutex g_bound_mu;
 std::unordered_map<uint64_t, BoundPlayer> g_bound;
 
 bool FenceOk(uint64_t player_id, const std::string &session_id, const std::string &fence,
-             std::string *err) {
+             uint64_t generation, std::string *err) {
     std::lock_guard<std::mutex> lk(g_bound_mu);
     auto it = g_bound.find(player_id);
     if (it == g_bound.end()) {
@@ -43,6 +44,11 @@ bool FenceOk(uint64_t player_id, const std::string &session_id, const std::strin
     if (it->second.fence_token != fence) {
         if (err)
             *err = "fence_token rejected";
+        return false;
+    }
+    if (generation != 0 && it->second.generation != 0 && generation != it->second.generation) {
+        if (err)
+            *err = "generation rejected";
         return false;
     }
     return true;
@@ -88,8 +94,18 @@ void GameLogicServiceImpl::BindPlayer(::google::protobuf::RpcController *control
     bp.map_instance_id = request->map_instance_id();
     bp.map_owner_epoch = request->map_owner_epoch();
     bp.route_version = request->route_version();
+    bp.generation = request->generation();
+    // Bind 幂等：同 session+fence 重复 Bind 覆盖 gateway 路由；更高 generation 顶替旧绑定
     {
         std::lock_guard<std::mutex> lk(g_bound_mu);
+        auto it = g_bound.find(player_id);
+        if (it != g_bound.end() && bp.generation != 0 && it->second.generation != 0 &&
+            bp.generation < it->second.generation) {
+            response->set_ok(false);
+            response->set_error_code("STALE_GENERATION");
+            response->set_message("stale bind generation");
+            return;
+        }
         g_bound[player_id] = bp;
     }
     GameLogic::Instance().BindAuthenticatedPlayer(player_id);
@@ -97,7 +113,7 @@ void GameLogicServiceImpl::BindPlayer(::google::protobuf::RpcController *control
     response->set_message("player ready");
     response->set_bag_item_kinds(0);
     LOG_INFO << "BindPlayer ok player_id=" << player_id << " session=" << request->session_id()
-             << " gw=" << request->gateway_instance_id();
+             << " gen=" << request->generation() << " gw=" << request->gateway_instance_id();
 }
 
 void GameLogicServiceImpl::Dispatch(::google::protobuf::RpcController *controller,
@@ -114,11 +130,15 @@ void GameLogicServiceImpl::Dispatch(::google::protobuf::RpcController *controlle
         return;
     }
     std::string err;
-    if (!FenceOk(request->player_id(), request->session_id(), request->fence_token(), &err)) {
+    if (!FenceOk(request->player_id(), request->session_id(), request->fence_token(),
+                 request->generation(), &err)) {
         response->set_ok(false);
         response->set_error_code("FENCE_REJECT");
         response->set_message(err);
         return;
+    }
+    if (!request->gamelogic_instance_id().empty()) {
+        // 请求目标必须与本节点一致时由上层路由保证；此处拒绝空/伪造在 Bind 表校验
     }
     if (request->map_instance_id() != 0) {
         if (!MapInstanceRegistry::Instance().AcceptWrite(request->map_instance_id(),
@@ -134,7 +154,11 @@ void GameLogicServiceImpl::Dispatch(::google::protobuf::RpcController *controlle
     meta.player_id = request->player_id();
     meta.map_instance_id = request->map_instance_id();
     meta.owner_epoch = request->map_owner_epoch();
+    meta.route_version = request->route_version();
     meta.gamelogic_instance_id = request->gamelogic_instance_id();
+    meta.session_id = request->session_id();
+    meta.fence_token = request->fence_token();
+    meta.generation = request->generation();
     ForwardMetaContext::Set(meta);
 
     std::string out_frame;
@@ -159,7 +183,7 @@ void GameLogicServiceImpl::UnbindPlayer(::google::protobuf::RpcController *contr
     }
     std::string err;
     if (!request->fence_token().empty() &&
-        !FenceOk(request->player_id(), request->session_id(), request->fence_token(), &err)) {
+        !FenceOk(request->player_id(), request->session_id(), request->fence_token(), 0, &err)) {
         response->set_ok(false);
         response->set_message(err);
         return;

@@ -6,9 +6,11 @@
 #include "MapPlacement.h"
 
 #ifdef WEBSERVER_ENABLE_REDIS
+#include "PlacementStore.h"
 #include "SessionStore.h"
 #ifdef WEBSERVER_ENABLE_BRPC
 #include "SessionRpcClient.h"
+#include "session.pb.h"
 #endif
 #endif
 #ifdef WEBSERVER_ENABLE_MYSQL
@@ -383,31 +385,14 @@ bool GameLogic::HandleLogout(const game::LogoutReq &req, game::GameResponse *rsp
 }
 
 bool GameLogic::HandleRegister(const game::RegisterReq &req, game::GameResponse *rsp) {
-#ifdef WEBSERVER_ENABLE_MYSQL
-    auto *body = rsp->mutable_register_();
-    uint64_t player_id = 0;
-    std::string err;
-    if (!PlayerAccountStore::Instance().Register(req.device_id(), req.display_name(), &player_id,
-                                                 &err)) {
-        body->set_ok(false);
-        body->set_message(err.empty() ? "register failed" : err);
-        rsp->set_ok(false);
-        rsp->set_message(body->message());
-        return false;
-    }
-    body->set_ok(true);
-    body->set_message("ok");
-    body->set_player_id(player_id);
-    rsp->set_ok(true);
-    rsp->set_message("ok");
-    LOG_INFO << "Register ok player_id=" << player_id << " device=" << req.device_id();
-    return true;
-#else
     (void)req;
+    auto *body = rsp->mutable_register_();
+    body->set_ok(false);
+    body->set_message("register must be orchestrated by Gateway via Auth→GameDB; GameLogic rejects");
     rsp->set_ok(false);
-    rsp->set_message("mysql not enabled");
+    rsp->set_message(body->message());
+    LOG_WARN << "HandleRegister rejected: use Gateway→Auth→GameDB";
     return false;
-#endif
 }
 
 bool GameLogic::HandleFlushBag(const game::FlushBagReq &req, game::GameResponse *rsp) {
@@ -455,16 +440,39 @@ bool GameLogic::HandleEnterMap(const game::EnterMapReq &req, game::GameResponse 
         place.map_template_id = req.map_template_id();
         place.realm_id = req.realm_id();
     } else {
-        if (MapPlacement::Instance().owners().empty())
-            MapPlacement::Instance().ConfigureOwners({MapInstanceRegistry::Instance().local_instance_id()});
-        if (!MapPlacement::Instance().ResolveOrAllocate(req.realm_id(), req.map_template_id(),
-                                                       req.map_instance_id(), &place)) {
-            body->set_message("placement failed");
-            rsp->set_ok(false);
-            rsp->set_message(body->message());
-            return false;
+#ifdef WEBSERVER_ENABLE_REDIS
+        if (PlacementStore::Instance().Available()) {
+            ResolveOrCreateInput in;
+            in.realm_id = req.realm_id();
+            in.map_template_id = req.map_template_id();
+            in.map_instance_id = req.map_instance_id();
+            ResolveOrCreateResult pout;
+            if (!PlacementStore::Instance().ResolveOrCreate(in, &pout) || !pout.ok) {
+                body->set_message(pout.message.empty() ? "placement failed" : pout.message);
+                rsp->set_ok(false);
+                rsp->set_message(body->message());
+                return false;
+            }
+            place.map_instance_id = pout.placement.map_instance_id;
+            place.owner_epoch = pout.placement.owner_epoch;
+            place.route_version = pout.placement.route_version;
+            place.owner_gamelogic_id = pout.placement.owner_logic_server_id;
+            place.map_template_id = pout.placement.map_template_id;
+            place.realm_id = pout.placement.realm_id;
+        } else
+#endif
+        {
+            if (MapPlacement::Instance().owners().empty())
+                MapPlacement::Instance().ConfigureOwners(
+                    {MapInstanceRegistry::Instance().local_instance_id()});
+            if (!MapPlacement::Instance().ResolveOrAllocate(req.realm_id(), req.map_template_id(),
+                                                           req.map_instance_id(), &place)) {
+                body->set_message("placement failed");
+                rsp->set_ok(false);
+                rsp->set_message(body->message());
+                return false;
+            }
         }
-        // 单进程：只认本地 owner
         if (place.owner_gamelogic_id != MapInstanceRegistry::Instance().local_instance_id()) {
             body->set_message("owner not local");
             rsp->set_ok(false);
@@ -482,13 +490,57 @@ bool GameLogic::HandleEnterMap(const game::EnterMapReq &req, game::GameResponse 
     }
     MapInstanceRegistry::Instance().AddPlayer(place.map_instance_id, req.player_id());
 
+    // 权威 Session 路由：有 fence 时更新；失败回滚本地玩家归属
+    uint64_t route_ver = place.route_version;
+#ifdef WEBSERVER_ENABLE_REDIS
+    const std::string fence = (meta && !meta->fence_token.empty()) ? meta->fence_token : std::string();
+    if (!fence.empty()) {
+        uint64_t rv = 0;
+        std::string err;
+        bool route_ok = false;
+#ifdef WEBSERVER_ENABLE_BRPC
+        if (SessionRpcClient::Instance().ready()) {
+            sess::UpdatePlayerRouteRequest ureq;
+            ureq.set_player_id(req.player_id());
+            ureq.set_fence_token(fence);
+            ureq.set_gamelogic_instance_id(MapInstanceRegistry::Instance().local_instance_id());
+            ureq.set_map_instance_id(place.map_instance_id);
+            ureq.set_map_owner_epoch(place.owner_epoch);
+            ureq.set_route_version(place.route_version);
+            sess::UpdatePlayerRouteResponse ursp;
+            route_ok = SessionRpcClient::Instance().UpdatePlayerRoute(ureq, &ursp) && ursp.ok();
+            if (route_ok)
+                rv = ursp.route_version();
+            else
+                err = ursp.message();
+        } else
+#endif
+            if (SessionStore::Instance().Available()) {
+            route_ok = SessionStore::Instance().UpdatePlayerRoute(
+                req.player_id(), fence, MapInstanceRegistry::Instance().local_instance_id(),
+                place.map_instance_id, place.owner_epoch, place.route_version, "", "", &rv, &err);
+        } else {
+            route_ok = true;
+        }
+        if (!route_ok) {
+            MapInstanceRegistry::Instance().RemovePlayer(place.map_instance_id, req.player_id());
+            body->set_message(err.empty() ? "update route failed" : err);
+            rsp->set_ok(false);
+            rsp->set_message(body->message());
+            return false;
+        }
+        if (rv != 0)
+            route_ver = rv;
+    }
+#endif
+
     body->set_ok(true);
     body->set_message("entered");
     body->set_map_template_id(place.map_template_id);
     body->set_map_instance_id(place.map_instance_id);
     body->set_gamelogic_instance_id(MapInstanceRegistry::Instance().local_instance_id());
     body->set_owner_epoch(place.owner_epoch);
-    body->set_route_version(place.route_version);
+    body->set_route_version(route_ver);
     rsp->set_ok(true);
     rsp->set_message("entered");
     LOG_INFO << "[enter_map] player=" << req.player_id() << " map=" << place.map_instance_id

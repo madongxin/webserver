@@ -35,6 +35,8 @@ void Acceptor::Create() {
     listenfd_ = socket(AF_INET, SOCK_STREAM | SOCK_NONBLOCK | SOCK_CLOEXEC, IPPROTO_TCP);
     if (listenfd_ == -1)
         LOG_ERROR << "Failed to create socket";
+    int on = 1;
+    ::setsockopt(listenfd_, SOL_SOCKET, SO_REUSEADDR, &on, sizeof(on));
 }
 
 void Acceptor::Bind(const char *ip, const int port) {

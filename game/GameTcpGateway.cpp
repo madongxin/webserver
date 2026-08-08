@@ -9,9 +9,11 @@
 #include "EventLoop.h"
 #include "GameRequestPlayerId.h"
 #include "GameRequestTransport.h"
+#include "GatewayAuthPolicy.h"
 #include "GatewayConnRegistry.h"
 #include "InProcessTransport.h"
 #include "Logging.h"
+#include "PlayerSerialQueue.h"
 #include "ProtoFraming.h"
 #include "ReplySink.h"
 #include "SessionHandle.h"
@@ -37,9 +39,6 @@
 
 namespace {
 
-std::mutex g_stream_mu;
-std::unordered_map<int, std::string> g_stream_buf;
-
 struct ConnBind {
     uint64_t player_id = 0;
     std::string token;
@@ -48,14 +47,10 @@ struct ConnBind {
 };
 
 std::mutex g_bind_mu;
-std::unordered_map<int, ConnBind> g_conn_bind;  // connection_id -> bind
+std::unordered_map<uint64_t, ConnBind> g_conn_bind;  // connection_id -> bind
 std::string g_gateway_id = "gw:local";
 
-std::string &StreamBuf(int conn_id) {
-    return g_stream_buf[conn_id];
-}
-
-void RememberBind(int conn_id, uint64_t player_id, const std::string &token,
+void RememberBind(uint64_t conn_id, uint64_t player_id, const std::string &token,
                   const std::string &session_id, uint64_t generation,
                   std::shared_ptr<ReplySink> sink,
                   const gameproto::GatewayLoginRoute *route = nullptr) {
@@ -90,7 +85,7 @@ void RememberBind(int conn_id, uint64_t player_id, const std::string &token,
     GatewayConnRegistry::Instance().Remember(conn_id, std::move(gb));
 }
 
-void ForgetBind(int conn_id) {
+void ForgetBind(uint64_t conn_id) {
     std::lock_guard<std::mutex> lk(g_bind_mu);
     g_conn_bind.erase(conn_id);
     GatewayConnRegistry::Instance().Forget(conn_id);
@@ -98,7 +93,7 @@ void ForgetBind(int conn_id) {
 
 class BindingReplySink : public ReplySink {
 public:
-    BindingReplySink(std::shared_ptr<ReplySink> inner, int conn_id, uint64_t player_id,
+    BindingReplySink(std::shared_ptr<ReplySink> inner, uint64_t conn_id, uint64_t player_id,
                      bool is_login_or_reconnect)
         : inner_(std::move(inner)),
           conn_id_(conn_id),
@@ -109,7 +104,7 @@ public:
         if (bindable_ && player_id_ != 0) {
             std::string buf = response_frame;
             std::string payload;
-            if (gameproto::TryDecodeOneFrame(&buf, &payload)) {
+            if (gameproto::DecodeOneFrame(&buf, &payload) == gameproto::FrameDecodeResult::Complete) {
                 game::GameResponse rsp;
                 if (rsp.ParseFromString(payload) && rsp.ok()) {
                     std::string token;
@@ -150,18 +145,10 @@ public:
 
 private:
     std::shared_ptr<ReplySink> inner_;
-    int conn_id_ = 0;
+    uint64_t conn_id_ = 0;
     uint64_t player_id_ = 0;
     bool bindable_ = false;
 };
-
-bool IsLoginOrReconnectPayload(const std::string &payload) {
-    game::GameRequest req;
-    if (!req.ParseFromString(payload))
-        return false;
-    return req.body_case() == game::GameRequest::kLogin ||
-           req.body_case() == game::GameRequest::kReconnect;
-}
 
 }  // namespace
 
@@ -250,51 +237,104 @@ void GameTcpGateway::OnMessage(const std::shared_ptr<TcpConnection> &conn) {
     if (!rb || rb->readablebytes() <= 0)
         return;
 
-    std::vector<std::string> frames;
-    {
-        std::lock_guard<std::mutex> lk(g_stream_mu);
-        std::string &buf = StreamBuf(conn->id());
-        buf.append(rb->RetrieveAllAsString());
+    // 流缓冲挂在连接上，仅由所属 EventLoop 访问，无需全局锁
+    std::string &buf = conn->proto_stream();
+    buf.append(rb->RetrieveAllAsString());
 
-        std::string frame;
-        while (gameproto::TryDecodeOneFrame(&buf, &frame))
+    std::vector<std::string> frames;
+    std::string frame;
+    for (;;) {
+        const auto dr = gameproto::DecodeOneFrame(&buf, &frame);
+        if (dr == gameproto::FrameDecodeResult::Complete) {
             frames.push_back(std::move(frame));
+            frame.clear();
+            continue;
+        }
+        if (dr == gameproto::FrameDecodeResult::Invalid) {
+            LOG_WARN << "GameTcpGateway invalid frame conn#" << conn->id()
+                     << " stream_bytes=" << buf.size();
+            buf.clear();
+            conn->HandleClose();
+            return;
+        }
+        break;  // Incomplete
+    }
+    // 恶意半包堆积：超过读缓冲上限则关连
+    if (buf.size() > conn->max_read_buf_bytes()) {
+        LOG_WARN << "GameTcpGateway stream overflow conn#" << conn->id();
+        buf.clear();
+        conn->HandleClose();
+        return;
     }
 
     for (auto &frame : frames) {
-        const uint64_t player_id = gameproto::ExtractPlayerIdFromRequestPayload(frame);
-        SessionHandle handle;
-        handle.player_id = player_id;
-        handle.connection_id = conn->id();
         auto tcp_sink = std::make_shared<TcpReplySink>(conn);
+        GatewayConnRegistry::Bind sticky;
+        const bool bound =
+            GatewayConnRegistry::Instance().FindByConnection(conn->id(), &sticky);
 
 #ifdef WEBSERVER_ENABLE_BRPC
-        // Login/Logout：Gateway 编排 Auth+Session+BindPlayer，不再转发 GameLogic Login RPC
-        if (gameproto::IsGatewayOwnedAuthPayload(frame)) {
-            std::string out;
-            game::GameRequest peek;
-            const bool is_login = peek.ParseFromString(frame) && peek.has_login();
-            bool ok = false;
-            gameproto::GatewayLoginRoute route;
-            if (is_login)
-                ok = gameproto::OrchestrateGatewayLogin(g_gateway_id, conn->id(), frame, &out,
-                                                        &route);
-            else
-                ok = gameproto::OrchestrateGatewayLogout(g_gateway_id, conn->id(), frame, &out);
-            if (!out.empty()) {
-                if (is_login && ok && route.player_id != 0) {
-                    RememberBind(conn->id(), route.player_id, route.fence_token, route.session_id,
-                                 route.generation, tcp_sink, &route);
-                }
+        // 登录前白名单；未绑定业务命令 fail-closed
+        if (!bound && !gameproto::IsPreAuthWhitelistPayload(frame) &&
+            !gameproto::IsGatewayOwnedAuthPayload(frame)) {
+            game::GameResponse rsp;
+            rsp.set_ok(false);
+            rsp.set_message("unauthenticated");
+            std::string body, out;
+            if (rsp.SerializeToString(&body) && gameproto::EncodeFrame(body, &out))
                 tcp_sink->SendFrame(out);
-            }
+            continue;
+        }
+
+        // Login / Logout / Reconnect：投递到 PlayerSerialQueue，避免阻塞 Reactor
+        if (gameproto::IsGatewayOwnedAuthPayload(frame)) {
+            game::GameRequest peek;
+            peek.ParseFromString(frame);
+            const uint64_t shard_key = bound                          ? sticky.player_id
+                                       : peek.has_login()              ? peek.login().player_id()
+                                       : peek.has_reconnect()          ? peek.reconnect().player_id()
+                                       : peek.has_logout()             ? peek.logout().player_id()
+                                                                       : conn->id();
+            const uint64_t conn_id = conn->id();
+            const std::string gw = g_gateway_id;
+            auto sink = tcp_sink;
+            std::string payload = frame;
+            PlayerSerialQueue::Instance().Post(shard_key, [gw, conn_id, payload, sink]() {
+                std::string out;
+                gameproto::GatewayLoginRoute route;
+                game::GameRequest req;
+                req.ParseFromString(payload);
+                bool ok = false;
+                if (req.has_login()) {
+                    ok = gameproto::OrchestrateGatewayLogin(gw, conn_id, payload, &out, &route);
+                    if (ok && route.player_id != 0)
+                        RememberBind(conn_id, route.player_id, route.fence_token, route.session_id,
+                                     route.generation, sink, &route);
+                } else if (req.has_register_()) {
+                    ok = gameproto::OrchestrateGatewayRegister(payload, &out);
+                } else if (req.has_reconnect()) {
+                    ok = gameproto::OrchestrateGatewayReconnect(gw, conn_id, payload, &out, &route);
+                    if (ok && route.player_id != 0)
+                        RememberBind(conn_id, route.player_id, route.fence_token, route.session_id,
+                                     route.generation, sink, &route);
+                } else {
+                    ok = gameproto::OrchestrateGatewayLogout(gw, conn_id, payload, &out);
+                    if (ok)
+                        ForgetBind(conn_id);
+                }
+                (void)ok;
+                if (!out.empty() && sink)
+                    sink->SendFrame(out);
+            });
             continue;
         }
 #endif
 
-        // 粘性路由：用 Session 返回的 gamelogic_instance_id，不信任客户端自报
-        GatewayConnRegistry::Bind sticky;
-        if (GatewayConnRegistry::Instance().FindByConnection(conn->id(), &sticky)) {
+        SessionHandle handle;
+        handle.connection_id = conn->id();
+        if (bound) {
+            // 覆盖客户端身份：不信任自报 player_id / route
+            handle.player_id = sticky.player_id;
             handle.session_id = sticky.session_id;
             handle.fence_token = sticky.token;
             handle.generation = sticky.generation;
@@ -302,13 +342,12 @@ void GameTcpGateway::OnMessage(const std::shared_ptr<TcpConnection> &conn) {
             handle.map_instance_id = sticky.map_instance_id;
             handle.owner_epoch = sticky.map_owner_epoch;
             handle.route_version = sticky.route_version;
+        } else {
+            // 仅 Register 等白名单可到此（尚未绑定）
+            handle.player_id = gameproto::ExtractPlayerIdFromRequestPayload(frame);
         }
 
-        const bool bindable = IsLoginOrReconnectPayload(frame);
-        std::shared_ptr<ReplySink> sink = tcp_sink;
-        if (bindable) {
-            sink = std::make_shared<BindingReplySink>(tcp_sink, conn->id(), player_id, true);
-        }
-        GameRequestTransport::Get().PostPlayerRequest(handle, std::move(frame), std::move(sink));
+        GameRequestTransport::Get().PostPlayerRequest(handle, std::move(frame),
+                                                     std::move(tcp_sink));
     }
 }

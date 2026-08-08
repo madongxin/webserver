@@ -5,6 +5,7 @@
 #include "BrpcSslUtil.h"
 #include "GameMeshPaths.h"
 #include "Logging.h"
+#include "PlacementStore.h"
 #include "SessionServiceImpl.h"
 #include "SessionStore.h"
 
@@ -90,15 +91,32 @@ bool SessionBrpcServer::StartFromConfig() {
     std::vector<std::string> logic_ids;
     if (!ParseSessionConfig(SessionCnf(), &addr, &idle, &logic_ids))
         LOG_WARN << "SessionBrpcServer: default listen, cannot parse " << SessionCnf();
-    if (!logic_ids.empty())
+    if (!logic_ids.empty()) {
+        PlacementStore::Instance().SetLogicOwners(logic_ids);
         SessionStore::Instance().SetLogicInstanceIds(std::move(logic_ids));
+    }
     AuthTokenStore::Instance().InitFromConfig();
+    if (SessionStore::Instance().Available())
+        PlacementStore::Instance().InitFromSessionPrefix(SessionStore::Instance().key_prefix());
     return Start(addr, idle);
 }
 
 bool SessionBrpcServer::Start(const std::string &listen_addr, int idle_timeout_sec) {
     if (running_)
         return true;
+    // 端口覆盖启动时也加载 logic owners / Placement
+    {
+        std::vector<std::string> logic_ids;
+        std::string addr_unused;
+        int idle_unused = 30;
+        if (ParseSessionConfig(SessionCnf(), &addr_unused, &idle_unused, &logic_ids) &&
+            !logic_ids.empty()) {
+            PlacementStore::Instance().SetLogicOwners(logic_ids);
+            SessionStore::Instance().SetLogicInstanceIds(logic_ids);
+        }
+        if (SessionStore::Instance().Available())
+            PlacementStore::Instance().InitFromSessionPrefix(SessionStore::Instance().key_prefix());
+    }
     server_.reset(new brpc::Server());
     service_.reset(new SessionServiceImpl());
     auth_service_.reset(new AuthServiceImpl());

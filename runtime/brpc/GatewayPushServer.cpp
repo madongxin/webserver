@@ -3,6 +3,7 @@
 #include "GatewayConnRegistry.h"
 #include "Logging.h"
 #include "ProtoFraming.h"
+#include "PushReplayCache.h"
 
 #include <brpc/controller.h>
 #include <brpc/server.h>
@@ -19,6 +20,13 @@ void GatewayPushServiceImpl::PushBatch(::google::protobuf::RpcController *contro
         response->set_message("null request");
         return;
     }
+    const std::string &local_gw = GatewayPushServer::Instance().gateway_instance_id();
+    if (!local_gw.empty() && !request->gateway_instance_id().empty() &&
+        request->gateway_instance_id() != local_gw) {
+        response->set_ok(false);
+        response->set_message("gateway_instance_id mismatch");
+        return;
+    }
     uint32_t accepted = 0;
     uint32_t rejected = 0;
     for (const auto &m : request->messages()) {
@@ -31,13 +39,16 @@ void GatewayPushServiceImpl::PushBatch(::google::protobuf::RpcController *contro
             ++rejected;
             continue;
         }
-        // payload：若已是完整帧则直送；否则当 GameResponse body 封装
+        if (!local_gw.empty() && !bind.gateway_instance_id.empty() &&
+            bind.gateway_instance_id != local_gw) {
+            ++rejected;
+            continue;
+        }
         std::string frame = m.payload();
         if (frame.size() < 4) {
             ++rejected;
             continue;
         }
-        // 简单判定：若前 4 字节像长度头且匹配剩余长度，视为已成帧
         const uint32_t be = (static_cast<uint8_t>(frame[0]) << 24) |
                             (static_cast<uint8_t>(frame[1]) << 16) |
                             (static_cast<uint8_t>(frame[2]) << 8) |
@@ -53,6 +64,14 @@ void GatewayPushServiceImpl::PushBatch(::google::protobuf::RpcController *contro
         if (!GatewayConnRegistry::Instance().SendBySession(m.session_id(), frame)) {
             ++rejected;
             continue;
+        }
+        if (m.reliable() && m.player_id() != 0 && m.server_seq() != 0) {
+            PushReplayEntry e;
+            e.server_seq = m.server_seq();
+            e.message_type = m.message_type();
+            e.payload = m.payload();
+            e.reliable = true;
+            PushReplayCache::Instance().Store(m.player_id(), e);
         }
         ++accepted;
     }
@@ -86,7 +105,8 @@ bool GatewayPushServer::Start(const std::string &listen_addr, int idle_timeout_s
     }
     listen_addr_ = listen_addr;
     running_ = true;
-    LOG_INFO << "GatewayPushServer listening on " << listen_addr_;
+    LOG_INFO << "GatewayPushServer listening on " << listen_addr_
+             << " gw=" << gateway_instance_id_;
     return true;
 }
 

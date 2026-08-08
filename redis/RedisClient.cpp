@@ -4,6 +4,7 @@
 
 #include <arpa/inet.h>
 #include <cstring>
+#include <string>
 #include <vector>
 
 RedisClient::~RedisClient() {
@@ -138,6 +139,71 @@ bool RedisClient::HGetAll(const std::string &key, std::map<std::string, std::str
         if (k->type == REDIS_REPLY_STRING && v->type == REDIS_REPLY_STRING)
             (*fields)[std::string(k->str, k->len)] = std::string(v->str, v->len);
     }
+    freeReplyObject(r);
+    return true;
+}
+
+namespace {
+
+void AppendReplyFlat(redisReply *r, std::vector<std::string> *out) {
+    if (!r || !out)
+        return;
+    switch (r->type) {
+    case REDIS_REPLY_STRING:
+    case REDIS_REPLY_STATUS:
+        if (r->str)
+            out->emplace_back(r->str, r->len);
+        else
+            out->emplace_back();
+        break;
+    case REDIS_REPLY_INTEGER:
+        out->push_back(std::to_string(r->integer));
+        break;
+    case REDIS_REPLY_NIL:
+        out->emplace_back();
+        break;
+    case REDIS_REPLY_ARRAY:
+        for (size_t i = 0; i < r->elements; ++i)
+            AppendReplyFlat(r->element[i], out);
+        break;
+    default:
+        break;
+    }
+}
+
+}  // namespace
+
+bool RedisClient::Eval(const std::string &script, const std::vector<std::string> &keys,
+                       const std::vector<std::string> &args, std::vector<std::string> *out) {
+    if (!ctx_ || !out || script.empty())
+        return false;
+    out->clear();
+    std::vector<const char *> argv;
+    std::vector<size_t> argvlen;
+    argv.push_back("EVAL");
+    argvlen.push_back(4);
+    argv.push_back(script.c_str());
+    argvlen.push_back(script.size());
+    const std::string nkeys = std::to_string(keys.size());
+    argv.push_back(nkeys.c_str());
+    argvlen.push_back(nkeys.size());
+    for (const auto &k : keys) {
+        argv.push_back(k.c_str());
+        argvlen.push_back(k.size());
+    }
+    for (const auto &a : args) {
+        argv.push_back(a.c_str());
+        argvlen.push_back(a.size());
+    }
+    redisReply *r = static_cast<redisReply *>(redisCommandArgv(
+        static_cast<redisContext *>(ctx_), static_cast<int>(argv.size()), argv.data(), argvlen.data()));
+    if (!r)
+        return false;
+    if (r->type == REDIS_REPLY_ERROR) {
+        freeReplyObject(r);
+        return false;
+    }
+    AppendReplyFlat(r, out);
     freeReplyObject(r);
     return true;
 }

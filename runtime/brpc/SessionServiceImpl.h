@@ -22,6 +22,30 @@ public:
     void Kick(::google::protobuf::RpcController *controller, const ::sess::KickRequest *request,
               ::sess::KickResponse *response, ::google::protobuf::Closure *done) override;
 
+    void ResolveOrCreateMap(::google::protobuf::RpcController *controller,
+                            const ::sess::ResolveOrCreateMapRequest *request,
+                            ::sess::ResolveOrCreateMapResponse *response,
+                            ::google::protobuf::Closure *done) override;
+    void GetPlacement(::google::protobuf::RpcController *controller,
+                      const ::sess::GetPlacementRequest *request,
+                      ::sess::GetPlacementResponse *response,
+                      ::google::protobuf::Closure *done) override;
+    void MigrateMap(::google::protobuf::RpcController *controller,
+                    const ::sess::MigrateMapRequest *request, ::sess::MigrateMapResponse *response,
+                    ::google::protobuf::Closure *done) override;
+    void MarkRecovering(::google::protobuf::RpcController *controller,
+                        const ::sess::MarkRecoveringRequest *request,
+                        ::sess::MarkRecoveringResponse *response,
+                        ::google::protobuf::Closure *done) override;
+    void HeartbeatOwner(::google::protobuf::RpcController *controller,
+                        const ::sess::HeartbeatOwnerRequest *request,
+                        ::sess::HeartbeatOwnerResponse *response,
+                        ::google::protobuf::Closure *done) override;
+    void UpdatePlayerRoute(::google::protobuf::RpcController *controller,
+                           const ::sess::UpdatePlayerRouteRequest *request,
+                           ::sess::UpdatePlayerRouteResponse *response,
+                           ::google::protobuf::Closure *done) override;
+
     void Login(::google::protobuf::RpcController *controller, const ::game::LoginReq *request,
                ::game::LoginRsp *response, ::google::protobuf::Closure *done) override;
     void Reconnect(::google::protobuf::RpcController *controller,

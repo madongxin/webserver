@@ -489,6 +489,20 @@ class LoginReq : public ::google::protobuf::Message /* @@protoc_insertion_point(
   ::std::string* release_device_id();
   void set_allocated_device_id(::std::string* device_id);
 
+  // string credential = 6;
+  void clear_credential();
+  static const int kCredentialFieldNumber = 6;
+  const ::std::string& credential() const;
+  void set_credential(const ::std::string& value);
+  #if LANG_CXX11
+  void set_credential(::std::string&& value);
+  #endif
+  void set_credential(const char* value);
+  void set_credential(const char* value, size_t size);
+  ::std::string* mutable_credential();
+  ::std::string* release_credential();
+  void set_allocated_credential(::std::string* credential);
+
   // uint64 player_id = 1;
   void clear_player_id();
   static const int kPlayerIdFieldNumber = 1;
@@ -518,6 +532,7 @@ class LoginReq : public ::google::protobuf::Message /* @@protoc_insertion_point(
 
   ::google::protobuf::internal::InternalMetadataWithArena _internal_metadata_;
   ::google::protobuf::internal::ArenaStringPtr device_id_;
+  ::google::protobuf::internal::ArenaStringPtr credential_;
   ::google::protobuf::uint64 player_id_;
   ::google::protobuf::uint32 server_id_;
   ::google::protobuf::uint32 ttl_sec_;
@@ -1816,12 +1831,27 @@ class RegisterReq : public ::google::protobuf::Message /* @@protoc_insertion_poi
   ::std::string* release_display_name();
   void set_allocated_display_name(::std::string* display_name);
 
+  // string password = 3;
+  void clear_password();
+  static const int kPasswordFieldNumber = 3;
+  const ::std::string& password() const;
+  void set_password(const ::std::string& value);
+  #if LANG_CXX11
+  void set_password(::std::string&& value);
+  #endif
+  void set_password(const char* value);
+  void set_password(const char* value, size_t size);
+  ::std::string* mutable_password();
+  ::std::string* release_password();
+  void set_allocated_password(::std::string* password);
+
   // @@protoc_insertion_point(class_scope:game.RegisterReq)
  private:
 
   ::google::protobuf::internal::InternalMetadataWithArena _internal_metadata_;
   ::google::protobuf::internal::ArenaStringPtr device_id_;
   ::google::protobuf::internal::ArenaStringPtr display_name_;
+  ::google::protobuf::internal::ArenaStringPtr password_;
   mutable int _cached_size_;
   friend struct ::protobuf_game_2eproto::TableStruct;
   friend void ::protobuf_game_2eproto::InitDefaultsRegisterReqImpl();
@@ -9048,6 +9078,59 @@ inline void LoginReq::set_kick_other_device(bool value) {
   // @@protoc_insertion_point(field_set:game.LoginReq.kick_other_device)
 }
 
+// string credential = 6;
+inline void LoginReq::clear_credential() {
+  credential_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline const ::std::string& LoginReq::credential() const {
+  // @@protoc_insertion_point(field_get:game.LoginReq.credential)
+  return credential_.GetNoArena();
+}
+inline void LoginReq::set_credential(const ::std::string& value) {
+  
+  credential_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), value);
+  // @@protoc_insertion_point(field_set:game.LoginReq.credential)
+}
+#if LANG_CXX11
+inline void LoginReq::set_credential(::std::string&& value) {
+  
+  credential_.SetNoArena(
+    &::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::move(value));
+  // @@protoc_insertion_point(field_set_rvalue:game.LoginReq.credential)
+}
+#endif
+inline void LoginReq::set_credential(const char* value) {
+  GOOGLE_DCHECK(value != NULL);
+  
+  credential_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::string(value));
+  // @@protoc_insertion_point(field_set_char:game.LoginReq.credential)
+}
+inline void LoginReq::set_credential(const char* value, size_t size) {
+  
+  credential_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(),
+      ::std::string(reinterpret_cast<const char*>(value), size));
+  // @@protoc_insertion_point(field_set_pointer:game.LoginReq.credential)
+}
+inline ::std::string* LoginReq::mutable_credential() {
+  
+  // @@protoc_insertion_point(field_mutable:game.LoginReq.credential)
+  return credential_.MutableNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline ::std::string* LoginReq::release_credential() {
+  // @@protoc_insertion_point(field_release:game.LoginReq.credential)
+  
+  return credential_.ReleaseNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline void LoginReq::set_allocated_credential(::std::string* credential) {
+  if (credential != NULL) {
+    
+  } else {
+    
+  }
+  credential_.SetAllocatedNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), credential);
+  // @@protoc_insertion_point(field_set_allocated:game.LoginReq.credential)
+}
+
 // -------------------------------------------------------------------
 
 // LoginRsp
@@ -10214,6 +10297,59 @@ inline void RegisterReq::set_allocated_display_name(::std::string* display_name)
   }
   display_name_.SetAllocatedNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), display_name);
   // @@protoc_insertion_point(field_set_allocated:game.RegisterReq.display_name)
+}
+
+// string password = 3;
+inline void RegisterReq::clear_password() {
+  password_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline const ::std::string& RegisterReq::password() const {
+  // @@protoc_insertion_point(field_get:game.RegisterReq.password)
+  return password_.GetNoArena();
+}
+inline void RegisterReq::set_password(const ::std::string& value) {
+  
+  password_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), value);
+  // @@protoc_insertion_point(field_set:game.RegisterReq.password)
+}
+#if LANG_CXX11
+inline void RegisterReq::set_password(::std::string&& value) {
+  
+  password_.SetNoArena(
+    &::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::move(value));
+  // @@protoc_insertion_point(field_set_rvalue:game.RegisterReq.password)
+}
+#endif
+inline void RegisterReq::set_password(const char* value) {
+  GOOGLE_DCHECK(value != NULL);
+  
+  password_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::string(value));
+  // @@protoc_insertion_point(field_set_char:game.RegisterReq.password)
+}
+inline void RegisterReq::set_password(const char* value, size_t size) {
+  
+  password_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(),
+      ::std::string(reinterpret_cast<const char*>(value), size));
+  // @@protoc_insertion_point(field_set_pointer:game.RegisterReq.password)
+}
+inline ::std::string* RegisterReq::mutable_password() {
+  
+  // @@protoc_insertion_point(field_mutable:game.RegisterReq.password)
+  return password_.MutableNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline ::std::string* RegisterReq::release_password() {
+  // @@protoc_insertion_point(field_release:game.RegisterReq.password)
+  
+  return password_.ReleaseNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline void RegisterReq::set_allocated_password(::std::string* password) {
+  if (password != NULL) {
+    
+  } else {
+    
+  }
+  password_.SetAllocatedNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), password);
+  // @@protoc_insertion_point(field_set_allocated:game.RegisterReq.password)
 }
 
 // -------------------------------------------------------------------

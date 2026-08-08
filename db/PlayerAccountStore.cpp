@@ -49,11 +49,20 @@ bool PlayerAccountStore::EnsureTable() {
         "player_id BIGINT AUTO_INCREMENT PRIMARY KEY,"
         "device_id VARCHAR(128) NOT NULL DEFAULT '',"
         "display_name VARCHAR(64) NOT NULL DEFAULT '',"
+        "password_hash VARCHAR(128) NOT NULL DEFAULT '',"
+        "password_salt VARCHAR(64) NOT NULL DEFAULT '',"
+        "password_iters INT NOT NULL DEFAULT 0,"
+        "banned TINYINT NOT NULL DEFAULT 0,"
         "created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,"
         "KEY idx_player_account_device (device_id)"
         ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4";
     if (!conn->update(sql))
         return false;
+    // 兼容旧表：尝试加列（已存在则忽略失败）
+    conn->update("ALTER TABLE player_account ADD COLUMN password_hash VARCHAR(128) NOT NULL DEFAULT ''");
+    conn->update("ALTER TABLE player_account ADD COLUMN password_salt VARCHAR(64) NOT NULL DEFAULT ''");
+    conn->update("ALTER TABLE player_account ADD COLUMN password_iters INT NOT NULL DEFAULT 0");
+    conn->update("ALTER TABLE player_account ADD COLUMN banned TINYINT NOT NULL DEFAULT 0");
     table_ready_ = true;
     LOG_INFO << "PlayerAccountStore: table player_account ready";
     return true;
@@ -61,6 +70,14 @@ bool PlayerAccountStore::EnsureTable() {
 
 bool PlayerAccountStore::Register(const std::string &device_id, const std::string &display_name,
                                   uint64_t *player_id, std::string *err) {
+    return RegisterWithPassword(device_id, display_name, "", "", 0, player_id, err);
+}
+
+bool PlayerAccountStore::RegisterWithPassword(const std::string &device_id,
+                                              const std::string &display_name,
+                                              const std::string &password_hash,
+                                              const std::string &password_salt, int password_iters,
+                                              uint64_t *player_id, std::string *err) {
     if (!player_id) {
         if (err)
             *err = "bad arg";
@@ -81,8 +98,10 @@ bool PlayerAccountStore::Register(const std::string &device_id, const std::strin
     if (name.size() > 64)
         name.resize(64);
     std::ostringstream sql;
-    sql << "INSERT INTO player_account (device_id,display_name) VALUES ('" << SqlEscape(device_id)
-        << "','" << SqlEscape(name) << "')";
+    sql << "INSERT INTO player_account (device_id,display_name,password_hash,password_salt,password_iters)"
+           " VALUES ('"
+        << SqlEscape(device_id) << "','" << SqlEscape(name) << "','" << SqlEscape(password_hash)
+        << "','" << SqlEscape(password_salt) << "'," << password_iters << ")";
     if (!conn->update(sql.str())) {
         if (err)
             *err = "insert failed";
@@ -112,18 +131,39 @@ bool PlayerAccountStore::Register(const std::string &device_id, const std::strin
 }
 
 bool PlayerAccountStore::Exists(uint64_t player_id) {
-    if (player_id == 0 || !EnsureTable())
+    AccountAuthRow row;
+    return LoadAuth(player_id, &row) && row.exists;
+}
+
+bool PlayerAccountStore::LoadAuth(uint64_t player_id, AccountAuthRow *out) {
+    if (!out || player_id == 0 || !EnsureTable())
         return false;
+    *out = AccountAuthRow{};
     auto conn = ConnectionPool::getconnectionPool()->getConnection();
     if (!conn)
         return false;
     std::ostringstream sql;
-    sql << "SELECT 1 FROM player_account WHERE player_id=" << player_id << " LIMIT 1";
+    sql << "SELECT player_id,IFNULL(password_hash,''),IFNULL(password_salt,''),"
+           "IFNULL(password_iters,0),IFNULL(banned,0) FROM player_account WHERE player_id="
+        << player_id << " LIMIT 1";
     MYSQL_RES *res = conn->query(sql.str());
     if (!res)
         return false;
     MYSQL_ROW row = mysql_fetch_row(res);
-    const bool ok = row != nullptr;
+    if (!row) {
+        mysql_free_result(res);
+        out->exists = false;
+        return true;
+    }
+    out->exists = true;
+    out->player_id = static_cast<uint64_t>(std::strtoull(row[0] ? row[0] : "0", nullptr, 10));
+    out->account_id = out->player_id;
+    out->password_hash = row[1] ? row[1] : "";
+    out->password_salt = row[2] ? row[2] : "";
+    out->password_iters = row[3] ? std::atoi(row[3]) : 0;
+    out->banned = row[4] && std::atoi(row[4]) != 0;
+    out->has_password = !out->password_hash.empty() && !out->password_salt.empty() &&
+                        out->password_iters > 0;
     mysql_free_result(res);
-    return ok;
+    return true;
 }

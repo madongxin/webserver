@@ -50,6 +50,16 @@ class LookupAccountRspDefaultTypeInternal {
   ::google::protobuf::internal::ExplicitlyConstructed<LookupAccountRsp>
       _instance;
 } _LookupAccountRsp_default_instance_;
+class RegisterAccountReqDefaultTypeInternal {
+ public:
+  ::google::protobuf::internal::ExplicitlyConstructed<RegisterAccountReq>
+      _instance;
+} _RegisterAccountReq_default_instance_;
+class RegisterAccountRspDefaultTypeInternal {
+ public:
+  ::google::protobuf::internal::ExplicitlyConstructed<RegisterAccountRsp>
+      _instance;
+} _RegisterAccountRsp_default_instance_;
 }  // namespace gdb
 namespace protobuf_gamedb_2eproto {
 void InitDefaultsGrantedItemImpl() {
@@ -180,7 +190,49 @@ void InitDefaultsLookupAccountRsp() {
   ::google::protobuf::GoogleOnceInit(&once, &InitDefaultsLookupAccountRspImpl);
 }
 
-::google::protobuf::Metadata file_level_metadata[6];
+void InitDefaultsRegisterAccountReqImpl() {
+  GOOGLE_PROTOBUF_VERIFY_VERSION;
+
+#ifdef GOOGLE_PROTOBUF_ENFORCE_UNIQUENESS
+  ::google::protobuf::internal::InitProtobufDefaultsForceUnique();
+#else
+  ::google::protobuf::internal::InitProtobufDefaults();
+#endif  // GOOGLE_PROTOBUF_ENFORCE_UNIQUENESS
+  {
+    void* ptr = &::gdb::_RegisterAccountReq_default_instance_;
+    new (ptr) ::gdb::RegisterAccountReq();
+    ::google::protobuf::internal::OnShutdownDestroyMessage(ptr);
+  }
+  ::gdb::RegisterAccountReq::InitAsDefaultInstance();
+}
+
+void InitDefaultsRegisterAccountReq() {
+  static GOOGLE_PROTOBUF_DECLARE_ONCE(once);
+  ::google::protobuf::GoogleOnceInit(&once, &InitDefaultsRegisterAccountReqImpl);
+}
+
+void InitDefaultsRegisterAccountRspImpl() {
+  GOOGLE_PROTOBUF_VERIFY_VERSION;
+
+#ifdef GOOGLE_PROTOBUF_ENFORCE_UNIQUENESS
+  ::google::protobuf::internal::InitProtobufDefaultsForceUnique();
+#else
+  ::google::protobuf::internal::InitProtobufDefaults();
+#endif  // GOOGLE_PROTOBUF_ENFORCE_UNIQUENESS
+  {
+    void* ptr = &::gdb::_RegisterAccountRsp_default_instance_;
+    new (ptr) ::gdb::RegisterAccountRsp();
+    ::google::protobuf::internal::OnShutdownDestroyMessage(ptr);
+  }
+  ::gdb::RegisterAccountRsp::InitAsDefaultInstance();
+}
+
+void InitDefaultsRegisterAccountRsp() {
+  static GOOGLE_PROTOBUF_DECLARE_ONCE(once);
+  ::google::protobuf::GoogleOnceInit(&once, &InitDefaultsRegisterAccountRspImpl);
+}
+
+::google::protobuf::Metadata file_level_metadata[8];
 const ::google::protobuf::ServiceDescriptor* file_level_service_descriptors[1];
 
 const ::google::protobuf::uint32 TableStruct::offsets[] GOOGLE_PROTOBUF_ATTRIBUTE_SECTION_VARIABLE(protodesc_cold) = {
@@ -241,6 +293,31 @@ const ::google::protobuf::uint32 TableStruct::offsets[] GOOGLE_PROTOBUF_ATTRIBUT
   GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::gdb::LookupAccountRsp, banned_),
   GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::gdb::LookupAccountRsp, account_id_),
   GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::gdb::LookupAccountRsp, player_id_),
+  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::gdb::LookupAccountRsp, password_hash_),
+  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::gdb::LookupAccountRsp, password_salt_),
+  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::gdb::LookupAccountRsp, password_iters_),
+  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::gdb::LookupAccountRsp, has_password_),
+  ~0u,  // no _has_bits_
+  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::gdb::RegisterAccountReq, _internal_metadata_),
+  ~0u,  // no _extensions_
+  ~0u,  // no _oneof_case_
+  ~0u,  // no _weak_field_map_
+  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::gdb::RegisterAccountReq, device_id_),
+  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::gdb::RegisterAccountReq, display_name_),
+  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::gdb::RegisterAccountReq, password_hash_),
+  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::gdb::RegisterAccountReq, password_salt_),
+  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::gdb::RegisterAccountReq, password_iters_),
+  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::gdb::RegisterAccountReq, idempotency_key_),
+  ~0u,  // no _has_bits_
+  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::gdb::RegisterAccountRsp, _internal_metadata_),
+  ~0u,  // no _extensions_
+  ~0u,  // no _oneof_case_
+  ~0u,  // no _weak_field_map_
+  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::gdb::RegisterAccountRsp, ok_),
+  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::gdb::RegisterAccountRsp, message_),
+  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::gdb::RegisterAccountRsp, error_code_),
+  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::gdb::RegisterAccountRsp, account_id_),
+  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::gdb::RegisterAccountRsp, player_id_),
 };
 static const ::google::protobuf::internal::MigrationSchema schemas[] GOOGLE_PROTOBUF_ATTRIBUTE_SECTION_VARIABLE(protodesc_cold) = {
   { 0, -1, sizeof(::gdb::GrantedItem)},
@@ -249,6 +326,8 @@ static const ::google::protobuf::internal::MigrationSchema schemas[] GOOGLE_PROT
   { 25, -1, sizeof(::gdb::ClaimMailRsp)},
   { 38, -1, sizeof(::gdb::LookupAccountReq)},
   { 45, -1, sizeof(::gdb::LookupAccountRsp)},
+  { 61, -1, sizeof(::gdb::RegisterAccountReq)},
+  { 72, -1, sizeof(::gdb::RegisterAccountRsp)},
 };
 
 static ::google::protobuf::Message const * const file_default_instances[] = {
@@ -258,6 +337,8 @@ static ::google::protobuf::Message const * const file_default_instances[] = {
   reinterpret_cast<const ::google::protobuf::Message*>(&::gdb::_ClaimMailRsp_default_instance_),
   reinterpret_cast<const ::google::protobuf::Message*>(&::gdb::_LookupAccountReq_default_instance_),
   reinterpret_cast<const ::google::protobuf::Message*>(&::gdb::_LookupAccountRsp_default_instance_),
+  reinterpret_cast<const ::google::protobuf::Message*>(&::gdb::_RegisterAccountReq_default_instance_),
+  reinterpret_cast<const ::google::protobuf::Message*>(&::gdb::_RegisterAccountRsp_default_instance_),
 };
 
 void protobuf_AssignDescriptors() {
@@ -276,7 +357,7 @@ void protobuf_AssignDescriptorsOnce() {
 void protobuf_RegisterTypes(const ::std::string&) GOOGLE_PROTOBUF_ATTRIBUTE_COLD;
 void protobuf_RegisterTypes(const ::std::string&) {
   protobuf_AssignDescriptorsOnce();
-  ::google::protobuf::internal::RegisterAllTypes(file_level_metadata, 6);
+  ::google::protobuf::internal::RegisterAllTypes(file_level_metadata, 8);
 }
 
 void AddDescriptorsImpl() {
@@ -295,17 +376,28 @@ void AddDescriptorsImpl() {
       "hment_state\030\006 \001(\t\022\030\n\020mail_row_version\030\007 "
       "\001(\003\022 \n\006grants\030\010 \003(\0132\020.gdb.GrantedItem\"8\n"
       "\020LookupAccountReq\022\021\n\tplayer_id\030\001 \001(\004\022\021\n\t"
-      "device_id\030\002 \001(\t\"\212\001\n\020LookupAccountRsp\022\n\n\002"
+      "device_id\030\002 \001(\t\"\346\001\n\020LookupAccountRsp\022\n\n\002"
       "ok\030\001 \001(\010\022\017\n\007message\030\002 \001(\t\022\022\n\nerror_code\030"
       "\003 \001(\t\022\016\n\006exists\030\004 \001(\010\022\016\n\006banned\030\005 \001(\010\022\022\n"
-      "\naccount_id\030\006 \001(\004\022\021\n\tplayer_id\030\007 \001(\0042\214\001\n"
-      "\rGameDbService\022<\n\024ClaimMailAttachments\022\021"
-      ".gdb.ClaimMailReq\032\021.gdb.ClaimMailRsp\022=\n\r"
-      "LookupAccount\022\025.gdb.LookupAccountReq\032\025.g"
-      "db.LookupAccountRspB\003\200\001\001b\006proto3"
+      "\naccount_id\030\006 \001(\004\022\021\n\tplayer_id\030\007 \001(\004\022\025\n\r"
+      "password_hash\030\010 \001(\t\022\025\n\rpassword_salt\030\t \001"
+      "(\t\022\026\n\016password_iters\030\n \001(\005\022\024\n\014has_passwo"
+      "rd\030\013 \001(\010\"\234\001\n\022RegisterAccountReq\022\021\n\tdevic"
+      "e_id\030\001 \001(\t\022\024\n\014display_name\030\002 \001(\t\022\025\n\rpass"
+      "word_hash\030\003 \001(\t\022\025\n\rpassword_salt\030\004 \001(\t\022\026"
+      "\n\016password_iters\030\005 \001(\005\022\027\n\017idempotency_ke"
+      "y\030\006 \001(\t\"l\n\022RegisterAccountRsp\022\n\n\002ok\030\001 \001("
+      "\010\022\017\n\007message\030\002 \001(\t\022\022\n\nerror_code\030\003 \001(\t\022\022"
+      "\n\naccount_id\030\004 \001(\004\022\021\n\tplayer_id\030\005 \001(\0042\321\001"
+      "\n\rGameDbService\022<\n\024ClaimMailAttachments\022"
+      "\021.gdb.ClaimMailReq\032\021.gdb.ClaimMailRsp\022=\n"
+      "\rLookupAccount\022\025.gdb.LookupAccountReq\032\025."
+      "gdb.LookupAccountRsp\022C\n\017RegisterAccount\022"
+      "\027.gdb.RegisterAccountReq\032\027.gdb.RegisterA"
+      "ccountRspB\003\200\001\001b\006proto3"
   };
   ::google::protobuf::DescriptorPool::InternalAddGeneratedFile(
-      descriptor, 832);
+      descriptor, 1262);
   ::google::protobuf::MessageFactory::InternalRegisterGeneratedFile(
     "gamedb.proto", &protobuf_RegisterTypes);
 }
@@ -2221,6 +2313,10 @@ const int LookupAccountRsp::kExistsFieldNumber;
 const int LookupAccountRsp::kBannedFieldNumber;
 const int LookupAccountRsp::kAccountIdFieldNumber;
 const int LookupAccountRsp::kPlayerIdFieldNumber;
+const int LookupAccountRsp::kPasswordHashFieldNumber;
+const int LookupAccountRsp::kPasswordSaltFieldNumber;
+const int LookupAccountRsp::kPasswordItersFieldNumber;
+const int LookupAccountRsp::kHasPasswordFieldNumber;
 #endif  // !defined(_MSC_VER) || _MSC_VER >= 1900
 
 LookupAccountRsp::LookupAccountRsp()
@@ -2244,18 +2340,28 @@ LookupAccountRsp::LookupAccountRsp(const LookupAccountRsp& from)
   if (from.error_code().size() > 0) {
     error_code_.AssignWithDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), from.error_code_);
   }
+  password_hash_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  if (from.password_hash().size() > 0) {
+    password_hash_.AssignWithDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), from.password_hash_);
+  }
+  password_salt_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  if (from.password_salt().size() > 0) {
+    password_salt_.AssignWithDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), from.password_salt_);
+  }
   ::memcpy(&account_id_, &from.account_id_,
-    static_cast<size_t>(reinterpret_cast<char*>(&banned_) -
-    reinterpret_cast<char*>(&account_id_)) + sizeof(banned_));
+    static_cast<size_t>(reinterpret_cast<char*>(&player_id_) -
+    reinterpret_cast<char*>(&account_id_)) + sizeof(player_id_));
   // @@protoc_insertion_point(copy_constructor:gdb.LookupAccountRsp)
 }
 
 void LookupAccountRsp::SharedCtor() {
   message_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
   error_code_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  password_hash_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  password_salt_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
   ::memset(&account_id_, 0, static_cast<size_t>(
-      reinterpret_cast<char*>(&banned_) -
-      reinterpret_cast<char*>(&account_id_)) + sizeof(banned_));
+      reinterpret_cast<char*>(&player_id_) -
+      reinterpret_cast<char*>(&account_id_)) + sizeof(player_id_));
   _cached_size_ = 0;
 }
 
@@ -2267,6 +2373,8 @@ LookupAccountRsp::~LookupAccountRsp() {
 void LookupAccountRsp::SharedDtor() {
   message_.DestroyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
   error_code_.DestroyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  password_hash_.DestroyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  password_salt_.DestroyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
 }
 
 void LookupAccountRsp::SetCachedSize(int size) const {
@@ -2300,9 +2408,11 @@ void LookupAccountRsp::Clear() {
 
   message_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
   error_code_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  password_hash_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  password_salt_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
   ::memset(&account_id_, 0, static_cast<size_t>(
-      reinterpret_cast<char*>(&banned_) -
-      reinterpret_cast<char*>(&account_id_)) + sizeof(banned_));
+      reinterpret_cast<char*>(&player_id_) -
+      reinterpret_cast<char*>(&account_id_)) + sizeof(player_id_));
   _internal_metadata_.Clear();
 }
 
@@ -2418,6 +2528,66 @@ bool LookupAccountRsp::MergePartialFromCodedStream(
         break;
       }
 
+      // string password_hash = 8;
+      case 8: {
+        if (static_cast< ::google::protobuf::uint8>(tag) ==
+            static_cast< ::google::protobuf::uint8>(66u /* 66 & 0xFF */)) {
+          DO_(::google::protobuf::internal::WireFormatLite::ReadString(
+                input, this->mutable_password_hash()));
+          DO_(::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+            this->password_hash().data(), static_cast<int>(this->password_hash().length()),
+            ::google::protobuf::internal::WireFormatLite::PARSE,
+            "gdb.LookupAccountRsp.password_hash"));
+        } else {
+          goto handle_unusual;
+        }
+        break;
+      }
+
+      // string password_salt = 9;
+      case 9: {
+        if (static_cast< ::google::protobuf::uint8>(tag) ==
+            static_cast< ::google::protobuf::uint8>(74u /* 74 & 0xFF */)) {
+          DO_(::google::protobuf::internal::WireFormatLite::ReadString(
+                input, this->mutable_password_salt()));
+          DO_(::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+            this->password_salt().data(), static_cast<int>(this->password_salt().length()),
+            ::google::protobuf::internal::WireFormatLite::PARSE,
+            "gdb.LookupAccountRsp.password_salt"));
+        } else {
+          goto handle_unusual;
+        }
+        break;
+      }
+
+      // int32 password_iters = 10;
+      case 10: {
+        if (static_cast< ::google::protobuf::uint8>(tag) ==
+            static_cast< ::google::protobuf::uint8>(80u /* 80 & 0xFF */)) {
+
+          DO_((::google::protobuf::internal::WireFormatLite::ReadPrimitive<
+                   ::google::protobuf::int32, ::google::protobuf::internal::WireFormatLite::TYPE_INT32>(
+                 input, &password_iters_)));
+        } else {
+          goto handle_unusual;
+        }
+        break;
+      }
+
+      // bool has_password = 11;
+      case 11: {
+        if (static_cast< ::google::protobuf::uint8>(tag) ==
+            static_cast< ::google::protobuf::uint8>(88u /* 88 & 0xFF */)) {
+
+          DO_((::google::protobuf::internal::WireFormatLite::ReadPrimitive<
+                   bool, ::google::protobuf::internal::WireFormatLite::TYPE_BOOL>(
+                 input, &has_password_)));
+        } else {
+          goto handle_unusual;
+        }
+        break;
+      }
+
       default: {
       handle_unusual:
         if (tag == 0) {
@@ -2489,6 +2659,36 @@ void LookupAccountRsp::SerializeWithCachedSizes(
     ::google::protobuf::internal::WireFormatLite::WriteUInt64(7, this->player_id(), output);
   }
 
+  // string password_hash = 8;
+  if (this->password_hash().size() > 0) {
+    ::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+      this->password_hash().data(), static_cast<int>(this->password_hash().length()),
+      ::google::protobuf::internal::WireFormatLite::SERIALIZE,
+      "gdb.LookupAccountRsp.password_hash");
+    ::google::protobuf::internal::WireFormatLite::WriteStringMaybeAliased(
+      8, this->password_hash(), output);
+  }
+
+  // string password_salt = 9;
+  if (this->password_salt().size() > 0) {
+    ::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+      this->password_salt().data(), static_cast<int>(this->password_salt().length()),
+      ::google::protobuf::internal::WireFormatLite::SERIALIZE,
+      "gdb.LookupAccountRsp.password_salt");
+    ::google::protobuf::internal::WireFormatLite::WriteStringMaybeAliased(
+      9, this->password_salt(), output);
+  }
+
+  // int32 password_iters = 10;
+  if (this->password_iters() != 0) {
+    ::google::protobuf::internal::WireFormatLite::WriteInt32(10, this->password_iters(), output);
+  }
+
+  // bool has_password = 11;
+  if (this->has_password() != 0) {
+    ::google::protobuf::internal::WireFormatLite::WriteBool(11, this->has_password(), output);
+  }
+
   if ((_internal_metadata_.have_unknown_fields() &&  ::google::protobuf::internal::GetProto3PreserveUnknownsDefault())) {
     ::google::protobuf::internal::WireFormat::SerializeUnknownFields(
         (::google::protobuf::internal::GetProto3PreserveUnknownsDefault()   ? _internal_metadata_.unknown_fields()   : _internal_metadata_.default_instance()), output);
@@ -2550,6 +2750,38 @@ void LookupAccountRsp::SerializeWithCachedSizes(
     target = ::google::protobuf::internal::WireFormatLite::WriteUInt64ToArray(7, this->player_id(), target);
   }
 
+  // string password_hash = 8;
+  if (this->password_hash().size() > 0) {
+    ::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+      this->password_hash().data(), static_cast<int>(this->password_hash().length()),
+      ::google::protobuf::internal::WireFormatLite::SERIALIZE,
+      "gdb.LookupAccountRsp.password_hash");
+    target =
+      ::google::protobuf::internal::WireFormatLite::WriteStringToArray(
+        8, this->password_hash(), target);
+  }
+
+  // string password_salt = 9;
+  if (this->password_salt().size() > 0) {
+    ::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+      this->password_salt().data(), static_cast<int>(this->password_salt().length()),
+      ::google::protobuf::internal::WireFormatLite::SERIALIZE,
+      "gdb.LookupAccountRsp.password_salt");
+    target =
+      ::google::protobuf::internal::WireFormatLite::WriteStringToArray(
+        9, this->password_salt(), target);
+  }
+
+  // int32 password_iters = 10;
+  if (this->password_iters() != 0) {
+    target = ::google::protobuf::internal::WireFormatLite::WriteInt32ToArray(10, this->password_iters(), target);
+  }
+
+  // bool has_password = 11;
+  if (this->has_password() != 0) {
+    target = ::google::protobuf::internal::WireFormatLite::WriteBoolToArray(11, this->has_password(), target);
+  }
+
   if ((_internal_metadata_.have_unknown_fields() &&  ::google::protobuf::internal::GetProto3PreserveUnknownsDefault())) {
     target = ::google::protobuf::internal::WireFormat::SerializeUnknownFieldsToArray(
         (::google::protobuf::internal::GetProto3PreserveUnknownsDefault()   ? _internal_metadata_.unknown_fields()   : _internal_metadata_.default_instance()), target);
@@ -2581,18 +2813,25 @@ size_t LookupAccountRsp::ByteSizeLong() const {
         this->error_code());
   }
 
+  // string password_hash = 8;
+  if (this->password_hash().size() > 0) {
+    total_size += 1 +
+      ::google::protobuf::internal::WireFormatLite::StringSize(
+        this->password_hash());
+  }
+
+  // string password_salt = 9;
+  if (this->password_salt().size() > 0) {
+    total_size += 1 +
+      ::google::protobuf::internal::WireFormatLite::StringSize(
+        this->password_salt());
+  }
+
   // uint64 account_id = 6;
   if (this->account_id() != 0) {
     total_size += 1 +
       ::google::protobuf::internal::WireFormatLite::UInt64Size(
         this->account_id());
-  }
-
-  // uint64 player_id = 7;
-  if (this->player_id() != 0) {
-    total_size += 1 +
-      ::google::protobuf::internal::WireFormatLite::UInt64Size(
-        this->player_id());
   }
 
   // bool ok = 1;
@@ -2608,6 +2847,25 @@ size_t LookupAccountRsp::ByteSizeLong() const {
   // bool banned = 5;
   if (this->banned() != 0) {
     total_size += 1 + 1;
+  }
+
+  // bool has_password = 11;
+  if (this->has_password() != 0) {
+    total_size += 1 + 1;
+  }
+
+  // int32 password_iters = 10;
+  if (this->password_iters() != 0) {
+    total_size += 1 +
+      ::google::protobuf::internal::WireFormatLite::Int32Size(
+        this->password_iters());
+  }
+
+  // uint64 player_id = 7;
+  if (this->player_id() != 0) {
+    total_size += 1 +
+      ::google::protobuf::internal::WireFormatLite::UInt64Size(
+        this->player_id());
   }
 
   int cached_size = ::google::protobuf::internal::ToCachedSize(total_size);
@@ -2647,11 +2905,16 @@ void LookupAccountRsp::MergeFrom(const LookupAccountRsp& from) {
 
     error_code_.AssignWithDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), from.error_code_);
   }
+  if (from.password_hash().size() > 0) {
+
+    password_hash_.AssignWithDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), from.password_hash_);
+  }
+  if (from.password_salt().size() > 0) {
+
+    password_salt_.AssignWithDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), from.password_salt_);
+  }
   if (from.account_id() != 0) {
     set_account_id(from.account_id());
-  }
-  if (from.player_id() != 0) {
-    set_player_id(from.player_id());
   }
   if (from.ok() != 0) {
     set_ok(from.ok());
@@ -2661,6 +2924,15 @@ void LookupAccountRsp::MergeFrom(const LookupAccountRsp& from) {
   }
   if (from.banned() != 0) {
     set_banned(from.banned());
+  }
+  if (from.has_password() != 0) {
+    set_has_password(from.has_password());
+  }
+  if (from.password_iters() != 0) {
+    set_password_iters(from.password_iters());
+  }
+  if (from.player_id() != 0) {
+    set_player_id(from.player_id());
   }
 }
 
@@ -2690,16 +2962,971 @@ void LookupAccountRsp::InternalSwap(LookupAccountRsp* other) {
   using std::swap;
   message_.Swap(&other->message_);
   error_code_.Swap(&other->error_code_);
+  password_hash_.Swap(&other->password_hash_);
+  password_salt_.Swap(&other->password_salt_);
   swap(account_id_, other->account_id_);
-  swap(player_id_, other->player_id_);
   swap(ok_, other->ok_);
   swap(exists_, other->exists_);
   swap(banned_, other->banned_);
+  swap(has_password_, other->has_password_);
+  swap(password_iters_, other->password_iters_);
+  swap(player_id_, other->player_id_);
   _internal_metadata_.Swap(&other->_internal_metadata_);
   swap(_cached_size_, other->_cached_size_);
 }
 
 ::google::protobuf::Metadata LookupAccountRsp::GetMetadata() const {
+  protobuf_gamedb_2eproto::protobuf_AssignDescriptorsOnce();
+  return ::protobuf_gamedb_2eproto::file_level_metadata[kIndexInFileMessages];
+}
+
+
+// ===================================================================
+
+void RegisterAccountReq::InitAsDefaultInstance() {
+}
+#if !defined(_MSC_VER) || _MSC_VER >= 1900
+const int RegisterAccountReq::kDeviceIdFieldNumber;
+const int RegisterAccountReq::kDisplayNameFieldNumber;
+const int RegisterAccountReq::kPasswordHashFieldNumber;
+const int RegisterAccountReq::kPasswordSaltFieldNumber;
+const int RegisterAccountReq::kPasswordItersFieldNumber;
+const int RegisterAccountReq::kIdempotencyKeyFieldNumber;
+#endif  // !defined(_MSC_VER) || _MSC_VER >= 1900
+
+RegisterAccountReq::RegisterAccountReq()
+  : ::google::protobuf::Message(), _internal_metadata_(NULL) {
+  if (GOOGLE_PREDICT_TRUE(this != internal_default_instance())) {
+    ::protobuf_gamedb_2eproto::InitDefaultsRegisterAccountReq();
+  }
+  SharedCtor();
+  // @@protoc_insertion_point(constructor:gdb.RegisterAccountReq)
+}
+RegisterAccountReq::RegisterAccountReq(const RegisterAccountReq& from)
+  : ::google::protobuf::Message(),
+      _internal_metadata_(NULL),
+      _cached_size_(0) {
+  _internal_metadata_.MergeFrom(from._internal_metadata_);
+  device_id_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  if (from.device_id().size() > 0) {
+    device_id_.AssignWithDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), from.device_id_);
+  }
+  display_name_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  if (from.display_name().size() > 0) {
+    display_name_.AssignWithDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), from.display_name_);
+  }
+  password_hash_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  if (from.password_hash().size() > 0) {
+    password_hash_.AssignWithDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), from.password_hash_);
+  }
+  password_salt_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  if (from.password_salt().size() > 0) {
+    password_salt_.AssignWithDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), from.password_salt_);
+  }
+  idempotency_key_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  if (from.idempotency_key().size() > 0) {
+    idempotency_key_.AssignWithDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), from.idempotency_key_);
+  }
+  password_iters_ = from.password_iters_;
+  // @@protoc_insertion_point(copy_constructor:gdb.RegisterAccountReq)
+}
+
+void RegisterAccountReq::SharedCtor() {
+  device_id_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  display_name_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  password_hash_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  password_salt_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  idempotency_key_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  password_iters_ = 0;
+  _cached_size_ = 0;
+}
+
+RegisterAccountReq::~RegisterAccountReq() {
+  // @@protoc_insertion_point(destructor:gdb.RegisterAccountReq)
+  SharedDtor();
+}
+
+void RegisterAccountReq::SharedDtor() {
+  device_id_.DestroyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  display_name_.DestroyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  password_hash_.DestroyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  password_salt_.DestroyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  idempotency_key_.DestroyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+
+void RegisterAccountReq::SetCachedSize(int size) const {
+  GOOGLE_SAFE_CONCURRENT_WRITES_BEGIN();
+  _cached_size_ = size;
+  GOOGLE_SAFE_CONCURRENT_WRITES_END();
+}
+const ::google::protobuf::Descriptor* RegisterAccountReq::descriptor() {
+  ::protobuf_gamedb_2eproto::protobuf_AssignDescriptorsOnce();
+  return ::protobuf_gamedb_2eproto::file_level_metadata[kIndexInFileMessages].descriptor;
+}
+
+const RegisterAccountReq& RegisterAccountReq::default_instance() {
+  ::protobuf_gamedb_2eproto::InitDefaultsRegisterAccountReq();
+  return *internal_default_instance();
+}
+
+RegisterAccountReq* RegisterAccountReq::New(::google::protobuf::Arena* arena) const {
+  RegisterAccountReq* n = new RegisterAccountReq;
+  if (arena != NULL) {
+    arena->Own(n);
+  }
+  return n;
+}
+
+void RegisterAccountReq::Clear() {
+// @@protoc_insertion_point(message_clear_start:gdb.RegisterAccountReq)
+  ::google::protobuf::uint32 cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void) cached_has_bits;
+
+  device_id_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  display_name_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  password_hash_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  password_salt_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  idempotency_key_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  password_iters_ = 0;
+  _internal_metadata_.Clear();
+}
+
+bool RegisterAccountReq::MergePartialFromCodedStream(
+    ::google::protobuf::io::CodedInputStream* input) {
+#define DO_(EXPRESSION) if (!GOOGLE_PREDICT_TRUE(EXPRESSION)) goto failure
+  ::google::protobuf::uint32 tag;
+  // @@protoc_insertion_point(parse_start:gdb.RegisterAccountReq)
+  for (;;) {
+    ::std::pair< ::google::protobuf::uint32, bool> p = input->ReadTagWithCutoffNoLastTag(127u);
+    tag = p.first;
+    if (!p.second) goto handle_unusual;
+    switch (::google::protobuf::internal::WireFormatLite::GetTagFieldNumber(tag)) {
+      // string device_id = 1;
+      case 1: {
+        if (static_cast< ::google::protobuf::uint8>(tag) ==
+            static_cast< ::google::protobuf::uint8>(10u /* 10 & 0xFF */)) {
+          DO_(::google::protobuf::internal::WireFormatLite::ReadString(
+                input, this->mutable_device_id()));
+          DO_(::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+            this->device_id().data(), static_cast<int>(this->device_id().length()),
+            ::google::protobuf::internal::WireFormatLite::PARSE,
+            "gdb.RegisterAccountReq.device_id"));
+        } else {
+          goto handle_unusual;
+        }
+        break;
+      }
+
+      // string display_name = 2;
+      case 2: {
+        if (static_cast< ::google::protobuf::uint8>(tag) ==
+            static_cast< ::google::protobuf::uint8>(18u /* 18 & 0xFF */)) {
+          DO_(::google::protobuf::internal::WireFormatLite::ReadString(
+                input, this->mutable_display_name()));
+          DO_(::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+            this->display_name().data(), static_cast<int>(this->display_name().length()),
+            ::google::protobuf::internal::WireFormatLite::PARSE,
+            "gdb.RegisterAccountReq.display_name"));
+        } else {
+          goto handle_unusual;
+        }
+        break;
+      }
+
+      // string password_hash = 3;
+      case 3: {
+        if (static_cast< ::google::protobuf::uint8>(tag) ==
+            static_cast< ::google::protobuf::uint8>(26u /* 26 & 0xFF */)) {
+          DO_(::google::protobuf::internal::WireFormatLite::ReadString(
+                input, this->mutable_password_hash()));
+          DO_(::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+            this->password_hash().data(), static_cast<int>(this->password_hash().length()),
+            ::google::protobuf::internal::WireFormatLite::PARSE,
+            "gdb.RegisterAccountReq.password_hash"));
+        } else {
+          goto handle_unusual;
+        }
+        break;
+      }
+
+      // string password_salt = 4;
+      case 4: {
+        if (static_cast< ::google::protobuf::uint8>(tag) ==
+            static_cast< ::google::protobuf::uint8>(34u /* 34 & 0xFF */)) {
+          DO_(::google::protobuf::internal::WireFormatLite::ReadString(
+                input, this->mutable_password_salt()));
+          DO_(::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+            this->password_salt().data(), static_cast<int>(this->password_salt().length()),
+            ::google::protobuf::internal::WireFormatLite::PARSE,
+            "gdb.RegisterAccountReq.password_salt"));
+        } else {
+          goto handle_unusual;
+        }
+        break;
+      }
+
+      // int32 password_iters = 5;
+      case 5: {
+        if (static_cast< ::google::protobuf::uint8>(tag) ==
+            static_cast< ::google::protobuf::uint8>(40u /* 40 & 0xFF */)) {
+
+          DO_((::google::protobuf::internal::WireFormatLite::ReadPrimitive<
+                   ::google::protobuf::int32, ::google::protobuf::internal::WireFormatLite::TYPE_INT32>(
+                 input, &password_iters_)));
+        } else {
+          goto handle_unusual;
+        }
+        break;
+      }
+
+      // string idempotency_key = 6;
+      case 6: {
+        if (static_cast< ::google::protobuf::uint8>(tag) ==
+            static_cast< ::google::protobuf::uint8>(50u /* 50 & 0xFF */)) {
+          DO_(::google::protobuf::internal::WireFormatLite::ReadString(
+                input, this->mutable_idempotency_key()));
+          DO_(::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+            this->idempotency_key().data(), static_cast<int>(this->idempotency_key().length()),
+            ::google::protobuf::internal::WireFormatLite::PARSE,
+            "gdb.RegisterAccountReq.idempotency_key"));
+        } else {
+          goto handle_unusual;
+        }
+        break;
+      }
+
+      default: {
+      handle_unusual:
+        if (tag == 0) {
+          goto success;
+        }
+        DO_(::google::protobuf::internal::WireFormat::SkipField(
+              input, tag, _internal_metadata_.mutable_unknown_fields()));
+        break;
+      }
+    }
+  }
+success:
+  // @@protoc_insertion_point(parse_success:gdb.RegisterAccountReq)
+  return true;
+failure:
+  // @@protoc_insertion_point(parse_failure:gdb.RegisterAccountReq)
+  return false;
+#undef DO_
+}
+
+void RegisterAccountReq::SerializeWithCachedSizes(
+    ::google::protobuf::io::CodedOutputStream* output) const {
+  // @@protoc_insertion_point(serialize_start:gdb.RegisterAccountReq)
+  ::google::protobuf::uint32 cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  // string device_id = 1;
+  if (this->device_id().size() > 0) {
+    ::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+      this->device_id().data(), static_cast<int>(this->device_id().length()),
+      ::google::protobuf::internal::WireFormatLite::SERIALIZE,
+      "gdb.RegisterAccountReq.device_id");
+    ::google::protobuf::internal::WireFormatLite::WriteStringMaybeAliased(
+      1, this->device_id(), output);
+  }
+
+  // string display_name = 2;
+  if (this->display_name().size() > 0) {
+    ::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+      this->display_name().data(), static_cast<int>(this->display_name().length()),
+      ::google::protobuf::internal::WireFormatLite::SERIALIZE,
+      "gdb.RegisterAccountReq.display_name");
+    ::google::protobuf::internal::WireFormatLite::WriteStringMaybeAliased(
+      2, this->display_name(), output);
+  }
+
+  // string password_hash = 3;
+  if (this->password_hash().size() > 0) {
+    ::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+      this->password_hash().data(), static_cast<int>(this->password_hash().length()),
+      ::google::protobuf::internal::WireFormatLite::SERIALIZE,
+      "gdb.RegisterAccountReq.password_hash");
+    ::google::protobuf::internal::WireFormatLite::WriteStringMaybeAliased(
+      3, this->password_hash(), output);
+  }
+
+  // string password_salt = 4;
+  if (this->password_salt().size() > 0) {
+    ::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+      this->password_salt().data(), static_cast<int>(this->password_salt().length()),
+      ::google::protobuf::internal::WireFormatLite::SERIALIZE,
+      "gdb.RegisterAccountReq.password_salt");
+    ::google::protobuf::internal::WireFormatLite::WriteStringMaybeAliased(
+      4, this->password_salt(), output);
+  }
+
+  // int32 password_iters = 5;
+  if (this->password_iters() != 0) {
+    ::google::protobuf::internal::WireFormatLite::WriteInt32(5, this->password_iters(), output);
+  }
+
+  // string idempotency_key = 6;
+  if (this->idempotency_key().size() > 0) {
+    ::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+      this->idempotency_key().data(), static_cast<int>(this->idempotency_key().length()),
+      ::google::protobuf::internal::WireFormatLite::SERIALIZE,
+      "gdb.RegisterAccountReq.idempotency_key");
+    ::google::protobuf::internal::WireFormatLite::WriteStringMaybeAliased(
+      6, this->idempotency_key(), output);
+  }
+
+  if ((_internal_metadata_.have_unknown_fields() &&  ::google::protobuf::internal::GetProto3PreserveUnknownsDefault())) {
+    ::google::protobuf::internal::WireFormat::SerializeUnknownFields(
+        (::google::protobuf::internal::GetProto3PreserveUnknownsDefault()   ? _internal_metadata_.unknown_fields()   : _internal_metadata_.default_instance()), output);
+  }
+  // @@protoc_insertion_point(serialize_end:gdb.RegisterAccountReq)
+}
+
+::google::protobuf::uint8* RegisterAccountReq::InternalSerializeWithCachedSizesToArray(
+    bool deterministic, ::google::protobuf::uint8* target) const {
+  (void)deterministic; // Unused
+  // @@protoc_insertion_point(serialize_to_array_start:gdb.RegisterAccountReq)
+  ::google::protobuf::uint32 cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  // string device_id = 1;
+  if (this->device_id().size() > 0) {
+    ::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+      this->device_id().data(), static_cast<int>(this->device_id().length()),
+      ::google::protobuf::internal::WireFormatLite::SERIALIZE,
+      "gdb.RegisterAccountReq.device_id");
+    target =
+      ::google::protobuf::internal::WireFormatLite::WriteStringToArray(
+        1, this->device_id(), target);
+  }
+
+  // string display_name = 2;
+  if (this->display_name().size() > 0) {
+    ::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+      this->display_name().data(), static_cast<int>(this->display_name().length()),
+      ::google::protobuf::internal::WireFormatLite::SERIALIZE,
+      "gdb.RegisterAccountReq.display_name");
+    target =
+      ::google::protobuf::internal::WireFormatLite::WriteStringToArray(
+        2, this->display_name(), target);
+  }
+
+  // string password_hash = 3;
+  if (this->password_hash().size() > 0) {
+    ::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+      this->password_hash().data(), static_cast<int>(this->password_hash().length()),
+      ::google::protobuf::internal::WireFormatLite::SERIALIZE,
+      "gdb.RegisterAccountReq.password_hash");
+    target =
+      ::google::protobuf::internal::WireFormatLite::WriteStringToArray(
+        3, this->password_hash(), target);
+  }
+
+  // string password_salt = 4;
+  if (this->password_salt().size() > 0) {
+    ::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+      this->password_salt().data(), static_cast<int>(this->password_salt().length()),
+      ::google::protobuf::internal::WireFormatLite::SERIALIZE,
+      "gdb.RegisterAccountReq.password_salt");
+    target =
+      ::google::protobuf::internal::WireFormatLite::WriteStringToArray(
+        4, this->password_salt(), target);
+  }
+
+  // int32 password_iters = 5;
+  if (this->password_iters() != 0) {
+    target = ::google::protobuf::internal::WireFormatLite::WriteInt32ToArray(5, this->password_iters(), target);
+  }
+
+  // string idempotency_key = 6;
+  if (this->idempotency_key().size() > 0) {
+    ::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+      this->idempotency_key().data(), static_cast<int>(this->idempotency_key().length()),
+      ::google::protobuf::internal::WireFormatLite::SERIALIZE,
+      "gdb.RegisterAccountReq.idempotency_key");
+    target =
+      ::google::protobuf::internal::WireFormatLite::WriteStringToArray(
+        6, this->idempotency_key(), target);
+  }
+
+  if ((_internal_metadata_.have_unknown_fields() &&  ::google::protobuf::internal::GetProto3PreserveUnknownsDefault())) {
+    target = ::google::protobuf::internal::WireFormat::SerializeUnknownFieldsToArray(
+        (::google::protobuf::internal::GetProto3PreserveUnknownsDefault()   ? _internal_metadata_.unknown_fields()   : _internal_metadata_.default_instance()), target);
+  }
+  // @@protoc_insertion_point(serialize_to_array_end:gdb.RegisterAccountReq)
+  return target;
+}
+
+size_t RegisterAccountReq::ByteSizeLong() const {
+// @@protoc_insertion_point(message_byte_size_start:gdb.RegisterAccountReq)
+  size_t total_size = 0;
+
+  if ((_internal_metadata_.have_unknown_fields() &&  ::google::protobuf::internal::GetProto3PreserveUnknownsDefault())) {
+    total_size +=
+      ::google::protobuf::internal::WireFormat::ComputeUnknownFieldsSize(
+        (::google::protobuf::internal::GetProto3PreserveUnknownsDefault()   ? _internal_metadata_.unknown_fields()   : _internal_metadata_.default_instance()));
+  }
+  // string device_id = 1;
+  if (this->device_id().size() > 0) {
+    total_size += 1 +
+      ::google::protobuf::internal::WireFormatLite::StringSize(
+        this->device_id());
+  }
+
+  // string display_name = 2;
+  if (this->display_name().size() > 0) {
+    total_size += 1 +
+      ::google::protobuf::internal::WireFormatLite::StringSize(
+        this->display_name());
+  }
+
+  // string password_hash = 3;
+  if (this->password_hash().size() > 0) {
+    total_size += 1 +
+      ::google::protobuf::internal::WireFormatLite::StringSize(
+        this->password_hash());
+  }
+
+  // string password_salt = 4;
+  if (this->password_salt().size() > 0) {
+    total_size += 1 +
+      ::google::protobuf::internal::WireFormatLite::StringSize(
+        this->password_salt());
+  }
+
+  // string idempotency_key = 6;
+  if (this->idempotency_key().size() > 0) {
+    total_size += 1 +
+      ::google::protobuf::internal::WireFormatLite::StringSize(
+        this->idempotency_key());
+  }
+
+  // int32 password_iters = 5;
+  if (this->password_iters() != 0) {
+    total_size += 1 +
+      ::google::protobuf::internal::WireFormatLite::Int32Size(
+        this->password_iters());
+  }
+
+  int cached_size = ::google::protobuf::internal::ToCachedSize(total_size);
+  GOOGLE_SAFE_CONCURRENT_WRITES_BEGIN();
+  _cached_size_ = cached_size;
+  GOOGLE_SAFE_CONCURRENT_WRITES_END();
+  return total_size;
+}
+
+void RegisterAccountReq::MergeFrom(const ::google::protobuf::Message& from) {
+// @@protoc_insertion_point(generalized_merge_from_start:gdb.RegisterAccountReq)
+  GOOGLE_DCHECK_NE(&from, this);
+  const RegisterAccountReq* source =
+      ::google::protobuf::internal::DynamicCastToGenerated<const RegisterAccountReq>(
+          &from);
+  if (source == NULL) {
+  // @@protoc_insertion_point(generalized_merge_from_cast_fail:gdb.RegisterAccountReq)
+    ::google::protobuf::internal::ReflectionOps::Merge(from, this);
+  } else {
+  // @@protoc_insertion_point(generalized_merge_from_cast_success:gdb.RegisterAccountReq)
+    MergeFrom(*source);
+  }
+}
+
+void RegisterAccountReq::MergeFrom(const RegisterAccountReq& from) {
+// @@protoc_insertion_point(class_specific_merge_from_start:gdb.RegisterAccountReq)
+  GOOGLE_DCHECK_NE(&from, this);
+  _internal_metadata_.MergeFrom(from._internal_metadata_);
+  ::google::protobuf::uint32 cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  if (from.device_id().size() > 0) {
+
+    device_id_.AssignWithDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), from.device_id_);
+  }
+  if (from.display_name().size() > 0) {
+
+    display_name_.AssignWithDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), from.display_name_);
+  }
+  if (from.password_hash().size() > 0) {
+
+    password_hash_.AssignWithDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), from.password_hash_);
+  }
+  if (from.password_salt().size() > 0) {
+
+    password_salt_.AssignWithDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), from.password_salt_);
+  }
+  if (from.idempotency_key().size() > 0) {
+
+    idempotency_key_.AssignWithDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), from.idempotency_key_);
+  }
+  if (from.password_iters() != 0) {
+    set_password_iters(from.password_iters());
+  }
+}
+
+void RegisterAccountReq::CopyFrom(const ::google::protobuf::Message& from) {
+// @@protoc_insertion_point(generalized_copy_from_start:gdb.RegisterAccountReq)
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+void RegisterAccountReq::CopyFrom(const RegisterAccountReq& from) {
+// @@protoc_insertion_point(class_specific_copy_from_start:gdb.RegisterAccountReq)
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+bool RegisterAccountReq::IsInitialized() const {
+  return true;
+}
+
+void RegisterAccountReq::Swap(RegisterAccountReq* other) {
+  if (other == this) return;
+  InternalSwap(other);
+}
+void RegisterAccountReq::InternalSwap(RegisterAccountReq* other) {
+  using std::swap;
+  device_id_.Swap(&other->device_id_);
+  display_name_.Swap(&other->display_name_);
+  password_hash_.Swap(&other->password_hash_);
+  password_salt_.Swap(&other->password_salt_);
+  idempotency_key_.Swap(&other->idempotency_key_);
+  swap(password_iters_, other->password_iters_);
+  _internal_metadata_.Swap(&other->_internal_metadata_);
+  swap(_cached_size_, other->_cached_size_);
+}
+
+::google::protobuf::Metadata RegisterAccountReq::GetMetadata() const {
+  protobuf_gamedb_2eproto::protobuf_AssignDescriptorsOnce();
+  return ::protobuf_gamedb_2eproto::file_level_metadata[kIndexInFileMessages];
+}
+
+
+// ===================================================================
+
+void RegisterAccountRsp::InitAsDefaultInstance() {
+}
+#if !defined(_MSC_VER) || _MSC_VER >= 1900
+const int RegisterAccountRsp::kOkFieldNumber;
+const int RegisterAccountRsp::kMessageFieldNumber;
+const int RegisterAccountRsp::kErrorCodeFieldNumber;
+const int RegisterAccountRsp::kAccountIdFieldNumber;
+const int RegisterAccountRsp::kPlayerIdFieldNumber;
+#endif  // !defined(_MSC_VER) || _MSC_VER >= 1900
+
+RegisterAccountRsp::RegisterAccountRsp()
+  : ::google::protobuf::Message(), _internal_metadata_(NULL) {
+  if (GOOGLE_PREDICT_TRUE(this != internal_default_instance())) {
+    ::protobuf_gamedb_2eproto::InitDefaultsRegisterAccountRsp();
+  }
+  SharedCtor();
+  // @@protoc_insertion_point(constructor:gdb.RegisterAccountRsp)
+}
+RegisterAccountRsp::RegisterAccountRsp(const RegisterAccountRsp& from)
+  : ::google::protobuf::Message(),
+      _internal_metadata_(NULL),
+      _cached_size_(0) {
+  _internal_metadata_.MergeFrom(from._internal_metadata_);
+  message_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  if (from.message().size() > 0) {
+    message_.AssignWithDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), from.message_);
+  }
+  error_code_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  if (from.error_code().size() > 0) {
+    error_code_.AssignWithDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), from.error_code_);
+  }
+  ::memcpy(&account_id_, &from.account_id_,
+    static_cast<size_t>(reinterpret_cast<char*>(&ok_) -
+    reinterpret_cast<char*>(&account_id_)) + sizeof(ok_));
+  // @@protoc_insertion_point(copy_constructor:gdb.RegisterAccountRsp)
+}
+
+void RegisterAccountRsp::SharedCtor() {
+  message_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  error_code_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  ::memset(&account_id_, 0, static_cast<size_t>(
+      reinterpret_cast<char*>(&ok_) -
+      reinterpret_cast<char*>(&account_id_)) + sizeof(ok_));
+  _cached_size_ = 0;
+}
+
+RegisterAccountRsp::~RegisterAccountRsp() {
+  // @@protoc_insertion_point(destructor:gdb.RegisterAccountRsp)
+  SharedDtor();
+}
+
+void RegisterAccountRsp::SharedDtor() {
+  message_.DestroyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  error_code_.DestroyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+
+void RegisterAccountRsp::SetCachedSize(int size) const {
+  GOOGLE_SAFE_CONCURRENT_WRITES_BEGIN();
+  _cached_size_ = size;
+  GOOGLE_SAFE_CONCURRENT_WRITES_END();
+}
+const ::google::protobuf::Descriptor* RegisterAccountRsp::descriptor() {
+  ::protobuf_gamedb_2eproto::protobuf_AssignDescriptorsOnce();
+  return ::protobuf_gamedb_2eproto::file_level_metadata[kIndexInFileMessages].descriptor;
+}
+
+const RegisterAccountRsp& RegisterAccountRsp::default_instance() {
+  ::protobuf_gamedb_2eproto::InitDefaultsRegisterAccountRsp();
+  return *internal_default_instance();
+}
+
+RegisterAccountRsp* RegisterAccountRsp::New(::google::protobuf::Arena* arena) const {
+  RegisterAccountRsp* n = new RegisterAccountRsp;
+  if (arena != NULL) {
+    arena->Own(n);
+  }
+  return n;
+}
+
+void RegisterAccountRsp::Clear() {
+// @@protoc_insertion_point(message_clear_start:gdb.RegisterAccountRsp)
+  ::google::protobuf::uint32 cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void) cached_has_bits;
+
+  message_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  error_code_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  ::memset(&account_id_, 0, static_cast<size_t>(
+      reinterpret_cast<char*>(&ok_) -
+      reinterpret_cast<char*>(&account_id_)) + sizeof(ok_));
+  _internal_metadata_.Clear();
+}
+
+bool RegisterAccountRsp::MergePartialFromCodedStream(
+    ::google::protobuf::io::CodedInputStream* input) {
+#define DO_(EXPRESSION) if (!GOOGLE_PREDICT_TRUE(EXPRESSION)) goto failure
+  ::google::protobuf::uint32 tag;
+  // @@protoc_insertion_point(parse_start:gdb.RegisterAccountRsp)
+  for (;;) {
+    ::std::pair< ::google::protobuf::uint32, bool> p = input->ReadTagWithCutoffNoLastTag(127u);
+    tag = p.first;
+    if (!p.second) goto handle_unusual;
+    switch (::google::protobuf::internal::WireFormatLite::GetTagFieldNumber(tag)) {
+      // bool ok = 1;
+      case 1: {
+        if (static_cast< ::google::protobuf::uint8>(tag) ==
+            static_cast< ::google::protobuf::uint8>(8u /* 8 & 0xFF */)) {
+
+          DO_((::google::protobuf::internal::WireFormatLite::ReadPrimitive<
+                   bool, ::google::protobuf::internal::WireFormatLite::TYPE_BOOL>(
+                 input, &ok_)));
+        } else {
+          goto handle_unusual;
+        }
+        break;
+      }
+
+      // string message = 2;
+      case 2: {
+        if (static_cast< ::google::protobuf::uint8>(tag) ==
+            static_cast< ::google::protobuf::uint8>(18u /* 18 & 0xFF */)) {
+          DO_(::google::protobuf::internal::WireFormatLite::ReadString(
+                input, this->mutable_message()));
+          DO_(::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+            this->message().data(), static_cast<int>(this->message().length()),
+            ::google::protobuf::internal::WireFormatLite::PARSE,
+            "gdb.RegisterAccountRsp.message"));
+        } else {
+          goto handle_unusual;
+        }
+        break;
+      }
+
+      // string error_code = 3;
+      case 3: {
+        if (static_cast< ::google::protobuf::uint8>(tag) ==
+            static_cast< ::google::protobuf::uint8>(26u /* 26 & 0xFF */)) {
+          DO_(::google::protobuf::internal::WireFormatLite::ReadString(
+                input, this->mutable_error_code()));
+          DO_(::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+            this->error_code().data(), static_cast<int>(this->error_code().length()),
+            ::google::protobuf::internal::WireFormatLite::PARSE,
+            "gdb.RegisterAccountRsp.error_code"));
+        } else {
+          goto handle_unusual;
+        }
+        break;
+      }
+
+      // uint64 account_id = 4;
+      case 4: {
+        if (static_cast< ::google::protobuf::uint8>(tag) ==
+            static_cast< ::google::protobuf::uint8>(32u /* 32 & 0xFF */)) {
+
+          DO_((::google::protobuf::internal::WireFormatLite::ReadPrimitive<
+                   ::google::protobuf::uint64, ::google::protobuf::internal::WireFormatLite::TYPE_UINT64>(
+                 input, &account_id_)));
+        } else {
+          goto handle_unusual;
+        }
+        break;
+      }
+
+      // uint64 player_id = 5;
+      case 5: {
+        if (static_cast< ::google::protobuf::uint8>(tag) ==
+            static_cast< ::google::protobuf::uint8>(40u /* 40 & 0xFF */)) {
+
+          DO_((::google::protobuf::internal::WireFormatLite::ReadPrimitive<
+                   ::google::protobuf::uint64, ::google::protobuf::internal::WireFormatLite::TYPE_UINT64>(
+                 input, &player_id_)));
+        } else {
+          goto handle_unusual;
+        }
+        break;
+      }
+
+      default: {
+      handle_unusual:
+        if (tag == 0) {
+          goto success;
+        }
+        DO_(::google::protobuf::internal::WireFormat::SkipField(
+              input, tag, _internal_metadata_.mutable_unknown_fields()));
+        break;
+      }
+    }
+  }
+success:
+  // @@protoc_insertion_point(parse_success:gdb.RegisterAccountRsp)
+  return true;
+failure:
+  // @@protoc_insertion_point(parse_failure:gdb.RegisterAccountRsp)
+  return false;
+#undef DO_
+}
+
+void RegisterAccountRsp::SerializeWithCachedSizes(
+    ::google::protobuf::io::CodedOutputStream* output) const {
+  // @@protoc_insertion_point(serialize_start:gdb.RegisterAccountRsp)
+  ::google::protobuf::uint32 cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  // bool ok = 1;
+  if (this->ok() != 0) {
+    ::google::protobuf::internal::WireFormatLite::WriteBool(1, this->ok(), output);
+  }
+
+  // string message = 2;
+  if (this->message().size() > 0) {
+    ::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+      this->message().data(), static_cast<int>(this->message().length()),
+      ::google::protobuf::internal::WireFormatLite::SERIALIZE,
+      "gdb.RegisterAccountRsp.message");
+    ::google::protobuf::internal::WireFormatLite::WriteStringMaybeAliased(
+      2, this->message(), output);
+  }
+
+  // string error_code = 3;
+  if (this->error_code().size() > 0) {
+    ::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+      this->error_code().data(), static_cast<int>(this->error_code().length()),
+      ::google::protobuf::internal::WireFormatLite::SERIALIZE,
+      "gdb.RegisterAccountRsp.error_code");
+    ::google::protobuf::internal::WireFormatLite::WriteStringMaybeAliased(
+      3, this->error_code(), output);
+  }
+
+  // uint64 account_id = 4;
+  if (this->account_id() != 0) {
+    ::google::protobuf::internal::WireFormatLite::WriteUInt64(4, this->account_id(), output);
+  }
+
+  // uint64 player_id = 5;
+  if (this->player_id() != 0) {
+    ::google::protobuf::internal::WireFormatLite::WriteUInt64(5, this->player_id(), output);
+  }
+
+  if ((_internal_metadata_.have_unknown_fields() &&  ::google::protobuf::internal::GetProto3PreserveUnknownsDefault())) {
+    ::google::protobuf::internal::WireFormat::SerializeUnknownFields(
+        (::google::protobuf::internal::GetProto3PreserveUnknownsDefault()   ? _internal_metadata_.unknown_fields()   : _internal_metadata_.default_instance()), output);
+  }
+  // @@protoc_insertion_point(serialize_end:gdb.RegisterAccountRsp)
+}
+
+::google::protobuf::uint8* RegisterAccountRsp::InternalSerializeWithCachedSizesToArray(
+    bool deterministic, ::google::protobuf::uint8* target) const {
+  (void)deterministic; // Unused
+  // @@protoc_insertion_point(serialize_to_array_start:gdb.RegisterAccountRsp)
+  ::google::protobuf::uint32 cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  // bool ok = 1;
+  if (this->ok() != 0) {
+    target = ::google::protobuf::internal::WireFormatLite::WriteBoolToArray(1, this->ok(), target);
+  }
+
+  // string message = 2;
+  if (this->message().size() > 0) {
+    ::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+      this->message().data(), static_cast<int>(this->message().length()),
+      ::google::protobuf::internal::WireFormatLite::SERIALIZE,
+      "gdb.RegisterAccountRsp.message");
+    target =
+      ::google::protobuf::internal::WireFormatLite::WriteStringToArray(
+        2, this->message(), target);
+  }
+
+  // string error_code = 3;
+  if (this->error_code().size() > 0) {
+    ::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+      this->error_code().data(), static_cast<int>(this->error_code().length()),
+      ::google::protobuf::internal::WireFormatLite::SERIALIZE,
+      "gdb.RegisterAccountRsp.error_code");
+    target =
+      ::google::protobuf::internal::WireFormatLite::WriteStringToArray(
+        3, this->error_code(), target);
+  }
+
+  // uint64 account_id = 4;
+  if (this->account_id() != 0) {
+    target = ::google::protobuf::internal::WireFormatLite::WriteUInt64ToArray(4, this->account_id(), target);
+  }
+
+  // uint64 player_id = 5;
+  if (this->player_id() != 0) {
+    target = ::google::protobuf::internal::WireFormatLite::WriteUInt64ToArray(5, this->player_id(), target);
+  }
+
+  if ((_internal_metadata_.have_unknown_fields() &&  ::google::protobuf::internal::GetProto3PreserveUnknownsDefault())) {
+    target = ::google::protobuf::internal::WireFormat::SerializeUnknownFieldsToArray(
+        (::google::protobuf::internal::GetProto3PreserveUnknownsDefault()   ? _internal_metadata_.unknown_fields()   : _internal_metadata_.default_instance()), target);
+  }
+  // @@protoc_insertion_point(serialize_to_array_end:gdb.RegisterAccountRsp)
+  return target;
+}
+
+size_t RegisterAccountRsp::ByteSizeLong() const {
+// @@protoc_insertion_point(message_byte_size_start:gdb.RegisterAccountRsp)
+  size_t total_size = 0;
+
+  if ((_internal_metadata_.have_unknown_fields() &&  ::google::protobuf::internal::GetProto3PreserveUnknownsDefault())) {
+    total_size +=
+      ::google::protobuf::internal::WireFormat::ComputeUnknownFieldsSize(
+        (::google::protobuf::internal::GetProto3PreserveUnknownsDefault()   ? _internal_metadata_.unknown_fields()   : _internal_metadata_.default_instance()));
+  }
+  // string message = 2;
+  if (this->message().size() > 0) {
+    total_size += 1 +
+      ::google::protobuf::internal::WireFormatLite::StringSize(
+        this->message());
+  }
+
+  // string error_code = 3;
+  if (this->error_code().size() > 0) {
+    total_size += 1 +
+      ::google::protobuf::internal::WireFormatLite::StringSize(
+        this->error_code());
+  }
+
+  // uint64 account_id = 4;
+  if (this->account_id() != 0) {
+    total_size += 1 +
+      ::google::protobuf::internal::WireFormatLite::UInt64Size(
+        this->account_id());
+  }
+
+  // uint64 player_id = 5;
+  if (this->player_id() != 0) {
+    total_size += 1 +
+      ::google::protobuf::internal::WireFormatLite::UInt64Size(
+        this->player_id());
+  }
+
+  // bool ok = 1;
+  if (this->ok() != 0) {
+    total_size += 1 + 1;
+  }
+
+  int cached_size = ::google::protobuf::internal::ToCachedSize(total_size);
+  GOOGLE_SAFE_CONCURRENT_WRITES_BEGIN();
+  _cached_size_ = cached_size;
+  GOOGLE_SAFE_CONCURRENT_WRITES_END();
+  return total_size;
+}
+
+void RegisterAccountRsp::MergeFrom(const ::google::protobuf::Message& from) {
+// @@protoc_insertion_point(generalized_merge_from_start:gdb.RegisterAccountRsp)
+  GOOGLE_DCHECK_NE(&from, this);
+  const RegisterAccountRsp* source =
+      ::google::protobuf::internal::DynamicCastToGenerated<const RegisterAccountRsp>(
+          &from);
+  if (source == NULL) {
+  // @@protoc_insertion_point(generalized_merge_from_cast_fail:gdb.RegisterAccountRsp)
+    ::google::protobuf::internal::ReflectionOps::Merge(from, this);
+  } else {
+  // @@protoc_insertion_point(generalized_merge_from_cast_success:gdb.RegisterAccountRsp)
+    MergeFrom(*source);
+  }
+}
+
+void RegisterAccountRsp::MergeFrom(const RegisterAccountRsp& from) {
+// @@protoc_insertion_point(class_specific_merge_from_start:gdb.RegisterAccountRsp)
+  GOOGLE_DCHECK_NE(&from, this);
+  _internal_metadata_.MergeFrom(from._internal_metadata_);
+  ::google::protobuf::uint32 cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  if (from.message().size() > 0) {
+
+    message_.AssignWithDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), from.message_);
+  }
+  if (from.error_code().size() > 0) {
+
+    error_code_.AssignWithDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), from.error_code_);
+  }
+  if (from.account_id() != 0) {
+    set_account_id(from.account_id());
+  }
+  if (from.player_id() != 0) {
+    set_player_id(from.player_id());
+  }
+  if (from.ok() != 0) {
+    set_ok(from.ok());
+  }
+}
+
+void RegisterAccountRsp::CopyFrom(const ::google::protobuf::Message& from) {
+// @@protoc_insertion_point(generalized_copy_from_start:gdb.RegisterAccountRsp)
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+void RegisterAccountRsp::CopyFrom(const RegisterAccountRsp& from) {
+// @@protoc_insertion_point(class_specific_copy_from_start:gdb.RegisterAccountRsp)
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+bool RegisterAccountRsp::IsInitialized() const {
+  return true;
+}
+
+void RegisterAccountRsp::Swap(RegisterAccountRsp* other) {
+  if (other == this) return;
+  InternalSwap(other);
+}
+void RegisterAccountRsp::InternalSwap(RegisterAccountRsp* other) {
+  using std::swap;
+  message_.Swap(&other->message_);
+  error_code_.Swap(&other->error_code_);
+  swap(account_id_, other->account_id_);
+  swap(player_id_, other->player_id_);
+  swap(ok_, other->ok_);
+  _internal_metadata_.Swap(&other->_internal_metadata_);
+  swap(_cached_size_, other->_cached_size_);
+}
+
+::google::protobuf::Metadata RegisterAccountRsp::GetMetadata() const {
   protobuf_gamedb_2eproto::protobuf_AssignDescriptorsOnce();
   return ::protobuf_gamedb_2eproto::file_level_metadata[kIndexInFileMessages];
 }
@@ -2734,6 +3961,14 @@ void GameDbService::LookupAccount(::google::protobuf::RpcController* controller,
   done->Run();
 }
 
+void GameDbService::RegisterAccount(::google::protobuf::RpcController* controller,
+                         const ::gdb::RegisterAccountReq*,
+                         ::gdb::RegisterAccountRsp*,
+                         ::google::protobuf::Closure* done) {
+  controller->SetFailed("Method RegisterAccount() not implemented.");
+  done->Run();
+}
+
 void GameDbService::CallMethod(const ::google::protobuf::MethodDescriptor* method,
                              ::google::protobuf::RpcController* controller,
                              const ::google::protobuf::Message* request,
@@ -2753,6 +3988,12 @@ void GameDbService::CallMethod(const ::google::protobuf::MethodDescriptor* metho
              ::google::protobuf::down_cast< ::gdb::LookupAccountRsp*>(response),
              done);
       break;
+    case 2:
+      RegisterAccount(controller,
+             ::google::protobuf::down_cast<const ::gdb::RegisterAccountReq*>(request),
+             ::google::protobuf::down_cast< ::gdb::RegisterAccountRsp*>(response),
+             done);
+      break;
     default:
       GOOGLE_LOG(FATAL) << "Bad method index; this should never happen.";
       break;
@@ -2767,6 +4008,8 @@ const ::google::protobuf::Message& GameDbService::GetRequestPrototype(
       return ::gdb::ClaimMailReq::default_instance();
     case 1:
       return ::gdb::LookupAccountReq::default_instance();
+    case 2:
+      return ::gdb::RegisterAccountReq::default_instance();
     default:
       GOOGLE_LOG(FATAL) << "Bad method index; this should never happen.";
       return *::google::protobuf::MessageFactory::generated_factory()
@@ -2782,6 +4025,8 @@ const ::google::protobuf::Message& GameDbService::GetResponsePrototype(
       return ::gdb::ClaimMailRsp::default_instance();
     case 1:
       return ::gdb::LookupAccountRsp::default_instance();
+    case 2:
+      return ::gdb::RegisterAccountRsp::default_instance();
     default:
       GOOGLE_LOG(FATAL) << "Bad method index; this should never happen.";
       return *::google::protobuf::MessageFactory::generated_factory()
@@ -2812,6 +4057,13 @@ void GameDbService_Stub::LookupAccount(::google::protobuf::RpcController* contro
                               ::gdb::LookupAccountRsp* response,
                               ::google::protobuf::Closure* done) {
   channel_->CallMethod(descriptor()->method(1),
+                       controller, request, response, done);
+}
+void GameDbService_Stub::RegisterAccount(::google::protobuf::RpcController* controller,
+                              const ::gdb::RegisterAccountReq* request,
+                              ::gdb::RegisterAccountRsp* response,
+                              ::google::protobuf::Closure* done) {
+  channel_->CallMethod(descriptor()->method(2),
                        controller, request, response, done);
 }
 

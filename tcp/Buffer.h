@@ -20,6 +20,10 @@
 
 static const int kPrePendIndex = 8;
 static const int kInitalSize = 1024;
+/** 单连接读缓冲软上限（字节）；超过由 TcpConnection 关闭连接 */
+static const int kDefaultMaxReadBufBytes = 8 * 1024 * 1024;
+/** 单连接发送队列软上限（字节） */
+static const int kDefaultMaxSendBufBytes = 4 * 1024 * 1024;
 
 class Buffer {
 public:

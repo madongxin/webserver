@@ -3,6 +3,7 @@
 #include "GameLogicServiceImpl.h"
 #include "GatewayPushClient.h"
 #include "Logging.h"
+#include "PushReplayCache.h"
 
 namespace GameLogicPush {
 
@@ -25,12 +26,15 @@ bool PushToBoundGateway(const std::string &gateway_instance_id, uint64_t player_
         LOG_WARN << "PushToBoundGateway missing gateway/session player_id=" << player_id;
         return false;
     }
+    uint64_t seq = server_seq;
+    if (seq == 0 && reliable)
+        seq = PushReplayCache::Instance().NextSeq(player_id);
     gwpush::PushBatchRequest req;
     req.set_gateway_instance_id(gw);
     auto *m = req.add_messages();
     m->set_player_id(player_id);
     m->set_session_id(sid);
-    m->set_server_seq(server_seq);
+    m->set_server_seq(seq);
     m->set_message_type(message_type);
     m->set_payload(payload_or_frame);
     m->set_reliable(reliable);
@@ -44,6 +48,14 @@ bool PushToBoundGateway(const std::string &gateway_instance_id, uint64_t player_
     if (rsp.rejected() > 0) {
         LOG_WARN << "PushBatch rejected=" << rsp.rejected() << " accepted=" << rsp.accepted()
                  << " (stale session_id?)";
+    }
+    if (reliable && rsp.accepted() > 0) {
+        PushReplayEntry e;
+        e.server_seq = seq;
+        e.message_type = message_type;
+        e.payload = payload_or_frame;
+        e.reliable = true;
+        PushReplayCache::Instance().Store(player_id, e);
     }
     return rsp.accepted() > 0;
 }

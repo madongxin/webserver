@@ -10,4 +10,8 @@ public:
     void LookupAccount(::google::protobuf::RpcController *controller,
                        const ::gdb::LookupAccountReq *request, ::gdb::LookupAccountRsp *response,
                        ::google::protobuf::Closure *done) override;
+    void RegisterAccount(::google::protobuf::RpcController *controller,
+                         const ::gdb::RegisterAccountReq *request,
+                         ::gdb::RegisterAccountRsp *response,
+                         ::google::protobuf::Closure *done) override;
 };

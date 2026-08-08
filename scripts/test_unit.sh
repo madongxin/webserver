@@ -1,0 +1,28 @@
+#!/usr/bin/env bash
+# 阶段 0+ 单元测试（失败立即退出，禁止吞错）
+set -euo pipefail
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+cd "$ROOT"
+BIN="${ROOT}/build/test"
+
+run_one() {
+  local name="$1"
+  shift
+  if [[ ! -x "$BIN/$name" ]]; then
+    echo "ERROR missing binary: $BIN/$name (build first)" >&2
+    exit 1
+  fi
+  echo "== $name =="
+  "$BIN/$name" "$@"
+}
+
+run_one reactor_unit_test
+run_one message_route_test
+run_one map_placement_test
+run_one player_serial_queue_test
+run_one auth_session_boundary_test
+run_one phase1_gateway_boundary_test
+run_one push_replay_cache_test
+run_one password_hash_test
+# session_store_test / placement_store_test 依赖 Redis：scripts/test_placement.sh / test_integration.sh
+echo "test_unit.sh PASS"

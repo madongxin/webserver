@@ -22,7 +22,14 @@ Details: `docs/mmo-migration/topology-auth-session.md`
 
 ```bash
 ./scripts/check_deps.sh
-./scripts/build.sh Debug
-./scripts/test.sh unit
+./scripts/build.sh Debug          # C++17；支持 clean
+./scripts/test_reactor.sh         # 阶段 0 Reactor / ProtoFraming
+./scripts/test_unit.sh
+./scripts/test_all.sh
+./scripts/run_version.sh
+./scripts/test.sh unit            # 兼容旧入口
 ./scripts/test.sh integration
 ```
+
+全阶段路线图：`docs/GameMesh_Cursor_All_Phases.md`（阶段 0–3 见 `docs/mmo-migration/PHASE*_STATUS.md`）。
+Session Redis：连接池 + Lua；正式业务 `Dispatch`；Register/Login 经 Auth→GameDB；`GAMEMESH_FORMAL=1` fail-closed。

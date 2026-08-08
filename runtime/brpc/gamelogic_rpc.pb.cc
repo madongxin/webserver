@@ -198,6 +198,7 @@ const ::google::protobuf::uint32 TableStruct::offsets[] GOOGLE_PROTOBUF_ATTRIBUT
   GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::glrpc::BindPlayerRequest, gateway_instance_id_),
   GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::glrpc::BindPlayerRequest, idempotency_key_),
   GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::glrpc::BindPlayerRequest, trace_context_),
+  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::glrpc::BindPlayerRequest, generation_),
   ~0u,  // no _has_bits_
   GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::glrpc::BindPlayerResponse, _internal_metadata_),
   ~0u,  // no _extensions_
@@ -241,6 +242,10 @@ const ::google::protobuf::uint32 TableStruct::offsets[] GOOGLE_PROTOBUF_ATTRIBUT
   GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::glrpc::ClientCommand, payload_),
   GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::glrpc::ClientCommand, trace_context_),
   GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::glrpc::ClientCommand, idempotency_key_),
+  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::glrpc::ClientCommand, generation_),
+  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::glrpc::ClientCommand, route_version_),
+  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::glrpc::ClientCommand, deadline_ms_),
+  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::glrpc::ClientCommand, trace_id_),
   ~0u,  // no _has_bits_
   GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::glrpc::CommandResult, _internal_metadata_),
   ~0u,  // no _extensions_
@@ -254,11 +259,11 @@ const ::google::protobuf::uint32 TableStruct::offsets[] GOOGLE_PROTOBUF_ATTRIBUT
 };
 static const ::google::protobuf::internal::MigrationSchema schemas[] GOOGLE_PROTOBUF_ATTRIBUTE_SECTION_VARIABLE(protodesc_cold) = {
   { 0, -1, sizeof(::glrpc::BindPlayerRequest)},
-  { 16, -1, sizeof(::glrpc::BindPlayerResponse)},
-  { 25, -1, sizeof(::glrpc::UnbindPlayerRequest)},
-  { 35, -1, sizeof(::glrpc::UnbindPlayerResponse)},
-  { 42, -1, sizeof(::glrpc::ClientCommand)},
-  { 59, -1, sizeof(::glrpc::CommandResult)},
+  { 17, -1, sizeof(::glrpc::BindPlayerResponse)},
+  { 26, -1, sizeof(::glrpc::UnbindPlayerRequest)},
+  { 36, -1, sizeof(::glrpc::UnbindPlayerResponse)},
+  { 43, -1, sizeof(::glrpc::ClientCommand)},
+  { 64, -1, sizeof(::glrpc::CommandResult)},
 };
 
 static ::google::protobuf::Message const * const file_default_instances[] = {
@@ -292,40 +297,42 @@ void protobuf_RegisterTypes(const ::std::string&) {
 void AddDescriptorsImpl() {
   InitDefaults();
   static const char descriptor[] GOOGLE_PROTOBUF_ATTRIBUTE_SECTION_VARIABLE(protodesc_cold) = {
-      "\n\023gamelogic_rpc.proto\022\005glrpc\"\230\002\n\021BindPla"
+      "\n\023gamelogic_rpc.proto\022\005glrpc\"\254\002\n\021BindPla"
       "yerRequest\022\022\n\nrequest_id\030\001 \001(\004\022\021\n\tplayer"
       "_id\030\002 \001(\004\022\022\n\nsession_id\030\003 \001(\t\022\023\n\013fence_t"
       "oken\030\004 \001(\t\022\035\n\025gamelogic_instance_id\030\005 \001("
       "\t\022\027\n\017map_instance_id\030\006 \001(\004\022\027\n\017map_owner_"
       "epoch\030\007 \001(\004\022\025\n\rroute_version\030\010 \001(\004\022\033\n\023ga"
       "teway_instance_id\030\t \001(\t\022\027\n\017idempotency_k"
-      "ey\030\n \001(\t\022\025\n\rtrace_context\030\013 \001(\t\"]\n\022BindP"
-      "layerResponse\022\n\n\002ok\030\001 \001(\010\022\017\n\007message\030\002 \001"
-      "(\t\022\022\n\nerror_code\030\003 \001(\t\022\026\n\016bag_item_kinds"
-      "\030\004 \001(\r\"z\n\023UnbindPlayerRequest\022\021\n\tplayer_"
-      "id\030\001 \001(\004\022\022\n\nsession_id\030\002 \001(\t\022\023\n\013fence_to"
-      "ken\030\003 \001(\t\022\016\n\006reason\030\004 \001(\t\022\027\n\017idempotency"
-      "_key\030\005 \001(\t\"3\n\024UnbindPlayerResponse\022\n\n\002ok"
-      "\030\001 \001(\010\022\017\n\007message\030\002 \001(\t\"\233\002\n\rClientComman"
-      "d\022\022\n\nrequest_id\030\001 \001(\004\022\021\n\tplayer_id\030\002 \001(\004"
-      "\022\022\n\nsession_id\030\003 \001(\t\022\023\n\013fence_token\030\004 \001("
-      "\t\022\035\n\025gamelogic_instance_id\030\005 \001(\t\022\027\n\017map_"
-      "instance_id\030\006 \001(\004\022\027\n\017map_owner_epoch\030\007 \001"
-      "(\004\022\022\n\nclient_seq\030\010 \001(\004\022\024\n\014message_type\030\t"
-      " \001(\t\022\017\n\007payload\030\n \001(\014\022\025\n\rtrace_context\030\013"
-      " \001(\t\022\027\n\017idempotency_key\030\014 \001(\t\"l\n\rCommand"
-      "Result\022\n\n\002ok\030\001 \001(\010\022\017\n\007message\030\002 \001(\t\022\022\n\ne"
-      "rror_code\030\003 \001(\t\022\026\n\016response_frame\030\004 \001(\014\022"
-      "\022\n\nserver_seq\030\005 \001(\0042\326\001\n\020GameLogicService"
-      "\022A\n\nBindPlayer\022\030.glrpc.BindPlayerRequest"
-      "\032\031.glrpc.BindPlayerResponse\0226\n\010Dispatch\022"
-      "\024.glrpc.ClientCommand\032\024.glrpc.CommandRes"
-      "ult\022G\n\014UnbindPlayer\022\032.glrpc.UnbindPlayer"
-      "Request\032\033.glrpc.UnbindPlayerResponseB\003\200\001"
-      "\001b\006proto3"
+      "ey\030\n \001(\t\022\025\n\rtrace_context\030\013 \001(\t\022\022\n\ngener"
+      "ation\030\014 \001(\004\"]\n\022BindPlayerResponse\022\n\n\002ok\030"
+      "\001 \001(\010\022\017\n\007message\030\002 \001(\t\022\022\n\nerror_code\030\003 \001"
+      "(\t\022\026\n\016bag_item_kinds\030\004 \001(\r\"z\n\023UnbindPlay"
+      "erRequest\022\021\n\tplayer_id\030\001 \001(\004\022\022\n\nsession_"
+      "id\030\002 \001(\t\022\023\n\013fence_token\030\003 \001(\t\022\016\n\006reason\030"
+      "\004 \001(\t\022\027\n\017idempotency_key\030\005 \001(\t\"3\n\024Unbind"
+      "PlayerResponse\022\n\n\002ok\030\001 \001(\010\022\017\n\007message\030\002 "
+      "\001(\t\"\355\002\n\rClientCommand\022\022\n\nrequest_id\030\001 \001("
+      "\004\022\021\n\tplayer_id\030\002 \001(\004\022\022\n\nsession_id\030\003 \001(\t"
+      "\022\023\n\013fence_token\030\004 \001(\t\022\035\n\025gamelogic_insta"
+      "nce_id\030\005 \001(\t\022\027\n\017map_instance_id\030\006 \001(\004\022\027\n"
+      "\017map_owner_epoch\030\007 \001(\004\022\022\n\nclient_seq\030\010 \001"
+      "(\004\022\024\n\014message_type\030\t \001(\t\022\017\n\007payload\030\n \001("
+      "\014\022\025\n\rtrace_context\030\013 \001(\t\022\027\n\017idempotency_"
+      "key\030\014 \001(\t\022\022\n\ngeneration\030\r \001(\004\022\025\n\rroute_v"
+      "ersion\030\016 \001(\004\022\023\n\013deadline_ms\030\017 \001(\005\022\020\n\010tra"
+      "ce_id\030\020 \001(\t\"l\n\rCommandResult\022\n\n\002ok\030\001 \001(\010"
+      "\022\017\n\007message\030\002 \001(\t\022\022\n\nerror_code\030\003 \001(\t\022\026\n"
+      "\016response_frame\030\004 \001(\014\022\022\n\nserver_seq\030\005 \001("
+      "\0042\326\001\n\020GameLogicService\022A\n\nBindPlayer\022\030.g"
+      "lrpc.BindPlayerRequest\032\031.glrpc.BindPlaye"
+      "rResponse\0226\n\010Dispatch\022\024.glrpc.ClientComm"
+      "and\032\024.glrpc.CommandResult\022G\n\014UnbindPlaye"
+      "r\022\032.glrpc.UnbindPlayerRequest\032\033.glrpc.Un"
+      "bindPlayerResponseB\003\200\001\001b\006proto3"
   };
   ::google::protobuf::DescriptorPool::InternalAddGeneratedFile(
-      descriptor, 1209);
+      descriptor, 1311);
   ::google::protobuf::MessageFactory::InternalRegisterGeneratedFile(
     "gamelogic_rpc.proto", &protobuf_RegisterTypes);
 }
@@ -359,6 +366,7 @@ const int BindPlayerRequest::kRouteVersionFieldNumber;
 const int BindPlayerRequest::kGatewayInstanceIdFieldNumber;
 const int BindPlayerRequest::kIdempotencyKeyFieldNumber;
 const int BindPlayerRequest::kTraceContextFieldNumber;
+const int BindPlayerRequest::kGenerationFieldNumber;
 #endif  // !defined(_MSC_VER) || _MSC_VER >= 1900
 
 BindPlayerRequest::BindPlayerRequest()
@@ -399,8 +407,8 @@ BindPlayerRequest::BindPlayerRequest(const BindPlayerRequest& from)
     trace_context_.AssignWithDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), from.trace_context_);
   }
   ::memcpy(&request_id_, &from.request_id_,
-    static_cast<size_t>(reinterpret_cast<char*>(&route_version_) -
-    reinterpret_cast<char*>(&request_id_)) + sizeof(route_version_));
+    static_cast<size_t>(reinterpret_cast<char*>(&generation_) -
+    reinterpret_cast<char*>(&request_id_)) + sizeof(generation_));
   // @@protoc_insertion_point(copy_constructor:glrpc.BindPlayerRequest)
 }
 
@@ -412,8 +420,8 @@ void BindPlayerRequest::SharedCtor() {
   idempotency_key_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
   trace_context_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
   ::memset(&request_id_, 0, static_cast<size_t>(
-      reinterpret_cast<char*>(&route_version_) -
-      reinterpret_cast<char*>(&request_id_)) + sizeof(route_version_));
+      reinterpret_cast<char*>(&generation_) -
+      reinterpret_cast<char*>(&request_id_)) + sizeof(generation_));
   _cached_size_ = 0;
 }
 
@@ -467,8 +475,8 @@ void BindPlayerRequest::Clear() {
   idempotency_key_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
   trace_context_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
   ::memset(&request_id_, 0, static_cast<size_t>(
-      reinterpret_cast<char*>(&route_version_) -
-      reinterpret_cast<char*>(&request_id_)) + sizeof(route_version_));
+      reinterpret_cast<char*>(&generation_) -
+      reinterpret_cast<char*>(&request_id_)) + sizeof(generation_));
   _internal_metadata_.Clear();
 }
 
@@ -648,6 +656,20 @@ bool BindPlayerRequest::MergePartialFromCodedStream(
         break;
       }
 
+      // uint64 generation = 12;
+      case 12: {
+        if (static_cast< ::google::protobuf::uint8>(tag) ==
+            static_cast< ::google::protobuf::uint8>(96u /* 96 & 0xFF */)) {
+
+          DO_((::google::protobuf::internal::WireFormatLite::ReadPrimitive<
+                   ::google::protobuf::uint64, ::google::protobuf::internal::WireFormatLite::TYPE_UINT64>(
+                 input, &generation_)));
+        } else {
+          goto handle_unusual;
+        }
+        break;
+      }
+
       default: {
       handle_unusual:
         if (tag == 0) {
@@ -759,6 +781,11 @@ void BindPlayerRequest::SerializeWithCachedSizes(
       11, this->trace_context(), output);
   }
 
+  // uint64 generation = 12;
+  if (this->generation() != 0) {
+    ::google::protobuf::internal::WireFormatLite::WriteUInt64(12, this->generation(), output);
+  }
+
   if ((_internal_metadata_.have_unknown_fields() &&  ::google::protobuf::internal::GetProto3PreserveUnknownsDefault())) {
     ::google::protobuf::internal::WireFormat::SerializeUnknownFields(
         (::google::protobuf::internal::GetProto3PreserveUnknownsDefault()   ? _internal_metadata_.unknown_fields()   : _internal_metadata_.default_instance()), output);
@@ -864,6 +891,11 @@ void BindPlayerRequest::SerializeWithCachedSizes(
         11, this->trace_context(), target);
   }
 
+  // uint64 generation = 12;
+  if (this->generation() != 0) {
+    target = ::google::protobuf::internal::WireFormatLite::WriteUInt64ToArray(12, this->generation(), target);
+  }
+
   if ((_internal_metadata_.have_unknown_fields() &&  ::google::protobuf::internal::GetProto3PreserveUnknownsDefault())) {
     target = ::google::protobuf::internal::WireFormat::SerializeUnknownFieldsToArray(
         (::google::protobuf::internal::GetProto3PreserveUnknownsDefault()   ? _internal_metadata_.unknown_fields()   : _internal_metadata_.default_instance()), target);
@@ -958,6 +990,13 @@ size_t BindPlayerRequest::ByteSizeLong() const {
         this->route_version());
   }
 
+  // uint64 generation = 12;
+  if (this->generation() != 0) {
+    total_size += 1 +
+      ::google::protobuf::internal::WireFormatLite::UInt64Size(
+        this->generation());
+  }
+
   int cached_size = ::google::protobuf::internal::ToCachedSize(total_size);
   GOOGLE_SAFE_CONCURRENT_WRITES_BEGIN();
   _cached_size_ = cached_size;
@@ -1026,6 +1065,9 @@ void BindPlayerRequest::MergeFrom(const BindPlayerRequest& from) {
   if (from.route_version() != 0) {
     set_route_version(from.route_version());
   }
+  if (from.generation() != 0) {
+    set_generation(from.generation());
+  }
 }
 
 void BindPlayerRequest::CopyFrom(const ::google::protobuf::Message& from) {
@@ -1063,6 +1105,7 @@ void BindPlayerRequest::InternalSwap(BindPlayerRequest* other) {
   swap(map_instance_id_, other->map_instance_id_);
   swap(map_owner_epoch_, other->map_owner_epoch_);
   swap(route_version_, other->route_version_);
+  swap(generation_, other->generation_);
   _internal_metadata_.Swap(&other->_internal_metadata_);
   swap(_cached_size_, other->_cached_size_);
 }
@@ -2241,6 +2284,10 @@ const int ClientCommand::kMessageTypeFieldNumber;
 const int ClientCommand::kPayloadFieldNumber;
 const int ClientCommand::kTraceContextFieldNumber;
 const int ClientCommand::kIdempotencyKeyFieldNumber;
+const int ClientCommand::kGenerationFieldNumber;
+const int ClientCommand::kRouteVersionFieldNumber;
+const int ClientCommand::kDeadlineMsFieldNumber;
+const int ClientCommand::kTraceIdFieldNumber;
 #endif  // !defined(_MSC_VER) || _MSC_VER >= 1900
 
 ClientCommand::ClientCommand()
@@ -2284,9 +2331,13 @@ ClientCommand::ClientCommand(const ClientCommand& from)
   if (from.idempotency_key().size() > 0) {
     idempotency_key_.AssignWithDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), from.idempotency_key_);
   }
+  trace_id_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  if (from.trace_id().size() > 0) {
+    trace_id_.AssignWithDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), from.trace_id_);
+  }
   ::memcpy(&request_id_, &from.request_id_,
-    static_cast<size_t>(reinterpret_cast<char*>(&client_seq_) -
-    reinterpret_cast<char*>(&request_id_)) + sizeof(client_seq_));
+    static_cast<size_t>(reinterpret_cast<char*>(&deadline_ms_) -
+    reinterpret_cast<char*>(&request_id_)) + sizeof(deadline_ms_));
   // @@protoc_insertion_point(copy_constructor:glrpc.ClientCommand)
 }
 
@@ -2298,9 +2349,10 @@ void ClientCommand::SharedCtor() {
   payload_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
   trace_context_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
   idempotency_key_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  trace_id_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
   ::memset(&request_id_, 0, static_cast<size_t>(
-      reinterpret_cast<char*>(&client_seq_) -
-      reinterpret_cast<char*>(&request_id_)) + sizeof(client_seq_));
+      reinterpret_cast<char*>(&deadline_ms_) -
+      reinterpret_cast<char*>(&request_id_)) + sizeof(deadline_ms_));
   _cached_size_ = 0;
 }
 
@@ -2317,6 +2369,7 @@ void ClientCommand::SharedDtor() {
   payload_.DestroyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
   trace_context_.DestroyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
   idempotency_key_.DestroyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  trace_id_.DestroyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
 }
 
 void ClientCommand::SetCachedSize(int size) const {
@@ -2355,9 +2408,10 @@ void ClientCommand::Clear() {
   payload_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
   trace_context_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
   idempotency_key_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  trace_id_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
   ::memset(&request_id_, 0, static_cast<size_t>(
-      reinterpret_cast<char*>(&client_seq_) -
-      reinterpret_cast<char*>(&request_id_)) + sizeof(client_seq_));
+      reinterpret_cast<char*>(&deadline_ms_) -
+      reinterpret_cast<char*>(&request_id_)) + sizeof(deadline_ms_));
   _internal_metadata_.Clear();
 }
 
@@ -2367,7 +2421,7 @@ bool ClientCommand::MergePartialFromCodedStream(
   ::google::protobuf::uint32 tag;
   // @@protoc_insertion_point(parse_start:glrpc.ClientCommand)
   for (;;) {
-    ::std::pair< ::google::protobuf::uint32, bool> p = input->ReadTagWithCutoffNoLastTag(127u);
+    ::std::pair< ::google::protobuf::uint32, bool> p = input->ReadTagWithCutoffNoLastTag(16383u);
     tag = p.first;
     if (!p.second) goto handle_unusual;
     switch (::google::protobuf::internal::WireFormatLite::GetTagFieldNumber(tag)) {
@@ -2549,6 +2603,64 @@ bool ClientCommand::MergePartialFromCodedStream(
         break;
       }
 
+      // uint64 generation = 13;
+      case 13: {
+        if (static_cast< ::google::protobuf::uint8>(tag) ==
+            static_cast< ::google::protobuf::uint8>(104u /* 104 & 0xFF */)) {
+
+          DO_((::google::protobuf::internal::WireFormatLite::ReadPrimitive<
+                   ::google::protobuf::uint64, ::google::protobuf::internal::WireFormatLite::TYPE_UINT64>(
+                 input, &generation_)));
+        } else {
+          goto handle_unusual;
+        }
+        break;
+      }
+
+      // uint64 route_version = 14;
+      case 14: {
+        if (static_cast< ::google::protobuf::uint8>(tag) ==
+            static_cast< ::google::protobuf::uint8>(112u /* 112 & 0xFF */)) {
+
+          DO_((::google::protobuf::internal::WireFormatLite::ReadPrimitive<
+                   ::google::protobuf::uint64, ::google::protobuf::internal::WireFormatLite::TYPE_UINT64>(
+                 input, &route_version_)));
+        } else {
+          goto handle_unusual;
+        }
+        break;
+      }
+
+      // int32 deadline_ms = 15;
+      case 15: {
+        if (static_cast< ::google::protobuf::uint8>(tag) ==
+            static_cast< ::google::protobuf::uint8>(120u /* 120 & 0xFF */)) {
+
+          DO_((::google::protobuf::internal::WireFormatLite::ReadPrimitive<
+                   ::google::protobuf::int32, ::google::protobuf::internal::WireFormatLite::TYPE_INT32>(
+                 input, &deadline_ms_)));
+        } else {
+          goto handle_unusual;
+        }
+        break;
+      }
+
+      // string trace_id = 16;
+      case 16: {
+        if (static_cast< ::google::protobuf::uint8>(tag) ==
+            static_cast< ::google::protobuf::uint8>(130u /* 130 & 0xFF */)) {
+          DO_(::google::protobuf::internal::WireFormatLite::ReadString(
+                input, this->mutable_trace_id()));
+          DO_(::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+            this->trace_id().data(), static_cast<int>(this->trace_id().length()),
+            ::google::protobuf::internal::WireFormatLite::PARSE,
+            "glrpc.ClientCommand.trace_id"));
+        } else {
+          goto handle_unusual;
+        }
+        break;
+      }
+
       default: {
       handle_unusual:
         if (tag == 0) {
@@ -2666,6 +2778,31 @@ void ClientCommand::SerializeWithCachedSizes(
       12, this->idempotency_key(), output);
   }
 
+  // uint64 generation = 13;
+  if (this->generation() != 0) {
+    ::google::protobuf::internal::WireFormatLite::WriteUInt64(13, this->generation(), output);
+  }
+
+  // uint64 route_version = 14;
+  if (this->route_version() != 0) {
+    ::google::protobuf::internal::WireFormatLite::WriteUInt64(14, this->route_version(), output);
+  }
+
+  // int32 deadline_ms = 15;
+  if (this->deadline_ms() != 0) {
+    ::google::protobuf::internal::WireFormatLite::WriteInt32(15, this->deadline_ms(), output);
+  }
+
+  // string trace_id = 16;
+  if (this->trace_id().size() > 0) {
+    ::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+      this->trace_id().data(), static_cast<int>(this->trace_id().length()),
+      ::google::protobuf::internal::WireFormatLite::SERIALIZE,
+      "glrpc.ClientCommand.trace_id");
+    ::google::protobuf::internal::WireFormatLite::WriteStringMaybeAliased(
+      16, this->trace_id(), output);
+  }
+
   if ((_internal_metadata_.have_unknown_fields() &&  ::google::protobuf::internal::GetProto3PreserveUnknownsDefault())) {
     ::google::protobuf::internal::WireFormat::SerializeUnknownFields(
         (::google::protobuf::internal::GetProto3PreserveUnknownsDefault()   ? _internal_metadata_.unknown_fields()   : _internal_metadata_.default_instance()), output);
@@ -2778,6 +2915,32 @@ void ClientCommand::SerializeWithCachedSizes(
         12, this->idempotency_key(), target);
   }
 
+  // uint64 generation = 13;
+  if (this->generation() != 0) {
+    target = ::google::protobuf::internal::WireFormatLite::WriteUInt64ToArray(13, this->generation(), target);
+  }
+
+  // uint64 route_version = 14;
+  if (this->route_version() != 0) {
+    target = ::google::protobuf::internal::WireFormatLite::WriteUInt64ToArray(14, this->route_version(), target);
+  }
+
+  // int32 deadline_ms = 15;
+  if (this->deadline_ms() != 0) {
+    target = ::google::protobuf::internal::WireFormatLite::WriteInt32ToArray(15, this->deadline_ms(), target);
+  }
+
+  // string trace_id = 16;
+  if (this->trace_id().size() > 0) {
+    ::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+      this->trace_id().data(), static_cast<int>(this->trace_id().length()),
+      ::google::protobuf::internal::WireFormatLite::SERIALIZE,
+      "glrpc.ClientCommand.trace_id");
+    target =
+      ::google::protobuf::internal::WireFormatLite::WriteStringToArray(
+        16, this->trace_id(), target);
+  }
+
   if ((_internal_metadata_.have_unknown_fields() &&  ::google::protobuf::internal::GetProto3PreserveUnknownsDefault())) {
     target = ::google::protobuf::internal::WireFormat::SerializeUnknownFieldsToArray(
         (::google::protobuf::internal::GetProto3PreserveUnknownsDefault()   ? _internal_metadata_.unknown_fields()   : _internal_metadata_.default_instance()), target);
@@ -2844,6 +3007,13 @@ size_t ClientCommand::ByteSizeLong() const {
         this->idempotency_key());
   }
 
+  // string trace_id = 16;
+  if (this->trace_id().size() > 0) {
+    total_size += 2 +
+      ::google::protobuf::internal::WireFormatLite::StringSize(
+        this->trace_id());
+  }
+
   // uint64 request_id = 1;
   if (this->request_id() != 0) {
     total_size += 1 +
@@ -2877,6 +3047,27 @@ size_t ClientCommand::ByteSizeLong() const {
     total_size += 1 +
       ::google::protobuf::internal::WireFormatLite::UInt64Size(
         this->client_seq());
+  }
+
+  // uint64 generation = 13;
+  if (this->generation() != 0) {
+    total_size += 1 +
+      ::google::protobuf::internal::WireFormatLite::UInt64Size(
+        this->generation());
+  }
+
+  // uint64 route_version = 14;
+  if (this->route_version() != 0) {
+    total_size += 1 +
+      ::google::protobuf::internal::WireFormatLite::UInt64Size(
+        this->route_version());
+  }
+
+  // int32 deadline_ms = 15;
+  if (this->deadline_ms() != 0) {
+    total_size += 1 +
+      ::google::protobuf::internal::WireFormatLite::Int32Size(
+        this->deadline_ms());
   }
 
   int cached_size = ::google::protobuf::internal::ToCachedSize(total_size);
@@ -2936,6 +3127,10 @@ void ClientCommand::MergeFrom(const ClientCommand& from) {
 
     idempotency_key_.AssignWithDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), from.idempotency_key_);
   }
+  if (from.trace_id().size() > 0) {
+
+    trace_id_.AssignWithDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), from.trace_id_);
+  }
   if (from.request_id() != 0) {
     set_request_id(from.request_id());
   }
@@ -2950,6 +3145,15 @@ void ClientCommand::MergeFrom(const ClientCommand& from) {
   }
   if (from.client_seq() != 0) {
     set_client_seq(from.client_seq());
+  }
+  if (from.generation() != 0) {
+    set_generation(from.generation());
+  }
+  if (from.route_version() != 0) {
+    set_route_version(from.route_version());
+  }
+  if (from.deadline_ms() != 0) {
+    set_deadline_ms(from.deadline_ms());
   }
 }
 
@@ -2984,11 +3188,15 @@ void ClientCommand::InternalSwap(ClientCommand* other) {
   payload_.Swap(&other->payload_);
   trace_context_.Swap(&other->trace_context_);
   idempotency_key_.Swap(&other->idempotency_key_);
+  trace_id_.Swap(&other->trace_id_);
   swap(request_id_, other->request_id_);
   swap(player_id_, other->player_id_);
   swap(map_instance_id_, other->map_instance_id_);
   swap(map_owner_epoch_, other->map_owner_epoch_);
   swap(client_seq_, other->client_seq_);
+  swap(generation_, other->generation_);
+  swap(route_version_, other->route_version_);
+  swap(deadline_ms_, other->deadline_ms_);
   _internal_metadata_.Swap(&other->_internal_metadata_);
   swap(_cached_size_, other->_cached_size_);
 }

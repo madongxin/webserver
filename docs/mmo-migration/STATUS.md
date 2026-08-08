@@ -1,12 +1,14 @@
 # STATUS — GameMesh 迁移进度
 
-> 更新：2026-08-07  
+> 更新：2026-08-08  
 > 正式基线：`docs/mmo-distributed-architecture.md`  
+> 全阶段路线图：`docs/GameMesh_Cursor_All_Phases.md`  
 > 工程名：**GameMesh**（原 CppWebServer）
 
 ## 当前阶段
 
-**阶段 7 — 独立 Session/GameDB + 生产化薄集成 + 多二进制：本轮已落地。**
+**`GameMesh_Cursor_All_Phases` 阶段 3 — 鉴权 / 所有权 / 安全 / 运维：本轮已落地（见 `PHASE3_STATUS.md`）。**  
+阶段 0–2 见对应 `PHASE*_STATUS.md`。正式模式请设 `GAMEMESH_FORMAL=1`。
 
 ## 阶段 0–6
 

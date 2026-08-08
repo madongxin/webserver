@@ -28,8 +28,12 @@ option(ENABLE_ROCKSDB "Local RocksDB KV store (protobuf values)" OFF)
 option(ENABLE_BRPC "baidu brpc mail dual-stack (MailBrpcService)" OFF)
 
 set(CMAKE_CXX_COMPILER "g++")
-set(CMAKE_CXX_FLAGS "-g -Wall -Werror -std=c++14")
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
+set(CMAKE_CXX_FLAGS "-g -Wall -Werror")
 set(CMAKE_CXX_FLAGS_DEBUG "-O0")
+message(STATUS "C++ standard: ${CMAKE_CXX_STANDARD} (required=${CMAKE_CXX_STANDARD_REQUIRED})")
 
 option(ENABLE_ASAN "Build with AddressSanitizer" OFF)
 if(ENABLE_ASAN)
@@ -71,6 +75,7 @@ if(ENABLE_GAME_PROTOBUF)
     game/GameService.cpp
     game/GameTcpGateway.cpp
     game/GatewayConnRegistry.cpp
+    game/GatewayAuthPolicy.cpp
     runtime/PlayerSerialQueue.cpp
     runtime/InProcessTransport.cpp
     runtime/TcpReplySink.cpp
@@ -98,7 +103,8 @@ if(ENABLE_GAME_PROTOBUF AND ENABLE_REDIS)
   if(NOT HIREDIS_INCLUDE_DIR OR NOT HIREDIS_LIB)
     message(FATAL_ERROR "ENABLE_REDIS=ON but hiredis not found. Install hiredis-devel.")
   endif()
-  list(APPEND SRC_REDIS redis/RedisClient.cpp game/SessionStore.cpp)
+  list(APPEND SRC_REDIS redis/RedisClient.cpp redis/RedisPool.cpp game/SessionStore.cpp
+                game/PlacementStore.cpp)
   message(STATUS "Redis: include=${HIREDIS_INCLUDE_DIR} lib=${HIREDIS_LIB}")
 endif()
 
@@ -197,6 +203,7 @@ if(ENABLE_BRPC)
     runtime/brpc/GatewayPushServer.cpp
     runtime/brpc/GatewayPushClient.cpp
     runtime/brpc/GameLogicPush.cpp
+    runtime/PushReplayCache.cpp
     runtime/brpc/gamedb.pb.cc
     runtime/brpc/GameDbServiceImpl.cpp
     runtime/brpc/GameDbBrpcServer.cpp
@@ -207,7 +214,7 @@ if(ENABLE_BRPC)
   message(STATUS "brpc: include=${BRPC_INCLUDE_DIR} lib=${BRPC_LIB}")
 endif()
 
-set(SRC_BOOTSTRAP apps/ServerBootstrap.cpp)
+set(SRC_BOOTSTRAP apps/ServerBootstrap.cpp runtime/ServiceHealth.cpp runtime/PasswordHash.cpp)
 set(GAMEMESH_COMMON_SRCS
   ${SRC_LIST1} ${SRC_LIST2} ${SRC_LIST3} ${SRC_LIST4} ${SRC_LIST5}
   ${SRC_DB} ${SRC_GAME} ${SRC_REDIS} ${SRC_ROCKSDB} ${SRC_BRPC} ${SRC_BOOTSTRAP})
@@ -237,7 +244,8 @@ function(gamemesh_apply_target_options tgt)
   endif()
   if(ENABLE_BRPC)
     target_compile_definitions(${tgt} PRIVATE WEBSERVER_ENABLE_BRPC)
-    target_include_directories(${tgt} PRIVATE ${BRPC_INCLUDE_DIR} game/brpc runtime/brpc runtime/discovery)
+    target_include_directories(${tgt} PRIVATE ${BRPC_INCLUDE_DIR} game/brpc runtime runtime/brpc
+                              runtime/discovery)
     target_link_libraries(${tgt} ${BRPC_LINK_LIBS})
   endif()
 endfunction()
@@ -256,13 +264,6 @@ if(ENABLE_BRPC)
   gamemesh_apply_target_options(world)
   gamemesh_apply_target_options(session)
   gamemesh_apply_target_options(gamedb)
-endif()
-
-if(ENABLE_ROCKSDB)
-  # RocksDB 8.x 头文件需要 C++17（全局仍为 -std=c++14，此处覆盖）
-  set_source_files_properties(
-    rocksdb/RocksDbClient.cpp rocksdb/DemoKvStore.cpp
-    PROPERTIES COMPILE_FLAGS "-std=c++17")
 endif()
 
 if(ENABLE_BRPC)
@@ -376,6 +377,23 @@ if(ENABLE_GAME_PROTOBUF)
   target_include_directories(auth_session_boundary_test PRIVATE
     ${Protobuf_INCLUDE_DIRS} runtime game runtime/discovery base log timer)
   target_link_libraries(auth_session_boundary_test ${Protobuf_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
+
+  add_executable(phase1_gateway_boundary_test
+    test/phase1_gateway_boundary_test.cpp
+    game/GatewayConnRegistry.cpp
+    game/GatewayAuthPolicy.cpp
+    game/ProtoFraming.cpp
+    game/game.pb.cc
+    runtime/MessageRoute.cpp
+    base/CurrentThread.cpp
+    log/Logging.cpp
+    log/LogStream.cpp
+    log/LogFile.cpp
+    log/AsyncLogging.cpp)
+  target_compile_definitions(phase1_gateway_boundary_test PRIVATE WEBSERVER_ENABLE_GAME_PROTOBUF)
+  target_include_directories(phase1_gateway_boundary_test PRIVATE
+    ${Protobuf_INCLUDE_DIRS} runtime game base log timer)
+  target_link_libraries(phase1_gateway_boundary_test ${Protobuf_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
 endif()
 
 # 阶段 3：Session 状态机（需 Redis）
@@ -385,6 +403,7 @@ if(ENABLE_GAME_PROTOBUF AND ENABLE_REDIS)
     game/SessionStore.cpp
     game/game.pb.cc
     redis/RedisClient.cpp
+    redis/RedisPool.cpp
     base/CurrentThread.cpp
     log/Logging.cpp
     log/LogStream.cpp
@@ -395,7 +414,34 @@ if(ENABLE_GAME_PROTOBUF AND ENABLE_REDIS)
     game redis base log timer ${HIREDIS_INCLUDE_DIR} ${Protobuf_INCLUDE_DIRS})
   target_link_libraries(session_store_test
     ${CMAKE_THREAD_LIBS_INIT} ${HIREDIS_LIB} ${Protobuf_LIBRARIES})
+
+  add_executable(placement_store_test
+    test/placement_store_test.cpp
+    game/PlacementStore.cpp
+    redis/RedisClient.cpp
+    redis/RedisPool.cpp
+    base/CurrentThread.cpp
+    log/Logging.cpp
+    log/LogStream.cpp
+    log/LogFile.cpp
+    log/AsyncLogging.cpp)
+  target_compile_definitions(placement_store_test PRIVATE WEBSERVER_ENABLE_REDIS)
+  target_include_directories(placement_store_test PRIVATE
+    game redis base log timer runtime ${HIREDIS_INCLUDE_DIR})
+  target_link_libraries(placement_store_test
+    ${CMAKE_THREAD_LIBS_INIT} ${HIREDIS_LIB})
+
+  add_executable(push_replay_cache_test
+    test/push_replay_cache_test.cpp
+    runtime/PushReplayCache.cpp)
+  target_include_directories(push_replay_cache_test PRIVATE runtime)
 endif()
+
+add_executable(password_hash_test
+  test/password_hash_test.cpp
+  runtime/PasswordHash.cpp)
+target_include_directories(password_hash_test PRIVATE runtime ${OPENSSL_INCLUDE_DIR})
+target_link_libraries(password_hash_test ${OPENSSL_CRYPTO_LIB})
 
 # RocksDB Demo KV 测试（需 ENABLE_ROCKSDB=ON）
 if(ENABLE_ROCKSDB)
@@ -414,9 +460,29 @@ if(ENABLE_ROCKSDB)
     ${ROCKSDB_INCLUDE_DIR} ${Protobuf_INCLUDE_DIRS} rocksdb base log timer)
   target_link_libraries(rocksdb_demo_test
     ${CMAKE_THREAD_LIBS_INIT} ${ROCKSDB_LIB} ${Protobuf_LIBRARIES})
-  # 覆盖全局 -std=c++14（RocksDB 头文件依赖 C++17）
-  target_compile_options(rocksdb_demo_test PRIVATE -std=c++17)
 endif()
+
+# 阶段 0：Reactor / Buffer / ProtoFraming 单元测试
+add_executable(reactor_unit_test
+  test/reactor_unit_test.cpp
+  tcp/Buffer.cpp
+  game/ProtoFraming.cpp
+  base/CurrentThread.cpp
+  log/Logging.cpp
+  log/LogStream.cpp
+  log/LogFile.cpp
+  log/AsyncLogging.cpp)
+target_include_directories(reactor_unit_test PRIVATE tcp game base log timer)
+target_link_libraries(reactor_unit_test ${CMAKE_THREAD_LIBS_INIT})
+
+# 阶段 0：连接 ID / 发送队列 / EPOLLOUT 集成风格测试（本地 loopback）
+add_executable(reactor_integration_test
+  test/reactor_integration_test.cpp
+  ${SRC_LIST1} ${SRC_LIST2} ${SRC_LIST3} ${SRC_LIST4} ${SRC_LIST5})
+target_include_directories(reactor_integration_test PRIVATE
+  base tcp http log timer ${OPENSSL_INCLUDE_DIR})
+target_link_libraries(reactor_integration_test
+  ${CMAKE_THREAD_LIBS_INIT} ${OPENSSL_CRYPTO_LIB} ${JSONCPP_LIBRARIES})
 
 # 邮件领取并发集成测试（需 MySQL）
 if(ENABLE_MYSQL AND ENABLE_GAME_PROTOBUF)
@@ -450,7 +516,8 @@ if(ENABLE_MYSQL AND ENABLE_GAME_PROTOBUF)
     test/mail_claim_integration_test.cpp
     ${SRC_GAMEDB_MAIL_TEST})
   if(ENABLE_REDIS)
-    target_sources(mail_claim_integration_test PRIVATE redis/RedisClient.cpp game/SessionStore.cpp)
+    target_sources(mail_claim_integration_test PRIVATE redis/RedisClient.cpp redis/RedisPool.cpp
+                    game/SessionStore.cpp)
     target_compile_definitions(mail_claim_integration_test PRIVATE WEBSERVER_ENABLE_REDIS)
     target_include_directories(mail_claim_integration_test PRIVATE ${HIREDIS_INCLUDE_DIR})
     target_link_libraries(mail_claim_integration_test ${HIREDIS_LIB})
@@ -469,7 +536,8 @@ if(ENABLE_MYSQL AND ENABLE_GAME_PROTOBUF)
     test/gamedb_mail_claim_test.cpp
     ${SRC_GAMEDB_MAIL_TEST})
   if(ENABLE_REDIS)
-    target_sources(gamedb_mail_claim_test PRIVATE redis/RedisClient.cpp game/SessionStore.cpp)
+    target_sources(gamedb_mail_claim_test PRIVATE redis/RedisClient.cpp redis/RedisPool.cpp
+                    game/SessionStore.cpp)
     target_compile_definitions(gamedb_mail_claim_test PRIVATE WEBSERVER_ENABLE_REDIS)
     target_include_directories(gamedb_mail_claim_test PRIVATE ${HIREDIS_INCLUDE_DIR})
     target_link_libraries(gamedb_mail_claim_test ${HIREDIS_LIB})

@@ -1,11 +1,14 @@
 /**
- * 阶段 3：Session 状态机 / 顶号 fence / 重连（需 Redis）
+ * Session 状态机 / 顶号 fence / 重连 / 并发 Acquire（需 Redis）
  */
 #include "SessionStore.h"
 #include "game.pb.h"
 
+#include <atomic>
 #include <cstdio>
 #include <string>
+#include <thread>
+#include <vector>
 
 namespace {
 
@@ -121,10 +124,54 @@ int main() {
     r2.set_session_id(aout.session_id);
     r2.set_reconnect_ticket(aout.fence_token);
     game::ReconnectRsp rr2;
-    if (!SessionStore::Instance().Reconnect(r2, &rr2) || !rr2.ok())
+    SessionRecord route;
+    if (!SessionStore::Instance().Reconnect(r2, &rr2, &route) || !rr2.ok())
         return Fail("Reconnect after MarkDisconnected (cross-GW allowed)");
+    if (route.gamelogic_instance_id.empty() || route.route_version == 0)
+        return Fail("Reconnect route fields");
 
-    std::printf("OK session_store_test login/replace/disconnect/reconnect/route\n");
+    // 并发 Acquire：Lua 原子递增 generation，最终只保留一个权威 fence
+    const uint64_t pid2 = 900002;
+    {
+        game::LogoutReq lo2;
+        lo2.set_player_id(pid2);
+        game::LogoutRsp lorsp2;
+        SessionStore::Instance().Logout(lo2, &lorsp2);
+    }
+    constexpr int kThreads = 8;
+    std::atomic<int> ok_count{0};
+    std::vector<std::thread> threads;
+    threads.reserve(kThreads);
+    for (int i = 0; i < kThreads; ++i) {
+        threads.emplace_back([&, i]() {
+            AcquireSessionInput cin;
+            cin.player_id = pid2;
+            cin.device_id = "dev-c-" + std::to_string(i);
+            cin.server_id = 1;
+            cin.kick_other_device = true;
+            cin.gateway_instance_id = "gw-c";
+            AcquireSessionResult cout;
+            if (SessionStore::Instance().AcquireSession(cin, &cout) && cout.ok)
+                ok_count.fetch_add(1);
+        });
+    }
+    for (auto &t : threads)
+        t.join();
+    if (ok_count.load() != kThreads)
+        return Fail("concurrent acquire not all ok");
+    if (!SessionStore::Instance().IsPlayerOnline(pid2))
+        return Fail("concurrent acquire not online");
+    AcquireSessionInput cin2;
+    cin2.player_id = pid2;
+    cin2.device_id = "dev-final";
+    cin2.kick_other_device = true;
+    AcquireSessionResult cout2;
+    if (!SessionStore::Instance().AcquireSession(cin2, &cout2) || !cout2.ok)
+        return Fail("post-concurrent acquire");
+    if (cout2.generation < static_cast<uint64_t>(kThreads + 1))
+        return Fail("generation not monotonic under concurrent acquire");
+
+    std::printf("OK session_store_test login/replace/disconnect/reconnect/route/concurrent\n");
     std::printf("PASS session_store_test\n");
     return 0;
 }

@@ -24,8 +24,17 @@ public:
     bool Logout(const game::LogoutReq &req, game::LogoutRsp *rsp);
     bool ValidateToken(uint64_t player_id, const std::string &token, std::string *err);
     bool BindConnection(uint64_t player_id, const std::string &token, const std::string &gateway_id,
-                        int connection_id);
+                        uint64_t connection_id);
     bool MarkDisconnected(uint64_t player_id, const std::string &token, uint64_t generation);
+
+    bool ResolveOrCreateMap(const sess::ResolveOrCreateMapRequest &req,
+                            sess::ResolveOrCreateMapResponse *rsp);
+    bool GetPlacement(uint64_t map_instance_id, sess::GetPlacementResponse *rsp);
+    bool MigrateMap(const sess::MigrateMapRequest &req, sess::MigrateMapResponse *rsp);
+    bool MarkRecovering(uint64_t map_instance_id, const std::string &reason,
+                        sess::MarkRecoveringResponse *rsp);
+    bool UpdatePlayerRoute(const sess::UpdatePlayerRouteRequest &req,
+                           sess::UpdatePlayerRouteResponse *rsp);
 
 private:
     SessionRpcClient() = default;

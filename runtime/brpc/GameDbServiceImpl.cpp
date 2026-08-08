@@ -54,15 +54,61 @@ void GameDbServiceImpl::LookupAccount(::google::protobuf::RpcController *control
 #ifdef WEBSERVER_ENABLE_MYSQL
     if (!PlayerAccountStore::Instance().Available())
         PlayerAccountStore::Instance().EnsureTable();
-    const bool exists = PlayerAccountStore::Instance().Exists(request->player_id());
+    AccountAuthRow row;
+    if (!PlayerAccountStore::Instance().LoadAuth(request->player_id(), &row)) {
+        response->set_ok(false);
+        response->set_error_code("DB_ERROR");
+        response->set_message("load auth failed");
+        return;
+    }
     response->set_ok(true);
-    response->set_exists(exists);
-    response->set_banned(false);
-    response->set_account_id(request->player_id());
+    response->set_exists(row.exists);
+    response->set_banned(row.banned);
+    response->set_account_id(row.account_id ? row.account_id : request->player_id());
     response->set_player_id(request->player_id());
-    response->set_message(exists ? "ok" : "not found");
-    if (!exists)
+    response->set_password_hash(row.password_hash);
+    response->set_password_salt(row.password_salt);
+    response->set_password_iters(row.password_iters);
+    response->set_has_password(row.has_password);
+    response->set_message(row.exists ? "ok" : "not found");
+    if (!row.exists)
         response->set_error_code("ACCOUNT_NOT_FOUND");
+#else
+    response->set_ok(false);
+    response->set_error_code("MYSQL_DISABLED");
+    response->set_message("mysql not enabled");
+#endif
+}
+
+void GameDbServiceImpl::RegisterAccount(::google::protobuf::RpcController *controller,
+                                        const ::gdb::RegisterAccountReq *request,
+                                        ::gdb::RegisterAccountRsp *response,
+                                        ::google::protobuf::Closure *done) {
+    (void)controller;
+    brpc::ClosureGuard done_guard(done);
+    response->Clear();
+    if (!request || request->device_id().empty() || request->password_hash().empty() ||
+        request->password_salt().empty() || request->password_iters() <= 0) {
+        response->set_ok(false);
+        response->set_error_code("INVALID_ARG");
+        response->set_message("device_id and password hash fields required");
+        return;
+    }
+#ifdef WEBSERVER_ENABLE_MYSQL
+    uint64_t player_id = 0;
+    std::string err;
+    if (!PlayerAccountStore::Instance().RegisterWithPassword(
+            request->device_id(), request->display_name(), request->password_hash(),
+            request->password_salt(), request->password_iters(), &player_id, &err)) {
+        response->set_ok(false);
+        response->set_error_code("REGISTER_FAILED");
+        response->set_message(err);
+        return;
+    }
+    response->set_ok(true);
+    response->set_message("ok");
+    response->set_player_id(player_id);
+    response->set_account_id(player_id);
 #else
     response->set_ok(false);
     response->set_error_code("MYSQL_DISABLED");

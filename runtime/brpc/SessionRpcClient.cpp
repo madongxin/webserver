@@ -91,7 +91,7 @@ bool SessionRpcClient::ValidateToken(uint64_t player_id, const std::string &toke
 }
 
 bool SessionRpcClient::BindConnection(uint64_t player_id, const std::string &token,
-                                      const std::string &gateway_id, int connection_id) {
+                                      const std::string &gateway_id, uint64_t connection_id) {
     if (!channel_)
         return false;
     sess::BindConnectionReq req;
@@ -119,4 +119,57 @@ bool SessionRpcClient::MarkDisconnected(uint64_t player_id, const std::string &t
     sess::SessionService_Stub stub(channel_.get());
     stub.MarkDisconnected(&cntl, &req, &rsp, nullptr);
     return !cntl.Failed() && rsp.ok();
+}
+
+bool SessionRpcClient::ResolveOrCreateMap(const sess::ResolveOrCreateMapRequest &req,
+                                          sess::ResolveOrCreateMapResponse *rsp) {
+    if (!channel_ || !rsp)
+        return false;
+    brpc::Controller cntl;
+    sess::SessionService_Stub stub(channel_.get());
+    stub.ResolveOrCreateMap(&cntl, &req, rsp, nullptr);
+    return !cntl.Failed() && rsp->ok();
+}
+
+bool SessionRpcClient::GetPlacement(uint64_t map_instance_id, sess::GetPlacementResponse *rsp) {
+    if (!channel_ || !rsp)
+        return false;
+    sess::GetPlacementRequest req;
+    req.set_map_instance_id(map_instance_id);
+    brpc::Controller cntl;
+    sess::SessionService_Stub stub(channel_.get());
+    stub.GetPlacement(&cntl, &req, rsp, nullptr);
+    return !cntl.Failed() && rsp->ok();
+}
+
+bool SessionRpcClient::MigrateMap(const sess::MigrateMapRequest &req, sess::MigrateMapResponse *rsp) {
+    if (!channel_ || !rsp)
+        return false;
+    brpc::Controller cntl;
+    sess::SessionService_Stub stub(channel_.get());
+    stub.MigrateMap(&cntl, &req, rsp, nullptr);
+    return !cntl.Failed() && rsp->ok();
+}
+
+bool SessionRpcClient::MarkRecovering(uint64_t map_instance_id, const std::string &reason,
+                                      sess::MarkRecoveringResponse *rsp) {
+    if (!channel_ || !rsp)
+        return false;
+    sess::MarkRecoveringRequest req;
+    req.set_map_instance_id(map_instance_id);
+    req.set_reason(reason);
+    brpc::Controller cntl;
+    sess::SessionService_Stub stub(channel_.get());
+    stub.MarkRecovering(&cntl, &req, rsp, nullptr);
+    return !cntl.Failed() && rsp->ok();
+}
+
+bool SessionRpcClient::UpdatePlayerRoute(const sess::UpdatePlayerRouteRequest &req,
+                                         sess::UpdatePlayerRouteResponse *rsp) {
+    if (!channel_ || !rsp)
+        return false;
+    brpc::Controller cntl;
+    sess::SessionService_Stub stub(channel_.get());
+    stub.UpdatePlayerRoute(&cntl, &req, rsp, nullptr);
+    return !cntl.Failed() && rsp->ok();
 }

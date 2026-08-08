@@ -8,6 +8,8 @@ message LoginReq {
   uint32 server_id = 3;
   uint32 ttl_sec = 4;
   bool kick_other_device = 5;
+  // 密码/凭证：仅 Gateway→Auth 消费，不入 GameLogic
+  string credential = 6;
 }
 
 message LoginRsp {
@@ -75,6 +77,7 @@ message LogoutRsp {
 message RegisterReq {
   string device_id = 1;
   string display_name = 2;
+  string password = 3;  // 明文仅在 Gateway→Auth 路径瞬时使用，不落日志
 }
 
 message RegisterRsp {

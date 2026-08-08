@@ -31,17 +31,14 @@ void TcpServer::HandleNewConnection(int fd) {
 
   EventLoop *sub_reactor = thread_pool_->nextloop();
 
-  auto conn = std::make_shared<TcpConnection>(sub_reactor, fd, next_conn_id_);
+  const uint64_t conn_id = next_conn_id_++;
+  auto conn = std::make_shared<TcpConnection>(sub_reactor, fd, conn_id);
   conn->set_connection_callback(on_connect_);
   conn->set_close_callback(
       std::bind(&TcpServer::HandleClose, this, std::placeholders::_1));
   conn->set_message_callback(on_message_);
 
   connectionsMap_[fd] = conn;
-
-  ++next_conn_id_;
-  if (next_conn_id_ == 1000)
-    next_conn_id_ = 1;
 
   conn->ConnectionEstablished();
 }

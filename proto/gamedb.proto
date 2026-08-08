@@ -47,10 +47,32 @@ message LookupAccountRsp {
   bool banned = 5;
   uint64 account_id = 6;
   uint64 player_id = 7;
+  string password_hash = 8;
+  string password_salt = 9;
+  int32 password_iters = 10;
+  bool has_password = 11;
+}
+
+message RegisterAccountReq {
+  string device_id = 1;
+  string display_name = 2;
+  string password_hash = 3;
+  string password_salt = 4;
+  int32 password_iters = 5;
+  string idempotency_key = 6;
+}
+
+message RegisterAccountRsp {
+  bool ok = 1;
+  string message = 2;
+  string error_code = 3;
+  uint64 account_id = 4;
+  uint64 player_id = 5;
 }
 
 service GameDbService {
   rpc ClaimMailAttachments(ClaimMailReq) returns (ClaimMailRsp);
   /** Auth 账号查询（持久化层；不经 GameLogic） */
   rpc LookupAccount(LookupAccountReq) returns (LookupAccountRsp);
+  rpc RegisterAccount(RegisterAccountReq) returns (RegisterAccountRsp);
 }

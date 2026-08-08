@@ -52,8 +52,24 @@ message RefreshTokenResponse {
   string refresh_token = 4;
 }
 
+message RegisterRequest {
+  string device_id = 1;
+  string display_name = 2;
+  string password = 3;
+  uint32 server_id = 4;
+}
+
+message RegisterResponse {
+  bool ok = 1;
+  string message = 2;
+  string error_code = 3;
+  uint64 account_id = 4;
+  uint64 player_id = 5;
+}
+
 service AuthService {
   rpc Login(LoginRequest) returns (LoginResponse);
+  rpc Register(RegisterRequest) returns (RegisterResponse);
   rpc VerifyToken(VerifyTokenRequest) returns (VerifyTokenResponse);
   rpc RefreshToken(RefreshTokenRequest) returns (RefreshTokenResponse);
 }

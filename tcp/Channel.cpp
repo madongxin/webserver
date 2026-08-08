@@ -54,6 +54,11 @@ void Channel::EnableWrite() {
     loop_->UpdateChannel(this);
 }
 
+void Channel::DisableWrite() {
+    listen_events_ &= static_cast<short>(~EPOLLOUT);
+    loop_->UpdateChannel(this);
+}
+
 void Channel::EnableET() {
     listen_events_ |= EPOLLET;
     loop_->UpdateChannel(this);
@@ -62,6 +67,7 @@ void Channel::EnableET() {
 int Channel::fd() const { return fd_; }
 short Channel::listen_events() const { return listen_events_; }
 short Channel::ready_events() const { return ready_events_; }
+bool Channel::IsWriting() const { return (listen_events_ & EPOLLOUT) != 0; }
 bool Channel::IsInEpoll() const { return in_epoll_; }
 void Channel::SetInEpoll(bool in) { in_epoll_ = in; }
 void Channel::SetReadyEvents(int ev) { ready_events_ = ev; }

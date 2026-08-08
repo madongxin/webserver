@@ -58,6 +58,8 @@ inline TimeStamp TimeStamp::Now(){
 };
 
 inline TimeStamp TimeStamp::AddTime(TimeStamp timestamp, double add_seconds){
-    int64_t add_microseconds = static_cast<int64_t>(add_seconds) * kMicrosecond2Second;   
+    // 注意：不可先把 double 截断成 int 秒，否则 RunAfter(0.1) 会变成 0
+    const int64_t add_microseconds =
+        static_cast<int64_t>(add_seconds * static_cast<double>(kMicrosecond2Second));
     return TimeStamp(timestamp.microseconds() + add_microseconds);
 };

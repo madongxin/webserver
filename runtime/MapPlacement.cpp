@@ -67,6 +67,15 @@ bool MapPlacement::Migrate(uint64_t map_instance_id, const std::string &new_owne
     return true;
 }
 
+void MapPlacement::UpsertCache(const MapPlacementRecord &rec) {
+    if (rec.map_instance_id == 0)
+        return;
+    std::lock_guard<std::mutex> lk(mu_);
+    table_[rec.map_instance_id] = rec;
+    if (rec.map_instance_id >= next_instance_id_)
+        next_instance_id_ = rec.map_instance_id + 1;
+}
+
 void MapPlacement::ClearForTest() {
     std::lock_guard<std::mutex> lk(mu_);
     table_.clear();

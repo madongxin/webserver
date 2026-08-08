@@ -284,6 +284,12 @@ class BindPlayerRequest : public ::google::protobuf::Message /* @@protoc_inserti
   ::google::protobuf::uint64 route_version() const;
   void set_route_version(::google::protobuf::uint64 value);
 
+  // uint64 generation = 12;
+  void clear_generation();
+  static const int kGenerationFieldNumber = 12;
+  ::google::protobuf::uint64 generation() const;
+  void set_generation(::google::protobuf::uint64 value);
+
   // @@protoc_insertion_point(class_scope:glrpc.BindPlayerRequest)
  private:
 
@@ -299,6 +305,7 @@ class BindPlayerRequest : public ::google::protobuf::Message /* @@protoc_inserti
   ::google::protobuf::uint64 map_instance_id_;
   ::google::protobuf::uint64 map_owner_epoch_;
   ::google::protobuf::uint64 route_version_;
+  ::google::protobuf::uint64 generation_;
   mutable int _cached_size_;
   friend struct ::protobuf_gamelogic_5frpc_2eproto::TableStruct;
   friend void ::protobuf_gamelogic_5frpc_2eproto::InitDefaultsBindPlayerRequestImpl();
@@ -894,6 +901,20 @@ class ClientCommand : public ::google::protobuf::Message /* @@protoc_insertion_p
   ::std::string* release_idempotency_key();
   void set_allocated_idempotency_key(::std::string* idempotency_key);
 
+  // string trace_id = 16;
+  void clear_trace_id();
+  static const int kTraceIdFieldNumber = 16;
+  const ::std::string& trace_id() const;
+  void set_trace_id(const ::std::string& value);
+  #if LANG_CXX11
+  void set_trace_id(::std::string&& value);
+  #endif
+  void set_trace_id(const char* value);
+  void set_trace_id(const char* value, size_t size);
+  ::std::string* mutable_trace_id();
+  ::std::string* release_trace_id();
+  void set_allocated_trace_id(::std::string* trace_id);
+
   // uint64 request_id = 1;
   void clear_request_id();
   static const int kRequestIdFieldNumber = 1;
@@ -924,6 +945,24 @@ class ClientCommand : public ::google::protobuf::Message /* @@protoc_insertion_p
   ::google::protobuf::uint64 client_seq() const;
   void set_client_seq(::google::protobuf::uint64 value);
 
+  // uint64 generation = 13;
+  void clear_generation();
+  static const int kGenerationFieldNumber = 13;
+  ::google::protobuf::uint64 generation() const;
+  void set_generation(::google::protobuf::uint64 value);
+
+  // uint64 route_version = 14;
+  void clear_route_version();
+  static const int kRouteVersionFieldNumber = 14;
+  ::google::protobuf::uint64 route_version() const;
+  void set_route_version(::google::protobuf::uint64 value);
+
+  // int32 deadline_ms = 15;
+  void clear_deadline_ms();
+  static const int kDeadlineMsFieldNumber = 15;
+  ::google::protobuf::int32 deadline_ms() const;
+  void set_deadline_ms(::google::protobuf::int32 value);
+
   // @@protoc_insertion_point(class_scope:glrpc.ClientCommand)
  private:
 
@@ -935,11 +974,15 @@ class ClientCommand : public ::google::protobuf::Message /* @@protoc_insertion_p
   ::google::protobuf::internal::ArenaStringPtr payload_;
   ::google::protobuf::internal::ArenaStringPtr trace_context_;
   ::google::protobuf::internal::ArenaStringPtr idempotency_key_;
+  ::google::protobuf::internal::ArenaStringPtr trace_id_;
   ::google::protobuf::uint64 request_id_;
   ::google::protobuf::uint64 player_id_;
   ::google::protobuf::uint64 map_instance_id_;
   ::google::protobuf::uint64 map_owner_epoch_;
   ::google::protobuf::uint64 client_seq_;
+  ::google::protobuf::uint64 generation_;
+  ::google::protobuf::uint64 route_version_;
+  ::google::protobuf::int32 deadline_ms_;
   mutable int _cached_size_;
   friend struct ::protobuf_gamelogic_5frpc_2eproto::TableStruct;
   friend void ::protobuf_gamelogic_5frpc_2eproto::InitDefaultsClientCommandImpl();
@@ -1567,6 +1610,20 @@ inline void BindPlayerRequest::set_allocated_trace_context(::std::string* trace_
   }
   trace_context_.SetAllocatedNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), trace_context);
   // @@protoc_insertion_point(field_set_allocated:glrpc.BindPlayerRequest.trace_context)
+}
+
+// uint64 generation = 12;
+inline void BindPlayerRequest::clear_generation() {
+  generation_ = GOOGLE_ULONGLONG(0);
+}
+inline ::google::protobuf::uint64 BindPlayerRequest::generation() const {
+  // @@protoc_insertion_point(field_get:glrpc.BindPlayerRequest.generation)
+  return generation_;
+}
+inline void BindPlayerRequest::set_generation(::google::protobuf::uint64 value) {
+  
+  generation_ = value;
+  // @@protoc_insertion_point(field_set:glrpc.BindPlayerRequest.generation)
 }
 
 // -------------------------------------------------------------------
@@ -2451,6 +2508,101 @@ inline void ClientCommand::set_allocated_idempotency_key(::std::string* idempote
   }
   idempotency_key_.SetAllocatedNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), idempotency_key);
   // @@protoc_insertion_point(field_set_allocated:glrpc.ClientCommand.idempotency_key)
+}
+
+// uint64 generation = 13;
+inline void ClientCommand::clear_generation() {
+  generation_ = GOOGLE_ULONGLONG(0);
+}
+inline ::google::protobuf::uint64 ClientCommand::generation() const {
+  // @@protoc_insertion_point(field_get:glrpc.ClientCommand.generation)
+  return generation_;
+}
+inline void ClientCommand::set_generation(::google::protobuf::uint64 value) {
+  
+  generation_ = value;
+  // @@protoc_insertion_point(field_set:glrpc.ClientCommand.generation)
+}
+
+// uint64 route_version = 14;
+inline void ClientCommand::clear_route_version() {
+  route_version_ = GOOGLE_ULONGLONG(0);
+}
+inline ::google::protobuf::uint64 ClientCommand::route_version() const {
+  // @@protoc_insertion_point(field_get:glrpc.ClientCommand.route_version)
+  return route_version_;
+}
+inline void ClientCommand::set_route_version(::google::protobuf::uint64 value) {
+  
+  route_version_ = value;
+  // @@protoc_insertion_point(field_set:glrpc.ClientCommand.route_version)
+}
+
+// int32 deadline_ms = 15;
+inline void ClientCommand::clear_deadline_ms() {
+  deadline_ms_ = 0;
+}
+inline ::google::protobuf::int32 ClientCommand::deadline_ms() const {
+  // @@protoc_insertion_point(field_get:glrpc.ClientCommand.deadline_ms)
+  return deadline_ms_;
+}
+inline void ClientCommand::set_deadline_ms(::google::protobuf::int32 value) {
+  
+  deadline_ms_ = value;
+  // @@protoc_insertion_point(field_set:glrpc.ClientCommand.deadline_ms)
+}
+
+// string trace_id = 16;
+inline void ClientCommand::clear_trace_id() {
+  trace_id_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline const ::std::string& ClientCommand::trace_id() const {
+  // @@protoc_insertion_point(field_get:glrpc.ClientCommand.trace_id)
+  return trace_id_.GetNoArena();
+}
+inline void ClientCommand::set_trace_id(const ::std::string& value) {
+  
+  trace_id_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), value);
+  // @@protoc_insertion_point(field_set:glrpc.ClientCommand.trace_id)
+}
+#if LANG_CXX11
+inline void ClientCommand::set_trace_id(::std::string&& value) {
+  
+  trace_id_.SetNoArena(
+    &::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::move(value));
+  // @@protoc_insertion_point(field_set_rvalue:glrpc.ClientCommand.trace_id)
+}
+#endif
+inline void ClientCommand::set_trace_id(const char* value) {
+  GOOGLE_DCHECK(value != NULL);
+  
+  trace_id_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::string(value));
+  // @@protoc_insertion_point(field_set_char:glrpc.ClientCommand.trace_id)
+}
+inline void ClientCommand::set_trace_id(const char* value, size_t size) {
+  
+  trace_id_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(),
+      ::std::string(reinterpret_cast<const char*>(value), size));
+  // @@protoc_insertion_point(field_set_pointer:glrpc.ClientCommand.trace_id)
+}
+inline ::std::string* ClientCommand::mutable_trace_id() {
+  
+  // @@protoc_insertion_point(field_mutable:glrpc.ClientCommand.trace_id)
+  return trace_id_.MutableNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline ::std::string* ClientCommand::release_trace_id() {
+  // @@protoc_insertion_point(field_release:glrpc.ClientCommand.trace_id)
+  
+  return trace_id_.ReleaseNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline void ClientCommand::set_allocated_trace_id(::std::string* trace_id) {
+  if (trace_id != NULL) {
+    
+  } else {
+    
+  }
+  trace_id_.SetAllocatedNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), trace_id);
+  // @@protoc_insertion_point(field_set_allocated:glrpc.ClientCommand.trace_id)
 }
 
 // -------------------------------------------------------------------

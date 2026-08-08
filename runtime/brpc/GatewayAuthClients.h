@@ -24,7 +24,10 @@ public:
     bool ready() const { return session_channel_ != nullptr; }
 
     bool AuthLogin(const auth::LoginRequest &req, auth::LoginResponse *rsp);
+    bool AuthRegister(const auth::RegisterRequest &req, auth::RegisterResponse *rsp);
     bool AcquireSession(const sess::AcquireSessionRequest &req, sess::AcquireSessionResponse *rsp);
+    bool ReconnectV2(const sess::ReconnectRequest &req, sess::ReconnectResponse *rsp);
+    bool LogoutV2(const sess::LogoutRequest &req, sess::LogoutResponse *rsp);
     bool BindPlayer(const std::string &logic_instance_id, const glrpc::BindPlayerRequest &req,
                     glrpc::BindPlayerResponse *rsp);
     bool UnbindPlayer(const std::string &logic_instance_id, const glrpc::UnbindPlayerRequest &req,

@@ -47,12 +47,12 @@ std::string Buffer::PeekAllAsString(){
 }
 
 void Buffer::Retrieve(int len){
-    assert(readablebytes() > len);
-    if(len + read_index_ < write_index_){
-        // 如果读的内容不超过可读空间，则只用更新read_index_
+    assert(len >= 0);
+    assert(readablebytes() >= len);
+    if (len < readablebytes()) {
         read_index_ += len;
-    }else{
-        // 否则就是正好读完，需要同时更新write_index_;
+    } else {
+        // 恰好消费完全部可读字节（含 len==0）
         RetrieveAll();
     }
 }
