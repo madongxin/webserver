@@ -1,0 +1,20 @@
+# 运行镜像：预编译二进制 + 从构建主机收集的共享库（不依赖 CentOS 额外源）
+FROM centos:8
+RUN sed -i 's/mirrorlist/#mirrorlist/g; s|#baseurl=http://mirror.centos.org|baseurl=http://vault.centos.org|g' /etc/yum.repos.d/CentOS-*.repo \
+ && yum install -y openssl zlib curl ca-certificates \
+ && yum clean all
+WORKDIR /opt/gamemesh
+COPY lib/ /opt/gamemesh/lib/
+COPY gateway session gamelogic world gamedb /opt/gamemesh/
+COPY docker-entrypoint.sh /opt/gamemesh/docker-entrypoint.sh
+COPY config /opt/gamemesh/config
+RUN chmod +x /opt/gamemesh/docker-entrypoint.sh \
+             /opt/gamemesh/gateway /opt/gamemesh/session /opt/gamemesh/gamelogic \
+             /opt/gamemesh/world /opt/gamemesh/gamedb \
+ && echo "/opt/gamemesh/lib" > /etc/ld.so.conf.d/gamemesh.conf \
+ && ldconfig || true
+ENV GAMEMESH_FORMAL=1 GAMEMESH_HTTP_BIND=0.0.0.0 GAMEMESH_ADVERTISE_HOST=127.0.0.1 \
+    GAMEMESH_BIN_DIR=/opt/gamemesh \
+    LD_LIBRARY_PATH=/opt/gamemesh/lib:/usr/lib64/mysql
+ENTRYPOINT ["/opt/gamemesh/docker-entrypoint.sh"]
+CMD ["gateway", "8080", "8081"]

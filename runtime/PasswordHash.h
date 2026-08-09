@@ -18,4 +18,7 @@ bool VerifyPassword(const std::string &password, const std::string &salt_hex, in
 /** 脱敏：仅保留前后各 2 字符 */
 std::string RedactSecret(const std::string &s);
 
+/** SHA-256 hex（小写），用于 token 摘要 / 幂等键材料 */
+bool Sha256Hex(const std::string &data, std::string *hex_out);
+
 }  // namespace PasswordHash

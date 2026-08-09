@@ -170,29 +170,34 @@ bool LookupAccount(uint64_t player_id, const std::string &device_id, AuthLookup 
     return LookupLocal(player_id, out);
 }
 
-/** 简易登录失败限流：账号维度 */
+/** 登录失败限流：检查与记录共用同一状态（账号维度，60s 窗口） */
+struct LoginFailBucket {
+    std::mutex mu;
+    std::unordered_map<uint64_t, std::pair<int, int64_t>> fails;  // count, window_sec
+};
+
+LoginFailBucket &LoginFails() {
+    static LoginFailBucket g;
+    return g;
+}
+
 bool LoginRateLimited(uint64_t player_id) {
-    static std::mutex mu;
-    static std::unordered_map<uint64_t, std::pair<int, int64_t>> fails;
     using namespace std::chrono;
     const int64_t now = duration_cast<seconds>(system_clock::now().time_since_epoch()).count();
-    std::lock_guard<std::mutex> lk(mu);
-    auto &e = fails[player_id];
-    if (now - e.second > 60) {
+    auto &g = LoginFails();
+    std::lock_guard<std::mutex> lk(g.mu);
+    auto &e = g.fails[player_id];
+    if (now - e.second > 60)
         e = {0, now};
-    }
-    if (e.first >= 10)
-        return true;
-    return false;
+    return e.first >= 10;
 }
 
 void RecordLoginFail(uint64_t player_id) {
-    static std::mutex mu;
-    static std::unordered_map<uint64_t, std::pair<int, int64_t>> fails;
     using namespace std::chrono;
     const int64_t now = duration_cast<seconds>(system_clock::now().time_since_epoch()).count();
-    std::lock_guard<std::mutex> lk(mu);
-    auto &e = fails[player_id];
+    auto &g = LoginFails();
+    std::lock_guard<std::mutex> lk(g.mu);
+    auto &e = g.fails[player_id];
     if (now - e.second > 60)
         e = {0, now};
     e.first += 1;
@@ -266,10 +271,11 @@ void AuthServiceImpl::Login(::google::protobuf::RpcController *controller,
     }
 
     std::string access;
+    std::string refresh;
     if (AuthTokenStore::Instance().Available()) {
-        if (!AuthTokenStore::Instance().IssueAccessToken(request->player_id(), lu.account_id, 3600,
-                                                         &access)) {
-            LOG_WARN << "AuthTokenStore IssueAccessToken failed; continue without access_token";
+        if (!AuthTokenStore::Instance().IssueTokenPair(request->player_id(), lu.account_id, 3600,
+                                                       86400 * 7, &access, &refresh)) {
+            LOG_WARN << "AuthTokenStore IssueTokenPair failed; continue without tokens";
         }
     }
 
@@ -280,10 +286,11 @@ void AuthServiceImpl::Login(::google::protobuf::RpcController *controller,
     response->set_banned(false);
     if (!access.empty()) {
         response->set_access_token(access);
-        response->set_refresh_token(access);
+        response->set_refresh_token(refresh);
     }
     LOG_INFO << "AuthService Login ok player_id=" << request->player_id()
-             << " access=" << PasswordHash::RedactSecret(access);
+             << " access=" << PasswordHash::RedactSecret(access)
+             << " refresh=" << PasswordHash::RedactSecret(refresh);
 }
 
 void AuthServiceImpl::Register(::google::protobuf::RpcController *controller,
@@ -351,7 +358,15 @@ void AuthServiceImpl::Register(::google::protobuf::RpcController *controller,
     req.set_password_hash(hash);
     req.set_password_salt(salt);
     req.set_password_iters(PasswordHash::kDefaultIterations);
-    req.set_idempotency_key(request->device_id() + ":" + salt.substr(0, 8));
+    std::string idem = request->idempotency_key();
+    if (idem.empty()) {
+        std::string fp;
+        if (PasswordHash::Sha256Hex(request->device_id() + "|" + request->password(), &fp))
+            idem = "reg:" + request->device_id() + ":" + fp.substr(0, 16);
+        else
+            idem = "reg:" + request->device_id();
+    }
+    req.set_idempotency_key(idem);
     gdb::RegisterAccountRsp rsp;
     brpc::Controller cntl;
     stub.RegisterAccount(&cntl, &req, &rsp, nullptr);
@@ -399,14 +414,16 @@ void AuthServiceImpl::RefreshToken(::google::protobuf::RpcController *controller
     if (!AuthTokenStore::Instance().Available())
         AuthTokenStore::Instance().InitFromConfig();
     std::string err;
-    std::string neu;
-    if (!AuthTokenStore::Instance().RefreshAccessToken(request->player_id(), request->refresh_token(),
-                                                       3600, &neu, &err)) {
+    std::string neu_access;
+    std::string neu_refresh;
+    if (!AuthTokenStore::Instance().RefreshAccessToken(request->player_id(),
+                                                       request->refresh_token(), 3600, &neu_access,
+                                                       &err, &neu_refresh)) {
         response->set_ok(false);
         response->set_message(err.empty() ? "refresh failed" : err);
         return;
     }
     response->set_ok(true);
-    response->set_access_token(neu);
-    response->set_refresh_token(neu);
+    response->set_access_token(neu_access);
+    response->set_refresh_token(neu_refresh);
 }

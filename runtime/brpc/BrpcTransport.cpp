@@ -273,9 +273,18 @@ void BrpcTransport::PostPlayerRequest(const SessionHandle &handle, std::string r
     const bool parsed_ok = parsed.ParseFromString(request_payload);
     const bool to_world = parsed_ok && gameproto::IsWorldBoundRequest(parsed);
 
+    // EnterMap 由 GatewayEnterMapOrchestrator 在 worker 编排；此处禁止 Placement 直改 sticky 后裸 Dispatch
     if (parsed_ok && !to_world) {
-        if (parsed.body_case() == game::GameRequest::kEnterMap ||
-            parsed.body_case() == game::GameRequest::kLeaveMap ||
+        if (parsed.body_case() == game::GameRequest::kEnterMap) {
+            if (sink) {
+                const std::string err =
+                    BuildErrorFrame(request_payload, "enter_map_must_use_gateway_orchestrator");
+                if (!err.empty())
+                    sink->SendFrame(err);
+            }
+            return;
+        }
+        if (parsed.body_case() == game::GameRequest::kLeaveMap ||
             parsed.body_case() == game::GameRequest::kMapPing) {
             if (!FillMapRouteFromRequest(parsed, &route, &placement)) {
                 if (sink) {

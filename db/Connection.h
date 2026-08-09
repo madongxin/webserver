@@ -16,6 +16,11 @@ public:
     bool update(const std::string &sql);
     MYSQL_RES *query(const std::string &sql);
 
+    /** 显式事务（Outbox SKIP LOCKED claim 等） */
+    bool begin();
+    bool commit();
+    bool rollback();
+
     void refreshAliveTime();
     clock_t getAlieTime() const;
 

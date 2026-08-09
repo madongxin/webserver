@@ -76,6 +76,11 @@ void TcpServer::set_disconnect_callback(
   on_disconnect_ = std::move(fn);
 }
 
+void TcpServer::StopAccepting() {
+  if (acceptor_)
+    acceptor_->PauseListening();
+}
+
 void TcpServer::SetThreadNums(int thread_nums) {
   thread_pool_->SetThreadNums(thread_nums);
 }

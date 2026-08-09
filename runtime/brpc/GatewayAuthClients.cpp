@@ -1,6 +1,8 @@
 #include "GatewayAuthClients.h"
 
+#include "BrpcNamingUtil.h"
 #include "BrpcSslUtil.h"
+#include "GatewayConfigPath.h"
 #include "Logging.h"
 
 #include <brpc/channel.h>
@@ -10,20 +12,41 @@ GatewayAuthClients &GatewayAuthClients::Instance() {
     return g;
 }
 
-bool GatewayAuthClients::InitAuthSession(const std::string &session_addr, int timeout_ms) {
+bool GatewayAuthClients::InitAuthSession(const std::string &session_addr_or_csv, int timeout_ms) {
+    std::vector<std::string> addrs;
+    if (session_addr_or_csv.rfind("list://", 0) == 0) {
+        addrs.push_back(session_addr_or_csv);
+    } else {
+        GatewayConfigPath::SplitCsv(session_addr_or_csv, &addrs);
+    }
+    return InitAuthSession(addrs, timeout_ms);
+}
+
+bool GatewayAuthClients::InitAuthSession(const std::vector<std::string> &session_addrs,
+                                         int timeout_ms) {
     timeout_ms_ = timeout_ms;
+    session_channel_.reset();
+    session_peer_count_ = 0;
+    if (session_addrs.empty())
+        return false;
+    const std::string naming = BuildListNamingUrl(session_addrs);
     session_channel_.reset(new brpc::Channel());
     brpc::ChannelOptions opt;
     opt.timeout_ms = timeout_ms_;
-    opt.max_retry = 0;
+    opt.max_retry = session_addrs.size() > 1 ? 2 : 0;
     BrpcSslUtil::SslFiles ssl;
     BrpcSslUtil::ApplyChannel(&opt, ssl);
-    if (session_channel_->Init(session_addr.c_str(), &opt) != 0) {
-        LOG_ERROR << "GatewayAuthClients session Init failed " << session_addr;
+    const std::string lb = SessionLoadBalancerName(session_addrs.size());
+    const int rc = lb.empty() ? session_channel_->Init(naming.c_str(), &opt)
+                              : session_channel_->Init(naming.c_str(), lb.c_str(), &opt);
+    if (rc != 0) {
+        LOG_ERROR << "GatewayAuthClients session Init failed naming=" << naming;
         session_channel_.reset();
         return false;
     }
-    LOG_INFO << "GatewayAuthClients session ready " << session_addr;
+    session_peer_count_ = session_addrs.size();
+    LOG_INFO << "GatewayAuthClients session ready naming=" << naming
+             << " peers=" << session_peer_count_ << " lb=" << (lb.empty() ? "none" : lb);
     return true;
 }
 
@@ -108,6 +131,66 @@ bool GatewayAuthClients::LogoutV2(const sess::LogoutRequest &req, sess::LogoutRe
     return !cntl.Failed();
 }
 
+bool GatewayAuthClients::BeginPlayerTransfer(const sess::BeginPlayerTransferRequest &req,
+                                             sess::BeginPlayerTransferResponse *rsp) {
+    if (!session_channel_ || !rsp)
+        return false;
+    sess::SessionService_Stub stub(session_channel_.get());
+    brpc::Controller cntl;
+    stub.BeginPlayerTransfer(&cntl, &req, rsp, nullptr);
+    return !cntl.Failed();
+}
+
+bool GatewayAuthClients::CommitPlayerTransfer(const sess::CommitPlayerTransferRequest &req,
+                                              sess::CommitPlayerTransferResponse *rsp) {
+    if (!session_channel_ || !rsp)
+        return false;
+    sess::SessionService_Stub stub(session_channel_.get());
+    brpc::Controller cntl;
+    stub.CommitPlayerTransfer(&cntl, &req, rsp, nullptr);
+    return !cntl.Failed();
+}
+
+bool GatewayAuthClients::AbortPlayerTransfer(const sess::AbortPlayerTransferRequest &req,
+                                             sess::AbortPlayerTransferResponse *rsp) {
+    if (!session_channel_ || !rsp)
+        return false;
+    sess::SessionService_Stub stub(session_channel_.get());
+    brpc::Controller cntl;
+    stub.AbortPlayerTransfer(&cntl, &req, rsp, nullptr);
+    return !cntl.Failed();
+}
+
+bool GatewayAuthClients::GetPlayerRoute(const sess::GetPlayerRouteRequest &req,
+                                        sess::GetPlayerRouteResponse *rsp) {
+    if (!session_channel_ || !rsp)
+        return false;
+    sess::SessionService_Stub stub(session_channel_.get());
+    brpc::Controller cntl;
+    stub.GetPlayerRoute(&cntl, &req, rsp, nullptr);
+    return !cntl.Failed();
+}
+
+bool GatewayAuthClients::UpdatePlayerRoute(const sess::UpdatePlayerRouteRequest &req,
+                                           sess::UpdatePlayerRouteResponse *rsp) {
+    if (!session_channel_ || !rsp)
+        return false;
+    sess::SessionService_Stub stub(session_channel_.get());
+    brpc::Controller cntl;
+    stub.UpdatePlayerRoute(&cntl, &req, rsp, nullptr);
+    return !cntl.Failed() && rsp->ok();
+}
+
+bool GatewayAuthClients::ResolveOrCreateMap(const sess::ResolveOrCreateMapRequest &req,
+                                            sess::ResolveOrCreateMapResponse *rsp) {
+    if (!session_channel_ || !rsp)
+        return false;
+    sess::SessionService_Stub stub(session_channel_.get());
+    brpc::Controller cntl;
+    stub.ResolveOrCreateMap(&cntl, &req, rsp, nullptr);
+    return !cntl.Failed();
+}
+
 bool GatewayAuthClients::BindPlayer(const std::string &logic_instance_id,
                                     const glrpc::BindPlayerRequest &req,
                                     glrpc::BindPlayerResponse *rsp) {
@@ -130,6 +213,18 @@ bool GatewayAuthClients::UnbindPlayer(const std::string &logic_instance_id,
     brpc::Controller cntl;
     stub.UnbindPlayer(&cntl, &req, rsp, nullptr);
     return !cntl.Failed();
+}
+
+bool GatewayAuthClients::FreezePlayer(const std::string &logic_instance_id,
+                                      const glrpc::FreezePlayerRequest &req,
+                                      glrpc::FreezePlayerResponse *rsp) {
+    auto *ch = LogicChannel(logic_instance_id);
+    if (!ch || !rsp)
+        return false;
+    glrpc::GameLogicService_Stub stub(ch);
+    brpc::Controller cntl;
+    stub.FreezePlayer(&cntl, &req, rsp, nullptr);
+    return !cntl.Failed() && rsp->ok();
 }
 
 bool GatewayAuthClients::Dispatch(const std::string &logic_instance_id,

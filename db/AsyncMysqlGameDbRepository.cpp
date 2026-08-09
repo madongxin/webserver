@@ -146,7 +146,7 @@ void AsyncMysqlGameDbRepository::SetNatsUrl(std::string url) {
 
 void AsyncMysqlGameDbRepository::PublishBatch(int limit) {
     std::vector<GameDbOutboxRow> rows;
-    if (!GameDbOutbox::Instance().FetchUnpublished(limit, &rows))
+    if (!GameDbOutbox::Instance().ClaimUnpublished(limit, &rows))
         return;
     const int64_t now = NowUtc();
     for (const auto &r : rows) {
@@ -158,7 +158,8 @@ void AsyncMysqlGameDbRepository::PublishBatch(int limit) {
             const std::string subject = "gamedb." + r.event_type;
             published = NatsThinClient::Instance().Publish(subject, r.payload);
             if (!published) {
-                LOG_WARN << "GameDB outbox NATS publish failed id=" << r.id << " keep unpublished";
+                LOG_WARN << "GameDB outbox NATS publish failed id=" << r.id << " release claim";
+                GameDbOutbox::Instance().ReleaseClaim(r.id);
                 continue;
             }
         }
@@ -169,13 +170,15 @@ void AsyncMysqlGameDbRepository::PublishBatch(int limit) {
 
 int AsyncMysqlGameDbRepository::PublishOnceForTest(int limit) {
     std::vector<GameDbOutboxRow> rows;
-    if (!GameDbOutbox::Instance().FetchUnpublished(limit, &rows))
+    if (!GameDbOutbox::Instance().ClaimUnpublished(limit, &rows))
         return -1;
     const int64_t now = NowUtc();
     int n = 0;
     for (const auto &r : rows) {
         if (GameDbOutbox::Instance().MarkPublished(r.id, now))
             ++n;
+        else
+            GameDbOutbox::Instance().ReleaseClaim(r.id);
     }
     return n;
 }

@@ -86,6 +86,11 @@ int main() {
         Expect(MapInstanceRegistry::Instance().AcceptWrite(100, 5), "accept current epoch");
         Expect(!MapInstanceRegistry::Instance().AcceptWrite(100, 4), "reject stale map_owner_epoch");
         Expect(!MapInstanceRegistry::Instance().AcceptWrite(100, 6), "reject future epoch");
+        // lease 强制：过期后拒写
+        Expect(MapInstanceRegistry::Instance().Claim(101, 1, 1, 1), "claim with past lease");
+        Expect(MapInstanceRegistry::Instance().CheckWrite(101, 1) == MapWriteFence::LeaseExpired,
+               "lease expired fence");
+        Expect(!MapInstanceRegistry::Instance().AcceptWrite(101, 1), "reject expired lease write");
         MapInstanceRegistry::Instance().ClearForTest();
     }
 

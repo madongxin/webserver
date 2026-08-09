@@ -298,6 +298,7 @@ const ::google::protobuf::uint32 TableStruct::offsets[] GOOGLE_PROTOBUF_ATTRIBUT
   GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::auth::RegisterRequest, display_name_),
   GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::auth::RegisterRequest, password_),
   GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::auth::RegisterRequest, server_id_),
+  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::auth::RegisterRequest, idempotency_key_),
   ~0u,  // no _has_bits_
   GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::auth::RegisterResponse, _internal_metadata_),
   ~0u,  // no _extensions_
@@ -317,7 +318,7 @@ static const ::google::protobuf::internal::MigrationSchema schemas[] GOOGLE_PROT
   { 39, -1, sizeof(::auth::RefreshTokenRequest)},
   { 46, -1, sizeof(::auth::RefreshTokenResponse)},
   { 55, -1, sizeof(::auth::RegisterRequest)},
-  { 64, -1, sizeof(::auth::RegisterResponse)},
+  { 65, -1, sizeof(::auth::RegisterResponse)},
 };
 
 static ::google::protobuf::Message const * const file_default_instances[] = {
@@ -368,22 +369,23 @@ void AddDescriptorsImpl() {
       "\021\n\tplayer_id\030\001 \001(\004\022\025\n\rrefresh_token\030\002 \001("
       "\t\"`\n\024RefreshTokenResponse\022\n\n\002ok\030\001 \001(\010\022\017\n"
       "\007message\030\002 \001(\t\022\024\n\014access_token\030\003 \001(\t\022\025\n\r"
-      "refresh_token\030\004 \001(\t\"_\n\017RegisterRequest\022\021"
+      "refresh_token\030\004 \001(\t\"x\n\017RegisterRequest\022\021"
       "\n\tdevice_id\030\001 \001(\t\022\024\n\014display_name\030\002 \001(\t\022"
-      "\020\n\010password\030\003 \001(\t\022\021\n\tserver_id\030\004 \001(\r\"j\n\020"
-      "RegisterResponse\022\n\n\002ok\030\001 \001(\010\022\017\n\007message\030"
-      "\002 \001(\t\022\022\n\nerror_code\030\003 \001(\t\022\022\n\naccount_id\030"
-      "\004 \001(\004\022\021\n\tplayer_id\030\005 \001(\0042\205\002\n\013AuthService"
-      "\0220\n\005Login\022\022.auth.LoginRequest\032\023.auth.Log"
-      "inResponse\0229\n\010Register\022\025.auth.RegisterRe"
-      "quest\032\026.auth.RegisterResponse\022B\n\013VerifyT"
-      "oken\022\030.auth.VerifyTokenRequest\032\031.auth.Ve"
-      "rifyTokenResponse\022E\n\014RefreshToken\022\031.auth"
-      ".RefreshTokenRequest\032\032.auth.RefreshToken"
-      "ResponseB\003\200\001\001b\006proto3"
+      "\020\n\010password\030\003 \001(\t\022\021\n\tserver_id\030\004 \001(\r\022\027\n\017"
+      "idempotency_key\030\005 \001(\t\"j\n\020RegisterRespons"
+      "e\022\n\n\002ok\030\001 \001(\010\022\017\n\007message\030\002 \001(\t\022\022\n\nerror_"
+      "code\030\003 \001(\t\022\022\n\naccount_id\030\004 \001(\004\022\021\n\tplayer"
+      "_id\030\005 \001(\0042\205\002\n\013AuthService\0220\n\005Login\022\022.aut"
+      "h.LoginRequest\032\023.auth.LoginResponse\0229\n\010R"
+      "egister\022\025.auth.RegisterRequest\032\026.auth.Re"
+      "gisterResponse\022B\n\013VerifyToken\022\030.auth.Ver"
+      "ifyTokenRequest\032\031.auth.VerifyTokenRespon"
+      "se\022E\n\014RefreshToken\022\031.auth.RefreshTokenRe"
+      "quest\032\032.auth.RefreshTokenResponseB\003\200\001\001b\006"
+      "proto3"
   };
   ::google::protobuf::DescriptorPool::InternalAddGeneratedFile(
-      descriptor, 1101);
+      descriptor, 1126);
   ::google::protobuf::MessageFactory::InternalRegisterGeneratedFile(
     "auth.proto", &protobuf_RegisterTypes);
 }
@@ -2805,6 +2807,7 @@ const int RegisterRequest::kDeviceIdFieldNumber;
 const int RegisterRequest::kDisplayNameFieldNumber;
 const int RegisterRequest::kPasswordFieldNumber;
 const int RegisterRequest::kServerIdFieldNumber;
+const int RegisterRequest::kIdempotencyKeyFieldNumber;
 #endif  // !defined(_MSC_VER) || _MSC_VER >= 1900
 
 RegisterRequest::RegisterRequest()
@@ -2832,6 +2835,10 @@ RegisterRequest::RegisterRequest(const RegisterRequest& from)
   if (from.password().size() > 0) {
     password_.AssignWithDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), from.password_);
   }
+  idempotency_key_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  if (from.idempotency_key().size() > 0) {
+    idempotency_key_.AssignWithDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), from.idempotency_key_);
+  }
   server_id_ = from.server_id_;
   // @@protoc_insertion_point(copy_constructor:auth.RegisterRequest)
 }
@@ -2840,6 +2847,7 @@ void RegisterRequest::SharedCtor() {
   device_id_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
   display_name_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
   password_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  idempotency_key_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
   server_id_ = 0u;
   _cached_size_ = 0;
 }
@@ -2853,6 +2861,7 @@ void RegisterRequest::SharedDtor() {
   device_id_.DestroyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
   display_name_.DestroyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
   password_.DestroyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  idempotency_key_.DestroyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
 }
 
 void RegisterRequest::SetCachedSize(int size) const {
@@ -2887,6 +2896,7 @@ void RegisterRequest::Clear() {
   device_id_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
   display_name_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
   password_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  idempotency_key_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
   server_id_ = 0u;
   _internal_metadata_.Clear();
 }
@@ -2963,6 +2973,22 @@ bool RegisterRequest::MergePartialFromCodedStream(
         break;
       }
 
+      // string idempotency_key = 5;
+      case 5: {
+        if (static_cast< ::google::protobuf::uint8>(tag) ==
+            static_cast< ::google::protobuf::uint8>(42u /* 42 & 0xFF */)) {
+          DO_(::google::protobuf::internal::WireFormatLite::ReadString(
+                input, this->mutable_idempotency_key()));
+          DO_(::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+            this->idempotency_key().data(), static_cast<int>(this->idempotency_key().length()),
+            ::google::protobuf::internal::WireFormatLite::PARSE,
+            "auth.RegisterRequest.idempotency_key"));
+        } else {
+          goto handle_unusual;
+        }
+        break;
+      }
+
       default: {
       handle_unusual:
         if (tag == 0) {
@@ -3024,6 +3050,16 @@ void RegisterRequest::SerializeWithCachedSizes(
     ::google::protobuf::internal::WireFormatLite::WriteUInt32(4, this->server_id(), output);
   }
 
+  // string idempotency_key = 5;
+  if (this->idempotency_key().size() > 0) {
+    ::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+      this->idempotency_key().data(), static_cast<int>(this->idempotency_key().length()),
+      ::google::protobuf::internal::WireFormatLite::SERIALIZE,
+      "auth.RegisterRequest.idempotency_key");
+    ::google::protobuf::internal::WireFormatLite::WriteStringMaybeAliased(
+      5, this->idempotency_key(), output);
+  }
+
   if ((_internal_metadata_.have_unknown_fields() &&  ::google::protobuf::internal::GetProto3PreserveUnknownsDefault())) {
     ::google::protobuf::internal::WireFormat::SerializeUnknownFields(
         (::google::protobuf::internal::GetProto3PreserveUnknownsDefault()   ? _internal_metadata_.unknown_fields()   : _internal_metadata_.default_instance()), output);
@@ -3076,6 +3112,17 @@ void RegisterRequest::SerializeWithCachedSizes(
     target = ::google::protobuf::internal::WireFormatLite::WriteUInt32ToArray(4, this->server_id(), target);
   }
 
+  // string idempotency_key = 5;
+  if (this->idempotency_key().size() > 0) {
+    ::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+      this->idempotency_key().data(), static_cast<int>(this->idempotency_key().length()),
+      ::google::protobuf::internal::WireFormatLite::SERIALIZE,
+      "auth.RegisterRequest.idempotency_key");
+    target =
+      ::google::protobuf::internal::WireFormatLite::WriteStringToArray(
+        5, this->idempotency_key(), target);
+  }
+
   if ((_internal_metadata_.have_unknown_fields() &&  ::google::protobuf::internal::GetProto3PreserveUnknownsDefault())) {
     target = ::google::protobuf::internal::WireFormat::SerializeUnknownFieldsToArray(
         (::google::protobuf::internal::GetProto3PreserveUnknownsDefault()   ? _internal_metadata_.unknown_fields()   : _internal_metadata_.default_instance()), target);
@@ -3112,6 +3159,13 @@ size_t RegisterRequest::ByteSizeLong() const {
     total_size += 1 +
       ::google::protobuf::internal::WireFormatLite::StringSize(
         this->password());
+  }
+
+  // string idempotency_key = 5;
+  if (this->idempotency_key().size() > 0) {
+    total_size += 1 +
+      ::google::protobuf::internal::WireFormatLite::StringSize(
+        this->idempotency_key());
   }
 
   // uint32 server_id = 4;
@@ -3162,6 +3216,10 @@ void RegisterRequest::MergeFrom(const RegisterRequest& from) {
 
     password_.AssignWithDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), from.password_);
   }
+  if (from.idempotency_key().size() > 0) {
+
+    idempotency_key_.AssignWithDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), from.idempotency_key_);
+  }
   if (from.server_id() != 0) {
     set_server_id(from.server_id());
   }
@@ -3194,6 +3252,7 @@ void RegisterRequest::InternalSwap(RegisterRequest* other) {
   device_id_.Swap(&other->device_id_);
   display_name_.Swap(&other->display_name_);
   password_.Swap(&other->password_);
+  idempotency_key_.Swap(&other->idempotency_key_);
   swap(server_id_, other->server_id_);
   _internal_metadata_.Swap(&other->_internal_metadata_);
   swap(_cached_size_, other->_cached_size_);

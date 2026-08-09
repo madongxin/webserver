@@ -1,72 +1,136 @@
-# 最小集群拓扑（需本机已构建二进制挂载，或先 docker build）
-# 2×gateway 2×session 2×gamelogic 1×world 2×gamedb + redis + mysql
+# 最小集群拓扑：entrypoint dispatcher + 挂载本机二进制/宿主库。
+# 角色正确性由 scripts/smoke_test.sh 校验 /api/version（不只看容器 running）。
 version: "3.8"
+
+x-gamemesh-app: &gamemesh_app
+  image: centos:8
+  network_mode: host
+  # cwd=/opt/gamemesh 使代码里的 ../config/*.cnf 解析到 /opt/config
+  working_dir: /opt/gamemesh
+  volumes:
+    - ../build/test/gateway:/opt/gamemesh/gateway:ro
+    - ../build/test/session:/opt/gamemesh/session:ro
+    - ../build/test/gamelogic:/opt/gamemesh/gamelogic:ro
+    - ../build/test/world:/opt/gamemesh/world:ro
+    - ../build/test/gamedb:/opt/gamemesh/gamedb:ro
+    - ./docker-entrypoint.sh:/opt/gamemesh/docker-entrypoint.sh:ro
+    - ../config:/opt/config:ro
+    - /lib64:/lib64:ro
+    - /usr/lib64:/usr/lib64:ro
+  entrypoint: ["/opt/gamemesh/docker-entrypoint.sh"]
+  # 管理口探活：centos 镜像无 curl 时用 /dev/tcp；完整 ready 由 smoke_test.sh 断言
+  healthcheck:
+    test: ["CMD-SHELL", "bash -c 'exec 3<>/dev/tcp/127.0.0.1/$${GAMEMESH_HEALTH_PORT}'"]
+    interval: 10s
+    timeout: 3s
+    retries: 6
+    start_period: 25s
+  environment: &gamemesh_env
+    GAMEMESH_FORMAL: "1"
+    GAMEMESH_ADVERTISE_HOST: "127.0.0.1"
+    GAMEMESH_HTTP_BIND: "127.0.0.1"
+    GAMEMESH_BIN_DIR: "/opt/gamemesh"
+    LD_LIBRARY_PATH: "/usr/lib64:/lib64:/usr/lib64/mysql"
+
 services:
+  # 可选依赖容器：docker compose --profile deps up -d
+  # 默认 up 使用宿主机已有 MySQL/Redis（节省镜像磁盘）。
   mysql:
+    profiles: ["deps"]
     image: mysql:8.0
     environment:
       MYSQL_ROOT_PASSWORD: gamemesh
       MYSQL_DATABASE: gamemesh
     ports: ["3306:3306"]
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-uroot", "-pgamemesh"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
   redis:
+    profiles: ["deps"]
     image: redis:7
     ports: ["6379:6379"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
   session0:
-    image: gamemesh:local
-    network_mode: host
+    <<: *gamemesh_app
     environment:
-      GAMEMESH_FORMAL: "1"
-      GAMEMESH_ADVERTISE_HOST: "127.0.0.1"
-      GAMEMESH_HTTP_BIND: "127.0.0.1"
-    command: ["/opt/gamemesh/session", "8093", "8401"]
-    depends_on: [mysql, redis]
+      <<: *gamemesh_env
+      GAMEMESH_INSTANCE_ID: "session-0"
+      GAMEMESH_HEALTH_PORT: "8093"
+    command: ["session", "8093", "8401"]
+
   session1:
-    image: gamemesh:local
-    network_mode: host
+    <<: *gamemesh_app
     environment:
-      GAMEMESH_FORMAL: "1"
-      GAMEMESH_HTTP_BIND: "127.0.0.1"
-    command: ["/opt/gamemesh/session", "8096", "8402"]
-    depends_on: [mysql, redis]
+      <<: *gamemesh_env
+      GAMEMESH_INSTANCE_ID: "session-1"
+      GAMEMESH_HEALTH_PORT: "8096"
+    command: ["session", "8096", "8402"]
+
   gamedb0:
-    image: gamemesh:local
-    network_mode: host
-    command: ["/opt/gamemesh/gamedb", "8094", "8501"]
-    depends_on: [mysql]
+    <<: *gamemesh_app
+    environment:
+      <<: *gamemesh_env
+      GAMEMESH_INSTANCE_ID: "gamedb-0"
+      GAMEMESH_HEALTH_PORT: "8094"
+    command: ["gamedb", "8094", "8501"]
+
   gamedb1:
-    image: gamemesh:local
-    network_mode: host
-    command: ["/opt/gamemesh/gamedb", "8095", "8502"]
-    depends_on: [mysql]
+    <<: *gamemesh_app
+    environment:
+      <<: *gamemesh_env
+      GAMEMESH_INSTANCE_ID: "gamedb-1"
+      GAMEMESH_HEALTH_PORT: "8095"
+    command: ["gamedb", "8095", "8502"]
+
   world:
-    image: gamemesh:local
-    network_mode: host
-    command: ["/opt/gamemesh/world", "8092"]
+    <<: *gamemesh_app
+    environment:
+      <<: *gamemesh_env
+      GAMEMESH_INSTANCE_ID: "world-0"
+      GAMEMESH_HEALTH_PORT: "8092"
+    command: ["world", "8092"]
     depends_on: [gamedb0]
+
   gamelogic0:
-    image: gamemesh:local
-    network_mode: host
-    command: ["/opt/gamemesh/gamelogic", "8090", "8201"]
+    <<: *gamemesh_app
+    environment:
+      <<: *gamemesh_env
+      GAMEMESH_INSTANCE_ID: "gl-0"
+      GAMEMESH_HEALTH_PORT: "8090"
+    command: ["gamelogic", "8090", "8201"]
     depends_on: [session0, gamedb0]
+
   gamelogic1:
-    image: gamemesh:local
-    network_mode: host
-    command: ["/opt/gamemesh/gamelogic", "8091", "8202"]
+    <<: *gamemesh_app
+    environment:
+      <<: *gamemesh_env
+      GAMEMESH_INSTANCE_ID: "gl-1"
+      GAMEMESH_HEALTH_PORT: "8091"
+    command: ["gamelogic", "8091", "8202"]
     depends_on: [session0, gamedb0]
+
   gateway0:
-    image: gamemesh:local
-    network_mode: host
+    <<: *gamemesh_app
     environment:
-      GAMEMESH_FORMAL: "1"
-      GAMEMESH_HTTP_BIND: "127.0.0.1"
-      GAMEMESH_ADVERTISE_HOST: "127.0.0.1"
-    command: ["/opt/gamemesh/gateway", "8080", "8081"]
+      <<: *gamemesh_env
+      GAMEMESH_INSTANCE_ID: "gw-0"
+      GAMEMESH_HEALTH_PORT: "8080"
+    command: ["gateway", "8080", "8081"]
     depends_on: [session0, gamelogic0, gamelogic1]
+
   gateway1:
-    image: gamemesh:local
-    network_mode: host
+    <<: *gamemesh_app
     environment:
-      GAMEMESH_FORMAL: "1"
-      GAMEMESH_HTTP_BIND: "127.0.0.1"
-    command: ["/opt/gamemesh/gateway", "8082", "8083"]
+      <<: *gamemesh_env
+      GAMEMESH_INSTANCE_ID: "gw-1"
+      GAMEMESH_HEALTH_PORT: "8082"
+    command: ["gateway", "8082", "8083"]
     depends_on: [session0, gamelogic0]

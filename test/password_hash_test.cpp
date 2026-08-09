@@ -21,6 +21,9 @@ int main() {
     const std::string red = PasswordHash::RedactSecret("abcdefgh");
     if (red.find("abcd") != std::string::npos && red.find("****") == std::string::npos)
         return Fail("redact");
+    std::string dig;
+    if (!PasswordHash::Sha256Hex("abc", &dig) || dig.size() != 64)
+        return Fail("sha256");
     std::printf("PASS password_hash_test\n");
     return 0;
 }

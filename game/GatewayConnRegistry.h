@@ -27,6 +27,12 @@ public:
 
     void Remember(uint64_t connection_id, Bind bind);
     void Forget(uint64_t connection_id);
+    /**
+     * 权威路由 cutover：仅当 connection 仍绑定且新 route_version >= 旧值时更新。
+     * 返回 false 表示连接已换人或版本过旧。
+     */
+    bool ApplyRoute(uint64_t connection_id, const std::string &gamelogic_instance_id,
+                    uint64_t map_instance_id, uint64_t map_owner_epoch, uint64_t route_version);
     bool FindBySession(const std::string &session_id, Bind *out);
     bool FindByConnection(uint64_t connection_id, Bind *out);
     bool FindByPlayer(uint64_t player_id, Bind *out);

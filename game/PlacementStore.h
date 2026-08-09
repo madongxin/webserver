@@ -63,6 +63,9 @@ public:
     bool MarkRecovering(uint64_t map_instance_id, const std::string &reason, PlacementRecord *out);
     bool Heartbeat(uint64_t map_instance_id, const std::string &owner, uint64_t epoch,
                    uint32_t lease_sec, int64_t *lease_until_out);
+    /** READY 且 lease 已过期 → RECOVERING；lease 仍有效返回 false */
+    bool ExpireLeaseToRecovering(uint64_t map_instance_id, PlacementRecord *out, std::string *err);
+    int default_lease_sec() const { return default_lease_sec_; }
 
     static std::string StateToString(PlacementState s);
     static PlacementState StateFromString(const std::string &s);

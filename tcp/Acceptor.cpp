@@ -79,3 +79,9 @@ void Acceptor::AcceptConnection() {
 void Acceptor::set_newconnection_callback(std::function<void(int)> const &callback) {
     new_connection_callback_ = std::move(callback);
 }
+
+void Acceptor::PauseListening() {
+    if (channel_)
+        channel_->DisableRead();
+    LOG_INFO << "Acceptor: listening paused (stop accept)";
+}

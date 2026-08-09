@@ -243,6 +243,111 @@ if push ~= '' then redis.call('HSET', key, 'pushEndpoint', push) end
 return {'1', 'OK', tostring(new_rv)}
 )LUA";
 
+const char kLuaBeginPlayerTransfer[] = R"LUA(
+local key = KEYS[1]
+local token = ARGV[1]
+local expect_rv = tonumber(ARGV[2]) or 0
+local from_logic = ARGV[3]
+local to_logic = ARGV[4]
+local map_id = ARGV[5]
+local epoch = ARGV[6]
+local tid = ARGV[7]
+local gateway = ARGV[8]
+local raw = redis.call('HGETALL', key)
+if #raw == 0 then return {'0', 'NOT_FOUND', 'session not found'} end
+local f = {}
+for i = 1, #raw, 2 do f[raw[i]] = raw[i + 1] end
+if (f['token'] or '') ~= token then
+  return {'0', 'TOKEN_MISMATCH', 'fence mismatch'}
+end
+if (f['state'] or '') ~= 'ONLINE' and (f['state'] or '') ~= 'TRANSFERRING' then
+  return {'0', 'BAD_STATE', 'session not ONLINE'}
+end
+local cur = tonumber(f['routeVersion'] or '0') or 0
+if expect_rv ~= 0 and expect_rv ~= cur then
+  return {'0', 'STALE_ROUTE', 'route_version mismatch', tostring(cur)}
+end
+if (f['routeState'] or '') == 'TRANSFERRING' then
+  if tid ~= '' and (f['transferId'] or '') == tid then
+    return {'1', 'IDEMPOTENT', tid, tostring(cur), 'TRANSFERRING'}
+  end
+  return {'0', 'IN_TRANSFER', 'already transferring', f['transferId'] or ''}
+end
+if from_logic ~= '' and (f['gamelogicInstanceId'] or '') ~= '' and
+   (f['gamelogicInstanceId'] or '') ~= from_logic then
+  return {'0', 'FROM_MISMATCH', 'from logic mismatch'}
+end
+if tid == '' then tid = to_logic .. ':' .. map_id .. ':' .. tostring(cur + 1) end
+redis.call('HMSET', key,
+  'routeState', 'TRANSFERRING',
+  'transferId', tid,
+  'transferToLogic', to_logic,
+  'transferMapId', map_id,
+  'transferEpoch', epoch)
+if gateway ~= '' then redis.call('HSET', key, 'gatewayId', gateway) end
+return {'1', 'OK', tid, tostring(cur), 'TRANSFERRING'}
+)LUA";
+
+const char kLuaCommitPlayerTransfer[] = R"LUA(
+local key = KEYS[1]
+local token = ARGV[1]
+local tid = ARGV[2]
+local to_logic = ARGV[3]
+local map_id = ARGV[4]
+local epoch = ARGV[5]
+local gateway = ARGV[6]
+local raw = redis.call('HGETALL', key)
+if #raw == 0 then return {'0', 'NOT_FOUND', 'session not found'} end
+local f = {}
+for i = 1, #raw, 2 do f[raw[i]] = raw[i + 1] end
+if (f['token'] or '') ~= token then
+  return {'0', 'TOKEN_MISMATCH', 'fence mismatch'}
+end
+if (f['routeState'] or '') ~= 'TRANSFERRING' then
+  -- 幂等：已提交且目标一致
+  if (f['gamelogicInstanceId'] or '') == to_logic and (f['mapInstanceId'] or '') == map_id then
+    return {'1', 'IDEMPOTENT', tostring(f['routeVersion'] or '0'), to_logic, map_id, epoch, 'ONLINE'}
+  end
+  return {'0', 'NOT_TRANSFERRING', 'not in TRANSFERRING'}
+end
+if (f['transferId'] or '') ~= tid then
+  return {'0', 'TRANSFER_MISMATCH', 'transfer_id mismatch'}
+end
+local cur = tonumber(f['routeVersion'] or '0') or 0
+local new_rv = cur + 1
+redis.call('HMSET', key,
+  'gamelogicInstanceId', to_logic,
+  'mapInstanceId', map_id,
+  'mapOwnerEpoch', epoch,
+  'routeVersion', tostring(new_rv),
+  'routeState', 'ONLINE')
+redis.call('HDEL', key, 'transferId', 'transferToLogic', 'transferMapId', 'transferEpoch')
+if gateway ~= '' then redis.call('HSET', key, 'gatewayId', gateway) end
+return {'1', 'OK', tostring(new_rv), to_logic, map_id, epoch, 'ONLINE'}
+)LUA";
+
+const char kLuaAbortPlayerTransfer[] = R"LUA(
+local key = KEYS[1]
+local token = ARGV[1]
+local tid = ARGV[2]
+local raw = redis.call('HGETALL', key)
+if #raw == 0 then return {'0', 'NOT_FOUND', 'session not found'} end
+local f = {}
+for i = 1, #raw, 2 do f[raw[i]] = raw[i + 1] end
+if (f['token'] or '') ~= token then
+  return {'0', 'TOKEN_MISMATCH', 'fence mismatch'}
+end
+if (f['routeState'] or '') ~= 'TRANSFERRING' then
+  return {'1', 'IDEMPOTENT', tostring(f['routeVersion'] or '0'), f['routeState'] or 'ONLINE'}
+end
+if tid ~= '' and (f['transferId'] or '') ~= tid then
+  return {'0', 'TRANSFER_MISMATCH', 'transfer_id mismatch'}
+end
+redis.call('HSET', key, 'routeState', 'ONLINE')
+redis.call('HDEL', key, 'transferId', 'transferToLogic', 'transferMapId', 'transferEpoch')
+return {'1', 'OK', tostring(f['routeVersion'] or '0'), 'ONLINE'}
+)LUA";
+
 const char kLuaBindConnection[] = R"LUA(
 local key = KEYS[1]
 local token = ARGV[1]
@@ -754,6 +859,158 @@ bool SessionStore::UpdatePlayerRoute(uint64_t player_id, const std::string &fenc
     }
     if (route_version_out && reply.size() > 2)
         *route_version_out = ParseU64(reply[2]);
+    return true;
+}
+
+bool SessionStore::BeginPlayerTransfer(const TransferBeginIn &in, TransferBeginOut *out) {
+    if (!out)
+        return false;
+    *out = TransferBeginOut{};
+    if (!available_ || in.player_id == 0 || in.fence_token.empty() || in.to_logic.empty()) {
+        out->message = "invalid arg";
+        out->error_code = "INVALID_ARG";
+        return false;
+    }
+    auto lease = RedisPool::Instance().Acquire();
+    if (!lease) {
+        out->message = "pool exhausted";
+        out->error_code = "POOL";
+        return false;
+    }
+    std::vector<std::string> keys{SessionKey(in.player_id)};
+    std::vector<std::string> args{in.fence_token,
+                                  std::to_string(in.expected_route_version),
+                                  in.from_logic,
+                                  in.to_logic,
+                                  std::to_string(in.map_instance_id),
+                                  std::to_string(in.map_owner_epoch),
+                                  in.transfer_id,
+                                  in.gateway_instance_id};
+    std::vector<std::string> reply;
+    if (!lease->Eval(kLuaBeginPlayerTransfer, keys, args, &reply) || reply.size() < 2) {
+        out->message = "lua failed";
+        out->error_code = "LUA";
+        return false;
+    }
+    out->error_code = reply[1];
+    if (reply[0] != "1") {
+        out->message = reply.size() > 2 ? reply[2] : reply[1];
+        return false;
+    }
+    out->ok = true;
+    out->transfer_id = reply.size() > 2 ? reply[2] : in.transfer_id;
+    out->route_version = reply.size() > 3 ? ParseU64(reply[3]) : 0;
+    out->route_state = reply.size() > 4 ? reply[4] : "TRANSFERRING";
+    out->message = "ok";
+    return true;
+}
+
+bool SessionStore::CommitPlayerTransfer(const TransferCommitIn &in, TransferCommitOut *out) {
+    if (!out)
+        return false;
+    *out = TransferCommitOut{};
+    if (!available_ || in.player_id == 0 || in.fence_token.empty() || in.transfer_id.empty() ||
+        in.to_logic.empty()) {
+        out->message = "invalid arg";
+        out->error_code = "INVALID_ARG";
+        return false;
+    }
+    auto lease = RedisPool::Instance().Acquire();
+    if (!lease) {
+        out->message = "pool exhausted";
+        out->error_code = "POOL";
+        return false;
+    }
+    std::vector<std::string> keys{SessionKey(in.player_id)};
+    std::vector<std::string> args{in.fence_token,
+                                  in.transfer_id,
+                                  in.to_logic,
+                                  std::to_string(in.map_instance_id),
+                                  std::to_string(in.map_owner_epoch),
+                                  in.gateway_instance_id};
+    std::vector<std::string> reply;
+    if (!lease->Eval(kLuaCommitPlayerTransfer, keys, args, &reply) || reply.size() < 2) {
+        out->message = "lua failed";
+        out->error_code = "LUA";
+        return false;
+    }
+    out->error_code = reply[1];
+    if (reply[0] != "1") {
+        out->message = reply.size() > 2 ? reply[2] : reply[1];
+        return false;
+    }
+    out->ok = true;
+    out->route_version = reply.size() > 2 ? ParseU64(reply[2]) : 0;
+    out->gamelogic_instance_id = reply.size() > 3 ? reply[3] : in.to_logic;
+    out->map_instance_id = reply.size() > 4 ? ParseU64(reply[4]) : in.map_instance_id;
+    out->map_owner_epoch = reply.size() > 5 ? ParseU64(reply[5]) : in.map_owner_epoch;
+    out->route_state = reply.size() > 6 ? reply[6] : "ONLINE";
+    out->message = "ok";
+    return true;
+}
+
+bool SessionStore::AbortPlayerTransfer(uint64_t player_id, const std::string &fence_token,
+                                       const std::string &transfer_id, std::string *err,
+                                       uint64_t *route_version_out) {
+    if (!available_ || player_id == 0 || fence_token.empty()) {
+        if (err)
+            *err = "invalid arg";
+        return false;
+    }
+    auto lease = RedisPool::Instance().Acquire();
+    if (!lease) {
+        if (err)
+            *err = "pool exhausted";
+        return false;
+    }
+    std::vector<std::string> keys{SessionKey(player_id)};
+    std::vector<std::string> args{fence_token, transfer_id};
+    std::vector<std::string> reply;
+    if (!lease->Eval(kLuaAbortPlayerTransfer, keys, args, &reply) || reply.size() < 2) {
+        if (err)
+            *err = "lua failed";
+        return false;
+    }
+    if (reply[0] != "1") {
+        if (err)
+            *err = reply.size() > 2 ? reply[2] : reply[1];
+        return false;
+    }
+    if (route_version_out && reply.size() > 2)
+        *route_version_out = ParseU64(reply[2]);
+    return true;
+}
+
+bool SessionStore::GetPlayerRoute(uint64_t player_id, const std::string &fence_token,
+                                  SessionRecord *out, std::string *route_state,
+                                  std::string *transfer_id, std::string *err) {
+    if (!available_ || !out) {
+        if (err)
+            *err = "unavailable";
+        return false;
+    }
+    if (!LoadSession(player_id, out)) {
+        if (err)
+            *err = "not found";
+        return false;
+    }
+    if (!fence_token.empty() && out->token != fence_token) {
+        if (err)
+            *err = "fence mismatch";
+        return false;
+    }
+    auto lease = RedisPool::Instance().Acquire();
+    if (lease) {
+        std::map<std::string, std::string> fields;
+        if (lease->HGetAll(SessionKey(player_id), &fields)) {
+            if (route_state)
+                *route_state = fields.count("routeState") ? fields["routeState"] : "ONLINE";
+            if (transfer_id)
+                *transfer_id = fields.count("transferId") ? fields["transferId"] : "";
+        }
+    } else if (route_state) {
+        *route_state = "ONLINE";
+    }
     return true;
 }
 

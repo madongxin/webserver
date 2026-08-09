@@ -14,6 +14,8 @@ message PushMessage {
   bytes payload = 5;       // 通常已是外网帧或 GameResponse body
   bool reliable = 6;
   bool coalescable = 7;
+  string fence_token = 8;  // 可选：与 Gateway 本地绑定校验
+  uint64 generation = 9;
 }
 
 message PushBatchRequest {

@@ -1,6 +1,7 @@
 #include "AuthTokenStore.h"
 
 #include "Logging.h"
+#include "PasswordHash.h"
 #include "RedisClient.h"
 #include "RedisConfigPath.h"
 
@@ -34,6 +35,7 @@ AuthTokenStore &AuthTokenStore::Instance() {
 }
 
 bool AuthTokenStore::InitFromConfig() {
+    std::lock_guard<std::mutex> lk(mu_);
     if (available_)
         return true;
     const std::string &path = RedisConfigPath::RedisCnf();
@@ -68,6 +70,8 @@ bool AuthTokenStore::InitFromConfig() {
                 password = val;
             else if (key == "auth_token_ttl_sec" && std::atoi(val.c_str()) > 0)
                 default_ttl_sec_ = std::atoi(val.c_str());
+            else if (key == "auth_refresh_ttl_sec" && std::atoi(val.c_str()) > 0)
+                default_refresh_ttl_sec_ = std::atoi(val.c_str());
         }
     }
     if (!AuthRedis().Connect(host, port, password)) {
@@ -76,12 +80,16 @@ bool AuthTokenStore::InitFromConfig() {
         return false;
     }
     available_ = true;
-    LOG_INFO << "AuthTokenStore Redis ok ttl=" << default_ttl_sec_;
+    LOG_INFO << "AuthTokenStore Redis ok access_ttl=" << default_ttl_sec_
+             << " refresh_ttl=" << default_refresh_ttl_sec_;
     return true;
 }
 
-std::string AuthTokenStore::TokenKey(const std::string &token) const {
-    return "game:auth:access:" + token;
+std::string AuthTokenStore::DigestKey(const char *kind, const std::string &raw_token) const {
+    std::string dig;
+    if (!PasswordHash::Sha256Hex(raw_token, &dig))
+        return {};
+    return std::string("game:auth:") + kind + ":" + dig;
 }
 
 std::string AuthTokenStore::PlayerKey(uint64_t player_id) const {
@@ -91,13 +99,11 @@ std::string AuthTokenStore::PlayerKey(uint64_t player_id) const {
     return buf;
 }
 
-bool AuthTokenStore::IssueAccessToken(uint64_t player_id, uint64_t account_id, int ttl_sec,
-                                      std::string *access_token_out) {
-    if (!available_ || !access_token_out || player_id == 0)
+bool AuthTokenStore::StoreTokenDigest(const char *kind, const std::string &raw_token,
+                                      uint64_t player_id, uint64_t account_id, int ttl_sec) {
+    const std::string key = DigestKey(kind, raw_token);
+    if (key.empty())
         return false;
-    if (ttl_sec <= 0)
-        ttl_sec = default_ttl_sec_;
-    const std::string token = GenHex(32);
     std::map<std::string, std::string> fields;
     fields["playerId"] = std::to_string(player_id);
     fields["accountId"] = std::to_string(account_id);
@@ -105,34 +111,29 @@ bool AuthTokenStore::IssueAccessToken(uint64_t player_id, uint64_t account_id, i
         std::chrono::duration_cast<std::chrono::seconds>(
             std::chrono::system_clock::now().time_since_epoch())
             .count());
-    if (!AuthRedis().HSet(TokenKey(token), fields))
+    if (!AuthRedis().HSet(key, fields))
         return false;
-    if (!AuthRedis().Expire(TokenKey(token), ttl_sec))
-        return false;
-    // 玩家当前 access token（便于吊销旧票）
-    std::map<std::string, std::string> pfields{{"token", token}};
-    AuthRedis().HSet(PlayerKey(player_id), pfields);
-    AuthRedis().Expire(PlayerKey(player_id), ttl_sec);
-    *access_token_out = token;
-    return true;
+    return AuthRedis().Expire(key, ttl_sec);
 }
 
-bool AuthTokenStore::VerifyAccessToken(uint64_t player_id, const std::string &access_token,
-                                       std::string *err) {
-    if (!available_) {
+bool AuthTokenStore::VerifyTokenDigest(const char *kind, uint64_t player_id,
+                                       const std::string &raw_token, std::string *err,
+                                       uint64_t *account_id_out) {
+    if (raw_token.empty()) {
         if (err)
-            *err = "auth token store unavailable";
+            *err = std::string("empty ") + kind + "_token";
         return false;
     }
-    if (access_token.empty()) {
+    const std::string key = DigestKey(kind, raw_token);
+    if (key.empty()) {
         if (err)
-            *err = "empty access_token";
+            *err = "digest failed";
         return false;
     }
     std::map<std::string, std::string> fields;
-    if (!AuthRedis().HGetAll(TokenKey(access_token), &fields) || fields.empty()) {
+    if (!AuthRedis().HGetAll(key, &fields) || fields.empty()) {
         if (err)
-            *err = "invalid or expired access_token";
+            *err = std::string("invalid or expired ") + kind + "_token";
         return false;
     }
     const uint64_t pid =
@@ -142,13 +143,87 @@ bool AuthTokenStore::VerifyAccessToken(uint64_t player_id, const std::string &ac
             *err = "player_id mismatch";
         return false;
     }
+    if (account_id_out)
+        *account_id_out =
+            static_cast<uint64_t>(std::strtoull(fields["accountId"].c_str(), nullptr, 10));
     return true;
 }
 
-bool AuthTokenStore::RefreshAccessToken(uint64_t player_id, const std::string &old_token,
-                                        int ttl_sec, std::string *new_token_out, std::string *err) {
-    if (!VerifyAccessToken(player_id, old_token, err))
+bool AuthTokenStore::IssueTokenPair(uint64_t player_id, uint64_t account_id, int access_ttl_sec,
+                                    int refresh_ttl_sec, std::string *access_out,
+                                    std::string *refresh_out) {
+    if (!access_out || !refresh_out || player_id == 0)
         return false;
-    AuthRedis().Del(TokenKey(old_token));
-    return IssueAccessToken(player_id, player_id, ttl_sec, new_token_out);
+    std::lock_guard<std::mutex> lk(mu_);
+    if (!available_)
+        return false;
+    if (access_ttl_sec <= 0)
+        access_ttl_sec = default_ttl_sec_;
+    if (refresh_ttl_sec <= 0)
+        refresh_ttl_sec = default_refresh_ttl_sec_;
+    const std::string access = GenHex(32);
+    const std::string refresh = GenHex(40);
+    if (access == refresh)
+        return false;
+    if (!StoreTokenDigest("access", access, player_id, account_id, access_ttl_sec))
+        return false;
+    if (!StoreTokenDigest("refresh", refresh, player_id, account_id, refresh_ttl_sec)) {
+        AuthRedis().Del(DigestKey("access", access));
+        return false;
+    }
+    std::map<std::string, std::string> pfields;
+    pfields["accessDig"] = DigestKey("access", access);
+    pfields["refreshDig"] = DigestKey("refresh", refresh);
+    AuthRedis().HSet(PlayerKey(player_id), pfields);
+    AuthRedis().Expire(PlayerKey(player_id), refresh_ttl_sec);
+    *access_out = access;
+    *refresh_out = refresh;
+    return true;
+}
+
+bool AuthTokenStore::IssueAccessToken(uint64_t player_id, uint64_t account_id, int ttl_sec,
+                                      std::string *access_token_out) {
+    std::string refresh;
+    return IssueTokenPair(player_id, account_id, ttl_sec, default_refresh_ttl_sec_,
+                          access_token_out, &refresh);
+}
+
+bool AuthTokenStore::VerifyAccessToken(uint64_t player_id, const std::string &access_token,
+                                       std::string *err) {
+    std::lock_guard<std::mutex> lk(mu_);
+    if (!available_) {
+        if (err)
+            *err = "auth token store unavailable";
+        return false;
+    }
+    return VerifyTokenDigest("access", player_id, access_token, err, nullptr);
+}
+
+bool AuthTokenStore::RefreshAccessToken(uint64_t player_id, const std::string &refresh_token,
+                                        int access_ttl_sec, std::string *new_access_out,
+                                        std::string *err, std::string *new_refresh_out) {
+    if (!new_access_out)
+        return false;
+    uint64_t account_id = 0;
+    {
+        std::lock_guard<std::mutex> lk(mu_);
+        if (!available_) {
+            if (err)
+                *err = "auth token store unavailable";
+            return false;
+        }
+        if (!VerifyTokenDigest("refresh", player_id, refresh_token, err, &account_id))
+            return false;
+        AuthRedis().Del(DigestKey("refresh", refresh_token));
+    }
+    std::string neu_refresh;
+    if (!IssueTokenPair(player_id, account_id != 0 ? account_id : player_id, access_ttl_sec,
+                        default_refresh_ttl_sec_, new_access_out, &neu_refresh)) {
+        if (err)
+            *err = "reissue failed";
+        return false;
+    }
+    if (new_refresh_out)
+        *new_refresh_out = neu_refresh;
+    return true;
 }

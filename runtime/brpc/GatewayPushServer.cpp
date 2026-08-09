@@ -3,8 +3,6 @@
 #include "GatewayConnRegistry.h"
 #include "Logging.h"
 #include "ProtoFraming.h"
-#include "PushReplayCache.h"
-
 #include <brpc/controller.h>
 #include <brpc/server.h>
 
@@ -44,6 +42,14 @@ void GatewayPushServiceImpl::PushBatch(::google::protobuf::RpcController *contro
             ++rejected;
             continue;
         }
+        if (!m.fence_token().empty() && !bind.token.empty() && m.fence_token() != bind.token) {
+            ++rejected;
+            continue;
+        }
+        if (m.generation() != 0 && bind.generation != 0 && m.generation() != bind.generation) {
+            ++rejected;
+            continue;
+        }
         std::string frame = m.payload();
         if (frame.size() < 4) {
             ++rejected;
@@ -65,14 +71,7 @@ void GatewayPushServiceImpl::PushBatch(::google::protobuf::RpcController *contro
             ++rejected;
             continue;
         }
-        if (m.reliable() && m.player_id() != 0 && m.server_seq() != 0) {
-            PushReplayEntry e;
-            e.server_seq = m.server_seq();
-            e.message_type = m.message_type();
-            e.payload = m.payload();
-            e.reliable = true;
-            PushReplayCache::Instance().Store(m.player_id(), e);
-        }
+        // 权威回放在 Redis PushReplayStore；此处不再双写本地缓存
         ++accepted;
     }
     response->set_ok(true);

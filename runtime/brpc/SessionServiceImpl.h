@@ -45,6 +45,22 @@ public:
                            const ::sess::UpdatePlayerRouteRequest *request,
                            ::sess::UpdatePlayerRouteResponse *response,
                            ::google::protobuf::Closure *done) override;
+    void BeginPlayerTransfer(::google::protobuf::RpcController *controller,
+                             const ::sess::BeginPlayerTransferRequest *request,
+                             ::sess::BeginPlayerTransferResponse *response,
+                             ::google::protobuf::Closure *done) override;
+    void CommitPlayerTransfer(::google::protobuf::RpcController *controller,
+                              const ::sess::CommitPlayerTransferRequest *request,
+                              ::sess::CommitPlayerTransferResponse *response,
+                              ::google::protobuf::Closure *done) override;
+    void AbortPlayerTransfer(::google::protobuf::RpcController *controller,
+                             const ::sess::AbortPlayerTransferRequest *request,
+                             ::sess::AbortPlayerTransferResponse *response,
+                             ::google::protobuf::Closure *done) override;
+    void GetPlayerRoute(::google::protobuf::RpcController *controller,
+                        const ::sess::GetPlayerRouteRequest *request,
+                        ::sess::GetPlayerRouteResponse *response,
+                        ::google::protobuf::Closure *done) override;
 
     void Login(::google::protobuf::RpcController *controller, const ::game::LoginReq *request,
                ::game::LoginRsp *response, ::google::protobuf::Closure *done) override;

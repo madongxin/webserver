@@ -73,6 +73,15 @@ public:
     static ConnectionPool *getconnectionPool();
 
     /**
+     * 在首次 getconnectionPool() 之前调用：禁止本进程建立 MySQL 池（正式模式数据边界）。
+     * 已初始化则不再建连；后续 isInitialized() 为 false。
+     */
+    static void ForbidInit(const char *reason);
+
+    /** 测试/运维：是否被 ForbidInit */
+    static bool IsForbidden();
+
+    /**
      * 从池中借出一条空闲连接。
      * @return 非空 shared_ptr：离开作用域自动还池；nullptr：等待超时或队列仍空
      *

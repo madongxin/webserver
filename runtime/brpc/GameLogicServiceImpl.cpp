@@ -22,6 +22,8 @@ struct BoundPlayer {
     uint64_t map_owner_epoch = 0;
     uint64_t route_version = 0;
     uint64_t generation = 0;
+    bool frozen = false;
+    std::string transfer_id;
 };
 
 std::mutex g_bound_mu;
@@ -73,6 +75,24 @@ bool GameLogicGetPushTarget(uint64_t player_id, std::string *gateway_instance_id
     std::lock_guard<std::mutex> lk(g_bound_mu);
     return GetPushTargetLocked(player_id, gateway_instance_id, session_id);
 }
+
+bool GameLogicGetBoundMeta(uint64_t player_id, std::string *gateway_instance_id,
+                           std::string *session_id, std::string *fence_token,
+                           uint64_t *generation) {
+    std::lock_guard<std::mutex> lk(g_bound_mu);
+    auto it = g_bound.find(player_id);
+    if (it == g_bound.end())
+        return false;
+    if (gateway_instance_id)
+        *gateway_instance_id = it->second.gateway_instance_id;
+    if (session_id)
+        *session_id = it->second.session_id;
+    if (fence_token)
+        *fence_token = it->second.fence_token;
+    if (generation)
+        *generation = it->second.generation;
+    return true;
+}
 void GameLogicServiceImpl::BindPlayer(::google::protobuf::RpcController *controller,
                                       const ::glrpc::BindPlayerRequest *request,
                                       ::glrpc::BindPlayerResponse *response,
@@ -95,6 +115,8 @@ void GameLogicServiceImpl::BindPlayer(::google::protobuf::RpcController *control
     bp.map_owner_epoch = request->map_owner_epoch();
     bp.route_version = request->route_version();
     bp.generation = request->generation();
+    bp.transfer_id = request->transfer_id();
+    bp.frozen = false;  // Prepare/Bind 后可写
     // Bind 幂等：同 session+fence 重复 Bind 覆盖 gateway 路由；更高 generation 顶替旧绑定
     {
         std::lock_guard<std::mutex> lk(g_bound_mu);
@@ -104,6 +126,14 @@ void GameLogicServiceImpl::BindPlayer(::google::protobuf::RpcController *control
             response->set_ok(false);
             response->set_error_code("STALE_GENERATION");
             response->set_message("stale bind generation");
+            return;
+        }
+        // 同 transfer_id 重复 Prepare 幂等
+        if (it != g_bound.end() && !bp.transfer_id.empty() &&
+            it->second.transfer_id == bp.transfer_id && !it->second.frozen) {
+            response->set_ok(true);
+            response->set_message("prepare idempotent");
+            response->set_bag_item_kinds(0);
             return;
         }
         g_bound[player_id] = bp;
@@ -137,15 +167,45 @@ void GameLogicServiceImpl::Dispatch(::google::protobuf::RpcController *controlle
         response->set_message(err);
         return;
     }
-    if (!request->gamelogic_instance_id().empty()) {
-        // 请求目标必须与本节点一致时由上层路由保证；此处拒绝空/伪造在 Bind 表校验
+    {
+        std::lock_guard<std::mutex> lk(g_bound_mu);
+        auto it = g_bound.find(request->player_id());
+        if (it != g_bound.end()) {
+            if (it->second.frozen) {
+                response->set_ok(false);
+                response->set_error_code("PLAYER_FROZEN");
+                response->set_message("player frozen for transfer");
+                return;
+            }
+            if (request->route_version() != 0 && it->second.route_version != 0 &&
+                request->route_version() < it->second.route_version) {
+                response->set_ok(false);
+                response->set_error_code("ERR_ROUTE_STALE");
+                response->set_message("route_version stale");
+                return;
+            }
+        }
     }
     if (request->map_instance_id() != 0) {
-        if (!MapInstanceRegistry::Instance().AcceptWrite(request->map_instance_id(),
-                                                         request->map_owner_epoch())) {
+        const MapWriteFence fence = MapInstanceRegistry::Instance().CheckWrite(
+            request->map_instance_id(), request->map_owner_epoch());
+        // EnterMap 首次到达本 Logic 时尚无 Claim：放行由 HandleEnterMap 完成 Claim
+        const bool allow_first_claim =
+            fence == MapWriteFence::NotClaimed &&
+            (request->message_type() == "enter_map" || request->message_type().empty());
+        if (fence != MapWriteFence::Ok && !allow_first_claim) {
             response->set_ok(false);
-            response->set_error_code("STALE_EPOCH");
-            response->set_message("stale map_owner_epoch");
+            if (fence == MapWriteFence::LeaseExpired) {
+                response->set_error_code("LEASE_EXPIRED");
+                response->set_message("map owner lease expired");
+                MapInstanceRegistry::Instance().Release(request->map_instance_id());
+            } else if (fence == MapWriteFence::NotClaimed) {
+                response->set_error_code("NOT_CLAIMED");
+                response->set_message("map not claimed on this logic");
+            } else {
+                response->set_error_code("STALE_EPOCH");
+                response->set_message("stale map_owner_epoch");
+            }
             return;
         }
     }
@@ -196,4 +256,47 @@ void GameLogicServiceImpl::UnbindPlayer(::google::protobuf::RpcController *contr
                                     request->reason().empty() ? "unbind" : request->reason());
     response->set_ok(true);
     response->set_message("unbound");
+}
+
+void GameLogicServiceImpl::FreezePlayer(::google::protobuf::RpcController *controller,
+                                        const ::glrpc::FreezePlayerRequest *request,
+                                        ::glrpc::FreezePlayerResponse *response,
+                                        ::google::protobuf::Closure *done) {
+    (void)controller;
+    brpc::ClosureGuard done_guard(done);
+    response->Clear();
+    if (!request || request->player_id() == 0) {
+        response->set_ok(false);
+        response->set_error_code("INVALID_ARG");
+        return;
+    }
+    std::string err;
+    if (!FenceOk(request->player_id(), request->session_id(), request->fence_token(), 0, &err)) {
+        response->set_ok(false);
+        response->set_error_code("FENCE_REJECT");
+        response->set_message(err);
+        return;
+    }
+    std::lock_guard<std::mutex> lk(g_bound_mu);
+    auto it = g_bound.find(request->player_id());
+    if (it == g_bound.end()) {
+        response->set_ok(false);
+        response->set_error_code("NOT_BOUND");
+        response->set_message("player not bound");
+        return;
+    }
+    // 幂等：同 transfer_id 已冻结
+    if (it->second.frozen &&
+        (request->transfer_id().empty() || it->second.transfer_id == request->transfer_id())) {
+        response->set_ok(true);
+        response->set_message("already frozen");
+        return;
+    }
+    it->second.frozen = true;
+    if (!request->transfer_id().empty())
+        it->second.transfer_id = request->transfer_id();
+    response->set_ok(true);
+    response->set_message("frozen");
+    LOG_INFO << "FreezePlayer ok player_id=" << request->player_id()
+             << " transfer=" << request->transfer_id();
 }

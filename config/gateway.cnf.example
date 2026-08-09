@@ -1,15 +1,20 @@
-# Gateway → GameLogic / World / Session 静态路由（阶段 2/5/6/7）
+# Gateway → GameLogic / World / Session 静态路由
+# 稳定实例身份（勿用 listen 地址拼接）；也可用环境变量 GAMEMESH_INSTANCE_ID 覆盖
+gateway_instance_id=gw-0
 # logic_addrs 与 logic_instance_ids 一一对应；无地图绑定时仍可用 player_id % N
 # 进图后按 MapPlacement.owner → ChannelForInstance
 # 邮件/聊天/好友 → world_addrs（WorldForward）
-# Login/Reconnect/Bind → session_addrs（独立 Session；空则网关本地 Redis SessionStore）
+# Login/Reconnect/Bind → session_addrs（CSV 多 Session；list:// + rr，不得只取首地址）
 logic_addrs=127.0.0.1:8201,127.0.0.1:8202
 logic_instance_ids=gl-0,gl-1
 world_addrs=127.0.0.1:8301
-session_addrs=127.0.0.1:8401
+session_addrs=127.0.0.1:8401,127.0.0.1:8402
+session_instance_ids=sess-0,sess-1
 gamedb_addrs=127.0.0.1:8501
-# 例：http://127.0.0.1:2379 ；空=仅静态
+# etcd v2 已废弃；生产勿用。遗留调试需同时设置环境变量 GAMEMESH_ENABLE_ETCD_V2=1
 etcd_endpoints=
+# 可选：Gateway 热加载 gateway.cnf 的间隔秒（默认 5）
+# GAMEMESH_DISCOVERY_POLL_SEC=5
 rpc_timeout_ms=3000
 ssl_enable=0
 # ssl_cert=/path/client.crt

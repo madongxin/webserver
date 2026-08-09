@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 # 本地集群：2×gateway + 2×session + 2×gamelogic + 1×world + 2×gamedb
+# Gateway session_addrs 含双 Session（list:// + rr）
 set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
@@ -9,7 +10,7 @@ export GAMEMESH_ADVERTISE_HOST="${GAMEMESH_ADVERTISE_HOST:-127.0.0.1}"
 
 # 复用 formal 端口布局，第二 session 用 8402
 export GAMEMESH_SESSION="${GAMEMESH_SESSION:-8401}"
-SESSION2="${GAMEMESH_SESSION2:-8402}"
+export GAMEMESH_SESSION2="${GAMEMESH_SESSION2:-8402}"
 HTTP_S2="${GAMEMESH_HTTP_S2:-8096}"
 
 if [[ -f "$GAMEMESH_RUN_DIR/pids" ]]; then
@@ -17,7 +18,7 @@ if [[ -f "$GAMEMESH_RUN_DIR/pids" ]]; then
   exit 1
 fi
 
-# 先走 formal 启动（1 session），再追加 session2
+# formal 启动时已把 SESSION2 写入 gateway/gamelogic session_addrs
 ./scripts/start_formal.sh
 
 SESSION_BIN=""
@@ -33,11 +34,12 @@ fi
 
 mkdir -p "$GAMEMESH_RUN_DIR/logs"
 if [[ "$(basename "$SESSION_BIN")" == "server" ]]; then
-  nohup "$SESSION_BIN" session "$HTTP_S2" "$SESSION2" >"$GAMEMESH_RUN_DIR/logs/session2.log" 2>&1 &
+  GAMEMESH_INSTANCE_ID=sess-1 nohup "$SESSION_BIN" session "$HTTP_S2" "$GAMEMESH_SESSION2" \
+    >"$GAMEMESH_RUN_DIR/logs/session2.log" 2>&1 &
 else
-  nohup "$SESSION_BIN" "$HTTP_S2" "$SESSION2" >"$GAMEMESH_RUN_DIR/logs/session2.log" 2>&1 &
+  GAMEMESH_INSTANCE_ID=sess-1 nohup "$SESSION_BIN" "$HTTP_S2" "$GAMEMESH_SESSION2" \
+    >"$GAMEMESH_RUN_DIR/logs/session2.log" 2>&1 &
 fi
 echo $! >>"$GAMEMESH_RUN_DIR/pids"
-echo "started session2 pid=$! port=$SESSION2"
-echo "run_cluster_local.sh PASS (2nd session on $SESSION2; Gateways still point to primary session_addrs)"
-echo "NOTE: dual-session client LB for session_addrs 可在 gateway.cnf 配逗号列表（当前 Init 取首地址）"
+echo "started session2 pid=$! port=$GAMEMESH_SESSION2 instance_id=sess-1"
+echo "run_cluster_local.sh PASS (session_addrs=127.0.0.1:${GAMEMESH_SESSION},127.0.0.1:${GAMEMESH_SESSION2})"

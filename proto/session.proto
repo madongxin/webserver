@@ -216,6 +216,84 @@ message UpdatePlayerRouteResponse {
   uint64 route_version = 3;
 }
 
+// 跨 GameLogic 玩家转移（EnterMap 等）
+message BeginPlayerTransferRequest {
+  uint64 player_id = 1;
+  string fence_token = 2;
+  uint64 expected_route_version = 3;  // CAS；0=接受当前
+  string from_gamelogic_instance_id = 4;
+  string to_gamelogic_instance_id = 5;
+  uint64 map_instance_id = 6;
+  uint64 map_owner_epoch = 7;
+  string transfer_id = 8;             // 空则服务端生成；重试幂等
+  string gateway_instance_id = 9;
+}
+
+message BeginPlayerTransferResponse {
+  bool ok = 1;
+  string message = 2;
+  string error_code = 3;
+  string transfer_id = 4;
+  uint64 route_version = 5;           // 仍为 Begin 前版本；Commit 后递增
+  string route_state = 6;             // TRANSFERRING
+}
+
+message CommitPlayerTransferRequest {
+  uint64 player_id = 1;
+  string fence_token = 2;
+  string transfer_id = 3;
+  string to_gamelogic_instance_id = 4;
+  uint64 map_instance_id = 5;
+  uint64 map_owner_epoch = 6;
+  string gateway_instance_id = 7;
+}
+
+message CommitPlayerTransferResponse {
+  bool ok = 1;
+  string message = 2;
+  string error_code = 3;
+  uint64 route_version = 4;
+  string gamelogic_instance_id = 5;
+  uint64 map_instance_id = 6;
+  uint64 map_owner_epoch = 7;
+  string route_state = 8;
+}
+
+message AbortPlayerTransferRequest {
+  uint64 player_id = 1;
+  string fence_token = 2;
+  string transfer_id = 3;
+  string reason = 4;
+}
+
+message AbortPlayerTransferResponse {
+  bool ok = 1;
+  string message = 2;
+  string error_code = 3;
+  uint64 route_version = 4;
+  string route_state = 5;
+}
+
+message GetPlayerRouteRequest {
+  uint64 player_id = 1;
+  string fence_token = 2;
+}
+
+message GetPlayerRouteResponse {
+  bool ok = 1;
+  string message = 2;
+  string session_id = 3;
+  string fence_token = 4;
+  uint64 generation = 5;
+  string gateway_instance_id = 6;
+  string gamelogic_instance_id = 7;
+  uint64 map_instance_id = 8;
+  uint64 map_owner_epoch = 9;
+  uint64 route_version = 10;
+  string route_state = 11;
+  string transfer_id = 12;
+}
+
 service SessionService {
   // --- 新边界（Gateway 编排）---
   rpc AcquireSession(AcquireSessionRequest) returns (AcquireSessionResponse);
@@ -231,6 +309,10 @@ service SessionService {
   rpc MarkRecovering(MarkRecoveringRequest) returns (MarkRecoveringResponse);
   rpc HeartbeatOwner(HeartbeatOwnerRequest) returns (HeartbeatOwnerResponse);
   rpc UpdatePlayerRoute(UpdatePlayerRouteRequest) returns (UpdatePlayerRouteResponse);
+  rpc BeginPlayerTransfer(BeginPlayerTransferRequest) returns (BeginPlayerTransferResponse);
+  rpc CommitPlayerTransfer(CommitPlayerTransferRequest) returns (CommitPlayerTransferResponse);
+  rpc AbortPlayerTransfer(AbortPlayerTransferRequest) returns (AbortPlayerTransferResponse);
+  rpc GetPlayerRoute(GetPlayerRouteRequest) returns (GetPlayerRouteResponse);
 
   // --- 兼容旧 RPC（内部转调；GameLogic 不应再调 Login）---
   rpc Login(game.LoginReq) returns (game.LoginRsp);

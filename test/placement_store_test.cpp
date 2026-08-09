@@ -6,6 +6,7 @@
 #include "RedisPool.h"
 
 #include <atomic>
+#include <chrono>
 #include <cstdio>
 #include <cstdlib>
 #include <fstream>
@@ -122,12 +123,35 @@ int main() {
         // 若 RR 碰巧相同也允许，只要实例不同
     }
 
-    // 迁移：epoch 递增，幂等
-    PlacementRecord mig;
+    // 活跃 lease 时 Migrate 应失败
+    PlacementRecord blocked;
     std::string err;
+    if (PlacementStore::Instance().Migrate(ra.placement.map_instance_id, "gl-1",
+                                           ra.placement.owner_epoch, "mig-blocked", &blocked,
+                                           &err))
+        return Fail("migrate should fail while lease active");
+
+    // Heartbeat 续租
+    int64_t until = 0;
+    if (!PlacementStore::Instance().Heartbeat(ra.placement.map_instance_id, "gl-0",
+                                              ra.placement.owner_epoch, 30, &until) ||
+        until <= 0)
+        return Fail("heartbeat");
+
+    // MarkRecovering 失效 lease 后可 Migrate
+    PlacementRecord rec;
+    if (!PlacementStore::Instance().MarkRecovering(ra.placement.map_instance_id, "kill", &rec))
+        return Fail("recovering");
+    if (rec.state != PlacementState::Recovering)
+        return Fail("state recovering");
+    if (PlacementStore::Instance().Heartbeat(ra.placement.map_instance_id, "gl-0",
+                                             ra.placement.owner_epoch, 30, &until))
+        return Fail("heartbeat must fail in RECOVERING");
+
+    PlacementRecord mig;
     if (!PlacementStore::Instance().Migrate(ra.placement.map_instance_id, "gl-1",
                                             ra.placement.owner_epoch, "mig-1", &mig, &err))
-        return Fail("migrate");
+        return Fail(("migrate after recovering: " + err).c_str());
     if (mig.owner_epoch <= ra.placement.owner_epoch)
         return Fail("epoch not bumped");
     PlacementRecord mig2;
@@ -137,14 +161,24 @@ int main() {
     if (mig2.owner_epoch != mig.owner_epoch)
         return Fail("idempotent epoch changed");
 
-    // RECOVERING
-    PlacementRecord rec;
-    if (!PlacementStore::Instance().MarkRecovering(rb.placement.map_instance_id, "kill", &rec))
-        return Fail("recovering");
-    if (rec.state != PlacementState::Recovering)
-        return Fail("state recovering");
+    // rb：短 lease → 过期扫描 → Migrate
+    int64_t short_until = 0;
+    if (!PlacementStore::Instance().Heartbeat(rb.placement.map_instance_id, "gl-1",
+                                              rb.placement.owner_epoch, 1, &short_until))
+        return Fail("short heartbeat");
+    std::this_thread::sleep_for(std::chrono::seconds(2));
+    PlacementRecord expired;
+    if (!PlacementStore::Instance().ExpireLeaseToRecovering(rb.placement.map_instance_id, &expired,
+                                                            &err))
+        return Fail(("expire to recovering: " + err).c_str());
+    if (expired.state != PlacementState::Recovering)
+        return Fail("expire state");
+    PlacementRecord mig_b;
+    if (!PlacementStore::Instance().Migrate(rb.placement.map_instance_id, "gl-0", 0, "mig-b", &mig_b,
+                                            &err))
+        return Fail(("migrate after expire: " + err).c_str());
 
-    std::printf("OK placement_store_test concurrent/unique/migrate/recover\n");
+    std::printf("OK placement_store_test concurrent/unique/lease/migrate/recover\n");
     std::printf("PASS placement_store_test\n");
     return 0;
 }

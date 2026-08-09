@@ -8,6 +8,7 @@
 #include <unistd.h>
 
 #include <cstdio>
+#include <cstdlib>
 #include <cstring>
 #include <sstream>
 
@@ -58,6 +59,11 @@ bool DoRawHttp(const std::string &host, int port, const std::string &method,
            (out.find("200") != std::string::npos || out.find("201") != std::string::npos);
 }
 
+bool LegacyEtcdV2Enabled() {
+    const char *en = std::getenv("GAMEMESH_ENABLE_ETCD_V2");
+    return en && std::strcmp(en, "1") == 0;
+}
+
 }  // namespace
 
 EtcdDiscovery &EtcdDiscovery::Instance() {
@@ -70,6 +76,14 @@ void EtcdDiscovery::Configure(std::string endpoints, std::string prefix) {
     enabled_ = false;
     if (endpoints.empty())
         return;
+    // 生产路径禁止 etcd v2；仅显式 GAMEMESH_ENABLE_ETCD_V2=1 开启（已废弃）
+    if (!LegacyEtcdV2Enabled()) {
+        LOG_WARN << "etcd_endpoints set but etcd v2 disabled for production; "
+                    "use static *_addrs / brpc list:// naming "
+                    "(legacy only: GAMEMESH_ENABLE_ETCD_V2=1)";
+        return;
+    }
+    LOG_WARN << "EtcdDiscovery: DEPRECATED etcd v2 HTTP path enabled (do not use in production)";
     // 取第一个 host:port
     std::string e = endpoints;
     const auto comma = e.find(',');

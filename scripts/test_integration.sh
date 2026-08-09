@@ -21,5 +21,6 @@ if [[ "$need_redis" -ne 1 ]]; then
 fi
 ./scripts/test_placement.sh
 ./build/test/session_store_test
+./build/test/player_transfer_test
 ./scripts/test_push_reconnect.sh
 echo "test_integration.sh PASS"

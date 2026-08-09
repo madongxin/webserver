@@ -1055,6 +1055,20 @@ class RegisterRequest : public ::google::protobuf::Message /* @@protoc_insertion
   ::std::string* release_password();
   void set_allocated_password(::std::string* password);
 
+  // string idempotency_key = 5;
+  void clear_idempotency_key();
+  static const int kIdempotencyKeyFieldNumber = 5;
+  const ::std::string& idempotency_key() const;
+  void set_idempotency_key(const ::std::string& value);
+  #if LANG_CXX11
+  void set_idempotency_key(::std::string&& value);
+  #endif
+  void set_idempotency_key(const char* value);
+  void set_idempotency_key(const char* value, size_t size);
+  ::std::string* mutable_idempotency_key();
+  ::std::string* release_idempotency_key();
+  void set_allocated_idempotency_key(::std::string* idempotency_key);
+
   // uint32 server_id = 4;
   void clear_server_id();
   static const int kServerIdFieldNumber = 4;
@@ -1068,6 +1082,7 @@ class RegisterRequest : public ::google::protobuf::Message /* @@protoc_insertion
   ::google::protobuf::internal::ArenaStringPtr device_id_;
   ::google::protobuf::internal::ArenaStringPtr display_name_;
   ::google::protobuf::internal::ArenaStringPtr password_;
+  ::google::protobuf::internal::ArenaStringPtr idempotency_key_;
   ::google::protobuf::uint32 server_id_;
   mutable int _cached_size_;
   friend struct ::protobuf_auth_2eproto::TableStruct;
@@ -2362,6 +2377,59 @@ inline void RegisterRequest::set_server_id(::google::protobuf::uint32 value) {
   
   server_id_ = value;
   // @@protoc_insertion_point(field_set:auth.RegisterRequest.server_id)
+}
+
+// string idempotency_key = 5;
+inline void RegisterRequest::clear_idempotency_key() {
+  idempotency_key_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline const ::std::string& RegisterRequest::idempotency_key() const {
+  // @@protoc_insertion_point(field_get:auth.RegisterRequest.idempotency_key)
+  return idempotency_key_.GetNoArena();
+}
+inline void RegisterRequest::set_idempotency_key(const ::std::string& value) {
+  
+  idempotency_key_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), value);
+  // @@protoc_insertion_point(field_set:auth.RegisterRequest.idempotency_key)
+}
+#if LANG_CXX11
+inline void RegisterRequest::set_idempotency_key(::std::string&& value) {
+  
+  idempotency_key_.SetNoArena(
+    &::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::move(value));
+  // @@protoc_insertion_point(field_set_rvalue:auth.RegisterRequest.idempotency_key)
+}
+#endif
+inline void RegisterRequest::set_idempotency_key(const char* value) {
+  GOOGLE_DCHECK(value != NULL);
+  
+  idempotency_key_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::string(value));
+  // @@protoc_insertion_point(field_set_char:auth.RegisterRequest.idempotency_key)
+}
+inline void RegisterRequest::set_idempotency_key(const char* value, size_t size) {
+  
+  idempotency_key_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(),
+      ::std::string(reinterpret_cast<const char*>(value), size));
+  // @@protoc_insertion_point(field_set_pointer:auth.RegisterRequest.idempotency_key)
+}
+inline ::std::string* RegisterRequest::mutable_idempotency_key() {
+  
+  // @@protoc_insertion_point(field_mutable:auth.RegisterRequest.idempotency_key)
+  return idempotency_key_.MutableNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline ::std::string* RegisterRequest::release_idempotency_key() {
+  // @@protoc_insertion_point(field_release:auth.RegisterRequest.idempotency_key)
+  
+  return idempotency_key_.ReleaseNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline void RegisterRequest::set_allocated_idempotency_key(::std::string* idempotency_key) {
+  if (idempotency_key != NULL) {
+    
+  } else {
+    
+  }
+  idempotency_key_.SetAllocatedNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), idempotency_key);
+  // @@protoc_insertion_point(field_set_allocated:auth.RegisterRequest.idempotency_key)
 }
 
 // -------------------------------------------------------------------

@@ -97,16 +97,18 @@ void GameDbServiceImpl::RegisterAccount(::google::protobuf::RpcController *contr
 #ifdef WEBSERVER_ENABLE_MYSQL
     uint64_t player_id = 0;
     std::string err;
-    if (!PlayerAccountStore::Instance().RegisterWithPassword(
+    bool replayed = false;
+    if (!PlayerAccountStore::Instance().RegisterWithPasswordIdempotent(
             request->device_id(), request->display_name(), request->password_hash(),
-            request->password_salt(), request->password_iters(), &player_id, &err)) {
+            request->password_salt(), request->password_iters(), request->idempotency_key(),
+            &player_id, &err, &replayed)) {
         response->set_ok(false);
         response->set_error_code("REGISTER_FAILED");
         response->set_message(err);
         return;
     }
     response->set_ok(true);
-    response->set_message("ok");
+    response->set_message(replayed ? "ok replay" : "ok");
     response->set_player_id(player_id);
     response->set_account_id(player_id);
 #else

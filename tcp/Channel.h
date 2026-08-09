@@ -28,6 +28,7 @@ public:
     void HandleEventWithGuard() const;
 
     void EnableRead();
+    void DisableRead();
     void EnableWrite();
     void DisableWrite();
     void EnableET();

@@ -231,6 +231,107 @@ void SessionServiceImpl::UpdatePlayerRoute(::google::protobuf::RpcController *co
     response->set_route_version(rv);
 }
 
+void SessionServiceImpl::BeginPlayerTransfer(::google::protobuf::RpcController *controller,
+                                             const ::sess::BeginPlayerTransferRequest *request,
+                                             ::sess::BeginPlayerTransferResponse *response,
+                                             ::google::protobuf::Closure *done) {
+    (void)controller;
+    brpc::ClosureGuard done_guard(done);
+    response->Clear();
+    SessionStore::TransferBeginIn in;
+    in.player_id = request->player_id();
+    in.fence_token = request->fence_token();
+    in.expected_route_version = request->expected_route_version();
+    in.from_logic = request->from_gamelogic_instance_id();
+    in.to_logic = request->to_gamelogic_instance_id();
+    in.map_instance_id = request->map_instance_id();
+    in.map_owner_epoch = request->map_owner_epoch();
+    in.transfer_id = request->transfer_id();
+    in.gateway_instance_id = request->gateway_instance_id();
+    SessionStore::TransferBeginOut out;
+    SessionStore::Instance().BeginPlayerTransfer(in, &out);
+    response->set_ok(out.ok);
+    response->set_message(out.message);
+    response->set_error_code(out.error_code);
+    response->set_transfer_id(out.transfer_id);
+    response->set_route_version(out.route_version);
+    response->set_route_state(out.route_state);
+}
+
+void SessionServiceImpl::CommitPlayerTransfer(::google::protobuf::RpcController *controller,
+                                              const ::sess::CommitPlayerTransferRequest *request,
+                                              ::sess::CommitPlayerTransferResponse *response,
+                                              ::google::protobuf::Closure *done) {
+    (void)controller;
+    brpc::ClosureGuard done_guard(done);
+    response->Clear();
+    SessionStore::TransferCommitIn in;
+    in.player_id = request->player_id();
+    in.fence_token = request->fence_token();
+    in.transfer_id = request->transfer_id();
+    in.to_logic = request->to_gamelogic_instance_id();
+    in.map_instance_id = request->map_instance_id();
+    in.map_owner_epoch = request->map_owner_epoch();
+    in.gateway_instance_id = request->gateway_instance_id();
+    SessionStore::TransferCommitOut out;
+    SessionStore::Instance().CommitPlayerTransfer(in, &out);
+    response->set_ok(out.ok);
+    response->set_message(out.message);
+    response->set_error_code(out.error_code);
+    response->set_route_version(out.route_version);
+    response->set_gamelogic_instance_id(out.gamelogic_instance_id);
+    response->set_map_instance_id(out.map_instance_id);
+    response->set_map_owner_epoch(out.map_owner_epoch);
+    response->set_route_state(out.route_state);
+}
+
+void SessionServiceImpl::AbortPlayerTransfer(::google::protobuf::RpcController *controller,
+                                             const ::sess::AbortPlayerTransferRequest *request,
+                                             ::sess::AbortPlayerTransferResponse *response,
+                                             ::google::protobuf::Closure *done) {
+    (void)controller;
+    brpc::ClosureGuard done_guard(done);
+    response->Clear();
+    uint64_t rv = 0;
+    std::string err;
+    const bool ok = SessionStore::Instance().AbortPlayerTransfer(
+        request->player_id(), request->fence_token(), request->transfer_id(), &err, &rv);
+    response->set_ok(ok);
+    response->set_message(ok ? "ok" : err);
+    response->set_error_code(ok ? "OK" : "ABORT_FAILED");
+    response->set_route_version(rv);
+    response->set_route_state(ok ? "ONLINE" : "");
+}
+
+void SessionServiceImpl::GetPlayerRoute(::google::protobuf::RpcController *controller,
+                                        const ::sess::GetPlayerRouteRequest *request,
+                                        ::sess::GetPlayerRouteResponse *response,
+                                        ::google::protobuf::Closure *done) {
+    (void)controller;
+    brpc::ClosureGuard done_guard(done);
+    response->Clear();
+    SessionRecord rec;
+    std::string state, tid, err;
+    if (!SessionStore::Instance().GetPlayerRoute(request->player_id(), request->fence_token(), &rec,
+                                                 &state, &tid, &err)) {
+        response->set_ok(false);
+        response->set_message(err);
+        return;
+    }
+    response->set_ok(true);
+    response->set_message("ok");
+    response->set_session_id(rec.session_id);
+    response->set_fence_token(rec.token);
+    response->set_generation(rec.generation);
+    response->set_gateway_instance_id(rec.gateway_id);
+    response->set_gamelogic_instance_id(rec.gamelogic_instance_id);
+    response->set_map_instance_id(rec.map_instance_id);
+    response->set_map_owner_epoch(rec.map_owner_epoch);
+    response->set_route_version(rec.route_version);
+    response->set_route_state(state.empty() ? "ONLINE" : state);
+    response->set_transfer_id(tid);
+}
+
 void SessionServiceImpl::Login(::google::protobuf::RpcController *controller,
                                const ::game::LoginReq *request, ::game::LoginRsp *response,
                                ::google::protobuf::Closure *done) {

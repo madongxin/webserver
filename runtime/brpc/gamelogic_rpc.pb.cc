@@ -40,6 +40,16 @@ class UnbindPlayerResponseDefaultTypeInternal {
   ::google::protobuf::internal::ExplicitlyConstructed<UnbindPlayerResponse>
       _instance;
 } _UnbindPlayerResponse_default_instance_;
+class FreezePlayerRequestDefaultTypeInternal {
+ public:
+  ::google::protobuf::internal::ExplicitlyConstructed<FreezePlayerRequest>
+      _instance;
+} _FreezePlayerRequest_default_instance_;
+class FreezePlayerResponseDefaultTypeInternal {
+ public:
+  ::google::protobuf::internal::ExplicitlyConstructed<FreezePlayerResponse>
+      _instance;
+} _FreezePlayerResponse_default_instance_;
 class ClientCommandDefaultTypeInternal {
  public:
   ::google::protobuf::internal::ExplicitlyConstructed<ClientCommand>
@@ -136,6 +146,48 @@ void InitDefaultsUnbindPlayerResponse() {
   ::google::protobuf::GoogleOnceInit(&once, &InitDefaultsUnbindPlayerResponseImpl);
 }
 
+void InitDefaultsFreezePlayerRequestImpl() {
+  GOOGLE_PROTOBUF_VERIFY_VERSION;
+
+#ifdef GOOGLE_PROTOBUF_ENFORCE_UNIQUENESS
+  ::google::protobuf::internal::InitProtobufDefaultsForceUnique();
+#else
+  ::google::protobuf::internal::InitProtobufDefaults();
+#endif  // GOOGLE_PROTOBUF_ENFORCE_UNIQUENESS
+  {
+    void* ptr = &::glrpc::_FreezePlayerRequest_default_instance_;
+    new (ptr) ::glrpc::FreezePlayerRequest();
+    ::google::protobuf::internal::OnShutdownDestroyMessage(ptr);
+  }
+  ::glrpc::FreezePlayerRequest::InitAsDefaultInstance();
+}
+
+void InitDefaultsFreezePlayerRequest() {
+  static GOOGLE_PROTOBUF_DECLARE_ONCE(once);
+  ::google::protobuf::GoogleOnceInit(&once, &InitDefaultsFreezePlayerRequestImpl);
+}
+
+void InitDefaultsFreezePlayerResponseImpl() {
+  GOOGLE_PROTOBUF_VERIFY_VERSION;
+
+#ifdef GOOGLE_PROTOBUF_ENFORCE_UNIQUENESS
+  ::google::protobuf::internal::InitProtobufDefaultsForceUnique();
+#else
+  ::google::protobuf::internal::InitProtobufDefaults();
+#endif  // GOOGLE_PROTOBUF_ENFORCE_UNIQUENESS
+  {
+    void* ptr = &::glrpc::_FreezePlayerResponse_default_instance_;
+    new (ptr) ::glrpc::FreezePlayerResponse();
+    ::google::protobuf::internal::OnShutdownDestroyMessage(ptr);
+  }
+  ::glrpc::FreezePlayerResponse::InitAsDefaultInstance();
+}
+
+void InitDefaultsFreezePlayerResponse() {
+  static GOOGLE_PROTOBUF_DECLARE_ONCE(once);
+  ::google::protobuf::GoogleOnceInit(&once, &InitDefaultsFreezePlayerResponseImpl);
+}
+
 void InitDefaultsClientCommandImpl() {
   GOOGLE_PROTOBUF_VERIFY_VERSION;
 
@@ -178,7 +230,7 @@ void InitDefaultsCommandResult() {
   ::google::protobuf::GoogleOnceInit(&once, &InitDefaultsCommandResultImpl);
 }
 
-::google::protobuf::Metadata file_level_metadata[6];
+::google::protobuf::Metadata file_level_metadata[8];
 const ::google::protobuf::ServiceDescriptor* file_level_service_descriptors[1];
 
 const ::google::protobuf::uint32 TableStruct::offsets[] GOOGLE_PROTOBUF_ATTRIBUTE_SECTION_VARIABLE(protodesc_cold) = {
@@ -199,6 +251,7 @@ const ::google::protobuf::uint32 TableStruct::offsets[] GOOGLE_PROTOBUF_ATTRIBUT
   GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::glrpc::BindPlayerRequest, idempotency_key_),
   GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::glrpc::BindPlayerRequest, trace_context_),
   GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::glrpc::BindPlayerRequest, generation_),
+  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::glrpc::BindPlayerRequest, transfer_id_),
   ~0u,  // no _has_bits_
   GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::glrpc::BindPlayerResponse, _internal_metadata_),
   ~0u,  // no _extensions_
@@ -225,6 +278,25 @@ const ::google::protobuf::uint32 TableStruct::offsets[] GOOGLE_PROTOBUF_ATTRIBUT
   ~0u,  // no _weak_field_map_
   GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::glrpc::UnbindPlayerResponse, ok_),
   GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::glrpc::UnbindPlayerResponse, message_),
+  ~0u,  // no _has_bits_
+  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::glrpc::FreezePlayerRequest, _internal_metadata_),
+  ~0u,  // no _extensions_
+  ~0u,  // no _oneof_case_
+  ~0u,  // no _weak_field_map_
+  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::glrpc::FreezePlayerRequest, player_id_),
+  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::glrpc::FreezePlayerRequest, session_id_),
+  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::glrpc::FreezePlayerRequest, fence_token_),
+  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::glrpc::FreezePlayerRequest, transfer_id_),
+  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::glrpc::FreezePlayerRequest, reason_),
+  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::glrpc::FreezePlayerRequest, idempotency_key_),
+  ~0u,  // no _has_bits_
+  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::glrpc::FreezePlayerResponse, _internal_metadata_),
+  ~0u,  // no _extensions_
+  ~0u,  // no _oneof_case_
+  ~0u,  // no _weak_field_map_
+  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::glrpc::FreezePlayerResponse, ok_),
+  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::glrpc::FreezePlayerResponse, message_),
+  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::glrpc::FreezePlayerResponse, error_code_),
   ~0u,  // no _has_bits_
   GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::glrpc::ClientCommand, _internal_metadata_),
   ~0u,  // no _extensions_
@@ -259,11 +331,13 @@ const ::google::protobuf::uint32 TableStruct::offsets[] GOOGLE_PROTOBUF_ATTRIBUT
 };
 static const ::google::protobuf::internal::MigrationSchema schemas[] GOOGLE_PROTOBUF_ATTRIBUTE_SECTION_VARIABLE(protodesc_cold) = {
   { 0, -1, sizeof(::glrpc::BindPlayerRequest)},
-  { 17, -1, sizeof(::glrpc::BindPlayerResponse)},
-  { 26, -1, sizeof(::glrpc::UnbindPlayerRequest)},
-  { 36, -1, sizeof(::glrpc::UnbindPlayerResponse)},
-  { 43, -1, sizeof(::glrpc::ClientCommand)},
-  { 64, -1, sizeof(::glrpc::CommandResult)},
+  { 18, -1, sizeof(::glrpc::BindPlayerResponse)},
+  { 27, -1, sizeof(::glrpc::UnbindPlayerRequest)},
+  { 37, -1, sizeof(::glrpc::UnbindPlayerResponse)},
+  { 44, -1, sizeof(::glrpc::FreezePlayerRequest)},
+  { 55, -1, sizeof(::glrpc::FreezePlayerResponse)},
+  { 63, -1, sizeof(::glrpc::ClientCommand)},
+  { 84, -1, sizeof(::glrpc::CommandResult)},
 };
 
 static ::google::protobuf::Message const * const file_default_instances[] = {
@@ -271,6 +345,8 @@ static ::google::protobuf::Message const * const file_default_instances[] = {
   reinterpret_cast<const ::google::protobuf::Message*>(&::glrpc::_BindPlayerResponse_default_instance_),
   reinterpret_cast<const ::google::protobuf::Message*>(&::glrpc::_UnbindPlayerRequest_default_instance_),
   reinterpret_cast<const ::google::protobuf::Message*>(&::glrpc::_UnbindPlayerResponse_default_instance_),
+  reinterpret_cast<const ::google::protobuf::Message*>(&::glrpc::_FreezePlayerRequest_default_instance_),
+  reinterpret_cast<const ::google::protobuf::Message*>(&::glrpc::_FreezePlayerResponse_default_instance_),
   reinterpret_cast<const ::google::protobuf::Message*>(&::glrpc::_ClientCommand_default_instance_),
   reinterpret_cast<const ::google::protobuf::Message*>(&::glrpc::_CommandResult_default_instance_),
 };
@@ -291,13 +367,13 @@ void protobuf_AssignDescriptorsOnce() {
 void protobuf_RegisterTypes(const ::std::string&) GOOGLE_PROTOBUF_ATTRIBUTE_COLD;
 void protobuf_RegisterTypes(const ::std::string&) {
   protobuf_AssignDescriptorsOnce();
-  ::google::protobuf::internal::RegisterAllTypes(file_level_metadata, 6);
+  ::google::protobuf::internal::RegisterAllTypes(file_level_metadata, 8);
 }
 
 void AddDescriptorsImpl() {
   InitDefaults();
   static const char descriptor[] GOOGLE_PROTOBUF_ATTRIBUTE_SECTION_VARIABLE(protodesc_cold) = {
-      "\n\023gamelogic_rpc.proto\022\005glrpc\"\254\002\n\021BindPla"
+      "\n\023gamelogic_rpc.proto\022\005glrpc\"\301\002\n\021BindPla"
       "yerRequest\022\022\n\nrequest_id\030\001 \001(\004\022\021\n\tplayer"
       "_id\030\002 \001(\004\022\022\n\nsession_id\030\003 \001(\t\022\023\n\013fence_t"
       "oken\030\004 \001(\t\022\035\n\025gamelogic_instance_id\030\005 \001("
@@ -305,13 +381,19 @@ void AddDescriptorsImpl() {
       "epoch\030\007 \001(\004\022\025\n\rroute_version\030\010 \001(\004\022\033\n\023ga"
       "teway_instance_id\030\t \001(\t\022\027\n\017idempotency_k"
       "ey\030\n \001(\t\022\025\n\rtrace_context\030\013 \001(\t\022\022\n\ngener"
-      "ation\030\014 \001(\004\"]\n\022BindPlayerResponse\022\n\n\002ok\030"
-      "\001 \001(\010\022\017\n\007message\030\002 \001(\t\022\022\n\nerror_code\030\003 \001"
-      "(\t\022\026\n\016bag_item_kinds\030\004 \001(\r\"z\n\023UnbindPlay"
-      "erRequest\022\021\n\tplayer_id\030\001 \001(\004\022\022\n\nsession_"
-      "id\030\002 \001(\t\022\023\n\013fence_token\030\003 \001(\t\022\016\n\006reason\030"
-      "\004 \001(\t\022\027\n\017idempotency_key\030\005 \001(\t\"3\n\024Unbind"
+      "ation\030\014 \001(\004\022\023\n\013transfer_id\030\r \001(\t\"]\n\022Bind"
       "PlayerResponse\022\n\n\002ok\030\001 \001(\010\022\017\n\007message\030\002 "
+      "\001(\t\022\022\n\nerror_code\030\003 \001(\t\022\026\n\016bag_item_kind"
+      "s\030\004 \001(\r\"z\n\023UnbindPlayerRequest\022\021\n\tplayer"
+      "_id\030\001 \001(\004\022\022\n\nsession_id\030\002 \001(\t\022\023\n\013fence_t"
+      "oken\030\003 \001(\t\022\016\n\006reason\030\004 \001(\t\022\027\n\017idempotenc"
+      "y_key\030\005 \001(\t\"3\n\024UnbindPlayerResponse\022\n\n\002o"
+      "k\030\001 \001(\010\022\017\n\007message\030\002 \001(\t\"\217\001\n\023FreezePlaye"
+      "rRequest\022\021\n\tplayer_id\030\001 \001(\004\022\022\n\nsession_i"
+      "d\030\002 \001(\t\022\023\n\013fence_token\030\003 \001(\t\022\023\n\013transfer"
+      "_id\030\004 \001(\t\022\016\n\006reason\030\005 \001(\t\022\027\n\017idempotency"
+      "_key\030\006 \001(\t\"G\n\024FreezePlayerResponse\022\n\n\002ok"
+      "\030\001 \001(\010\022\017\n\007message\030\002 \001(\t\022\022\n\nerror_code\030\003 "
       "\001(\t\"\355\002\n\rClientCommand\022\022\n\nrequest_id\030\001 \001("
       "\004\022\021\n\tplayer_id\030\002 \001(\004\022\022\n\nsession_id\030\003 \001(\t"
       "\022\023\n\013fence_token\030\004 \001(\t\022\035\n\025gamelogic_insta"
@@ -324,15 +406,17 @@ void AddDescriptorsImpl() {
       "ce_id\030\020 \001(\t\"l\n\rCommandResult\022\n\n\002ok\030\001 \001(\010"
       "\022\017\n\007message\030\002 \001(\t\022\022\n\nerror_code\030\003 \001(\t\022\026\n"
       "\016response_frame\030\004 \001(\014\022\022\n\nserver_seq\030\005 \001("
-      "\0042\326\001\n\020GameLogicService\022A\n\nBindPlayer\022\030.g"
+      "\0042\237\002\n\020GameLogicService\022A\n\nBindPlayer\022\030.g"
       "lrpc.BindPlayerRequest\032\031.glrpc.BindPlaye"
       "rResponse\0226\n\010Dispatch\022\024.glrpc.ClientComm"
       "and\032\024.glrpc.CommandResult\022G\n\014UnbindPlaye"
       "r\022\032.glrpc.UnbindPlayerRequest\032\033.glrpc.Un"
-      "bindPlayerResponseB\003\200\001\001b\006proto3"
+      "bindPlayerResponse\022G\n\014FreezePlayer\022\032.glr"
+      "pc.FreezePlayerRequest\032\033.glrpc.FreezePla"
+      "yerResponseB\003\200\001\001b\006proto3"
   };
   ::google::protobuf::DescriptorPool::InternalAddGeneratedFile(
-      descriptor, 1311);
+      descriptor, 1624);
   ::google::protobuf::MessageFactory::InternalRegisterGeneratedFile(
     "gamelogic_rpc.proto", &protobuf_RegisterTypes);
 }
@@ -367,6 +451,7 @@ const int BindPlayerRequest::kGatewayInstanceIdFieldNumber;
 const int BindPlayerRequest::kIdempotencyKeyFieldNumber;
 const int BindPlayerRequest::kTraceContextFieldNumber;
 const int BindPlayerRequest::kGenerationFieldNumber;
+const int BindPlayerRequest::kTransferIdFieldNumber;
 #endif  // !defined(_MSC_VER) || _MSC_VER >= 1900
 
 BindPlayerRequest::BindPlayerRequest()
@@ -406,6 +491,10 @@ BindPlayerRequest::BindPlayerRequest(const BindPlayerRequest& from)
   if (from.trace_context().size() > 0) {
     trace_context_.AssignWithDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), from.trace_context_);
   }
+  transfer_id_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  if (from.transfer_id().size() > 0) {
+    transfer_id_.AssignWithDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), from.transfer_id_);
+  }
   ::memcpy(&request_id_, &from.request_id_,
     static_cast<size_t>(reinterpret_cast<char*>(&generation_) -
     reinterpret_cast<char*>(&request_id_)) + sizeof(generation_));
@@ -419,6 +508,7 @@ void BindPlayerRequest::SharedCtor() {
   gateway_instance_id_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
   idempotency_key_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
   trace_context_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  transfer_id_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
   ::memset(&request_id_, 0, static_cast<size_t>(
       reinterpret_cast<char*>(&generation_) -
       reinterpret_cast<char*>(&request_id_)) + sizeof(generation_));
@@ -437,6 +527,7 @@ void BindPlayerRequest::SharedDtor() {
   gateway_instance_id_.DestroyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
   idempotency_key_.DestroyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
   trace_context_.DestroyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  transfer_id_.DestroyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
 }
 
 void BindPlayerRequest::SetCachedSize(int size) const {
@@ -474,6 +565,7 @@ void BindPlayerRequest::Clear() {
   gateway_instance_id_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
   idempotency_key_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
   trace_context_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  transfer_id_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
   ::memset(&request_id_, 0, static_cast<size_t>(
       reinterpret_cast<char*>(&generation_) -
       reinterpret_cast<char*>(&request_id_)) + sizeof(generation_));
@@ -670,6 +762,22 @@ bool BindPlayerRequest::MergePartialFromCodedStream(
         break;
       }
 
+      // string transfer_id = 13;
+      case 13: {
+        if (static_cast< ::google::protobuf::uint8>(tag) ==
+            static_cast< ::google::protobuf::uint8>(106u /* 106 & 0xFF */)) {
+          DO_(::google::protobuf::internal::WireFormatLite::ReadString(
+                input, this->mutable_transfer_id()));
+          DO_(::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+            this->transfer_id().data(), static_cast<int>(this->transfer_id().length()),
+            ::google::protobuf::internal::WireFormatLite::PARSE,
+            "glrpc.BindPlayerRequest.transfer_id"));
+        } else {
+          goto handle_unusual;
+        }
+        break;
+      }
+
       default: {
       handle_unusual:
         if (tag == 0) {
@@ -786,6 +894,16 @@ void BindPlayerRequest::SerializeWithCachedSizes(
     ::google::protobuf::internal::WireFormatLite::WriteUInt64(12, this->generation(), output);
   }
 
+  // string transfer_id = 13;
+  if (this->transfer_id().size() > 0) {
+    ::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+      this->transfer_id().data(), static_cast<int>(this->transfer_id().length()),
+      ::google::protobuf::internal::WireFormatLite::SERIALIZE,
+      "glrpc.BindPlayerRequest.transfer_id");
+    ::google::protobuf::internal::WireFormatLite::WriteStringMaybeAliased(
+      13, this->transfer_id(), output);
+  }
+
   if ((_internal_metadata_.have_unknown_fields() &&  ::google::protobuf::internal::GetProto3PreserveUnknownsDefault())) {
     ::google::protobuf::internal::WireFormat::SerializeUnknownFields(
         (::google::protobuf::internal::GetProto3PreserveUnknownsDefault()   ? _internal_metadata_.unknown_fields()   : _internal_metadata_.default_instance()), output);
@@ -896,6 +1014,17 @@ void BindPlayerRequest::SerializeWithCachedSizes(
     target = ::google::protobuf::internal::WireFormatLite::WriteUInt64ToArray(12, this->generation(), target);
   }
 
+  // string transfer_id = 13;
+  if (this->transfer_id().size() > 0) {
+    ::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+      this->transfer_id().data(), static_cast<int>(this->transfer_id().length()),
+      ::google::protobuf::internal::WireFormatLite::SERIALIZE,
+      "glrpc.BindPlayerRequest.transfer_id");
+    target =
+      ::google::protobuf::internal::WireFormatLite::WriteStringToArray(
+        13, this->transfer_id(), target);
+  }
+
   if ((_internal_metadata_.have_unknown_fields() &&  ::google::protobuf::internal::GetProto3PreserveUnknownsDefault())) {
     target = ::google::protobuf::internal::WireFormat::SerializeUnknownFieldsToArray(
         (::google::protobuf::internal::GetProto3PreserveUnknownsDefault()   ? _internal_metadata_.unknown_fields()   : _internal_metadata_.default_instance()), target);
@@ -953,6 +1082,13 @@ size_t BindPlayerRequest::ByteSizeLong() const {
     total_size += 1 +
       ::google::protobuf::internal::WireFormatLite::StringSize(
         this->trace_context());
+  }
+
+  // string transfer_id = 13;
+  if (this->transfer_id().size() > 0) {
+    total_size += 1 +
+      ::google::protobuf::internal::WireFormatLite::StringSize(
+        this->transfer_id());
   }
 
   // uint64 request_id = 1;
@@ -1050,6 +1186,10 @@ void BindPlayerRequest::MergeFrom(const BindPlayerRequest& from) {
 
     trace_context_.AssignWithDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), from.trace_context_);
   }
+  if (from.transfer_id().size() > 0) {
+
+    transfer_id_.AssignWithDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), from.transfer_id_);
+  }
   if (from.request_id() != 0) {
     set_request_id(from.request_id());
   }
@@ -1100,6 +1240,7 @@ void BindPlayerRequest::InternalSwap(BindPlayerRequest* other) {
   gateway_instance_id_.Swap(&other->gateway_instance_id_);
   idempotency_key_.Swap(&other->idempotency_key_);
   trace_context_.Swap(&other->trace_context_);
+  transfer_id_.Swap(&other->transfer_id_);
   swap(request_id_, other->request_id_);
   swap(player_id_, other->player_id_);
   swap(map_instance_id_, other->map_instance_id_);
@@ -2262,6 +2403,879 @@ void UnbindPlayerResponse::InternalSwap(UnbindPlayerResponse* other) {
 }
 
 ::google::protobuf::Metadata UnbindPlayerResponse::GetMetadata() const {
+  protobuf_gamelogic_5frpc_2eproto::protobuf_AssignDescriptorsOnce();
+  return ::protobuf_gamelogic_5frpc_2eproto::file_level_metadata[kIndexInFileMessages];
+}
+
+
+// ===================================================================
+
+void FreezePlayerRequest::InitAsDefaultInstance() {
+}
+#if !defined(_MSC_VER) || _MSC_VER >= 1900
+const int FreezePlayerRequest::kPlayerIdFieldNumber;
+const int FreezePlayerRequest::kSessionIdFieldNumber;
+const int FreezePlayerRequest::kFenceTokenFieldNumber;
+const int FreezePlayerRequest::kTransferIdFieldNumber;
+const int FreezePlayerRequest::kReasonFieldNumber;
+const int FreezePlayerRequest::kIdempotencyKeyFieldNumber;
+#endif  // !defined(_MSC_VER) || _MSC_VER >= 1900
+
+FreezePlayerRequest::FreezePlayerRequest()
+  : ::google::protobuf::Message(), _internal_metadata_(NULL) {
+  if (GOOGLE_PREDICT_TRUE(this != internal_default_instance())) {
+    ::protobuf_gamelogic_5frpc_2eproto::InitDefaultsFreezePlayerRequest();
+  }
+  SharedCtor();
+  // @@protoc_insertion_point(constructor:glrpc.FreezePlayerRequest)
+}
+FreezePlayerRequest::FreezePlayerRequest(const FreezePlayerRequest& from)
+  : ::google::protobuf::Message(),
+      _internal_metadata_(NULL),
+      _cached_size_(0) {
+  _internal_metadata_.MergeFrom(from._internal_metadata_);
+  session_id_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  if (from.session_id().size() > 0) {
+    session_id_.AssignWithDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), from.session_id_);
+  }
+  fence_token_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  if (from.fence_token().size() > 0) {
+    fence_token_.AssignWithDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), from.fence_token_);
+  }
+  transfer_id_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  if (from.transfer_id().size() > 0) {
+    transfer_id_.AssignWithDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), from.transfer_id_);
+  }
+  reason_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  if (from.reason().size() > 0) {
+    reason_.AssignWithDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), from.reason_);
+  }
+  idempotency_key_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  if (from.idempotency_key().size() > 0) {
+    idempotency_key_.AssignWithDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), from.idempotency_key_);
+  }
+  player_id_ = from.player_id_;
+  // @@protoc_insertion_point(copy_constructor:glrpc.FreezePlayerRequest)
+}
+
+void FreezePlayerRequest::SharedCtor() {
+  session_id_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  fence_token_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  transfer_id_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  reason_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  idempotency_key_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  player_id_ = GOOGLE_ULONGLONG(0);
+  _cached_size_ = 0;
+}
+
+FreezePlayerRequest::~FreezePlayerRequest() {
+  // @@protoc_insertion_point(destructor:glrpc.FreezePlayerRequest)
+  SharedDtor();
+}
+
+void FreezePlayerRequest::SharedDtor() {
+  session_id_.DestroyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  fence_token_.DestroyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  transfer_id_.DestroyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  reason_.DestroyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  idempotency_key_.DestroyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+
+void FreezePlayerRequest::SetCachedSize(int size) const {
+  GOOGLE_SAFE_CONCURRENT_WRITES_BEGIN();
+  _cached_size_ = size;
+  GOOGLE_SAFE_CONCURRENT_WRITES_END();
+}
+const ::google::protobuf::Descriptor* FreezePlayerRequest::descriptor() {
+  ::protobuf_gamelogic_5frpc_2eproto::protobuf_AssignDescriptorsOnce();
+  return ::protobuf_gamelogic_5frpc_2eproto::file_level_metadata[kIndexInFileMessages].descriptor;
+}
+
+const FreezePlayerRequest& FreezePlayerRequest::default_instance() {
+  ::protobuf_gamelogic_5frpc_2eproto::InitDefaultsFreezePlayerRequest();
+  return *internal_default_instance();
+}
+
+FreezePlayerRequest* FreezePlayerRequest::New(::google::protobuf::Arena* arena) const {
+  FreezePlayerRequest* n = new FreezePlayerRequest;
+  if (arena != NULL) {
+    arena->Own(n);
+  }
+  return n;
+}
+
+void FreezePlayerRequest::Clear() {
+// @@protoc_insertion_point(message_clear_start:glrpc.FreezePlayerRequest)
+  ::google::protobuf::uint32 cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void) cached_has_bits;
+
+  session_id_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  fence_token_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  transfer_id_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  reason_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  idempotency_key_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  player_id_ = GOOGLE_ULONGLONG(0);
+  _internal_metadata_.Clear();
+}
+
+bool FreezePlayerRequest::MergePartialFromCodedStream(
+    ::google::protobuf::io::CodedInputStream* input) {
+#define DO_(EXPRESSION) if (!GOOGLE_PREDICT_TRUE(EXPRESSION)) goto failure
+  ::google::protobuf::uint32 tag;
+  // @@protoc_insertion_point(parse_start:glrpc.FreezePlayerRequest)
+  for (;;) {
+    ::std::pair< ::google::protobuf::uint32, bool> p = input->ReadTagWithCutoffNoLastTag(127u);
+    tag = p.first;
+    if (!p.second) goto handle_unusual;
+    switch (::google::protobuf::internal::WireFormatLite::GetTagFieldNumber(tag)) {
+      // uint64 player_id = 1;
+      case 1: {
+        if (static_cast< ::google::protobuf::uint8>(tag) ==
+            static_cast< ::google::protobuf::uint8>(8u /* 8 & 0xFF */)) {
+
+          DO_((::google::protobuf::internal::WireFormatLite::ReadPrimitive<
+                   ::google::protobuf::uint64, ::google::protobuf::internal::WireFormatLite::TYPE_UINT64>(
+                 input, &player_id_)));
+        } else {
+          goto handle_unusual;
+        }
+        break;
+      }
+
+      // string session_id = 2;
+      case 2: {
+        if (static_cast< ::google::protobuf::uint8>(tag) ==
+            static_cast< ::google::protobuf::uint8>(18u /* 18 & 0xFF */)) {
+          DO_(::google::protobuf::internal::WireFormatLite::ReadString(
+                input, this->mutable_session_id()));
+          DO_(::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+            this->session_id().data(), static_cast<int>(this->session_id().length()),
+            ::google::protobuf::internal::WireFormatLite::PARSE,
+            "glrpc.FreezePlayerRequest.session_id"));
+        } else {
+          goto handle_unusual;
+        }
+        break;
+      }
+
+      // string fence_token = 3;
+      case 3: {
+        if (static_cast< ::google::protobuf::uint8>(tag) ==
+            static_cast< ::google::protobuf::uint8>(26u /* 26 & 0xFF */)) {
+          DO_(::google::protobuf::internal::WireFormatLite::ReadString(
+                input, this->mutable_fence_token()));
+          DO_(::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+            this->fence_token().data(), static_cast<int>(this->fence_token().length()),
+            ::google::protobuf::internal::WireFormatLite::PARSE,
+            "glrpc.FreezePlayerRequest.fence_token"));
+        } else {
+          goto handle_unusual;
+        }
+        break;
+      }
+
+      // string transfer_id = 4;
+      case 4: {
+        if (static_cast< ::google::protobuf::uint8>(tag) ==
+            static_cast< ::google::protobuf::uint8>(34u /* 34 & 0xFF */)) {
+          DO_(::google::protobuf::internal::WireFormatLite::ReadString(
+                input, this->mutable_transfer_id()));
+          DO_(::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+            this->transfer_id().data(), static_cast<int>(this->transfer_id().length()),
+            ::google::protobuf::internal::WireFormatLite::PARSE,
+            "glrpc.FreezePlayerRequest.transfer_id"));
+        } else {
+          goto handle_unusual;
+        }
+        break;
+      }
+
+      // string reason = 5;
+      case 5: {
+        if (static_cast< ::google::protobuf::uint8>(tag) ==
+            static_cast< ::google::protobuf::uint8>(42u /* 42 & 0xFF */)) {
+          DO_(::google::protobuf::internal::WireFormatLite::ReadString(
+                input, this->mutable_reason()));
+          DO_(::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+            this->reason().data(), static_cast<int>(this->reason().length()),
+            ::google::protobuf::internal::WireFormatLite::PARSE,
+            "glrpc.FreezePlayerRequest.reason"));
+        } else {
+          goto handle_unusual;
+        }
+        break;
+      }
+
+      // string idempotency_key = 6;
+      case 6: {
+        if (static_cast< ::google::protobuf::uint8>(tag) ==
+            static_cast< ::google::protobuf::uint8>(50u /* 50 & 0xFF */)) {
+          DO_(::google::protobuf::internal::WireFormatLite::ReadString(
+                input, this->mutable_idempotency_key()));
+          DO_(::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+            this->idempotency_key().data(), static_cast<int>(this->idempotency_key().length()),
+            ::google::protobuf::internal::WireFormatLite::PARSE,
+            "glrpc.FreezePlayerRequest.idempotency_key"));
+        } else {
+          goto handle_unusual;
+        }
+        break;
+      }
+
+      default: {
+      handle_unusual:
+        if (tag == 0) {
+          goto success;
+        }
+        DO_(::google::protobuf::internal::WireFormat::SkipField(
+              input, tag, _internal_metadata_.mutable_unknown_fields()));
+        break;
+      }
+    }
+  }
+success:
+  // @@protoc_insertion_point(parse_success:glrpc.FreezePlayerRequest)
+  return true;
+failure:
+  // @@protoc_insertion_point(parse_failure:glrpc.FreezePlayerRequest)
+  return false;
+#undef DO_
+}
+
+void FreezePlayerRequest::SerializeWithCachedSizes(
+    ::google::protobuf::io::CodedOutputStream* output) const {
+  // @@protoc_insertion_point(serialize_start:glrpc.FreezePlayerRequest)
+  ::google::protobuf::uint32 cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  // uint64 player_id = 1;
+  if (this->player_id() != 0) {
+    ::google::protobuf::internal::WireFormatLite::WriteUInt64(1, this->player_id(), output);
+  }
+
+  // string session_id = 2;
+  if (this->session_id().size() > 0) {
+    ::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+      this->session_id().data(), static_cast<int>(this->session_id().length()),
+      ::google::protobuf::internal::WireFormatLite::SERIALIZE,
+      "glrpc.FreezePlayerRequest.session_id");
+    ::google::protobuf::internal::WireFormatLite::WriteStringMaybeAliased(
+      2, this->session_id(), output);
+  }
+
+  // string fence_token = 3;
+  if (this->fence_token().size() > 0) {
+    ::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+      this->fence_token().data(), static_cast<int>(this->fence_token().length()),
+      ::google::protobuf::internal::WireFormatLite::SERIALIZE,
+      "glrpc.FreezePlayerRequest.fence_token");
+    ::google::protobuf::internal::WireFormatLite::WriteStringMaybeAliased(
+      3, this->fence_token(), output);
+  }
+
+  // string transfer_id = 4;
+  if (this->transfer_id().size() > 0) {
+    ::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+      this->transfer_id().data(), static_cast<int>(this->transfer_id().length()),
+      ::google::protobuf::internal::WireFormatLite::SERIALIZE,
+      "glrpc.FreezePlayerRequest.transfer_id");
+    ::google::protobuf::internal::WireFormatLite::WriteStringMaybeAliased(
+      4, this->transfer_id(), output);
+  }
+
+  // string reason = 5;
+  if (this->reason().size() > 0) {
+    ::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+      this->reason().data(), static_cast<int>(this->reason().length()),
+      ::google::protobuf::internal::WireFormatLite::SERIALIZE,
+      "glrpc.FreezePlayerRequest.reason");
+    ::google::protobuf::internal::WireFormatLite::WriteStringMaybeAliased(
+      5, this->reason(), output);
+  }
+
+  // string idempotency_key = 6;
+  if (this->idempotency_key().size() > 0) {
+    ::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+      this->idempotency_key().data(), static_cast<int>(this->idempotency_key().length()),
+      ::google::protobuf::internal::WireFormatLite::SERIALIZE,
+      "glrpc.FreezePlayerRequest.idempotency_key");
+    ::google::protobuf::internal::WireFormatLite::WriteStringMaybeAliased(
+      6, this->idempotency_key(), output);
+  }
+
+  if ((_internal_metadata_.have_unknown_fields() &&  ::google::protobuf::internal::GetProto3PreserveUnknownsDefault())) {
+    ::google::protobuf::internal::WireFormat::SerializeUnknownFields(
+        (::google::protobuf::internal::GetProto3PreserveUnknownsDefault()   ? _internal_metadata_.unknown_fields()   : _internal_metadata_.default_instance()), output);
+  }
+  // @@protoc_insertion_point(serialize_end:glrpc.FreezePlayerRequest)
+}
+
+::google::protobuf::uint8* FreezePlayerRequest::InternalSerializeWithCachedSizesToArray(
+    bool deterministic, ::google::protobuf::uint8* target) const {
+  (void)deterministic; // Unused
+  // @@protoc_insertion_point(serialize_to_array_start:glrpc.FreezePlayerRequest)
+  ::google::protobuf::uint32 cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  // uint64 player_id = 1;
+  if (this->player_id() != 0) {
+    target = ::google::protobuf::internal::WireFormatLite::WriteUInt64ToArray(1, this->player_id(), target);
+  }
+
+  // string session_id = 2;
+  if (this->session_id().size() > 0) {
+    ::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+      this->session_id().data(), static_cast<int>(this->session_id().length()),
+      ::google::protobuf::internal::WireFormatLite::SERIALIZE,
+      "glrpc.FreezePlayerRequest.session_id");
+    target =
+      ::google::protobuf::internal::WireFormatLite::WriteStringToArray(
+        2, this->session_id(), target);
+  }
+
+  // string fence_token = 3;
+  if (this->fence_token().size() > 0) {
+    ::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+      this->fence_token().data(), static_cast<int>(this->fence_token().length()),
+      ::google::protobuf::internal::WireFormatLite::SERIALIZE,
+      "glrpc.FreezePlayerRequest.fence_token");
+    target =
+      ::google::protobuf::internal::WireFormatLite::WriteStringToArray(
+        3, this->fence_token(), target);
+  }
+
+  // string transfer_id = 4;
+  if (this->transfer_id().size() > 0) {
+    ::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+      this->transfer_id().data(), static_cast<int>(this->transfer_id().length()),
+      ::google::protobuf::internal::WireFormatLite::SERIALIZE,
+      "glrpc.FreezePlayerRequest.transfer_id");
+    target =
+      ::google::protobuf::internal::WireFormatLite::WriteStringToArray(
+        4, this->transfer_id(), target);
+  }
+
+  // string reason = 5;
+  if (this->reason().size() > 0) {
+    ::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+      this->reason().data(), static_cast<int>(this->reason().length()),
+      ::google::protobuf::internal::WireFormatLite::SERIALIZE,
+      "glrpc.FreezePlayerRequest.reason");
+    target =
+      ::google::protobuf::internal::WireFormatLite::WriteStringToArray(
+        5, this->reason(), target);
+  }
+
+  // string idempotency_key = 6;
+  if (this->idempotency_key().size() > 0) {
+    ::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+      this->idempotency_key().data(), static_cast<int>(this->idempotency_key().length()),
+      ::google::protobuf::internal::WireFormatLite::SERIALIZE,
+      "glrpc.FreezePlayerRequest.idempotency_key");
+    target =
+      ::google::protobuf::internal::WireFormatLite::WriteStringToArray(
+        6, this->idempotency_key(), target);
+  }
+
+  if ((_internal_metadata_.have_unknown_fields() &&  ::google::protobuf::internal::GetProto3PreserveUnknownsDefault())) {
+    target = ::google::protobuf::internal::WireFormat::SerializeUnknownFieldsToArray(
+        (::google::protobuf::internal::GetProto3PreserveUnknownsDefault()   ? _internal_metadata_.unknown_fields()   : _internal_metadata_.default_instance()), target);
+  }
+  // @@protoc_insertion_point(serialize_to_array_end:glrpc.FreezePlayerRequest)
+  return target;
+}
+
+size_t FreezePlayerRequest::ByteSizeLong() const {
+// @@protoc_insertion_point(message_byte_size_start:glrpc.FreezePlayerRequest)
+  size_t total_size = 0;
+
+  if ((_internal_metadata_.have_unknown_fields() &&  ::google::protobuf::internal::GetProto3PreserveUnknownsDefault())) {
+    total_size +=
+      ::google::protobuf::internal::WireFormat::ComputeUnknownFieldsSize(
+        (::google::protobuf::internal::GetProto3PreserveUnknownsDefault()   ? _internal_metadata_.unknown_fields()   : _internal_metadata_.default_instance()));
+  }
+  // string session_id = 2;
+  if (this->session_id().size() > 0) {
+    total_size += 1 +
+      ::google::protobuf::internal::WireFormatLite::StringSize(
+        this->session_id());
+  }
+
+  // string fence_token = 3;
+  if (this->fence_token().size() > 0) {
+    total_size += 1 +
+      ::google::protobuf::internal::WireFormatLite::StringSize(
+        this->fence_token());
+  }
+
+  // string transfer_id = 4;
+  if (this->transfer_id().size() > 0) {
+    total_size += 1 +
+      ::google::protobuf::internal::WireFormatLite::StringSize(
+        this->transfer_id());
+  }
+
+  // string reason = 5;
+  if (this->reason().size() > 0) {
+    total_size += 1 +
+      ::google::protobuf::internal::WireFormatLite::StringSize(
+        this->reason());
+  }
+
+  // string idempotency_key = 6;
+  if (this->idempotency_key().size() > 0) {
+    total_size += 1 +
+      ::google::protobuf::internal::WireFormatLite::StringSize(
+        this->idempotency_key());
+  }
+
+  // uint64 player_id = 1;
+  if (this->player_id() != 0) {
+    total_size += 1 +
+      ::google::protobuf::internal::WireFormatLite::UInt64Size(
+        this->player_id());
+  }
+
+  int cached_size = ::google::protobuf::internal::ToCachedSize(total_size);
+  GOOGLE_SAFE_CONCURRENT_WRITES_BEGIN();
+  _cached_size_ = cached_size;
+  GOOGLE_SAFE_CONCURRENT_WRITES_END();
+  return total_size;
+}
+
+void FreezePlayerRequest::MergeFrom(const ::google::protobuf::Message& from) {
+// @@protoc_insertion_point(generalized_merge_from_start:glrpc.FreezePlayerRequest)
+  GOOGLE_DCHECK_NE(&from, this);
+  const FreezePlayerRequest* source =
+      ::google::protobuf::internal::DynamicCastToGenerated<const FreezePlayerRequest>(
+          &from);
+  if (source == NULL) {
+  // @@protoc_insertion_point(generalized_merge_from_cast_fail:glrpc.FreezePlayerRequest)
+    ::google::protobuf::internal::ReflectionOps::Merge(from, this);
+  } else {
+  // @@protoc_insertion_point(generalized_merge_from_cast_success:glrpc.FreezePlayerRequest)
+    MergeFrom(*source);
+  }
+}
+
+void FreezePlayerRequest::MergeFrom(const FreezePlayerRequest& from) {
+// @@protoc_insertion_point(class_specific_merge_from_start:glrpc.FreezePlayerRequest)
+  GOOGLE_DCHECK_NE(&from, this);
+  _internal_metadata_.MergeFrom(from._internal_metadata_);
+  ::google::protobuf::uint32 cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  if (from.session_id().size() > 0) {
+
+    session_id_.AssignWithDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), from.session_id_);
+  }
+  if (from.fence_token().size() > 0) {
+
+    fence_token_.AssignWithDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), from.fence_token_);
+  }
+  if (from.transfer_id().size() > 0) {
+
+    transfer_id_.AssignWithDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), from.transfer_id_);
+  }
+  if (from.reason().size() > 0) {
+
+    reason_.AssignWithDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), from.reason_);
+  }
+  if (from.idempotency_key().size() > 0) {
+
+    idempotency_key_.AssignWithDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), from.idempotency_key_);
+  }
+  if (from.player_id() != 0) {
+    set_player_id(from.player_id());
+  }
+}
+
+void FreezePlayerRequest::CopyFrom(const ::google::protobuf::Message& from) {
+// @@protoc_insertion_point(generalized_copy_from_start:glrpc.FreezePlayerRequest)
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+void FreezePlayerRequest::CopyFrom(const FreezePlayerRequest& from) {
+// @@protoc_insertion_point(class_specific_copy_from_start:glrpc.FreezePlayerRequest)
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+bool FreezePlayerRequest::IsInitialized() const {
+  return true;
+}
+
+void FreezePlayerRequest::Swap(FreezePlayerRequest* other) {
+  if (other == this) return;
+  InternalSwap(other);
+}
+void FreezePlayerRequest::InternalSwap(FreezePlayerRequest* other) {
+  using std::swap;
+  session_id_.Swap(&other->session_id_);
+  fence_token_.Swap(&other->fence_token_);
+  transfer_id_.Swap(&other->transfer_id_);
+  reason_.Swap(&other->reason_);
+  idempotency_key_.Swap(&other->idempotency_key_);
+  swap(player_id_, other->player_id_);
+  _internal_metadata_.Swap(&other->_internal_metadata_);
+  swap(_cached_size_, other->_cached_size_);
+}
+
+::google::protobuf::Metadata FreezePlayerRequest::GetMetadata() const {
+  protobuf_gamelogic_5frpc_2eproto::protobuf_AssignDescriptorsOnce();
+  return ::protobuf_gamelogic_5frpc_2eproto::file_level_metadata[kIndexInFileMessages];
+}
+
+
+// ===================================================================
+
+void FreezePlayerResponse::InitAsDefaultInstance() {
+}
+#if !defined(_MSC_VER) || _MSC_VER >= 1900
+const int FreezePlayerResponse::kOkFieldNumber;
+const int FreezePlayerResponse::kMessageFieldNumber;
+const int FreezePlayerResponse::kErrorCodeFieldNumber;
+#endif  // !defined(_MSC_VER) || _MSC_VER >= 1900
+
+FreezePlayerResponse::FreezePlayerResponse()
+  : ::google::protobuf::Message(), _internal_metadata_(NULL) {
+  if (GOOGLE_PREDICT_TRUE(this != internal_default_instance())) {
+    ::protobuf_gamelogic_5frpc_2eproto::InitDefaultsFreezePlayerResponse();
+  }
+  SharedCtor();
+  // @@protoc_insertion_point(constructor:glrpc.FreezePlayerResponse)
+}
+FreezePlayerResponse::FreezePlayerResponse(const FreezePlayerResponse& from)
+  : ::google::protobuf::Message(),
+      _internal_metadata_(NULL),
+      _cached_size_(0) {
+  _internal_metadata_.MergeFrom(from._internal_metadata_);
+  message_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  if (from.message().size() > 0) {
+    message_.AssignWithDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), from.message_);
+  }
+  error_code_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  if (from.error_code().size() > 0) {
+    error_code_.AssignWithDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), from.error_code_);
+  }
+  ok_ = from.ok_;
+  // @@protoc_insertion_point(copy_constructor:glrpc.FreezePlayerResponse)
+}
+
+void FreezePlayerResponse::SharedCtor() {
+  message_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  error_code_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  ok_ = false;
+  _cached_size_ = 0;
+}
+
+FreezePlayerResponse::~FreezePlayerResponse() {
+  // @@protoc_insertion_point(destructor:glrpc.FreezePlayerResponse)
+  SharedDtor();
+}
+
+void FreezePlayerResponse::SharedDtor() {
+  message_.DestroyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  error_code_.DestroyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+
+void FreezePlayerResponse::SetCachedSize(int size) const {
+  GOOGLE_SAFE_CONCURRENT_WRITES_BEGIN();
+  _cached_size_ = size;
+  GOOGLE_SAFE_CONCURRENT_WRITES_END();
+}
+const ::google::protobuf::Descriptor* FreezePlayerResponse::descriptor() {
+  ::protobuf_gamelogic_5frpc_2eproto::protobuf_AssignDescriptorsOnce();
+  return ::protobuf_gamelogic_5frpc_2eproto::file_level_metadata[kIndexInFileMessages].descriptor;
+}
+
+const FreezePlayerResponse& FreezePlayerResponse::default_instance() {
+  ::protobuf_gamelogic_5frpc_2eproto::InitDefaultsFreezePlayerResponse();
+  return *internal_default_instance();
+}
+
+FreezePlayerResponse* FreezePlayerResponse::New(::google::protobuf::Arena* arena) const {
+  FreezePlayerResponse* n = new FreezePlayerResponse;
+  if (arena != NULL) {
+    arena->Own(n);
+  }
+  return n;
+}
+
+void FreezePlayerResponse::Clear() {
+// @@protoc_insertion_point(message_clear_start:glrpc.FreezePlayerResponse)
+  ::google::protobuf::uint32 cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void) cached_has_bits;
+
+  message_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  error_code_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  ok_ = false;
+  _internal_metadata_.Clear();
+}
+
+bool FreezePlayerResponse::MergePartialFromCodedStream(
+    ::google::protobuf::io::CodedInputStream* input) {
+#define DO_(EXPRESSION) if (!GOOGLE_PREDICT_TRUE(EXPRESSION)) goto failure
+  ::google::protobuf::uint32 tag;
+  // @@protoc_insertion_point(parse_start:glrpc.FreezePlayerResponse)
+  for (;;) {
+    ::std::pair< ::google::protobuf::uint32, bool> p = input->ReadTagWithCutoffNoLastTag(127u);
+    tag = p.first;
+    if (!p.second) goto handle_unusual;
+    switch (::google::protobuf::internal::WireFormatLite::GetTagFieldNumber(tag)) {
+      // bool ok = 1;
+      case 1: {
+        if (static_cast< ::google::protobuf::uint8>(tag) ==
+            static_cast< ::google::protobuf::uint8>(8u /* 8 & 0xFF */)) {
+
+          DO_((::google::protobuf::internal::WireFormatLite::ReadPrimitive<
+                   bool, ::google::protobuf::internal::WireFormatLite::TYPE_BOOL>(
+                 input, &ok_)));
+        } else {
+          goto handle_unusual;
+        }
+        break;
+      }
+
+      // string message = 2;
+      case 2: {
+        if (static_cast< ::google::protobuf::uint8>(tag) ==
+            static_cast< ::google::protobuf::uint8>(18u /* 18 & 0xFF */)) {
+          DO_(::google::protobuf::internal::WireFormatLite::ReadString(
+                input, this->mutable_message()));
+          DO_(::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+            this->message().data(), static_cast<int>(this->message().length()),
+            ::google::protobuf::internal::WireFormatLite::PARSE,
+            "glrpc.FreezePlayerResponse.message"));
+        } else {
+          goto handle_unusual;
+        }
+        break;
+      }
+
+      // string error_code = 3;
+      case 3: {
+        if (static_cast< ::google::protobuf::uint8>(tag) ==
+            static_cast< ::google::protobuf::uint8>(26u /* 26 & 0xFF */)) {
+          DO_(::google::protobuf::internal::WireFormatLite::ReadString(
+                input, this->mutable_error_code()));
+          DO_(::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+            this->error_code().data(), static_cast<int>(this->error_code().length()),
+            ::google::protobuf::internal::WireFormatLite::PARSE,
+            "glrpc.FreezePlayerResponse.error_code"));
+        } else {
+          goto handle_unusual;
+        }
+        break;
+      }
+
+      default: {
+      handle_unusual:
+        if (tag == 0) {
+          goto success;
+        }
+        DO_(::google::protobuf::internal::WireFormat::SkipField(
+              input, tag, _internal_metadata_.mutable_unknown_fields()));
+        break;
+      }
+    }
+  }
+success:
+  // @@protoc_insertion_point(parse_success:glrpc.FreezePlayerResponse)
+  return true;
+failure:
+  // @@protoc_insertion_point(parse_failure:glrpc.FreezePlayerResponse)
+  return false;
+#undef DO_
+}
+
+void FreezePlayerResponse::SerializeWithCachedSizes(
+    ::google::protobuf::io::CodedOutputStream* output) const {
+  // @@protoc_insertion_point(serialize_start:glrpc.FreezePlayerResponse)
+  ::google::protobuf::uint32 cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  // bool ok = 1;
+  if (this->ok() != 0) {
+    ::google::protobuf::internal::WireFormatLite::WriteBool(1, this->ok(), output);
+  }
+
+  // string message = 2;
+  if (this->message().size() > 0) {
+    ::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+      this->message().data(), static_cast<int>(this->message().length()),
+      ::google::protobuf::internal::WireFormatLite::SERIALIZE,
+      "glrpc.FreezePlayerResponse.message");
+    ::google::protobuf::internal::WireFormatLite::WriteStringMaybeAliased(
+      2, this->message(), output);
+  }
+
+  // string error_code = 3;
+  if (this->error_code().size() > 0) {
+    ::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+      this->error_code().data(), static_cast<int>(this->error_code().length()),
+      ::google::protobuf::internal::WireFormatLite::SERIALIZE,
+      "glrpc.FreezePlayerResponse.error_code");
+    ::google::protobuf::internal::WireFormatLite::WriteStringMaybeAliased(
+      3, this->error_code(), output);
+  }
+
+  if ((_internal_metadata_.have_unknown_fields() &&  ::google::protobuf::internal::GetProto3PreserveUnknownsDefault())) {
+    ::google::protobuf::internal::WireFormat::SerializeUnknownFields(
+        (::google::protobuf::internal::GetProto3PreserveUnknownsDefault()   ? _internal_metadata_.unknown_fields()   : _internal_metadata_.default_instance()), output);
+  }
+  // @@protoc_insertion_point(serialize_end:glrpc.FreezePlayerResponse)
+}
+
+::google::protobuf::uint8* FreezePlayerResponse::InternalSerializeWithCachedSizesToArray(
+    bool deterministic, ::google::protobuf::uint8* target) const {
+  (void)deterministic; // Unused
+  // @@protoc_insertion_point(serialize_to_array_start:glrpc.FreezePlayerResponse)
+  ::google::protobuf::uint32 cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  // bool ok = 1;
+  if (this->ok() != 0) {
+    target = ::google::protobuf::internal::WireFormatLite::WriteBoolToArray(1, this->ok(), target);
+  }
+
+  // string message = 2;
+  if (this->message().size() > 0) {
+    ::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+      this->message().data(), static_cast<int>(this->message().length()),
+      ::google::protobuf::internal::WireFormatLite::SERIALIZE,
+      "glrpc.FreezePlayerResponse.message");
+    target =
+      ::google::protobuf::internal::WireFormatLite::WriteStringToArray(
+        2, this->message(), target);
+  }
+
+  // string error_code = 3;
+  if (this->error_code().size() > 0) {
+    ::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+      this->error_code().data(), static_cast<int>(this->error_code().length()),
+      ::google::protobuf::internal::WireFormatLite::SERIALIZE,
+      "glrpc.FreezePlayerResponse.error_code");
+    target =
+      ::google::protobuf::internal::WireFormatLite::WriteStringToArray(
+        3, this->error_code(), target);
+  }
+
+  if ((_internal_metadata_.have_unknown_fields() &&  ::google::protobuf::internal::GetProto3PreserveUnknownsDefault())) {
+    target = ::google::protobuf::internal::WireFormat::SerializeUnknownFieldsToArray(
+        (::google::protobuf::internal::GetProto3PreserveUnknownsDefault()   ? _internal_metadata_.unknown_fields()   : _internal_metadata_.default_instance()), target);
+  }
+  // @@protoc_insertion_point(serialize_to_array_end:glrpc.FreezePlayerResponse)
+  return target;
+}
+
+size_t FreezePlayerResponse::ByteSizeLong() const {
+// @@protoc_insertion_point(message_byte_size_start:glrpc.FreezePlayerResponse)
+  size_t total_size = 0;
+
+  if ((_internal_metadata_.have_unknown_fields() &&  ::google::protobuf::internal::GetProto3PreserveUnknownsDefault())) {
+    total_size +=
+      ::google::protobuf::internal::WireFormat::ComputeUnknownFieldsSize(
+        (::google::protobuf::internal::GetProto3PreserveUnknownsDefault()   ? _internal_metadata_.unknown_fields()   : _internal_metadata_.default_instance()));
+  }
+  // string message = 2;
+  if (this->message().size() > 0) {
+    total_size += 1 +
+      ::google::protobuf::internal::WireFormatLite::StringSize(
+        this->message());
+  }
+
+  // string error_code = 3;
+  if (this->error_code().size() > 0) {
+    total_size += 1 +
+      ::google::protobuf::internal::WireFormatLite::StringSize(
+        this->error_code());
+  }
+
+  // bool ok = 1;
+  if (this->ok() != 0) {
+    total_size += 1 + 1;
+  }
+
+  int cached_size = ::google::protobuf::internal::ToCachedSize(total_size);
+  GOOGLE_SAFE_CONCURRENT_WRITES_BEGIN();
+  _cached_size_ = cached_size;
+  GOOGLE_SAFE_CONCURRENT_WRITES_END();
+  return total_size;
+}
+
+void FreezePlayerResponse::MergeFrom(const ::google::protobuf::Message& from) {
+// @@protoc_insertion_point(generalized_merge_from_start:glrpc.FreezePlayerResponse)
+  GOOGLE_DCHECK_NE(&from, this);
+  const FreezePlayerResponse* source =
+      ::google::protobuf::internal::DynamicCastToGenerated<const FreezePlayerResponse>(
+          &from);
+  if (source == NULL) {
+  // @@protoc_insertion_point(generalized_merge_from_cast_fail:glrpc.FreezePlayerResponse)
+    ::google::protobuf::internal::ReflectionOps::Merge(from, this);
+  } else {
+  // @@protoc_insertion_point(generalized_merge_from_cast_success:glrpc.FreezePlayerResponse)
+    MergeFrom(*source);
+  }
+}
+
+void FreezePlayerResponse::MergeFrom(const FreezePlayerResponse& from) {
+// @@protoc_insertion_point(class_specific_merge_from_start:glrpc.FreezePlayerResponse)
+  GOOGLE_DCHECK_NE(&from, this);
+  _internal_metadata_.MergeFrom(from._internal_metadata_);
+  ::google::protobuf::uint32 cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  if (from.message().size() > 0) {
+
+    message_.AssignWithDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), from.message_);
+  }
+  if (from.error_code().size() > 0) {
+
+    error_code_.AssignWithDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), from.error_code_);
+  }
+  if (from.ok() != 0) {
+    set_ok(from.ok());
+  }
+}
+
+void FreezePlayerResponse::CopyFrom(const ::google::protobuf::Message& from) {
+// @@protoc_insertion_point(generalized_copy_from_start:glrpc.FreezePlayerResponse)
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+void FreezePlayerResponse::CopyFrom(const FreezePlayerResponse& from) {
+// @@protoc_insertion_point(class_specific_copy_from_start:glrpc.FreezePlayerResponse)
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+bool FreezePlayerResponse::IsInitialized() const {
+  return true;
+}
+
+void FreezePlayerResponse::Swap(FreezePlayerResponse* other) {
+  if (other == this) return;
+  InternalSwap(other);
+}
+void FreezePlayerResponse::InternalSwap(FreezePlayerResponse* other) {
+  using std::swap;
+  message_.Swap(&other->message_);
+  error_code_.Swap(&other->error_code_);
+  swap(ok_, other->ok_);
+  _internal_metadata_.Swap(&other->_internal_metadata_);
+  swap(_cached_size_, other->_cached_size_);
+}
+
+::google::protobuf::Metadata FreezePlayerResponse::GetMetadata() const {
   protobuf_gamelogic_5frpc_2eproto::protobuf_AssignDescriptorsOnce();
   return ::protobuf_gamelogic_5frpc_2eproto::file_level_metadata[kIndexInFileMessages];
 }
@@ -3681,6 +4695,14 @@ void GameLogicService::UnbindPlayer(::google::protobuf::RpcController* controlle
   done->Run();
 }
 
+void GameLogicService::FreezePlayer(::google::protobuf::RpcController* controller,
+                         const ::glrpc::FreezePlayerRequest*,
+                         ::glrpc::FreezePlayerResponse*,
+                         ::google::protobuf::Closure* done) {
+  controller->SetFailed("Method FreezePlayer() not implemented.");
+  done->Run();
+}
+
 void GameLogicService::CallMethod(const ::google::protobuf::MethodDescriptor* method,
                              ::google::protobuf::RpcController* controller,
                              const ::google::protobuf::Message* request,
@@ -3706,6 +4728,12 @@ void GameLogicService::CallMethod(const ::google::protobuf::MethodDescriptor* me
              ::google::protobuf::down_cast< ::glrpc::UnbindPlayerResponse*>(response),
              done);
       break;
+    case 3:
+      FreezePlayer(controller,
+             ::google::protobuf::down_cast<const ::glrpc::FreezePlayerRequest*>(request),
+             ::google::protobuf::down_cast< ::glrpc::FreezePlayerResponse*>(response),
+             done);
+      break;
     default:
       GOOGLE_LOG(FATAL) << "Bad method index; this should never happen.";
       break;
@@ -3722,6 +4750,8 @@ const ::google::protobuf::Message& GameLogicService::GetRequestPrototype(
       return ::glrpc::ClientCommand::default_instance();
     case 2:
       return ::glrpc::UnbindPlayerRequest::default_instance();
+    case 3:
+      return ::glrpc::FreezePlayerRequest::default_instance();
     default:
       GOOGLE_LOG(FATAL) << "Bad method index; this should never happen.";
       return *::google::protobuf::MessageFactory::generated_factory()
@@ -3739,6 +4769,8 @@ const ::google::protobuf::Message& GameLogicService::GetResponsePrototype(
       return ::glrpc::CommandResult::default_instance();
     case 2:
       return ::glrpc::UnbindPlayerResponse::default_instance();
+    case 3:
+      return ::glrpc::FreezePlayerResponse::default_instance();
     default:
       GOOGLE_LOG(FATAL) << "Bad method index; this should never happen.";
       return *::google::protobuf::MessageFactory::generated_factory()
@@ -3776,6 +4808,13 @@ void GameLogicService_Stub::UnbindPlayer(::google::protobuf::RpcController* cont
                               ::glrpc::UnbindPlayerResponse* response,
                               ::google::protobuf::Closure* done) {
   channel_->CallMethod(descriptor()->method(2),
+                       controller, request, response, done);
+}
+void GameLogicService_Stub::FreezePlayer(::google::protobuf::RpcController* controller,
+                              const ::glrpc::FreezePlayerRequest* request,
+                              ::glrpc::FreezePlayerResponse* response,
+                              ::google::protobuf::Closure* done) {
+  channel_->CallMethod(descriptor()->method(3),
                        controller, request, response, done);
 }
 

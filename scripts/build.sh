@@ -1,5 +1,11 @@
 #!/usr/bin/env bash
-# 配置并编译（默认 Debug；可传 Release）；支持 clean
+# 配置并编译（默认 Debug；可传 Release / clean）
+# 用法：
+#   ./scripts/build.sh Debug
+#   ./scripts/build.sh Release
+#   ./scripts/build.sh clean
+#   ENABLE_BRPC=OFF ./scripts/build.sh Debug   # 低层单测构建
+#   ./scripts/build.sh Debug --lowlevel
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -8,7 +14,26 @@ cd "$ROOT"
 BUILD_TYPE="${1:-${GAMEMESH_BUILD_TYPE:-${MMO_BUILD_TYPE:-Debug}}}"
 BUILD_DIR="${GAMEMESH_BUILD_DIR:-${MMO_BUILD_DIR:-$ROOT/build}}"
 JOBS="${GAMEMESH_JOBS:-${MMO_JOBS:-$(nproc 2>/dev/null || echo 4)}}"
-TARGET="${2:-}"
+TARGET=""
+LOWLEVEL=0
+
+shift_args=()
+if [[ $# -ge 1 ]]; then
+  shift || true
+fi
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --lowlevel) LOWLEVEL=1 ;;
+    *)
+      if [[ -z "$TARGET" ]]; then
+        TARGET="$1"
+      else
+        shift_args+=("$1")
+      fi
+      ;;
+  esac
+  shift || true
+done
 
 if [[ "${BUILD_TYPE}" == "clean" ]]; then
   echo "== clean: rm -rf ${BUILD_DIR} =="
@@ -16,13 +41,27 @@ if [[ "${BUILD_TYPE}" == "clean" ]]; then
   exit 0
 fi
 
-# 基线默认打开常用能力；可用环境变量覆盖
-: "${ENABLE_MYSQL:=ON}"
-: "${ENABLE_GAME_PROTOBUF:=ON}"
-: "${ENABLE_REDIS:=ON}"
-: "${ENABLE_BRPC:=ON}"
+if [[ "$LOWLEVEL" -eq 1 ]]; then
+  : "${ENABLE_BRPC:=OFF}"
+  : "${ENABLE_MYSQL:=ON}"
+  : "${ENABLE_GAME_PROTOBUF:=ON}"
+  : "${ENABLE_REDIS:=ON}"
+else
+  : "${ENABLE_MYSQL:=ON}"
+  : "${ENABLE_GAME_PROTOBUF:=ON}"
+  : "${ENABLE_REDIS:=ON}"
+  : "${ENABLE_BRPC:=ON}"
+fi
 : "${ENABLE_ROCKSDB:=OFF}"
 : "${ENABLE_ASAN:=OFF}"
+
+if [[ "${ENABLE_BRPC}" == "ON" ]]; then
+  if [[ ! -f /usr/local/include/brpc/server.h && ! -f /usr/include/brpc/server.h ]]; then
+    echo "ERROR: ENABLE_BRPC=ON but brpc headers not found." >&2
+    echo "       Install brpc, or use: ./scripts/build.sh ${BUILD_TYPE} --lowlevel" >&2
+    exit 1
+  fi
+fi
 
 CXX_BIN="${CXX:-g++}"
 echo "== toolchain =="
@@ -31,6 +70,7 @@ ${CXX_BIN} --version | head -1 || true
 echo "  build    : ${BUILD_TYPE}"
 echo "  cxx std  : C++17 (CMAKE_CXX_STANDARD=17)"
 echo "  dir      : ${BUILD_DIR}"
+echo "  brpc     : ${ENABLE_BRPC}"
 echo "  asan     : ${ENABLE_ASAN}"
 
 echo "== configure: type=$BUILD_TYPE dir=$BUILD_DIR =="

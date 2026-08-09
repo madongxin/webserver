@@ -194,6 +194,20 @@ class PushMessage : public ::google::protobuf::Message /* @@protoc_insertion_poi
   ::std::string* release_payload();
   void set_allocated_payload(::std::string* payload);
 
+  // string fence_token = 8;
+  void clear_fence_token();
+  static const int kFenceTokenFieldNumber = 8;
+  const ::std::string& fence_token() const;
+  void set_fence_token(const ::std::string& value);
+  #if LANG_CXX11
+  void set_fence_token(::std::string&& value);
+  #endif
+  void set_fence_token(const char* value);
+  void set_fence_token(const char* value, size_t size);
+  ::std::string* mutable_fence_token();
+  ::std::string* release_fence_token();
+  void set_allocated_fence_token(::std::string* fence_token);
+
   // uint64 player_id = 1;
   void clear_player_id();
   static const int kPlayerIdFieldNumber = 1;
@@ -205,6 +219,12 @@ class PushMessage : public ::google::protobuf::Message /* @@protoc_insertion_poi
   static const int kServerSeqFieldNumber = 3;
   ::google::protobuf::uint64 server_seq() const;
   void set_server_seq(::google::protobuf::uint64 value);
+
+  // uint64 generation = 9;
+  void clear_generation();
+  static const int kGenerationFieldNumber = 9;
+  ::google::protobuf::uint64 generation() const;
+  void set_generation(::google::protobuf::uint64 value);
 
   // bool reliable = 6;
   void clear_reliable();
@@ -225,8 +245,10 @@ class PushMessage : public ::google::protobuf::Message /* @@protoc_insertion_poi
   ::google::protobuf::internal::ArenaStringPtr session_id_;
   ::google::protobuf::internal::ArenaStringPtr message_type_;
   ::google::protobuf::internal::ArenaStringPtr payload_;
+  ::google::protobuf::internal::ArenaStringPtr fence_token_;
   ::google::protobuf::uint64 player_id_;
   ::google::protobuf::uint64 server_seq_;
+  ::google::protobuf::uint64 generation_;
   bool reliable_;
   bool coalescable_;
   mutable int _cached_size_;
@@ -764,6 +786,73 @@ inline void PushMessage::set_coalescable(bool value) {
   
   coalescable_ = value;
   // @@protoc_insertion_point(field_set:gwpush.PushMessage.coalescable)
+}
+
+// string fence_token = 8;
+inline void PushMessage::clear_fence_token() {
+  fence_token_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline const ::std::string& PushMessage::fence_token() const {
+  // @@protoc_insertion_point(field_get:gwpush.PushMessage.fence_token)
+  return fence_token_.GetNoArena();
+}
+inline void PushMessage::set_fence_token(const ::std::string& value) {
+  
+  fence_token_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), value);
+  // @@protoc_insertion_point(field_set:gwpush.PushMessage.fence_token)
+}
+#if LANG_CXX11
+inline void PushMessage::set_fence_token(::std::string&& value) {
+  
+  fence_token_.SetNoArena(
+    &::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::move(value));
+  // @@protoc_insertion_point(field_set_rvalue:gwpush.PushMessage.fence_token)
+}
+#endif
+inline void PushMessage::set_fence_token(const char* value) {
+  GOOGLE_DCHECK(value != NULL);
+  
+  fence_token_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::string(value));
+  // @@protoc_insertion_point(field_set_char:gwpush.PushMessage.fence_token)
+}
+inline void PushMessage::set_fence_token(const char* value, size_t size) {
+  
+  fence_token_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(),
+      ::std::string(reinterpret_cast<const char*>(value), size));
+  // @@protoc_insertion_point(field_set_pointer:gwpush.PushMessage.fence_token)
+}
+inline ::std::string* PushMessage::mutable_fence_token() {
+  
+  // @@protoc_insertion_point(field_mutable:gwpush.PushMessage.fence_token)
+  return fence_token_.MutableNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline ::std::string* PushMessage::release_fence_token() {
+  // @@protoc_insertion_point(field_release:gwpush.PushMessage.fence_token)
+  
+  return fence_token_.ReleaseNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline void PushMessage::set_allocated_fence_token(::std::string* fence_token) {
+  if (fence_token != NULL) {
+    
+  } else {
+    
+  }
+  fence_token_.SetAllocatedNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), fence_token);
+  // @@protoc_insertion_point(field_set_allocated:gwpush.PushMessage.fence_token)
+}
+
+// uint64 generation = 9;
+inline void PushMessage::clear_generation() {
+  generation_ = GOOGLE_ULONGLONG(0);
+}
+inline ::google::protobuf::uint64 PushMessage::generation() const {
+  // @@protoc_insertion_point(field_get:gwpush.PushMessage.generation)
+  return generation_;
+}
+inline void PushMessage::set_generation(::google::protobuf::uint64 value) {
+  
+  generation_ = value;
+  // @@protoc_insertion_point(field_set:gwpush.PushMessage.generation)
 }
 
 // -------------------------------------------------------------------

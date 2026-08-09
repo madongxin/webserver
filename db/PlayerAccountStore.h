@@ -34,8 +34,19 @@ public:
                               const std::string &password_hash, const std::string &password_salt,
                               int password_iters, uint64_t *player_id, std::string *err);
 
+    /**
+     * 带幂等键注册：相同 idempotency_key 重试返回首次 player_id，不重复建号。
+     * idempotency_key 空则退化为非幂等 RegisterWithPassword。
+     */
+    bool RegisterWithPasswordIdempotent(const std::string &device_id, const std::string &display_name,
+                                        const std::string &password_hash,
+                                        const std::string &password_salt, int password_iters,
+                                        const std::string &idempotency_key, uint64_t *player_id,
+                                        std::string *err, bool *replayed = nullptr);
+
     bool Exists(uint64_t player_id);
     bool LoadAuth(uint64_t player_id, AccountAuthRow *out);
+    bool FindByIdempotencyKey(const std::string &idempotency_key, uint64_t *player_id);
 
 private:
     PlayerAccountStore() = default;

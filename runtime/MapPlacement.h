@@ -20,6 +20,7 @@ struct MapPlacementRecord {
     std::string owner_gamelogic_id;
     uint64_t owner_epoch = 0;
     uint64_t route_version = 0;
+    int64_t lease_until_unix = 0;
     bool frozen = false;
 };
 

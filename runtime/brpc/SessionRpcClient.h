@@ -5,6 +5,7 @@
 
 #include <memory>
 #include <string>
+#include <vector>
 
 namespace brpc {
 class Channel;
@@ -15,8 +16,11 @@ class SessionRpcClient {
 public:
     static SessionRpcClient &Instance();
 
-    bool Init(const std::string &addr, int timeout_ms = 3000);
+    /** 单地址或 CSV；多地址使用 list:// + rr，不得只取首地址 */
+    bool Init(const std::string &addr_or_csv, int timeout_ms = 3000);
+    bool Init(const std::vector<std::string> &addrs, int timeout_ms = 3000);
     bool ready() const { return channel_ != nullptr; }
+    size_t peer_count() const { return peer_count_; }
     void Shutdown();
 
     bool Login(const game::LoginReq &req, game::LoginRsp *rsp);
@@ -33,10 +37,13 @@ public:
     bool MigrateMap(const sess::MigrateMapRequest &req, sess::MigrateMapResponse *rsp);
     bool MarkRecovering(uint64_t map_instance_id, const std::string &reason,
                         sess::MarkRecoveringResponse *rsp);
+    bool HeartbeatOwner(uint64_t map_instance_id, const std::string &owner_logic_id,
+                        uint64_t owner_epoch, uint32_t lease_sec, int64_t *lease_until_out);
     bool UpdatePlayerRoute(const sess::UpdatePlayerRouteRequest &req,
                            sess::UpdatePlayerRouteResponse *rsp);
 
 private:
     SessionRpcClient() = default;
     std::unique_ptr<brpc::Channel> channel_;
+    size_t peer_count_ = 0;
 };

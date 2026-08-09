@@ -1,5 +1,6 @@
 #include "ServiceHealth.h"
 
+#include <chrono>
 #include <sstream>
 
 #ifndef GAMEMESH_GIT_SHA
@@ -8,6 +9,16 @@
 #ifndef GAMEMESH_BUILD_TIME
 #define GAMEMESH_BUILD_TIME __DATE__ " " __TIME__
 #endif
+
+namespace {
+
+int64_t NowUnix() {
+    return std::chrono::duration_cast<std::chrono::seconds>(
+               std::chrono::system_clock::now().time_since_epoch())
+        .count();
+}
+
+}  // namespace
 
 ServiceHealth &ServiceHealth::Instance() {
     static ServiceHealth g;
@@ -29,7 +40,21 @@ void ServiceHealth::SetDraining(bool v) {
 
 bool ServiceHealth::ready() const { return ready_.load() && !draining_.load(); }
 
-void ServiceHealth::MarkAlive() { alive_.store(true); }
+void ServiceHealth::MarkAlive() {
+    alive_.store(true);
+    last_alive_unix_.store(NowUnix());
+}
+
+bool ServiceHealth::IsLive(int max_stale_sec) const {
+    if (!alive_.load())
+        return false;
+    if (max_stale_sec <= 0)
+        return true;
+    const int64_t last = last_alive_unix_.load();
+    if (last == 0)
+        return true;  // 尚未心跳前视为活（启动窗口）
+    return (NowUnix() - last) <= max_stale_sec;
+}
 
 std::string ServiceHealth::VersionJson() const {
     std::ostringstream os;
@@ -40,9 +65,10 @@ std::string ServiceHealth::VersionJson() const {
 }
 
 std::string ServiceHealth::LivenessJson() const {
+    const bool live = IsLive(30);
     std::ostringstream os;
-    os << "{\"alive\":" << (alive_.load() ? "true" : "false") << ",\"service\":\"" << service_
-       << "\"}";
+    os << "{\"alive\":" << (live ? "true" : "false") << ",\"service\":\"" << service_
+       << "\",\"last_alive_unix\":" << last_alive_unix_.load() << "}";
     return os.str();
 }
 

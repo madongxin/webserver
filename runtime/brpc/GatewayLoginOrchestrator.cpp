@@ -4,8 +4,13 @@
 #include "GatewayConnRegistry.h"
 #include "Logging.h"
 #include "ProtoFraming.h"
+#include "PushReplayCache.h"
 #include "SessionRpcClient.h"
 #include "game.pb.h"
+
+#ifdef WEBSERVER_ENABLE_REDIS
+#include "PushReplayStore.h"
+#endif
 #include "session.pb.h"
 
 namespace gameproto {
@@ -36,6 +41,11 @@ static void CompensateLogout(uint64_t player_id, const std::string &session_id,
         SessionRpcClient::Instance().Logout(legacy, &lr);
         LOG_WARN << "CompensateLogout legacy player=" << player_id << " ok=" << lr.ok();
     }
+}
+
+void CompensateGatewaySession(uint64_t player_id, const std::string &session_id,
+                              const std::string &fence_token) {
+    CompensateLogout(player_id, session_id, fence_token);
 }
 
 bool OrchestrateGatewayLogin(const std::string &gateway_instance_id, uint64_t connection_id,
@@ -273,6 +283,8 @@ bool OrchestrateGatewayReconnect(const std::string &gateway_instance_id, uint64_
         route_out->map_instance_id = v2rsp.map_instance_id();
         route_out->map_owner_epoch = v2rsp.map_owner_epoch();
         route_out->route_version = v2rsp.route_version();
+        route_out->pending_push_payloads.clear();
+        route_out->need_full_snapshot = false;
     }
 
     body->set_ok(true);
@@ -280,10 +292,47 @@ bool OrchestrateGatewayReconnect(const std::string &gateway_instance_id, uint64_
     body->set_token(v2rsp.fence_token());
     body->set_session_id(v2rsp.session_id());
     body->set_generation(v2rsp.generation());
+
+    // 可靠 Push 回放（跨 Gateway Redis）；缺口则 NeedFullSnapshot，禁止伪成功补发
+    const uint64_t last_seq = req.reconnect().last_server_seq();
+    bool need_snap = false;
+    std::vector<PushReplayEntry> replay;
+#ifdef WEBSERVER_ENABLE_REDIS
+    if (PushReplayStore::Instance().Available()) {
+        if (!PushReplayStore::Instance().ReplayAfter(req.reconnect().player_id(), last_seq, &replay,
+                                                     &need_snap)) {
+            if (!need_snap)
+                need_snap = true;
+        }
+    } else
+#endif
+    {
+        if (!PushReplayCache::Instance().ReplayAfter(req.reconnect().player_id(), last_seq, &replay,
+                                                     &need_snap) &&
+            last_seq != 0) {
+            need_snap = true;
+        }
+    }
+    body->set_need_full_snapshot(need_snap);
+    if (!need_snap && !replay.empty()) {
+        body->set_replay_from_seq(replay.front().server_seq);
+        if (route_out) {
+            for (const auto &e : replay)
+                route_out->pending_push_payloads.push_back(e.payload);
+        }
+    } else {
+        body->set_replay_from_seq(0);
+    }
+    if (route_out) {
+        route_out->need_full_snapshot = need_snap;
+        route_out->last_server_seq = last_seq;
+    }
+
     rsp.set_ok(true);
-    rsp.set_message("reconnect ok");
+    rsp.set_message(need_snap ? "reconnect ok need_full_snapshot" : "reconnect ok");
     LOG_INFO << "Gateway reconnect orchestrated player=" << req.reconnect().player_id()
-             << " logic=" << v2rsp.gamelogic_instance_id() << " conn=" << connection_id;
+             << " logic=" << v2rsp.gamelogic_instance_id() << " conn=" << connection_id
+             << " need_snap=" << need_snap << " replay_n=" << replay.size();
     return EncodeResponse(rsp, response_frame);
 }
 

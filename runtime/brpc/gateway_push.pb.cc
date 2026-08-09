@@ -117,6 +117,8 @@ const ::google::protobuf::uint32 TableStruct::offsets[] GOOGLE_PROTOBUF_ATTRIBUT
   GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::gwpush::PushMessage, payload_),
   GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::gwpush::PushMessage, reliable_),
   GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::gwpush::PushMessage, coalescable_),
+  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::gwpush::PushMessage, fence_token_),
+  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::gwpush::PushMessage, generation_),
   ~0u,  // no _has_bits_
   GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::gwpush::PushBatchRequest, _internal_metadata_),
   ~0u,  // no _extensions_
@@ -136,8 +138,8 @@ const ::google::protobuf::uint32 TableStruct::offsets[] GOOGLE_PROTOBUF_ATTRIBUT
 };
 static const ::google::protobuf::internal::MigrationSchema schemas[] GOOGLE_PROTOBUF_ATTRIBUTE_SECTION_VARIABLE(protodesc_cold) = {
   { 0, -1, sizeof(::gwpush::PushMessage)},
-  { 12, -1, sizeof(::gwpush::PushBatchRequest)},
-  { 19, -1, sizeof(::gwpush::PushBatchResponse)},
+  { 14, -1, sizeof(::gwpush::PushBatchRequest)},
+  { 21, -1, sizeof(::gwpush::PushBatchResponse)},
 };
 
 static ::google::protobuf::Message const * const file_default_instances[] = {
@@ -168,21 +170,22 @@ void protobuf_RegisterTypes(const ::std::string&) {
 void AddDescriptorsImpl() {
   InitDefaults();
   static const char descriptor[] GOOGLE_PROTOBUF_ATTRIBUTE_SECTION_VARIABLE(protodesc_cold) = {
-      "\n\022gateway_push.proto\022\006gwpush\"\226\001\n\013PushMes"
+      "\n\022gateway_push.proto\022\006gwpush\"\277\001\n\013PushMes"
       "sage\022\021\n\tplayer_id\030\001 \001(\004\022\022\n\nsession_id\030\002 "
       "\001(\t\022\022\n\nserver_seq\030\003 \001(\004\022\024\n\014message_type\030"
       "\004 \001(\t\022\017\n\007payload\030\005 \001(\014\022\020\n\010reliable\030\006 \001(\010"
-      "\022\023\n\013coalescable\030\007 \001(\010\"V\n\020PushBatchReques"
-      "t\022\033\n\023gateway_instance_id\030\001 \001(\t\022%\n\010messag"
-      "es\030\002 \003(\0132\023.gwpush.PushMessage\"T\n\021PushBat"
-      "chResponse\022\n\n\002ok\030\001 \001(\010\022\017\n\007message\030\002 \001(\t\022"
-      "\020\n\010accepted\030\003 \001(\r\022\020\n\010rejected\030\004 \001(\r2V\n\022G"
-      "atewayPushService\022@\n\tPushBatch\022\030.gwpush."
-      "PushBatchRequest\032\031.gwpush.PushBatchRespo"
-      "nseB\003\200\001\001b\006proto3"
+      "\022\023\n\013coalescable\030\007 \001(\010\022\023\n\013fence_token\030\010 \001"
+      "(\t\022\022\n\ngeneration\030\t \001(\004\"V\n\020PushBatchReque"
+      "st\022\033\n\023gateway_instance_id\030\001 \001(\t\022%\n\010messa"
+      "ges\030\002 \003(\0132\023.gwpush.PushMessage\"T\n\021PushBa"
+      "tchResponse\022\n\n\002ok\030\001 \001(\010\022\017\n\007message\030\002 \001(\t"
+      "\022\020\n\010accepted\030\003 \001(\r\022\020\n\010rejected\030\004 \001(\r2V\n\022"
+      "GatewayPushService\022@\n\tPushBatch\022\030.gwpush"
+      ".PushBatchRequest\032\031.gwpush.PushBatchResp"
+      "onseB\003\200\001\001b\006proto3"
   };
   ::google::protobuf::DescriptorPool::InternalAddGeneratedFile(
-      descriptor, 456);
+      descriptor, 497);
   ::google::protobuf::MessageFactory::InternalRegisterGeneratedFile(
     "gateway_push.proto", &protobuf_RegisterTypes);
 }
@@ -212,6 +215,8 @@ const int PushMessage::kMessageTypeFieldNumber;
 const int PushMessage::kPayloadFieldNumber;
 const int PushMessage::kReliableFieldNumber;
 const int PushMessage::kCoalescableFieldNumber;
+const int PushMessage::kFenceTokenFieldNumber;
+const int PushMessage::kGenerationFieldNumber;
 #endif  // !defined(_MSC_VER) || _MSC_VER >= 1900
 
 PushMessage::PushMessage()
@@ -239,6 +244,10 @@ PushMessage::PushMessage(const PushMessage& from)
   if (from.payload().size() > 0) {
     payload_.AssignWithDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), from.payload_);
   }
+  fence_token_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  if (from.fence_token().size() > 0) {
+    fence_token_.AssignWithDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), from.fence_token_);
+  }
   ::memcpy(&player_id_, &from.player_id_,
     static_cast<size_t>(reinterpret_cast<char*>(&coalescable_) -
     reinterpret_cast<char*>(&player_id_)) + sizeof(coalescable_));
@@ -249,6 +258,7 @@ void PushMessage::SharedCtor() {
   session_id_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
   message_type_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
   payload_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  fence_token_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
   ::memset(&player_id_, 0, static_cast<size_t>(
       reinterpret_cast<char*>(&coalescable_) -
       reinterpret_cast<char*>(&player_id_)) + sizeof(coalescable_));
@@ -264,6 +274,7 @@ void PushMessage::SharedDtor() {
   session_id_.DestroyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
   message_type_.DestroyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
   payload_.DestroyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  fence_token_.DestroyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
 }
 
 void PushMessage::SetCachedSize(int size) const {
@@ -298,6 +309,7 @@ void PushMessage::Clear() {
   session_id_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
   message_type_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
   payload_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  fence_token_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
   ::memset(&player_id_, 0, static_cast<size_t>(
       reinterpret_cast<char*>(&coalescable_) -
       reinterpret_cast<char*>(&player_id_)) + sizeof(coalescable_));
@@ -414,6 +426,36 @@ bool PushMessage::MergePartialFromCodedStream(
         break;
       }
 
+      // string fence_token = 8;
+      case 8: {
+        if (static_cast< ::google::protobuf::uint8>(tag) ==
+            static_cast< ::google::protobuf::uint8>(66u /* 66 & 0xFF */)) {
+          DO_(::google::protobuf::internal::WireFormatLite::ReadString(
+                input, this->mutable_fence_token()));
+          DO_(::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+            this->fence_token().data(), static_cast<int>(this->fence_token().length()),
+            ::google::protobuf::internal::WireFormatLite::PARSE,
+            "gwpush.PushMessage.fence_token"));
+        } else {
+          goto handle_unusual;
+        }
+        break;
+      }
+
+      // uint64 generation = 9;
+      case 9: {
+        if (static_cast< ::google::protobuf::uint8>(tag) ==
+            static_cast< ::google::protobuf::uint8>(72u /* 72 & 0xFF */)) {
+
+          DO_((::google::protobuf::internal::WireFormatLite::ReadPrimitive<
+                   ::google::protobuf::uint64, ::google::protobuf::internal::WireFormatLite::TYPE_UINT64>(
+                 input, &generation_)));
+        } else {
+          goto handle_unusual;
+        }
+        break;
+      }
+
       default: {
       handle_unusual:
         if (tag == 0) {
@@ -486,6 +528,21 @@ void PushMessage::SerializeWithCachedSizes(
     ::google::protobuf::internal::WireFormatLite::WriteBool(7, this->coalescable(), output);
   }
 
+  // string fence_token = 8;
+  if (this->fence_token().size() > 0) {
+    ::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+      this->fence_token().data(), static_cast<int>(this->fence_token().length()),
+      ::google::protobuf::internal::WireFormatLite::SERIALIZE,
+      "gwpush.PushMessage.fence_token");
+    ::google::protobuf::internal::WireFormatLite::WriteStringMaybeAliased(
+      8, this->fence_token(), output);
+  }
+
+  // uint64 generation = 9;
+  if (this->generation() != 0) {
+    ::google::protobuf::internal::WireFormatLite::WriteUInt64(9, this->generation(), output);
+  }
+
   if ((_internal_metadata_.have_unknown_fields() &&  ::google::protobuf::internal::GetProto3PreserveUnknownsDefault())) {
     ::google::protobuf::internal::WireFormat::SerializeUnknownFields(
         (::google::protobuf::internal::GetProto3PreserveUnknownsDefault()   ? _internal_metadata_.unknown_fields()   : _internal_metadata_.default_instance()), output);
@@ -549,6 +606,22 @@ void PushMessage::SerializeWithCachedSizes(
     target = ::google::protobuf::internal::WireFormatLite::WriteBoolToArray(7, this->coalescable(), target);
   }
 
+  // string fence_token = 8;
+  if (this->fence_token().size() > 0) {
+    ::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+      this->fence_token().data(), static_cast<int>(this->fence_token().length()),
+      ::google::protobuf::internal::WireFormatLite::SERIALIZE,
+      "gwpush.PushMessage.fence_token");
+    target =
+      ::google::protobuf::internal::WireFormatLite::WriteStringToArray(
+        8, this->fence_token(), target);
+  }
+
+  // uint64 generation = 9;
+  if (this->generation() != 0) {
+    target = ::google::protobuf::internal::WireFormatLite::WriteUInt64ToArray(9, this->generation(), target);
+  }
+
   if ((_internal_metadata_.have_unknown_fields() &&  ::google::protobuf::internal::GetProto3PreserveUnknownsDefault())) {
     target = ::google::protobuf::internal::WireFormat::SerializeUnknownFieldsToArray(
         (::google::protobuf::internal::GetProto3PreserveUnknownsDefault()   ? _internal_metadata_.unknown_fields()   : _internal_metadata_.default_instance()), target);
@@ -587,6 +660,13 @@ size_t PushMessage::ByteSizeLong() const {
         this->payload());
   }
 
+  // string fence_token = 8;
+  if (this->fence_token().size() > 0) {
+    total_size += 1 +
+      ::google::protobuf::internal::WireFormatLite::StringSize(
+        this->fence_token());
+  }
+
   // uint64 player_id = 1;
   if (this->player_id() != 0) {
     total_size += 1 +
@@ -599,6 +679,13 @@ size_t PushMessage::ByteSizeLong() const {
     total_size += 1 +
       ::google::protobuf::internal::WireFormatLite::UInt64Size(
         this->server_seq());
+  }
+
+  // uint64 generation = 9;
+  if (this->generation() != 0) {
+    total_size += 1 +
+      ::google::protobuf::internal::WireFormatLite::UInt64Size(
+        this->generation());
   }
 
   // bool reliable = 6;
@@ -652,11 +739,18 @@ void PushMessage::MergeFrom(const PushMessage& from) {
 
     payload_.AssignWithDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), from.payload_);
   }
+  if (from.fence_token().size() > 0) {
+
+    fence_token_.AssignWithDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), from.fence_token_);
+  }
   if (from.player_id() != 0) {
     set_player_id(from.player_id());
   }
   if (from.server_seq() != 0) {
     set_server_seq(from.server_seq());
+  }
+  if (from.generation() != 0) {
+    set_generation(from.generation());
   }
   if (from.reliable() != 0) {
     set_reliable(from.reliable());
@@ -693,8 +787,10 @@ void PushMessage::InternalSwap(PushMessage* other) {
   session_id_.Swap(&other->session_id_);
   message_type_.Swap(&other->message_type_);
   payload_.Swap(&other->payload_);
+  fence_token_.Swap(&other->fence_token_);
   swap(player_id_, other->player_id_);
   swap(server_seq_, other->server_seq_);
+  swap(generation_, other->generation_);
   swap(reliable_, other->reliable_);
   swap(coalescable_, other->coalescable_);
   _internal_metadata_.Swap(&other->_internal_metadata_);

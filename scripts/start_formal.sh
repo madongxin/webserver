@@ -104,7 +104,8 @@ printf '%s\n' \
   "logic_addrs=127.0.0.1:${LOGIC0},127.0.0.1:${LOGIC1}" \
   "logic_instance_ids=gl-0,gl-1" \
   "world_addrs=127.0.0.1:${WORLD}" \
-  "session_addrs=127.0.0.1:${SESSION}" \
+  "session_addrs=127.0.0.1:${SESSION}${GAMEMESH_SESSION2:+,127.0.0.1:${GAMEMESH_SESSION2}}" \
+  "session_instance_ids=sess-0${GAMEMESH_SESSION2:+,sess-1}" \
   "gamedb_addrs=127.0.0.1:${GAMEDB0},127.0.0.1:${GAMEDB1}" \
   "etcd_endpoints=" \
   "rpc_timeout_ms=3000" \
@@ -136,9 +137,9 @@ printf '%s\n' \
   "listen_addr=0.0.0.0:${LOGIC0}" \
   "idle_timeout_sec=30" \
   "instance_id=gl-0" \
-  "session_addrs=127.0.0.1:${SESSION}" \
+  "session_addrs=127.0.0.1:${SESSION}${GAMEMESH_SESSION2:+,127.0.0.1:${GAMEMESH_SESSION2}}" \
   "gamedb_addrs=127.0.0.1:${GAMEDB0},127.0.0.1:${GAMEDB1}" \
-  "gateway_push_addrs=gw-${GAME_G0}=${GAMEMESH_ADVERTISE_HOST}:${PUSH_G0},gw-${GAME_G1}=${GAMEMESH_ADVERTISE_HOST}:${PUSH_G1}" \
+  "gateway_push_addrs=gw-0=${GAMEMESH_ADVERTISE_HOST}:${PUSH_G0},gw-1=${GAMEMESH_ADVERTISE_HOST}:${PUSH_G1}" \
   "ssl_enable=0" >"$LOGIC_CNF"
 
 run_role() {
@@ -171,23 +172,23 @@ wait_log() {
 }
 
 echo "== GameMesh formal start (2×gw + 2×logic + 2×gamedb + world + session) =="
-run_role "$SESSION_BIN" session    "$RUN_DIR/logs/session.log" "$HTTP_S"  "$SESSION"
-run_role "$GAMEDB_BIN"  gamedb0    "$RUN_DIR/logs/gamedb0.log" "$HTTP_D0" "$GAMEDB0"
-run_role "$GAMEDB_BIN"  gamedb1    "$RUN_DIR/logs/gamedb1.log" "$HTTP_D1" "$GAMEDB1"
+GAMEMESH_INSTANCE_ID=sess-0 run_role "$SESSION_BIN" session "$RUN_DIR/logs/session.log" "$HTTP_S" "$SESSION"
+GAMEMESH_INSTANCE_ID=gamedb-0 run_role "$GAMEDB_BIN" gamedb0 "$RUN_DIR/logs/gamedb0.log" "$HTTP_D0" "$GAMEDB0"
+GAMEMESH_INSTANCE_ID=gamedb-1 run_role "$GAMEDB_BIN" gamedb1 "$RUN_DIR/logs/gamedb1.log" "$HTTP_D1" "$GAMEDB1"
 wait_log session "$RUN_DIR/logs/session.log" \
   'SessionBrpcServer\(\+Auth\) listening|SessionBrpcServer listening|role=session'
 wait_log gamedb0 "$RUN_DIR/logs/gamedb0.log" 'GameDbBrpcServer listening|role=gamedb'
 wait_log gamedb1 "$RUN_DIR/logs/gamedb1.log" 'GameDbBrpcServer listening|role=gamedb'
 
-run_role "$WORLD_BIN"   world      "$RUN_DIR/logs/world.log"   "$HTTP_W"
-run_role "$LOGIC_BIN"   gamelogic0 "$RUN_DIR/logs/logic0.log"  "$HTTP_L0" "$LOGIC0"
-run_role "$LOGIC_BIN"   gamelogic1 "$RUN_DIR/logs/logic1.log"  "$HTTP_L1" "$LOGIC1"
+GAMEMESH_INSTANCE_ID=world-1 run_role "$WORLD_BIN" world "$RUN_DIR/logs/world.log" "$HTTP_W"
+GAMEMESH_INSTANCE_ID=gl-0 run_role "$LOGIC_BIN" gamelogic0 "$RUN_DIR/logs/logic0.log" "$HTTP_L0" "$LOGIC0"
+GAMEMESH_INSTANCE_ID=gl-1 run_role "$LOGIC_BIN" gamelogic1 "$RUN_DIR/logs/logic1.log" "$HTTP_L1" "$LOGIC1"
 wait_log world "$RUN_DIR/logs/world.log" 'WorldBrpcServer listening|role=world'
 wait_log gamelogic0 "$RUN_DIR/logs/logic0.log" 'GameLogicBrpcServer listening|role=gamelogic'
 wait_log gamelogic1 "$RUN_DIR/logs/logic1.log" 'GameLogicBrpcServer listening|role=gamelogic'
 
-run_role "$GW_BIN"      gateway0   "$RUN_DIR/logs/gw0.log"     "$HTTP_G0" "$GAME_G0"
-run_role "$GW_BIN"      gateway1   "$RUN_DIR/logs/gw1.log"     "$HTTP_G1" "$GAME_G1"
+GAMEMESH_INSTANCE_ID=gw-0 run_role "$GW_BIN" gateway0 "$RUN_DIR/logs/gw0.log" "$HTTP_G0" "$GAME_G0"
+GAMEMESH_INSTANCE_ID=gw-1 run_role "$GW_BIN" gateway1 "$RUN_DIR/logs/gw1.log" "$HTTP_G1" "$GAME_G1"
 wait_log gateway0 "$RUN_DIR/logs/gw0.log" 'GameTcpGateway ready|Game protobuf TCP'
 wait_log gateway1 "$RUN_DIR/logs/gw1.log" 'GameTcpGateway ready|Game protobuf TCP'
 wait_log gw0_push "$RUN_DIR/logs/gw0.log" 'GatewayPushServer listening'

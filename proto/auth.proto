@@ -57,6 +57,7 @@ message RegisterRequest {
   string display_name = 2;
   string password = 3;
   uint32 server_id = 4;
+  string idempotency_key = 5;  // 客户端重试稳定键；空则 Auth 用 device+password 指纹
 }
 
 message RegisterResponse {

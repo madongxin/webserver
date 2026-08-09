@@ -1,5 +1,6 @@
 #include "PrometheusMetrics.h"
 
+#include "OpsMetrics.h"
 #include "ProcessMetricsSnapshot.h"
 
 #include <sstream>
@@ -59,5 +60,6 @@ std::string BuildPrometheusMetricsText() {
         os << "\n";
     }
 
+    os << OpsMetrics::Instance().PrometheusText();
     return os.str();
 }

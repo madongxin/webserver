@@ -22,7 +22,15 @@ run_one map_placement_test
 run_one player_serial_queue_test
 run_one auth_session_boundary_test
 run_one phase1_gateway_boundary_test
+run_one gateway_conn_race_test
+run_one discovery_ha_test
 run_one push_replay_cache_test
 run_one password_hash_test
+run_one service_health_test
+run_one formal_mysql_boundary_test
+# Redis 不可达时 auth_token_store_test 自行 SKIP（exit 0）
+if [[ -x "$BIN/auth_token_store_test" ]]; then
+  run_one auth_token_store_test
+fi
 # session_store_test / placement_store_test 依赖 Redis：scripts/test_placement.sh / test_integration.sh
 echo "test_unit.sh PASS"

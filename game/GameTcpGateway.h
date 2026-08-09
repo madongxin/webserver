@@ -21,21 +21,33 @@
  * 注意：网关运行在独立 std::thread 中（StartInBackground），与 HTTP 主 EventLoop 分离。
  * 阶段 1：IO 线程不再同步跑 GameLogic。
  * 阶段 3：Login/Reconnect 绑定 conn↔player；断线 MarkDisconnected（宽限重连）。
+ * 阶段 7：StopAccepting / RequestQuit 配合 SIGTERM 摘流。
  */
 
+#include <atomic>
 #include <memory>
 #include <string>
 #include <thread>
 
+class EventLoop;
 class TcpConnection;
+class TcpServer;
 
 class GameTcpGateway {
 public:
-    GameTcpGateway(const std::string &ip, int port);
+    /** instance_id：稳定 Gateway 身份（如 gw-0），不得用 listen 地址拼接 */
+    GameTcpGateway(const std::string &ip, int port, const std::string &instance_id);
     ~GameTcpGateway();
 
     /** 在后台线程启动 Run()，内部阻塞在 EventLoop::Loop */
     void StartInBackground();
+
+    /** 停止 accept（跨线程安全，投递到 gateway loop） */
+    void StopAccepting();
+    /** 退出 gateway EventLoop（随后线程可 join） */
+    void RequestQuit();
+
+    const std::string &gateway_instance_id() const { return instance_id_; }
 
 private:
     void Run();
@@ -44,5 +56,8 @@ private:
 
     std::string ip_;
     int port_ = 0;
+    std::string instance_id_;
     std::thread thread_;
+    std::atomic<EventLoop *> loop_{nullptr};
+    std::atomic<TcpServer *> server_{nullptr};
 };

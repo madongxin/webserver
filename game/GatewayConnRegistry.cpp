@@ -9,10 +9,17 @@ void GatewayConnRegistry::Remember(uint64_t connection_id, Bind bind) {
     std::lock_guard<std::mutex> lk(mu_);
     auto it = by_conn_.find(connection_id);
     if (it != by_conn_.end()) {
-        if (!it->second.session_id.empty())
-            session_to_conn_.erase(it->second.session_id);
-        if (it->second.player_id != 0)
-            player_to_conn_.erase(it->second.player_id);
+        // 仅当索引仍指向本连接时才清理（避免误删已被新连接接管的索引）
+        if (!it->second.session_id.empty()) {
+            auto sit = session_to_conn_.find(it->second.session_id);
+            if (sit != session_to_conn_.end() && sit->second == connection_id)
+                session_to_conn_.erase(sit);
+        }
+        if (it->second.player_id != 0) {
+            auto pit = player_to_conn_.find(it->second.player_id);
+            if (pit != player_to_conn_.end() && pit->second == connection_id)
+                player_to_conn_.erase(pit);
+        }
     }
     bind.connection_id = connection_id;
     if (!bind.session_id.empty())
@@ -27,11 +34,35 @@ void GatewayConnRegistry::Forget(uint64_t connection_id) {
     auto it = by_conn_.find(connection_id);
     if (it == by_conn_.end())
         return;
-    if (!it->second.session_id.empty())
-        session_to_conn_.erase(it->second.session_id);
-    if (it->second.player_id != 0)
-        player_to_conn_.erase(it->second.player_id);
+    if (!it->second.session_id.empty()) {
+        auto sit = session_to_conn_.find(it->second.session_id);
+        if (sit != session_to_conn_.end() && sit->second == connection_id)
+            session_to_conn_.erase(sit);
+    }
+    if (it->second.player_id != 0) {
+        auto pit = player_to_conn_.find(it->second.player_id);
+        if (pit != player_to_conn_.end() && pit->second == connection_id)
+            player_to_conn_.erase(pit);
+    }
     by_conn_.erase(it);
+}
+
+bool GatewayConnRegistry::ApplyRoute(uint64_t connection_id, const std::string &gamelogic_instance_id,
+                                     uint64_t map_instance_id, uint64_t map_owner_epoch,
+                                     uint64_t route_version) {
+    std::lock_guard<std::mutex> lk(mu_);
+    auto it = by_conn_.find(connection_id);
+    if (it == by_conn_.end())
+        return false;
+    if (route_version != 0 && it->second.route_version != 0 &&
+        route_version < it->second.route_version)
+        return false;
+    it->second.gamelogic_instance_id = gamelogic_instance_id;
+    it->second.map_instance_id = map_instance_id;
+    it->second.map_owner_epoch = map_owner_epoch;
+    if (route_version != 0)
+        it->second.route_version = route_version;
+    return true;
 }
 
 bool GatewayConnRegistry::FindBySession(const std::string &session_id, Bind *out) {

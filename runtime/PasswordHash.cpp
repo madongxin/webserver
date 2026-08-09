@@ -2,6 +2,7 @@
 
 #include <openssl/evp.h>
 #include <openssl/rand.h>
+#include <openssl/sha.h>
 
 #include <cstdio>
 #include <vector>
@@ -78,6 +79,21 @@ std::string RedactSecret(const std::string &s) {
     if (s.size() <= 4)
         return "****";
     return s.substr(0, 2) + "****" + s.substr(s.size() - 2);
+}
+
+bool Sha256Hex(const std::string &data, std::string *hex_out) {
+    if (!hex_out)
+        return false;
+    unsigned char md[SHA256_DIGEST_LENGTH];
+    if (!SHA256(reinterpret_cast<const unsigned char *>(data.data()), data.size(), md))
+        return false;
+    static const char hex[] = "0123456789abcdef";
+    hex_out->assign(SHA256_DIGEST_LENGTH * 2, '0');
+    for (int i = 0; i < SHA256_DIGEST_LENGTH; ++i) {
+        (*hex_out)[static_cast<size_t>(i) * 2] = hex[md[i] >> 4];
+        (*hex_out)[static_cast<size_t>(i) * 2 + 1] = hex[md[i] & 0xf];
+    }
+    return true;
 }
 
 }  // namespace PasswordHash

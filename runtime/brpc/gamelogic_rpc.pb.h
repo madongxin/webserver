@@ -37,7 +37,7 @@ namespace protobuf_gamelogic_5frpc_2eproto {
 struct TableStruct {
   static const ::google::protobuf::internal::ParseTableField entries[];
   static const ::google::protobuf::internal::AuxillaryParseTableField aux[];
-  static const ::google::protobuf::internal::ParseTable schema[6];
+  static const ::google::protobuf::internal::ParseTable schema[8];
   static const ::google::protobuf::internal::FieldMetadata field_metadata[];
   static const ::google::protobuf::internal::SerializationTable serialization_table[];
   static const ::google::protobuf::uint32 offsets[];
@@ -51,6 +51,10 @@ void InitDefaultsUnbindPlayerRequestImpl();
 void InitDefaultsUnbindPlayerRequest();
 void InitDefaultsUnbindPlayerResponseImpl();
 void InitDefaultsUnbindPlayerResponse();
+void InitDefaultsFreezePlayerRequestImpl();
+void InitDefaultsFreezePlayerRequest();
+void InitDefaultsFreezePlayerResponseImpl();
+void InitDefaultsFreezePlayerResponse();
 void InitDefaultsClientCommandImpl();
 void InitDefaultsClientCommand();
 void InitDefaultsCommandResultImpl();
@@ -60,6 +64,8 @@ inline void InitDefaults() {
   InitDefaultsBindPlayerResponse();
   InitDefaultsUnbindPlayerRequest();
   InitDefaultsUnbindPlayerResponse();
+  InitDefaultsFreezePlayerRequest();
+  InitDefaultsFreezePlayerResponse();
   InitDefaultsClientCommand();
   InitDefaultsCommandResult();
 }
@@ -77,6 +83,12 @@ extern ClientCommandDefaultTypeInternal _ClientCommand_default_instance_;
 class CommandResult;
 class CommandResultDefaultTypeInternal;
 extern CommandResultDefaultTypeInternal _CommandResult_default_instance_;
+class FreezePlayerRequest;
+class FreezePlayerRequestDefaultTypeInternal;
+extern FreezePlayerRequestDefaultTypeInternal _FreezePlayerRequest_default_instance_;
+class FreezePlayerResponse;
+class FreezePlayerResponseDefaultTypeInternal;
+extern FreezePlayerResponseDefaultTypeInternal _FreezePlayerResponse_default_instance_;
 class UnbindPlayerRequest;
 class UnbindPlayerRequestDefaultTypeInternal;
 extern UnbindPlayerRequestDefaultTypeInternal _UnbindPlayerRequest_default_instance_;
@@ -254,6 +266,20 @@ class BindPlayerRequest : public ::google::protobuf::Message /* @@protoc_inserti
   ::std::string* release_trace_context();
   void set_allocated_trace_context(::std::string* trace_context);
 
+  // string transfer_id = 13;
+  void clear_transfer_id();
+  static const int kTransferIdFieldNumber = 13;
+  const ::std::string& transfer_id() const;
+  void set_transfer_id(const ::std::string& value);
+  #if LANG_CXX11
+  void set_transfer_id(::std::string&& value);
+  #endif
+  void set_transfer_id(const char* value);
+  void set_transfer_id(const char* value, size_t size);
+  ::std::string* mutable_transfer_id();
+  ::std::string* release_transfer_id();
+  void set_allocated_transfer_id(::std::string* transfer_id);
+
   // uint64 request_id = 1;
   void clear_request_id();
   static const int kRequestIdFieldNumber = 1;
@@ -300,6 +326,7 @@ class BindPlayerRequest : public ::google::protobuf::Message /* @@protoc_inserti
   ::google::protobuf::internal::ArenaStringPtr gateway_instance_id_;
   ::google::protobuf::internal::ArenaStringPtr idempotency_key_;
   ::google::protobuf::internal::ArenaStringPtr trace_context_;
+  ::google::protobuf::internal::ArenaStringPtr transfer_id_;
   ::google::protobuf::uint64 request_id_;
   ::google::protobuf::uint64 player_id_;
   ::google::protobuf::uint64 map_instance_id_;
@@ -721,6 +748,309 @@ class UnbindPlayerResponse : public ::google::protobuf::Message /* @@protoc_inse
 };
 // -------------------------------------------------------------------
 
+class FreezePlayerRequest : public ::google::protobuf::Message /* @@protoc_insertion_point(class_definition:glrpc.FreezePlayerRequest) */ {
+ public:
+  FreezePlayerRequest();
+  virtual ~FreezePlayerRequest();
+
+  FreezePlayerRequest(const FreezePlayerRequest& from);
+
+  inline FreezePlayerRequest& operator=(const FreezePlayerRequest& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  #if LANG_CXX11
+  FreezePlayerRequest(FreezePlayerRequest&& from) noexcept
+    : FreezePlayerRequest() {
+    *this = ::std::move(from);
+  }
+
+  inline FreezePlayerRequest& operator=(FreezePlayerRequest&& from) noexcept {
+    if (GetArenaNoVirtual() == from.GetArenaNoVirtual()) {
+      if (this != &from) InternalSwap(&from);
+    } else {
+      CopyFrom(from);
+    }
+    return *this;
+  }
+  #endif
+  static const ::google::protobuf::Descriptor* descriptor();
+  static const FreezePlayerRequest& default_instance();
+
+  static void InitAsDefaultInstance();  // FOR INTERNAL USE ONLY
+  static inline const FreezePlayerRequest* internal_default_instance() {
+    return reinterpret_cast<const FreezePlayerRequest*>(
+               &_FreezePlayerRequest_default_instance_);
+  }
+  static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
+    4;
+
+  void Swap(FreezePlayerRequest* other);
+  friend void swap(FreezePlayerRequest& a, FreezePlayerRequest& b) {
+    a.Swap(&b);
+  }
+
+  // implements Message ----------------------------------------------
+
+  inline FreezePlayerRequest* New() const PROTOBUF_FINAL { return New(NULL); }
+
+  FreezePlayerRequest* New(::google::protobuf::Arena* arena) const PROTOBUF_FINAL;
+  void CopyFrom(const ::google::protobuf::Message& from) PROTOBUF_FINAL;
+  void MergeFrom(const ::google::protobuf::Message& from) PROTOBUF_FINAL;
+  void CopyFrom(const FreezePlayerRequest& from);
+  void MergeFrom(const FreezePlayerRequest& from);
+  void Clear() PROTOBUF_FINAL;
+  bool IsInitialized() const PROTOBUF_FINAL;
+
+  size_t ByteSizeLong() const PROTOBUF_FINAL;
+  bool MergePartialFromCodedStream(
+      ::google::protobuf::io::CodedInputStream* input) PROTOBUF_FINAL;
+  void SerializeWithCachedSizes(
+      ::google::protobuf::io::CodedOutputStream* output) const PROTOBUF_FINAL;
+  ::google::protobuf::uint8* InternalSerializeWithCachedSizesToArray(
+      bool deterministic, ::google::protobuf::uint8* target) const PROTOBUF_FINAL;
+  int GetCachedSize() const PROTOBUF_FINAL { return _cached_size_; }
+  private:
+  void SharedCtor();
+  void SharedDtor();
+  void SetCachedSize(int size) const PROTOBUF_FINAL;
+  void InternalSwap(FreezePlayerRequest* other);
+  private:
+  inline ::google::protobuf::Arena* GetArenaNoVirtual() const {
+    return NULL;
+  }
+  inline void* MaybeArenaPtr() const {
+    return NULL;
+  }
+  public:
+
+  ::google::protobuf::Metadata GetMetadata() const PROTOBUF_FINAL;
+
+  // nested types ----------------------------------------------------
+
+  // accessors -------------------------------------------------------
+
+  // string session_id = 2;
+  void clear_session_id();
+  static const int kSessionIdFieldNumber = 2;
+  const ::std::string& session_id() const;
+  void set_session_id(const ::std::string& value);
+  #if LANG_CXX11
+  void set_session_id(::std::string&& value);
+  #endif
+  void set_session_id(const char* value);
+  void set_session_id(const char* value, size_t size);
+  ::std::string* mutable_session_id();
+  ::std::string* release_session_id();
+  void set_allocated_session_id(::std::string* session_id);
+
+  // string fence_token = 3;
+  void clear_fence_token();
+  static const int kFenceTokenFieldNumber = 3;
+  const ::std::string& fence_token() const;
+  void set_fence_token(const ::std::string& value);
+  #if LANG_CXX11
+  void set_fence_token(::std::string&& value);
+  #endif
+  void set_fence_token(const char* value);
+  void set_fence_token(const char* value, size_t size);
+  ::std::string* mutable_fence_token();
+  ::std::string* release_fence_token();
+  void set_allocated_fence_token(::std::string* fence_token);
+
+  // string transfer_id = 4;
+  void clear_transfer_id();
+  static const int kTransferIdFieldNumber = 4;
+  const ::std::string& transfer_id() const;
+  void set_transfer_id(const ::std::string& value);
+  #if LANG_CXX11
+  void set_transfer_id(::std::string&& value);
+  #endif
+  void set_transfer_id(const char* value);
+  void set_transfer_id(const char* value, size_t size);
+  ::std::string* mutable_transfer_id();
+  ::std::string* release_transfer_id();
+  void set_allocated_transfer_id(::std::string* transfer_id);
+
+  // string reason = 5;
+  void clear_reason();
+  static const int kReasonFieldNumber = 5;
+  const ::std::string& reason() const;
+  void set_reason(const ::std::string& value);
+  #if LANG_CXX11
+  void set_reason(::std::string&& value);
+  #endif
+  void set_reason(const char* value);
+  void set_reason(const char* value, size_t size);
+  ::std::string* mutable_reason();
+  ::std::string* release_reason();
+  void set_allocated_reason(::std::string* reason);
+
+  // string idempotency_key = 6;
+  void clear_idempotency_key();
+  static const int kIdempotencyKeyFieldNumber = 6;
+  const ::std::string& idempotency_key() const;
+  void set_idempotency_key(const ::std::string& value);
+  #if LANG_CXX11
+  void set_idempotency_key(::std::string&& value);
+  #endif
+  void set_idempotency_key(const char* value);
+  void set_idempotency_key(const char* value, size_t size);
+  ::std::string* mutable_idempotency_key();
+  ::std::string* release_idempotency_key();
+  void set_allocated_idempotency_key(::std::string* idempotency_key);
+
+  // uint64 player_id = 1;
+  void clear_player_id();
+  static const int kPlayerIdFieldNumber = 1;
+  ::google::protobuf::uint64 player_id() const;
+  void set_player_id(::google::protobuf::uint64 value);
+
+  // @@protoc_insertion_point(class_scope:glrpc.FreezePlayerRequest)
+ private:
+
+  ::google::protobuf::internal::InternalMetadataWithArena _internal_metadata_;
+  ::google::protobuf::internal::ArenaStringPtr session_id_;
+  ::google::protobuf::internal::ArenaStringPtr fence_token_;
+  ::google::protobuf::internal::ArenaStringPtr transfer_id_;
+  ::google::protobuf::internal::ArenaStringPtr reason_;
+  ::google::protobuf::internal::ArenaStringPtr idempotency_key_;
+  ::google::protobuf::uint64 player_id_;
+  mutable int _cached_size_;
+  friend struct ::protobuf_gamelogic_5frpc_2eproto::TableStruct;
+  friend void ::protobuf_gamelogic_5frpc_2eproto::InitDefaultsFreezePlayerRequestImpl();
+};
+// -------------------------------------------------------------------
+
+class FreezePlayerResponse : public ::google::protobuf::Message /* @@protoc_insertion_point(class_definition:glrpc.FreezePlayerResponse) */ {
+ public:
+  FreezePlayerResponse();
+  virtual ~FreezePlayerResponse();
+
+  FreezePlayerResponse(const FreezePlayerResponse& from);
+
+  inline FreezePlayerResponse& operator=(const FreezePlayerResponse& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  #if LANG_CXX11
+  FreezePlayerResponse(FreezePlayerResponse&& from) noexcept
+    : FreezePlayerResponse() {
+    *this = ::std::move(from);
+  }
+
+  inline FreezePlayerResponse& operator=(FreezePlayerResponse&& from) noexcept {
+    if (GetArenaNoVirtual() == from.GetArenaNoVirtual()) {
+      if (this != &from) InternalSwap(&from);
+    } else {
+      CopyFrom(from);
+    }
+    return *this;
+  }
+  #endif
+  static const ::google::protobuf::Descriptor* descriptor();
+  static const FreezePlayerResponse& default_instance();
+
+  static void InitAsDefaultInstance();  // FOR INTERNAL USE ONLY
+  static inline const FreezePlayerResponse* internal_default_instance() {
+    return reinterpret_cast<const FreezePlayerResponse*>(
+               &_FreezePlayerResponse_default_instance_);
+  }
+  static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
+    5;
+
+  void Swap(FreezePlayerResponse* other);
+  friend void swap(FreezePlayerResponse& a, FreezePlayerResponse& b) {
+    a.Swap(&b);
+  }
+
+  // implements Message ----------------------------------------------
+
+  inline FreezePlayerResponse* New() const PROTOBUF_FINAL { return New(NULL); }
+
+  FreezePlayerResponse* New(::google::protobuf::Arena* arena) const PROTOBUF_FINAL;
+  void CopyFrom(const ::google::protobuf::Message& from) PROTOBUF_FINAL;
+  void MergeFrom(const ::google::protobuf::Message& from) PROTOBUF_FINAL;
+  void CopyFrom(const FreezePlayerResponse& from);
+  void MergeFrom(const FreezePlayerResponse& from);
+  void Clear() PROTOBUF_FINAL;
+  bool IsInitialized() const PROTOBUF_FINAL;
+
+  size_t ByteSizeLong() const PROTOBUF_FINAL;
+  bool MergePartialFromCodedStream(
+      ::google::protobuf::io::CodedInputStream* input) PROTOBUF_FINAL;
+  void SerializeWithCachedSizes(
+      ::google::protobuf::io::CodedOutputStream* output) const PROTOBUF_FINAL;
+  ::google::protobuf::uint8* InternalSerializeWithCachedSizesToArray(
+      bool deterministic, ::google::protobuf::uint8* target) const PROTOBUF_FINAL;
+  int GetCachedSize() const PROTOBUF_FINAL { return _cached_size_; }
+  private:
+  void SharedCtor();
+  void SharedDtor();
+  void SetCachedSize(int size) const PROTOBUF_FINAL;
+  void InternalSwap(FreezePlayerResponse* other);
+  private:
+  inline ::google::protobuf::Arena* GetArenaNoVirtual() const {
+    return NULL;
+  }
+  inline void* MaybeArenaPtr() const {
+    return NULL;
+  }
+  public:
+
+  ::google::protobuf::Metadata GetMetadata() const PROTOBUF_FINAL;
+
+  // nested types ----------------------------------------------------
+
+  // accessors -------------------------------------------------------
+
+  // string message = 2;
+  void clear_message();
+  static const int kMessageFieldNumber = 2;
+  const ::std::string& message() const;
+  void set_message(const ::std::string& value);
+  #if LANG_CXX11
+  void set_message(::std::string&& value);
+  #endif
+  void set_message(const char* value);
+  void set_message(const char* value, size_t size);
+  ::std::string* mutable_message();
+  ::std::string* release_message();
+  void set_allocated_message(::std::string* message);
+
+  // string error_code = 3;
+  void clear_error_code();
+  static const int kErrorCodeFieldNumber = 3;
+  const ::std::string& error_code() const;
+  void set_error_code(const ::std::string& value);
+  #if LANG_CXX11
+  void set_error_code(::std::string&& value);
+  #endif
+  void set_error_code(const char* value);
+  void set_error_code(const char* value, size_t size);
+  ::std::string* mutable_error_code();
+  ::std::string* release_error_code();
+  void set_allocated_error_code(::std::string* error_code);
+
+  // bool ok = 1;
+  void clear_ok();
+  static const int kOkFieldNumber = 1;
+  bool ok() const;
+  void set_ok(bool value);
+
+  // @@protoc_insertion_point(class_scope:glrpc.FreezePlayerResponse)
+ private:
+
+  ::google::protobuf::internal::InternalMetadataWithArena _internal_metadata_;
+  ::google::protobuf::internal::ArenaStringPtr message_;
+  ::google::protobuf::internal::ArenaStringPtr error_code_;
+  bool ok_;
+  mutable int _cached_size_;
+  friend struct ::protobuf_gamelogic_5frpc_2eproto::TableStruct;
+  friend void ::protobuf_gamelogic_5frpc_2eproto::InitDefaultsFreezePlayerResponseImpl();
+};
+// -------------------------------------------------------------------
+
 class ClientCommand : public ::google::protobuf::Message /* @@protoc_insertion_point(class_definition:glrpc.ClientCommand) */ {
  public:
   ClientCommand();
@@ -756,7 +1086,7 @@ class ClientCommand : public ::google::protobuf::Message /* @@protoc_insertion_p
                &_ClientCommand_default_instance_);
   }
   static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
-    4;
+    6;
 
   void Swap(ClientCommand* other);
   friend void swap(ClientCommand& a, ClientCommand& b) {
@@ -1024,7 +1354,7 @@ class CommandResult : public ::google::protobuf::Message /* @@protoc_insertion_p
                &_CommandResult_default_instance_);
   }
   static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
-    5;
+    7;
 
   void Swap(CommandResult* other);
   friend void swap(CommandResult& a, CommandResult& b) {
@@ -1165,6 +1495,10 @@ class GameLogicService : public ::google::protobuf::Service {
                        const ::glrpc::UnbindPlayerRequest* request,
                        ::glrpc::UnbindPlayerResponse* response,
                        ::google::protobuf::Closure* done);
+  virtual void FreezePlayer(::google::protobuf::RpcController* controller,
+                       const ::glrpc::FreezePlayerRequest* request,
+                       ::glrpc::FreezePlayerResponse* response,
+                       ::google::protobuf::Closure* done);
 
   // implements Service ----------------------------------------------
 
@@ -1205,6 +1539,10 @@ class GameLogicService_Stub : public GameLogicService {
   void UnbindPlayer(::google::protobuf::RpcController* controller,
                        const ::glrpc::UnbindPlayerRequest* request,
                        ::glrpc::UnbindPlayerResponse* response,
+                       ::google::protobuf::Closure* done);
+  void FreezePlayer(::google::protobuf::RpcController* controller,
+                       const ::glrpc::FreezePlayerRequest* request,
+                       ::glrpc::FreezePlayerResponse* response,
                        ::google::protobuf::Closure* done);
  private:
   ::google::protobuf::RpcChannel* channel_;
@@ -1624,6 +1962,59 @@ inline void BindPlayerRequest::set_generation(::google::protobuf::uint64 value) 
   
   generation_ = value;
   // @@protoc_insertion_point(field_set:glrpc.BindPlayerRequest.generation)
+}
+
+// string transfer_id = 13;
+inline void BindPlayerRequest::clear_transfer_id() {
+  transfer_id_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline const ::std::string& BindPlayerRequest::transfer_id() const {
+  // @@protoc_insertion_point(field_get:glrpc.BindPlayerRequest.transfer_id)
+  return transfer_id_.GetNoArena();
+}
+inline void BindPlayerRequest::set_transfer_id(const ::std::string& value) {
+  
+  transfer_id_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), value);
+  // @@protoc_insertion_point(field_set:glrpc.BindPlayerRequest.transfer_id)
+}
+#if LANG_CXX11
+inline void BindPlayerRequest::set_transfer_id(::std::string&& value) {
+  
+  transfer_id_.SetNoArena(
+    &::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::move(value));
+  // @@protoc_insertion_point(field_set_rvalue:glrpc.BindPlayerRequest.transfer_id)
+}
+#endif
+inline void BindPlayerRequest::set_transfer_id(const char* value) {
+  GOOGLE_DCHECK(value != NULL);
+  
+  transfer_id_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::string(value));
+  // @@protoc_insertion_point(field_set_char:glrpc.BindPlayerRequest.transfer_id)
+}
+inline void BindPlayerRequest::set_transfer_id(const char* value, size_t size) {
+  
+  transfer_id_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(),
+      ::std::string(reinterpret_cast<const char*>(value), size));
+  // @@protoc_insertion_point(field_set_pointer:glrpc.BindPlayerRequest.transfer_id)
+}
+inline ::std::string* BindPlayerRequest::mutable_transfer_id() {
+  
+  // @@protoc_insertion_point(field_mutable:glrpc.BindPlayerRequest.transfer_id)
+  return transfer_id_.MutableNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline ::std::string* BindPlayerRequest::release_transfer_id() {
+  // @@protoc_insertion_point(field_release:glrpc.BindPlayerRequest.transfer_id)
+  
+  return transfer_id_.ReleaseNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline void BindPlayerRequest::set_allocated_transfer_id(::std::string* transfer_id) {
+  if (transfer_id != NULL) {
+    
+  } else {
+    
+  }
+  transfer_id_.SetAllocatedNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), transfer_id);
+  // @@protoc_insertion_point(field_set_allocated:glrpc.BindPlayerRequest.transfer_id)
 }
 
 // -------------------------------------------------------------------
@@ -2063,6 +2454,413 @@ inline void UnbindPlayerResponse::set_allocated_message(::std::string* message) 
   }
   message_.SetAllocatedNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), message);
   // @@protoc_insertion_point(field_set_allocated:glrpc.UnbindPlayerResponse.message)
+}
+
+// -------------------------------------------------------------------
+
+// FreezePlayerRequest
+
+// uint64 player_id = 1;
+inline void FreezePlayerRequest::clear_player_id() {
+  player_id_ = GOOGLE_ULONGLONG(0);
+}
+inline ::google::protobuf::uint64 FreezePlayerRequest::player_id() const {
+  // @@protoc_insertion_point(field_get:glrpc.FreezePlayerRequest.player_id)
+  return player_id_;
+}
+inline void FreezePlayerRequest::set_player_id(::google::protobuf::uint64 value) {
+  
+  player_id_ = value;
+  // @@protoc_insertion_point(field_set:glrpc.FreezePlayerRequest.player_id)
+}
+
+// string session_id = 2;
+inline void FreezePlayerRequest::clear_session_id() {
+  session_id_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline const ::std::string& FreezePlayerRequest::session_id() const {
+  // @@protoc_insertion_point(field_get:glrpc.FreezePlayerRequest.session_id)
+  return session_id_.GetNoArena();
+}
+inline void FreezePlayerRequest::set_session_id(const ::std::string& value) {
+  
+  session_id_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), value);
+  // @@protoc_insertion_point(field_set:glrpc.FreezePlayerRequest.session_id)
+}
+#if LANG_CXX11
+inline void FreezePlayerRequest::set_session_id(::std::string&& value) {
+  
+  session_id_.SetNoArena(
+    &::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::move(value));
+  // @@protoc_insertion_point(field_set_rvalue:glrpc.FreezePlayerRequest.session_id)
+}
+#endif
+inline void FreezePlayerRequest::set_session_id(const char* value) {
+  GOOGLE_DCHECK(value != NULL);
+  
+  session_id_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::string(value));
+  // @@protoc_insertion_point(field_set_char:glrpc.FreezePlayerRequest.session_id)
+}
+inline void FreezePlayerRequest::set_session_id(const char* value, size_t size) {
+  
+  session_id_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(),
+      ::std::string(reinterpret_cast<const char*>(value), size));
+  // @@protoc_insertion_point(field_set_pointer:glrpc.FreezePlayerRequest.session_id)
+}
+inline ::std::string* FreezePlayerRequest::mutable_session_id() {
+  
+  // @@protoc_insertion_point(field_mutable:glrpc.FreezePlayerRequest.session_id)
+  return session_id_.MutableNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline ::std::string* FreezePlayerRequest::release_session_id() {
+  // @@protoc_insertion_point(field_release:glrpc.FreezePlayerRequest.session_id)
+  
+  return session_id_.ReleaseNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline void FreezePlayerRequest::set_allocated_session_id(::std::string* session_id) {
+  if (session_id != NULL) {
+    
+  } else {
+    
+  }
+  session_id_.SetAllocatedNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), session_id);
+  // @@protoc_insertion_point(field_set_allocated:glrpc.FreezePlayerRequest.session_id)
+}
+
+// string fence_token = 3;
+inline void FreezePlayerRequest::clear_fence_token() {
+  fence_token_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline const ::std::string& FreezePlayerRequest::fence_token() const {
+  // @@protoc_insertion_point(field_get:glrpc.FreezePlayerRequest.fence_token)
+  return fence_token_.GetNoArena();
+}
+inline void FreezePlayerRequest::set_fence_token(const ::std::string& value) {
+  
+  fence_token_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), value);
+  // @@protoc_insertion_point(field_set:glrpc.FreezePlayerRequest.fence_token)
+}
+#if LANG_CXX11
+inline void FreezePlayerRequest::set_fence_token(::std::string&& value) {
+  
+  fence_token_.SetNoArena(
+    &::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::move(value));
+  // @@protoc_insertion_point(field_set_rvalue:glrpc.FreezePlayerRequest.fence_token)
+}
+#endif
+inline void FreezePlayerRequest::set_fence_token(const char* value) {
+  GOOGLE_DCHECK(value != NULL);
+  
+  fence_token_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::string(value));
+  // @@protoc_insertion_point(field_set_char:glrpc.FreezePlayerRequest.fence_token)
+}
+inline void FreezePlayerRequest::set_fence_token(const char* value, size_t size) {
+  
+  fence_token_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(),
+      ::std::string(reinterpret_cast<const char*>(value), size));
+  // @@protoc_insertion_point(field_set_pointer:glrpc.FreezePlayerRequest.fence_token)
+}
+inline ::std::string* FreezePlayerRequest::mutable_fence_token() {
+  
+  // @@protoc_insertion_point(field_mutable:glrpc.FreezePlayerRequest.fence_token)
+  return fence_token_.MutableNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline ::std::string* FreezePlayerRequest::release_fence_token() {
+  // @@protoc_insertion_point(field_release:glrpc.FreezePlayerRequest.fence_token)
+  
+  return fence_token_.ReleaseNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline void FreezePlayerRequest::set_allocated_fence_token(::std::string* fence_token) {
+  if (fence_token != NULL) {
+    
+  } else {
+    
+  }
+  fence_token_.SetAllocatedNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), fence_token);
+  // @@protoc_insertion_point(field_set_allocated:glrpc.FreezePlayerRequest.fence_token)
+}
+
+// string transfer_id = 4;
+inline void FreezePlayerRequest::clear_transfer_id() {
+  transfer_id_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline const ::std::string& FreezePlayerRequest::transfer_id() const {
+  // @@protoc_insertion_point(field_get:glrpc.FreezePlayerRequest.transfer_id)
+  return transfer_id_.GetNoArena();
+}
+inline void FreezePlayerRequest::set_transfer_id(const ::std::string& value) {
+  
+  transfer_id_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), value);
+  // @@protoc_insertion_point(field_set:glrpc.FreezePlayerRequest.transfer_id)
+}
+#if LANG_CXX11
+inline void FreezePlayerRequest::set_transfer_id(::std::string&& value) {
+  
+  transfer_id_.SetNoArena(
+    &::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::move(value));
+  // @@protoc_insertion_point(field_set_rvalue:glrpc.FreezePlayerRequest.transfer_id)
+}
+#endif
+inline void FreezePlayerRequest::set_transfer_id(const char* value) {
+  GOOGLE_DCHECK(value != NULL);
+  
+  transfer_id_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::string(value));
+  // @@protoc_insertion_point(field_set_char:glrpc.FreezePlayerRequest.transfer_id)
+}
+inline void FreezePlayerRequest::set_transfer_id(const char* value, size_t size) {
+  
+  transfer_id_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(),
+      ::std::string(reinterpret_cast<const char*>(value), size));
+  // @@protoc_insertion_point(field_set_pointer:glrpc.FreezePlayerRequest.transfer_id)
+}
+inline ::std::string* FreezePlayerRequest::mutable_transfer_id() {
+  
+  // @@protoc_insertion_point(field_mutable:glrpc.FreezePlayerRequest.transfer_id)
+  return transfer_id_.MutableNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline ::std::string* FreezePlayerRequest::release_transfer_id() {
+  // @@protoc_insertion_point(field_release:glrpc.FreezePlayerRequest.transfer_id)
+  
+  return transfer_id_.ReleaseNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline void FreezePlayerRequest::set_allocated_transfer_id(::std::string* transfer_id) {
+  if (transfer_id != NULL) {
+    
+  } else {
+    
+  }
+  transfer_id_.SetAllocatedNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), transfer_id);
+  // @@protoc_insertion_point(field_set_allocated:glrpc.FreezePlayerRequest.transfer_id)
+}
+
+// string reason = 5;
+inline void FreezePlayerRequest::clear_reason() {
+  reason_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline const ::std::string& FreezePlayerRequest::reason() const {
+  // @@protoc_insertion_point(field_get:glrpc.FreezePlayerRequest.reason)
+  return reason_.GetNoArena();
+}
+inline void FreezePlayerRequest::set_reason(const ::std::string& value) {
+  
+  reason_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), value);
+  // @@protoc_insertion_point(field_set:glrpc.FreezePlayerRequest.reason)
+}
+#if LANG_CXX11
+inline void FreezePlayerRequest::set_reason(::std::string&& value) {
+  
+  reason_.SetNoArena(
+    &::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::move(value));
+  // @@protoc_insertion_point(field_set_rvalue:glrpc.FreezePlayerRequest.reason)
+}
+#endif
+inline void FreezePlayerRequest::set_reason(const char* value) {
+  GOOGLE_DCHECK(value != NULL);
+  
+  reason_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::string(value));
+  // @@protoc_insertion_point(field_set_char:glrpc.FreezePlayerRequest.reason)
+}
+inline void FreezePlayerRequest::set_reason(const char* value, size_t size) {
+  
+  reason_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(),
+      ::std::string(reinterpret_cast<const char*>(value), size));
+  // @@protoc_insertion_point(field_set_pointer:glrpc.FreezePlayerRequest.reason)
+}
+inline ::std::string* FreezePlayerRequest::mutable_reason() {
+  
+  // @@protoc_insertion_point(field_mutable:glrpc.FreezePlayerRequest.reason)
+  return reason_.MutableNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline ::std::string* FreezePlayerRequest::release_reason() {
+  // @@protoc_insertion_point(field_release:glrpc.FreezePlayerRequest.reason)
+  
+  return reason_.ReleaseNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline void FreezePlayerRequest::set_allocated_reason(::std::string* reason) {
+  if (reason != NULL) {
+    
+  } else {
+    
+  }
+  reason_.SetAllocatedNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), reason);
+  // @@protoc_insertion_point(field_set_allocated:glrpc.FreezePlayerRequest.reason)
+}
+
+// string idempotency_key = 6;
+inline void FreezePlayerRequest::clear_idempotency_key() {
+  idempotency_key_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline const ::std::string& FreezePlayerRequest::idempotency_key() const {
+  // @@protoc_insertion_point(field_get:glrpc.FreezePlayerRequest.idempotency_key)
+  return idempotency_key_.GetNoArena();
+}
+inline void FreezePlayerRequest::set_idempotency_key(const ::std::string& value) {
+  
+  idempotency_key_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), value);
+  // @@protoc_insertion_point(field_set:glrpc.FreezePlayerRequest.idempotency_key)
+}
+#if LANG_CXX11
+inline void FreezePlayerRequest::set_idempotency_key(::std::string&& value) {
+  
+  idempotency_key_.SetNoArena(
+    &::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::move(value));
+  // @@protoc_insertion_point(field_set_rvalue:glrpc.FreezePlayerRequest.idempotency_key)
+}
+#endif
+inline void FreezePlayerRequest::set_idempotency_key(const char* value) {
+  GOOGLE_DCHECK(value != NULL);
+  
+  idempotency_key_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::string(value));
+  // @@protoc_insertion_point(field_set_char:glrpc.FreezePlayerRequest.idempotency_key)
+}
+inline void FreezePlayerRequest::set_idempotency_key(const char* value, size_t size) {
+  
+  idempotency_key_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(),
+      ::std::string(reinterpret_cast<const char*>(value), size));
+  // @@protoc_insertion_point(field_set_pointer:glrpc.FreezePlayerRequest.idempotency_key)
+}
+inline ::std::string* FreezePlayerRequest::mutable_idempotency_key() {
+  
+  // @@protoc_insertion_point(field_mutable:glrpc.FreezePlayerRequest.idempotency_key)
+  return idempotency_key_.MutableNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline ::std::string* FreezePlayerRequest::release_idempotency_key() {
+  // @@protoc_insertion_point(field_release:glrpc.FreezePlayerRequest.idempotency_key)
+  
+  return idempotency_key_.ReleaseNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline void FreezePlayerRequest::set_allocated_idempotency_key(::std::string* idempotency_key) {
+  if (idempotency_key != NULL) {
+    
+  } else {
+    
+  }
+  idempotency_key_.SetAllocatedNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), idempotency_key);
+  // @@protoc_insertion_point(field_set_allocated:glrpc.FreezePlayerRequest.idempotency_key)
+}
+
+// -------------------------------------------------------------------
+
+// FreezePlayerResponse
+
+// bool ok = 1;
+inline void FreezePlayerResponse::clear_ok() {
+  ok_ = false;
+}
+inline bool FreezePlayerResponse::ok() const {
+  // @@protoc_insertion_point(field_get:glrpc.FreezePlayerResponse.ok)
+  return ok_;
+}
+inline void FreezePlayerResponse::set_ok(bool value) {
+  
+  ok_ = value;
+  // @@protoc_insertion_point(field_set:glrpc.FreezePlayerResponse.ok)
+}
+
+// string message = 2;
+inline void FreezePlayerResponse::clear_message() {
+  message_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline const ::std::string& FreezePlayerResponse::message() const {
+  // @@protoc_insertion_point(field_get:glrpc.FreezePlayerResponse.message)
+  return message_.GetNoArena();
+}
+inline void FreezePlayerResponse::set_message(const ::std::string& value) {
+  
+  message_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), value);
+  // @@protoc_insertion_point(field_set:glrpc.FreezePlayerResponse.message)
+}
+#if LANG_CXX11
+inline void FreezePlayerResponse::set_message(::std::string&& value) {
+  
+  message_.SetNoArena(
+    &::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::move(value));
+  // @@protoc_insertion_point(field_set_rvalue:glrpc.FreezePlayerResponse.message)
+}
+#endif
+inline void FreezePlayerResponse::set_message(const char* value) {
+  GOOGLE_DCHECK(value != NULL);
+  
+  message_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::string(value));
+  // @@protoc_insertion_point(field_set_char:glrpc.FreezePlayerResponse.message)
+}
+inline void FreezePlayerResponse::set_message(const char* value, size_t size) {
+  
+  message_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(),
+      ::std::string(reinterpret_cast<const char*>(value), size));
+  // @@protoc_insertion_point(field_set_pointer:glrpc.FreezePlayerResponse.message)
+}
+inline ::std::string* FreezePlayerResponse::mutable_message() {
+  
+  // @@protoc_insertion_point(field_mutable:glrpc.FreezePlayerResponse.message)
+  return message_.MutableNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline ::std::string* FreezePlayerResponse::release_message() {
+  // @@protoc_insertion_point(field_release:glrpc.FreezePlayerResponse.message)
+  
+  return message_.ReleaseNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline void FreezePlayerResponse::set_allocated_message(::std::string* message) {
+  if (message != NULL) {
+    
+  } else {
+    
+  }
+  message_.SetAllocatedNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), message);
+  // @@protoc_insertion_point(field_set_allocated:glrpc.FreezePlayerResponse.message)
+}
+
+// string error_code = 3;
+inline void FreezePlayerResponse::clear_error_code() {
+  error_code_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline const ::std::string& FreezePlayerResponse::error_code() const {
+  // @@protoc_insertion_point(field_get:glrpc.FreezePlayerResponse.error_code)
+  return error_code_.GetNoArena();
+}
+inline void FreezePlayerResponse::set_error_code(const ::std::string& value) {
+  
+  error_code_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), value);
+  // @@protoc_insertion_point(field_set:glrpc.FreezePlayerResponse.error_code)
+}
+#if LANG_CXX11
+inline void FreezePlayerResponse::set_error_code(::std::string&& value) {
+  
+  error_code_.SetNoArena(
+    &::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::move(value));
+  // @@protoc_insertion_point(field_set_rvalue:glrpc.FreezePlayerResponse.error_code)
+}
+#endif
+inline void FreezePlayerResponse::set_error_code(const char* value) {
+  GOOGLE_DCHECK(value != NULL);
+  
+  error_code_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::string(value));
+  // @@protoc_insertion_point(field_set_char:glrpc.FreezePlayerResponse.error_code)
+}
+inline void FreezePlayerResponse::set_error_code(const char* value, size_t size) {
+  
+  error_code_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(),
+      ::std::string(reinterpret_cast<const char*>(value), size));
+  // @@protoc_insertion_point(field_set_pointer:glrpc.FreezePlayerResponse.error_code)
+}
+inline ::std::string* FreezePlayerResponse::mutable_error_code() {
+  
+  // @@protoc_insertion_point(field_mutable:glrpc.FreezePlayerResponse.error_code)
+  return error_code_.MutableNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline ::std::string* FreezePlayerResponse::release_error_code() {
+  // @@protoc_insertion_point(field_release:glrpc.FreezePlayerResponse.error_code)
+  
+  return error_code_.ReleaseNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline void FreezePlayerResponse::set_allocated_error_code(::std::string* error_code) {
+  if (error_code != NULL) {
+    
+  } else {
+    
+  }
+  error_code_.SetAllocatedNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), error_code);
+  // @@protoc_insertion_point(field_set_allocated:glrpc.FreezePlayerResponse.error_code)
 }
 
 // -------------------------------------------------------------------
@@ -2799,6 +3597,10 @@ inline void CommandResult::set_server_seq(::google::protobuf::uint64 value) {
 #ifdef __GNUC__
   #pragma GCC diagnostic pop
 #endif  // __GNUC__
+// -------------------------------------------------------------------
+
+// -------------------------------------------------------------------
+
 // -------------------------------------------------------------------
 
 // -------------------------------------------------------------------

@@ -101,6 +101,53 @@ public:
                            const std::string &gateway_instance_id, const std::string &push_endpoint,
                            uint64_t *route_version_out, std::string *err);
 
+    struct TransferBeginIn {
+        uint64_t player_id = 0;
+        std::string fence_token;
+        uint64_t expected_route_version = 0;
+        std::string from_logic;
+        std::string to_logic;
+        uint64_t map_instance_id = 0;
+        uint64_t map_owner_epoch = 0;
+        std::string transfer_id;
+        std::string gateway_instance_id;
+    };
+    struct TransferBeginOut {
+        bool ok = false;
+        std::string message;
+        std::string error_code;
+        std::string transfer_id;
+        uint64_t route_version = 0;
+        std::string route_state;
+    };
+    bool BeginPlayerTransfer(const TransferBeginIn &in, TransferBeginOut *out);
+
+    struct TransferCommitIn {
+        uint64_t player_id = 0;
+        std::string fence_token;
+        std::string transfer_id;
+        std::string to_logic;
+        uint64_t map_instance_id = 0;
+        uint64_t map_owner_epoch = 0;
+        std::string gateway_instance_id;
+    };
+    struct TransferCommitOut {
+        bool ok = false;
+        std::string message;
+        std::string error_code;
+        uint64_t route_version = 0;
+        std::string gamelogic_instance_id;
+        uint64_t map_instance_id = 0;
+        uint64_t map_owner_epoch = 0;
+        std::string route_state;
+    };
+    bool CommitPlayerTransfer(const TransferCommitIn &in, TransferCommitOut *out);
+    bool AbortPlayerTransfer(uint64_t player_id, const std::string &fence_token,
+                             const std::string &transfer_id, std::string *err,
+                             uint64_t *route_version_out);
+    bool GetPlayerRoute(uint64_t player_id, const std::string &fence_token, SessionRecord *out,
+                        std::string *route_state, std::string *transfer_id, std::string *err);
+
 private:
     SessionStore() = default;
     std::string SessionKey(uint64_t player_id) const;

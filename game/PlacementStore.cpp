@@ -129,6 +129,11 @@ if idem ~= '' and (f['lastMigrateIdem'] or '') == idem then
 end
 local state = f['state'] or 'READY'
 if state == 'CLOSED' then return {'0', 'CLOSED', 'closed'} end
+local lease_until_cur = tonumber(f['leaseUntil'] or '0') or 0
+-- 仅当 lease 已过期、RECOVERING/FROZEN，或显式允许时才 Claim 更高 epoch
+if state == 'READY' and lease_until_cur > now then
+  return {'0', 'LEASE_ACTIVE', 'owner lease still active'}
+end
 local epoch = tonumber(f['ownerEpoch'] or '0') or 0
 if expect_epoch ~= '0' and epoch ~= tonumber(expect_epoch) then
   return {'0', 'EPOCH_MISMATCH', 'expect epoch mismatch'}
@@ -157,11 +162,13 @@ local raw = redis.call('HGETALL', key)
 if #raw == 0 then return {'0', 'NOT_FOUND'} end
 local f = {}
 for i = 1, #raw, 2 do f[raw[i]] = raw[i + 1] end
-redis.call('HMSET', key, 'state', 'RECOVERING', 'updatedAt', tostring(now))
+-- 崩溃恢复：标记 RECOVERING 并立刻让 lease 失效，阻止旧 Owner Heartbeat 复活
+redis.call('HMSET', key, 'state', 'RECOVERING', 'updatedAt', tostring(now),
+           'leaseUntil', tostring(now))
 redis.call('EXPIRE', key, 86400)
 return {'1', 'OK', string.match(key, '(%d+)$') or '0', f['realmId'] or '0', f['mapTemplateId'] or '0',
         f['ownerLogicServerId'] or '', f['ownerEpoch'] or '0', f['routeVersion'] or '0',
-        'RECOVERING', tostring(now), f['leaseUntil'] or '0'}
+        'RECOVERING', tostring(now), tostring(now)}
 )LUA";
 
 const char kLuaHeartbeat[] = R"LUA(
@@ -177,10 +184,32 @@ for i = 1, #raw, 2 do f[raw[i]] = raw[i + 1] end
 if (f['ownerLogicServerId'] or '') ~= owner then return {'0', 'OWNER_MISMATCH'} end
 if (f['ownerEpoch'] or '') ~= epoch then return {'0', 'EPOCH_MISMATCH'} end
 local state = f['state'] or ''
-if state ~= 'READY' and state ~= 'RECOVERING' then return {'0', 'BAD_STATE'} end
+-- RECOVERING 后旧 Owner 不得续租复活
+if state ~= 'READY' then return {'0', 'BAD_STATE'} end
 local lease_until = now + lease
-redis.call('HMSET', key, 'leaseUntil', tostring(lease_until), 'updatedAt', tostring(now), 'state', 'READY')
+redis.call('HMSET', key, 'leaseUntil', tostring(lease_until), 'updatedAt', tostring(now))
 return {'1', 'OK', tostring(lease_until)}
+)LUA";
+
+/** lease 过期且仍为 READY → RECOVERING（Session 扫描） */
+const char kLuaExpireToRecovering[] = R"LUA(
+local key = KEYS[1]
+local now = tonumber(ARGV[1])
+local raw = redis.call('HGETALL', key)
+if #raw == 0 then return {'0', 'NOT_FOUND'} end
+local f = {}
+for i = 1, #raw, 2 do f[raw[i]] = raw[i + 1] end
+local state = f['state'] or ''
+if state ~= 'READY' then
+  return {'1', 'SKIP', f['state'] or '', f['leaseUntil'] or '0'}
+end
+local lease_until = tonumber(f['leaseUntil'] or '0') or 0
+if lease_until > now then
+  return {'0', 'LEASE_ACTIVE', 'still leased'}
+end
+redis.call('HMSET', key, 'state', 'RECOVERING', 'updatedAt', tostring(now),
+           'leaseUntil', tostring(now))
+return {'1', 'OK', 'RECOVERING', tostring(now)}
 )LUA";
 
 }  // namespace
@@ -441,5 +470,37 @@ bool PlacementStore::Heartbeat(uint64_t map_instance_id, const std::string &owne
         return false;
     if (lease_until_out && reply.size() > 2)
         *lease_until_out = ParseI64(reply[2]);
+    return true;
+}
+
+bool PlacementStore::ExpireLeaseToRecovering(uint64_t map_instance_id, PlacementRecord *out,
+                                             std::string *err) {
+    if (!available_ || map_instance_id == 0) {
+        if (err)
+            *err = "invalid";
+        return false;
+    }
+    auto lease = RedisPool::Instance().Acquire();
+    if (!lease) {
+        if (err)
+            *err = "pool exhausted";
+        return false;
+    }
+    std::vector<std::string> keys{InstKey(map_instance_id)};
+    std::vector<std::string> args{std::to_string(NowUnixSec())};
+    std::vector<std::string> reply;
+    if (!lease->Eval(kLuaExpireToRecovering, keys, args, &reply) || reply.size() < 2) {
+        if (err)
+            *err = "lua failed";
+        return false;
+    }
+    if (reply[0] != "1" || (reply.size() > 1 && reply[1] != "OK")) {
+        if (err)
+            *err = reply.size() > 2 ? reply[2] : (reply.size() > 1 ? reply[1] : "rejected");
+        return false;
+    }
+    if (out)
+        Get(map_instance_id, out);
+    LOG_INFO << "PlacementStore lease expired -> RECOVERING map=" << map_instance_id;
     return true;
 }

@@ -103,6 +103,11 @@ public:
     /** 设置子 EventLoop 数量（0 表示仅主 reactor 处理 IO，本项目中通常 >0） */
     void SetThreadNums(int thread_nums);
 
+    /** 停止 accept 新连接（须在持有 main_reactor_ 的线程或经 Queue 调用） */
+    void StopAccepting();
+
+    EventLoop *main_loop() const { return main_reactor_; }
+
 private:
     EventLoop *main_reactor_;
     /** 进程内单调递增，绝不回绕到小整数复用 */

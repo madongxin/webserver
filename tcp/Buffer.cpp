@@ -71,21 +71,22 @@ void Buffer::RetrieveUtil(const char *end){
 std::string Buffer::RetrieveAsString(int len){
     assert(read_index_ + len <= write_index_);
 
-    std::string ret = std::move(PeekAsString(len));
+    // Peek* 已返回临时对象，勿再 std::move（避免 pessimizing-move）
+    std::string ret = PeekAsString(len);
     Retrieve(len);
     return ret;
 }
 
 std::string Buffer::RetrieveUtilAsString(const char *end){
     assert(beginwrite() >= end);
-    std::string ret = std::move(PeekAsString(static_cast<int>(end - beginread())));
+    std::string ret = PeekAsString(static_cast<int>(end - beginread()));
     RetrieveUtil(end);
     return ret;
 }
 
 std::string Buffer::RetrieveAllAsString(){
     assert(readablebytes() > 0);
-    std::string ret = std::move(PeekAllAsString());
+    std::string ret = PeekAllAsString();
     RetrieveAll();
     return ret;
 }

@@ -8,6 +8,7 @@
 #include "DbConfigPath.h"
 #include "Logging.h"
 
+#include <atomic>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -15,6 +16,8 @@
 #include <thread>
 
 namespace {
+
+std::atomic<bool> g_mysql_forbidden{false};
 
 /** 去掉行首尾空白与 \r\n，便于解析 key=value */
 std::string Trim(std::string s) {
@@ -27,6 +30,13 @@ std::string Trim(std::string s) {
 }
 
 }  // namespace
+
+void ConnectionPool::ForbidInit(const char *reason) {
+    g_mysql_forbidden.store(true);
+    LOG_WARN << "ConnectionPool ForbidInit: " << (reason ? reason : "forbidden");
+}
+
+bool ConnectionPool::IsForbidden() { return g_mysql_forbidden.load(); }
 
 ConnectionPool *ConnectionPool::getconnectionPool() {
     // C++11 起局部 static 初始化线程安全；整个进程共用一个池
@@ -78,6 +88,12 @@ bool ConnectionPool::loadConfigFile() {
 }
 
 ConnectionPool::ConnectionPool() {
+    if (g_mysql_forbidden.load() ||
+        (std::getenv("GAMEMESH_FORBID_MYSQL") &&
+         std::strcmp(std::getenv("GAMEMESH_FORBID_MYSQL"), "1") == 0)) {
+        LOG_WARN << "ConnectionPool: MySQL init skipped (formal data boundary)";
+        return;
+    }
     // 无配置或全部建连失败时保持 initialized_=false，业务侧自行降级
     if (!loadConfigFile())
         return;

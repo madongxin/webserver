@@ -112,15 +112,85 @@ bool GameDbOutbox::FetchUnpublished(int limit, std::vector<GameDbOutboxRow> *out
     return true;
 }
 
+bool GameDbOutbox::ClaimUnpublished(int limit, std::vector<GameDbOutboxRow> *out) {
+    if (!out || !EnsureTable())
+        return false;
+    out->clear();
+    auto conn = ConnectionPool::getconnectionPool()->getConnection();
+    if (!conn)
+        return false;
+    if (!conn->begin())
+        return false;
+    std::ostringstream sql;
+    sql << "SELECT id,event_type,aggregate_type,aggregate_id,idempotency_key,payload,created_at,"
+        << "IFNULL(published_at,0) FROM gamedb_outbox WHERE published_at IS NULL ORDER BY id "
+        << "LIMIT " << (limit > 0 ? limit : 100) << " FOR UPDATE SKIP LOCKED";
+    MYSQL_RES *res = conn->query(sql.str());
+    if (!res) {
+        conn->rollback();
+        return false;
+    }
+    MYSQL_ROW row;
+    while ((row = mysql_fetch_row(res)) != nullptr) {
+        GameDbOutboxRow r;
+        r.id = row[0] ? std::strtoull(row[0], nullptr, 10) : 0;
+        r.event_type = row[1] ? row[1] : "";
+        r.aggregate_type = row[2] ? row[2] : "";
+        r.aggregate_id = row[3] ? row[3] : "";
+        r.idempotency_key = row[4] ? row[4] : "";
+        r.payload = row[5] ? row[5] : "";
+        r.created_at = row[6] ? std::strtoll(row[6], nullptr, 10) : 0;
+        r.published_at = row[7] ? std::strtoll(row[7], nullptr, 10) : 0;
+        if (r.id != 0)
+            out->push_back(std::move(r));
+    }
+    mysql_free_result(res);
+    if (out->empty()) {
+        conn->commit();
+        return true;
+    }
+    std::ostringstream upd;
+    upd << "UPDATE gamedb_outbox SET published_at=" << kClaimSentinel << " WHERE id IN (";
+    for (size_t i = 0; i < out->size(); ++i) {
+        if (i)
+            upd << ',';
+        upd << (*out)[i].id;
+    }
+    upd << ") AND published_at IS NULL";
+    if (!conn->update(upd.str())) {
+        conn->rollback();
+        out->clear();
+        return false;
+    }
+    if (!conn->commit()) {
+        out->clear();
+        return false;
+    }
+    for (auto &r : *out)
+        r.published_at = kClaimSentinel;
+    return true;
+}
+
 bool GameDbOutbox::MarkPublished(uint64_t id, int64_t published_at) {
-    if (!EnsureTable())
+    if (!EnsureTable() || id == 0 || published_at < 0)
         return false;
     auto conn = ConnectionPool::getconnectionPool()->getConnection();
     if (!conn)
         return false;
     std::ostringstream sql;
     sql << "UPDATE gamedb_outbox SET published_at=" << published_at << " WHERE id=" << id
-        << " AND published_at IS NULL";
+        << " AND (published_at IS NULL OR published_at < 0)";
+    return conn->update(sql.str());
+}
+
+bool GameDbOutbox::ReleaseClaim(uint64_t id) {
+    if (!EnsureTable() || id == 0)
+        return false;
+    auto conn = ConnectionPool::getconnectionPool()->getConnection();
+    if (!conn)
+        return false;
+    std::ostringstream sql;
+    sql << "UPDATE gamedb_outbox SET published_at=NULL WHERE id=" << id << " AND published_at < 0";
     return conn->update(sql.str());
 }
 
@@ -134,6 +204,22 @@ int GameDbOutbox::CountByIdempotency(const std::string &idempotency_key) {
     sql << "SELECT COUNT(*) FROM gamedb_outbox WHERE idempotency_key='"
         << SqlEscape(idempotency_key) << "'";
     MYSQL_RES *res = conn->query(sql.str());
+    if (!res)
+        return -1;
+    MYSQL_ROW row = mysql_fetch_row(res);
+    const int n = row && row[0] ? std::atoi(row[0]) : 0;
+    mysql_free_result(res);
+    return n;
+}
+
+int GameDbOutbox::CountUnpublished() {
+    if (!EnsureTable())
+        return -1;
+    auto conn = ConnectionPool::getconnectionPool()->getConnection();
+    if (!conn)
+        return -1;
+    MYSQL_RES *res = conn->query(
+        "SELECT COUNT(*) FROM gamedb_outbox WHERE published_at IS NULL OR published_at < 0");
     if (!res)
         return -1;
     MYSQL_ROW row = mysql_fetch_row(res);

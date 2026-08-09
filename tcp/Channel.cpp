@@ -49,6 +49,11 @@ void Channel::EnableRead() {
     loop_->UpdateChannel(this);
 }
 
+void Channel::DisableRead() {
+    listen_events_ &= static_cast<short>(~(EPOLLIN | EPOLLPRI));
+    loop_->UpdateChannel(this);
+}
+
 void Channel::EnableWrite() {
     listen_events_ |= EPOLLOUT;
     loop_->UpdateChannel(this);

@@ -36,6 +36,20 @@ message ReconnectRsp {
   string token = 3;       // 新 fence_token
   string session_id = 4;
   uint64 generation = 5;
+  bool need_full_snapshot = 6;  // 可靠 Push 缓存缺口，需全量同步
+  uint64 replay_from_seq = 7;   // 将从该 seq 之后补发（0=无补发）
+}
+
+/** 客户端确认已收到可靠 Push（Gateway 裁剪 ReplayStore） */
+message PushAckReq {
+  uint64 player_id = 1;
+  uint64 ack_server_seq = 2;
+}
+
+message PushAckRsp {
+  bool ok = 1;
+  string message = 2;
+  uint64 trimmed_to_seq = 3;
 }
 
 message ValidateSessionReq {
@@ -464,6 +478,7 @@ message GameRequest {
     MapPingReq map_ping = 42;
     ChatSendReq chat_send = 50;
     FriendListReq friend_list = 51;
+    PushAckReq push_ack = 52;
   }
 }
 
@@ -497,5 +512,6 @@ message GameResponse {
     MapPingRsp map_ping = 42;
     ChatSendRsp chat_send = 50;
     FriendListRsp friend_list = 51;
+    PushAckRsp push_ack = 52;
   }
 }

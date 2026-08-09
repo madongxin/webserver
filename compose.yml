@@ -1,0 +1,4 @@
+# Remediation / local gate entry: `docker compose config|up|down`
+# Implementation lives under deploy/; keep this file as the stable root name.
+include:
+  - path: deploy/compose.cluster.yml

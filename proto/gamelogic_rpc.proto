@@ -19,6 +19,7 @@ message BindPlayerRequest {
   string idempotency_key = 10;
   string trace_context = 11;
   uint64 generation = 12;
+  string transfer_id = 13;  // 非空=Prepare/转移 Bind，清除 frozen
 }
 
 message BindPlayerResponse {
@@ -40,6 +41,21 @@ message UnbindPlayerRequest {
 message UnbindPlayerResponse {
   bool ok = 1;
   string message = 2;
+}
+
+message FreezePlayerRequest {
+  uint64 player_id = 1;
+  string session_id = 2;
+  string fence_token = 3;
+  string transfer_id = 4;
+  string reason = 5;
+  string idempotency_key = 6;
+}
+
+message FreezePlayerResponse {
+  bool ok = 1;
+  string message = 2;
+  string error_code = 3;
 }
 
 message ClientCommand {
@@ -73,4 +89,5 @@ service GameLogicService {
   rpc BindPlayer(BindPlayerRequest) returns (BindPlayerResponse);
   rpc Dispatch(ClientCommand) returns (CommandResult);
   rpc UnbindPlayer(UnbindPlayerRequest) returns (UnbindPlayerResponse);
+  rpc FreezePlayer(FreezePlayerRequest) returns (FreezePlayerResponse);
 }

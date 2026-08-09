@@ -39,6 +39,12 @@ MYSQL_RES *Connection::query(const std::string &sql) {
     return mysql_use_result(_conn);
 }
 
+bool Connection::begin() { return update("START TRANSACTION"); }
+
+bool Connection::commit() { return update("COMMIT"); }
+
+bool Connection::rollback() { return update("ROLLBACK"); }
+
 void Connection::refreshAliveTime() {
     _alivetime = clock();
 }

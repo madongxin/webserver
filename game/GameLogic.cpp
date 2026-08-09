@@ -9,6 +9,7 @@
 #include "PlacementStore.h"
 #include "SessionStore.h"
 #ifdef WEBSERVER_ENABLE_BRPC
+#include "GameLogicPush.h"
 #include "SessionRpcClient.h"
 #include "session.pb.h"
 #endif
@@ -424,21 +425,42 @@ bool GameLogic::HandleEnterMap(const game::EnterMapReq &req, game::GameResponse 
     }
 
     MapPlacementRecord place;
-    const ForwardRouteMeta *meta = ForwardMetaContext::Get();
-    if (meta && meta->map_instance_id != 0) {
-        if (!meta->gamelogic_instance_id.empty() &&
-            meta->gamelogic_instance_id != MapInstanceRegistry::Instance().local_instance_id()) {
+    // brpc bthread 可能迁移 pthread：TLS ForwardMeta 在 Redis/RPC yield 后不可再解引用
+    ForwardRouteMeta meta_snap;
+    bool have_meta = false;
+    if (const ForwardRouteMeta *meta = ForwardMetaContext::Get()) {
+        meta_snap = *meta;
+        have_meta = true;
+    }
+    if (have_meta && meta_snap.map_instance_id != 0) {
+        if (!meta_snap.gamelogic_instance_id.empty() &&
+            meta_snap.gamelogic_instance_id != MapInstanceRegistry::Instance().local_instance_id()) {
             body->set_message("wrong logic owner");
             rsp->set_ok(false);
             rsp->set_message(body->message());
             return false;
         }
-        place.map_instance_id = meta->map_instance_id;
-        place.owner_epoch = meta->owner_epoch;
-        place.route_version = meta->route_version;
-        place.owner_gamelogic_id = meta->gamelogic_instance_id;
+        place.map_instance_id = meta_snap.map_instance_id;
+        place.owner_epoch = meta_snap.owner_epoch;
+        place.route_version = meta_snap.route_version;
+        place.owner_gamelogic_id = meta_snap.gamelogic_instance_id;
         place.map_template_id = req.map_template_id();
         place.realm_id = req.realm_id();
+#ifdef WEBSERVER_ENABLE_REDIS
+        if (PlacementStore::Instance().Available()) {
+            PlacementRecord prec;
+            if (PlacementStore::Instance().Get(place.map_instance_id, &prec))
+                place.lease_until_unix = prec.lease_until;
+        }
+#endif
+#ifdef WEBSERVER_ENABLE_BRPC
+        if (place.lease_until_unix == 0 && SessionRpcClient::Instance().ready()) {
+            sess::GetPlacementResponse grsp;
+            if (SessionRpcClient::Instance().GetPlacement(place.map_instance_id, &grsp) &&
+                grsp.ok() && grsp.has_placement())
+                place.lease_until_unix = grsp.placement().lease_until();
+        }
+#endif
     } else {
 #ifdef WEBSERVER_ENABLE_REDIS
         if (PlacementStore::Instance().Available()) {
@@ -459,6 +481,7 @@ bool GameLogic::HandleEnterMap(const game::EnterMapReq &req, game::GameResponse 
             place.owner_gamelogic_id = pout.placement.owner_logic_server_id;
             place.map_template_id = pout.placement.map_template_id;
             place.realm_id = pout.placement.realm_id;
+            place.lease_until_unix = pout.placement.lease_until;
         } else
 #endif
         {
@@ -482,7 +505,7 @@ bool GameLogic::HandleEnterMap(const game::EnterMapReq &req, game::GameResponse 
     }
 
     if (!MapInstanceRegistry::Instance().Claim(place.map_instance_id, place.map_template_id,
-                                               place.owner_epoch)) {
+                                               place.owner_epoch, place.lease_until_unix)) {
         body->set_message("claim rejected");
         rsp->set_ok(false);
         rsp->set_message(body->message());
@@ -490,23 +513,27 @@ bool GameLogic::HandleEnterMap(const game::EnterMapReq &req, game::GameResponse 
     }
     MapInstanceRegistry::Instance().AddPlayer(place.map_instance_id, req.player_id());
 
-    // 权威 Session 路由：有 fence 时更新；失败回滚本地玩家归属
+    // Session 路由：Gateway 编排路径（meta 已带 map）由 Gateway Update/Transfer 写权威；
+    // Logic 仅在无 meta 直连路径上自行 Update，避免 brpc yield 后二次 fence 校验踩踏。
     uint64_t route_ver = place.route_version;
 #ifdef WEBSERVER_ENABLE_REDIS
-    const std::string fence = (meta && !meta->fence_token.empty()) ? meta->fence_token : std::string();
-    if (!fence.empty()) {
+    const bool gateway_routed = have_meta && meta_snap.map_instance_id != 0;
+    const std::string fence = have_meta ? meta_snap.fence_token : std::string();
+    if (!gateway_routed && !fence.empty()) {
         uint64_t rv = 0;
         std::string err;
         bool route_ok = false;
+        const uint64_t pid = (have_meta && meta_snap.player_id != 0) ? meta_snap.player_id
+                                                                     : req.player_id();
 #ifdef WEBSERVER_ENABLE_BRPC
         if (SessionRpcClient::Instance().ready()) {
             sess::UpdatePlayerRouteRequest ureq;
-            ureq.set_player_id(req.player_id());
+            ureq.set_player_id(pid);
             ureq.set_fence_token(fence);
             ureq.set_gamelogic_instance_id(MapInstanceRegistry::Instance().local_instance_id());
             ureq.set_map_instance_id(place.map_instance_id);
             ureq.set_map_owner_epoch(place.owner_epoch);
-            ureq.set_route_version(place.route_version);
+            ureq.set_route_version(0);
             sess::UpdatePlayerRouteResponse ursp;
             route_ok = SessionRpcClient::Instance().UpdatePlayerRoute(ureq, &ursp) && ursp.ok();
             if (route_ok)
@@ -517,8 +544,8 @@ bool GameLogic::HandleEnterMap(const game::EnterMapReq &req, game::GameResponse 
 #endif
             if (SessionStore::Instance().Available()) {
             route_ok = SessionStore::Instance().UpdatePlayerRoute(
-                req.player_id(), fence, MapInstanceRegistry::Instance().local_instance_id(),
-                place.map_instance_id, place.owner_epoch, place.route_version, "", "", &rv, &err);
+                pid, fence, MapInstanceRegistry::Instance().local_instance_id(),
+                place.map_instance_id, place.owner_epoch, 0, "", "", &rv, &err);
         } else {
             route_ok = true;
         }
@@ -531,6 +558,8 @@ bool GameLogic::HandleEnterMap(const game::EnterMapReq &req, game::GameResponse 
         }
         if (rv != 0)
             route_ver = rv;
+    } else if (gateway_routed && meta_snap.route_version != 0) {
+        route_ver = meta_snap.route_version;
     }
 #endif
 
@@ -546,6 +575,22 @@ bool GameLogic::HandleEnterMap(const game::EnterMapReq &req, game::GameResponse 
     LOG_INFO << "[enter_map] player=" << req.player_id() << " map=" << place.map_instance_id
              << " epoch=" << place.owner_epoch
              << " gl=" << MapInstanceRegistry::Instance().local_instance_id();
+#if defined(WEBSERVER_ENABLE_BRPC)
+    // 真实业务可靠 Push：进图结果按 gateway_instance_id 推送（非广播）
+    {
+        game::GameResponse notify;
+        notify.set_ok(true);
+        notify.set_message("enter_map_notify");
+        *notify.mutable_enter_map() = *body;
+        std::string payload;
+        if (notify.SerializeToString(&payload)) {
+            const bool pushed = GameLogicPush::PushToBoundGateway(
+                "", req.player_id(), "", "enter_map_notify", payload, true, false, 0);
+            LOG_INFO << "[enter_map] PushToBoundGateway player=" << req.player_id()
+                     << " ok=" << pushed;
+        }
+    }
+#endif
     return true;
 }
 

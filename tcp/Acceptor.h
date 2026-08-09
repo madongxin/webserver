@@ -29,6 +29,9 @@ public:
     void Listen();
     void AcceptConnection();
 
+    /** 优雅停服：从 epoll 摘掉 listen（不再 accept） */
+    void PauseListening();
+
 private:
     EventLoop *loop_;
     int listenfd_;
