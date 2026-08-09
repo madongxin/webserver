@@ -19,6 +19,13 @@ size_t PlayerSerialQueue::ShardIndex(uint64_t player_id, size_t n) {
     return static_cast<size_t>(player_id % n);
 }
 
+void PlayerSerialQueue::SetLimits(size_t max_per_shard, size_t max_global) {
+    if (max_per_shard > 0)
+        max_per_shard_ = max_per_shard;
+    if (max_global > 0)
+        max_global_ = max_global;
+}
+
 void PlayerSerialQueue::Start(int shard_count) {
     std::lock_guard<std::mutex> lk(life_mu_);
     if (started_)
@@ -37,7 +44,9 @@ void PlayerSerialQueue::Start(int shard_count) {
         shards_.push_back(std::move(shard));
     }
     started_ = true;
-    LOG_INFO << "PlayerSerialQueue started shards=" << shard_count;
+    pending_global_.store(0, std::memory_order_relaxed);
+    LOG_INFO << "PlayerSerialQueue started shards=" << shard_count
+             << " max_per_shard=" << max_per_shard_ << " max_global=" << max_global_;
 }
 
 void PlayerSerialQueue::Stop() {
@@ -57,6 +66,7 @@ void PlayerSerialQueue::Stop() {
     }
     shards_.clear();
     started_ = false;
+    pending_global_.store(0, std::memory_order_relaxed);
     LOG_INFO << "PlayerSerialQueue stopped";
 }
 
@@ -78,6 +88,7 @@ void PlayerSerialQueue::WorkerLoop(Shard *shard) {
         } catch (...) {
             LOG_ERROR << "PlayerSerialQueue: task threw";
         }
+        pending_global_.fetch_sub(1, std::memory_order_relaxed);
         {
             std::lock_guard<std::mutex> lk(shard->mu);
             --shard->inflight;
@@ -87,24 +98,31 @@ void PlayerSerialQueue::WorkerLoop(Shard *shard) {
     }
 }
 
-void PlayerSerialQueue::Post(uint64_t player_id, std::function<void()> task) {
+bool PlayerSerialQueue::TryPost(uint64_t player_id, std::function<void()> task) {
     if (!started_) {
-        // 未 Start 时同步执行，避免测试/早期路径丢请求
         if (task)
             task();
-        return;
+        return true;
     }
+    if (pending_global_.load(std::memory_order_relaxed) >= max_global_)
+        return false;
     Shard *shard = shards_[ShardIndex(player_id, shards_.size())].get();
     {
         std::lock_guard<std::mutex> lk(shard->mu);
-        const size_t depth = shard->q.size();
-        if (depth > 1000) {
-            LOG_WARN << "PlayerSerialQueue shard depth=" << depth
-                     << " player_id=" << player_id;
-        }
+        if (shard->q.size() >= max_per_shard_)
+            return false;
         shard->q.push_back(std::move(task));
+        pending_global_.fetch_add(1, std::memory_order_relaxed);
     }
     shard->cv.notify_one();
+    return true;
+}
+
+void PlayerSerialQueue::Post(uint64_t player_id, std::function<void()> task) {
+    if (!TryPost(player_id, std::move(task))) {
+        LOG_WARN << "PlayerSerialQueue overload drop player_id=" << player_id
+                 << " pending=" << pending_global_.load(std::memory_order_relaxed);
+    }
 }
 
 void PlayerSerialQueue::DrainForTest() {

@@ -42,7 +42,7 @@ bool PushToBoundGateway(const std::string &gateway_instance_id, uint64_t player_
     if (seq == 0 && reliable) {
 #ifdef WEBSERVER_ENABLE_REDIS
         if (PushReplayStore::Instance().Available()) {
-            seq = PushReplayStore::Instance().AppendReliable(player_id, message_type,
+            seq = PushReplayStore::Instance().AppendReliable(player_id, sid, message_type,
                                                              payload_or_frame);
             if (seq == 0) {
                 LOG_WARN << "PushReplayStore AppendReliable failed player=" << player_id;

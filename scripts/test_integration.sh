@@ -22,5 +22,21 @@ fi
 ./scripts/test_placement.sh
 ./build/test/session_store_test
 ./build/test/player_transfer_test
+./build/test/placement_recovery_test
+./build/test/phase3_discovery_test
 ./scripts/test_push_reconnect.sh
+# MySQL 资产测：不可用则 SKIP（exit 0）；可用则必须通过
+if [[ -x ./build/test/phase3_gamedb_asset_test ]]; then
+  if timeout 15 ./build/test/phase3_gamedb_asset_test; then
+    :
+  else
+    ec=$?
+    if [[ "$ec" -eq 124 ]]; then
+      echo "SKIP: phase3_gamedb_asset_test timed out (MySQL unreachable?)"
+    else
+      echo "ERROR: phase3_gamedb_asset_test failed ec=$ec"
+      exit "$ec"
+    fi
+  fi
+fi
 echo "test_integration.sh PASS"

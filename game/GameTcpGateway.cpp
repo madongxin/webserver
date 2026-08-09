@@ -486,13 +486,27 @@ void GameTcpGateway::OnMessage(const std::shared_ptr<TcpConnection> &conn) {
                 const uint64_t pid = sticky.player_id != 0 ? sticky.player_id
                                                           : peek.push_ack().player_id();
                 const uint64_t aseq = peek.push_ack().ack_server_seq();
+                const std::string ack_sid = peek.push_ack().session_id().empty()
+                                               ? sticky.session_id
+                                               : peek.push_ack().session_id();
+                const std::string ack_fence = peek.push_ack().fence_token().empty()
+                                                 ? sticky.token
+                                                 : peek.push_ack().fence_token();
+                const uint64_t ack_gen = peek.push_ack().generation() != 0
+                                            ? peek.push_ack().generation()
+                                            : sticky.generation;
                 bool ok_ack = false;
+                // 仅当前 session/fence/generation 可裁剪；旧 Session ACK 不得影响新 Session
+                if (pid == sticky.player_id && aseq > 0 && ack_sid == sticky.session_id &&
+                    (ack_fence.empty() || ack_fence == sticky.token) &&
+                    (ack_gen == 0 || ack_gen == sticky.generation)) {
 #ifdef WEBSERVER_ENABLE_REDIS
-                if (pid == sticky.player_id && aseq > 0 && PushReplayStore::Instance().Available())
-                    ok_ack = PushReplayStore::Instance().Ack(pid, aseq);
+                    if (PushReplayStore::Instance().Available())
+                        ok_ack = PushReplayStore::Instance().Ack(pid, ack_sid, aseq);
 #endif
+                }
                 ack->set_ok(ok_ack);
-                ack->set_message(ok_ack ? "acked" : "ack failed");
+                ack->set_message(ok_ack ? "acked" : "ack rejected");
                 ack->set_trimmed_to_seq(ok_ack ? aseq : 0);
                 rsp.set_ok(ok_ack);
                 rsp.set_message(ack->message());

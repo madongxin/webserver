@@ -5,9 +5,11 @@
 
 #include "GameService.h"
 
+#include "ForwardMetaContext.h"
 #include "GameLogic.h"
 #include "Logging.h"
 #include "ProtoFraming.h"
+#include "TrustedPlayerId.h"
 #include "game.pb.h"
 
 namespace gameproto {
@@ -21,6 +23,11 @@ bool HandleFrame(const std::string &request_payload, std::string *response_frame
     if (!req.ParseFromString(request_payload)) {
         LOG_ERROR << "GameService: ParseFromString failed";
         return false;
+    }
+
+    if (const ForwardRouteMeta *meta = ForwardMetaContext::Get()) {
+        if (meta->player_id != 0)
+            ApplyTrustedPlayerId(&req, meta->player_id);
     }
 
     // 2. 业务分发（会话校验、背包、技能 CD 等均在 GameLogic::Handle 内）

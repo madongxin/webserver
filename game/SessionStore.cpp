@@ -13,6 +13,8 @@
 #include <map>
 #include <random>
 #include <sstream>
+#include <thread>
+#include <vector>
 
 namespace {
 
@@ -127,6 +129,39 @@ redis.call('HMSET', key,
   'routeVersion', route_version)
 redis.call('EXPIRE', key, ttl)
 return {'1', 'OK', tostring(gen), route_version, tostring(kicked), token, session_id, logic_id, map_id, map_epoch}
+)LUA";
+
+// 幂等操作：PENDING / DONE|payload；同 operation_id 超时重试返回同一结果
+const char kLuaOpBegin[] = R"LUA(
+local key = KEYS[1]
+local ttl = tonumber(ARGV[1]) or 120
+local v = redis.call('GET', key)
+if v then
+  if string.sub(v, 1, 5) == 'DONE|' then return {'DONE', v} end
+  if v == 'PENDING' then return {'PENDING'} end
+end
+if redis.call('SET', key, 'PENDING', 'NX', 'EX', ttl) then
+  return {'EXECUTE'}
+end
+v = redis.call('GET', key)
+if v and string.sub(v, 1, 5) == 'DONE|' then return {'DONE', v} end
+return {'PENDING'}
+)LUA";
+
+const char kLuaOpComplete[] = R"LUA(
+local key = KEYS[1]
+local payload = ARGV[1]
+local ttl = tonumber(ARGV[2]) or 86400
+redis.call('SET', key, payload, 'EX', ttl)
+return {'1'}
+)LUA";
+
+const char kLuaOpAbort[] = R"LUA(
+local key = KEYS[1]
+if redis.call('GET', key) == 'PENDING' then
+  redis.call('DEL', key)
+end
+return {'1'}
 )LUA";
 
 const char kLuaReconnect[] = R"LUA(
@@ -456,6 +491,180 @@ std::string SessionStore::SessionKey(uint64_t player_id) const {
     return buf;
 }
 
+std::string SessionStore::OpKey(const std::string &operation_id) const {
+    return key_prefix_ + "sessop:" + operation_id;
+}
+
+namespace {
+
+std::string SanitizeOpField(std::string s) {
+    for (char &c : s) {
+        if (c == '|')
+            c = ' ';
+    }
+    return s;
+}
+
+std::string PackOpResult(const std::string &kind, const AcquireSessionResult &r) {
+    std::ostringstream oss;
+    oss << "DONE|" << SanitizeOpField(kind) << '|' << (r.ok ? '1' : '0') << '|'
+        << SanitizeOpField(r.message) << '|' << SanitizeOpField(r.error_code) << '|'
+        << SanitizeOpField(r.session_id) << '|' << SanitizeOpField(r.fence_token) << '|'
+        << r.generation << '|' << SanitizeOpField(r.gamelogic_instance_id) << '|'
+        << r.map_instance_id << '|' << r.map_owner_epoch << '|' << r.route_version << '|'
+        << (r.kicked_previous ? '1' : '0') << '|' << r.login_time_sec << '|' << r.server_id;
+    return oss.str();
+}
+
+uint64_t OpParseU64(const std::string &s) {
+    return static_cast<uint64_t>(std::strtoull(s.c_str(), nullptr, 10));
+}
+
+int64_t OpParseI64(const std::string &s) {
+    return static_cast<int64_t>(std::strtoll(s.c_str(), nullptr, 10));
+}
+
+bool UnpackOpResult(const std::string &packed, std::string *kind, AcquireSessionResult *out) {
+    if (!out || packed.size() < 6 || packed.compare(0, 5, "DONE|") != 0)
+        return false;
+    std::vector<std::string> parts;
+    std::string cur;
+    for (size_t i = 5; i < packed.size(); ++i) {
+        if (packed[i] == '|') {
+            parts.push_back(cur);
+            cur.clear();
+        } else {
+            cur.push_back(packed[i]);
+        }
+    }
+    parts.push_back(cur);
+    if (parts.size() < 14)
+        return false;
+    if (kind)
+        *kind = parts[0];
+    *out = AcquireSessionResult{};
+    out->ok = parts[1] == "1";
+    out->message = parts[2];
+    out->error_code = parts[3];
+    out->session_id = parts[4];
+    out->fence_token = parts[5];
+    out->generation = OpParseU64(parts[6]);
+    out->gamelogic_instance_id = parts[7];
+    out->map_instance_id = OpParseU64(parts[8]);
+    out->map_owner_epoch = OpParseU64(parts[9]);
+    out->route_version = OpParseU64(parts[10]);
+    out->kicked_previous = parts[11] == "1";
+    out->login_time_sec = OpParseI64(parts[12]);
+    out->server_id = static_cast<uint32_t>(OpParseU64(parts[13]));
+    return true;
+}
+
+}  // namespace
+
+bool SessionStore::LoadOperationResult(const std::string &operation_id, SessionOpStatus *status,
+                                       std::string *op_kind, AcquireSessionResult *out) {
+    if (!available_ || operation_id.empty() || !status)
+        return false;
+    auto lease = RedisPool::Instance().Acquire();
+    if (!lease)
+        return false;
+    std::map<std::string, std::string> ignore;
+    (void)ignore;
+    // GET via Eval for simplicity (RedisClient has no Get)
+    std::vector<std::string> keys{OpKey(operation_id)};
+    std::vector<std::string> args;
+    std::vector<std::string> reply;
+    const char *get_lua = "return {redis.call('GET', KEYS[1]) or ''}";
+    if (!lease->Eval(get_lua, keys, args, &reply) || reply.empty())
+        return false;
+    const std::string &v = reply[0];
+    if (v.empty()) {
+        *status = SessionOpStatus::NotFound;
+        return true;
+    }
+    if (v == "PENDING") {
+        *status = SessionOpStatus::Pending;
+        return true;
+    }
+    AcquireSessionResult tmp;
+    std::string kind;
+    if (!UnpackOpResult(v, &kind, &tmp)) {
+        *status = SessionOpStatus::NotFound;
+        return false;
+    }
+    *status = SessionOpStatus::Done;
+    if (op_kind)
+        *op_kind = kind;
+    if (out)
+        *out = tmp;
+    return true;
+}
+
+SessionStore::OpBegin SessionStore::BeginOperation(const std::string &operation_id,
+                                                   AcquireSessionResult *cached,
+                                                   std::string *op_kind_out, std::string *err) {
+    if (operation_id.empty())
+        return OpBegin::Execute;
+    auto lease = RedisPool::Instance().Acquire();
+    if (!lease) {
+        if (err)
+            *err = "redis pool exhausted";
+        return OpBegin::Error;
+    }
+    std::vector<std::string> keys{OpKey(operation_id)};
+    std::vector<std::string> args{"120"};
+    std::vector<std::string> reply;
+    if (!lease->Eval(kLuaOpBegin, keys, args, &reply) || reply.empty()) {
+        if (err)
+            *err = "op begin lua failed";
+        return OpBegin::Error;
+    }
+    if (reply[0] == "EXECUTE")
+        return OpBegin::Execute;
+    if (reply[0] == "DONE" && reply.size() > 1) {
+        std::string kind;
+        if (cached && UnpackOpResult(reply[1], &kind, cached)) {
+            if (op_kind_out)
+                *op_kind_out = kind;
+            return OpBegin::Done;
+        }
+        if (err)
+            *err = "bad cached op payload";
+        return OpBegin::Error;
+    }
+    return OpBegin::Pending;
+}
+
+bool SessionStore::CompleteOperation(const std::string &operation_id, const std::string &op_kind,
+                                     const AcquireSessionResult &result) {
+    if (operation_id.empty() || !result.ok)
+        return AbortOperation(operation_id);
+    auto lease = RedisPool::Instance().Acquire();
+    if (!lease)
+        return false;
+    std::vector<std::string> keys{OpKey(operation_id)};
+    std::vector<std::string> args{PackOpResult(op_kind, result), "86400"};
+    std::vector<std::string> reply;
+    return lease->Eval(kLuaOpComplete, keys, args, &reply) && !reply.empty() && reply[0] == "1";
+}
+
+bool SessionStore::AbortOperation(const std::string &operation_id) {
+    if (operation_id.empty())
+        return true;
+    auto lease = RedisPool::Instance().Acquire();
+    if (!lease)
+        return false;
+    std::vector<std::string> keys{OpKey(operation_id)};
+    std::vector<std::string> args;
+    std::vector<std::string> reply;
+    return lease->Eval(kLuaOpAbort, keys, args, &reply);
+}
+
+bool SessionStore::GetSessionOperation(const std::string &operation_id, SessionOpStatus *status,
+                                       std::string *op_kind, AcquireSessionResult *out) {
+    return LoadOperationResult(operation_id, status, op_kind, out);
+}
+
 bool SessionStore::LoadSession(uint64_t player_id, SessionRecord *out) {
     if (!out || !available_)
         return false;
@@ -508,7 +717,7 @@ void SessionStore::SetLogicInstanceIds(std::vector<std::string> ids) {
         logic_instance_ids_ = std::move(ids);
 }
 
-bool SessionStore::AcquireSession(const AcquireSessionInput &in, AcquireSessionResult *out) {
+bool SessionStore::AcquireSessionUnlocked(const AcquireSessionInput &in, AcquireSessionResult *out) {
     if (!out)
         return false;
     *out = AcquireSessionResult{};
@@ -598,6 +807,43 @@ bool SessionStore::AcquireSession(const AcquireSessionInput &in, AcquireSessionR
     return true;
 }
 
+bool SessionStore::AcquireSession(const AcquireSessionInput &in, AcquireSessionResult *out) {
+    if (!out)
+        return false;
+    *out = AcquireSessionResult{};
+    if (in.operation_id.empty())
+        return AcquireSessionUnlocked(in, out);
+
+    for (int attempt = 0; attempt < 50; ++attempt) {
+        std::string kind;
+        std::string err;
+        AcquireSessionResult cached;
+        const OpBegin st = BeginOperation(in.operation_id, &cached, &kind, &err);
+        if (st == OpBegin::Done) {
+            *out = cached;
+            return out->ok;
+        }
+        if (st == OpBegin::Error) {
+            out->message = err.empty() ? "op begin failed" : err;
+            out->error_code = "OP_BEGIN_FAILED";
+            return false;
+        }
+        if (st == OpBegin::Pending) {
+            std::this_thread::sleep_for(std::chrono::milliseconds(10));
+            continue;
+        }
+        const bool ok = AcquireSessionUnlocked(in, out);
+        if (ok && out->ok)
+            CompleteOperation(in.operation_id, "acquire", *out);
+        else
+            AbortOperation(in.operation_id);
+        return ok && out->ok;
+    }
+    out->message = "operation still pending";
+    out->error_code = "OP_IN_PROGRESS";
+    return false;
+}
+
 bool SessionStore::Login(const game::LoginReq &req, game::LoginRsp *rsp) {
     if (!rsp)
         return false;
@@ -632,63 +878,133 @@ bool SessionStore::Reconnect(const game::ReconnectReq &req, game::ReconnectRsp *
 
 bool SessionStore::Reconnect(const game::ReconnectReq &req, game::ReconnectRsp *rsp,
                              SessionRecord *route_out) {
+    ReconnectSessionInput in;
+    in.player_id = req.player_id();
+    in.session_id = req.session_id();
+    in.reconnect_ticket = req.reconnect_ticket();
+    in.last_server_seq = req.last_server_seq();
+    AcquireSessionResult out;
+    SessionRecord route;
+    const bool ok = ReconnectSession(in, &out, route_out ? &route : nullptr);
     if (!rsp)
-        return false;
+        return ok;
     rsp->Clear();
+    rsp->set_ok(ok && out.ok);
+    rsp->set_message(out.message);
+    rsp->set_token(out.fence_token);
+    rsp->set_session_id(out.session_id);
+    rsp->set_generation(out.generation);
+    if (route_out && ok && out.ok)
+        *route_out = route;
+    return ok && out.ok;
+}
+
+bool SessionStore::ReconnectSession(const ReconnectSessionInput &in, AcquireSessionResult *out,
+                                    SessionRecord *route_out) {
+    if (!out)
+        return false;
+    *out = AcquireSessionResult{};
     if (route_out)
         *route_out = SessionRecord{};
     if (!available_) {
-        rsp->set_ok(false);
-        rsp->set_message("redis unavailable");
+        out->message = "redis unavailable";
+        out->error_code = "REDIS_UNAVAILABLE";
         return false;
     }
-    if (req.player_id() == 0 || req.session_id().empty() || req.reconnect_ticket().empty()) {
-        rsp->set_ok(false);
-        rsp->set_message("player_id/session_id/reconnect_ticket required");
-        return false;
-    }
-
-    const std::string new_token = GenHex(32);
-    auto lease = RedisPool::Instance().Acquire();
-    if (!lease) {
-        rsp->set_ok(false);
-        rsp->set_message("redis pool exhausted");
-        return false;
-    }
-    std::vector<std::string> keys{SessionKey(req.player_id())};
-    std::vector<std::string> args{req.session_id(), req.reconnect_ticket(), new_token,
-                                  std::to_string(default_ttl_sec_), std::to_string(NowUnixSec())};
-    std::vector<std::string> reply;
-    if (!lease->Eval(kLuaReconnect, keys, args, &reply) || reply.size() < 3) {
-        rsp->set_ok(false);
-        rsp->set_message("redis reconnect lua failed");
-        return false;
-    }
-    if (reply[0] != "1") {
-        rsp->set_ok(false);
-        rsp->set_message(reply.size() > 2 ? reply[2] : "reconnect rejected");
+    if (in.player_id == 0 || in.session_id.empty() || in.reconnect_ticket.empty()) {
+        out->message = "player_id/session_id/reconnect_ticket required";
+        out->error_code = "INVALID_ARG";
         return false;
     }
 
-    rsp->set_ok(true);
-    rsp->set_message("reconnect ok");
-    rsp->set_token(reply.size() > 2 ? reply[2] : new_token);
-    rsp->set_session_id(reply.size() > 3 ? reply[3] : req.session_id());
-    rsp->set_generation(reply.size() > 4 ? ParseU64(reply[4]) : 0);
-    if (route_out) {
-        route_out->token = rsp->token();
-        route_out->session_id = rsp->session_id();
-        route_out->generation = rsp->generation();
-        route_out->state = SessionState::Online;
-        route_out->gamelogic_instance_id = reply.size() > 5 ? reply[5] : "";
-        route_out->map_instance_id = reply.size() > 6 ? ParseU64(reply[6]) : 0;
-        route_out->map_owner_epoch = reply.size() > 7 ? ParseU64(reply[7]) : 0;
-        route_out->route_version = reply.size() > 8 ? ParseU64(reply[8]) : 0;
+    auto run_once = [&]() -> bool {
+        const std::string new_token = GenHex(32);
+        auto lease = RedisPool::Instance().Acquire();
+        if (!lease) {
+            out->message = "redis pool exhausted";
+            out->error_code = "POOL_EXHAUSTED";
+            return false;
+        }
+        std::vector<std::string> keys{SessionKey(in.player_id)};
+        std::vector<std::string> args{in.session_id, in.reconnect_ticket, new_token,
+                                      std::to_string(default_ttl_sec_),
+                                      std::to_string(NowUnixSec())};
+        std::vector<std::string> reply;
+        if (!lease->Eval(kLuaReconnect, keys, args, &reply) || reply.size() < 3) {
+            out->message = "redis reconnect lua failed";
+            out->error_code = "LUA_FAILED";
+            return false;
+        }
+        if (reply[0] != "1") {
+            out->message = reply.size() > 2 ? reply[2] : "reconnect rejected";
+            out->error_code = reply.size() > 1 ? reply[1] : "REJECTED";
+            return false;
+        }
+        out->ok = true;
+        out->message = "reconnect ok";
+        out->fence_token = reply.size() > 2 ? reply[2] : new_token;
+        out->session_id = reply.size() > 3 ? reply[3] : in.session_id;
+        out->generation = reply.size() > 4 ? ParseU64(reply[4]) : 0;
+        out->gamelogic_instance_id = reply.size() > 5 ? reply[5] : "";
+        out->map_instance_id = reply.size() > 6 ? ParseU64(reply[6]) : 0;
+        out->map_owner_epoch = reply.size() > 7 ? ParseU64(reply[7]) : 0;
+        out->route_version = reply.size() > 8 ? ParseU64(reply[8]) : 0;
+        if (route_out) {
+            route_out->token = out->fence_token;
+            route_out->session_id = out->session_id;
+            route_out->generation = out->generation;
+            route_out->state = SessionState::Online;
+            route_out->gamelogic_instance_id = out->gamelogic_instance_id;
+            route_out->map_instance_id = out->map_instance_id;
+            route_out->map_owner_epoch = out->map_owner_epoch;
+            route_out->route_version = out->route_version;
+        }
+        LOG_INFO << "SessionStore: Reconnect player_id=" << in.player_id
+                 << " generation=" << out->generation << " logic=" << out->gamelogic_instance_id;
+        return true;
+    };
+
+    if (in.operation_id.empty())
+        return run_once() && out->ok;
+
+    for (int attempt = 0; attempt < 50; ++attempt) {
+        std::string kind;
+        std::string err;
+        AcquireSessionResult cached;
+        const OpBegin st = BeginOperation(in.operation_id, &cached, &kind, &err);
+        if (st == OpBegin::Done) {
+            *out = cached;
+            if (route_out && out->ok) {
+                route_out->token = out->fence_token;
+                route_out->session_id = out->session_id;
+                route_out->generation = out->generation;
+                route_out->state = SessionState::Online;
+                route_out->gamelogic_instance_id = out->gamelogic_instance_id;
+                route_out->map_instance_id = out->map_instance_id;
+                route_out->map_owner_epoch = out->map_owner_epoch;
+                route_out->route_version = out->route_version;
+            }
+            return out->ok;
+        }
+        if (st == OpBegin::Error) {
+            out->message = err.empty() ? "op begin failed" : err;
+            out->error_code = "OP_BEGIN_FAILED";
+            return false;
+        }
+        if (st == OpBegin::Pending) {
+            std::this_thread::sleep_for(std::chrono::milliseconds(10));
+            continue;
+        }
+        const bool ok = run_once();
+        if (ok && out->ok)
+            CompleteOperation(in.operation_id, "reconnect", *out);
+        else
+            AbortOperation(in.operation_id);
+        return ok && out->ok;
     }
-    LOG_INFO << "SessionStore: Reconnect player_id=" << req.player_id()
-             << " generation=" << rsp->generation()
-             << " logic=" << (route_out ? route_out->gamelogic_instance_id : "");
-    return true;
+    out->message = "operation still pending";
+    out->error_code = "OP_IN_PROGRESS";
+    return false;
 }
 
 bool SessionStore::BindConnection(uint64_t player_id, const std::string &token,

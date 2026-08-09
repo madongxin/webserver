@@ -37,7 +37,7 @@ namespace protobuf_gamelogic_5frpc_2eproto {
 struct TableStruct {
   static const ::google::protobuf::internal::ParseTableField entries[];
   static const ::google::protobuf::internal::AuxillaryParseTableField aux[];
-  static const ::google::protobuf::internal::ParseTable schema[8];
+  static const ::google::protobuf::internal::ParseTable schema[16];
   static const ::google::protobuf::internal::FieldMetadata field_metadata[];
   static const ::google::protobuf::internal::SerializationTable serialization_table[];
   static const ::google::protobuf::uint32 offsets[];
@@ -55,6 +55,22 @@ void InitDefaultsFreezePlayerRequestImpl();
 void InitDefaultsFreezePlayerRequest();
 void InitDefaultsFreezePlayerResponseImpl();
 void InitDefaultsFreezePlayerResponse();
+void InitDefaultsBagItemEntryImpl();
+void InitDefaultsBagItemEntry();
+void InitDefaultsSkillCdEntryImpl();
+void InitDefaultsSkillCdEntry();
+void InitDefaultsPlayerRuntimeStateImpl();
+void InitDefaultsPlayerRuntimeState();
+void InitDefaultsPlayerTransferSnapshotImpl();
+void InitDefaultsPlayerTransferSnapshot();
+void InitDefaultsExportPlayerSnapshotRequestImpl();
+void InitDefaultsExportPlayerSnapshotRequest();
+void InitDefaultsExportPlayerSnapshotResponseImpl();
+void InitDefaultsExportPlayerSnapshotResponse();
+void InitDefaultsImportPlayerSnapshotRequestImpl();
+void InitDefaultsImportPlayerSnapshotRequest();
+void InitDefaultsImportPlayerSnapshotResponseImpl();
+void InitDefaultsImportPlayerSnapshotResponse();
 void InitDefaultsClientCommandImpl();
 void InitDefaultsClientCommand();
 void InitDefaultsCommandResultImpl();
@@ -66,11 +82,22 @@ inline void InitDefaults() {
   InitDefaultsUnbindPlayerResponse();
   InitDefaultsFreezePlayerRequest();
   InitDefaultsFreezePlayerResponse();
+  InitDefaultsBagItemEntry();
+  InitDefaultsSkillCdEntry();
+  InitDefaultsPlayerRuntimeState();
+  InitDefaultsPlayerTransferSnapshot();
+  InitDefaultsExportPlayerSnapshotRequest();
+  InitDefaultsExportPlayerSnapshotResponse();
+  InitDefaultsImportPlayerSnapshotRequest();
+  InitDefaultsImportPlayerSnapshotResponse();
   InitDefaultsClientCommand();
   InitDefaultsCommandResult();
 }
 }  // namespace protobuf_gamelogic_5frpc_2eproto
 namespace glrpc {
+class BagItemEntry;
+class BagItemEntryDefaultTypeInternal;
+extern BagItemEntryDefaultTypeInternal _BagItemEntry_default_instance_;
 class BindPlayerRequest;
 class BindPlayerRequestDefaultTypeInternal;
 extern BindPlayerRequestDefaultTypeInternal _BindPlayerRequest_default_instance_;
@@ -83,12 +110,33 @@ extern ClientCommandDefaultTypeInternal _ClientCommand_default_instance_;
 class CommandResult;
 class CommandResultDefaultTypeInternal;
 extern CommandResultDefaultTypeInternal _CommandResult_default_instance_;
+class ExportPlayerSnapshotRequest;
+class ExportPlayerSnapshotRequestDefaultTypeInternal;
+extern ExportPlayerSnapshotRequestDefaultTypeInternal _ExportPlayerSnapshotRequest_default_instance_;
+class ExportPlayerSnapshotResponse;
+class ExportPlayerSnapshotResponseDefaultTypeInternal;
+extern ExportPlayerSnapshotResponseDefaultTypeInternal _ExportPlayerSnapshotResponse_default_instance_;
 class FreezePlayerRequest;
 class FreezePlayerRequestDefaultTypeInternal;
 extern FreezePlayerRequestDefaultTypeInternal _FreezePlayerRequest_default_instance_;
 class FreezePlayerResponse;
 class FreezePlayerResponseDefaultTypeInternal;
 extern FreezePlayerResponseDefaultTypeInternal _FreezePlayerResponse_default_instance_;
+class ImportPlayerSnapshotRequest;
+class ImportPlayerSnapshotRequestDefaultTypeInternal;
+extern ImportPlayerSnapshotRequestDefaultTypeInternal _ImportPlayerSnapshotRequest_default_instance_;
+class ImportPlayerSnapshotResponse;
+class ImportPlayerSnapshotResponseDefaultTypeInternal;
+extern ImportPlayerSnapshotResponseDefaultTypeInternal _ImportPlayerSnapshotResponse_default_instance_;
+class PlayerRuntimeState;
+class PlayerRuntimeStateDefaultTypeInternal;
+extern PlayerRuntimeStateDefaultTypeInternal _PlayerRuntimeState_default_instance_;
+class PlayerTransferSnapshot;
+class PlayerTransferSnapshotDefaultTypeInternal;
+extern PlayerTransferSnapshotDefaultTypeInternal _PlayerTransferSnapshot_default_instance_;
+class SkillCdEntry;
+class SkillCdEntryDefaultTypeInternal;
+extern SkillCdEntryDefaultTypeInternal _SkillCdEntry_default_instance_;
 class UnbindPlayerRequest;
 class UnbindPlayerRequestDefaultTypeInternal;
 extern UnbindPlayerRequestDefaultTypeInternal _UnbindPlayerRequest_default_instance_;
@@ -1051,6 +1099,1171 @@ class FreezePlayerResponse : public ::google::protobuf::Message /* @@protoc_inse
 };
 // -------------------------------------------------------------------
 
+class BagItemEntry : public ::google::protobuf::Message /* @@protoc_insertion_point(class_definition:glrpc.BagItemEntry) */ {
+ public:
+  BagItemEntry();
+  virtual ~BagItemEntry();
+
+  BagItemEntry(const BagItemEntry& from);
+
+  inline BagItemEntry& operator=(const BagItemEntry& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  #if LANG_CXX11
+  BagItemEntry(BagItemEntry&& from) noexcept
+    : BagItemEntry() {
+    *this = ::std::move(from);
+  }
+
+  inline BagItemEntry& operator=(BagItemEntry&& from) noexcept {
+    if (GetArenaNoVirtual() == from.GetArenaNoVirtual()) {
+      if (this != &from) InternalSwap(&from);
+    } else {
+      CopyFrom(from);
+    }
+    return *this;
+  }
+  #endif
+  static const ::google::protobuf::Descriptor* descriptor();
+  static const BagItemEntry& default_instance();
+
+  static void InitAsDefaultInstance();  // FOR INTERNAL USE ONLY
+  static inline const BagItemEntry* internal_default_instance() {
+    return reinterpret_cast<const BagItemEntry*>(
+               &_BagItemEntry_default_instance_);
+  }
+  static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
+    6;
+
+  void Swap(BagItemEntry* other);
+  friend void swap(BagItemEntry& a, BagItemEntry& b) {
+    a.Swap(&b);
+  }
+
+  // implements Message ----------------------------------------------
+
+  inline BagItemEntry* New() const PROTOBUF_FINAL { return New(NULL); }
+
+  BagItemEntry* New(::google::protobuf::Arena* arena) const PROTOBUF_FINAL;
+  void CopyFrom(const ::google::protobuf::Message& from) PROTOBUF_FINAL;
+  void MergeFrom(const ::google::protobuf::Message& from) PROTOBUF_FINAL;
+  void CopyFrom(const BagItemEntry& from);
+  void MergeFrom(const BagItemEntry& from);
+  void Clear() PROTOBUF_FINAL;
+  bool IsInitialized() const PROTOBUF_FINAL;
+
+  size_t ByteSizeLong() const PROTOBUF_FINAL;
+  bool MergePartialFromCodedStream(
+      ::google::protobuf::io::CodedInputStream* input) PROTOBUF_FINAL;
+  void SerializeWithCachedSizes(
+      ::google::protobuf::io::CodedOutputStream* output) const PROTOBUF_FINAL;
+  ::google::protobuf::uint8* InternalSerializeWithCachedSizesToArray(
+      bool deterministic, ::google::protobuf::uint8* target) const PROTOBUF_FINAL;
+  int GetCachedSize() const PROTOBUF_FINAL { return _cached_size_; }
+  private:
+  void SharedCtor();
+  void SharedDtor();
+  void SetCachedSize(int size) const PROTOBUF_FINAL;
+  void InternalSwap(BagItemEntry* other);
+  private:
+  inline ::google::protobuf::Arena* GetArenaNoVirtual() const {
+    return NULL;
+  }
+  inline void* MaybeArenaPtr() const {
+    return NULL;
+  }
+  public:
+
+  ::google::protobuf::Metadata GetMetadata() const PROTOBUF_FINAL;
+
+  // nested types ----------------------------------------------------
+
+  // accessors -------------------------------------------------------
+
+  // uint32 item_id = 1;
+  void clear_item_id();
+  static const int kItemIdFieldNumber = 1;
+  ::google::protobuf::uint32 item_id() const;
+  void set_item_id(::google::protobuf::uint32 value);
+
+  // uint32 count = 2;
+  void clear_count();
+  static const int kCountFieldNumber = 2;
+  ::google::protobuf::uint32 count() const;
+  void set_count(::google::protobuf::uint32 value);
+
+  // @@protoc_insertion_point(class_scope:glrpc.BagItemEntry)
+ private:
+
+  ::google::protobuf::internal::InternalMetadataWithArena _internal_metadata_;
+  ::google::protobuf::uint32 item_id_;
+  ::google::protobuf::uint32 count_;
+  mutable int _cached_size_;
+  friend struct ::protobuf_gamelogic_5frpc_2eproto::TableStruct;
+  friend void ::protobuf_gamelogic_5frpc_2eproto::InitDefaultsBagItemEntryImpl();
+};
+// -------------------------------------------------------------------
+
+class SkillCdEntry : public ::google::protobuf::Message /* @@protoc_insertion_point(class_definition:glrpc.SkillCdEntry) */ {
+ public:
+  SkillCdEntry();
+  virtual ~SkillCdEntry();
+
+  SkillCdEntry(const SkillCdEntry& from);
+
+  inline SkillCdEntry& operator=(const SkillCdEntry& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  #if LANG_CXX11
+  SkillCdEntry(SkillCdEntry&& from) noexcept
+    : SkillCdEntry() {
+    *this = ::std::move(from);
+  }
+
+  inline SkillCdEntry& operator=(SkillCdEntry&& from) noexcept {
+    if (GetArenaNoVirtual() == from.GetArenaNoVirtual()) {
+      if (this != &from) InternalSwap(&from);
+    } else {
+      CopyFrom(from);
+    }
+    return *this;
+  }
+  #endif
+  static const ::google::protobuf::Descriptor* descriptor();
+  static const SkillCdEntry& default_instance();
+
+  static void InitAsDefaultInstance();  // FOR INTERNAL USE ONLY
+  static inline const SkillCdEntry* internal_default_instance() {
+    return reinterpret_cast<const SkillCdEntry*>(
+               &_SkillCdEntry_default_instance_);
+  }
+  static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
+    7;
+
+  void Swap(SkillCdEntry* other);
+  friend void swap(SkillCdEntry& a, SkillCdEntry& b) {
+    a.Swap(&b);
+  }
+
+  // implements Message ----------------------------------------------
+
+  inline SkillCdEntry* New() const PROTOBUF_FINAL { return New(NULL); }
+
+  SkillCdEntry* New(::google::protobuf::Arena* arena) const PROTOBUF_FINAL;
+  void CopyFrom(const ::google::protobuf::Message& from) PROTOBUF_FINAL;
+  void MergeFrom(const ::google::protobuf::Message& from) PROTOBUF_FINAL;
+  void CopyFrom(const SkillCdEntry& from);
+  void MergeFrom(const SkillCdEntry& from);
+  void Clear() PROTOBUF_FINAL;
+  bool IsInitialized() const PROTOBUF_FINAL;
+
+  size_t ByteSizeLong() const PROTOBUF_FINAL;
+  bool MergePartialFromCodedStream(
+      ::google::protobuf::io::CodedInputStream* input) PROTOBUF_FINAL;
+  void SerializeWithCachedSizes(
+      ::google::protobuf::io::CodedOutputStream* output) const PROTOBUF_FINAL;
+  ::google::protobuf::uint8* InternalSerializeWithCachedSizesToArray(
+      bool deterministic, ::google::protobuf::uint8* target) const PROTOBUF_FINAL;
+  int GetCachedSize() const PROTOBUF_FINAL { return _cached_size_; }
+  private:
+  void SharedCtor();
+  void SharedDtor();
+  void SetCachedSize(int size) const PROTOBUF_FINAL;
+  void InternalSwap(SkillCdEntry* other);
+  private:
+  inline ::google::protobuf::Arena* GetArenaNoVirtual() const {
+    return NULL;
+  }
+  inline void* MaybeArenaPtr() const {
+    return NULL;
+  }
+  public:
+
+  ::google::protobuf::Metadata GetMetadata() const PROTOBUF_FINAL;
+
+  // nested types ----------------------------------------------------
+
+  // accessors -------------------------------------------------------
+
+  // int64 cd_until_ms = 2;
+  void clear_cd_until_ms();
+  static const int kCdUntilMsFieldNumber = 2;
+  ::google::protobuf::int64 cd_until_ms() const;
+  void set_cd_until_ms(::google::protobuf::int64 value);
+
+  // uint32 skill_id = 1;
+  void clear_skill_id();
+  static const int kSkillIdFieldNumber = 1;
+  ::google::protobuf::uint32 skill_id() const;
+  void set_skill_id(::google::protobuf::uint32 value);
+
+  // @@protoc_insertion_point(class_scope:glrpc.SkillCdEntry)
+ private:
+
+  ::google::protobuf::internal::InternalMetadataWithArena _internal_metadata_;
+  ::google::protobuf::int64 cd_until_ms_;
+  ::google::protobuf::uint32 skill_id_;
+  mutable int _cached_size_;
+  friend struct ::protobuf_gamelogic_5frpc_2eproto::TableStruct;
+  friend void ::protobuf_gamelogic_5frpc_2eproto::InitDefaultsSkillCdEntryImpl();
+};
+// -------------------------------------------------------------------
+
+class PlayerRuntimeState : public ::google::protobuf::Message /* @@protoc_insertion_point(class_definition:glrpc.PlayerRuntimeState) */ {
+ public:
+  PlayerRuntimeState();
+  virtual ~PlayerRuntimeState();
+
+  PlayerRuntimeState(const PlayerRuntimeState& from);
+
+  inline PlayerRuntimeState& operator=(const PlayerRuntimeState& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  #if LANG_CXX11
+  PlayerRuntimeState(PlayerRuntimeState&& from) noexcept
+    : PlayerRuntimeState() {
+    *this = ::std::move(from);
+  }
+
+  inline PlayerRuntimeState& operator=(PlayerRuntimeState&& from) noexcept {
+    if (GetArenaNoVirtual() == from.GetArenaNoVirtual()) {
+      if (this != &from) InternalSwap(&from);
+    } else {
+      CopyFrom(from);
+    }
+    return *this;
+  }
+  #endif
+  static const ::google::protobuf::Descriptor* descriptor();
+  static const PlayerRuntimeState& default_instance();
+
+  static void InitAsDefaultInstance();  // FOR INTERNAL USE ONLY
+  static inline const PlayerRuntimeState* internal_default_instance() {
+    return reinterpret_cast<const PlayerRuntimeState*>(
+               &_PlayerRuntimeState_default_instance_);
+  }
+  static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
+    8;
+
+  void Swap(PlayerRuntimeState* other);
+  friend void swap(PlayerRuntimeState& a, PlayerRuntimeState& b) {
+    a.Swap(&b);
+  }
+
+  // implements Message ----------------------------------------------
+
+  inline PlayerRuntimeState* New() const PROTOBUF_FINAL { return New(NULL); }
+
+  PlayerRuntimeState* New(::google::protobuf::Arena* arena) const PROTOBUF_FINAL;
+  void CopyFrom(const ::google::protobuf::Message& from) PROTOBUF_FINAL;
+  void MergeFrom(const ::google::protobuf::Message& from) PROTOBUF_FINAL;
+  void CopyFrom(const PlayerRuntimeState& from);
+  void MergeFrom(const PlayerRuntimeState& from);
+  void Clear() PROTOBUF_FINAL;
+  bool IsInitialized() const PROTOBUF_FINAL;
+
+  size_t ByteSizeLong() const PROTOBUF_FINAL;
+  bool MergePartialFromCodedStream(
+      ::google::protobuf::io::CodedInputStream* input) PROTOBUF_FINAL;
+  void SerializeWithCachedSizes(
+      ::google::protobuf::io::CodedOutputStream* output) const PROTOBUF_FINAL;
+  ::google::protobuf::uint8* InternalSerializeWithCachedSizesToArray(
+      bool deterministic, ::google::protobuf::uint8* target) const PROTOBUF_FINAL;
+  int GetCachedSize() const PROTOBUF_FINAL { return _cached_size_; }
+  private:
+  void SharedCtor();
+  void SharedDtor();
+  void SetCachedSize(int size) const PROTOBUF_FINAL;
+  void InternalSwap(PlayerRuntimeState* other);
+  private:
+  inline ::google::protobuf::Arena* GetArenaNoVirtual() const {
+    return NULL;
+  }
+  inline void* MaybeArenaPtr() const {
+    return NULL;
+  }
+  public:
+
+  ::google::protobuf::Metadata GetMetadata() const PROTOBUF_FINAL;
+
+  // nested types ----------------------------------------------------
+
+  // accessors -------------------------------------------------------
+
+  // repeated .glrpc.BagItemEntry bag = 1;
+  int bag_size() const;
+  void clear_bag();
+  static const int kBagFieldNumber = 1;
+  const ::glrpc::BagItemEntry& bag(int index) const;
+  ::glrpc::BagItemEntry* mutable_bag(int index);
+  ::glrpc::BagItemEntry* add_bag();
+  ::google::protobuf::RepeatedPtrField< ::glrpc::BagItemEntry >*
+      mutable_bag();
+  const ::google::protobuf::RepeatedPtrField< ::glrpc::BagItemEntry >&
+      bag() const;
+
+  // repeated .glrpc.SkillCdEntry skill_cds = 2;
+  int skill_cds_size() const;
+  void clear_skill_cds();
+  static const int kSkillCdsFieldNumber = 2;
+  const ::glrpc::SkillCdEntry& skill_cds(int index) const;
+  ::glrpc::SkillCdEntry* mutable_skill_cds(int index);
+  ::glrpc::SkillCdEntry* add_skill_cds();
+  ::google::protobuf::RepeatedPtrField< ::glrpc::SkillCdEntry >*
+      mutable_skill_cds();
+  const ::google::protobuf::RepeatedPtrField< ::glrpc::SkillCdEntry >&
+      skill_cds() const;
+
+  // uint64 last_client_seq = 3;
+  void clear_last_client_seq();
+  static const int kLastClientSeqFieldNumber = 3;
+  ::google::protobuf::uint64 last_client_seq() const;
+  void set_last_client_seq(::google::protobuf::uint64 value);
+
+  // uint64 asset_version = 4;
+  void clear_asset_version();
+  static const int kAssetVersionFieldNumber = 4;
+  ::google::protobuf::uint64 asset_version() const;
+  void set_asset_version(::google::protobuf::uint64 value);
+
+  // @@protoc_insertion_point(class_scope:glrpc.PlayerRuntimeState)
+ private:
+
+  ::google::protobuf::internal::InternalMetadataWithArena _internal_metadata_;
+  ::google::protobuf::RepeatedPtrField< ::glrpc::BagItemEntry > bag_;
+  ::google::protobuf::RepeatedPtrField< ::glrpc::SkillCdEntry > skill_cds_;
+  ::google::protobuf::uint64 last_client_seq_;
+  ::google::protobuf::uint64 asset_version_;
+  mutable int _cached_size_;
+  friend struct ::protobuf_gamelogic_5frpc_2eproto::TableStruct;
+  friend void ::protobuf_gamelogic_5frpc_2eproto::InitDefaultsPlayerRuntimeStateImpl();
+};
+// -------------------------------------------------------------------
+
+class PlayerTransferSnapshot : public ::google::protobuf::Message /* @@protoc_insertion_point(class_definition:glrpc.PlayerTransferSnapshot) */ {
+ public:
+  PlayerTransferSnapshot();
+  virtual ~PlayerTransferSnapshot();
+
+  PlayerTransferSnapshot(const PlayerTransferSnapshot& from);
+
+  inline PlayerTransferSnapshot& operator=(const PlayerTransferSnapshot& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  #if LANG_CXX11
+  PlayerTransferSnapshot(PlayerTransferSnapshot&& from) noexcept
+    : PlayerTransferSnapshot() {
+    *this = ::std::move(from);
+  }
+
+  inline PlayerTransferSnapshot& operator=(PlayerTransferSnapshot&& from) noexcept {
+    if (GetArenaNoVirtual() == from.GetArenaNoVirtual()) {
+      if (this != &from) InternalSwap(&from);
+    } else {
+      CopyFrom(from);
+    }
+    return *this;
+  }
+  #endif
+  static const ::google::protobuf::Descriptor* descriptor();
+  static const PlayerTransferSnapshot& default_instance();
+
+  static void InitAsDefaultInstance();  // FOR INTERNAL USE ONLY
+  static inline const PlayerTransferSnapshot* internal_default_instance() {
+    return reinterpret_cast<const PlayerTransferSnapshot*>(
+               &_PlayerTransferSnapshot_default_instance_);
+  }
+  static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
+    9;
+
+  void Swap(PlayerTransferSnapshot* other);
+  friend void swap(PlayerTransferSnapshot& a, PlayerTransferSnapshot& b) {
+    a.Swap(&b);
+  }
+
+  // implements Message ----------------------------------------------
+
+  inline PlayerTransferSnapshot* New() const PROTOBUF_FINAL { return New(NULL); }
+
+  PlayerTransferSnapshot* New(::google::protobuf::Arena* arena) const PROTOBUF_FINAL;
+  void CopyFrom(const ::google::protobuf::Message& from) PROTOBUF_FINAL;
+  void MergeFrom(const ::google::protobuf::Message& from) PROTOBUF_FINAL;
+  void CopyFrom(const PlayerTransferSnapshot& from);
+  void MergeFrom(const PlayerTransferSnapshot& from);
+  void Clear() PROTOBUF_FINAL;
+  bool IsInitialized() const PROTOBUF_FINAL;
+
+  size_t ByteSizeLong() const PROTOBUF_FINAL;
+  bool MergePartialFromCodedStream(
+      ::google::protobuf::io::CodedInputStream* input) PROTOBUF_FINAL;
+  void SerializeWithCachedSizes(
+      ::google::protobuf::io::CodedOutputStream* output) const PROTOBUF_FINAL;
+  ::google::protobuf::uint8* InternalSerializeWithCachedSizesToArray(
+      bool deterministic, ::google::protobuf::uint8* target) const PROTOBUF_FINAL;
+  int GetCachedSize() const PROTOBUF_FINAL { return _cached_size_; }
+  private:
+  void SharedCtor();
+  void SharedDtor();
+  void SetCachedSize(int size) const PROTOBUF_FINAL;
+  void InternalSwap(PlayerTransferSnapshot* other);
+  private:
+  inline ::google::protobuf::Arena* GetArenaNoVirtual() const {
+    return NULL;
+  }
+  inline void* MaybeArenaPtr() const {
+    return NULL;
+  }
+  public:
+
+  ::google::protobuf::Metadata GetMetadata() const PROTOBUF_FINAL;
+
+  // nested types ----------------------------------------------------
+
+  // accessors -------------------------------------------------------
+
+  // string session_id = 2;
+  void clear_session_id();
+  static const int kSessionIdFieldNumber = 2;
+  const ::std::string& session_id() const;
+  void set_session_id(const ::std::string& value);
+  #if LANG_CXX11
+  void set_session_id(::std::string&& value);
+  #endif
+  void set_session_id(const char* value);
+  void set_session_id(const char* value, size_t size);
+  ::std::string* mutable_session_id();
+  ::std::string* release_session_id();
+  void set_allocated_session_id(::std::string* session_id);
+
+  // string fence_token = 3;
+  void clear_fence_token();
+  static const int kFenceTokenFieldNumber = 3;
+  const ::std::string& fence_token() const;
+  void set_fence_token(const ::std::string& value);
+  #if LANG_CXX11
+  void set_fence_token(::std::string&& value);
+  #endif
+  void set_fence_token(const char* value);
+  void set_fence_token(const char* value, size_t size);
+  ::std::string* mutable_fence_token();
+  ::std::string* release_fence_token();
+  void set_allocated_fence_token(::std::string* fence_token);
+
+  // string source_gamelogic_id = 5;
+  void clear_source_gamelogic_id();
+  static const int kSourceGamelogicIdFieldNumber = 5;
+  const ::std::string& source_gamelogic_id() const;
+  void set_source_gamelogic_id(const ::std::string& value);
+  #if LANG_CXX11
+  void set_source_gamelogic_id(::std::string&& value);
+  #endif
+  void set_source_gamelogic_id(const char* value);
+  void set_source_gamelogic_id(const char* value, size_t size);
+  ::std::string* mutable_source_gamelogic_id();
+  ::std::string* release_source_gamelogic_id();
+  void set_allocated_source_gamelogic_id(::std::string* source_gamelogic_id);
+
+  // string target_gamelogic_id = 6;
+  void clear_target_gamelogic_id();
+  static const int kTargetGamelogicIdFieldNumber = 6;
+  const ::std::string& target_gamelogic_id() const;
+  void set_target_gamelogic_id(const ::std::string& value);
+  #if LANG_CXX11
+  void set_target_gamelogic_id(::std::string&& value);
+  #endif
+  void set_target_gamelogic_id(const char* value);
+  void set_target_gamelogic_id(const char* value, size_t size);
+  ::std::string* mutable_target_gamelogic_id();
+  ::std::string* release_target_gamelogic_id();
+  void set_allocated_target_gamelogic_id(::std::string* target_gamelogic_id);
+
+  // string checksum = 13;
+  void clear_checksum();
+  static const int kChecksumFieldNumber = 13;
+  const ::std::string& checksum() const;
+  void set_checksum(const ::std::string& value);
+  #if LANG_CXX11
+  void set_checksum(::std::string&& value);
+  #endif
+  void set_checksum(const char* value);
+  void set_checksum(const char* value, size_t size);
+  ::std::string* mutable_checksum();
+  ::std::string* release_checksum();
+  void set_allocated_checksum(::std::string* checksum);
+
+  // string transfer_id = 14;
+  void clear_transfer_id();
+  static const int kTransferIdFieldNumber = 14;
+  const ::std::string& transfer_id() const;
+  void set_transfer_id(const ::std::string& value);
+  #if LANG_CXX11
+  void set_transfer_id(::std::string&& value);
+  #endif
+  void set_transfer_id(const char* value);
+  void set_transfer_id(const char* value, size_t size);
+  ::std::string* mutable_transfer_id();
+  ::std::string* release_transfer_id();
+  void set_allocated_transfer_id(::std::string* transfer_id);
+
+  // .glrpc.PlayerRuntimeState state = 12;
+  bool has_state() const;
+  void clear_state();
+  static const int kStateFieldNumber = 12;
+  const ::glrpc::PlayerRuntimeState& state() const;
+  ::glrpc::PlayerRuntimeState* release_state();
+  ::glrpc::PlayerRuntimeState* mutable_state();
+  void set_allocated_state(::glrpc::PlayerRuntimeState* state);
+
+  // uint64 player_id = 1;
+  void clear_player_id();
+  static const int kPlayerIdFieldNumber = 1;
+  ::google::protobuf::uint64 player_id() const;
+  void set_player_id(::google::protobuf::uint64 value);
+
+  // uint64 generation = 4;
+  void clear_generation();
+  static const int kGenerationFieldNumber = 4;
+  ::google::protobuf::uint64 generation() const;
+  void set_generation(::google::protobuf::uint64 value);
+
+  // uint64 source_map_instance_id = 7;
+  void clear_source_map_instance_id();
+  static const int kSourceMapInstanceIdFieldNumber = 7;
+  ::google::protobuf::uint64 source_map_instance_id() const;
+  void set_source_map_instance_id(::google::protobuf::uint64 value);
+
+  // uint64 target_map_instance_id = 8;
+  void clear_target_map_instance_id();
+  static const int kTargetMapInstanceIdFieldNumber = 8;
+  ::google::protobuf::uint64 target_map_instance_id() const;
+  void set_target_map_instance_id(::google::protobuf::uint64 value);
+
+  // uint64 target_owner_epoch = 9;
+  void clear_target_owner_epoch();
+  static const int kTargetOwnerEpochFieldNumber = 9;
+  ::google::protobuf::uint64 target_owner_epoch() const;
+  void set_target_owner_epoch(::google::protobuf::uint64 value);
+
+  // uint64 route_version = 10;
+  void clear_route_version();
+  static const int kRouteVersionFieldNumber = 10;
+  ::google::protobuf::uint64 route_version() const;
+  void set_route_version(::google::protobuf::uint64 value);
+
+  // uint64 snapshot_version = 11;
+  void clear_snapshot_version();
+  static const int kSnapshotVersionFieldNumber = 11;
+  ::google::protobuf::uint64 snapshot_version() const;
+  void set_snapshot_version(::google::protobuf::uint64 value);
+
+  // @@protoc_insertion_point(class_scope:glrpc.PlayerTransferSnapshot)
+ private:
+
+  ::google::protobuf::internal::InternalMetadataWithArena _internal_metadata_;
+  ::google::protobuf::internal::ArenaStringPtr session_id_;
+  ::google::protobuf::internal::ArenaStringPtr fence_token_;
+  ::google::protobuf::internal::ArenaStringPtr source_gamelogic_id_;
+  ::google::protobuf::internal::ArenaStringPtr target_gamelogic_id_;
+  ::google::protobuf::internal::ArenaStringPtr checksum_;
+  ::google::protobuf::internal::ArenaStringPtr transfer_id_;
+  ::glrpc::PlayerRuntimeState* state_;
+  ::google::protobuf::uint64 player_id_;
+  ::google::protobuf::uint64 generation_;
+  ::google::protobuf::uint64 source_map_instance_id_;
+  ::google::protobuf::uint64 target_map_instance_id_;
+  ::google::protobuf::uint64 target_owner_epoch_;
+  ::google::protobuf::uint64 route_version_;
+  ::google::protobuf::uint64 snapshot_version_;
+  mutable int _cached_size_;
+  friend struct ::protobuf_gamelogic_5frpc_2eproto::TableStruct;
+  friend void ::protobuf_gamelogic_5frpc_2eproto::InitDefaultsPlayerTransferSnapshotImpl();
+};
+// -------------------------------------------------------------------
+
+class ExportPlayerSnapshotRequest : public ::google::protobuf::Message /* @@protoc_insertion_point(class_definition:glrpc.ExportPlayerSnapshotRequest) */ {
+ public:
+  ExportPlayerSnapshotRequest();
+  virtual ~ExportPlayerSnapshotRequest();
+
+  ExportPlayerSnapshotRequest(const ExportPlayerSnapshotRequest& from);
+
+  inline ExportPlayerSnapshotRequest& operator=(const ExportPlayerSnapshotRequest& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  #if LANG_CXX11
+  ExportPlayerSnapshotRequest(ExportPlayerSnapshotRequest&& from) noexcept
+    : ExportPlayerSnapshotRequest() {
+    *this = ::std::move(from);
+  }
+
+  inline ExportPlayerSnapshotRequest& operator=(ExportPlayerSnapshotRequest&& from) noexcept {
+    if (GetArenaNoVirtual() == from.GetArenaNoVirtual()) {
+      if (this != &from) InternalSwap(&from);
+    } else {
+      CopyFrom(from);
+    }
+    return *this;
+  }
+  #endif
+  static const ::google::protobuf::Descriptor* descriptor();
+  static const ExportPlayerSnapshotRequest& default_instance();
+
+  static void InitAsDefaultInstance();  // FOR INTERNAL USE ONLY
+  static inline const ExportPlayerSnapshotRequest* internal_default_instance() {
+    return reinterpret_cast<const ExportPlayerSnapshotRequest*>(
+               &_ExportPlayerSnapshotRequest_default_instance_);
+  }
+  static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
+    10;
+
+  void Swap(ExportPlayerSnapshotRequest* other);
+  friend void swap(ExportPlayerSnapshotRequest& a, ExportPlayerSnapshotRequest& b) {
+    a.Swap(&b);
+  }
+
+  // implements Message ----------------------------------------------
+
+  inline ExportPlayerSnapshotRequest* New() const PROTOBUF_FINAL { return New(NULL); }
+
+  ExportPlayerSnapshotRequest* New(::google::protobuf::Arena* arena) const PROTOBUF_FINAL;
+  void CopyFrom(const ::google::protobuf::Message& from) PROTOBUF_FINAL;
+  void MergeFrom(const ::google::protobuf::Message& from) PROTOBUF_FINAL;
+  void CopyFrom(const ExportPlayerSnapshotRequest& from);
+  void MergeFrom(const ExportPlayerSnapshotRequest& from);
+  void Clear() PROTOBUF_FINAL;
+  bool IsInitialized() const PROTOBUF_FINAL;
+
+  size_t ByteSizeLong() const PROTOBUF_FINAL;
+  bool MergePartialFromCodedStream(
+      ::google::protobuf::io::CodedInputStream* input) PROTOBUF_FINAL;
+  void SerializeWithCachedSizes(
+      ::google::protobuf::io::CodedOutputStream* output) const PROTOBUF_FINAL;
+  ::google::protobuf::uint8* InternalSerializeWithCachedSizesToArray(
+      bool deterministic, ::google::protobuf::uint8* target) const PROTOBUF_FINAL;
+  int GetCachedSize() const PROTOBUF_FINAL { return _cached_size_; }
+  private:
+  void SharedCtor();
+  void SharedDtor();
+  void SetCachedSize(int size) const PROTOBUF_FINAL;
+  void InternalSwap(ExportPlayerSnapshotRequest* other);
+  private:
+  inline ::google::protobuf::Arena* GetArenaNoVirtual() const {
+    return NULL;
+  }
+  inline void* MaybeArenaPtr() const {
+    return NULL;
+  }
+  public:
+
+  ::google::protobuf::Metadata GetMetadata() const PROTOBUF_FINAL;
+
+  // nested types ----------------------------------------------------
+
+  // accessors -------------------------------------------------------
+
+  // string session_id = 2;
+  void clear_session_id();
+  static const int kSessionIdFieldNumber = 2;
+  const ::std::string& session_id() const;
+  void set_session_id(const ::std::string& value);
+  #if LANG_CXX11
+  void set_session_id(::std::string&& value);
+  #endif
+  void set_session_id(const char* value);
+  void set_session_id(const char* value, size_t size);
+  ::std::string* mutable_session_id();
+  ::std::string* release_session_id();
+  void set_allocated_session_id(::std::string* session_id);
+
+  // string fence_token = 3;
+  void clear_fence_token();
+  static const int kFenceTokenFieldNumber = 3;
+  const ::std::string& fence_token() const;
+  void set_fence_token(const ::std::string& value);
+  #if LANG_CXX11
+  void set_fence_token(::std::string&& value);
+  #endif
+  void set_fence_token(const char* value);
+  void set_fence_token(const char* value, size_t size);
+  ::std::string* mutable_fence_token();
+  ::std::string* release_fence_token();
+  void set_allocated_fence_token(::std::string* fence_token);
+
+  // string transfer_id = 4;
+  void clear_transfer_id();
+  static const int kTransferIdFieldNumber = 4;
+  const ::std::string& transfer_id() const;
+  void set_transfer_id(const ::std::string& value);
+  #if LANG_CXX11
+  void set_transfer_id(::std::string&& value);
+  #endif
+  void set_transfer_id(const char* value);
+  void set_transfer_id(const char* value, size_t size);
+  ::std::string* mutable_transfer_id();
+  ::std::string* release_transfer_id();
+  void set_allocated_transfer_id(::std::string* transfer_id);
+
+  // string target_gamelogic_id = 5;
+  void clear_target_gamelogic_id();
+  static const int kTargetGamelogicIdFieldNumber = 5;
+  const ::std::string& target_gamelogic_id() const;
+  void set_target_gamelogic_id(const ::std::string& value);
+  #if LANG_CXX11
+  void set_target_gamelogic_id(::std::string&& value);
+  #endif
+  void set_target_gamelogic_id(const char* value);
+  void set_target_gamelogic_id(const char* value, size_t size);
+  ::std::string* mutable_target_gamelogic_id();
+  ::std::string* release_target_gamelogic_id();
+  void set_allocated_target_gamelogic_id(::std::string* target_gamelogic_id);
+
+  // string idempotency_key = 8;
+  void clear_idempotency_key();
+  static const int kIdempotencyKeyFieldNumber = 8;
+  const ::std::string& idempotency_key() const;
+  void set_idempotency_key(const ::std::string& value);
+  #if LANG_CXX11
+  void set_idempotency_key(::std::string&& value);
+  #endif
+  void set_idempotency_key(const char* value);
+  void set_idempotency_key(const char* value, size_t size);
+  ::std::string* mutable_idempotency_key();
+  ::std::string* release_idempotency_key();
+  void set_allocated_idempotency_key(::std::string* idempotency_key);
+
+  // uint64 player_id = 1;
+  void clear_player_id();
+  static const int kPlayerIdFieldNumber = 1;
+  ::google::protobuf::uint64 player_id() const;
+  void set_player_id(::google::protobuf::uint64 value);
+
+  // uint64 target_map_instance_id = 6;
+  void clear_target_map_instance_id();
+  static const int kTargetMapInstanceIdFieldNumber = 6;
+  ::google::protobuf::uint64 target_map_instance_id() const;
+  void set_target_map_instance_id(::google::protobuf::uint64 value);
+
+  // uint64 target_owner_epoch = 7;
+  void clear_target_owner_epoch();
+  static const int kTargetOwnerEpochFieldNumber = 7;
+  ::google::protobuf::uint64 target_owner_epoch() const;
+  void set_target_owner_epoch(::google::protobuf::uint64 value);
+
+  // @@protoc_insertion_point(class_scope:glrpc.ExportPlayerSnapshotRequest)
+ private:
+
+  ::google::protobuf::internal::InternalMetadataWithArena _internal_metadata_;
+  ::google::protobuf::internal::ArenaStringPtr session_id_;
+  ::google::protobuf::internal::ArenaStringPtr fence_token_;
+  ::google::protobuf::internal::ArenaStringPtr transfer_id_;
+  ::google::protobuf::internal::ArenaStringPtr target_gamelogic_id_;
+  ::google::protobuf::internal::ArenaStringPtr idempotency_key_;
+  ::google::protobuf::uint64 player_id_;
+  ::google::protobuf::uint64 target_map_instance_id_;
+  ::google::protobuf::uint64 target_owner_epoch_;
+  mutable int _cached_size_;
+  friend struct ::protobuf_gamelogic_5frpc_2eproto::TableStruct;
+  friend void ::protobuf_gamelogic_5frpc_2eproto::InitDefaultsExportPlayerSnapshotRequestImpl();
+};
+// -------------------------------------------------------------------
+
+class ExportPlayerSnapshotResponse : public ::google::protobuf::Message /* @@protoc_insertion_point(class_definition:glrpc.ExportPlayerSnapshotResponse) */ {
+ public:
+  ExportPlayerSnapshotResponse();
+  virtual ~ExportPlayerSnapshotResponse();
+
+  ExportPlayerSnapshotResponse(const ExportPlayerSnapshotResponse& from);
+
+  inline ExportPlayerSnapshotResponse& operator=(const ExportPlayerSnapshotResponse& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  #if LANG_CXX11
+  ExportPlayerSnapshotResponse(ExportPlayerSnapshotResponse&& from) noexcept
+    : ExportPlayerSnapshotResponse() {
+    *this = ::std::move(from);
+  }
+
+  inline ExportPlayerSnapshotResponse& operator=(ExportPlayerSnapshotResponse&& from) noexcept {
+    if (GetArenaNoVirtual() == from.GetArenaNoVirtual()) {
+      if (this != &from) InternalSwap(&from);
+    } else {
+      CopyFrom(from);
+    }
+    return *this;
+  }
+  #endif
+  static const ::google::protobuf::Descriptor* descriptor();
+  static const ExportPlayerSnapshotResponse& default_instance();
+
+  static void InitAsDefaultInstance();  // FOR INTERNAL USE ONLY
+  static inline const ExportPlayerSnapshotResponse* internal_default_instance() {
+    return reinterpret_cast<const ExportPlayerSnapshotResponse*>(
+               &_ExportPlayerSnapshotResponse_default_instance_);
+  }
+  static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
+    11;
+
+  void Swap(ExportPlayerSnapshotResponse* other);
+  friend void swap(ExportPlayerSnapshotResponse& a, ExportPlayerSnapshotResponse& b) {
+    a.Swap(&b);
+  }
+
+  // implements Message ----------------------------------------------
+
+  inline ExportPlayerSnapshotResponse* New() const PROTOBUF_FINAL { return New(NULL); }
+
+  ExportPlayerSnapshotResponse* New(::google::protobuf::Arena* arena) const PROTOBUF_FINAL;
+  void CopyFrom(const ::google::protobuf::Message& from) PROTOBUF_FINAL;
+  void MergeFrom(const ::google::protobuf::Message& from) PROTOBUF_FINAL;
+  void CopyFrom(const ExportPlayerSnapshotResponse& from);
+  void MergeFrom(const ExportPlayerSnapshotResponse& from);
+  void Clear() PROTOBUF_FINAL;
+  bool IsInitialized() const PROTOBUF_FINAL;
+
+  size_t ByteSizeLong() const PROTOBUF_FINAL;
+  bool MergePartialFromCodedStream(
+      ::google::protobuf::io::CodedInputStream* input) PROTOBUF_FINAL;
+  void SerializeWithCachedSizes(
+      ::google::protobuf::io::CodedOutputStream* output) const PROTOBUF_FINAL;
+  ::google::protobuf::uint8* InternalSerializeWithCachedSizesToArray(
+      bool deterministic, ::google::protobuf::uint8* target) const PROTOBUF_FINAL;
+  int GetCachedSize() const PROTOBUF_FINAL { return _cached_size_; }
+  private:
+  void SharedCtor();
+  void SharedDtor();
+  void SetCachedSize(int size) const PROTOBUF_FINAL;
+  void InternalSwap(ExportPlayerSnapshotResponse* other);
+  private:
+  inline ::google::protobuf::Arena* GetArenaNoVirtual() const {
+    return NULL;
+  }
+  inline void* MaybeArenaPtr() const {
+    return NULL;
+  }
+  public:
+
+  ::google::protobuf::Metadata GetMetadata() const PROTOBUF_FINAL;
+
+  // nested types ----------------------------------------------------
+
+  // accessors -------------------------------------------------------
+
+  // string message = 2;
+  void clear_message();
+  static const int kMessageFieldNumber = 2;
+  const ::std::string& message() const;
+  void set_message(const ::std::string& value);
+  #if LANG_CXX11
+  void set_message(::std::string&& value);
+  #endif
+  void set_message(const char* value);
+  void set_message(const char* value, size_t size);
+  ::std::string* mutable_message();
+  ::std::string* release_message();
+  void set_allocated_message(::std::string* message);
+
+  // string error_code = 3;
+  void clear_error_code();
+  static const int kErrorCodeFieldNumber = 3;
+  const ::std::string& error_code() const;
+  void set_error_code(const ::std::string& value);
+  #if LANG_CXX11
+  void set_error_code(::std::string&& value);
+  #endif
+  void set_error_code(const char* value);
+  void set_error_code(const char* value, size_t size);
+  ::std::string* mutable_error_code();
+  ::std::string* release_error_code();
+  void set_allocated_error_code(::std::string* error_code);
+
+  // .glrpc.PlayerTransferSnapshot snapshot = 4;
+  bool has_snapshot() const;
+  void clear_snapshot();
+  static const int kSnapshotFieldNumber = 4;
+  const ::glrpc::PlayerTransferSnapshot& snapshot() const;
+  ::glrpc::PlayerTransferSnapshot* release_snapshot();
+  ::glrpc::PlayerTransferSnapshot* mutable_snapshot();
+  void set_allocated_snapshot(::glrpc::PlayerTransferSnapshot* snapshot);
+
+  // bool ok = 1;
+  void clear_ok();
+  static const int kOkFieldNumber = 1;
+  bool ok() const;
+  void set_ok(bool value);
+
+  // @@protoc_insertion_point(class_scope:glrpc.ExportPlayerSnapshotResponse)
+ private:
+
+  ::google::protobuf::internal::InternalMetadataWithArena _internal_metadata_;
+  ::google::protobuf::internal::ArenaStringPtr message_;
+  ::google::protobuf::internal::ArenaStringPtr error_code_;
+  ::glrpc::PlayerTransferSnapshot* snapshot_;
+  bool ok_;
+  mutable int _cached_size_;
+  friend struct ::protobuf_gamelogic_5frpc_2eproto::TableStruct;
+  friend void ::protobuf_gamelogic_5frpc_2eproto::InitDefaultsExportPlayerSnapshotResponseImpl();
+};
+// -------------------------------------------------------------------
+
+class ImportPlayerSnapshotRequest : public ::google::protobuf::Message /* @@protoc_insertion_point(class_definition:glrpc.ImportPlayerSnapshotRequest) */ {
+ public:
+  ImportPlayerSnapshotRequest();
+  virtual ~ImportPlayerSnapshotRequest();
+
+  ImportPlayerSnapshotRequest(const ImportPlayerSnapshotRequest& from);
+
+  inline ImportPlayerSnapshotRequest& operator=(const ImportPlayerSnapshotRequest& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  #if LANG_CXX11
+  ImportPlayerSnapshotRequest(ImportPlayerSnapshotRequest&& from) noexcept
+    : ImportPlayerSnapshotRequest() {
+    *this = ::std::move(from);
+  }
+
+  inline ImportPlayerSnapshotRequest& operator=(ImportPlayerSnapshotRequest&& from) noexcept {
+    if (GetArenaNoVirtual() == from.GetArenaNoVirtual()) {
+      if (this != &from) InternalSwap(&from);
+    } else {
+      CopyFrom(from);
+    }
+    return *this;
+  }
+  #endif
+  static const ::google::protobuf::Descriptor* descriptor();
+  static const ImportPlayerSnapshotRequest& default_instance();
+
+  static void InitAsDefaultInstance();  // FOR INTERNAL USE ONLY
+  static inline const ImportPlayerSnapshotRequest* internal_default_instance() {
+    return reinterpret_cast<const ImportPlayerSnapshotRequest*>(
+               &_ImportPlayerSnapshotRequest_default_instance_);
+  }
+  static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
+    12;
+
+  void Swap(ImportPlayerSnapshotRequest* other);
+  friend void swap(ImportPlayerSnapshotRequest& a, ImportPlayerSnapshotRequest& b) {
+    a.Swap(&b);
+  }
+
+  // implements Message ----------------------------------------------
+
+  inline ImportPlayerSnapshotRequest* New() const PROTOBUF_FINAL { return New(NULL); }
+
+  ImportPlayerSnapshotRequest* New(::google::protobuf::Arena* arena) const PROTOBUF_FINAL;
+  void CopyFrom(const ::google::protobuf::Message& from) PROTOBUF_FINAL;
+  void MergeFrom(const ::google::protobuf::Message& from) PROTOBUF_FINAL;
+  void CopyFrom(const ImportPlayerSnapshotRequest& from);
+  void MergeFrom(const ImportPlayerSnapshotRequest& from);
+  void Clear() PROTOBUF_FINAL;
+  bool IsInitialized() const PROTOBUF_FINAL;
+
+  size_t ByteSizeLong() const PROTOBUF_FINAL;
+  bool MergePartialFromCodedStream(
+      ::google::protobuf::io::CodedInputStream* input) PROTOBUF_FINAL;
+  void SerializeWithCachedSizes(
+      ::google::protobuf::io::CodedOutputStream* output) const PROTOBUF_FINAL;
+  ::google::protobuf::uint8* InternalSerializeWithCachedSizesToArray(
+      bool deterministic, ::google::protobuf::uint8* target) const PROTOBUF_FINAL;
+  int GetCachedSize() const PROTOBUF_FINAL { return _cached_size_; }
+  private:
+  void SharedCtor();
+  void SharedDtor();
+  void SetCachedSize(int size) const PROTOBUF_FINAL;
+  void InternalSwap(ImportPlayerSnapshotRequest* other);
+  private:
+  inline ::google::protobuf::Arena* GetArenaNoVirtual() const {
+    return NULL;
+  }
+  inline void* MaybeArenaPtr() const {
+    return NULL;
+  }
+  public:
+
+  ::google::protobuf::Metadata GetMetadata() const PROTOBUF_FINAL;
+
+  // nested types ----------------------------------------------------
+
+  // accessors -------------------------------------------------------
+
+  // string idempotency_key = 2;
+  void clear_idempotency_key();
+  static const int kIdempotencyKeyFieldNumber = 2;
+  const ::std::string& idempotency_key() const;
+  void set_idempotency_key(const ::std::string& value);
+  #if LANG_CXX11
+  void set_idempotency_key(::std::string&& value);
+  #endif
+  void set_idempotency_key(const char* value);
+  void set_idempotency_key(const char* value, size_t size);
+  ::std::string* mutable_idempotency_key();
+  ::std::string* release_idempotency_key();
+  void set_allocated_idempotency_key(::std::string* idempotency_key);
+
+  // .glrpc.PlayerTransferSnapshot snapshot = 1;
+  bool has_snapshot() const;
+  void clear_snapshot();
+  static const int kSnapshotFieldNumber = 1;
+  const ::glrpc::PlayerTransferSnapshot& snapshot() const;
+  ::glrpc::PlayerTransferSnapshot* release_snapshot();
+  ::glrpc::PlayerTransferSnapshot* mutable_snapshot();
+  void set_allocated_snapshot(::glrpc::PlayerTransferSnapshot* snapshot);
+
+  // @@protoc_insertion_point(class_scope:glrpc.ImportPlayerSnapshotRequest)
+ private:
+
+  ::google::protobuf::internal::InternalMetadataWithArena _internal_metadata_;
+  ::google::protobuf::internal::ArenaStringPtr idempotency_key_;
+  ::glrpc::PlayerTransferSnapshot* snapshot_;
+  mutable int _cached_size_;
+  friend struct ::protobuf_gamelogic_5frpc_2eproto::TableStruct;
+  friend void ::protobuf_gamelogic_5frpc_2eproto::InitDefaultsImportPlayerSnapshotRequestImpl();
+};
+// -------------------------------------------------------------------
+
+class ImportPlayerSnapshotResponse : public ::google::protobuf::Message /* @@protoc_insertion_point(class_definition:glrpc.ImportPlayerSnapshotResponse) */ {
+ public:
+  ImportPlayerSnapshotResponse();
+  virtual ~ImportPlayerSnapshotResponse();
+
+  ImportPlayerSnapshotResponse(const ImportPlayerSnapshotResponse& from);
+
+  inline ImportPlayerSnapshotResponse& operator=(const ImportPlayerSnapshotResponse& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  #if LANG_CXX11
+  ImportPlayerSnapshotResponse(ImportPlayerSnapshotResponse&& from) noexcept
+    : ImportPlayerSnapshotResponse() {
+    *this = ::std::move(from);
+  }
+
+  inline ImportPlayerSnapshotResponse& operator=(ImportPlayerSnapshotResponse&& from) noexcept {
+    if (GetArenaNoVirtual() == from.GetArenaNoVirtual()) {
+      if (this != &from) InternalSwap(&from);
+    } else {
+      CopyFrom(from);
+    }
+    return *this;
+  }
+  #endif
+  static const ::google::protobuf::Descriptor* descriptor();
+  static const ImportPlayerSnapshotResponse& default_instance();
+
+  static void InitAsDefaultInstance();  // FOR INTERNAL USE ONLY
+  static inline const ImportPlayerSnapshotResponse* internal_default_instance() {
+    return reinterpret_cast<const ImportPlayerSnapshotResponse*>(
+               &_ImportPlayerSnapshotResponse_default_instance_);
+  }
+  static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
+    13;
+
+  void Swap(ImportPlayerSnapshotResponse* other);
+  friend void swap(ImportPlayerSnapshotResponse& a, ImportPlayerSnapshotResponse& b) {
+    a.Swap(&b);
+  }
+
+  // implements Message ----------------------------------------------
+
+  inline ImportPlayerSnapshotResponse* New() const PROTOBUF_FINAL { return New(NULL); }
+
+  ImportPlayerSnapshotResponse* New(::google::protobuf::Arena* arena) const PROTOBUF_FINAL;
+  void CopyFrom(const ::google::protobuf::Message& from) PROTOBUF_FINAL;
+  void MergeFrom(const ::google::protobuf::Message& from) PROTOBUF_FINAL;
+  void CopyFrom(const ImportPlayerSnapshotResponse& from);
+  void MergeFrom(const ImportPlayerSnapshotResponse& from);
+  void Clear() PROTOBUF_FINAL;
+  bool IsInitialized() const PROTOBUF_FINAL;
+
+  size_t ByteSizeLong() const PROTOBUF_FINAL;
+  bool MergePartialFromCodedStream(
+      ::google::protobuf::io::CodedInputStream* input) PROTOBUF_FINAL;
+  void SerializeWithCachedSizes(
+      ::google::protobuf::io::CodedOutputStream* output) const PROTOBUF_FINAL;
+  ::google::protobuf::uint8* InternalSerializeWithCachedSizesToArray(
+      bool deterministic, ::google::protobuf::uint8* target) const PROTOBUF_FINAL;
+  int GetCachedSize() const PROTOBUF_FINAL { return _cached_size_; }
+  private:
+  void SharedCtor();
+  void SharedDtor();
+  void SetCachedSize(int size) const PROTOBUF_FINAL;
+  void InternalSwap(ImportPlayerSnapshotResponse* other);
+  private:
+  inline ::google::protobuf::Arena* GetArenaNoVirtual() const {
+    return NULL;
+  }
+  inline void* MaybeArenaPtr() const {
+    return NULL;
+  }
+  public:
+
+  ::google::protobuf::Metadata GetMetadata() const PROTOBUF_FINAL;
+
+  // nested types ----------------------------------------------------
+
+  // accessors -------------------------------------------------------
+
+  // string message = 2;
+  void clear_message();
+  static const int kMessageFieldNumber = 2;
+  const ::std::string& message() const;
+  void set_message(const ::std::string& value);
+  #if LANG_CXX11
+  void set_message(::std::string&& value);
+  #endif
+  void set_message(const char* value);
+  void set_message(const char* value, size_t size);
+  ::std::string* mutable_message();
+  ::std::string* release_message();
+  void set_allocated_message(::std::string* message);
+
+  // string error_code = 3;
+  void clear_error_code();
+  static const int kErrorCodeFieldNumber = 3;
+  const ::std::string& error_code() const;
+  void set_error_code(const ::std::string& value);
+  #if LANG_CXX11
+  void set_error_code(::std::string&& value);
+  #endif
+  void set_error_code(const char* value);
+  void set_error_code(const char* value, size_t size);
+  ::std::string* mutable_error_code();
+  ::std::string* release_error_code();
+  void set_allocated_error_code(::std::string* error_code);
+
+  // bool ok = 1;
+  void clear_ok();
+  static const int kOkFieldNumber = 1;
+  bool ok() const;
+  void set_ok(bool value);
+
+  // bool already_applied = 4;
+  void clear_already_applied();
+  static const int kAlreadyAppliedFieldNumber = 4;
+  bool already_applied() const;
+  void set_already_applied(bool value);
+
+  // @@protoc_insertion_point(class_scope:glrpc.ImportPlayerSnapshotResponse)
+ private:
+
+  ::google::protobuf::internal::InternalMetadataWithArena _internal_metadata_;
+  ::google::protobuf::internal::ArenaStringPtr message_;
+  ::google::protobuf::internal::ArenaStringPtr error_code_;
+  bool ok_;
+  bool already_applied_;
+  mutable int _cached_size_;
+  friend struct ::protobuf_gamelogic_5frpc_2eproto::TableStruct;
+  friend void ::protobuf_gamelogic_5frpc_2eproto::InitDefaultsImportPlayerSnapshotResponseImpl();
+};
+// -------------------------------------------------------------------
+
 class ClientCommand : public ::google::protobuf::Message /* @@protoc_insertion_point(class_definition:glrpc.ClientCommand) */ {
  public:
   ClientCommand();
@@ -1086,7 +2299,7 @@ class ClientCommand : public ::google::protobuf::Message /* @@protoc_insertion_p
                &_ClientCommand_default_instance_);
   }
   static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
-    6;
+    14;
 
   void Swap(ClientCommand* other);
   friend void swap(ClientCommand& a, ClientCommand& b) {
@@ -1354,7 +2567,7 @@ class CommandResult : public ::google::protobuf::Message /* @@protoc_insertion_p
                &_CommandResult_default_instance_);
   }
   static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
-    7;
+    15;
 
   void Swap(CommandResult* other);
   friend void swap(CommandResult& a, CommandResult& b) {
@@ -1499,6 +2712,14 @@ class GameLogicService : public ::google::protobuf::Service {
                        const ::glrpc::FreezePlayerRequest* request,
                        ::glrpc::FreezePlayerResponse* response,
                        ::google::protobuf::Closure* done);
+  virtual void ExportPlayerSnapshot(::google::protobuf::RpcController* controller,
+                       const ::glrpc::ExportPlayerSnapshotRequest* request,
+                       ::glrpc::ExportPlayerSnapshotResponse* response,
+                       ::google::protobuf::Closure* done);
+  virtual void ImportPlayerSnapshot(::google::protobuf::RpcController* controller,
+                       const ::glrpc::ImportPlayerSnapshotRequest* request,
+                       ::glrpc::ImportPlayerSnapshotResponse* response,
+                       ::google::protobuf::Closure* done);
 
   // implements Service ----------------------------------------------
 
@@ -1543,6 +2764,14 @@ class GameLogicService_Stub : public GameLogicService {
   void FreezePlayer(::google::protobuf::RpcController* controller,
                        const ::glrpc::FreezePlayerRequest* request,
                        ::glrpc::FreezePlayerResponse* response,
+                       ::google::protobuf::Closure* done);
+  void ExportPlayerSnapshot(::google::protobuf::RpcController* controller,
+                       const ::glrpc::ExportPlayerSnapshotRequest* request,
+                       ::glrpc::ExportPlayerSnapshotResponse* response,
+                       ::google::protobuf::Closure* done);
+  void ImportPlayerSnapshot(::google::protobuf::RpcController* controller,
+                       const ::glrpc::ImportPlayerSnapshotRequest* request,
+                       ::glrpc::ImportPlayerSnapshotResponse* response,
                        ::google::protobuf::Closure* done);
  private:
   ::google::protobuf::RpcChannel* channel_;
@@ -2865,6 +4094,1362 @@ inline void FreezePlayerResponse::set_allocated_error_code(::std::string* error_
 
 // -------------------------------------------------------------------
 
+// BagItemEntry
+
+// uint32 item_id = 1;
+inline void BagItemEntry::clear_item_id() {
+  item_id_ = 0u;
+}
+inline ::google::protobuf::uint32 BagItemEntry::item_id() const {
+  // @@protoc_insertion_point(field_get:glrpc.BagItemEntry.item_id)
+  return item_id_;
+}
+inline void BagItemEntry::set_item_id(::google::protobuf::uint32 value) {
+  
+  item_id_ = value;
+  // @@protoc_insertion_point(field_set:glrpc.BagItemEntry.item_id)
+}
+
+// uint32 count = 2;
+inline void BagItemEntry::clear_count() {
+  count_ = 0u;
+}
+inline ::google::protobuf::uint32 BagItemEntry::count() const {
+  // @@protoc_insertion_point(field_get:glrpc.BagItemEntry.count)
+  return count_;
+}
+inline void BagItemEntry::set_count(::google::protobuf::uint32 value) {
+  
+  count_ = value;
+  // @@protoc_insertion_point(field_set:glrpc.BagItemEntry.count)
+}
+
+// -------------------------------------------------------------------
+
+// SkillCdEntry
+
+// uint32 skill_id = 1;
+inline void SkillCdEntry::clear_skill_id() {
+  skill_id_ = 0u;
+}
+inline ::google::protobuf::uint32 SkillCdEntry::skill_id() const {
+  // @@protoc_insertion_point(field_get:glrpc.SkillCdEntry.skill_id)
+  return skill_id_;
+}
+inline void SkillCdEntry::set_skill_id(::google::protobuf::uint32 value) {
+  
+  skill_id_ = value;
+  // @@protoc_insertion_point(field_set:glrpc.SkillCdEntry.skill_id)
+}
+
+// int64 cd_until_ms = 2;
+inline void SkillCdEntry::clear_cd_until_ms() {
+  cd_until_ms_ = GOOGLE_LONGLONG(0);
+}
+inline ::google::protobuf::int64 SkillCdEntry::cd_until_ms() const {
+  // @@protoc_insertion_point(field_get:glrpc.SkillCdEntry.cd_until_ms)
+  return cd_until_ms_;
+}
+inline void SkillCdEntry::set_cd_until_ms(::google::protobuf::int64 value) {
+  
+  cd_until_ms_ = value;
+  // @@protoc_insertion_point(field_set:glrpc.SkillCdEntry.cd_until_ms)
+}
+
+// -------------------------------------------------------------------
+
+// PlayerRuntimeState
+
+// repeated .glrpc.BagItemEntry bag = 1;
+inline int PlayerRuntimeState::bag_size() const {
+  return bag_.size();
+}
+inline void PlayerRuntimeState::clear_bag() {
+  bag_.Clear();
+}
+inline const ::glrpc::BagItemEntry& PlayerRuntimeState::bag(int index) const {
+  // @@protoc_insertion_point(field_get:glrpc.PlayerRuntimeState.bag)
+  return bag_.Get(index);
+}
+inline ::glrpc::BagItemEntry* PlayerRuntimeState::mutable_bag(int index) {
+  // @@protoc_insertion_point(field_mutable:glrpc.PlayerRuntimeState.bag)
+  return bag_.Mutable(index);
+}
+inline ::glrpc::BagItemEntry* PlayerRuntimeState::add_bag() {
+  // @@protoc_insertion_point(field_add:glrpc.PlayerRuntimeState.bag)
+  return bag_.Add();
+}
+inline ::google::protobuf::RepeatedPtrField< ::glrpc::BagItemEntry >*
+PlayerRuntimeState::mutable_bag() {
+  // @@protoc_insertion_point(field_mutable_list:glrpc.PlayerRuntimeState.bag)
+  return &bag_;
+}
+inline const ::google::protobuf::RepeatedPtrField< ::glrpc::BagItemEntry >&
+PlayerRuntimeState::bag() const {
+  // @@protoc_insertion_point(field_list:glrpc.PlayerRuntimeState.bag)
+  return bag_;
+}
+
+// repeated .glrpc.SkillCdEntry skill_cds = 2;
+inline int PlayerRuntimeState::skill_cds_size() const {
+  return skill_cds_.size();
+}
+inline void PlayerRuntimeState::clear_skill_cds() {
+  skill_cds_.Clear();
+}
+inline const ::glrpc::SkillCdEntry& PlayerRuntimeState::skill_cds(int index) const {
+  // @@protoc_insertion_point(field_get:glrpc.PlayerRuntimeState.skill_cds)
+  return skill_cds_.Get(index);
+}
+inline ::glrpc::SkillCdEntry* PlayerRuntimeState::mutable_skill_cds(int index) {
+  // @@protoc_insertion_point(field_mutable:glrpc.PlayerRuntimeState.skill_cds)
+  return skill_cds_.Mutable(index);
+}
+inline ::glrpc::SkillCdEntry* PlayerRuntimeState::add_skill_cds() {
+  // @@protoc_insertion_point(field_add:glrpc.PlayerRuntimeState.skill_cds)
+  return skill_cds_.Add();
+}
+inline ::google::protobuf::RepeatedPtrField< ::glrpc::SkillCdEntry >*
+PlayerRuntimeState::mutable_skill_cds() {
+  // @@protoc_insertion_point(field_mutable_list:glrpc.PlayerRuntimeState.skill_cds)
+  return &skill_cds_;
+}
+inline const ::google::protobuf::RepeatedPtrField< ::glrpc::SkillCdEntry >&
+PlayerRuntimeState::skill_cds() const {
+  // @@protoc_insertion_point(field_list:glrpc.PlayerRuntimeState.skill_cds)
+  return skill_cds_;
+}
+
+// uint64 last_client_seq = 3;
+inline void PlayerRuntimeState::clear_last_client_seq() {
+  last_client_seq_ = GOOGLE_ULONGLONG(0);
+}
+inline ::google::protobuf::uint64 PlayerRuntimeState::last_client_seq() const {
+  // @@protoc_insertion_point(field_get:glrpc.PlayerRuntimeState.last_client_seq)
+  return last_client_seq_;
+}
+inline void PlayerRuntimeState::set_last_client_seq(::google::protobuf::uint64 value) {
+  
+  last_client_seq_ = value;
+  // @@protoc_insertion_point(field_set:glrpc.PlayerRuntimeState.last_client_seq)
+}
+
+// uint64 asset_version = 4;
+inline void PlayerRuntimeState::clear_asset_version() {
+  asset_version_ = GOOGLE_ULONGLONG(0);
+}
+inline ::google::protobuf::uint64 PlayerRuntimeState::asset_version() const {
+  // @@protoc_insertion_point(field_get:glrpc.PlayerRuntimeState.asset_version)
+  return asset_version_;
+}
+inline void PlayerRuntimeState::set_asset_version(::google::protobuf::uint64 value) {
+  
+  asset_version_ = value;
+  // @@protoc_insertion_point(field_set:glrpc.PlayerRuntimeState.asset_version)
+}
+
+// -------------------------------------------------------------------
+
+// PlayerTransferSnapshot
+
+// uint64 player_id = 1;
+inline void PlayerTransferSnapshot::clear_player_id() {
+  player_id_ = GOOGLE_ULONGLONG(0);
+}
+inline ::google::protobuf::uint64 PlayerTransferSnapshot::player_id() const {
+  // @@protoc_insertion_point(field_get:glrpc.PlayerTransferSnapshot.player_id)
+  return player_id_;
+}
+inline void PlayerTransferSnapshot::set_player_id(::google::protobuf::uint64 value) {
+  
+  player_id_ = value;
+  // @@protoc_insertion_point(field_set:glrpc.PlayerTransferSnapshot.player_id)
+}
+
+// string session_id = 2;
+inline void PlayerTransferSnapshot::clear_session_id() {
+  session_id_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline const ::std::string& PlayerTransferSnapshot::session_id() const {
+  // @@protoc_insertion_point(field_get:glrpc.PlayerTransferSnapshot.session_id)
+  return session_id_.GetNoArena();
+}
+inline void PlayerTransferSnapshot::set_session_id(const ::std::string& value) {
+  
+  session_id_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), value);
+  // @@protoc_insertion_point(field_set:glrpc.PlayerTransferSnapshot.session_id)
+}
+#if LANG_CXX11
+inline void PlayerTransferSnapshot::set_session_id(::std::string&& value) {
+  
+  session_id_.SetNoArena(
+    &::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::move(value));
+  // @@protoc_insertion_point(field_set_rvalue:glrpc.PlayerTransferSnapshot.session_id)
+}
+#endif
+inline void PlayerTransferSnapshot::set_session_id(const char* value) {
+  GOOGLE_DCHECK(value != NULL);
+  
+  session_id_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::string(value));
+  // @@protoc_insertion_point(field_set_char:glrpc.PlayerTransferSnapshot.session_id)
+}
+inline void PlayerTransferSnapshot::set_session_id(const char* value, size_t size) {
+  
+  session_id_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(),
+      ::std::string(reinterpret_cast<const char*>(value), size));
+  // @@protoc_insertion_point(field_set_pointer:glrpc.PlayerTransferSnapshot.session_id)
+}
+inline ::std::string* PlayerTransferSnapshot::mutable_session_id() {
+  
+  // @@protoc_insertion_point(field_mutable:glrpc.PlayerTransferSnapshot.session_id)
+  return session_id_.MutableNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline ::std::string* PlayerTransferSnapshot::release_session_id() {
+  // @@protoc_insertion_point(field_release:glrpc.PlayerTransferSnapshot.session_id)
+  
+  return session_id_.ReleaseNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline void PlayerTransferSnapshot::set_allocated_session_id(::std::string* session_id) {
+  if (session_id != NULL) {
+    
+  } else {
+    
+  }
+  session_id_.SetAllocatedNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), session_id);
+  // @@protoc_insertion_point(field_set_allocated:glrpc.PlayerTransferSnapshot.session_id)
+}
+
+// string fence_token = 3;
+inline void PlayerTransferSnapshot::clear_fence_token() {
+  fence_token_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline const ::std::string& PlayerTransferSnapshot::fence_token() const {
+  // @@protoc_insertion_point(field_get:glrpc.PlayerTransferSnapshot.fence_token)
+  return fence_token_.GetNoArena();
+}
+inline void PlayerTransferSnapshot::set_fence_token(const ::std::string& value) {
+  
+  fence_token_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), value);
+  // @@protoc_insertion_point(field_set:glrpc.PlayerTransferSnapshot.fence_token)
+}
+#if LANG_CXX11
+inline void PlayerTransferSnapshot::set_fence_token(::std::string&& value) {
+  
+  fence_token_.SetNoArena(
+    &::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::move(value));
+  // @@protoc_insertion_point(field_set_rvalue:glrpc.PlayerTransferSnapshot.fence_token)
+}
+#endif
+inline void PlayerTransferSnapshot::set_fence_token(const char* value) {
+  GOOGLE_DCHECK(value != NULL);
+  
+  fence_token_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::string(value));
+  // @@protoc_insertion_point(field_set_char:glrpc.PlayerTransferSnapshot.fence_token)
+}
+inline void PlayerTransferSnapshot::set_fence_token(const char* value, size_t size) {
+  
+  fence_token_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(),
+      ::std::string(reinterpret_cast<const char*>(value), size));
+  // @@protoc_insertion_point(field_set_pointer:glrpc.PlayerTransferSnapshot.fence_token)
+}
+inline ::std::string* PlayerTransferSnapshot::mutable_fence_token() {
+  
+  // @@protoc_insertion_point(field_mutable:glrpc.PlayerTransferSnapshot.fence_token)
+  return fence_token_.MutableNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline ::std::string* PlayerTransferSnapshot::release_fence_token() {
+  // @@protoc_insertion_point(field_release:glrpc.PlayerTransferSnapshot.fence_token)
+  
+  return fence_token_.ReleaseNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline void PlayerTransferSnapshot::set_allocated_fence_token(::std::string* fence_token) {
+  if (fence_token != NULL) {
+    
+  } else {
+    
+  }
+  fence_token_.SetAllocatedNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), fence_token);
+  // @@protoc_insertion_point(field_set_allocated:glrpc.PlayerTransferSnapshot.fence_token)
+}
+
+// uint64 generation = 4;
+inline void PlayerTransferSnapshot::clear_generation() {
+  generation_ = GOOGLE_ULONGLONG(0);
+}
+inline ::google::protobuf::uint64 PlayerTransferSnapshot::generation() const {
+  // @@protoc_insertion_point(field_get:glrpc.PlayerTransferSnapshot.generation)
+  return generation_;
+}
+inline void PlayerTransferSnapshot::set_generation(::google::protobuf::uint64 value) {
+  
+  generation_ = value;
+  // @@protoc_insertion_point(field_set:glrpc.PlayerTransferSnapshot.generation)
+}
+
+// string source_gamelogic_id = 5;
+inline void PlayerTransferSnapshot::clear_source_gamelogic_id() {
+  source_gamelogic_id_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline const ::std::string& PlayerTransferSnapshot::source_gamelogic_id() const {
+  // @@protoc_insertion_point(field_get:glrpc.PlayerTransferSnapshot.source_gamelogic_id)
+  return source_gamelogic_id_.GetNoArena();
+}
+inline void PlayerTransferSnapshot::set_source_gamelogic_id(const ::std::string& value) {
+  
+  source_gamelogic_id_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), value);
+  // @@protoc_insertion_point(field_set:glrpc.PlayerTransferSnapshot.source_gamelogic_id)
+}
+#if LANG_CXX11
+inline void PlayerTransferSnapshot::set_source_gamelogic_id(::std::string&& value) {
+  
+  source_gamelogic_id_.SetNoArena(
+    &::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::move(value));
+  // @@protoc_insertion_point(field_set_rvalue:glrpc.PlayerTransferSnapshot.source_gamelogic_id)
+}
+#endif
+inline void PlayerTransferSnapshot::set_source_gamelogic_id(const char* value) {
+  GOOGLE_DCHECK(value != NULL);
+  
+  source_gamelogic_id_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::string(value));
+  // @@protoc_insertion_point(field_set_char:glrpc.PlayerTransferSnapshot.source_gamelogic_id)
+}
+inline void PlayerTransferSnapshot::set_source_gamelogic_id(const char* value, size_t size) {
+  
+  source_gamelogic_id_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(),
+      ::std::string(reinterpret_cast<const char*>(value), size));
+  // @@protoc_insertion_point(field_set_pointer:glrpc.PlayerTransferSnapshot.source_gamelogic_id)
+}
+inline ::std::string* PlayerTransferSnapshot::mutable_source_gamelogic_id() {
+  
+  // @@protoc_insertion_point(field_mutable:glrpc.PlayerTransferSnapshot.source_gamelogic_id)
+  return source_gamelogic_id_.MutableNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline ::std::string* PlayerTransferSnapshot::release_source_gamelogic_id() {
+  // @@protoc_insertion_point(field_release:glrpc.PlayerTransferSnapshot.source_gamelogic_id)
+  
+  return source_gamelogic_id_.ReleaseNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline void PlayerTransferSnapshot::set_allocated_source_gamelogic_id(::std::string* source_gamelogic_id) {
+  if (source_gamelogic_id != NULL) {
+    
+  } else {
+    
+  }
+  source_gamelogic_id_.SetAllocatedNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), source_gamelogic_id);
+  // @@protoc_insertion_point(field_set_allocated:glrpc.PlayerTransferSnapshot.source_gamelogic_id)
+}
+
+// string target_gamelogic_id = 6;
+inline void PlayerTransferSnapshot::clear_target_gamelogic_id() {
+  target_gamelogic_id_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline const ::std::string& PlayerTransferSnapshot::target_gamelogic_id() const {
+  // @@protoc_insertion_point(field_get:glrpc.PlayerTransferSnapshot.target_gamelogic_id)
+  return target_gamelogic_id_.GetNoArena();
+}
+inline void PlayerTransferSnapshot::set_target_gamelogic_id(const ::std::string& value) {
+  
+  target_gamelogic_id_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), value);
+  // @@protoc_insertion_point(field_set:glrpc.PlayerTransferSnapshot.target_gamelogic_id)
+}
+#if LANG_CXX11
+inline void PlayerTransferSnapshot::set_target_gamelogic_id(::std::string&& value) {
+  
+  target_gamelogic_id_.SetNoArena(
+    &::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::move(value));
+  // @@protoc_insertion_point(field_set_rvalue:glrpc.PlayerTransferSnapshot.target_gamelogic_id)
+}
+#endif
+inline void PlayerTransferSnapshot::set_target_gamelogic_id(const char* value) {
+  GOOGLE_DCHECK(value != NULL);
+  
+  target_gamelogic_id_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::string(value));
+  // @@protoc_insertion_point(field_set_char:glrpc.PlayerTransferSnapshot.target_gamelogic_id)
+}
+inline void PlayerTransferSnapshot::set_target_gamelogic_id(const char* value, size_t size) {
+  
+  target_gamelogic_id_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(),
+      ::std::string(reinterpret_cast<const char*>(value), size));
+  // @@protoc_insertion_point(field_set_pointer:glrpc.PlayerTransferSnapshot.target_gamelogic_id)
+}
+inline ::std::string* PlayerTransferSnapshot::mutable_target_gamelogic_id() {
+  
+  // @@protoc_insertion_point(field_mutable:glrpc.PlayerTransferSnapshot.target_gamelogic_id)
+  return target_gamelogic_id_.MutableNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline ::std::string* PlayerTransferSnapshot::release_target_gamelogic_id() {
+  // @@protoc_insertion_point(field_release:glrpc.PlayerTransferSnapshot.target_gamelogic_id)
+  
+  return target_gamelogic_id_.ReleaseNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline void PlayerTransferSnapshot::set_allocated_target_gamelogic_id(::std::string* target_gamelogic_id) {
+  if (target_gamelogic_id != NULL) {
+    
+  } else {
+    
+  }
+  target_gamelogic_id_.SetAllocatedNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), target_gamelogic_id);
+  // @@protoc_insertion_point(field_set_allocated:glrpc.PlayerTransferSnapshot.target_gamelogic_id)
+}
+
+// uint64 source_map_instance_id = 7;
+inline void PlayerTransferSnapshot::clear_source_map_instance_id() {
+  source_map_instance_id_ = GOOGLE_ULONGLONG(0);
+}
+inline ::google::protobuf::uint64 PlayerTransferSnapshot::source_map_instance_id() const {
+  // @@protoc_insertion_point(field_get:glrpc.PlayerTransferSnapshot.source_map_instance_id)
+  return source_map_instance_id_;
+}
+inline void PlayerTransferSnapshot::set_source_map_instance_id(::google::protobuf::uint64 value) {
+  
+  source_map_instance_id_ = value;
+  // @@protoc_insertion_point(field_set:glrpc.PlayerTransferSnapshot.source_map_instance_id)
+}
+
+// uint64 target_map_instance_id = 8;
+inline void PlayerTransferSnapshot::clear_target_map_instance_id() {
+  target_map_instance_id_ = GOOGLE_ULONGLONG(0);
+}
+inline ::google::protobuf::uint64 PlayerTransferSnapshot::target_map_instance_id() const {
+  // @@protoc_insertion_point(field_get:glrpc.PlayerTransferSnapshot.target_map_instance_id)
+  return target_map_instance_id_;
+}
+inline void PlayerTransferSnapshot::set_target_map_instance_id(::google::protobuf::uint64 value) {
+  
+  target_map_instance_id_ = value;
+  // @@protoc_insertion_point(field_set:glrpc.PlayerTransferSnapshot.target_map_instance_id)
+}
+
+// uint64 target_owner_epoch = 9;
+inline void PlayerTransferSnapshot::clear_target_owner_epoch() {
+  target_owner_epoch_ = GOOGLE_ULONGLONG(0);
+}
+inline ::google::protobuf::uint64 PlayerTransferSnapshot::target_owner_epoch() const {
+  // @@protoc_insertion_point(field_get:glrpc.PlayerTransferSnapshot.target_owner_epoch)
+  return target_owner_epoch_;
+}
+inline void PlayerTransferSnapshot::set_target_owner_epoch(::google::protobuf::uint64 value) {
+  
+  target_owner_epoch_ = value;
+  // @@protoc_insertion_point(field_set:glrpc.PlayerTransferSnapshot.target_owner_epoch)
+}
+
+// uint64 route_version = 10;
+inline void PlayerTransferSnapshot::clear_route_version() {
+  route_version_ = GOOGLE_ULONGLONG(0);
+}
+inline ::google::protobuf::uint64 PlayerTransferSnapshot::route_version() const {
+  // @@protoc_insertion_point(field_get:glrpc.PlayerTransferSnapshot.route_version)
+  return route_version_;
+}
+inline void PlayerTransferSnapshot::set_route_version(::google::protobuf::uint64 value) {
+  
+  route_version_ = value;
+  // @@protoc_insertion_point(field_set:glrpc.PlayerTransferSnapshot.route_version)
+}
+
+// uint64 snapshot_version = 11;
+inline void PlayerTransferSnapshot::clear_snapshot_version() {
+  snapshot_version_ = GOOGLE_ULONGLONG(0);
+}
+inline ::google::protobuf::uint64 PlayerTransferSnapshot::snapshot_version() const {
+  // @@protoc_insertion_point(field_get:glrpc.PlayerTransferSnapshot.snapshot_version)
+  return snapshot_version_;
+}
+inline void PlayerTransferSnapshot::set_snapshot_version(::google::protobuf::uint64 value) {
+  
+  snapshot_version_ = value;
+  // @@protoc_insertion_point(field_set:glrpc.PlayerTransferSnapshot.snapshot_version)
+}
+
+// .glrpc.PlayerRuntimeState state = 12;
+inline bool PlayerTransferSnapshot::has_state() const {
+  return this != internal_default_instance() && state_ != NULL;
+}
+inline void PlayerTransferSnapshot::clear_state() {
+  if (GetArenaNoVirtual() == NULL && state_ != NULL) {
+    delete state_;
+  }
+  state_ = NULL;
+}
+inline const ::glrpc::PlayerRuntimeState& PlayerTransferSnapshot::state() const {
+  const ::glrpc::PlayerRuntimeState* p = state_;
+  // @@protoc_insertion_point(field_get:glrpc.PlayerTransferSnapshot.state)
+  return p != NULL ? *p : *reinterpret_cast<const ::glrpc::PlayerRuntimeState*>(
+      &::glrpc::_PlayerRuntimeState_default_instance_);
+}
+inline ::glrpc::PlayerRuntimeState* PlayerTransferSnapshot::release_state() {
+  // @@protoc_insertion_point(field_release:glrpc.PlayerTransferSnapshot.state)
+  
+  ::glrpc::PlayerRuntimeState* temp = state_;
+  state_ = NULL;
+  return temp;
+}
+inline ::glrpc::PlayerRuntimeState* PlayerTransferSnapshot::mutable_state() {
+  
+  if (state_ == NULL) {
+    state_ = new ::glrpc::PlayerRuntimeState;
+  }
+  // @@protoc_insertion_point(field_mutable:glrpc.PlayerTransferSnapshot.state)
+  return state_;
+}
+inline void PlayerTransferSnapshot::set_allocated_state(::glrpc::PlayerRuntimeState* state) {
+  ::google::protobuf::Arena* message_arena = GetArenaNoVirtual();
+  if (message_arena == NULL) {
+    delete state_;
+  }
+  if (state) {
+    ::google::protobuf::Arena* submessage_arena = NULL;
+    if (message_arena != submessage_arena) {
+      state = ::google::protobuf::internal::GetOwnedMessage(
+          message_arena, state, submessage_arena);
+    }
+    
+  } else {
+    
+  }
+  state_ = state;
+  // @@protoc_insertion_point(field_set_allocated:glrpc.PlayerTransferSnapshot.state)
+}
+
+// string checksum = 13;
+inline void PlayerTransferSnapshot::clear_checksum() {
+  checksum_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline const ::std::string& PlayerTransferSnapshot::checksum() const {
+  // @@protoc_insertion_point(field_get:glrpc.PlayerTransferSnapshot.checksum)
+  return checksum_.GetNoArena();
+}
+inline void PlayerTransferSnapshot::set_checksum(const ::std::string& value) {
+  
+  checksum_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), value);
+  // @@protoc_insertion_point(field_set:glrpc.PlayerTransferSnapshot.checksum)
+}
+#if LANG_CXX11
+inline void PlayerTransferSnapshot::set_checksum(::std::string&& value) {
+  
+  checksum_.SetNoArena(
+    &::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::move(value));
+  // @@protoc_insertion_point(field_set_rvalue:glrpc.PlayerTransferSnapshot.checksum)
+}
+#endif
+inline void PlayerTransferSnapshot::set_checksum(const char* value) {
+  GOOGLE_DCHECK(value != NULL);
+  
+  checksum_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::string(value));
+  // @@protoc_insertion_point(field_set_char:glrpc.PlayerTransferSnapshot.checksum)
+}
+inline void PlayerTransferSnapshot::set_checksum(const char* value, size_t size) {
+  
+  checksum_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(),
+      ::std::string(reinterpret_cast<const char*>(value), size));
+  // @@protoc_insertion_point(field_set_pointer:glrpc.PlayerTransferSnapshot.checksum)
+}
+inline ::std::string* PlayerTransferSnapshot::mutable_checksum() {
+  
+  // @@protoc_insertion_point(field_mutable:glrpc.PlayerTransferSnapshot.checksum)
+  return checksum_.MutableNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline ::std::string* PlayerTransferSnapshot::release_checksum() {
+  // @@protoc_insertion_point(field_release:glrpc.PlayerTransferSnapshot.checksum)
+  
+  return checksum_.ReleaseNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline void PlayerTransferSnapshot::set_allocated_checksum(::std::string* checksum) {
+  if (checksum != NULL) {
+    
+  } else {
+    
+  }
+  checksum_.SetAllocatedNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), checksum);
+  // @@protoc_insertion_point(field_set_allocated:glrpc.PlayerTransferSnapshot.checksum)
+}
+
+// string transfer_id = 14;
+inline void PlayerTransferSnapshot::clear_transfer_id() {
+  transfer_id_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline const ::std::string& PlayerTransferSnapshot::transfer_id() const {
+  // @@protoc_insertion_point(field_get:glrpc.PlayerTransferSnapshot.transfer_id)
+  return transfer_id_.GetNoArena();
+}
+inline void PlayerTransferSnapshot::set_transfer_id(const ::std::string& value) {
+  
+  transfer_id_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), value);
+  // @@protoc_insertion_point(field_set:glrpc.PlayerTransferSnapshot.transfer_id)
+}
+#if LANG_CXX11
+inline void PlayerTransferSnapshot::set_transfer_id(::std::string&& value) {
+  
+  transfer_id_.SetNoArena(
+    &::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::move(value));
+  // @@protoc_insertion_point(field_set_rvalue:glrpc.PlayerTransferSnapshot.transfer_id)
+}
+#endif
+inline void PlayerTransferSnapshot::set_transfer_id(const char* value) {
+  GOOGLE_DCHECK(value != NULL);
+  
+  transfer_id_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::string(value));
+  // @@protoc_insertion_point(field_set_char:glrpc.PlayerTransferSnapshot.transfer_id)
+}
+inline void PlayerTransferSnapshot::set_transfer_id(const char* value, size_t size) {
+  
+  transfer_id_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(),
+      ::std::string(reinterpret_cast<const char*>(value), size));
+  // @@protoc_insertion_point(field_set_pointer:glrpc.PlayerTransferSnapshot.transfer_id)
+}
+inline ::std::string* PlayerTransferSnapshot::mutable_transfer_id() {
+  
+  // @@protoc_insertion_point(field_mutable:glrpc.PlayerTransferSnapshot.transfer_id)
+  return transfer_id_.MutableNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline ::std::string* PlayerTransferSnapshot::release_transfer_id() {
+  // @@protoc_insertion_point(field_release:glrpc.PlayerTransferSnapshot.transfer_id)
+  
+  return transfer_id_.ReleaseNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline void PlayerTransferSnapshot::set_allocated_transfer_id(::std::string* transfer_id) {
+  if (transfer_id != NULL) {
+    
+  } else {
+    
+  }
+  transfer_id_.SetAllocatedNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), transfer_id);
+  // @@protoc_insertion_point(field_set_allocated:glrpc.PlayerTransferSnapshot.transfer_id)
+}
+
+// -------------------------------------------------------------------
+
+// ExportPlayerSnapshotRequest
+
+// uint64 player_id = 1;
+inline void ExportPlayerSnapshotRequest::clear_player_id() {
+  player_id_ = GOOGLE_ULONGLONG(0);
+}
+inline ::google::protobuf::uint64 ExportPlayerSnapshotRequest::player_id() const {
+  // @@protoc_insertion_point(field_get:glrpc.ExportPlayerSnapshotRequest.player_id)
+  return player_id_;
+}
+inline void ExportPlayerSnapshotRequest::set_player_id(::google::protobuf::uint64 value) {
+  
+  player_id_ = value;
+  // @@protoc_insertion_point(field_set:glrpc.ExportPlayerSnapshotRequest.player_id)
+}
+
+// string session_id = 2;
+inline void ExportPlayerSnapshotRequest::clear_session_id() {
+  session_id_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline const ::std::string& ExportPlayerSnapshotRequest::session_id() const {
+  // @@protoc_insertion_point(field_get:glrpc.ExportPlayerSnapshotRequest.session_id)
+  return session_id_.GetNoArena();
+}
+inline void ExportPlayerSnapshotRequest::set_session_id(const ::std::string& value) {
+  
+  session_id_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), value);
+  // @@protoc_insertion_point(field_set:glrpc.ExportPlayerSnapshotRequest.session_id)
+}
+#if LANG_CXX11
+inline void ExportPlayerSnapshotRequest::set_session_id(::std::string&& value) {
+  
+  session_id_.SetNoArena(
+    &::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::move(value));
+  // @@protoc_insertion_point(field_set_rvalue:glrpc.ExportPlayerSnapshotRequest.session_id)
+}
+#endif
+inline void ExportPlayerSnapshotRequest::set_session_id(const char* value) {
+  GOOGLE_DCHECK(value != NULL);
+  
+  session_id_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::string(value));
+  // @@protoc_insertion_point(field_set_char:glrpc.ExportPlayerSnapshotRequest.session_id)
+}
+inline void ExportPlayerSnapshotRequest::set_session_id(const char* value, size_t size) {
+  
+  session_id_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(),
+      ::std::string(reinterpret_cast<const char*>(value), size));
+  // @@protoc_insertion_point(field_set_pointer:glrpc.ExportPlayerSnapshotRequest.session_id)
+}
+inline ::std::string* ExportPlayerSnapshotRequest::mutable_session_id() {
+  
+  // @@protoc_insertion_point(field_mutable:glrpc.ExportPlayerSnapshotRequest.session_id)
+  return session_id_.MutableNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline ::std::string* ExportPlayerSnapshotRequest::release_session_id() {
+  // @@protoc_insertion_point(field_release:glrpc.ExportPlayerSnapshotRequest.session_id)
+  
+  return session_id_.ReleaseNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline void ExportPlayerSnapshotRequest::set_allocated_session_id(::std::string* session_id) {
+  if (session_id != NULL) {
+    
+  } else {
+    
+  }
+  session_id_.SetAllocatedNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), session_id);
+  // @@protoc_insertion_point(field_set_allocated:glrpc.ExportPlayerSnapshotRequest.session_id)
+}
+
+// string fence_token = 3;
+inline void ExportPlayerSnapshotRequest::clear_fence_token() {
+  fence_token_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline const ::std::string& ExportPlayerSnapshotRequest::fence_token() const {
+  // @@protoc_insertion_point(field_get:glrpc.ExportPlayerSnapshotRequest.fence_token)
+  return fence_token_.GetNoArena();
+}
+inline void ExportPlayerSnapshotRequest::set_fence_token(const ::std::string& value) {
+  
+  fence_token_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), value);
+  // @@protoc_insertion_point(field_set:glrpc.ExportPlayerSnapshotRequest.fence_token)
+}
+#if LANG_CXX11
+inline void ExportPlayerSnapshotRequest::set_fence_token(::std::string&& value) {
+  
+  fence_token_.SetNoArena(
+    &::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::move(value));
+  // @@protoc_insertion_point(field_set_rvalue:glrpc.ExportPlayerSnapshotRequest.fence_token)
+}
+#endif
+inline void ExportPlayerSnapshotRequest::set_fence_token(const char* value) {
+  GOOGLE_DCHECK(value != NULL);
+  
+  fence_token_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::string(value));
+  // @@protoc_insertion_point(field_set_char:glrpc.ExportPlayerSnapshotRequest.fence_token)
+}
+inline void ExportPlayerSnapshotRequest::set_fence_token(const char* value, size_t size) {
+  
+  fence_token_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(),
+      ::std::string(reinterpret_cast<const char*>(value), size));
+  // @@protoc_insertion_point(field_set_pointer:glrpc.ExportPlayerSnapshotRequest.fence_token)
+}
+inline ::std::string* ExportPlayerSnapshotRequest::mutable_fence_token() {
+  
+  // @@protoc_insertion_point(field_mutable:glrpc.ExportPlayerSnapshotRequest.fence_token)
+  return fence_token_.MutableNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline ::std::string* ExportPlayerSnapshotRequest::release_fence_token() {
+  // @@protoc_insertion_point(field_release:glrpc.ExportPlayerSnapshotRequest.fence_token)
+  
+  return fence_token_.ReleaseNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline void ExportPlayerSnapshotRequest::set_allocated_fence_token(::std::string* fence_token) {
+  if (fence_token != NULL) {
+    
+  } else {
+    
+  }
+  fence_token_.SetAllocatedNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), fence_token);
+  // @@protoc_insertion_point(field_set_allocated:glrpc.ExportPlayerSnapshotRequest.fence_token)
+}
+
+// string transfer_id = 4;
+inline void ExportPlayerSnapshotRequest::clear_transfer_id() {
+  transfer_id_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline const ::std::string& ExportPlayerSnapshotRequest::transfer_id() const {
+  // @@protoc_insertion_point(field_get:glrpc.ExportPlayerSnapshotRequest.transfer_id)
+  return transfer_id_.GetNoArena();
+}
+inline void ExportPlayerSnapshotRequest::set_transfer_id(const ::std::string& value) {
+  
+  transfer_id_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), value);
+  // @@protoc_insertion_point(field_set:glrpc.ExportPlayerSnapshotRequest.transfer_id)
+}
+#if LANG_CXX11
+inline void ExportPlayerSnapshotRequest::set_transfer_id(::std::string&& value) {
+  
+  transfer_id_.SetNoArena(
+    &::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::move(value));
+  // @@protoc_insertion_point(field_set_rvalue:glrpc.ExportPlayerSnapshotRequest.transfer_id)
+}
+#endif
+inline void ExportPlayerSnapshotRequest::set_transfer_id(const char* value) {
+  GOOGLE_DCHECK(value != NULL);
+  
+  transfer_id_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::string(value));
+  // @@protoc_insertion_point(field_set_char:glrpc.ExportPlayerSnapshotRequest.transfer_id)
+}
+inline void ExportPlayerSnapshotRequest::set_transfer_id(const char* value, size_t size) {
+  
+  transfer_id_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(),
+      ::std::string(reinterpret_cast<const char*>(value), size));
+  // @@protoc_insertion_point(field_set_pointer:glrpc.ExportPlayerSnapshotRequest.transfer_id)
+}
+inline ::std::string* ExportPlayerSnapshotRequest::mutable_transfer_id() {
+  
+  // @@protoc_insertion_point(field_mutable:glrpc.ExportPlayerSnapshotRequest.transfer_id)
+  return transfer_id_.MutableNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline ::std::string* ExportPlayerSnapshotRequest::release_transfer_id() {
+  // @@protoc_insertion_point(field_release:glrpc.ExportPlayerSnapshotRequest.transfer_id)
+  
+  return transfer_id_.ReleaseNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline void ExportPlayerSnapshotRequest::set_allocated_transfer_id(::std::string* transfer_id) {
+  if (transfer_id != NULL) {
+    
+  } else {
+    
+  }
+  transfer_id_.SetAllocatedNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), transfer_id);
+  // @@protoc_insertion_point(field_set_allocated:glrpc.ExportPlayerSnapshotRequest.transfer_id)
+}
+
+// string target_gamelogic_id = 5;
+inline void ExportPlayerSnapshotRequest::clear_target_gamelogic_id() {
+  target_gamelogic_id_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline const ::std::string& ExportPlayerSnapshotRequest::target_gamelogic_id() const {
+  // @@protoc_insertion_point(field_get:glrpc.ExportPlayerSnapshotRequest.target_gamelogic_id)
+  return target_gamelogic_id_.GetNoArena();
+}
+inline void ExportPlayerSnapshotRequest::set_target_gamelogic_id(const ::std::string& value) {
+  
+  target_gamelogic_id_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), value);
+  // @@protoc_insertion_point(field_set:glrpc.ExportPlayerSnapshotRequest.target_gamelogic_id)
+}
+#if LANG_CXX11
+inline void ExportPlayerSnapshotRequest::set_target_gamelogic_id(::std::string&& value) {
+  
+  target_gamelogic_id_.SetNoArena(
+    &::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::move(value));
+  // @@protoc_insertion_point(field_set_rvalue:glrpc.ExportPlayerSnapshotRequest.target_gamelogic_id)
+}
+#endif
+inline void ExportPlayerSnapshotRequest::set_target_gamelogic_id(const char* value) {
+  GOOGLE_DCHECK(value != NULL);
+  
+  target_gamelogic_id_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::string(value));
+  // @@protoc_insertion_point(field_set_char:glrpc.ExportPlayerSnapshotRequest.target_gamelogic_id)
+}
+inline void ExportPlayerSnapshotRequest::set_target_gamelogic_id(const char* value, size_t size) {
+  
+  target_gamelogic_id_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(),
+      ::std::string(reinterpret_cast<const char*>(value), size));
+  // @@protoc_insertion_point(field_set_pointer:glrpc.ExportPlayerSnapshotRequest.target_gamelogic_id)
+}
+inline ::std::string* ExportPlayerSnapshotRequest::mutable_target_gamelogic_id() {
+  
+  // @@protoc_insertion_point(field_mutable:glrpc.ExportPlayerSnapshotRequest.target_gamelogic_id)
+  return target_gamelogic_id_.MutableNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline ::std::string* ExportPlayerSnapshotRequest::release_target_gamelogic_id() {
+  // @@protoc_insertion_point(field_release:glrpc.ExportPlayerSnapshotRequest.target_gamelogic_id)
+  
+  return target_gamelogic_id_.ReleaseNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline void ExportPlayerSnapshotRequest::set_allocated_target_gamelogic_id(::std::string* target_gamelogic_id) {
+  if (target_gamelogic_id != NULL) {
+    
+  } else {
+    
+  }
+  target_gamelogic_id_.SetAllocatedNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), target_gamelogic_id);
+  // @@protoc_insertion_point(field_set_allocated:glrpc.ExportPlayerSnapshotRequest.target_gamelogic_id)
+}
+
+// uint64 target_map_instance_id = 6;
+inline void ExportPlayerSnapshotRequest::clear_target_map_instance_id() {
+  target_map_instance_id_ = GOOGLE_ULONGLONG(0);
+}
+inline ::google::protobuf::uint64 ExportPlayerSnapshotRequest::target_map_instance_id() const {
+  // @@protoc_insertion_point(field_get:glrpc.ExportPlayerSnapshotRequest.target_map_instance_id)
+  return target_map_instance_id_;
+}
+inline void ExportPlayerSnapshotRequest::set_target_map_instance_id(::google::protobuf::uint64 value) {
+  
+  target_map_instance_id_ = value;
+  // @@protoc_insertion_point(field_set:glrpc.ExportPlayerSnapshotRequest.target_map_instance_id)
+}
+
+// uint64 target_owner_epoch = 7;
+inline void ExportPlayerSnapshotRequest::clear_target_owner_epoch() {
+  target_owner_epoch_ = GOOGLE_ULONGLONG(0);
+}
+inline ::google::protobuf::uint64 ExportPlayerSnapshotRequest::target_owner_epoch() const {
+  // @@protoc_insertion_point(field_get:glrpc.ExportPlayerSnapshotRequest.target_owner_epoch)
+  return target_owner_epoch_;
+}
+inline void ExportPlayerSnapshotRequest::set_target_owner_epoch(::google::protobuf::uint64 value) {
+  
+  target_owner_epoch_ = value;
+  // @@protoc_insertion_point(field_set:glrpc.ExportPlayerSnapshotRequest.target_owner_epoch)
+}
+
+// string idempotency_key = 8;
+inline void ExportPlayerSnapshotRequest::clear_idempotency_key() {
+  idempotency_key_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline const ::std::string& ExportPlayerSnapshotRequest::idempotency_key() const {
+  // @@protoc_insertion_point(field_get:glrpc.ExportPlayerSnapshotRequest.idempotency_key)
+  return idempotency_key_.GetNoArena();
+}
+inline void ExportPlayerSnapshotRequest::set_idempotency_key(const ::std::string& value) {
+  
+  idempotency_key_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), value);
+  // @@protoc_insertion_point(field_set:glrpc.ExportPlayerSnapshotRequest.idempotency_key)
+}
+#if LANG_CXX11
+inline void ExportPlayerSnapshotRequest::set_idempotency_key(::std::string&& value) {
+  
+  idempotency_key_.SetNoArena(
+    &::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::move(value));
+  // @@protoc_insertion_point(field_set_rvalue:glrpc.ExportPlayerSnapshotRequest.idempotency_key)
+}
+#endif
+inline void ExportPlayerSnapshotRequest::set_idempotency_key(const char* value) {
+  GOOGLE_DCHECK(value != NULL);
+  
+  idempotency_key_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::string(value));
+  // @@protoc_insertion_point(field_set_char:glrpc.ExportPlayerSnapshotRequest.idempotency_key)
+}
+inline void ExportPlayerSnapshotRequest::set_idempotency_key(const char* value, size_t size) {
+  
+  idempotency_key_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(),
+      ::std::string(reinterpret_cast<const char*>(value), size));
+  // @@protoc_insertion_point(field_set_pointer:glrpc.ExportPlayerSnapshotRequest.idempotency_key)
+}
+inline ::std::string* ExportPlayerSnapshotRequest::mutable_idempotency_key() {
+  
+  // @@protoc_insertion_point(field_mutable:glrpc.ExportPlayerSnapshotRequest.idempotency_key)
+  return idempotency_key_.MutableNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline ::std::string* ExportPlayerSnapshotRequest::release_idempotency_key() {
+  // @@protoc_insertion_point(field_release:glrpc.ExportPlayerSnapshotRequest.idempotency_key)
+  
+  return idempotency_key_.ReleaseNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline void ExportPlayerSnapshotRequest::set_allocated_idempotency_key(::std::string* idempotency_key) {
+  if (idempotency_key != NULL) {
+    
+  } else {
+    
+  }
+  idempotency_key_.SetAllocatedNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), idempotency_key);
+  // @@protoc_insertion_point(field_set_allocated:glrpc.ExportPlayerSnapshotRequest.idempotency_key)
+}
+
+// -------------------------------------------------------------------
+
+// ExportPlayerSnapshotResponse
+
+// bool ok = 1;
+inline void ExportPlayerSnapshotResponse::clear_ok() {
+  ok_ = false;
+}
+inline bool ExportPlayerSnapshotResponse::ok() const {
+  // @@protoc_insertion_point(field_get:glrpc.ExportPlayerSnapshotResponse.ok)
+  return ok_;
+}
+inline void ExportPlayerSnapshotResponse::set_ok(bool value) {
+  
+  ok_ = value;
+  // @@protoc_insertion_point(field_set:glrpc.ExportPlayerSnapshotResponse.ok)
+}
+
+// string message = 2;
+inline void ExportPlayerSnapshotResponse::clear_message() {
+  message_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline const ::std::string& ExportPlayerSnapshotResponse::message() const {
+  // @@protoc_insertion_point(field_get:glrpc.ExportPlayerSnapshotResponse.message)
+  return message_.GetNoArena();
+}
+inline void ExportPlayerSnapshotResponse::set_message(const ::std::string& value) {
+  
+  message_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), value);
+  // @@protoc_insertion_point(field_set:glrpc.ExportPlayerSnapshotResponse.message)
+}
+#if LANG_CXX11
+inline void ExportPlayerSnapshotResponse::set_message(::std::string&& value) {
+  
+  message_.SetNoArena(
+    &::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::move(value));
+  // @@protoc_insertion_point(field_set_rvalue:glrpc.ExportPlayerSnapshotResponse.message)
+}
+#endif
+inline void ExportPlayerSnapshotResponse::set_message(const char* value) {
+  GOOGLE_DCHECK(value != NULL);
+  
+  message_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::string(value));
+  // @@protoc_insertion_point(field_set_char:glrpc.ExportPlayerSnapshotResponse.message)
+}
+inline void ExportPlayerSnapshotResponse::set_message(const char* value, size_t size) {
+  
+  message_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(),
+      ::std::string(reinterpret_cast<const char*>(value), size));
+  // @@protoc_insertion_point(field_set_pointer:glrpc.ExportPlayerSnapshotResponse.message)
+}
+inline ::std::string* ExportPlayerSnapshotResponse::mutable_message() {
+  
+  // @@protoc_insertion_point(field_mutable:glrpc.ExportPlayerSnapshotResponse.message)
+  return message_.MutableNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline ::std::string* ExportPlayerSnapshotResponse::release_message() {
+  // @@protoc_insertion_point(field_release:glrpc.ExportPlayerSnapshotResponse.message)
+  
+  return message_.ReleaseNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline void ExportPlayerSnapshotResponse::set_allocated_message(::std::string* message) {
+  if (message != NULL) {
+    
+  } else {
+    
+  }
+  message_.SetAllocatedNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), message);
+  // @@protoc_insertion_point(field_set_allocated:glrpc.ExportPlayerSnapshotResponse.message)
+}
+
+// string error_code = 3;
+inline void ExportPlayerSnapshotResponse::clear_error_code() {
+  error_code_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline const ::std::string& ExportPlayerSnapshotResponse::error_code() const {
+  // @@protoc_insertion_point(field_get:glrpc.ExportPlayerSnapshotResponse.error_code)
+  return error_code_.GetNoArena();
+}
+inline void ExportPlayerSnapshotResponse::set_error_code(const ::std::string& value) {
+  
+  error_code_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), value);
+  // @@protoc_insertion_point(field_set:glrpc.ExportPlayerSnapshotResponse.error_code)
+}
+#if LANG_CXX11
+inline void ExportPlayerSnapshotResponse::set_error_code(::std::string&& value) {
+  
+  error_code_.SetNoArena(
+    &::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::move(value));
+  // @@protoc_insertion_point(field_set_rvalue:glrpc.ExportPlayerSnapshotResponse.error_code)
+}
+#endif
+inline void ExportPlayerSnapshotResponse::set_error_code(const char* value) {
+  GOOGLE_DCHECK(value != NULL);
+  
+  error_code_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::string(value));
+  // @@protoc_insertion_point(field_set_char:glrpc.ExportPlayerSnapshotResponse.error_code)
+}
+inline void ExportPlayerSnapshotResponse::set_error_code(const char* value, size_t size) {
+  
+  error_code_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(),
+      ::std::string(reinterpret_cast<const char*>(value), size));
+  // @@protoc_insertion_point(field_set_pointer:glrpc.ExportPlayerSnapshotResponse.error_code)
+}
+inline ::std::string* ExportPlayerSnapshotResponse::mutable_error_code() {
+  
+  // @@protoc_insertion_point(field_mutable:glrpc.ExportPlayerSnapshotResponse.error_code)
+  return error_code_.MutableNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline ::std::string* ExportPlayerSnapshotResponse::release_error_code() {
+  // @@protoc_insertion_point(field_release:glrpc.ExportPlayerSnapshotResponse.error_code)
+  
+  return error_code_.ReleaseNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline void ExportPlayerSnapshotResponse::set_allocated_error_code(::std::string* error_code) {
+  if (error_code != NULL) {
+    
+  } else {
+    
+  }
+  error_code_.SetAllocatedNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), error_code);
+  // @@protoc_insertion_point(field_set_allocated:glrpc.ExportPlayerSnapshotResponse.error_code)
+}
+
+// .glrpc.PlayerTransferSnapshot snapshot = 4;
+inline bool ExportPlayerSnapshotResponse::has_snapshot() const {
+  return this != internal_default_instance() && snapshot_ != NULL;
+}
+inline void ExportPlayerSnapshotResponse::clear_snapshot() {
+  if (GetArenaNoVirtual() == NULL && snapshot_ != NULL) {
+    delete snapshot_;
+  }
+  snapshot_ = NULL;
+}
+inline const ::glrpc::PlayerTransferSnapshot& ExportPlayerSnapshotResponse::snapshot() const {
+  const ::glrpc::PlayerTransferSnapshot* p = snapshot_;
+  // @@protoc_insertion_point(field_get:glrpc.ExportPlayerSnapshotResponse.snapshot)
+  return p != NULL ? *p : *reinterpret_cast<const ::glrpc::PlayerTransferSnapshot*>(
+      &::glrpc::_PlayerTransferSnapshot_default_instance_);
+}
+inline ::glrpc::PlayerTransferSnapshot* ExportPlayerSnapshotResponse::release_snapshot() {
+  // @@protoc_insertion_point(field_release:glrpc.ExportPlayerSnapshotResponse.snapshot)
+  
+  ::glrpc::PlayerTransferSnapshot* temp = snapshot_;
+  snapshot_ = NULL;
+  return temp;
+}
+inline ::glrpc::PlayerTransferSnapshot* ExportPlayerSnapshotResponse::mutable_snapshot() {
+  
+  if (snapshot_ == NULL) {
+    snapshot_ = new ::glrpc::PlayerTransferSnapshot;
+  }
+  // @@protoc_insertion_point(field_mutable:glrpc.ExportPlayerSnapshotResponse.snapshot)
+  return snapshot_;
+}
+inline void ExportPlayerSnapshotResponse::set_allocated_snapshot(::glrpc::PlayerTransferSnapshot* snapshot) {
+  ::google::protobuf::Arena* message_arena = GetArenaNoVirtual();
+  if (message_arena == NULL) {
+    delete snapshot_;
+  }
+  if (snapshot) {
+    ::google::protobuf::Arena* submessage_arena = NULL;
+    if (message_arena != submessage_arena) {
+      snapshot = ::google::protobuf::internal::GetOwnedMessage(
+          message_arena, snapshot, submessage_arena);
+    }
+    
+  } else {
+    
+  }
+  snapshot_ = snapshot;
+  // @@protoc_insertion_point(field_set_allocated:glrpc.ExportPlayerSnapshotResponse.snapshot)
+}
+
+// -------------------------------------------------------------------
+
+// ImportPlayerSnapshotRequest
+
+// .glrpc.PlayerTransferSnapshot snapshot = 1;
+inline bool ImportPlayerSnapshotRequest::has_snapshot() const {
+  return this != internal_default_instance() && snapshot_ != NULL;
+}
+inline void ImportPlayerSnapshotRequest::clear_snapshot() {
+  if (GetArenaNoVirtual() == NULL && snapshot_ != NULL) {
+    delete snapshot_;
+  }
+  snapshot_ = NULL;
+}
+inline const ::glrpc::PlayerTransferSnapshot& ImportPlayerSnapshotRequest::snapshot() const {
+  const ::glrpc::PlayerTransferSnapshot* p = snapshot_;
+  // @@protoc_insertion_point(field_get:glrpc.ImportPlayerSnapshotRequest.snapshot)
+  return p != NULL ? *p : *reinterpret_cast<const ::glrpc::PlayerTransferSnapshot*>(
+      &::glrpc::_PlayerTransferSnapshot_default_instance_);
+}
+inline ::glrpc::PlayerTransferSnapshot* ImportPlayerSnapshotRequest::release_snapshot() {
+  // @@protoc_insertion_point(field_release:glrpc.ImportPlayerSnapshotRequest.snapshot)
+  
+  ::glrpc::PlayerTransferSnapshot* temp = snapshot_;
+  snapshot_ = NULL;
+  return temp;
+}
+inline ::glrpc::PlayerTransferSnapshot* ImportPlayerSnapshotRequest::mutable_snapshot() {
+  
+  if (snapshot_ == NULL) {
+    snapshot_ = new ::glrpc::PlayerTransferSnapshot;
+  }
+  // @@protoc_insertion_point(field_mutable:glrpc.ImportPlayerSnapshotRequest.snapshot)
+  return snapshot_;
+}
+inline void ImportPlayerSnapshotRequest::set_allocated_snapshot(::glrpc::PlayerTransferSnapshot* snapshot) {
+  ::google::protobuf::Arena* message_arena = GetArenaNoVirtual();
+  if (message_arena == NULL) {
+    delete snapshot_;
+  }
+  if (snapshot) {
+    ::google::protobuf::Arena* submessage_arena = NULL;
+    if (message_arena != submessage_arena) {
+      snapshot = ::google::protobuf::internal::GetOwnedMessage(
+          message_arena, snapshot, submessage_arena);
+    }
+    
+  } else {
+    
+  }
+  snapshot_ = snapshot;
+  // @@protoc_insertion_point(field_set_allocated:glrpc.ImportPlayerSnapshotRequest.snapshot)
+}
+
+// string idempotency_key = 2;
+inline void ImportPlayerSnapshotRequest::clear_idempotency_key() {
+  idempotency_key_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline const ::std::string& ImportPlayerSnapshotRequest::idempotency_key() const {
+  // @@protoc_insertion_point(field_get:glrpc.ImportPlayerSnapshotRequest.idempotency_key)
+  return idempotency_key_.GetNoArena();
+}
+inline void ImportPlayerSnapshotRequest::set_idempotency_key(const ::std::string& value) {
+  
+  idempotency_key_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), value);
+  // @@protoc_insertion_point(field_set:glrpc.ImportPlayerSnapshotRequest.idempotency_key)
+}
+#if LANG_CXX11
+inline void ImportPlayerSnapshotRequest::set_idempotency_key(::std::string&& value) {
+  
+  idempotency_key_.SetNoArena(
+    &::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::move(value));
+  // @@protoc_insertion_point(field_set_rvalue:glrpc.ImportPlayerSnapshotRequest.idempotency_key)
+}
+#endif
+inline void ImportPlayerSnapshotRequest::set_idempotency_key(const char* value) {
+  GOOGLE_DCHECK(value != NULL);
+  
+  idempotency_key_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::string(value));
+  // @@protoc_insertion_point(field_set_char:glrpc.ImportPlayerSnapshotRequest.idempotency_key)
+}
+inline void ImportPlayerSnapshotRequest::set_idempotency_key(const char* value, size_t size) {
+  
+  idempotency_key_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(),
+      ::std::string(reinterpret_cast<const char*>(value), size));
+  // @@protoc_insertion_point(field_set_pointer:glrpc.ImportPlayerSnapshotRequest.idempotency_key)
+}
+inline ::std::string* ImportPlayerSnapshotRequest::mutable_idempotency_key() {
+  
+  // @@protoc_insertion_point(field_mutable:glrpc.ImportPlayerSnapshotRequest.idempotency_key)
+  return idempotency_key_.MutableNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline ::std::string* ImportPlayerSnapshotRequest::release_idempotency_key() {
+  // @@protoc_insertion_point(field_release:glrpc.ImportPlayerSnapshotRequest.idempotency_key)
+  
+  return idempotency_key_.ReleaseNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline void ImportPlayerSnapshotRequest::set_allocated_idempotency_key(::std::string* idempotency_key) {
+  if (idempotency_key != NULL) {
+    
+  } else {
+    
+  }
+  idempotency_key_.SetAllocatedNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), idempotency_key);
+  // @@protoc_insertion_point(field_set_allocated:glrpc.ImportPlayerSnapshotRequest.idempotency_key)
+}
+
+// -------------------------------------------------------------------
+
+// ImportPlayerSnapshotResponse
+
+// bool ok = 1;
+inline void ImportPlayerSnapshotResponse::clear_ok() {
+  ok_ = false;
+}
+inline bool ImportPlayerSnapshotResponse::ok() const {
+  // @@protoc_insertion_point(field_get:glrpc.ImportPlayerSnapshotResponse.ok)
+  return ok_;
+}
+inline void ImportPlayerSnapshotResponse::set_ok(bool value) {
+  
+  ok_ = value;
+  // @@protoc_insertion_point(field_set:glrpc.ImportPlayerSnapshotResponse.ok)
+}
+
+// string message = 2;
+inline void ImportPlayerSnapshotResponse::clear_message() {
+  message_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline const ::std::string& ImportPlayerSnapshotResponse::message() const {
+  // @@protoc_insertion_point(field_get:glrpc.ImportPlayerSnapshotResponse.message)
+  return message_.GetNoArena();
+}
+inline void ImportPlayerSnapshotResponse::set_message(const ::std::string& value) {
+  
+  message_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), value);
+  // @@protoc_insertion_point(field_set:glrpc.ImportPlayerSnapshotResponse.message)
+}
+#if LANG_CXX11
+inline void ImportPlayerSnapshotResponse::set_message(::std::string&& value) {
+  
+  message_.SetNoArena(
+    &::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::move(value));
+  // @@protoc_insertion_point(field_set_rvalue:glrpc.ImportPlayerSnapshotResponse.message)
+}
+#endif
+inline void ImportPlayerSnapshotResponse::set_message(const char* value) {
+  GOOGLE_DCHECK(value != NULL);
+  
+  message_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::string(value));
+  // @@protoc_insertion_point(field_set_char:glrpc.ImportPlayerSnapshotResponse.message)
+}
+inline void ImportPlayerSnapshotResponse::set_message(const char* value, size_t size) {
+  
+  message_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(),
+      ::std::string(reinterpret_cast<const char*>(value), size));
+  // @@protoc_insertion_point(field_set_pointer:glrpc.ImportPlayerSnapshotResponse.message)
+}
+inline ::std::string* ImportPlayerSnapshotResponse::mutable_message() {
+  
+  // @@protoc_insertion_point(field_mutable:glrpc.ImportPlayerSnapshotResponse.message)
+  return message_.MutableNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline ::std::string* ImportPlayerSnapshotResponse::release_message() {
+  // @@protoc_insertion_point(field_release:glrpc.ImportPlayerSnapshotResponse.message)
+  
+  return message_.ReleaseNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline void ImportPlayerSnapshotResponse::set_allocated_message(::std::string* message) {
+  if (message != NULL) {
+    
+  } else {
+    
+  }
+  message_.SetAllocatedNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), message);
+  // @@protoc_insertion_point(field_set_allocated:glrpc.ImportPlayerSnapshotResponse.message)
+}
+
+// string error_code = 3;
+inline void ImportPlayerSnapshotResponse::clear_error_code() {
+  error_code_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline const ::std::string& ImportPlayerSnapshotResponse::error_code() const {
+  // @@protoc_insertion_point(field_get:glrpc.ImportPlayerSnapshotResponse.error_code)
+  return error_code_.GetNoArena();
+}
+inline void ImportPlayerSnapshotResponse::set_error_code(const ::std::string& value) {
+  
+  error_code_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), value);
+  // @@protoc_insertion_point(field_set:glrpc.ImportPlayerSnapshotResponse.error_code)
+}
+#if LANG_CXX11
+inline void ImportPlayerSnapshotResponse::set_error_code(::std::string&& value) {
+  
+  error_code_.SetNoArena(
+    &::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::move(value));
+  // @@protoc_insertion_point(field_set_rvalue:glrpc.ImportPlayerSnapshotResponse.error_code)
+}
+#endif
+inline void ImportPlayerSnapshotResponse::set_error_code(const char* value) {
+  GOOGLE_DCHECK(value != NULL);
+  
+  error_code_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::string(value));
+  // @@protoc_insertion_point(field_set_char:glrpc.ImportPlayerSnapshotResponse.error_code)
+}
+inline void ImportPlayerSnapshotResponse::set_error_code(const char* value, size_t size) {
+  
+  error_code_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(),
+      ::std::string(reinterpret_cast<const char*>(value), size));
+  // @@protoc_insertion_point(field_set_pointer:glrpc.ImportPlayerSnapshotResponse.error_code)
+}
+inline ::std::string* ImportPlayerSnapshotResponse::mutable_error_code() {
+  
+  // @@protoc_insertion_point(field_mutable:glrpc.ImportPlayerSnapshotResponse.error_code)
+  return error_code_.MutableNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline ::std::string* ImportPlayerSnapshotResponse::release_error_code() {
+  // @@protoc_insertion_point(field_release:glrpc.ImportPlayerSnapshotResponse.error_code)
+  
+  return error_code_.ReleaseNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline void ImportPlayerSnapshotResponse::set_allocated_error_code(::std::string* error_code) {
+  if (error_code != NULL) {
+    
+  } else {
+    
+  }
+  error_code_.SetAllocatedNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), error_code);
+  // @@protoc_insertion_point(field_set_allocated:glrpc.ImportPlayerSnapshotResponse.error_code)
+}
+
+// bool already_applied = 4;
+inline void ImportPlayerSnapshotResponse::clear_already_applied() {
+  already_applied_ = false;
+}
+inline bool ImportPlayerSnapshotResponse::already_applied() const {
+  // @@protoc_insertion_point(field_get:glrpc.ImportPlayerSnapshotResponse.already_applied)
+  return already_applied_;
+}
+inline void ImportPlayerSnapshotResponse::set_already_applied(bool value) {
+  
+  already_applied_ = value;
+  // @@protoc_insertion_point(field_set:glrpc.ImportPlayerSnapshotResponse.already_applied)
+}
+
+// -------------------------------------------------------------------
+
 // ClientCommand
 
 // uint64 request_id = 1;
@@ -3597,6 +6182,22 @@ inline void CommandResult::set_server_seq(::google::protobuf::uint64 value) {
 #ifdef __GNUC__
   #pragma GCC diagnostic pop
 #endif  // __GNUC__
+// -------------------------------------------------------------------
+
+// -------------------------------------------------------------------
+
+// -------------------------------------------------------------------
+
+// -------------------------------------------------------------------
+
+// -------------------------------------------------------------------
+
+// -------------------------------------------------------------------
+
+// -------------------------------------------------------------------
+
+// -------------------------------------------------------------------
+
 // -------------------------------------------------------------------
 
 // -------------------------------------------------------------------

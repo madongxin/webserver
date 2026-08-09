@@ -504,3 +504,95 @@ bool PlacementStore::ExpireLeaseToRecovering(uint64_t map_instance_id, Placement
     LOG_INFO << "PlacementStore lease expired -> RECOVERING map=" << map_instance_id;
     return true;
 }
+
+bool PlacementStore::ScanRecoveryCandidates(std::string *cursor, size_t count,
+                                            std::vector<uint64_t> *expired_ready,
+                                            std::vector<uint64_t> *recovering) {
+    if (!available_ || !cursor || !expired_ready || !recovering)
+        return false;
+    expired_ready->clear();
+    recovering->clear();
+    auto lease = RedisPool::Instance().Acquire();
+    if (!lease)
+        return false;
+    const std::string match = key_prefix_ + "map:inst:*";
+    const char *scan_lua = R"LUA(
+local cursor = ARGV[1]
+local match = ARGV[2]
+local cnt = tonumber(ARGV[3]) or 32
+local now = tonumber(ARGV[4])
+local r = redis.call('SCAN', cursor, 'MATCH', match, 'COUNT', cnt)
+local nextc = r[1]
+local keys = r[2]
+local out = {nextc}
+for _, k in ipairs(keys) do
+  local state = redis.call('HGET', k, 'state') or ''
+  local lease_until = tonumber(redis.call('HGET', k, 'leaseUntil') or '0') or 0
+  local mid = redis.call('HGET', k, 'mapInstanceId') or string.match(k, '(%d+)$') or '0'
+  if state == 'READY' and lease_until > 0 and lease_until <= now then
+    out[#out + 1] = 'E:' .. mid
+  elseif state == 'RECOVERING' then
+    out[#out + 1] = 'R:' .. mid
+  end
+end
+return out
+)LUA";
+    std::vector<std::string> keys;
+    std::vector<std::string> args{*cursor, match, std::to_string(count > 0 ? count : 32),
+                                  std::to_string(NowUnixSec())};
+    std::vector<std::string> reply;
+    if (!lease->Eval(scan_lua, keys, args, &reply) || reply.empty())
+        return false;
+    *cursor = reply[0];
+    for (size_t i = 1; i < reply.size(); ++i) {
+        const std::string &t = reply[i];
+        if (t.size() < 3)
+            continue;
+        const uint64_t id = ParseU64(t.substr(2));
+        if (id == 0)
+            continue;
+        if (t[0] == 'E')
+            expired_ready->push_back(id);
+        else if (t[0] == 'R')
+            recovering->push_back(id);
+    }
+    return true;
+}
+
+std::string PlacementStore::PickHealthyOwner(const std::string &exclude) const {
+    std::lock_guard<std::mutex> lk(cfg_mu_);
+    if (owners_.empty())
+        return "gl-0";
+    for (size_t i = 0; i < owners_.size(); ++i) {
+        const size_t idx = (rr_ + i) % owners_.size();
+        if (owners_[idx] != exclude)
+            return owners_[idx];
+    }
+    return owners_[rr_ % owners_.size()];
+}
+
+void PlacementStore::AppendAudit(uint64_t map_instance_id, const std::string &event,
+                                 const std::string &old_owner, const std::string &new_owner,
+                                 uint64_t old_epoch, uint64_t new_epoch,
+                                 const std::string &reason) {
+    if (!available_)
+        return;
+    auto lease = RedisPool::Instance().Acquire();
+    if (!lease)
+        return;
+    std::ostringstream oss;
+    oss << NowUnixSec() << '|' << map_instance_id << '|' << event << '|' << old_owner << "->"
+        << new_owner << "|epoch=" << old_epoch << "->" << new_epoch << '|' << reason;
+    const std::string key = key_prefix_ + "map:audit";
+    const char *lua = R"LUA(
+redis.call('LPUSH', KEYS[1], ARGV[1])
+redis.call('LTRIM', KEYS[1], 0, 999)
+redis.call('EXPIRE', KEYS[1], 604800)
+return {'1'}
+)LUA";
+    std::vector<std::string> keys{key};
+    std::vector<std::string> args{oss.str()};
+    std::vector<std::string> reply;
+    lease->Eval(lua, keys, args, &reply);
+    LOG_INFO << "PlacementAudit " << oss.str();
+}

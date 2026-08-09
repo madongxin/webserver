@@ -127,22 +127,27 @@ bool PushReplayStore::InitFromSessionPrefix(const std::string &key_prefix, size_
     return available_;
 }
 
-std::string PushReplayStore::SeqKey(uint64_t player_id) const {
-    return key_prefix_ + "push:seq:" + std::to_string(player_id);
+std::string PushReplayStore::SeqKey(uint64_t player_id, const std::string &session_id) const {
+    return key_prefix_ + "push:seq:" + std::to_string(player_id) + ":" + session_id;
 }
 
-std::string PushReplayStore::ListKey(uint64_t player_id) const {
-    return key_prefix_ + "push:replay:" + std::to_string(player_id);
+std::string PushReplayStore::ListKey(uint64_t player_id, const std::string &session_id) const {
+    return key_prefix_ + "push:replay:" + std::to_string(player_id) + ":" + session_id;
 }
 
-uint64_t PushReplayStore::AppendReliable(uint64_t player_id, const std::string &message_type,
+std::string PushReplayStore::MetaKey(uint64_t player_id, const std::string &session_id) const {
+    return key_prefix_ + "push:meta:" + std::to_string(player_id) + ":" + session_id;
+}
+
+uint64_t PushReplayStore::AppendReliable(uint64_t player_id, const std::string &session_id,
+                                         const std::string &message_type,
                                          const std::string &payload) {
-    if (!available_ || player_id == 0)
+    if (!available_ || player_id == 0 || session_id.empty())
         return 0;
     auto lease = RedisPool::Instance().Acquire();
     if (!lease)
         return 0;
-    std::vector<std::string> keys{SeqKey(player_id), ListKey(player_id)};
+    std::vector<std::string> keys{SeqKey(player_id, session_id), ListKey(player_id, session_id)};
     std::vector<std::string> args{message_type, payload, std::to_string(cap_),
                                   std::to_string(ttl_sec_)};
     std::vector<std::string> reply;
@@ -151,19 +156,20 @@ uint64_t PushReplayStore::AppendReliable(uint64_t player_id, const std::string &
     return std::strtoull(reply[0].c_str(), nullptr, 10);
 }
 
-bool PushReplayStore::ReplayAfter(uint64_t player_id, uint64_t last_acked_seq,
-                                  std::vector<PushReplayEntry> *out, bool *need_snapshot) {
+bool PushReplayStore::ReplayAfter(uint64_t player_id, const std::string &session_id,
+                                  uint64_t last_acked_seq, std::vector<PushReplayEntry> *out,
+                                  bool *need_snapshot) {
     if (!out)
         return false;
     out->clear();
     if (need_snapshot)
         *need_snapshot = false;
-    if (!available_ || player_id == 0)
+    if (!available_ || player_id == 0 || session_id.empty())
         return false;
     auto lease = RedisPool::Instance().Acquire();
     if (!lease)
         return false;
-    std::vector<std::string> keys{ListKey(player_id), SeqKey(player_id)};
+    std::vector<std::string> keys{ListKey(player_id, session_id), SeqKey(player_id, session_id)};
     std::vector<std::string> args{std::to_string(last_acked_seq)};
     std::vector<std::string> reply;
     if (!lease->Eval(kLuaReplay, keys, args, &reply) || reply.size() < 2)
@@ -181,29 +187,45 @@ bool PushReplayStore::ReplayAfter(uint64_t player_id, uint64_t last_acked_seq,
     return true;
 }
 
-bool PushReplayStore::Ack(uint64_t player_id, uint64_t ack_seq) {
-    if (!available_ || player_id == 0 || ack_seq == 0)
+bool PushReplayStore::Ack(uint64_t player_id, const std::string &session_id, uint64_t ack_seq) {
+    if (!available_ || player_id == 0 || session_id.empty() || ack_seq == 0)
         return false;
     auto lease = RedisPool::Instance().Acquire();
     if (!lease)
         return false;
-    std::vector<std::string> keys{ListKey(player_id),
-                                  key_prefix_ + "push:meta:" + std::to_string(player_id)};
+    std::vector<std::string> keys{ListKey(player_id, session_id), MetaKey(player_id, session_id)};
     std::vector<std::string> args{std::to_string(ack_seq), std::to_string(ttl_sec_)};
     std::vector<std::string> reply;
     return lease->Eval(kLuaAck, keys, args, &reply) && !reply.empty() && reply[0] == "1";
 }
 
-uint64_t PushReplayStore::CurrentSeq(uint64_t player_id) {
-    if (!available_ || player_id == 0)
+uint64_t PushReplayStore::CurrentSeq(uint64_t player_id, const std::string &session_id) {
+    if (!available_ || player_id == 0 || session_id.empty())
         return 0;
     auto lease = RedisPool::Instance().Acquire();
     if (!lease)
         return 0;
-    std::vector<std::string> keys{SeqKey(player_id)};
+    std::vector<std::string> keys{SeqKey(player_id, session_id)};
     std::vector<std::string> args;
     std::vector<std::string> reply;
     if (!lease->Eval(kLuaGetSeq, keys, args, &reply) || reply.empty())
         return 0;
     return std::strtoull(reply[0].c_str(), nullptr, 10);
+}
+
+bool PushReplayStore::InvalidateSession(uint64_t player_id, const std::string &session_id) {
+    if (!available_ || player_id == 0 || session_id.empty())
+        return false;
+    auto lease = RedisPool::Instance().Acquire();
+    if (!lease)
+        return false;
+    const char *lua = R"LUA(
+redis.call('DEL', KEYS[1], KEYS[2], KEYS[3])
+return {'1'}
+)LUA";
+    std::vector<std::string> keys{SeqKey(player_id, session_id), ListKey(player_id, session_id),
+                                  MetaKey(player_id, session_id)};
+    std::vector<std::string> args;
+    std::vector<std::string> reply;
+    return lease->Eval(lua, keys, args, &reply);
 }

@@ -27,6 +27,7 @@ enum class MapWriteFence {
     NotClaimed,
     StaleEpoch,
     LeaseExpired,
+    LeaseMissing,  // formal：lease_until==0 / 未启用
 };
 
 class MapInstanceRegistry {
@@ -36,7 +37,11 @@ public:
     void SetLocalInstanceId(std::string id);
     const std::string &local_instance_id() const { return local_id_; }
 
-    /** Claim / 升 epoch；同 epoch 幂等；更低 epoch 拒绝。lease_until_unix=0 表示不启用本地 lease。 */
+    /** Formal 分布式：lease_until==0 视为缺失并拒写 */
+    void SetRequireLease(bool on);
+    bool require_lease() const { return require_lease_; }
+
+    /** Claim / 升 epoch；同 epoch 幂等；更低 epoch 拒绝。 */
     bool Claim(uint64_t map_instance_id, uint64_t map_template_id, uint64_t owner_epoch,
                int64_t lease_until_unix = 0);
 
@@ -72,5 +77,6 @@ private:
 
     mutable std::mutex mu_;
     std::string local_id_ = "gl-local";
+    bool require_lease_ = false;
     std::unordered_map<uint64_t, LocalMapInstance> maps_;
 };

@@ -3,6 +3,7 @@
 #include "GatewayConnRegistry.h"
 #include "Logging.h"
 #include "ProtoFraming.h"
+#include "game.pb.h"
 #include <brpc/controller.h>
 #include <brpc/server.h>
 
@@ -50,22 +51,44 @@ void GatewayPushServiceImpl::PushBatch(::google::protobuf::RpcController *contro
             ++rejected;
             continue;
         }
-        std::string frame = m.payload();
-        if (frame.size() < 4) {
+        std::string raw = m.payload();
+        if (raw.size() < 4) {
             ++rejected;
             continue;
         }
-        const uint32_t be = (static_cast<uint8_t>(frame[0]) << 24) |
-                            (static_cast<uint8_t>(frame[1]) << 16) |
-                            (static_cast<uint8_t>(frame[2]) << 8) |
-                            static_cast<uint8_t>(frame[3]);
-        if (be + 4 != frame.size()) {
-            std::string wrapped;
-            if (!gameproto::EncodeFrame(frame, &wrapped)) {
+        const uint32_t be = (static_cast<uint8_t>(raw[0]) << 24) |
+                            (static_cast<uint8_t>(raw[1]) << 16) |
+                            (static_cast<uint8_t>(raw[2]) << 8) |
+                            static_cast<uint8_t>(raw[3]);
+        std::string inner_body;
+        if (be + 4 == raw.size())
+            inner_body = raw.substr(4);
+        else
+            inner_body = raw;
+        // 客户端可见 Envelope：带真实 server_seq（兼容：seq=0 仍发原业务帧）
+        std::string frame;
+        if (m.server_seq() != 0) {
+            game::GameResponse env;
+            env.set_ok(true);
+            env.set_message("server_push");
+            auto *p = env.mutable_server_push();
+            p->set_server_seq(m.server_seq());
+            p->set_message_type(m.message_type());
+            p->set_payload(inner_body);
+            p->set_reliable(m.reliable());
+            p->set_coalescable(m.coalescable());
+            std::string body;
+            if (!env.SerializeToString(&body) || !gameproto::EncodeFrame(body, &frame)) {
                 ++rejected;
                 continue;
             }
-            frame = std::move(wrapped);
+        } else if (be + 4 == raw.size()) {
+            frame = std::move(raw);
+        } else {
+            if (!gameproto::EncodeFrame(inner_body, &frame)) {
+                ++rejected;
+                continue;
+            }
         }
         if (!GatewayConnRegistry::Instance().SendBySession(m.session_id(), frame)) {
             ++rejected;

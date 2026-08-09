@@ -36,7 +36,7 @@ namespace protobuf_game_2eproto {
 struct TableStruct {
   static const ::google::protobuf::internal::ParseTableField entries[];
   static const ::google::protobuf::internal::AuxillaryParseTableField aux[];
-  static const ::google::protobuf::internal::ParseTable schema[59];
+  static const ::google::protobuf::internal::ParseTable schema[61];
   static const ::google::protobuf::internal::FieldMetadata field_metadata[];
   static const ::google::protobuf::internal::SerializationTable serialization_table[];
   static const ::google::protobuf::uint32 offsets[];
@@ -54,6 +54,10 @@ void InitDefaultsPushAckReqImpl();
 void InitDefaultsPushAckReq();
 void InitDefaultsPushAckRspImpl();
 void InitDefaultsPushAckRsp();
+void InitDefaultsServerPushEnvelopeImpl();
+void InitDefaultsServerPushEnvelope();
+void InitDefaultsFullStateSnapshotRspImpl();
+void InitDefaultsFullStateSnapshotRsp();
 void InitDefaultsValidateSessionReqImpl();
 void InitDefaultsValidateSessionReq();
 void InitDefaultsValidateSessionRspImpl();
@@ -167,6 +171,8 @@ inline void InitDefaults() {
   InitDefaultsReconnectRsp();
   InitDefaultsPushAckReq();
   InitDefaultsPushAckRsp();
+  InitDefaultsServerPushEnvelope();
+  InitDefaultsFullStateSnapshotRsp();
   InitDefaultsValidateSessionReq();
   InitDefaultsValidateSessionRsp();
   InitDefaultsCheckOnlineReq();
@@ -259,6 +265,9 @@ extern FriendListReqDefaultTypeInternal _FriendListReq_default_instance_;
 class FriendListRsp;
 class FriendListRspDefaultTypeInternal;
 extern FriendListRspDefaultTypeInternal _FriendListRsp_default_instance_;
+class FullStateSnapshotRsp;
+class FullStateSnapshotRspDefaultTypeInternal;
+extern FullStateSnapshotRspDefaultTypeInternal _FullStateSnapshotRsp_default_instance_;
 class GameRequest;
 class GameRequestDefaultTypeInternal;
 extern GameRequestDefaultTypeInternal _GameRequest_default_instance_;
@@ -394,6 +403,9 @@ extern ReleaseSkillReqDefaultTypeInternal _ReleaseSkillReq_default_instance_;
 class ReleaseSkillRsp;
 class ReleaseSkillRspDefaultTypeInternal;
 extern ReleaseSkillRspDefaultTypeInternal _ReleaseSkillRsp_default_instance_;
+class ServerPushEnvelope;
+class ServerPushEnvelopeDefaultTypeInternal;
+extern ServerPushEnvelopeDefaultTypeInternal _ServerPushEnvelope_default_instance_;
 class ValidateSessionReq;
 class ValidateSessionReqDefaultTypeInternal;
 extern ValidateSessionReqDefaultTypeInternal _ValidateSessionReq_default_instance_;
@@ -1110,6 +1122,34 @@ class PushAckReq : public ::google::protobuf::Message /* @@protoc_insertion_poin
 
   // accessors -------------------------------------------------------
 
+  // string session_id = 3;
+  void clear_session_id();
+  static const int kSessionIdFieldNumber = 3;
+  const ::std::string& session_id() const;
+  void set_session_id(const ::std::string& value);
+  #if LANG_CXX11
+  void set_session_id(::std::string&& value);
+  #endif
+  void set_session_id(const char* value);
+  void set_session_id(const char* value, size_t size);
+  ::std::string* mutable_session_id();
+  ::std::string* release_session_id();
+  void set_allocated_session_id(::std::string* session_id);
+
+  // string fence_token = 4;
+  void clear_fence_token();
+  static const int kFenceTokenFieldNumber = 4;
+  const ::std::string& fence_token() const;
+  void set_fence_token(const ::std::string& value);
+  #if LANG_CXX11
+  void set_fence_token(::std::string&& value);
+  #endif
+  void set_fence_token(const char* value);
+  void set_fence_token(const char* value, size_t size);
+  ::std::string* mutable_fence_token();
+  ::std::string* release_fence_token();
+  void set_allocated_fence_token(::std::string* fence_token);
+
   // uint64 player_id = 1;
   void clear_player_id();
   static const int kPlayerIdFieldNumber = 1;
@@ -1122,12 +1162,21 @@ class PushAckReq : public ::google::protobuf::Message /* @@protoc_insertion_poin
   ::google::protobuf::uint64 ack_server_seq() const;
   void set_ack_server_seq(::google::protobuf::uint64 value);
 
+  // uint64 generation = 5;
+  void clear_generation();
+  static const int kGenerationFieldNumber = 5;
+  ::google::protobuf::uint64 generation() const;
+  void set_generation(::google::protobuf::uint64 value);
+
   // @@protoc_insertion_point(class_scope:game.PushAckReq)
  private:
 
   ::google::protobuf::internal::InternalMetadataWithArena _internal_metadata_;
+  ::google::protobuf::internal::ArenaStringPtr session_id_;
+  ::google::protobuf::internal::ArenaStringPtr fence_token_;
   ::google::protobuf::uint64 player_id_;
   ::google::protobuf::uint64 ack_server_seq_;
+  ::google::protobuf::uint64 generation_;
   mutable int _cached_size_;
   friend struct ::protobuf_game_2eproto::TableStruct;
   friend void ::protobuf_game_2eproto::InitDefaultsPushAckReqImpl();
@@ -1255,6 +1304,312 @@ class PushAckRsp : public ::google::protobuf::Message /* @@protoc_insertion_poin
 };
 // -------------------------------------------------------------------
 
+class ServerPushEnvelope : public ::google::protobuf::Message /* @@protoc_insertion_point(class_definition:game.ServerPushEnvelope) */ {
+ public:
+  ServerPushEnvelope();
+  virtual ~ServerPushEnvelope();
+
+  ServerPushEnvelope(const ServerPushEnvelope& from);
+
+  inline ServerPushEnvelope& operator=(const ServerPushEnvelope& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  #if LANG_CXX11
+  ServerPushEnvelope(ServerPushEnvelope&& from) noexcept
+    : ServerPushEnvelope() {
+    *this = ::std::move(from);
+  }
+
+  inline ServerPushEnvelope& operator=(ServerPushEnvelope&& from) noexcept {
+    if (GetArenaNoVirtual() == from.GetArenaNoVirtual()) {
+      if (this != &from) InternalSwap(&from);
+    } else {
+      CopyFrom(from);
+    }
+    return *this;
+  }
+  #endif
+  static const ::google::protobuf::Descriptor* descriptor();
+  static const ServerPushEnvelope& default_instance();
+
+  static void InitAsDefaultInstance();  // FOR INTERNAL USE ONLY
+  static inline const ServerPushEnvelope* internal_default_instance() {
+    return reinterpret_cast<const ServerPushEnvelope*>(
+               &_ServerPushEnvelope_default_instance_);
+  }
+  static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
+    6;
+
+  void Swap(ServerPushEnvelope* other);
+  friend void swap(ServerPushEnvelope& a, ServerPushEnvelope& b) {
+    a.Swap(&b);
+  }
+
+  // implements Message ----------------------------------------------
+
+  inline ServerPushEnvelope* New() const PROTOBUF_FINAL { return New(NULL); }
+
+  ServerPushEnvelope* New(::google::protobuf::Arena* arena) const PROTOBUF_FINAL;
+  void CopyFrom(const ::google::protobuf::Message& from) PROTOBUF_FINAL;
+  void MergeFrom(const ::google::protobuf::Message& from) PROTOBUF_FINAL;
+  void CopyFrom(const ServerPushEnvelope& from);
+  void MergeFrom(const ServerPushEnvelope& from);
+  void Clear() PROTOBUF_FINAL;
+  bool IsInitialized() const PROTOBUF_FINAL;
+
+  size_t ByteSizeLong() const PROTOBUF_FINAL;
+  bool MergePartialFromCodedStream(
+      ::google::protobuf::io::CodedInputStream* input) PROTOBUF_FINAL;
+  void SerializeWithCachedSizes(
+      ::google::protobuf::io::CodedOutputStream* output) const PROTOBUF_FINAL;
+  ::google::protobuf::uint8* InternalSerializeWithCachedSizesToArray(
+      bool deterministic, ::google::protobuf::uint8* target) const PROTOBUF_FINAL;
+  int GetCachedSize() const PROTOBUF_FINAL { return _cached_size_; }
+  private:
+  void SharedCtor();
+  void SharedDtor();
+  void SetCachedSize(int size) const PROTOBUF_FINAL;
+  void InternalSwap(ServerPushEnvelope* other);
+  private:
+  inline ::google::protobuf::Arena* GetArenaNoVirtual() const {
+    return NULL;
+  }
+  inline void* MaybeArenaPtr() const {
+    return NULL;
+  }
+  public:
+
+  ::google::protobuf::Metadata GetMetadata() const PROTOBUF_FINAL;
+
+  // nested types ----------------------------------------------------
+
+  // accessors -------------------------------------------------------
+
+  // string message_type = 2;
+  void clear_message_type();
+  static const int kMessageTypeFieldNumber = 2;
+  const ::std::string& message_type() const;
+  void set_message_type(const ::std::string& value);
+  #if LANG_CXX11
+  void set_message_type(::std::string&& value);
+  #endif
+  void set_message_type(const char* value);
+  void set_message_type(const char* value, size_t size);
+  ::std::string* mutable_message_type();
+  ::std::string* release_message_type();
+  void set_allocated_message_type(::std::string* message_type);
+
+  // bytes payload = 3;
+  void clear_payload();
+  static const int kPayloadFieldNumber = 3;
+  const ::std::string& payload() const;
+  void set_payload(const ::std::string& value);
+  #if LANG_CXX11
+  void set_payload(::std::string&& value);
+  #endif
+  void set_payload(const char* value);
+  void set_payload(const void* value, size_t size);
+  ::std::string* mutable_payload();
+  ::std::string* release_payload();
+  void set_allocated_payload(::std::string* payload);
+
+  // uint64 server_seq = 1;
+  void clear_server_seq();
+  static const int kServerSeqFieldNumber = 1;
+  ::google::protobuf::uint64 server_seq() const;
+  void set_server_seq(::google::protobuf::uint64 value);
+
+  // bool reliable = 4;
+  void clear_reliable();
+  static const int kReliableFieldNumber = 4;
+  bool reliable() const;
+  void set_reliable(bool value);
+
+  // bool coalescable = 5;
+  void clear_coalescable();
+  static const int kCoalescableFieldNumber = 5;
+  bool coalescable() const;
+  void set_coalescable(bool value);
+
+  // @@protoc_insertion_point(class_scope:game.ServerPushEnvelope)
+ private:
+
+  ::google::protobuf::internal::InternalMetadataWithArena _internal_metadata_;
+  ::google::protobuf::internal::ArenaStringPtr message_type_;
+  ::google::protobuf::internal::ArenaStringPtr payload_;
+  ::google::protobuf::uint64 server_seq_;
+  bool reliable_;
+  bool coalescable_;
+  mutable int _cached_size_;
+  friend struct ::protobuf_game_2eproto::TableStruct;
+  friend void ::protobuf_game_2eproto::InitDefaultsServerPushEnvelopeImpl();
+};
+// -------------------------------------------------------------------
+
+class FullStateSnapshotRsp : public ::google::protobuf::Message /* @@protoc_insertion_point(class_definition:game.FullStateSnapshotRsp) */ {
+ public:
+  FullStateSnapshotRsp();
+  virtual ~FullStateSnapshotRsp();
+
+  FullStateSnapshotRsp(const FullStateSnapshotRsp& from);
+
+  inline FullStateSnapshotRsp& operator=(const FullStateSnapshotRsp& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  #if LANG_CXX11
+  FullStateSnapshotRsp(FullStateSnapshotRsp&& from) noexcept
+    : FullStateSnapshotRsp() {
+    *this = ::std::move(from);
+  }
+
+  inline FullStateSnapshotRsp& operator=(FullStateSnapshotRsp&& from) noexcept {
+    if (GetArenaNoVirtual() == from.GetArenaNoVirtual()) {
+      if (this != &from) InternalSwap(&from);
+    } else {
+      CopyFrom(from);
+    }
+    return *this;
+  }
+  #endif
+  static const ::google::protobuf::Descriptor* descriptor();
+  static const FullStateSnapshotRsp& default_instance();
+
+  static void InitAsDefaultInstance();  // FOR INTERNAL USE ONLY
+  static inline const FullStateSnapshotRsp* internal_default_instance() {
+    return reinterpret_cast<const FullStateSnapshotRsp*>(
+               &_FullStateSnapshotRsp_default_instance_);
+  }
+  static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
+    7;
+
+  void Swap(FullStateSnapshotRsp* other);
+  friend void swap(FullStateSnapshotRsp& a, FullStateSnapshotRsp& b) {
+    a.Swap(&b);
+  }
+
+  // implements Message ----------------------------------------------
+
+  inline FullStateSnapshotRsp* New() const PROTOBUF_FINAL { return New(NULL); }
+
+  FullStateSnapshotRsp* New(::google::protobuf::Arena* arena) const PROTOBUF_FINAL;
+  void CopyFrom(const ::google::protobuf::Message& from) PROTOBUF_FINAL;
+  void MergeFrom(const ::google::protobuf::Message& from) PROTOBUF_FINAL;
+  void CopyFrom(const FullStateSnapshotRsp& from);
+  void MergeFrom(const FullStateSnapshotRsp& from);
+  void Clear() PROTOBUF_FINAL;
+  bool IsInitialized() const PROTOBUF_FINAL;
+
+  size_t ByteSizeLong() const PROTOBUF_FINAL;
+  bool MergePartialFromCodedStream(
+      ::google::protobuf::io::CodedInputStream* input) PROTOBUF_FINAL;
+  void SerializeWithCachedSizes(
+      ::google::protobuf::io::CodedOutputStream* output) const PROTOBUF_FINAL;
+  ::google::protobuf::uint8* InternalSerializeWithCachedSizesToArray(
+      bool deterministic, ::google::protobuf::uint8* target) const PROTOBUF_FINAL;
+  int GetCachedSize() const PROTOBUF_FINAL { return _cached_size_; }
+  private:
+  void SharedCtor();
+  void SharedDtor();
+  void SetCachedSize(int size) const PROTOBUF_FINAL;
+  void InternalSwap(FullStateSnapshotRsp* other);
+  private:
+  inline ::google::protobuf::Arena* GetArenaNoVirtual() const {
+    return NULL;
+  }
+  inline void* MaybeArenaPtr() const {
+    return NULL;
+  }
+  public:
+
+  ::google::protobuf::Metadata GetMetadata() const PROTOBUF_FINAL;
+
+  // nested types ----------------------------------------------------
+
+  // accessors -------------------------------------------------------
+
+  // repeated uint32 item_ids = 5;
+  int item_ids_size() const;
+  void clear_item_ids();
+  static const int kItemIdsFieldNumber = 5;
+  ::google::protobuf::uint32 item_ids(int index) const;
+  void set_item_ids(int index, ::google::protobuf::uint32 value);
+  void add_item_ids(::google::protobuf::uint32 value);
+  const ::google::protobuf::RepeatedField< ::google::protobuf::uint32 >&
+      item_ids() const;
+  ::google::protobuf::RepeatedField< ::google::protobuf::uint32 >*
+      mutable_item_ids();
+
+  // repeated uint32 item_counts = 6;
+  int item_counts_size() const;
+  void clear_item_counts();
+  static const int kItemCountsFieldNumber = 6;
+  ::google::protobuf::uint32 item_counts(int index) const;
+  void set_item_counts(int index, ::google::protobuf::uint32 value);
+  void add_item_counts(::google::protobuf::uint32 value);
+  const ::google::protobuf::RepeatedField< ::google::protobuf::uint32 >&
+      item_counts() const;
+  ::google::protobuf::RepeatedField< ::google::protobuf::uint32 >*
+      mutable_item_counts();
+
+  // string message = 2;
+  void clear_message();
+  static const int kMessageFieldNumber = 2;
+  const ::std::string& message() const;
+  void set_message(const ::std::string& value);
+  #if LANG_CXX11
+  void set_message(::std::string&& value);
+  #endif
+  void set_message(const char* value);
+  void set_message(const char* value, size_t size);
+  ::std::string* mutable_message();
+  ::std::string* release_message();
+  void set_allocated_message(::std::string* message);
+
+  // uint64 player_id = 3;
+  void clear_player_id();
+  static const int kPlayerIdFieldNumber = 3;
+  ::google::protobuf::uint64 player_id() const;
+  void set_player_id(::google::protobuf::uint64 value);
+
+  // uint64 asset_version = 4;
+  void clear_asset_version();
+  static const int kAssetVersionFieldNumber = 4;
+  ::google::protobuf::uint64 asset_version() const;
+  void set_asset_version(::google::protobuf::uint64 value);
+
+  // uint64 baseline_server_seq = 7;
+  void clear_baseline_server_seq();
+  static const int kBaselineServerSeqFieldNumber = 7;
+  ::google::protobuf::uint64 baseline_server_seq() const;
+  void set_baseline_server_seq(::google::protobuf::uint64 value);
+
+  // bool ok = 1;
+  void clear_ok();
+  static const int kOkFieldNumber = 1;
+  bool ok() const;
+  void set_ok(bool value);
+
+  // @@protoc_insertion_point(class_scope:game.FullStateSnapshotRsp)
+ private:
+
+  ::google::protobuf::internal::InternalMetadataWithArena _internal_metadata_;
+  ::google::protobuf::RepeatedField< ::google::protobuf::uint32 > item_ids_;
+  mutable int _item_ids_cached_byte_size_;
+  ::google::protobuf::RepeatedField< ::google::protobuf::uint32 > item_counts_;
+  mutable int _item_counts_cached_byte_size_;
+  ::google::protobuf::internal::ArenaStringPtr message_;
+  ::google::protobuf::uint64 player_id_;
+  ::google::protobuf::uint64 asset_version_;
+  ::google::protobuf::uint64 baseline_server_seq_;
+  bool ok_;
+  mutable int _cached_size_;
+  friend struct ::protobuf_game_2eproto::TableStruct;
+  friend void ::protobuf_game_2eproto::InitDefaultsFullStateSnapshotRspImpl();
+};
+// -------------------------------------------------------------------
+
 class ValidateSessionReq : public ::google::protobuf::Message /* @@protoc_insertion_point(class_definition:game.ValidateSessionReq) */ {
  public:
   ValidateSessionReq();
@@ -1290,7 +1645,7 @@ class ValidateSessionReq : public ::google::protobuf::Message /* @@protoc_insert
                &_ValidateSessionReq_default_instance_);
   }
   static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
-    6;
+    8;
 
   void Swap(ValidateSessionReq* other);
   friend void swap(ValidateSessionReq& a, ValidateSessionReq& b) {
@@ -1404,7 +1759,7 @@ class ValidateSessionRsp : public ::google::protobuf::Message /* @@protoc_insert
                &_ValidateSessionRsp_default_instance_);
   }
   static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
-    7;
+    9;
 
   void Swap(ValidateSessionRsp* other);
   friend void swap(ValidateSessionRsp& a, ValidateSessionRsp& b) {
@@ -1561,7 +1916,7 @@ class CheckOnlineReq : public ::google::protobuf::Message /* @@protoc_insertion_
                &_CheckOnlineReq_default_instance_);
   }
   static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
-    8;
+    10;
 
   void Swap(CheckOnlineReq* other);
   friend void swap(CheckOnlineReq& a, CheckOnlineReq& b) {
@@ -1660,7 +2015,7 @@ class CheckOnlineRsp : public ::google::protobuf::Message /* @@protoc_insertion_
                &_CheckOnlineRsp_default_instance_);
   }
   static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
-    9;
+    11;
 
   void Swap(CheckOnlineRsp* other);
   friend void swap(CheckOnlineRsp& a, CheckOnlineRsp& b) {
@@ -1781,7 +2136,7 @@ class LogoutReq : public ::google::protobuf::Message /* @@protoc_insertion_point
                &_LogoutReq_default_instance_);
   }
   static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
-    10;
+    12;
 
   void Swap(LogoutReq* other);
   friend void swap(LogoutReq& a, LogoutReq& b) {
@@ -1895,7 +2250,7 @@ class LogoutRsp : public ::google::protobuf::Message /* @@protoc_insertion_point
                &_LogoutRsp_default_instance_);
   }
   static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
-    11;
+    13;
 
   void Swap(LogoutRsp* other);
   friend void swap(LogoutRsp& a, LogoutRsp& b) {
@@ -2009,7 +2364,7 @@ class RegisterReq : public ::google::protobuf::Message /* @@protoc_insertion_poi
                &_RegisterReq_default_instance_);
   }
   static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
-    12;
+    14;
 
   void Swap(RegisterReq* other);
   friend void swap(RegisterReq& a, RegisterReq& b) {
@@ -2146,7 +2501,7 @@ class RegisterRsp : public ::google::protobuf::Message /* @@protoc_insertion_poi
                &_RegisterRsp_default_instance_);
   }
   static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
-    13;
+    15;
 
   void Swap(RegisterRsp* other);
   friend void swap(RegisterRsp& a, RegisterRsp& b) {
@@ -2267,7 +2622,7 @@ class FlushBagReq : public ::google::protobuf::Message /* @@protoc_insertion_poi
                &_FlushBagReq_default_instance_);
   }
   static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
-    14;
+    16;
 
   void Swap(FlushBagReq* other);
   friend void swap(FlushBagReq& a, FlushBagReq& b) {
@@ -2381,7 +2736,7 @@ class FlushBagRsp : public ::google::protobuf::Message /* @@protoc_insertion_poi
                &_FlushBagRsp_default_instance_);
   }
   static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
-    15;
+    17;
 
   void Swap(FlushBagRsp* other);
   friend void swap(FlushBagRsp& a, FlushBagRsp& b) {
@@ -2495,7 +2850,7 @@ class ConsumeItemReq : public ::google::protobuf::Message /* @@protoc_insertion_
                &_ConsumeItemReq_default_instance_);
   }
   static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
-    16;
+    18;
 
   void Swap(ConsumeItemReq* other);
   friend void swap(ConsumeItemReq& a, ConsumeItemReq& b) {
@@ -2608,7 +2963,7 @@ class ConsumeItemRsp : public ::google::protobuf::Message /* @@protoc_insertion_
                &_ConsumeItemRsp_default_instance_);
   }
   static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
-    17;
+    19;
 
   void Swap(ConsumeItemRsp* other);
   friend void swap(ConsumeItemRsp& a, ConsumeItemRsp& b) {
@@ -2729,7 +3084,7 @@ class ReleaseSkillReq : public ::google::protobuf::Message /* @@protoc_insertion
                &_ReleaseSkillReq_default_instance_);
   }
   static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
-    18;
+    20;
 
   void Swap(ReleaseSkillReq* other);
   friend void swap(ReleaseSkillReq& a, ReleaseSkillReq& b) {
@@ -2849,7 +3204,7 @@ class ReleaseSkillRsp : public ::google::protobuf::Message /* @@protoc_insertion
                &_ReleaseSkillRsp_default_instance_);
   }
   static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
-    19;
+    21;
 
   void Swap(ReleaseSkillRsp* other);
   friend void swap(ReleaseSkillRsp& a, ReleaseSkillRsp& b) {
@@ -2970,7 +3325,7 @@ class GrantItemReq : public ::google::protobuf::Message /* @@protoc_insertion_po
                &_GrantItemReq_default_instance_);
   }
   static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
-    20;
+    22;
 
   void Swap(GrantItemReq* other);
   friend void swap(GrantItemReq& a, GrantItemReq& b) {
@@ -3105,7 +3460,7 @@ class GrantItemRsp : public ::google::protobuf::Message /* @@protoc_insertion_po
                &_GrantItemRsp_default_instance_);
   }
   static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
-    21;
+    23;
 
   void Swap(GrantItemRsp* other);
   friend void swap(GrantItemRsp& a, GrantItemRsp& b) {
@@ -3233,7 +3588,7 @@ class MailAttachmentDto : public ::google::protobuf::Message /* @@protoc_inserti
                &_MailAttachmentDto_default_instance_);
   }
   static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
-    22;
+    24;
 
   void Swap(MailAttachmentDto* other);
   friend void swap(MailAttachmentDto& a, MailAttachmentDto& b) {
@@ -3406,7 +3761,7 @@ class MailBrief : public ::google::protobuf::Message /* @@protoc_insertion_point
                &_MailBrief_default_instance_);
   }
   static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
-    23;
+    25;
 
   void Swap(MailBrief* other);
   friend void swap(MailBrief& a, MailBrief& b) {
@@ -3637,7 +3992,7 @@ class MailDetail : public ::google::protobuf::Message /* @@protoc_insertion_poin
                &_MailDetail_default_instance_);
   }
   static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
-    24;
+    26;
 
   void Swap(MailDetail* other);
   friend void swap(MailDetail& a, MailDetail& b) {
@@ -3790,7 +4145,7 @@ class MailboxSummaryReq : public ::google::protobuf::Message /* @@protoc_inserti
                &_MailboxSummaryReq_default_instance_);
   }
   static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
-    25;
+    27;
 
   void Swap(MailboxSummaryReq* other);
   friend void swap(MailboxSummaryReq& a, MailboxSummaryReq& b) {
@@ -3889,7 +4244,7 @@ class MailboxSummaryRsp : public ::google::protobuf::Message /* @@protoc_inserti
                &_MailboxSummaryRsp_default_instance_);
   }
   static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
-    26;
+    28;
 
   void Swap(MailboxSummaryRsp* other);
   friend void swap(MailboxSummaryRsp& a, MailboxSummaryRsp& b) {
@@ -4088,7 +4443,7 @@ class MailListReq : public ::google::protobuf::Message /* @@protoc_insertion_poi
                &_MailListReq_default_instance_);
   }
   static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
-    27;
+    29;
 
   void Swap(MailListReq* other);
   friend void swap(MailListReq& a, MailListReq& b) {
@@ -4274,7 +4629,7 @@ class MailListRsp : public ::google::protobuf::Message /* @@protoc_insertion_poi
                &_MailListRsp_default_instance_);
   }
   static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
-    28;
+    30;
 
   void Swap(MailListRsp* other);
   friend void swap(MailListRsp& a, MailListRsp& b) {
@@ -4445,7 +4800,7 @@ class MailGetReq : public ::google::protobuf::Message /* @@protoc_insertion_poin
                &_MailGetReq_default_instance_);
   }
   static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
-    29;
+    31;
 
   void Swap(MailGetReq* other);
   friend void swap(MailGetReq& a, MailGetReq& b) {
@@ -4551,7 +4906,7 @@ class MailGetRsp : public ::google::protobuf::Message /* @@protoc_insertion_poin
                &_MailGetRsp_default_instance_);
   }
   static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
-    30;
+    32;
 
   void Swap(MailGetRsp* other);
   friend void swap(MailGetRsp& a, MailGetRsp& b) {
@@ -4704,7 +5059,7 @@ class MailReadReq : public ::google::protobuf::Message /* @@protoc_insertion_poi
                &_MailReadReq_default_instance_);
   }
   static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
-    31;
+    33;
 
   void Swap(MailReadReq* other);
   friend void swap(MailReadReq& a, MailReadReq& b) {
@@ -4825,7 +5180,7 @@ class MailReadRsp : public ::google::protobuf::Message /* @@protoc_insertion_poi
                &_MailReadRsp_default_instance_);
   }
   static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
-    32;
+    34;
 
   void Swap(MailReadRsp* other);
   friend void swap(MailReadRsp& a, MailReadRsp& b) {
@@ -4975,7 +5330,7 @@ class MailClaimReq : public ::google::protobuf::Message /* @@protoc_insertion_po
                &_MailClaimReq_default_instance_);
   }
   static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
-    33;
+    35;
 
   void Swap(MailClaimReq* other);
   friend void swap(MailClaimReq& a, MailClaimReq& b) {
@@ -5111,7 +5466,7 @@ class MailClaimResult : public ::google::protobuf::Message /* @@protoc_insertion
                &_MailClaimResult_default_instance_);
   }
   static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
-    34;
+    36;
 
   void Swap(MailClaimResult* other);
   friend void swap(MailClaimResult& a, MailClaimResult& b) {
@@ -5262,7 +5617,7 @@ class MailClaimRsp : public ::google::protobuf::Message /* @@protoc_insertion_po
                &_MailClaimRsp_default_instance_);
   }
   static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
-    35;
+    37;
 
   void Swap(MailClaimRsp* other);
   friend void swap(MailClaimRsp& a, MailClaimRsp& b) {
@@ -5415,7 +5770,7 @@ class MailBatchClaimReq : public ::google::protobuf::Message /* @@protoc_inserti
                &_MailBatchClaimReq_default_instance_);
   }
   static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
-    36;
+    38;
 
   void Swap(MailBatchClaimReq* other);
   friend void swap(MailBatchClaimReq& a, MailBatchClaimReq& b) {
@@ -5558,7 +5913,7 @@ class MailBatchClaimRsp : public ::google::protobuf::Message /* @@protoc_inserti
                &_MailBatchClaimRsp_default_instance_);
   }
   static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
-    37;
+    39;
 
   void Swap(MailBatchClaimRsp* other);
   friend void swap(MailBatchClaimRsp& a, MailBatchClaimRsp& b) {
@@ -5714,7 +6069,7 @@ class MailFavoriteReq : public ::google::protobuf::Message /* @@protoc_insertion
                &_MailFavoriteReq_default_instance_);
   }
   static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
-    38;
+    40;
 
   void Swap(MailFavoriteReq* other);
   friend void swap(MailFavoriteReq& a, MailFavoriteReq& b) {
@@ -5842,7 +6197,7 @@ class MailFavoriteRsp : public ::google::protobuf::Message /* @@protoc_insertion
                &_MailFavoriteRsp_default_instance_);
   }
   static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
-    39;
+    41;
 
   void Swap(MailFavoriteRsp* other);
   friend void swap(MailFavoriteRsp& a, MailFavoriteRsp& b) {
@@ -5992,7 +6347,7 @@ class MailBatchReadReq : public ::google::protobuf::Message /* @@protoc_insertio
                &_MailBatchReadReq_default_instance_);
   }
   static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
-    40;
+    42;
 
   void Swap(MailBatchReadReq* other);
   friend void swap(MailBatchReadReq& a, MailBatchReadReq& b) {
@@ -6120,7 +6475,7 @@ class MailBatchReadRsp : public ::google::protobuf::Message /* @@protoc_insertio
                &_MailBatchReadRsp_default_instance_);
   }
   static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
-    41;
+    43;
 
   void Swap(MailBatchReadRsp* other);
   friend void swap(MailBatchReadRsp& a, MailBatchReadRsp& b) {
@@ -6270,7 +6625,7 @@ class MailBatchDeleteReq : public ::google::protobuf::Message /* @@protoc_insert
                &_MailBatchDeleteReq_default_instance_);
   }
   static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
-    42;
+    44;
 
   void Swap(MailBatchDeleteReq* other);
   friend void swap(MailBatchDeleteReq& a, MailBatchDeleteReq& b) {
@@ -6398,7 +6753,7 @@ class MailBatchDeleteRsp : public ::google::protobuf::Message /* @@protoc_insert
                &_MailBatchDeleteRsp_default_instance_);
   }
   static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
-    43;
+    45;
 
   void Swap(MailBatchDeleteRsp* other);
   friend void swap(MailBatchDeleteRsp& a, MailBatchDeleteRsp& b) {
@@ -6562,7 +6917,7 @@ class MailDeliverAttachment : public ::google::protobuf::Message /* @@protoc_ins
                &_MailDeliverAttachment_default_instance_);
   }
   static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
-    44;
+    46;
 
   void Swap(MailDeliverAttachment* other);
   friend void swap(MailDeliverAttachment& a, MailDeliverAttachment& b) {
@@ -6713,7 +7068,7 @@ class MailDeliverReq : public ::google::protobuf::Message /* @@protoc_insertion_
                &_MailDeliverReq_default_instance_);
   }
   static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
-    45;
+    47;
 
   void Swap(MailDeliverReq* other);
   friend void swap(MailDeliverReq& a, MailDeliverReq& b) {
@@ -7003,7 +7358,7 @@ class MailDeliverRsp : public ::google::protobuf::Message /* @@protoc_insertion_
                &_MailDeliverRsp_default_instance_);
   }
   static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
-    46;
+    48;
 
   void Swap(MailDeliverRsp* other);
   friend void swap(MailDeliverRsp& a, MailDeliverRsp& b) {
@@ -7153,7 +7508,7 @@ class EnterMapReq : public ::google::protobuf::Message /* @@protoc_insertion_poi
                &_EnterMapReq_default_instance_);
   }
   static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
-    47;
+    49;
 
   void Swap(EnterMapReq* other);
   friend void swap(EnterMapReq& a, EnterMapReq& b) {
@@ -7273,7 +7628,7 @@ class EnterMapRsp : public ::google::protobuf::Message /* @@protoc_insertion_poi
                &_EnterMapRsp_default_instance_);
   }
   static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
-    48;
+    50;
 
   void Swap(EnterMapRsp* other);
   friend void swap(EnterMapRsp& a, EnterMapRsp& b) {
@@ -7430,7 +7785,7 @@ class LeaveMapReq : public ::google::protobuf::Message /* @@protoc_insertion_poi
                &_LeaveMapReq_default_instance_);
   }
   static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
-    49;
+    51;
 
   void Swap(LeaveMapReq* other);
   friend void swap(LeaveMapReq& a, LeaveMapReq& b) {
@@ -7536,7 +7891,7 @@ class LeaveMapRsp : public ::google::protobuf::Message /* @@protoc_insertion_poi
                &_LeaveMapRsp_default_instance_);
   }
   static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
-    50;
+    52;
 
   void Swap(LeaveMapRsp* other);
   friend void swap(LeaveMapRsp& a, LeaveMapRsp& b) {
@@ -7650,7 +8005,7 @@ class MapPingReq : public ::google::protobuf::Message /* @@protoc_insertion_poin
                &_MapPingReq_default_instance_);
   }
   static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
-    51;
+    53;
 
   void Swap(MapPingReq* other);
   friend void swap(MapPingReq& a, MapPingReq& b) {
@@ -7756,7 +8111,7 @@ class MapPingRsp : public ::google::protobuf::Message /* @@protoc_insertion_poin
                &_MapPingRsp_default_instance_);
   }
   static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
-    52;
+    54;
 
   void Swap(MapPingRsp* other);
   friend void swap(MapPingRsp& a, MapPingRsp& b) {
@@ -7899,7 +8254,7 @@ class ChatSendReq : public ::google::protobuf::Message /* @@protoc_insertion_poi
                &_ChatSendReq_default_instance_);
   }
   static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
-    53;
+    55;
 
   void Swap(ChatSendReq* other);
   friend void swap(ChatSendReq& a, ChatSendReq& b) {
@@ -8028,7 +8383,7 @@ class ChatSendRsp : public ::google::protobuf::Message /* @@protoc_insertion_poi
                &_ChatSendRsp_default_instance_);
   }
   static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
-    54;
+    56;
 
   void Swap(ChatSendRsp* other);
   friend void swap(ChatSendRsp& a, ChatSendRsp& b) {
@@ -8157,7 +8512,7 @@ class FriendListReq : public ::google::protobuf::Message /* @@protoc_insertion_p
                &_FriendListReq_default_instance_);
   }
   static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
-    55;
+    57;
 
   void Swap(FriendListReq* other);
   friend void swap(FriendListReq& a, FriendListReq& b) {
@@ -8256,7 +8611,7 @@ class FriendListRsp : public ::google::protobuf::Message /* @@protoc_insertion_p
                &_FriendListRsp_default_instance_);
   }
   static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
-    56;
+    58;
 
   void Swap(FriendListRsp* other);
   friend void swap(FriendListRsp& a, FriendListRsp& b) {
@@ -8415,7 +8770,7 @@ class GameRequest : public ::google::protobuf::Message /* @@protoc_insertion_poi
                &_GameRequest_default_instance_);
   }
   static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
-    57;
+    59;
 
   void Swap(GameRequest* other);
   friend void swap(GameRequest& a, GameRequest& b) {
@@ -8846,6 +9201,8 @@ class GameResponse : public ::google::protobuf::Message /* @@protoc_insertion_po
     kChatSend = 50,
     kFriendList = 51,
     kPushAck = 52,
+    kServerPush = 53,
+    kFullSnapshot = 54,
     BODY_NOT_SET = 0,
   };
 
@@ -8855,7 +9212,7 @@ class GameResponse : public ::google::protobuf::Message /* @@protoc_insertion_po
                &_GameResponse_default_instance_);
   }
   static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
-    58;
+    60;
 
   void Swap(GameResponse* other);
   friend void swap(GameResponse& a, GameResponse& b) {
@@ -9162,6 +9519,24 @@ class GameResponse : public ::google::protobuf::Message /* @@protoc_insertion_po
   ::game::PushAckRsp* mutable_push_ack();
   void set_allocated_push_ack(::game::PushAckRsp* push_ack);
 
+  // .game.ServerPushEnvelope server_push = 53;
+  bool has_server_push() const;
+  void clear_server_push();
+  static const int kServerPushFieldNumber = 53;
+  const ::game::ServerPushEnvelope& server_push() const;
+  ::game::ServerPushEnvelope* release_server_push();
+  ::game::ServerPushEnvelope* mutable_server_push();
+  void set_allocated_server_push(::game::ServerPushEnvelope* server_push);
+
+  // .game.FullStateSnapshotRsp full_snapshot = 54;
+  bool has_full_snapshot() const;
+  void clear_full_snapshot();
+  static const int kFullSnapshotFieldNumber = 54;
+  const ::game::FullStateSnapshotRsp& full_snapshot() const;
+  ::game::FullStateSnapshotRsp* release_full_snapshot();
+  ::game::FullStateSnapshotRsp* mutable_full_snapshot();
+  void set_allocated_full_snapshot(::game::FullStateSnapshotRsp* full_snapshot);
+
   BodyCase body_case() const;
   // @@protoc_insertion_point(class_scope:game.GameResponse)
  private:
@@ -9191,6 +9566,8 @@ class GameResponse : public ::google::protobuf::Message /* @@protoc_insertion_po
   void set_has_chat_send();
   void set_has_friend_list();
   void set_has_push_ack();
+  void set_has_server_push();
+  void set_has_full_snapshot();
 
   inline bool has_body() const;
   void clear_body();
@@ -9228,6 +9605,8 @@ class GameResponse : public ::google::protobuf::Message /* @@protoc_insertion_po
     ::game::ChatSendRsp* chat_send_;
     ::game::FriendListRsp* friend_list_;
     ::game::PushAckRsp* push_ack_;
+    ::game::ServerPushEnvelope* server_push_;
+    ::game::FullStateSnapshotRsp* full_snapshot_;
   } body_;
   mutable int _cached_size_;
   ::google::protobuf::uint32 _oneof_case_[1];
@@ -10030,6 +10409,126 @@ inline void PushAckReq::set_ack_server_seq(::google::protobuf::uint64 value) {
   // @@protoc_insertion_point(field_set:game.PushAckReq.ack_server_seq)
 }
 
+// string session_id = 3;
+inline void PushAckReq::clear_session_id() {
+  session_id_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline const ::std::string& PushAckReq::session_id() const {
+  // @@protoc_insertion_point(field_get:game.PushAckReq.session_id)
+  return session_id_.GetNoArena();
+}
+inline void PushAckReq::set_session_id(const ::std::string& value) {
+  
+  session_id_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), value);
+  // @@protoc_insertion_point(field_set:game.PushAckReq.session_id)
+}
+#if LANG_CXX11
+inline void PushAckReq::set_session_id(::std::string&& value) {
+  
+  session_id_.SetNoArena(
+    &::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::move(value));
+  // @@protoc_insertion_point(field_set_rvalue:game.PushAckReq.session_id)
+}
+#endif
+inline void PushAckReq::set_session_id(const char* value) {
+  GOOGLE_DCHECK(value != NULL);
+  
+  session_id_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::string(value));
+  // @@protoc_insertion_point(field_set_char:game.PushAckReq.session_id)
+}
+inline void PushAckReq::set_session_id(const char* value, size_t size) {
+  
+  session_id_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(),
+      ::std::string(reinterpret_cast<const char*>(value), size));
+  // @@protoc_insertion_point(field_set_pointer:game.PushAckReq.session_id)
+}
+inline ::std::string* PushAckReq::mutable_session_id() {
+  
+  // @@protoc_insertion_point(field_mutable:game.PushAckReq.session_id)
+  return session_id_.MutableNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline ::std::string* PushAckReq::release_session_id() {
+  // @@protoc_insertion_point(field_release:game.PushAckReq.session_id)
+  
+  return session_id_.ReleaseNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline void PushAckReq::set_allocated_session_id(::std::string* session_id) {
+  if (session_id != NULL) {
+    
+  } else {
+    
+  }
+  session_id_.SetAllocatedNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), session_id);
+  // @@protoc_insertion_point(field_set_allocated:game.PushAckReq.session_id)
+}
+
+// string fence_token = 4;
+inline void PushAckReq::clear_fence_token() {
+  fence_token_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline const ::std::string& PushAckReq::fence_token() const {
+  // @@protoc_insertion_point(field_get:game.PushAckReq.fence_token)
+  return fence_token_.GetNoArena();
+}
+inline void PushAckReq::set_fence_token(const ::std::string& value) {
+  
+  fence_token_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), value);
+  // @@protoc_insertion_point(field_set:game.PushAckReq.fence_token)
+}
+#if LANG_CXX11
+inline void PushAckReq::set_fence_token(::std::string&& value) {
+  
+  fence_token_.SetNoArena(
+    &::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::move(value));
+  // @@protoc_insertion_point(field_set_rvalue:game.PushAckReq.fence_token)
+}
+#endif
+inline void PushAckReq::set_fence_token(const char* value) {
+  GOOGLE_DCHECK(value != NULL);
+  
+  fence_token_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::string(value));
+  // @@protoc_insertion_point(field_set_char:game.PushAckReq.fence_token)
+}
+inline void PushAckReq::set_fence_token(const char* value, size_t size) {
+  
+  fence_token_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(),
+      ::std::string(reinterpret_cast<const char*>(value), size));
+  // @@protoc_insertion_point(field_set_pointer:game.PushAckReq.fence_token)
+}
+inline ::std::string* PushAckReq::mutable_fence_token() {
+  
+  // @@protoc_insertion_point(field_mutable:game.PushAckReq.fence_token)
+  return fence_token_.MutableNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline ::std::string* PushAckReq::release_fence_token() {
+  // @@protoc_insertion_point(field_release:game.PushAckReq.fence_token)
+  
+  return fence_token_.ReleaseNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline void PushAckReq::set_allocated_fence_token(::std::string* fence_token) {
+  if (fence_token != NULL) {
+    
+  } else {
+    
+  }
+  fence_token_.SetAllocatedNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), fence_token);
+  // @@protoc_insertion_point(field_set_allocated:game.PushAckReq.fence_token)
+}
+
+// uint64 generation = 5;
+inline void PushAckReq::clear_generation() {
+  generation_ = GOOGLE_ULONGLONG(0);
+}
+inline ::google::protobuf::uint64 PushAckReq::generation() const {
+  // @@protoc_insertion_point(field_get:game.PushAckReq.generation)
+  return generation_;
+}
+inline void PushAckReq::set_generation(::google::protobuf::uint64 value) {
+  
+  generation_ = value;
+  // @@protoc_insertion_point(field_set:game.PushAckReq.generation)
+}
+
 // -------------------------------------------------------------------
 
 // PushAckRsp
@@ -10113,6 +10612,331 @@ inline void PushAckRsp::set_trimmed_to_seq(::google::protobuf::uint64 value) {
   
   trimmed_to_seq_ = value;
   // @@protoc_insertion_point(field_set:game.PushAckRsp.trimmed_to_seq)
+}
+
+// -------------------------------------------------------------------
+
+// ServerPushEnvelope
+
+// uint64 server_seq = 1;
+inline void ServerPushEnvelope::clear_server_seq() {
+  server_seq_ = GOOGLE_ULONGLONG(0);
+}
+inline ::google::protobuf::uint64 ServerPushEnvelope::server_seq() const {
+  // @@protoc_insertion_point(field_get:game.ServerPushEnvelope.server_seq)
+  return server_seq_;
+}
+inline void ServerPushEnvelope::set_server_seq(::google::protobuf::uint64 value) {
+  
+  server_seq_ = value;
+  // @@protoc_insertion_point(field_set:game.ServerPushEnvelope.server_seq)
+}
+
+// string message_type = 2;
+inline void ServerPushEnvelope::clear_message_type() {
+  message_type_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline const ::std::string& ServerPushEnvelope::message_type() const {
+  // @@protoc_insertion_point(field_get:game.ServerPushEnvelope.message_type)
+  return message_type_.GetNoArena();
+}
+inline void ServerPushEnvelope::set_message_type(const ::std::string& value) {
+  
+  message_type_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), value);
+  // @@protoc_insertion_point(field_set:game.ServerPushEnvelope.message_type)
+}
+#if LANG_CXX11
+inline void ServerPushEnvelope::set_message_type(::std::string&& value) {
+  
+  message_type_.SetNoArena(
+    &::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::move(value));
+  // @@protoc_insertion_point(field_set_rvalue:game.ServerPushEnvelope.message_type)
+}
+#endif
+inline void ServerPushEnvelope::set_message_type(const char* value) {
+  GOOGLE_DCHECK(value != NULL);
+  
+  message_type_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::string(value));
+  // @@protoc_insertion_point(field_set_char:game.ServerPushEnvelope.message_type)
+}
+inline void ServerPushEnvelope::set_message_type(const char* value, size_t size) {
+  
+  message_type_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(),
+      ::std::string(reinterpret_cast<const char*>(value), size));
+  // @@protoc_insertion_point(field_set_pointer:game.ServerPushEnvelope.message_type)
+}
+inline ::std::string* ServerPushEnvelope::mutable_message_type() {
+  
+  // @@protoc_insertion_point(field_mutable:game.ServerPushEnvelope.message_type)
+  return message_type_.MutableNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline ::std::string* ServerPushEnvelope::release_message_type() {
+  // @@protoc_insertion_point(field_release:game.ServerPushEnvelope.message_type)
+  
+  return message_type_.ReleaseNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline void ServerPushEnvelope::set_allocated_message_type(::std::string* message_type) {
+  if (message_type != NULL) {
+    
+  } else {
+    
+  }
+  message_type_.SetAllocatedNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), message_type);
+  // @@protoc_insertion_point(field_set_allocated:game.ServerPushEnvelope.message_type)
+}
+
+// bytes payload = 3;
+inline void ServerPushEnvelope::clear_payload() {
+  payload_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline const ::std::string& ServerPushEnvelope::payload() const {
+  // @@protoc_insertion_point(field_get:game.ServerPushEnvelope.payload)
+  return payload_.GetNoArena();
+}
+inline void ServerPushEnvelope::set_payload(const ::std::string& value) {
+  
+  payload_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), value);
+  // @@protoc_insertion_point(field_set:game.ServerPushEnvelope.payload)
+}
+#if LANG_CXX11
+inline void ServerPushEnvelope::set_payload(::std::string&& value) {
+  
+  payload_.SetNoArena(
+    &::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::move(value));
+  // @@protoc_insertion_point(field_set_rvalue:game.ServerPushEnvelope.payload)
+}
+#endif
+inline void ServerPushEnvelope::set_payload(const char* value) {
+  GOOGLE_DCHECK(value != NULL);
+  
+  payload_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::string(value));
+  // @@protoc_insertion_point(field_set_char:game.ServerPushEnvelope.payload)
+}
+inline void ServerPushEnvelope::set_payload(const void* value, size_t size) {
+  
+  payload_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(),
+      ::std::string(reinterpret_cast<const char*>(value), size));
+  // @@protoc_insertion_point(field_set_pointer:game.ServerPushEnvelope.payload)
+}
+inline ::std::string* ServerPushEnvelope::mutable_payload() {
+  
+  // @@protoc_insertion_point(field_mutable:game.ServerPushEnvelope.payload)
+  return payload_.MutableNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline ::std::string* ServerPushEnvelope::release_payload() {
+  // @@protoc_insertion_point(field_release:game.ServerPushEnvelope.payload)
+  
+  return payload_.ReleaseNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline void ServerPushEnvelope::set_allocated_payload(::std::string* payload) {
+  if (payload != NULL) {
+    
+  } else {
+    
+  }
+  payload_.SetAllocatedNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), payload);
+  // @@protoc_insertion_point(field_set_allocated:game.ServerPushEnvelope.payload)
+}
+
+// bool reliable = 4;
+inline void ServerPushEnvelope::clear_reliable() {
+  reliable_ = false;
+}
+inline bool ServerPushEnvelope::reliable() const {
+  // @@protoc_insertion_point(field_get:game.ServerPushEnvelope.reliable)
+  return reliable_;
+}
+inline void ServerPushEnvelope::set_reliable(bool value) {
+  
+  reliable_ = value;
+  // @@protoc_insertion_point(field_set:game.ServerPushEnvelope.reliable)
+}
+
+// bool coalescable = 5;
+inline void ServerPushEnvelope::clear_coalescable() {
+  coalescable_ = false;
+}
+inline bool ServerPushEnvelope::coalescable() const {
+  // @@protoc_insertion_point(field_get:game.ServerPushEnvelope.coalescable)
+  return coalescable_;
+}
+inline void ServerPushEnvelope::set_coalescable(bool value) {
+  
+  coalescable_ = value;
+  // @@protoc_insertion_point(field_set:game.ServerPushEnvelope.coalescable)
+}
+
+// -------------------------------------------------------------------
+
+// FullStateSnapshotRsp
+
+// bool ok = 1;
+inline void FullStateSnapshotRsp::clear_ok() {
+  ok_ = false;
+}
+inline bool FullStateSnapshotRsp::ok() const {
+  // @@protoc_insertion_point(field_get:game.FullStateSnapshotRsp.ok)
+  return ok_;
+}
+inline void FullStateSnapshotRsp::set_ok(bool value) {
+  
+  ok_ = value;
+  // @@protoc_insertion_point(field_set:game.FullStateSnapshotRsp.ok)
+}
+
+// string message = 2;
+inline void FullStateSnapshotRsp::clear_message() {
+  message_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline const ::std::string& FullStateSnapshotRsp::message() const {
+  // @@protoc_insertion_point(field_get:game.FullStateSnapshotRsp.message)
+  return message_.GetNoArena();
+}
+inline void FullStateSnapshotRsp::set_message(const ::std::string& value) {
+  
+  message_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), value);
+  // @@protoc_insertion_point(field_set:game.FullStateSnapshotRsp.message)
+}
+#if LANG_CXX11
+inline void FullStateSnapshotRsp::set_message(::std::string&& value) {
+  
+  message_.SetNoArena(
+    &::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::move(value));
+  // @@protoc_insertion_point(field_set_rvalue:game.FullStateSnapshotRsp.message)
+}
+#endif
+inline void FullStateSnapshotRsp::set_message(const char* value) {
+  GOOGLE_DCHECK(value != NULL);
+  
+  message_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::string(value));
+  // @@protoc_insertion_point(field_set_char:game.FullStateSnapshotRsp.message)
+}
+inline void FullStateSnapshotRsp::set_message(const char* value, size_t size) {
+  
+  message_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(),
+      ::std::string(reinterpret_cast<const char*>(value), size));
+  // @@protoc_insertion_point(field_set_pointer:game.FullStateSnapshotRsp.message)
+}
+inline ::std::string* FullStateSnapshotRsp::mutable_message() {
+  
+  // @@protoc_insertion_point(field_mutable:game.FullStateSnapshotRsp.message)
+  return message_.MutableNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline ::std::string* FullStateSnapshotRsp::release_message() {
+  // @@protoc_insertion_point(field_release:game.FullStateSnapshotRsp.message)
+  
+  return message_.ReleaseNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline void FullStateSnapshotRsp::set_allocated_message(::std::string* message) {
+  if (message != NULL) {
+    
+  } else {
+    
+  }
+  message_.SetAllocatedNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), message);
+  // @@protoc_insertion_point(field_set_allocated:game.FullStateSnapshotRsp.message)
+}
+
+// uint64 player_id = 3;
+inline void FullStateSnapshotRsp::clear_player_id() {
+  player_id_ = GOOGLE_ULONGLONG(0);
+}
+inline ::google::protobuf::uint64 FullStateSnapshotRsp::player_id() const {
+  // @@protoc_insertion_point(field_get:game.FullStateSnapshotRsp.player_id)
+  return player_id_;
+}
+inline void FullStateSnapshotRsp::set_player_id(::google::protobuf::uint64 value) {
+  
+  player_id_ = value;
+  // @@protoc_insertion_point(field_set:game.FullStateSnapshotRsp.player_id)
+}
+
+// uint64 asset_version = 4;
+inline void FullStateSnapshotRsp::clear_asset_version() {
+  asset_version_ = GOOGLE_ULONGLONG(0);
+}
+inline ::google::protobuf::uint64 FullStateSnapshotRsp::asset_version() const {
+  // @@protoc_insertion_point(field_get:game.FullStateSnapshotRsp.asset_version)
+  return asset_version_;
+}
+inline void FullStateSnapshotRsp::set_asset_version(::google::protobuf::uint64 value) {
+  
+  asset_version_ = value;
+  // @@protoc_insertion_point(field_set:game.FullStateSnapshotRsp.asset_version)
+}
+
+// repeated uint32 item_ids = 5;
+inline int FullStateSnapshotRsp::item_ids_size() const {
+  return item_ids_.size();
+}
+inline void FullStateSnapshotRsp::clear_item_ids() {
+  item_ids_.Clear();
+}
+inline ::google::protobuf::uint32 FullStateSnapshotRsp::item_ids(int index) const {
+  // @@protoc_insertion_point(field_get:game.FullStateSnapshotRsp.item_ids)
+  return item_ids_.Get(index);
+}
+inline void FullStateSnapshotRsp::set_item_ids(int index, ::google::protobuf::uint32 value) {
+  item_ids_.Set(index, value);
+  // @@protoc_insertion_point(field_set:game.FullStateSnapshotRsp.item_ids)
+}
+inline void FullStateSnapshotRsp::add_item_ids(::google::protobuf::uint32 value) {
+  item_ids_.Add(value);
+  // @@protoc_insertion_point(field_add:game.FullStateSnapshotRsp.item_ids)
+}
+inline const ::google::protobuf::RepeatedField< ::google::protobuf::uint32 >&
+FullStateSnapshotRsp::item_ids() const {
+  // @@protoc_insertion_point(field_list:game.FullStateSnapshotRsp.item_ids)
+  return item_ids_;
+}
+inline ::google::protobuf::RepeatedField< ::google::protobuf::uint32 >*
+FullStateSnapshotRsp::mutable_item_ids() {
+  // @@protoc_insertion_point(field_mutable_list:game.FullStateSnapshotRsp.item_ids)
+  return &item_ids_;
+}
+
+// repeated uint32 item_counts = 6;
+inline int FullStateSnapshotRsp::item_counts_size() const {
+  return item_counts_.size();
+}
+inline void FullStateSnapshotRsp::clear_item_counts() {
+  item_counts_.Clear();
+}
+inline ::google::protobuf::uint32 FullStateSnapshotRsp::item_counts(int index) const {
+  // @@protoc_insertion_point(field_get:game.FullStateSnapshotRsp.item_counts)
+  return item_counts_.Get(index);
+}
+inline void FullStateSnapshotRsp::set_item_counts(int index, ::google::protobuf::uint32 value) {
+  item_counts_.Set(index, value);
+  // @@protoc_insertion_point(field_set:game.FullStateSnapshotRsp.item_counts)
+}
+inline void FullStateSnapshotRsp::add_item_counts(::google::protobuf::uint32 value) {
+  item_counts_.Add(value);
+  // @@protoc_insertion_point(field_add:game.FullStateSnapshotRsp.item_counts)
+}
+inline const ::google::protobuf::RepeatedField< ::google::protobuf::uint32 >&
+FullStateSnapshotRsp::item_counts() const {
+  // @@protoc_insertion_point(field_list:game.FullStateSnapshotRsp.item_counts)
+  return item_counts_;
+}
+inline ::google::protobuf::RepeatedField< ::google::protobuf::uint32 >*
+FullStateSnapshotRsp::mutable_item_counts() {
+  // @@protoc_insertion_point(field_mutable_list:game.FullStateSnapshotRsp.item_counts)
+  return &item_counts_;
+}
+
+// uint64 baseline_server_seq = 7;
+inline void FullStateSnapshotRsp::clear_baseline_server_seq() {
+  baseline_server_seq_ = GOOGLE_ULONGLONG(0);
+}
+inline ::google::protobuf::uint64 FullStateSnapshotRsp::baseline_server_seq() const {
+  // @@protoc_insertion_point(field_get:game.FullStateSnapshotRsp.baseline_server_seq)
+  return baseline_server_seq_;
+}
+inline void FullStateSnapshotRsp::set_baseline_server_seq(::google::protobuf::uint64 value) {
+  
+  baseline_server_seq_ = value;
+  // @@protoc_insertion_point(field_set:game.FullStateSnapshotRsp.baseline_server_seq)
 }
 
 // -------------------------------------------------------------------
@@ -19485,6 +20309,86 @@ inline ::game::PushAckRsp* GameResponse::mutable_push_ack() {
   return body_.push_ack_;
 }
 
+// .game.ServerPushEnvelope server_push = 53;
+inline bool GameResponse::has_server_push() const {
+  return body_case() == kServerPush;
+}
+inline void GameResponse::set_has_server_push() {
+  _oneof_case_[0] = kServerPush;
+}
+inline void GameResponse::clear_server_push() {
+  if (has_server_push()) {
+    delete body_.server_push_;
+    clear_has_body();
+  }
+}
+inline ::game::ServerPushEnvelope* GameResponse::release_server_push() {
+  // @@protoc_insertion_point(field_release:game.GameResponse.server_push)
+  if (has_server_push()) {
+    clear_has_body();
+      ::game::ServerPushEnvelope* temp = body_.server_push_;
+    body_.server_push_ = NULL;
+    return temp;
+  } else {
+    return NULL;
+  }
+}
+inline const ::game::ServerPushEnvelope& GameResponse::server_push() const {
+  // @@protoc_insertion_point(field_get:game.GameResponse.server_push)
+  return has_server_push()
+      ? *body_.server_push_
+      : *reinterpret_cast< ::game::ServerPushEnvelope*>(&::game::_ServerPushEnvelope_default_instance_);
+}
+inline ::game::ServerPushEnvelope* GameResponse::mutable_server_push() {
+  if (!has_server_push()) {
+    clear_body();
+    set_has_server_push();
+    body_.server_push_ = new ::game::ServerPushEnvelope;
+  }
+  // @@protoc_insertion_point(field_mutable:game.GameResponse.server_push)
+  return body_.server_push_;
+}
+
+// .game.FullStateSnapshotRsp full_snapshot = 54;
+inline bool GameResponse::has_full_snapshot() const {
+  return body_case() == kFullSnapshot;
+}
+inline void GameResponse::set_has_full_snapshot() {
+  _oneof_case_[0] = kFullSnapshot;
+}
+inline void GameResponse::clear_full_snapshot() {
+  if (has_full_snapshot()) {
+    delete body_.full_snapshot_;
+    clear_has_body();
+  }
+}
+inline ::game::FullStateSnapshotRsp* GameResponse::release_full_snapshot() {
+  // @@protoc_insertion_point(field_release:game.GameResponse.full_snapshot)
+  if (has_full_snapshot()) {
+    clear_has_body();
+      ::game::FullStateSnapshotRsp* temp = body_.full_snapshot_;
+    body_.full_snapshot_ = NULL;
+    return temp;
+  } else {
+    return NULL;
+  }
+}
+inline const ::game::FullStateSnapshotRsp& GameResponse::full_snapshot() const {
+  // @@protoc_insertion_point(field_get:game.GameResponse.full_snapshot)
+  return has_full_snapshot()
+      ? *body_.full_snapshot_
+      : *reinterpret_cast< ::game::FullStateSnapshotRsp*>(&::game::_FullStateSnapshotRsp_default_instance_);
+}
+inline ::game::FullStateSnapshotRsp* GameResponse::mutable_full_snapshot() {
+  if (!has_full_snapshot()) {
+    clear_body();
+    set_has_full_snapshot();
+    body_.full_snapshot_ = new ::game::FullStateSnapshotRsp;
+  }
+  // @@protoc_insertion_point(field_mutable:game.GameResponse.full_snapshot)
+  return body_.full_snapshot_;
+}
+
 inline bool GameResponse::has_body() const {
   return body_case() != BODY_NOT_SET;
 }
@@ -19497,6 +20401,10 @@ inline GameResponse::BodyCase GameResponse::body_case() const {
 #ifdef __GNUC__
   #pragma GCC diagnostic pop
 #endif  // __GNUC__
+// -------------------------------------------------------------------
+
+// -------------------------------------------------------------------
+
 // -------------------------------------------------------------------
 
 // -------------------------------------------------------------------

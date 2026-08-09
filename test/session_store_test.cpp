@@ -171,7 +171,37 @@ int main() {
     if (cout2.generation < static_cast<uint64_t>(kThreads + 1))
         return Fail("generation not monotonic under concurrent acquire");
 
-    std::printf("OK session_store_test login/replace/disconnect/reconnect/route/concurrent\n");
+    // operation_id 幂等：同键重试返回同一 session/fence，不产生第二会话
+    const uint64_t pid3 = 900003;
+    {
+        game::LogoutReq lo3;
+        lo3.set_player_id(pid3);
+        game::LogoutRsp lorsp3;
+        SessionStore::Instance().Logout(lo3, &lorsp3);
+    }
+    AcquireSessionInput idem;
+    idem.player_id = pid3;
+    idem.device_id = "dev-idem";
+    idem.server_id = 1;
+    idem.kick_other_device = true;
+    idem.operation_id = "test-acq-idem-900003";
+    AcquireSessionResult i1;
+    if (!SessionStore::Instance().AcquireSession(idem, &i1) || !i1.ok)
+        return Fail("idem acquire1");
+    AcquireSessionResult i2;
+    if (!SessionStore::Instance().AcquireSession(idem, &i2) || !i2.ok)
+        return Fail("idem acquire2");
+    if (i1.session_id != i2.session_id || i1.fence_token != i2.fence_token ||
+        i1.generation != i2.generation)
+        return Fail("idem acquire not same session/fence");
+    SessionOpStatus st = SessionOpStatus::NotFound;
+    std::string kind;
+    AcquireSessionResult ig;
+    if (!SessionStore::Instance().GetSessionOperation(idem.operation_id, &st, &kind, &ig) ||
+        st != SessionOpStatus::Done || kind != "acquire" || ig.session_id != i1.session_id)
+        return Fail("GetSessionOperation acquire");
+
+    std::printf("OK session_store_test login/replace/disconnect/reconnect/route/concurrent/idem\n");
     std::printf("PASS session_store_test\n");
     return 0;
 }

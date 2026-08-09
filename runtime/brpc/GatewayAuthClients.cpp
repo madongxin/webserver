@@ -30,10 +30,10 @@ bool GatewayAuthClients::InitAuthSession(const std::vector<std::string> &session
     if (session_addrs.empty())
         return false;
     const std::string naming = BuildListNamingUrl(session_addrs);
-    session_channel_.reset(new brpc::Channel());
+    session_channel_ = std::make_shared<brpc::Channel>();
     brpc::ChannelOptions opt;
     opt.timeout_ms = timeout_ms_;
-    opt.max_retry = session_addrs.size() > 1 ? 2 : 0;
+    opt.max_retry = 0;  // Acquire/Reconnect 等变更禁止自动重试
     BrpcSslUtil::SslFiles ssl;
     BrpcSslUtil::ApplyChannel(&opt, ssl);
     const std::string lb = SessionLoadBalancerName(session_addrs.size());
@@ -55,9 +55,8 @@ bool GatewayAuthClients::InitLogicChannels(const std::vector<std::string> &logic
                                            int timeout_ms) {
     timeout_ms_ = timeout_ms;
     logic_channels_.clear();
-    logic_by_index_.clear();
     for (size_t i = 0; i < logic_addrs.size(); ++i) {
-        auto ch = std::make_unique<brpc::Channel>();
+        auto ch = std::make_shared<brpc::Channel>();
         brpc::ChannelOptions opt;
         opt.timeout_ms = timeout_ms_;
         opt.max_retry = 0;
@@ -73,13 +72,13 @@ bool GatewayAuthClients::InitLogicChannels(const std::vector<std::string> &logic
     return !logic_channels_.empty();
 }
 
-brpc::Channel *GatewayAuthClients::LogicChannel(const std::string &id) {
+std::shared_ptr<brpc::Channel> GatewayAuthClients::SharedLogicChannel(const std::string &id) {
     // fail-closed：未知 logic_server_id 绝不回退到首节点
     if (id.empty())
         return nullptr;
     auto it = logic_channels_.find(id);
     if (it != logic_channels_.end())
-        return it->second.get();
+        return it->second;
     LOG_ERROR << "GatewayAuthClients: unknown logic_server_id=" << id;
     return nullptr;
 }
@@ -119,6 +118,16 @@ bool GatewayAuthClients::ReconnectV2(const sess::ReconnectRequest &req,
     sess::SessionService_Stub stub(session_channel_.get());
     brpc::Controller cntl;
     stub.ReconnectV2(&cntl, &req, rsp, nullptr);
+    return !cntl.Failed();
+}
+
+bool GatewayAuthClients::GetSessionOperation(const sess::GetSessionOperationRequest &req,
+                                             sess::GetSessionOperationResponse *rsp) {
+    if (!session_channel_ || !rsp)
+        return false;
+    sess::SessionService_Stub stub(session_channel_.get());
+    brpc::Controller cntl;
+    stub.GetSessionOperation(&cntl, &req, rsp, nullptr);
     return !cntl.Failed();
 }
 
@@ -194,10 +203,10 @@ bool GatewayAuthClients::ResolveOrCreateMap(const sess::ResolveOrCreateMapReques
 bool GatewayAuthClients::BindPlayer(const std::string &logic_instance_id,
                                     const glrpc::BindPlayerRequest &req,
                                     glrpc::BindPlayerResponse *rsp) {
-    auto *ch = LogicChannel(logic_instance_id);
+    auto ch = SharedLogicChannel(logic_instance_id);
     if (!ch || !rsp)
         return false;
-    glrpc::GameLogicService_Stub stub(ch);
+    glrpc::GameLogicService_Stub stub(ch.get());
     brpc::Controller cntl;
     stub.BindPlayer(&cntl, &req, rsp, nullptr);
     return !cntl.Failed() && rsp->ok();
@@ -206,10 +215,10 @@ bool GatewayAuthClients::BindPlayer(const std::string &logic_instance_id,
 bool GatewayAuthClients::UnbindPlayer(const std::string &logic_instance_id,
                                       const glrpc::UnbindPlayerRequest &req,
                                       glrpc::UnbindPlayerResponse *rsp) {
-    auto *ch = LogicChannel(logic_instance_id);
+    auto ch = SharedLogicChannel(logic_instance_id);
     if (!ch || !rsp)
         return false;
-    glrpc::GameLogicService_Stub stub(ch);
+    glrpc::GameLogicService_Stub stub(ch.get());
     brpc::Controller cntl;
     stub.UnbindPlayer(&cntl, &req, rsp, nullptr);
     return !cntl.Failed();
@@ -218,21 +227,45 @@ bool GatewayAuthClients::UnbindPlayer(const std::string &logic_instance_id,
 bool GatewayAuthClients::FreezePlayer(const std::string &logic_instance_id,
                                       const glrpc::FreezePlayerRequest &req,
                                       glrpc::FreezePlayerResponse *rsp) {
-    auto *ch = LogicChannel(logic_instance_id);
+    auto ch = SharedLogicChannel(logic_instance_id);
     if (!ch || !rsp)
         return false;
-    glrpc::GameLogicService_Stub stub(ch);
+    glrpc::GameLogicService_Stub stub(ch.get());
     brpc::Controller cntl;
     stub.FreezePlayer(&cntl, &req, rsp, nullptr);
     return !cntl.Failed() && rsp->ok();
 }
 
-bool GatewayAuthClients::Dispatch(const std::string &logic_instance_id,
-                                  const glrpc::ClientCommand &req, glrpc::CommandResult *rsp) {
-    auto *ch = LogicChannel(logic_instance_id);
+bool GatewayAuthClients::ExportPlayerSnapshot(const std::string &logic_instance_id,
+                                              const glrpc::ExportPlayerSnapshotRequest &req,
+                                              glrpc::ExportPlayerSnapshotResponse *rsp) {
+    auto ch = SharedLogicChannel(logic_instance_id);
     if (!ch || !rsp)
         return false;
-    glrpc::GameLogicService_Stub stub(ch);
+    glrpc::GameLogicService_Stub stub(ch.get());
+    brpc::Controller cntl;
+    stub.ExportPlayerSnapshot(&cntl, &req, rsp, nullptr);
+    return !cntl.Failed() && rsp->ok();
+}
+
+bool GatewayAuthClients::ImportPlayerSnapshot(const std::string &logic_instance_id,
+                                              const glrpc::ImportPlayerSnapshotRequest &req,
+                                              glrpc::ImportPlayerSnapshotResponse *rsp) {
+    auto ch = SharedLogicChannel(logic_instance_id);
+    if (!ch || !rsp)
+        return false;
+    glrpc::GameLogicService_Stub stub(ch.get());
+    brpc::Controller cntl;
+    stub.ImportPlayerSnapshot(&cntl, &req, rsp, nullptr);
+    return !cntl.Failed() && rsp->ok();
+}
+
+bool GatewayAuthClients::Dispatch(const std::string &logic_instance_id,
+                                  const glrpc::ClientCommand &req, glrpc::CommandResult *rsp) {
+    auto ch = SharedLogicChannel(logic_instance_id);
+    if (!ch || !rsp)
+        return false;
+    glrpc::GameLogicService_Stub stub(ch.get());
     brpc::Controller cntl;
     stub.Dispatch(&cntl, &req, rsp, nullptr);
     return !cntl.Failed();

@@ -68,11 +68,31 @@ if kill -0 "$LOGIC0_PID" 2>/dev/null; then
   exit 1
 fi
 
-"$DRILL_BIN" "$MAP_ID" "$NEW_OWNER" "$OLD_EPOCH"
+# AUTO_RECOVER=1：等待 Session PlacementRecoveryScheduler（不手工 Migrate）
+if [[ "${AUTO_RECOVER:-0}" == "1" ]]; then
+  echo "waiting auto PlacementRecoveryScheduler..."
+  ok=0
+  for _ in $(seq 1 40); do
+    st="$(redis-cli HGET "$KEY" state || true)"
+    own="$(redis-cli HGET "$KEY" ownerLogicServerId || true)"
+    ep="$(redis-cli HGET "$KEY" ownerEpoch || true)"
+    if [[ "$st" == "READY" && "$own" == "$NEW_OWNER" && "$ep" -gt "$OLD_EPOCH" ]]; then
+      ok=1
+      break
+    fi
+    sleep 1
+  done
+  if [[ "$ok" -ne 1 ]]; then
+    echo "ERROR: auto recover timeout state=$(redis-cli HGET "$KEY" state) owner=$(redis-cli HGET "$KEY" ownerLogicServerId)" >&2
+    exit 1
+  fi
+else
+  "$DRILL_BIN" "$MAP_ID" "$NEW_OWNER" "$OLD_EPOCH"
+fi
 
 NEW_EPOCH="$(redis-cli HGET "$KEY" ownerEpoch)"
 NEW_OWNER_GOT="$(redis-cli HGET "$KEY" ownerLogicServerId)"
 echo "after: owner=$NEW_OWNER_GOT epoch=$NEW_EPOCH"
 [[ "$NEW_OWNER_GOT" == "$NEW_OWNER" ]]
 [[ "$NEW_EPOCH" -gt "$OLD_EPOCH" ]]
-echo "kill_logic_drill.sh PASS (real SIGKILL + epoch bump; old heartbeat rejected)"
+echo "kill_logic_drill.sh PASS (real SIGKILL + epoch bump; auto=${AUTO_RECOVER:-0})"

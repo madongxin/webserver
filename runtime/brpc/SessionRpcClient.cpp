@@ -34,8 +34,8 @@ bool SessionRpcClient::Init(const std::vector<std::string> &addrs, int timeout_m
     brpc::ChannelOptions opt;
     opt.protocol = "baidu_std";
     opt.timeout_ms = timeout_ms > 0 ? timeout_ms : 3000;
-    // 多 Session：有限重试以便节点宕机时切换（状态修改幂等由业务保证）
-    opt.max_retry = addrs.size() > 1 ? 2 : 0;
+    // 禁止无条件重试 Acquire/Reconnect（阶段一：变更类 RPC max_retry=0）
+    opt.max_retry = 0;
     BrpcSslUtil::SslFiles ssl;
     BrpcSslUtil::LoadFromCnf(GatewayConfigPath::Cnf(), &ssl);
     if (!ssl.enable) {

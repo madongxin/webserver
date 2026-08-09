@@ -5,10 +5,12 @@
 #include "GatewayConnRegistry.h"
 #include "IServiceRegistry.h"
 #include "MapInstanceRegistry.h"
+#include "MapPlacement.h"
 #include "MessageRoute.h"
 #include "game.pb.h"
 
 #include <cstdio>
+#include <cstdlib>
 #include <string>
 #include <vector>
 
@@ -91,6 +93,13 @@ int main() {
         Expect(MapInstanceRegistry::Instance().CheckWrite(101, 1) == MapWriteFence::LeaseExpired,
                "lease expired fence");
         Expect(!MapInstanceRegistry::Instance().AcceptWrite(101, 1), "reject expired lease write");
+        // formal：lease=0 拒写
+        MapInstanceRegistry::Instance().SetRequireLease(true);
+        Expect(MapInstanceRegistry::Instance().Claim(102, 1, 1, 0), "claim lease 0");
+        Expect(MapInstanceRegistry::Instance().CheckWrite(102, 1) == MapWriteFence::LeaseMissing,
+               "lease missing when require_lease");
+        Expect(!MapInstanceRegistry::Instance().AcceptWrite(102, 1), "reject lease 0 write");
+        MapInstanceRegistry::Instance().SetRequireLease(false);
         MapInstanceRegistry::Instance().ClearForTest();
     }
 
@@ -114,11 +123,22 @@ int main() {
         Expect(http == 8080, "http management port");
     }
 
-    // 编排契约（Auth 失败不 AcquireSession；Push 按 gateway 选择）
-    Expect(true, "Auth success then AcquireSession (orchestrator contract)");
-    Expect(true, "Auth fail skips Session create (orchestrator early return)");
-    Expect(true, "PushBatch selects by gateway_instance_id not broadcast");
-    Expect(true, "Reactor I/O thread: sync brpc/db only on worker/RPC threads (design)");
+    // Formal：无 Placement 时禁止本地随意 Claim（与 phase1_correctness_test 互补）
+    {
+        ::setenv("GAMEMESH_FORMAL", "1", 1);
+        MapInstanceRegistry::Instance().ClearForTest();
+        MapInstanceRegistry::Instance().SetLocalInstanceId("gl-0");
+        MapPlacement::Instance().ConfigureOwners({"gl-0"});
+        game::GameRequest req;
+        req.mutable_enter_map()->set_player_id(1);
+        req.mutable_enter_map()->set_realm_id(1);
+        req.mutable_enter_map()->set_map_template_id(42);
+        game::GameResponse rsp;
+        Expect(!GameLogic::Instance().Handle(req, &rsp),
+               "formal EnterMap without Placement rejected");
+        ::unsetenv("GAMEMESH_FORMAL");
+        MapInstanceRegistry::Instance().ClearForTest();
+    }
 
     if (fails) {
         std::printf("%d failures\n", fails);

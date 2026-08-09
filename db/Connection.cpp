@@ -15,6 +15,8 @@ bool Connection::connect(const std::string &ip, unsigned short port, const std::
                          const std::string &password, const std::string &dbname) {
     if (!_conn)
         return false;
+    unsigned int connect_timeout_sec = 2;
+    mysql_options(_conn, MYSQL_OPT_CONNECT_TIMEOUT, &connect_timeout_sec);
     MYSQL *p = mysql_real_connect(_conn, ip.c_str(), user.c_str(), password.c_str(),
                                   dbname.c_str(), port, nullptr, 0);
     if (!p)

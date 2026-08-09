@@ -1,6 +1,7 @@
 #include "AuthServiceImpl.h"
 
 #include "AuthTokenStore.h"
+#include "AuthLoginRateLimit.h"
 #include "FormalMode.h"
 #include "GameMeshPaths.h"
 #include "Logging.h"
@@ -170,38 +171,17 @@ bool LookupAccount(uint64_t player_id, const std::string &device_id, AuthLookup 
     return LookupLocal(player_id, out);
 }
 
-/** 登录失败限流：检查与记录共用同一状态（账号维度，60s 窗口） */
-struct LoginFailBucket {
-    std::mutex mu;
-    std::unordered_map<uint64_t, std::pair<int, int64_t>> fails;  // count, window_sec
-};
-
-LoginFailBucket &LoginFails() {
-    static LoginFailBucket g;
-    return g;
-}
-
+/** 登录失败限流：Redis 共享状态（多 Auth 实例）；不可用时进程内降级 */
 bool LoginRateLimited(uint64_t player_id) {
-    using namespace std::chrono;
-    const int64_t now = duration_cast<seconds>(system_clock::now().time_since_epoch()).count();
-    auto &g = LoginFails();
-    std::lock_guard<std::mutex> lk(g.mu);
-    auto &e = g.fails[player_id];
-    if (now - e.second > 60)
-        e = {0, now};
-    return e.first >= 10;
+    return AuthLoginRateLimit::Instance().IsLimited(player_id);
 }
 
 void RecordLoginFail(uint64_t player_id) {
-    using namespace std::chrono;
-    const int64_t now = duration_cast<seconds>(system_clock::now().time_since_epoch()).count();
-    auto &g = LoginFails();
-    std::lock_guard<std::mutex> lk(g.mu);
-    auto &e = g.fails[player_id];
-    if (now - e.second > 60)
-        e = {0, now};
-    e.first += 1;
-    e.second = now;
+    AuthLoginRateLimit::Instance().RecordFail(player_id);
+}
+
+void ClearLoginFail(uint64_t player_id) {
+    AuthLoginRateLimit::Instance().Clear(player_id);
 }
 
 }  // namespace
@@ -279,6 +259,7 @@ void AuthServiceImpl::Login(::google::protobuf::RpcController *controller,
         }
     }
 
+    ClearLoginFail(request->player_id());
     response->set_ok(true);
     response->set_message("auth ok");
     response->set_account_id(lu.account_id);

@@ -52,6 +52,8 @@ message AcquireSessionRequest {
   string gateway_instance_id = 7;
   // 可选：由 Gateway/Registry 建议的 Logic；空则 Session 按 player_id % N 分配
   string preferred_gamelogic_instance_id = 8;
+  // 稳定幂等键：超时重试必须复用同一 operation_id，避免双 Session
+  string operation_id = 9;
 }
 
 message AcquireSessionResponse {
@@ -88,6 +90,32 @@ message ReconnectRequest {
   string reconnect_ticket = 3;  // 通常为旧 fence_token
   string gateway_instance_id = 4;
   uint64 last_server_seq = 5;
+  string operation_id = 6;
+}
+
+// 查询 Acquire/Reconnect 幂等操作结果（超时后结果未知时使用）
+message GetSessionOperationRequest {
+  string operation_id = 1;
+}
+
+message GetSessionOperationResponse {
+  bool ok = 1;
+  string message = 2;
+  string status = 3;  // NOT_FOUND / PENDING / DONE
+  string op_kind = 4;  // acquire / reconnect
+  bool result_ok = 5;
+  string result_message = 6;
+  string error_code = 7;
+  string session_id = 8;
+  string fence_token = 9;
+  uint64 generation = 10;
+  string gamelogic_instance_id = 11;
+  uint64 map_instance_id = 12;
+  uint64 map_owner_epoch = 13;
+  uint64 route_version = 14;
+  bool kicked_previous = 15;
+  int64 login_time_sec = 16;
+  uint32 server_id = 17;
 }
 
 message ReconnectResponse {
@@ -299,6 +327,7 @@ service SessionService {
   rpc AcquireSession(AcquireSessionRequest) returns (AcquireSessionResponse);
   rpc MarkDisconnectedV2(MarkDisconnectedRequest) returns (MarkDisconnectedResponse);
   rpc ReconnectV2(ReconnectRequest) returns (ReconnectResponse);
+  rpc GetSessionOperation(GetSessionOperationRequest) returns (GetSessionOperationResponse);
   rpc LogoutV2(LogoutRequest) returns (LogoutResponse);
   rpc Kick(KickRequest) returns (KickResponse);
 

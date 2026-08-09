@@ -26,6 +26,14 @@ jobs:
         run: |
           bash -n scripts/*.sh
           bash -n deploy/docker-entrypoint.sh
+      - name: shellcheck
+        run: |
+          if command -v shellcheck >/dev/null 2>&1; then
+            shellcheck -x scripts/*.sh deploy/docker-entrypoint.sh
+          else
+            sudo apt-get install -y shellcheck
+            shellcheck -x scripts/*.sh deploy/docker-entrypoint.sh
+          fi
 
   full:
     runs-on: ubuntu-latest
@@ -60,3 +68,12 @@ jobs:
         run: ./scripts/test_integration.sh
       - name: compose config
         run: docker compose -f compose.yml config >/dev/null
+      - name: ASan build+smoke
+        run: |
+          cmake -S . -B build-asan -DCMAKE_BUILD_TYPE=Debug \
+            -DENABLE_BRPC=OFF -DENABLE_MYSQL=OFF -DENABLE_REDIS=ON \
+            -DCMAKE_CXX_FLAGS="-fsanitize=address -fno-omit-frame-pointer" \
+            -DCMAKE_EXE_LINKER_FLAGS="-fsanitize=address"
+          cmake --build build-asan -j"$(nproc)" --target reactor_unit_test password_hash_test
+          ASAN_OPTIONS=detect_leaks=0 ./build-asan/test/reactor_unit_test
+          ASAN_OPTIONS=detect_leaks=0 ./build-asan/test/password_hash_test

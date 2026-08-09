@@ -17,6 +17,7 @@
 #include "GatewayIdentity.h"
 #include "HealthDeps.h"
 #include "MapLeaseKeeper.h"
+#include "PlacementRecoveryScheduler.h"
 #include "OpsMetrics.h"
 #include "ServiceHealth.h"
 
@@ -61,11 +62,14 @@
 #include "GameDbBrpcServer.h"
 #include "BrpcGameDbRepository.h"
 #include "EtcdDiscovery.h"
+#include "RedisServiceRegistry.h"
+#include "AuthLoginRateLimit.h"
 #endif
 #ifdef WEBSERVER_ENABLE_MYSQL
 #include "AsyncMysqlGameDbRepository.h"
 #include "GameDbOutbox.h"
 #include "PlayerAccountStore.h"
+#include "GameDbAssetStore.h"
 #endif
 #ifdef WEBSERVER_ENABLE_GAME_PROTOBUF
 #include "InProcessTransport.h"
@@ -959,6 +963,11 @@ int RunServer(const LaunchOpts &launch) {
             PlayerItemPersistQueue::Instance().StartPeriodic(&loop, 300.0);
         } else if (role == "world") {
             PlayerItemStore::Instance().EnsureTable();
+        } else if (role == "gamedb") {
+            PlayerAccountStore::Instance().EnsureTable();
+            PlayerItemStore::Instance().EnsureTable();
+            GameDbAssetStore::Instance().EnsureTables();
+            GameDbOutbox::Instance().EnsureTable();
         }
 #ifdef WEBSERVER_ENABLE_GAME_PROTOBUF
         // world：若配置 gamedb_addrs，先挂 BrpcGameDb 再 Init MailService（见下方 brpc 分支）
@@ -977,7 +986,7 @@ int RunServer(const LaunchOpts &launch) {
 #endif
 #ifdef WEBSERVER_ENABLE_REDIS
     if (role == "all" || role == "gamelogic" || role == "gateway" || role == "world" ||
-        role == "session") {
+        role == "session" || role == "gamedb") {
         if (!SessionStore::Instance().InitFromConfig())
             LOG_WARN << "Redis session disabled (config/redis.cnf)";
         else {
@@ -991,6 +1000,11 @@ int RunServer(const LaunchOpts &launch) {
                 PushReplayStore::Instance().InitFromSessionPrefix(
                     SessionStore::Instance().key_prefix());
             }
+#ifdef WEBSERVER_ENABLE_BRPC
+            AuthLoginRateLimit::Instance().Configure(SessionStore::Instance().key_prefix());
+            RedisServiceRegistry::Get().Configure(SessionStore::Instance().key_prefix());
+            RedisServiceRegistry::Get().InitFromRedisConfig();
+#endif
         }
     }
 #endif
@@ -1098,6 +1112,8 @@ int RunServer(const LaunchOpts &launch) {
             track_reg("session", sid, 30);
             LOG_INFO << "session registered id=" << sid << " advertise=" << adv;
         }
+        if (RedisServiceRegistry::Get().ready())
+            RedisServiceRegistry::Get().RegisterInstance(inst, 30);
         if (EtcdDiscovery::Instance().enabled())
             EtcdDiscovery::Instance().Register("session", sid, adv, 30);
         LOG_INFO << "role=session listen=" << listen << " instance_id=" << sid;
@@ -1127,6 +1143,8 @@ int RunServer(const LaunchOpts &launch) {
         inst.status = "UP";
         if (StaticServiceRegistry::Get().RegisterInstance(inst, 30))
             track_reg("gamedb", gid, 30);
+        if (RedisServiceRegistry::Get().ready())
+            RedisServiceRegistry::Get().RegisterInstance(inst, 30);
         if (EtcdDiscovery::Instance().enabled())
             EtcdDiscovery::Instance().Register("gamedb", gid, adv, 30);
         LOG_INFO << "role=gamedb listen=" << listen << " instance_id=" << gid
@@ -1144,8 +1162,11 @@ int RunServer(const LaunchOpts &launch) {
             const std::string iid =
                 resolve_instance_id("gl", logic_port_override, fb);
             MapInstanceRegistry::Instance().SetLocalInstanceId(iid);
+            if (FormalModeEnabled())
+                MapInstanceRegistry::Instance().SetRequireLease(true);
             LOG_INFO << "gamelogic local instance_id=" << iid
-                     << " listen_override=" << logic_port_override;
+                     << " listen_override=" << logic_port_override
+                     << " require_lease=" << MapInstanceRegistry::Instance().require_lease();
             if (!GameLogicBrpcServer::Instance().Start(listen, 30)) {
                 LOG_ERROR << "GameLogicBrpcServer start failed";
                 return 1;
@@ -1216,6 +1237,8 @@ int RunServer(const LaunchOpts &launch) {
             inst.status = "UP";
             if (StaticServiceRegistry::Get().RegisterInstance(inst, 30))
                 track_reg("gamelogic", inst.instance_id, 30);
+            if (RedisServiceRegistry::Get().ready())
+                RedisServiceRegistry::Get().RegisterInstance(inst, 30);
             if (EtcdDiscovery::Instance().enabled())
                 EtcdDiscovery::Instance().Register("gamelogic", inst.instance_id, adv, 30);
             LOG_INFO << "gamelogic registered id=" << inst.instance_id << " advertise=" << adv;
@@ -1328,16 +1351,33 @@ int RunServer(const LaunchOpts &launch) {
                 poll_sec = 5.0;
             loop.RunEvery(poll_sec, []() {
                 std::lock_guard<std::mutex> lk(g_local_regs_mu);
-                for (const auto &r : g_local_regs)
+                for (const auto &r : g_local_regs) {
                     StaticServiceRegistry::Get().RenewInstance(r.service, r.instance_id, r.ttl_sec);
+                    if (RedisServiceRegistry::Get().ready())
+                        RedisServiceRegistry::Get().RenewInstance(r.service, r.instance_id,
+                                                                 r.ttl_sec);
+                }
             });
             loop.RunEvery(poll_sec, [timeout_ms]() {
                 static std::string last_logic;
                 static std::string last_sess;
+                static std::string last_gamedb;
                 std::vector<std::string> logic_addrs, logic_ids, world_addrs, sess_addrs, sess_ids;
                 int to = timeout_ms;
-                if (!GatewayConfigPath::Load(&logic_addrs, &logic_ids, &world_addrs, &to))
+                // Redis 动态发现优先；失败再回落 cnf（空发现不覆盖健康 Channel）
+                std::vector<IServiceRegistry::ServiceInstance> redis_logic;
+                if (RedisServiceRegistry::Get().ready() &&
+                    RedisServiceRegistry::Get().Discover("gamelogic", &redis_logic) &&
+                    !redis_logic.empty()) {
+                    logic_addrs.clear();
+                    logic_ids.clear();
+                    for (const auto &i : redis_logic) {
+                        logic_addrs.push_back(i.address);
+                        logic_ids.push_back(i.instance_id);
+                    }
+                } else if (!GatewayConfigPath::Load(&logic_addrs, &logic_ids, &world_addrs, &to)) {
                     return;
+                }
                 std::string logic_key;
                 for (size_t i = 0; i < logic_addrs.size(); ++i) {
                     if (i)
@@ -1349,16 +1389,56 @@ int RunServer(const LaunchOpts &launch) {
                     BrpcChannelManager::Instance().ApplySnapshot(logic_addrs, logic_ids);
                     GatewayAuthClients::Instance().InitLogicChannels(logic_addrs, logic_ids, to);
                     last_logic = logic_key;
+                    LOG_INFO << "discovery ApplySnapshot gamelogic n=" << logic_addrs.size();
                 }
-                std::string sc = GatewayConfigPath::ReadValue("session_addrs");
-                GatewayConfigPath::SplitCsv(sc, &sess_addrs);
-                GatewayConfigPath::SplitCsv(GatewayConfigPath::ReadValue("session_instance_ids"),
-                                            &sess_ids);
-                if (!sess_addrs.empty() && sc != last_sess) {
+                std::vector<IServiceRegistry::ServiceInstance> redis_sess;
+                if (RedisServiceRegistry::Get().ready() &&
+                    RedisServiceRegistry::Get().Discover("session", &redis_sess) &&
+                    !redis_sess.empty()) {
+                    sess_addrs.clear();
+                    sess_ids.clear();
+                    for (const auto &i : redis_sess) {
+                        sess_addrs.push_back(i.address);
+                        sess_ids.push_back(i.instance_id);
+                    }
+                } else {
+                    std::string sc = GatewayConfigPath::ReadValue("session_addrs");
+                    GatewayConfigPath::SplitCsv(sc, &sess_addrs);
+                    GatewayConfigPath::SplitCsv(GatewayConfigPath::ReadValue("session_instance_ids"),
+                                                &sess_ids);
+                }
+                std::string sess_key;
+                for (size_t i = 0; i < sess_addrs.size(); ++i) {
+                    if (i)
+                        sess_key.push_back('|');
+                    sess_key += (i < sess_ids.size() ? sess_ids[i] : "") + "=" + sess_addrs[i];
+                }
+                if (!sess_addrs.empty() && sess_key != last_sess) {
                     StaticServiceRegistry::Get().SetStaticAddrs("session", sess_addrs, sess_ids);
                     SessionRpcClient::Instance().Init(sess_addrs, to);
                     GatewayAuthClients::Instance().InitAuthSession(sess_addrs, to);
-                    last_sess = sc;
+                    last_sess = sess_key;
+                }
+                std::vector<std::string> gdb_addrs;
+                std::vector<IServiceRegistry::ServiceInstance> redis_gdb;
+                if (RedisServiceRegistry::Get().ready() &&
+                    RedisServiceRegistry::Get().Discover("gamedb", &redis_gdb) &&
+                    !redis_gdb.empty()) {
+                    for (const auto &i : redis_gdb)
+                        gdb_addrs.push_back(i.address);
+                } else {
+                    std::string gc = GatewayConfigPath::ReadValue("gamedb_addrs");
+                    GatewayConfigPath::SplitCsv(gc, &gdb_addrs);
+                }
+                std::string gdb_key;
+                for (size_t i = 0; i < gdb_addrs.size(); ++i) {
+                    if (i)
+                        gdb_key.push_back('|');
+                    gdb_key += gdb_addrs[i];
+                }
+                if (!gdb_addrs.empty() && gdb_key != last_gamedb) {
+                    BrpcGameDbRepository::Instance().ApplySnapshot(gdb_addrs);
+                    last_gamedb = gdb_key;
                 }
             });
         }
@@ -1407,12 +1487,15 @@ int RunServer(const LaunchOpts &launch) {
                  << " advertise=" << adv;
     }
 
-    // 非 gateway 角色：进程内注册续租
+    // 非 gateway 角色：进程内注册续租 + Redis 发现续租
     if (role == "session" || role == "gamelogic" || role == "world" || role == "gamedb") {
         loop.RunEvery(5.0, []() {
             std::lock_guard<std::mutex> lk(g_local_regs_mu);
-            for (const auto &r : g_local_regs)
+            for (const auto &r : g_local_regs) {
                 StaticServiceRegistry::Get().RenewInstance(r.service, r.instance_id, r.ttl_sec);
+                if (RedisServiceRegistry::Get().ready())
+                    RedisServiceRegistry::Get().RenewInstance(r.service, r.instance_id, r.ttl_sec);
+            }
         });
     }
 #endif
@@ -1429,6 +1512,14 @@ int RunServer(const LaunchOpts &launch) {
         loop.RunEvery(hb, []() { MapLeaseKeeper::Instance().Tick(); });
         LOG_INFO << "MapLeaseKeeper interval_sec=" << hb << " lease_sec=" << lease_sec;
     }
+#ifdef WEBSERVER_ENABLE_REDIS
+    // Session：Placement 过期 lease 自动 RECOVERING + Migrate
+    if (role == "session" || role == "all") {
+        const double recover_iv = 5.0;
+        loop.RunEvery(recover_iv, []() { PlacementRecoveryScheduler::Instance().Tick(); });
+        LOG_INFO << "PlacementRecoveryScheduler interval_sec=" << recover_iv;
+    }
+#endif
 #endif
 
 #ifdef WEBSERVER_ENABLE_GAME_PROTOBUF

@@ -14,4 +14,22 @@ public:
                          const ::gdb::RegisterAccountReq *request,
                          ::gdb::RegisterAccountRsp *response,
                          ::google::protobuf::Closure *done) override;
+
+    void LoadPlayer(::google::protobuf::RpcController *controller,
+                    const ::gdb::LoadPlayerReq *request, ::gdb::LoadPlayerRsp *response,
+                    ::google::protobuf::Closure *done) override;
+    void LoadInventory(::google::protobuf::RpcController *controller,
+                       const ::gdb::LoadInventoryReq *request, ::gdb::LoadInventoryRsp *response,
+                       ::google::protobuf::Closure *done) override;
+    void ApplyAssetMutation(::google::protobuf::RpcController *controller,
+                            const ::gdb::AssetMutationReq *request,
+                            ::gdb::AssetMutationRsp *response,
+                            ::google::protobuf::Closure *done) override;
+    void SavePlayerSnapshot(::google::protobuf::RpcController *controller,
+                            const ::gdb::SavePlayerSnapshotReq *request,
+                            ::gdb::SavePlayerSnapshotRsp *response,
+                            ::google::protobuf::Closure *done) override;
+    void FlushPlayer(::google::protobuf::RpcController *controller,
+                     const ::gdb::FlushPlayerReq *request, ::gdb::FlushPlayerRsp *response,
+                     ::google::protobuf::Closure *done) override;
 };

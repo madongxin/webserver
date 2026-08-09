@@ -22,6 +22,11 @@ run_one map_placement_test
 run_one player_serial_queue_test
 run_one auth_session_boundary_test
 run_one phase1_gateway_boundary_test
+run_one phase1_correctness_test
+run_one phase2_transfer_snapshot_test
+if [[ -x "$BIN/phase1_channel_hold_test" ]]; then
+  run_one phase1_channel_hold_test
+fi
 run_one gateway_conn_race_test
 run_one discovery_ha_test
 run_one push_replay_cache_test
@@ -32,5 +37,6 @@ run_one formal_mysql_boundary_test
 if [[ -x "$BIN/auth_token_store_test" ]]; then
   run_one auth_token_store_test
 fi
+# phase3_discovery_test / phase3_gamedb_asset_test：依赖 Redis/MySQL，见 test_integration.sh
 # session_store_test / placement_store_test 依赖 Redis：scripts/test_placement.sh / test_integration.sh
 echo "test_unit.sh PASS"

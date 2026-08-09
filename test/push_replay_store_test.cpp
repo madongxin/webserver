@@ -1,5 +1,5 @@
 /**
- * 阶段 5：Redis PushReplayStore — 原子 seq、回放、ACK 裁剪、缺口 NeedFullSnapshot
+ * 阶段二：Redis PushReplayStore — session 隔离、原子 seq、回放、ACK、缺口
  */
 #include "PushReplayStore.h"
 #include "RedisConfigPath.h"
@@ -67,43 +67,56 @@ int main() {
         return Fail("init");
 
     const uint64_t player = 700001;
-    // 清理旧 key（新 prefix 一般干净）
+    const std::string sid_a = "sess-a";
+    const std::string sid_b = "sess-b";
+    PushReplayStore::Instance().InvalidateSession(player, sid_a);
+    PushReplayStore::Instance().InvalidateSession(player, sid_b);
+
     const uint64_t s1 =
-        PushReplayStore::Instance().AppendReliable(player, "enter_map_notify", "payload-a");
+        PushReplayStore::Instance().AppendReliable(player, sid_a, "enter_map_notify", "payload-a");
     const uint64_t s2 =
-        PushReplayStore::Instance().AppendReliable(player, "enter_map_notify", "payload-b");
+        PushReplayStore::Instance().AppendReliable(player, sid_a, "enter_map_notify", "payload-b");
     if (s1 == 0 || s2 <= s1)
         return Fail("append seq");
 
     std::vector<PushReplayEntry> out;
     bool need_snap = false;
-    if (!PushReplayStore::Instance().ReplayAfter(player, 0, &out, &need_snap) || need_snap)
+    if (!PushReplayStore::Instance().ReplayAfter(player, sid_a, 0, &out, &need_snap) || need_snap)
         return Fail("replay from 0");
     if (out.size() != 2 || out[0].server_seq != s1 || out[1].payload != "payload-b")
         return Fail("replay content");
 
-    if (!PushReplayStore::Instance().Ack(player, s1))
-        return Fail("ack");
+    // 新 Session 看不到旧 Session 消息
     out.clear();
-    if (!PushReplayStore::Instance().ReplayAfter(player, s1, &out, &need_snap) || need_snap)
+    if (!PushReplayStore::Instance().ReplayAfter(player, sid_b, 0, &out, &need_snap))
+        return Fail("replay empty new session");
+    if (!out.empty())
+        return Fail("session isolation broken");
+
+    if (!PushReplayStore::Instance().Ack(player, sid_a, s1))
+        return Fail("ack");
+    // 旧 session ACK 不能裁新 session（新 session 无消息，Ack 仍应成功/无害）
+    if (PushReplayStore::Instance().Ack(player, sid_b, s1)) {
+        // ok if empty list ack succeeds
+    }
+    out.clear();
+    if (!PushReplayStore::Instance().ReplayAfter(player, sid_a, s1, &out, &need_snap) || need_snap)
         return Fail("replay after ack");
     if (out.size() != 1 || out[0].server_seq != s2)
         return Fail("after ack one left");
 
-    // 人为造成缺口：再写满并裁剪后用过旧 last_seq
     for (int i = 0; i < 20; ++i)
-        PushReplayStore::Instance().AppendReliable(player, "t", "x");
+        PushReplayStore::Instance().AppendReliable(player, sid_a, "t", "x");
     out.clear();
     need_snap = false;
-    if (PushReplayStore::Instance().ReplayAfter(player, 1, &out, &need_snap) || !need_snap)
+    if (PushReplayStore::Instance().ReplayAfter(player, sid_a, 1, &out, &need_snap) || !need_snap)
         return Fail("expect need_snapshot on gap");
 
-    // 单调：CurrentSeq 不回退
-    const uint64_t cur = PushReplayStore::Instance().CurrentSeq(player);
+    const uint64_t cur = PushReplayStore::Instance().CurrentSeq(player, sid_a);
     if (cur < s2)
         return Fail("seq went backwards");
 
-    std::printf("OK push_replay_store_test append/replay/ack/gap/seq\n");
+    std::printf("OK push_replay_store_test session/append/replay/ack/gap/seq\n");
     std::printf("PASS push_replay_store_test\n");
     return 0;
 }

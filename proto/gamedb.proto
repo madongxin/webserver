@@ -70,9 +70,86 @@ message RegisterAccountRsp {
   uint64 player_id = 5;
 }
 
+message LoadPlayerReq {
+  uint64 player_id = 1;
+}
+
+message LoadPlayerRsp {
+  bool ok = 1;
+  string message = 2;
+  string error_code = 3;
+  uint64 player_id = 4;
+  uint64 asset_version = 5;
+  bool exists = 6;
+}
+
+message LoadInventoryReq {
+  uint64 player_id = 1;
+}
+
+message LoadInventoryRsp {
+  bool ok = 1;
+  string message = 2;
+  string error_code = 3;
+  uint64 player_id = 4;
+  uint64 asset_version = 5;
+  repeated BagEntry bag = 6;
+}
+
+message AssetMutationReq {
+  uint64 player_id = 1;
+  string idempotency_key = 2;
+  uint64 expected_version = 3;  // 0=不校验
+  string mutation_type = 4;     // GRANT / CONSUME
+  uint32 item_id = 5;
+  uint32 count = 6;
+  string trace_id = 7;
+}
+
+message AssetMutationRsp {
+  bool ok = 1;
+  string message = 2;
+  string error_code = 3;
+  bool idempotent_hit = 4;
+  uint64 asset_version = 5;
+  uint32 remain_count = 6;
+}
+
+message SavePlayerSnapshotReq {
+  uint64 player_id = 1;
+  uint64 expected_version = 2;
+  repeated BagEntry bag = 3;
+  string idempotency_key = 4;
+}
+
+message SavePlayerSnapshotRsp {
+  bool ok = 1;
+  string message = 2;
+  string error_code = 3;
+  uint64 asset_version = 4;
+}
+
+message FlushPlayerReq {
+  uint64 player_id = 1;
+  string reason = 2;
+}
+
+message FlushPlayerRsp {
+  bool ok = 1;
+  string message = 2;
+  string error_code = 3;
+  uint64 asset_version = 4;
+}
+
 service GameDbService {
   rpc ClaimMailAttachments(ClaimMailReq) returns (ClaimMailRsp);
   /** Auth 账号查询（持久化层；不经 GameLogic） */
   rpc LookupAccount(LookupAccountReq) returns (LookupAccountRsp);
   rpc RegisterAccount(RegisterAccountReq) returns (RegisterAccountRsp);
+
+  rpc LoadPlayer(LoadPlayerReq) returns (LoadPlayerRsp);
+  rpc LoadInventory(LoadInventoryReq) returns (LoadInventoryRsp);
+  rpc ApplyAssetMutation(AssetMutationReq) returns (AssetMutationRsp);
+  rpc SavePlayerSnapshot(SavePlayerSnapshotReq) returns (SavePlayerSnapshotRsp);
+  rpc FlushPlayer(FlushPlayerReq) returns (FlushPlayerRsp);
 }

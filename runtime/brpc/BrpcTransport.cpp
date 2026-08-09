@@ -1,8 +1,10 @@
 #include "BrpcTransport.h"
 
 #include "BrpcChannelManager.h"
+#include "FormalMode.h"
 #include "GameRequestTransport.h"
 #include "Logging.h"
+#include "MapInstanceRegistry.h"
 #include "MapPlacement.h"
 #include "MessageRoute.h"
 #include "PlacementStore.h"
@@ -45,6 +47,7 @@ struct DispatchCallContext {
     glrpc::CommandResult rsp;
     std::shared_ptr<ReplySink> sink;
     std::string request_payload;
+    std::shared_ptr<brpc::Channel> channel_keep;  // 覆盖异步 RPC 生命周期
 };
 
 struct WorldForwardCallContext {
@@ -178,6 +181,9 @@ bool ResolvePlacementAuthority(uint32_t realm_id, uint64_t map_template_id, uint
         MapPlacement::Instance().UpsertCache(*out);
         return true;
     }
+    // Formal / require_lease：禁止本地随意 Claim
+    if (FormalModeEnabled() || MapInstanceRegistry::Instance().require_lease())
+        return false;
     // 开发回退：进程内缓存（非权威）
     return MapPlacement::Instance().ResolveOrAllocate(realm_id, map_template_id, map_instance_id, out);
 }
@@ -332,11 +338,11 @@ void BrpcTransport::PostPlayerRequest(const SessionHandle &handle, std::string r
         return;
     }
 
-    brpc::Channel *ch = nullptr;
+    std::shared_ptr<brpc::Channel> ch;
     if (!route.gamelogic_instance_id.empty())
-        ch = BrpcChannelManager::Instance().ChannelForInstance(route.gamelogic_instance_id);
+        ch = BrpcChannelManager::Instance().SharedChannelForInstance(route.gamelogic_instance_id);
     if (!ch && is_register)
-        ch = BrpcChannelManager::Instance().ChannelForPlayer(route.player_id);
+        ch = BrpcChannelManager::Instance().SharedChannelForPlayer(route.player_id);
     if (!ch) {
         LOG_ERROR << "BrpcTransport: unknown logic id fail-closed instance="
                   << route.gamelogic_instance_id << " player_id=" << route.player_id;
@@ -349,6 +355,7 @@ void BrpcTransport::PostPlayerRequest(const SessionHandle &handle, std::string r
     }
 
     auto *ctx = new DispatchCallContext();
+    ctx->channel_keep = ch;
     ctx->sink = std::move(sink);
     ctx->request_payload = request_payload;
     const uint64_t req_id = g_dispatch_req_id.fetch_add(1);
@@ -375,6 +382,6 @@ void BrpcTransport::PostPlayerRequest(const SessionHandle &handle, std::string r
     ctx->req.set_payload(std::move(request_payload));
     ctx->cntl.set_timeout_ms(3000);
 
-    glrpc::GameLogicService_Stub stub(ch);
+    glrpc::GameLogicService_Stub stub(ch.get());
     stub.Dispatch(&ctx->cntl, &ctx->req, &ctx->rsp, brpc::NewCallback(&OnDispatchDone, ctx));
 }

@@ -93,6 +93,9 @@ bool OrchestrateGatewayLogin(const std::string &gateway_instance_id, uint64_t co
     sreq.set_ttl_sec(req.login().ttl_sec());
     sreq.set_kick_other_device(req.login().kick_other_device());
     sreq.set_gateway_instance_id(gateway_instance_id);
+    // 同连接同登录请求的稳定幂等键：RPC 超时重试不会创建双 Session
+    sreq.set_operation_id("acq:" + gateway_instance_id + ":" + std::to_string(connection_id) + ":" +
+                          std::to_string(arsp.player_id()) + ":" + req.login().device_id());
     sess::AcquireSessionResponse srsp;
     if (!GatewayAuthClients::Instance().AcquireSession(sreq, &srsp) || !srsp.ok()) {
         login_body->set_ok(false);
@@ -231,6 +234,9 @@ bool OrchestrateGatewayReconnect(const std::string &gateway_instance_id, uint64_
     v2req.set_reconnect_ticket(req.reconnect().reconnect_ticket());
     v2req.set_gateway_instance_id(gateway_instance_id);
     v2req.set_last_server_seq(req.reconnect().last_server_seq());
+    v2req.set_operation_id("rec:" + gateway_instance_id + ":" + std::to_string(connection_id) + ":" +
+                           req.reconnect().session_id() + ":" +
+                           req.reconnect().reconnect_ticket());
     sess::ReconnectResponse v2rsp;
     if (!GatewayAuthClients::Instance().ReconnectV2(v2req, &v2rsp) || !v2rsp.ok()) {
         body->set_ok(false);
@@ -298,9 +304,10 @@ bool OrchestrateGatewayReconnect(const std::string &gateway_instance_id, uint64_
     bool need_snap = false;
     std::vector<PushReplayEntry> replay;
 #ifdef WEBSERVER_ENABLE_REDIS
+    const std::string &sid = v2rsp.session_id();
     if (PushReplayStore::Instance().Available()) {
-        if (!PushReplayStore::Instance().ReplayAfter(req.reconnect().player_id(), last_seq, &replay,
-                                                     &need_snap)) {
+        if (!PushReplayStore::Instance().ReplayAfter(req.reconnect().player_id(), sid, last_seq,
+                                                     &replay, &need_snap)) {
             if (!need_snap)
                 need_snap = true;
         }
@@ -323,6 +330,49 @@ bool OrchestrateGatewayReconnect(const std::string &gateway_instance_id, uint64_
     } else {
         body->set_replay_from_seq(0);
     }
+
+    // 缺口：真正生成并下发全量状态快照（非仅标志）
+    if (need_snap) {
+        game::GameResponse snap_rsp;
+        snap_rsp.set_ok(true);
+        snap_rsp.set_message("full_snapshot");
+        auto *fs = snap_rsp.mutable_full_snapshot();
+        fs->set_ok(true);
+        fs->set_message("FULL_SNAPSHOT_REQUIRED");
+        fs->set_player_id(req.reconnect().player_id());
+        glrpc::ExportPlayerSnapshotRequest er;
+        er.set_player_id(req.reconnect().player_id());
+        er.set_session_id(v2rsp.session_id());
+        er.set_fence_token(v2rsp.fence_token());
+        er.set_transfer_id("reconnect-full-snap");
+        er.set_target_gamelogic_id(v2rsp.gamelogic_instance_id());
+        glrpc::ExportPlayerSnapshotResponse xrsp;
+        if (GatewayAuthClients::Instance().ExportPlayerSnapshot(v2rsp.gamelogic_instance_id(), er,
+                                                                &xrsp) &&
+            xrsp.ok() && xrsp.has_snapshot()) {
+            fs->set_asset_version(xrsp.snapshot().state().asset_version());
+            for (const auto &it : xrsp.snapshot().state().bag()) {
+                fs->add_item_ids(it.item_id());
+                fs->add_item_counts(it.count());
+            }
+        } else {
+            fs->set_message("full_snapshot_export_failed_retry");
+        }
+        std::string snap_payload;
+        if (snap_rsp.SerializeToString(&snap_payload) && route_out) {
+#ifdef WEBSERVER_ENABLE_REDIS
+            if (PushReplayStore::Instance().Available()) {
+                const uint64_t seq = PushReplayStore::Instance().AppendReliable(
+                    req.reconnect().player_id(), sid, "full_snapshot", snap_payload);
+                fs->set_baseline_server_seq(seq);
+                snap_rsp.mutable_full_snapshot()->set_baseline_server_seq(seq);
+                snap_rsp.SerializeToString(&snap_payload);
+            }
+#endif
+            route_out->pending_push_payloads.push_back(snap_payload);
+        }
+    }
+
     if (route_out) {
         route_out->need_full_snapshot = need_snap;
         route_out->last_server_seq = last_seq;

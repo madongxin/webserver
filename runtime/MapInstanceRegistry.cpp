@@ -18,6 +18,11 @@ void MapInstanceRegistry::SetLocalInstanceId(std::string id) {
         local_id_ = std::move(id);
 }
 
+void MapInstanceRegistry::SetRequireLease(bool on) {
+    std::lock_guard<std::mutex> lk(mu_);
+    require_lease_ = on;
+}
+
 bool MapInstanceRegistry::Claim(uint64_t map_instance_id, uint64_t map_template_id,
                                uint64_t owner_epoch, int64_t lease_until_unix) {
     if (map_instance_id == 0 || owner_epoch == 0)
@@ -69,8 +74,14 @@ MapWriteFence MapInstanceRegistry::CheckWrite(uint64_t map_instance_id,
         return MapWriteFence::NotClaimed;
     if (it->second.owner_epoch != owner_epoch)
         return MapWriteFence::StaleEpoch;
-    if (it->second.lease_until_unix > 0 && NowUnixSec() >= it->second.lease_until_unix)
+    if (require_lease_) {
+        if (it->second.lease_until_unix <= 0)
+            return MapWriteFence::LeaseMissing;
+        if (NowUnixSec() >= it->second.lease_until_unix)
+            return MapWriteFence::LeaseExpired;
+    } else if (it->second.lease_until_unix > 0 && NowUnixSec() >= it->second.lease_until_unix) {
         return MapWriteFence::LeaseExpired;
+    }
     return MapWriteFence::Ok;
 }
 

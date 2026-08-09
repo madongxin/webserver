@@ -6,8 +6,11 @@
 #include "PlayerSerialQueue.h"
 
 #include <atomic>
+#include <chrono>
+#include <condition_variable>
 #include <cstdio>
 #include <mutex>
+#include <thread>
 #include <vector>
 
 namespace {
@@ -67,12 +70,63 @@ bool TestDifferentPlayersProgress() {
     return true;
 }
 
+bool TestOverloadReject() {
+    auto &q = PlayerSerialQueue::Instance();
+    q.Stop();
+    q.SetLimits(2, 8);
+    q.Start(1);
+
+    std::mutex mu;
+    std::condition_variable cv;
+    bool release = false;
+    std::atomic<bool> holding{false};
+    if (!q.TryPost(1, [&]() {
+            holding.store(true);
+            std::unique_lock<std::mutex> lk(mu);
+            cv.wait(lk, [&]() { return release; });
+        })) {
+        std::printf("FAIL first TryPost\n");
+        return false;
+    }
+    for (int i = 0; i < 200 && !holding.load(); ++i)
+        std::this_thread::sleep_for(std::chrono::milliseconds(1));
+    if (!holding.load()) {
+        std::printf("FAIL worker did not take blocker\n");
+        return false;
+    }
+    // worker 占用第 1 个；队列还可再塞 max_per_shard=2
+    if (!q.TryPost(1, []() {}) || !q.TryPost(1, []() {})) {
+        std::printf("FAIL fill to capacity\n");
+        {
+            std::lock_guard<std::mutex> lk(mu);
+            release = true;
+        }
+        cv.notify_all();
+        q.DrainForTest();
+        return false;
+    }
+    const bool rejected = !q.TryPost(1, []() {});
+    {
+        std::lock_guard<std::mutex> lk(mu);
+        release = true;
+    }
+    cv.notify_all();
+    q.DrainForTest();
+    if (!rejected) {
+        std::printf("FAIL expected TryPost reject when shard full\n");
+        return false;
+    }
+    std::printf("OK overload reject\n");
+    return true;
+}
+
 }  // namespace
 
 int main() {
     bool ok = true;
     ok = TestSamePlayerOrdered() && ok;
     ok = TestDifferentPlayersProgress() && ok;
+    ok = TestOverloadReject() && ok;
     PlayerSerialQueue::Instance().Stop();
     if (!ok) {
         std::printf("FAIL player_serial_queue_test\n");

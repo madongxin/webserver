@@ -1,5 +1,6 @@
 #include "GameLogic.h"
 
+#include "FormalMode.h"
 #include "ForwardMetaContext.h"
 #include "LogicMetrics.h"
 #include "MapInstanceRegistry.h"
@@ -8,11 +9,12 @@
 #ifdef WEBSERVER_ENABLE_REDIS
 #include "PlacementStore.h"
 #include "SessionStore.h"
+#endif
 #ifdef WEBSERVER_ENABLE_BRPC
+#include "BrpcGameDbRepository.h"
 #include "GameLogicPush.h"
 #include "SessionRpcClient.h"
 #include "session.pb.h"
-#endif
 #endif
 #ifdef WEBSERVER_ENABLE_MYSQL
 #include "ConnectionPool.h"
@@ -48,22 +50,52 @@ void GameLogic::EnsurePlayer(uint64_t player_id) {
         return;
     }
     auto &inv = inventory_[player_id];
-#ifdef WEBSERVER_ENABLE_MYSQL
-    std::map<uint32_t, uint32_t> loaded;
-    if (PlayerItemStore::Instance().LoadInventoryAggregate(player_id, &loaded) && !loaded.empty()) {
-        inv = std::move(loaded);
-        LOG_INFO << "EnsurePlayer loaded bag from DB player_id=" << player_id
-                 << " kinds=" << inv.size();
-    } else {
-        // 新号或无存档：空背包（注册后靠 grant/mail 获得）
-        inv.clear();
+    bool loaded_ok = false;
+#if defined(WEBSERVER_ENABLE_BRPC)
+    if (FormalModeEnabled() && BrpcGameDbRepository::Instance().started()) {
+        std::map<uint32_t, uint32_t> loaded;
+        uint64_t ver = 1;
+        std::string err;
+        if (BrpcGameDbRepository::Instance().LoadInventory(player_id, &loaded, &ver, &err)) {
+            inv = std::move(loaded);
+            asset_version_[player_id] = ver == 0 ? 1 : ver;
+            loaded_ok = true;
+            LOG_INFO << "EnsurePlayer loaded bag from GameDB player_id=" << player_id
+                     << " kinds=" << inv.size() << " ver=" << asset_version_[player_id];
+        } else {
+            inv.clear();
+            asset_version_[player_id] = 1;
+            loaded_ok = true;  // Formal：不以本地 MySQL 作事实源
+            LOG_WARN << "EnsurePlayer GameDB load failed player_id=" << player_id << " err=" << err;
+        }
     }
-#else
-    inv[1001] = 10;
-    inv[1002] = 5;
 #endif
+#ifdef WEBSERVER_ENABLE_MYSQL
+    if (!loaded_ok && !FormalModeEnabled()) {
+        std::map<uint32_t, uint32_t> loaded;
+        if (PlayerItemStore::Instance().LoadInventoryAggregate(player_id, &loaded) &&
+            !loaded.empty()) {
+            inv = std::move(loaded);
+            LOG_INFO << "EnsurePlayer loaded bag from DB player_id=" << player_id
+                     << " kinds=" << inv.size();
+        } else {
+            inv.clear();
+        }
+        loaded_ok = true;
+    }
+#endif
+    if (!loaded_ok) {
+#ifdef WEBSERVER_ENABLE_MYSQL
+        inv.clear();
+#else
+        inv[1001] = 10;
+        inv[1002] = 5;
+#endif
+    }
     if (skill_cd_until_ms_.count(player_id) == 0)
         skill_cd_until_ms_[player_id] = {};
+    if (asset_version_.count(player_id) == 0)
+        asset_version_[player_id] = 1;
 }
 
 uint32_t GameLogic::GetItemCount(uint64_t player_id, uint32_t item_id) {
@@ -99,43 +131,155 @@ bool GameLogic::RollbackItemReward(uint64_t player_id, uint32_t item_id, uint32_
         n = 0;
     else
         n -= count;
+    ++asset_version_[player_id];
+    return true;
+}
+
+bool GameLogic::ExportRuntimeState(uint64_t player_id, std::map<uint32_t, uint32_t> *bag,
+                                   std::map<uint32_t, int64_t> *skill_cds, uint64_t *asset_version) {
+    if (!bag || !skill_cds)
+        return false;
+    std::lock_guard<std::mutex> lk(mu_);
+    EnsurePlayer(player_id);
+    *bag = inventory_[player_id];
+    *skill_cds = skill_cd_until_ms_[player_id];
+    if (asset_version)
+        *asset_version = asset_version_[player_id];
+    return true;
+}
+
+bool GameLogic::ImportRuntimeState(uint64_t player_id, const std::map<uint32_t, uint32_t> &bag,
+                                   const std::map<uint32_t, int64_t> &skill_cds,
+                                   uint64_t asset_version) {
+    if (player_id == 0)
+        return false;
+    std::lock_guard<std::mutex> lk(mu_);
+    inventory_[player_id] = bag;
+    skill_cd_until_ms_[player_id] = skill_cds;
+    asset_version_[player_id] = asset_version == 0 ? 1 : asset_version;
+    return true;
+}
+
+bool GameLogic::BuildFullStateSnapshot(uint64_t player_id, game::FullStateSnapshotRsp *out) {
+    if (!out || player_id == 0)
+        return false;
+    out->Clear();
+    std::lock_guard<std::mutex> lk(mu_);
+    EnsurePlayer(player_id);
+    out->set_ok(true);
+    out->set_message("ok");
+    out->set_player_id(player_id);
+    out->set_asset_version(asset_version_[player_id]);
+    for (const auto &kv : inventory_[player_id]) {
+        if (kv.second == 0)
+            continue;
+        out->add_item_ids(kv.first);
+        out->add_item_counts(kv.second);
+    }
     return true;
 }
 
 bool GameLogic::HandleConsumeItem(const game::ConsumeItemReq &req, game::GameResponse *rsp) {
     LOG_INFO << "[consume_item] recv player_id=" << req.player_id() << " item_id=" << req.item_id()
              << " count=" << req.count();
-    std::lock_guard<std::mutex> lk(mu_);
-    EnsurePlayer(req.player_id());
-    auto &inv = inventory_[req.player_id()];
     if (req.count() == 0) {
         rsp->set_ok(false);
         rsp->set_message("count must be > 0");
-        LOG_WARN << "[consume_item] reject player_id=" << req.player_id() << " reason=count_zero";
         return false;
     }
-    if (inv[req.item_id()] < req.count()) {
-        rsp->set_ok(false);
-        std::ostringstream os;
-        os << "not enough item " << req.item_id() << ", have " << inv[req.item_id()];
-        rsp->set_message(os.str());
+#if defined(WEBSERVER_ENABLE_BRPC)
+    if (FormalModeEnabled()) {
+        if (!BrpcGameDbRepository::Instance().started()) {
+            rsp->set_ok(false);
+            rsp->set_message("gamedb unavailable");
+            return false;
+        }
+        uint64_t expect = 0;
+        {
+            std::lock_guard<std::mutex> lk(mu_);
+            EnsurePlayer(req.player_id());
+            expect = asset_version_[req.player_id()];
+        }
+        const std::string idem = "logic:consume:" + std::to_string(req.player_id()) + ":" +
+                                 std::to_string(req.item_id()) + ":" + std::to_string(req.count()) +
+                                 ":" + std::to_string(expect) + ":" + std::to_string(NowMs());
+        BrpcGameDbRepository::AssetMutationResult mr;
+        if (!BrpcGameDbRepository::Instance().ApplyAssetMutation(
+                req.player_id(), idem, expect, "CONSUME", req.item_id(), req.count(), "", &mr)) {
+            rsp->set_ok(false);
+            rsp->set_message(mr.message.empty() ? mr.error_code : mr.message);
+            auto *body = rsp->mutable_consume_item();
+            body->set_ok(false);
+            body->set_message(rsp->message());
+            body->set_remain_count(mr.remain_count);
+            return false;
+        }
+        {
+            std::lock_guard<std::mutex> lk(mu_);
+            EnsurePlayer(req.player_id());
+            inventory_[req.player_id()][req.item_id()] = mr.remain_count;
+            asset_version_[req.player_id()] = mr.asset_version;
+        }
+        rsp->set_ok(true);
+        rsp->set_message("item consumed");
         auto *body = rsp->mutable_consume_item();
-        body->set_ok(false);
-        body->set_message(rsp->message());
-        body->set_remain_count(inv[req.item_id()]);
-        LOG_WARN << "[consume_item] fail player_id=" << req.player_id() << " item_id=" << req.item_id()
-                 << " have=" << inv[req.item_id()] << " need=" << req.count();
-        return false;
+        body->set_ok(true);
+        body->set_message("ok");
+        body->set_remain_count(mr.remain_count);
+#if defined(WEBSERVER_ENABLE_BRPC)
+        game::GameResponse notify;
+        notify.set_ok(true);
+        notify.set_message("item_changed");
+        *notify.mutable_consume_item() = *body;
+        std::string payload;
+        if (notify.SerializeToString(&payload))
+            GameLogicPush::PushToBoundGateway("", req.player_id(), "", "item_changed", payload, true,
+                                              true, 0);
+#endif
+        return true;
     }
-    inv[req.item_id()] -= req.count();
+#endif
+    uint32_t remain = 0;
+    {
+        std::lock_guard<std::mutex> lk(mu_);
+        EnsurePlayer(req.player_id());
+        auto &inv = inventory_[req.player_id()];
+        if (inv[req.item_id()] < req.count()) {
+            rsp->set_ok(false);
+            std::ostringstream os;
+            os << "not enough item " << req.item_id() << ", have " << inv[req.item_id()];
+            rsp->set_message(os.str());
+            auto *body = rsp->mutable_consume_item();
+            body->set_ok(false);
+            body->set_message(rsp->message());
+            body->set_remain_count(inv[req.item_id()]);
+            LOG_WARN << "[consume_item] fail player_id=" << req.player_id()
+                     << " item_id=" << req.item_id() << " have=" << inv[req.item_id()]
+                     << " need=" << req.count();
+            return false;
+        }
+        inv[req.item_id()] -= req.count();
+        ++asset_version_[req.player_id()];
+        remain = inv[req.item_id()];
+    }
     rsp->set_ok(true);
     rsp->set_message("item consumed");
     auto *body = rsp->mutable_consume_item();
     body->set_ok(true);
     body->set_message("ok");
-    body->set_remain_count(inv[req.item_id()]);
+    body->set_remain_count(remain);
     LOG_INFO << "[consume_item] ok player_id=" << req.player_id() << " item_id=" << req.item_id()
-             << " remain=" << inv[req.item_id()];
+             << " remain=" << remain;
+#if defined(WEBSERVER_ENABLE_BRPC)
+    game::GameResponse notify;
+    notify.set_ok(true);
+    notify.set_message("item_changed");
+    *notify.mutable_consume_item() = *body;
+    std::string payload;
+    if (notify.SerializeToString(&payload))
+        GameLogicPush::PushToBoundGateway("", req.player_id(), "", "item_changed", payload, true,
+                                          true, 0);
+#endif
     return true;
 }
 
@@ -197,12 +341,61 @@ bool GameLogic::HandleGrantItem(const game::GrantItemReq &req, game::GameRespons
         return false;
     }
     const uint32_t item_id = static_cast<uint32_t>(req.item_id());
+    uint32_t bag_total = 0;
 
-    // 先改内存，保证客户端下一次 consume 能立刻读到新数量
-    std::lock_guard<std::mutex> lk(mu_);
-    EnsurePlayer(req.player_id());
-    auto &inv = inventory_[req.player_id()];
-    inv[item_id] += req.count();
+#if defined(WEBSERVER_ENABLE_BRPC)
+    if (FormalModeEnabled()) {
+        if (!BrpcGameDbRepository::Instance().started()) {
+            rsp->set_ok(false);
+            rsp->set_message("gamedb unavailable");
+            body->set_ok(false);
+            body->set_message(rsp->message());
+            return false;
+        }
+        uint64_t expect = 0;
+        {
+            std::lock_guard<std::mutex> lk(mu_);
+            EnsurePlayer(req.player_id());
+            expect = asset_version_[req.player_id()];
+        }
+        const std::string idem = "logic:grant:" + std::to_string(req.player_id()) + ":" +
+                                 std::to_string(item_id) + ":" + std::to_string(req.count()) + ":" +
+                                 std::to_string(expect) + ":" + std::to_string(NowMs());
+        BrpcGameDbRepository::AssetMutationResult mr;
+        if (!BrpcGameDbRepository::Instance().ApplyAssetMutation(
+                req.player_id(), idem, expect, "GRANT", item_id, req.count(), "", &mr)) {
+            rsp->set_ok(false);
+            rsp->set_message(mr.message.empty() ? mr.error_code : mr.message);
+            body->set_ok(false);
+            body->set_message(rsp->message());
+            return false;
+        }
+        {
+            std::lock_guard<std::mutex> lk(mu_);
+            EnsurePlayer(req.player_id());
+            inventory_[req.player_id()][item_id] = mr.remain_count;
+            asset_version_[req.player_id()] = mr.asset_version;
+            bag_total = mr.remain_count;
+        }
+        rsp->set_ok(true);
+        rsp->set_message("item granted (gamedb)");
+        body->set_ok(true);
+        body->set_message(mr.idempotent_hit ? "idempotent" : "ok");
+        body->set_instance_id(0);
+        body->set_bag_total(bag_total);
+#if defined(WEBSERVER_ENABLE_BRPC)
+        game::GameResponse notify;
+        notify.set_ok(true);
+        notify.set_message("item_changed");
+        *notify.mutable_grant_item() = *body;
+        std::string payload;
+        if (notify.SerializeToString(&payload))
+            GameLogicPush::PushToBoundGateway("", req.player_id(), "", "item_changed", payload, true,
+                                              true, 0);
+#endif
+        return true;
+    }
+#endif
 
 #ifdef WEBSERVER_ENABLE_MYSQL
     if (!ConnectionPool::getconnectionPool()->isInitialized()) {
@@ -212,7 +405,13 @@ bool GameLogic::HandleGrantItem(const game::GrantItemReq &req, game::GameRespons
         body->set_message(rsp->message());
         return false;
     }
-    // 异步落库：不阻塞 RPC 线程连接 MySQL
+    {
+        std::lock_guard<std::mutex> lk(mu_);
+        EnsurePlayer(req.player_id());
+        inventory_[req.player_id()][item_id] += req.count();
+        ++asset_version_[req.player_id()];
+        bag_total = inventory_[req.player_id()][item_id];
+    }
     PendingPlayerItem pending;
     pending.player_id = req.player_id();
     pending.item_id = req.item_id();
@@ -222,6 +421,7 @@ bool GameLogic::HandleGrantItem(const game::GrantItemReq &req, game::GameRespons
     PlayerItemPersistQueue::Instance().Enqueue(pending);
     PlayerItemPersistQueue::Instance().MarkOnline(req.player_id());
 #else
+    (void)item_id;
     rsp->set_ok(false);
     rsp->set_message("mysql not enabled");
     body->set_ok(false);
@@ -234,9 +434,19 @@ bool GameLogic::HandleGrantItem(const game::GrantItemReq &req, game::GameRespons
     body->set_ok(true);
     body->set_message("queued");
     body->set_instance_id(0);
-    body->set_bag_total(inv[item_id]);
+    body->set_bag_total(bag_total);
     LOG_INFO << "[grant_item] ok player_id=" << req.player_id() << " item_id=" << item_id
-             << " bag_total=" << inv[item_id] << " (db queued)";
+             << " bag_total=" << bag_total << " (db queued)";
+#if defined(WEBSERVER_ENABLE_BRPC)
+    game::GameResponse notify;
+    notify.set_ok(true);
+    notify.set_message("item_changed");
+    *notify.mutable_grant_item() = *body;
+    std::string payload;
+    if (notify.SerializeToString(&payload))
+        GameLogicPush::PushToBoundGateway("", req.player_id(), "", "item_changed", payload, true,
+                                          true, 0);
+#endif
     return true;
 }
 
@@ -475,6 +685,20 @@ bool GameLogic::HandleEnterMap(const game::EnterMapReq &req, game::GameResponse 
                 rsp->set_message(body->message());
                 return false;
             }
+            if (MapInstanceRegistry::Instance().require_lease() || FormalModeEnabled()) {
+                if (pout.placement.state != PlacementState::Ready) {
+                    body->set_message("placement not READY");
+                    rsp->set_ok(false);
+                    rsp->set_message(body->message());
+                    return false;
+                }
+                if (pout.placement.lease_until <= 0) {
+                    body->set_message("placement lease missing");
+                    rsp->set_ok(false);
+                    rsp->set_message(body->message());
+                    return false;
+                }
+            }
             place.map_instance_id = pout.placement.map_instance_id;
             place.owner_epoch = pout.placement.owner_epoch;
             place.route_version = pout.placement.route_version;
@@ -485,6 +709,13 @@ bool GameLogic::HandleEnterMap(const game::EnterMapReq &req, game::GameResponse 
         } else
 #endif
         {
+            // Formal / require_lease：禁止本地 MapPlacement 随意 Claim 成为 Owner
+            if (MapInstanceRegistry::Instance().require_lease() || FormalModeEnabled()) {
+                body->set_message("placement unavailable");
+                rsp->set_ok(false);
+                rsp->set_message(body->message());
+                return false;
+            }
             if (MapPlacement::Instance().owners().empty())
                 MapPlacement::Instance().ConfigureOwners(
                     {MapInstanceRegistry::Instance().local_instance_id()});
@@ -502,6 +733,14 @@ bool GameLogic::HandleEnterMap(const game::EnterMapReq &req, game::GameResponse 
             rsp->set_message(body->message());
             return false;
         }
+    }
+
+    if ((MapInstanceRegistry::Instance().require_lease() || FormalModeEnabled()) &&
+        place.lease_until_unix <= 0) {
+        body->set_message("claim rejected: lease missing");
+        rsp->set_ok(false);
+        rsp->set_message(body->message());
+        return false;
     }
 
     if (!MapInstanceRegistry::Instance().Claim(place.map_instance_id, place.map_template_id,

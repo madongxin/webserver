@@ -30,6 +30,8 @@ public:
     bool AuthRegister(const auth::RegisterRequest &req, auth::RegisterResponse *rsp);
     bool AcquireSession(const sess::AcquireSessionRequest &req, sess::AcquireSessionResponse *rsp);
     bool ReconnectV2(const sess::ReconnectRequest &req, sess::ReconnectResponse *rsp);
+    bool GetSessionOperation(const sess::GetSessionOperationRequest &req,
+                             sess::GetSessionOperationResponse *rsp);
     bool LogoutV2(const sess::LogoutRequest &req, sess::LogoutResponse *rsp);
     bool BeginPlayerTransfer(const sess::BeginPlayerTransferRequest &req,
                              sess::BeginPlayerTransferResponse *rsp);
@@ -48,16 +50,21 @@ public:
                       glrpc::UnbindPlayerResponse *rsp);
     bool FreezePlayer(const std::string &logic_instance_id, const glrpc::FreezePlayerRequest &req,
                       glrpc::FreezePlayerResponse *rsp);
+    bool ExportPlayerSnapshot(const std::string &logic_instance_id,
+                              const glrpc::ExportPlayerSnapshotRequest &req,
+                              glrpc::ExportPlayerSnapshotResponse *rsp);
+    bool ImportPlayerSnapshot(const std::string &logic_instance_id,
+                              const glrpc::ImportPlayerSnapshotRequest &req,
+                              glrpc::ImportPlayerSnapshotResponse *rsp);
     bool Dispatch(const std::string &logic_instance_id, const glrpc::ClientCommand &req,
                   glrpc::CommandResult *rsp);
 
 private:
     GatewayAuthClients() = default;
-    brpc::Channel *LogicChannel(const std::string &id);
+    std::shared_ptr<brpc::Channel> SharedLogicChannel(const std::string &id);
 
-    std::unique_ptr<brpc::Channel> session_channel_;
+    std::shared_ptr<brpc::Channel> session_channel_;
     size_t session_peer_count_ = 0;
-    std::unordered_map<std::string, std::unique_ptr<brpc::Channel>> logic_channels_;
-    std::vector<std::unique_ptr<brpc::Channel>> logic_by_index_;
+    std::unordered_map<std::string, std::shared_ptr<brpc::Channel>> logic_channels_;
     int timeout_ms_ = 3000;
 };

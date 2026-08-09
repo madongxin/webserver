@@ -28,6 +28,14 @@ public:
     void BindAuthenticatedPlayer(uint64_t player_id);
     bool FlushBag(uint64_t player_id, const std::string &reason);
 
+    /** 跨 Logic 迁移：导出/导入运行时背包与技能 CD（不含凭证） */
+    bool ExportRuntimeState(uint64_t player_id, std::map<uint32_t, uint32_t> *bag,
+                            std::map<uint32_t, int64_t> *skill_cds, uint64_t *asset_version);
+    bool ImportRuntimeState(uint64_t player_id, const std::map<uint32_t, uint32_t> &bag,
+                            const std::map<uint32_t, int64_t> &skill_cds, uint64_t asset_version);
+    /** 全量快照（Push 缺口）：填充 FullStateSnapshotRsp */
+    bool BuildFullStateSnapshot(uint64_t player_id, game::FullStateSnapshotRsp *out);
+
 private:
     GameLogic() = default;
     bool HandleConsumeItem(const game::ConsumeItemReq &req, game::GameResponse *rsp);
@@ -53,4 +61,5 @@ private:
     /** 内存背包：player_id -> (item_config_id -> 聚合数量)，与 consume_item 共用 */
     std::map<uint64_t, std::map<uint32_t, uint32_t>> inventory_;
     std::map<uint64_t, std::map<uint32_t, int64_t>> skill_cd_until_ms_;
+    std::map<uint64_t, uint64_t> asset_version_;
 };

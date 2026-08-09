@@ -22,6 +22,14 @@ public:
                       const ::glrpc::FreezePlayerRequest *request,
                       ::glrpc::FreezePlayerResponse *response,
                       ::google::protobuf::Closure *done) override;
+    void ExportPlayerSnapshot(::google::protobuf::RpcController *controller,
+                              const ::glrpc::ExportPlayerSnapshotRequest *request,
+                              ::glrpc::ExportPlayerSnapshotResponse *response,
+                              ::google::protobuf::Closure *done) override;
+    void ImportPlayerSnapshot(::google::protobuf::RpcController *controller,
+                              const ::glrpc::ImportPlayerSnapshotRequest *request,
+                              ::glrpc::ImportPlayerSnapshotResponse *response,
+                              ::google::protobuf::Closure *done) override;
 };
 
 /** Push 按 Bind 时保存的 gateway_instance_id 选目标，非广播。 */

@@ -58,6 +58,71 @@ message FreezePlayerResponse {
   string error_code = 3;
 }
 
+message BagItemEntry {
+  uint32 item_id = 1;
+  uint32 count = 2;
+}
+
+message SkillCdEntry {
+  uint32 skill_id = 1;
+  int64 cd_until_ms = 2;
+}
+
+message PlayerRuntimeState {
+  repeated BagItemEntry bag = 1;
+  repeated SkillCdEntry skill_cds = 2;
+  uint64 last_client_seq = 3;
+  uint64 asset_version = 4;
+}
+
+/** 跨 GameLogic 迁移快照（版本化 + checksum） */
+message PlayerTransferSnapshot {
+  uint64 player_id = 1;
+  string session_id = 2;
+  string fence_token = 3;
+  uint64 generation = 4;
+  string source_gamelogic_id = 5;
+  string target_gamelogic_id = 6;
+  uint64 source_map_instance_id = 7;
+  uint64 target_map_instance_id = 8;
+  uint64 target_owner_epoch = 9;
+  uint64 route_version = 10;
+  uint64 snapshot_version = 11;
+  PlayerRuntimeState state = 12;
+  string checksum = 13;
+  string transfer_id = 14;
+}
+
+message ExportPlayerSnapshotRequest {
+  uint64 player_id = 1;
+  string session_id = 2;
+  string fence_token = 3;
+  string transfer_id = 4;
+  string target_gamelogic_id = 5;
+  uint64 target_map_instance_id = 6;
+  uint64 target_owner_epoch = 7;
+  string idempotency_key = 8;
+}
+
+message ExportPlayerSnapshotResponse {
+  bool ok = 1;
+  string message = 2;
+  string error_code = 3;
+  PlayerTransferSnapshot snapshot = 4;
+}
+
+message ImportPlayerSnapshotRequest {
+  PlayerTransferSnapshot snapshot = 1;
+  string idempotency_key = 2;
+}
+
+message ImportPlayerSnapshotResponse {
+  bool ok = 1;
+  string message = 2;
+  string error_code = 3;
+  bool already_applied = 4;
+}
+
 message ClientCommand {
   uint64 request_id = 1;
   uint64 player_id = 2;
@@ -90,4 +155,6 @@ service GameLogicService {
   rpc Dispatch(ClientCommand) returns (CommandResult);
   rpc UnbindPlayer(UnbindPlayerRequest) returns (UnbindPlayerResponse);
   rpc FreezePlayer(FreezePlayerRequest) returns (FreezePlayerResponse);
+  rpc ExportPlayerSnapshot(ExportPlayerSnapshotRequest) returns (ExportPlayerSnapshotResponse);
+  rpc ImportPlayerSnapshot(ImportPlayerSnapshotRequest) returns (ImportPlayerSnapshotResponse);
 }

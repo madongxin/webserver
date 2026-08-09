@@ -15,9 +15,9 @@ BrpcChannelManager::~BrpcChannelManager() {
     Shutdown();
 }
 
-std::unique_ptr<brpc::Channel> BrpcChannelManager::MakeChannel(const std::string &addr,
+std::shared_ptr<brpc::Channel> BrpcChannelManager::MakeChannel(const std::string &addr,
                                                               int timeout_ms) {
-    auto ch = std::make_unique<brpc::Channel>();
+    auto ch = std::make_shared<brpc::Channel>();
     brpc::ChannelOptions opt;
     opt.protocol = "baidu_std";
     opt.timeout_ms = timeout_ms;
@@ -102,28 +102,28 @@ bool BrpcChannelManager::ApplySnapshot(const std::vector<std::string> &addrs,
         return false;
     }
 
-    // 旧 id → (addr, channel)
-    std::unordered_map<std::string, std::pair<std::string, std::unique_ptr<brpc::Channel>>> old;
-    for (size_t i = 0; i < instance_ids_.size(); ++i) {
-        old[instance_ids_[i]] = {addrs_[i], std::move(channels_[i])};
-    }
+    // 旧 id → (addr, channel)；未纳入新快照的 shared_ptr 在函数结束时释放，
+    // 若仍有 RPC 持有副本则 Channel 延迟析构。
+    std::unordered_map<std::string, std::pair<std::string, std::shared_ptr<brpc::Channel>>> old;
+    for (size_t i = 0; i < instance_ids_.size(); ++i)
+        old[instance_ids_[i]] = {addrs_[i], channels_[i]};
+
     channels_.clear();
     instance_ids_.clear();
     addrs_.clear();
     id_to_index_.clear();
 
     for (size_t i = 0; i < addrs.size(); ++i) {
-        std::unique_ptr<brpc::Channel> ch;
+        std::shared_ptr<brpc::Channel> ch;
         auto it = old.find(ids[i]);
         if (it != old.end() && it->second.first == addrs[i] && it->second.second) {
-            ch = std::move(it->second.second);
+            ch = it->second.second;
             old.erase(it);
         } else {
             ch = MakeChannel(addrs[i], timeout_ms_);
             if (!ch) {
                 LOG_ERROR << "BrpcChannelManager: ApplySnapshot Init failed " << ids[i] << " "
                           << addrs[i];
-                // 尽量保留已建好的；失败则回退不完整
                 continue;
             }
             LOG_INFO << "BrpcChannelManager: hot-add id=" << ids[i] << " addr=" << addrs[i];
@@ -168,20 +168,29 @@ uint64_t BrpcChannelManager::empty_snapshot_ignored() const {
     return empty_snapshot_ignored_;
 }
 
-brpc::Channel *BrpcChannelManager::ChannelForPlayer(uint64_t player_id) {
+std::shared_ptr<brpc::Channel> BrpcChannelManager::SharedChannelForPlayer(uint64_t player_id) {
     std::lock_guard<std::mutex> lk(mu_);
     if (channels_.empty())
         return nullptr;
     const size_t idx = static_cast<size_t>(player_id % channels_.size());
-    return channels_[idx].get();
+    return channels_[idx];
 }
 
-brpc::Channel *BrpcChannelManager::ChannelForInstance(const std::string &gamelogic_instance_id) {
+std::shared_ptr<brpc::Channel> BrpcChannelManager::SharedChannelForInstance(
+    const std::string &gamelogic_instance_id) {
     std::lock_guard<std::mutex> lk(mu_);
     if (channels_.empty() || gamelogic_instance_id.empty())
         return nullptr;
     auto it = id_to_index_.find(gamelogic_instance_id);
     if (it == id_to_index_.end())
         return nullptr;
-    return channels_[it->second].get();
+    return channels_[it->second];
+}
+
+brpc::Channel *BrpcChannelManager::ChannelForPlayer(uint64_t player_id) {
+    return SharedChannelForPlayer(player_id).get();
+}
+
+brpc::Channel *BrpcChannelManager::ChannelForInstance(const std::string &gamelogic_instance_id) {
+    return SharedChannelForInstance(gamelogic_instance_id).get();
 }

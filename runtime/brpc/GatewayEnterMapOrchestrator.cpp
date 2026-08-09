@@ -170,9 +170,27 @@ bool OrchestrateGatewayEnterMap(const SessionHandle &sticky, const std::string &
         freq.set_reason("enter_map_transfer");
         freq.set_idempotency_key(transfer_id + ":freeze");
         glrpc::FreezePlayerResponse frsp;
-        if (!GatewayAuthClients::Instance().FreezePlayer(from_logic, freq, &frsp)) {
+        if (!GatewayAuthClients::Instance().FreezePlayer(from_logic, freq, &frsp) || !frsp.ok()) {
             AbortTransfer(sticky.player_id, sticky.fence_token, transfer_id, from_logic);
             return EncodeErr(req, frsp.message().empty() ? "freeze failed" : frsp.message(),
+                             response_frame);
+        }
+
+        // EXPORT_SNAPSHOT（Source 已 Freeze）
+        glrpc::ExportPlayerSnapshotRequest xreq;
+        xreq.set_player_id(sticky.player_id);
+        xreq.set_session_id(sticky.session_id);
+        xreq.set_fence_token(sticky.fence_token);
+        xreq.set_transfer_id(transfer_id);
+        xreq.set_target_gamelogic_id(target_logic);
+        xreq.set_target_map_instance_id(map_id);
+        xreq.set_target_owner_epoch(epoch);
+        xreq.set_idempotency_key(transfer_id + ":export");
+        glrpc::ExportPlayerSnapshotResponse xrsp;
+        if (!GatewayAuthClients::Instance().ExportPlayerSnapshot(from_logic, xreq, &xrsp) ||
+            !xrsp.ok() || !xrsp.has_snapshot()) {
+            AbortTransfer(sticky.player_id, sticky.fence_token, transfer_id, from_logic);
+            return EncodeErr(req, xrsp.message().empty() ? "export snapshot failed" : xrsp.message(),
                              response_frame);
         }
 
@@ -190,7 +208,7 @@ bool OrchestrateGatewayEnterMap(const SessionHandle &sticky, const std::string &
         prep.set_transfer_id(transfer_id);
         prep.set_idempotency_key(transfer_id + ":prepare");
         glrpc::BindPlayerResponse prsp;
-        if (!GatewayAuthClients::Instance().BindPlayer(target_logic, prep, &prsp)) {
+        if (!GatewayAuthClients::Instance().BindPlayer(target_logic, prep, &prsp) || !prsp.ok()) {
             AbortTransfer(sticky.player_id, sticky.fence_token, transfer_id, from_logic);
             // 尝试解冻旧 Logic：再次 Bind 同 gen
             glrpc::BindPlayerRequest thaw = prep;
@@ -203,6 +221,34 @@ bool OrchestrateGatewayEnterMap(const SessionHandle &sticky, const std::string &
             return EncodeErr(req, prsp.message().empty() ? "prepare/bind failed" : prsp.message(),
                              response_frame);
         }
+
+        // IMPORT_TARGET → TARGET_READY（路由切换前必须成功）
+        glrpc::ImportPlayerSnapshotRequest ireq;
+        *ireq.mutable_snapshot() = xrsp.snapshot();
+        ireq.set_idempotency_key(transfer_id + ":import");
+        glrpc::ImportPlayerSnapshotResponse irsp;
+        if (!GatewayAuthClients::Instance().ImportPlayerSnapshot(target_logic, ireq, &irsp) ||
+            !irsp.ok()) {
+            AbortTransfer(sticky.player_id, sticky.fence_token, transfer_id, from_logic);
+            glrpc::UnbindPlayerRequest ureq;
+            ureq.set_player_id(sticky.player_id);
+            ureq.set_session_id(sticky.session_id);
+            ureq.set_fence_token(sticky.fence_token);
+            ureq.set_reason("import_rollback");
+            glrpc::UnbindPlayerResponse ursp;
+            GatewayAuthClients::Instance().UnbindPlayer(target_logic, ureq, &ursp);
+            glrpc::BindPlayerRequest thaw = prep;
+            thaw.set_gamelogic_instance_id(from_logic);
+            thaw.set_transfer_id("");
+            thaw.set_map_instance_id(sticky.map_instance_id);
+            thaw.set_map_owner_epoch(sticky.owner_epoch);
+            glrpc::BindPlayerResponse tr;
+            GatewayAuthClients::Instance().BindPlayer(from_logic, thaw, &tr);
+            return EncodeErr(req, irsp.message().empty() ? "import snapshot failed" : irsp.message(),
+                             response_frame);
+        }
+        LOG_INFO << "EnterMap snapshot imported player=" << sticky.player_id
+                 << " transfer=" << transfer_id << " idempotent=" << irsp.already_applied();
 
         uint64_t committed_rv = 0;
         if (sess_rpc) {

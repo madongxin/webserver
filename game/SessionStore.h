@@ -41,6 +41,23 @@ struct AcquireSessionInput {
     bool kick_other_device = true;
     std::string gateway_instance_id;
     std::string preferred_gamelogic_instance_id;
+    /** 非空时 Redis 幂等：同 operation_id 重试返回同一 Session/fence */
+    std::string operation_id;
+};
+
+enum class SessionOpStatus {
+    NotFound = 0,
+    Pending = 1,
+    Done = 2,
+};
+
+struct ReconnectSessionInput {
+    uint64_t player_id = 0;
+    std::string session_id;
+    std::string reconnect_ticket;
+    std::string gateway_instance_id;
+    uint64_t last_server_seq = 0;
+    std::string operation_id;
 };
 
 struct AcquireSessionResult {
@@ -76,6 +93,12 @@ public:
     bool Reconnect(const game::ReconnectReq &req, game::ReconnectRsp *rsp);
     /** Reconnect 并输出权威路由（logic/map/epoch/version） */
     bool Reconnect(const game::ReconnectReq &req, game::ReconnectRsp *rsp, SessionRecord *route_out);
+    /** 带 operation_id 幂等的重连（Gateway ReconnectV2） */
+    bool ReconnectSession(const ReconnectSessionInput &in, AcquireSessionResult *out,
+                          SessionRecord *route_out);
+    /** 查询幂等操作结果（超时后结果未知） */
+    bool GetSessionOperation(const std::string &operation_id, SessionOpStatus *status,
+                             std::string *op_kind, AcquireSessionResult *out);
     bool Validate(const game::ValidateSessionReq &req, game::ValidateSessionRsp *rsp);
     bool CheckOnline(const game::CheckOnlineReq &req, game::CheckOnlineRsp *rsp);
     bool Logout(const game::LogoutReq &req, game::LogoutRsp *rsp);
@@ -151,10 +174,21 @@ public:
 private:
     SessionStore() = default;
     std::string SessionKey(uint64_t player_id) const;
+    std::string OpKey(const std::string &operation_id) const;
     bool LoadSession(uint64_t player_id, SessionRecord *out);
     bool ExpireIfGraceElapsed(uint64_t player_id, SessionRecord *rec);
     static std::string StateToString(SessionState s);
     static SessionState StateFromString(const std::string &s);
+
+    enum class OpBegin { Execute, Done, Pending, Error };
+    OpBegin BeginOperation(const std::string &operation_id, AcquireSessionResult *cached,
+                           std::string *op_kind_out, std::string *err);
+    bool CompleteOperation(const std::string &operation_id, const std::string &op_kind,
+                           const AcquireSessionResult &result);
+    bool AbortOperation(const std::string &operation_id);
+    bool LoadOperationResult(const std::string &operation_id, SessionOpStatus *status,
+                             std::string *op_kind, AcquireSessionResult *out);
+    bool AcquireSessionUnlocked(const AcquireSessionInput &in, AcquireSessionResult *out);
 
     bool available_ = false;
     int default_ttl_sec_ = 7200;

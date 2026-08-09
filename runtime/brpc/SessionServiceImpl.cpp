@@ -40,6 +40,7 @@ void SessionServiceImpl::AcquireSession(::google::protobuf::RpcController *contr
     in.kick_other_device = request->kick_other_device();
     in.gateway_instance_id = request->gateway_instance_id();
     in.preferred_gamelogic_instance_id = request->preferred_gamelogic_instance_id();
+    in.operation_id = request->operation_id();
     AcquireSessionResult out;
     SessionStore::Instance().AcquireSession(in, &out);
     response->set_ok(out.ok);
@@ -75,29 +76,76 @@ void SessionServiceImpl::ReconnectV2(::google::protobuf::RpcController *controll
                                      ::google::protobuf::Closure *done) {
     (void)controller;
     brpc::ClosureGuard done_guard(done);
-    game::ReconnectReq legacy;
-    legacy.set_player_id(request->player_id());
-    legacy.set_session_id(request->session_id());
-    legacy.set_reconnect_ticket(request->reconnect_ticket());
-    legacy.set_last_server_seq(request->last_server_seq());
-    game::ReconnectRsp legacy_rsp;
+    ReconnectSessionInput in;
+    in.player_id = request->player_id();
+    in.session_id = request->session_id();
+    in.reconnect_ticket = request->reconnect_ticket();
+    in.gateway_instance_id = request->gateway_instance_id();
+    in.last_server_seq = request->last_server_seq();
+    in.operation_id = request->operation_id();
+    AcquireSessionResult out;
     SessionRecord route;
-    const bool ok = SessionStore::Instance().Reconnect(legacy, &legacy_rsp, &route);
-    response->set_ok(ok && legacy_rsp.ok());
-    response->set_message(legacy_rsp.message());
-    response->set_session_id(legacy_rsp.session_id());
-    response->set_fence_token(legacy_rsp.token());
-    response->set_generation(legacy_rsp.generation());
+    const bool ok = SessionStore::Instance().ReconnectSession(in, &out, &route);
+    response->set_ok(ok && out.ok);
+    response->set_message(out.message);
+    response->set_session_id(out.session_id);
+    response->set_fence_token(out.fence_token);
+    response->set_generation(out.generation);
     if (response->ok()) {
         response->set_gamelogic_instance_id(route.gamelogic_instance_id);
         response->set_map_instance_id(route.map_instance_id);
         response->set_map_owner_epoch(route.map_owner_epoch);
         response->set_route_version(route.route_version);
         if (!request->gateway_instance_id().empty()) {
-            SessionStore::Instance().BindConnection(request->player_id(), legacy_rsp.token(),
+            SessionStore::Instance().BindConnection(request->player_id(), out.fence_token,
                                                     request->gateway_instance_id(), 0);
         }
     }
+}
+
+void SessionServiceImpl::GetSessionOperation(::google::protobuf::RpcController *controller,
+                                             const ::sess::GetSessionOperationRequest *request,
+                                             ::sess::GetSessionOperationResponse *response,
+                                             ::google::protobuf::Closure *done) {
+    (void)controller;
+    brpc::ClosureGuard done_guard(done);
+    response->Clear();
+    SessionOpStatus st = SessionOpStatus::NotFound;
+    std::string kind;
+    AcquireSessionResult out;
+    if (!SessionStore::Instance().GetSessionOperation(request->operation_id(), &st, &kind, &out)) {
+        response->set_ok(false);
+        response->set_message("lookup failed");
+        response->set_status("NOT_FOUND");
+        return;
+    }
+    response->set_ok(true);
+    if (st == SessionOpStatus::Pending) {
+        response->set_status("PENDING");
+        response->set_message("pending");
+        return;
+    }
+    if (st == SessionOpStatus::NotFound) {
+        response->set_status("NOT_FOUND");
+        response->set_message("not found");
+        return;
+    }
+    response->set_status("DONE");
+    response->set_op_kind(kind);
+    response->set_message("ok");
+    response->set_result_ok(out.ok);
+    response->set_result_message(out.message);
+    response->set_error_code(out.error_code);
+    response->set_session_id(out.session_id);
+    response->set_fence_token(out.fence_token);
+    response->set_generation(out.generation);
+    response->set_gamelogic_instance_id(out.gamelogic_instance_id);
+    response->set_map_instance_id(out.map_instance_id);
+    response->set_map_owner_epoch(out.map_owner_epoch);
+    response->set_route_version(out.route_version);
+    response->set_kicked_previous(out.kicked_previous);
+    response->set_login_time_sec(out.login_time_sec);
+    response->set_server_id(out.server_id);
 }
 
 void SessionServiceImpl::LogoutV2(::google::protobuf::RpcController *controller,

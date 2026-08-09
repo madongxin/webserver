@@ -16,6 +16,10 @@ public:
                      const ::sess::ReconnectRequest *request,
                      ::sess::ReconnectResponse *response,
                      ::google::protobuf::Closure *done) override;
+    void GetSessionOperation(::google::protobuf::RpcController *controller,
+                             const ::sess::GetSessionOperationRequest *request,
+                             ::sess::GetSessionOperationResponse *response,
+                             ::google::protobuf::Closure *done) override;
     void LogoutV2(::google::protobuf::RpcController *controller,
                   const ::sess::LogoutRequest *request, ::sess::LogoutResponse *response,
                   ::google::protobuf::Closure *done) override;

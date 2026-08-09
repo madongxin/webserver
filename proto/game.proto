@@ -44,12 +44,35 @@ message ReconnectRsp {
 message PushAckReq {
   uint64 player_id = 1;
   uint64 ack_server_seq = 2;
+  string session_id = 3;
+  string fence_token = 4;
+  uint64 generation = 5;
 }
 
 message PushAckRsp {
   bool ok = 1;
   string message = 2;
   uint64 trimmed_to_seq = 3;
+}
+
+/** 客户端可见的可靠 Push 外层（Gateway 下发；兼容仍可直接收业务 GameResponse） */
+message ServerPushEnvelope {
+  uint64 server_seq = 1;
+  string message_type = 2;
+  bytes payload = 3;  // 内层业务 GameResponse 序列化体
+  bool reliable = 4;
+  bool coalescable = 5;
+}
+
+/** 全量状态同步（Replay 缺口时下发，禁止只回标志） */
+message FullStateSnapshotRsp {
+  bool ok = 1;
+  string message = 2;
+  uint64 player_id = 3;
+  uint64 asset_version = 4;
+  repeated uint32 item_ids = 5;
+  repeated uint32 item_counts = 6;
+  uint64 baseline_server_seq = 7;
 }
 
 message ValidateSessionReq {
@@ -513,5 +536,7 @@ message GameResponse {
     ChatSendRsp chat_send = 50;
     FriendListRsp friend_list = 51;
     PushAckRsp push_ack = 52;
+    ServerPushEnvelope server_push = 53;
+    FullStateSnapshotRsp full_snapshot = 54;
   }
 }

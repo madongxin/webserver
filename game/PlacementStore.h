@@ -67,6 +67,17 @@ public:
     bool ExpireLeaseToRecovering(uint64_t map_instance_id, PlacementRecord *out, std::string *err);
     int default_lease_sec() const { return default_lease_sec_; }
 
+    /** SCAN 发现 READY+lease 过期 或 RECOVERING 的 map_instance_id（供后台恢复） */
+    bool ScanRecoveryCandidates(std::string *cursor, size_t count,
+                                std::vector<uint64_t> *expired_ready,
+                                std::vector<uint64_t> *recovering);
+    /** 选择健康 Owner（可排除旧 Owner） */
+    std::string PickHealthyOwner(const std::string &exclude) const;
+    /** 审计事件追加到 Redis list（旧/新 Owner、epoch、原因） */
+    void AppendAudit(uint64_t map_instance_id, const std::string &event,
+                     const std::string &old_owner, const std::string &new_owner, uint64_t old_epoch,
+                     uint64_t new_epoch, const std::string &reason);
+
     static std::string StateToString(PlacementState s);
     static PlacementState StateFromString(const std::string &s);
 

@@ -11,6 +11,7 @@
 #include <brpc/server.h>
 
 #include <cstdlib>
+#include <cstring>
 #include <fstream>
 #include <string>
 
@@ -80,7 +81,16 @@ bool GameLogicBrpcServer::StartFromConfig() {
     if (!ParseLogicConfig(LogicCnfPath(), &addr, &idle, &instance_id))
         LOG_WARN << "GameLogicBrpcServer: use default listen, cannot parse " << LogicCnfPath();
     MapInstanceRegistry::Instance().SetLocalInstanceId(instance_id);
-    LOG_INFO << "GameLogicBrpcServer instance_id=" << instance_id;
+#ifdef WEBSERVER_ENABLE_BRPC
+    // FormalMode.h 轻量；避免循环依赖时仅 env
+#endif
+    {
+        const char *v = std::getenv("GAMEMESH_FORMAL");
+        if (v && (std::strcmp(v, "1") == 0 || std::strcmp(v, "true") == 0))
+            MapInstanceRegistry::Instance().SetRequireLease(true);
+    }
+    LOG_INFO << "GameLogicBrpcServer instance_id=" << instance_id
+             << " require_lease=" << MapInstanceRegistry::Instance().require_lease();
     return Start(addr, idle);
 }
 
