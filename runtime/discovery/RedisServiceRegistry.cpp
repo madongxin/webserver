@@ -81,6 +81,10 @@ std::string RedisServiceRegistry::InstanceKey(const std::string &service,
     return key_prefix_ + "svc:" + service + ":" + instance_id;
 }
 
+std::string IndexKey(const std::string &prefix, const std::string &service) {
+    return prefix + "svcidx:" + service;
+}
+
 bool RedisServiceRegistry::RegisterInstance(const ServiceInstance &inst, int ttl_sec) {
 #ifdef WEBSERVER_ENABLE_REDIS
     if (!ready_ && !InitFromRedisConfig())
@@ -110,6 +114,10 @@ bool RedisServiceRegistry::RegisterInstance(const ServiceInstance &inst, int ttl
         return false;
     if (ttl_sec > 0 && !lease->Expire(key, ttl_sec))
         return false;
+    // 索引集合：避免 Discover 无界全量 SCAN
+    std::vector<std::string> out;
+    static const char *kSadd = "return redis.call('SADD', KEYS[1], ARGV[1])";
+    lease->Eval(kSadd, {IndexKey(key_prefix_, inst.service)}, {inst.instance_id}, &out);
     return true;
 #else
     (void)inst;
@@ -126,6 +134,9 @@ bool RedisServiceRegistry::UnregisterInstance(const std::string &service,
     auto lease = RedisPool::Instance().Acquire();
     if (!lease)
         return false;
+    std::vector<std::string> out;
+    static const char *kSrem = "return redis.call('SREM', KEYS[1], ARGV[1])";
+    lease->Eval(kSrem, {IndexKey(key_prefix_, service)}, {instance_id}, &out);
     return lease->Del(InstanceKey(service, instance_id));
 #else
     (void)service;
@@ -163,17 +174,20 @@ bool RedisServiceRegistry::Discover(const std::string &service, std::vector<Serv
     auto lease = RedisPool::Instance().Acquire();
     if (!lease)
         return false;
-    const std::string pattern = key_prefix_ + "svc:" + service + ":*";
-    std::vector<std::string> keys;
-    static const char *kScan =
-        "local c=0; local o={}; repeat local r=redis.call('SCAN',c,'MATCH',ARGV[1],'COUNT',64); "
-        "c=tonumber(r[1]); for _,k in ipairs(r[2]) do o[#o+1]=k end until c==0; return o";
-    if (!lease->Eval(kScan, {}, {pattern}, &keys))
+    std::vector<std::string> ids;
+    static const char *kMembers = "return redis.call('SMEMBERS', KEYS[1])";
+    if (!lease->Eval(kMembers, {IndexKey(key_prefix_, service)}, {}, &ids))
         return false;
-    for (const auto &key : keys) {
+    for (const auto &id : ids) {
+        const std::string key = InstanceKey(service, id);
         std::map<std::string, std::string> fields;
-        if (!lease->HGetAll(key, &fields) || fields.empty())
+        if (!lease->HGetAll(key, &fields) || fields.empty()) {
+            // 实例 TTL 过期：清索引残留
+            std::vector<std::string> ignored;
+            static const char *kSrem = "return redis.call('SREM', KEYS[1], ARGV[1])";
+            lease->Eval(kSrem, {IndexKey(key_prefix_, service)}, {id}, &ignored);
             continue;
+        }
         const std::string st = fields.count("status") ? fields["status"] : "UP";
         if (st != "UP")
             continue;

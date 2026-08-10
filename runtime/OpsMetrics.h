@@ -24,6 +24,7 @@ public:
     void IncDrainReject() { drain_reject_.fetch_add(1, std::memory_order_relaxed); }
     void IncPushAccepted() { push_accepted_.fetch_add(1, std::memory_order_relaxed); }
     void IncPushRejected() { push_rejected_.fetch_add(1, std::memory_order_relaxed); }
+    void IncIdentityMismatch() { identity_mismatch_.fetch_add(1, std::memory_order_relaxed); }
 
     void SetOnlinePlayers(int64_t n) { online_players_.store(n, std::memory_order_relaxed); }
     void SetOutboxBacklog(int64_t n) { outbox_backlog_.store(n, std::memory_order_relaxed); }
@@ -45,6 +46,7 @@ private:
     std::atomic<uint64_t> drain_reject_{0};
     std::atomic<uint64_t> push_accepted_{0};
     std::atomic<uint64_t> push_rejected_{0};
+    std::atomic<uint64_t> identity_mismatch_{0};
     std::atomic<int64_t> online_players_{0};
     std::atomic<int64_t> outbox_backlog_{0};
 };

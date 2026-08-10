@@ -12,6 +12,7 @@
 #include <fstream>
 #include <string>
 #include <thread>
+#include <unistd.h>
 
 namespace {
 
@@ -63,7 +64,9 @@ int main() {
         std::printf("SKIP placement_recovery_test (Redis unavailable)\n");
         return 0;
     }
-    const std::string prefix = "gamemesh:dev:placerecovertest:";
+    // 唯一前缀，避免与上次残留 map 互相扫描干扰
+    const std::string prefix =
+        "gamemesh:dev:placerecovertest:" + std::to_string(static_cast<long long>(::getpid())) + ":";
     if (!PlacementStore::Instance().InitFromSessionPrefix(prefix, 2))
         return Fail("init");
     PlacementStore::Instance().SetLogicOwners({"gl-0", "gl-1"});
@@ -78,6 +81,7 @@ int main() {
         return Fail("create");
     const uint64_t mid = out.placement.map_instance_id;
     const uint64_t epoch = out.placement.owner_epoch;
+    const std::string old_owner = out.placement.owner_logic_server_id;
     // 等 lease 过期（Init lease=2s）
     std::this_thread::sleep_for(std::chrono::seconds(3));
 
@@ -90,16 +94,17 @@ int main() {
         return Fail("get after recover");
     if (rec.state != PlacementState::Ready)
         return Fail("not READY after auto migrate");
-    if (rec.owner_logic_server_id != "gl-1")
-        return Fail("owner not switched to gl-1");
+    if (rec.owner_logic_server_id.empty() || rec.owner_logic_server_id == old_owner)
+        return Fail("owner not switched away from old");
     if (rec.owner_epoch <= epoch)
         return Fail("epoch not bumped");
     if (PlacementRecoveryScheduler::Instance().recover_ok() == 0)
         return Fail("recover_ok counter");
 
-    std::printf("OK placement_recovery_test map=%llu %llu->%llu owner=%s\n",
+    std::printf("OK placement_recovery_test map=%llu %llu->%llu owner=%s (was %s)\n",
                 (unsigned long long)mid, (unsigned long long)epoch,
-                (unsigned long long)rec.owner_epoch, rec.owner_logic_server_id.c_str());
+                (unsigned long long)rec.owner_epoch, rec.owner_logic_server_id.c_str(),
+                old_owner.c_str());
     std::printf("PASS placement_recovery_test\n");
     return 0;
 }

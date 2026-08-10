@@ -42,6 +42,8 @@ std::string OpsMetrics::PrometheusText() const {
         push_accepted_.load(std::memory_order_relaxed));
     ctr("gamemesh_push_rejected_total", "Push rejected.",
         push_rejected_.load(std::memory_order_relaxed));
+    ctr("gamemesh_identity_mismatch_total", "Client player_id mismatch vs trusted binding.",
+        identity_mismatch_.load(std::memory_order_relaxed));
     gauge("gamemesh_online_players", "Bound gateway connections (approx).",
           online_players_.load(std::memory_order_relaxed));
     gauge("gamemesh_outbox_backlog", "Unpublished outbox rows (GameDB).",

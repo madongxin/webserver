@@ -2,7 +2,7 @@
 set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
-# 集成项：依赖 Redis 的测试失败则失败（不再 SKIP→0）
+# 集成项：依赖 Redis/MySQL 的必需测试；Redis 不可用必须失败（禁止 SKIP→成功）
 need_redis=0
 REDIS_PASS=""
 if [[ -f "$ROOT/config/redis.cnf" ]]; then

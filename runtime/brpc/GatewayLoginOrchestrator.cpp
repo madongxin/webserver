@@ -324,14 +324,27 @@ bool OrchestrateGatewayReconnect(const std::string &gateway_instance_id, uint64_
     if (!need_snap && !replay.empty()) {
         body->set_replay_from_seq(replay.front().server_seq);
         if (route_out) {
-            for (const auto &e : replay)
-                route_out->pending_push_payloads.push_back(e.payload);
+            for (const auto &e : replay) {
+                // 重连补发必须是 ServerPushEnvelope，保留原始 server_seq / message_type
+                game::GameResponse env;
+                env.set_ok(true);
+                env.set_message("server_push");
+                auto *p = env.mutable_server_push();
+                p->set_server_seq(e.server_seq);
+                p->set_message_type(e.message_type.empty() ? "replay" : e.message_type);
+                p->set_payload(e.payload);
+                p->set_reliable(e.reliable);
+                p->set_coalescable(false);
+                std::string body_bytes;
+                if (env.SerializeToString(&body_bytes))
+                    route_out->pending_push_payloads.push_back(std::move(body_bytes));
+            }
         }
     } else {
         body->set_replay_from_seq(0);
     }
 
-    // 缺口：真正生成并下发全量状态快照（非仅标志）
+    // 缺口：真正生成并下发全量状态快照（非仅标志）；Gateway 侧必须发送 pending
     if (need_snap) {
         game::GameResponse snap_rsp;
         snap_rsp.set_ok(true);
@@ -360,16 +373,29 @@ bool OrchestrateGatewayReconnect(const std::string &gateway_instance_id, uint64_
         }
         std::string snap_payload;
         if (snap_rsp.SerializeToString(&snap_payload) && route_out) {
+            uint64_t seq = 0;
 #ifdef WEBSERVER_ENABLE_REDIS
             if (PushReplayStore::Instance().Available()) {
-                const uint64_t seq = PushReplayStore::Instance().AppendReliable(
+                seq = PushReplayStore::Instance().AppendReliable(
                     req.reconnect().player_id(), sid, "full_snapshot", snap_payload);
                 fs->set_baseline_server_seq(seq);
                 snap_rsp.mutable_full_snapshot()->set_baseline_server_seq(seq);
                 snap_rsp.SerializeToString(&snap_payload);
             }
 #endif
-            route_out->pending_push_payloads.push_back(snap_payload);
+            game::GameResponse env;
+            env.set_ok(true);
+            env.set_message("server_push");
+            auto *p = env.mutable_server_push();
+            p->set_server_seq(seq);
+            p->set_message_type("full_snapshot");
+            p->set_payload(snap_payload);
+            p->set_reliable(true);
+            std::string env_bytes;
+            if (env.SerializeToString(&env_bytes))
+                route_out->pending_push_payloads.push_back(std::move(env_bytes));
+            else
+                route_out->pending_push_payloads.push_back(std::move(snap_payload));
         }
     }
 

@@ -109,7 +109,7 @@ sc1() {
 
 # --- 2: EnterMap 到 gl-1（预置 Owner → 跨 Logic Transfer） ---
 sc2() {
-  [[ -x "$SEED" ]] || { echo "skip: no placement_seed_tool"; return 0; }
+  [[ -x "$SEED" ]] || { echo "ERROR: missing placement_seed_tool" >&2; return 1; }
   local tpl=$((920000 + RANDOM % 9000))
   local seed_out map_id
   seed_out="$("$SEED" "$tpl" "gl-1" 1)" || return 1
@@ -177,16 +177,13 @@ sc5() {
 
 # --- 6: kill logic1 + lease recover（委托 kill_logic_drill 若有 gl-0 地图；否则 seed+mark）---
 sc6() {
-  if [[ ! -x "$SEED" ]]; then
-    echo "skip sc6: no seed tool"
-    return 0
-  fi
+  [[ -x "$SEED" ]] || { echo "ERROR: missing placement_seed_tool" >&2; return 1; }
   local tpl=$((930000 + RANDOM % 9000))
   local seed_out map_id old_epoch
-  seed_out="$("$SEED" "$tpl" "gl-1" 1)"
+  seed_out="$("$SEED" "$tpl" "gl-1" 1)" || return 1
   map_id="$(echo "$seed_out" | sed -n 's/^map_instance_id=//p' | head -1)"
   old_epoch="$(echo "$seed_out" | sed -n 's/^owner_epoch=//p' | head -1)"
-  [[ -n "$map_id" ]]
+  [[ -n "$map_id" ]] || return 1
   if [[ -n "$PID_L1" ]] && kill -0 "$PID_L1" 2>/dev/null; then
     echo "SIGKILL logic1 pid=$PID_L1 map=$map_id"
     kill -9 "$PID_L1"
@@ -194,7 +191,7 @@ sc6() {
   fi
   # 使用 map_lease_drill：MarkRecovering + Migrate → gl-0
   local drill="${ROOT}/build/test/map_lease_drill"
-  [[ -x "$drill" ]] || { echo "skip migrate assert: no map_lease_drill"; return 0; }
+  [[ -x "$drill" ]] || { echo "ERROR: missing map_lease_drill" >&2; return 1; }
   "$drill" "$map_id" "gl-0" "${old_epoch:-1}"
 }
 

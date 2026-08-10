@@ -30,6 +30,16 @@ done <"$RUN_DIR/pids"
 
 rm -f "$RUN_DIR/pids"
 
+# 释放 GatewayIdentity 短租约，避免重启同 ID 时 duplicate claim（TTL=120s）
+if command -v redis-cli >/dev/null 2>&1 && [[ -f "$ROOT/config/redis.cnf" ]]; then
+  REDIS_PASS="$(grep -E '^password=' "$ROOT/config/redis.cnf" | head -1 | cut -d= -f2- || true)"
+  if [[ -n "$REDIS_PASS" ]]; then
+    redis-cli -a "$REDIS_PASS" DEL 'gamemesh:dev:gw_claim:gw-0' 'gamemesh:dev:gw_claim:gw-1' >/dev/null 2>&1 || true
+  else
+    redis-cli DEL 'gamemesh:dev:gw_claim:gw-0' 'gamemesh:dev:gw_claim:gw-1' >/dev/null 2>&1 || true
+  fi
+fi
+
 restore() {
   local name="$1"
   local dst="$ROOT/config/$name"

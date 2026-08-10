@@ -23,6 +23,8 @@ run_one player_serial_queue_test
 run_one auth_session_boundary_test
 run_one phase1_gateway_boundary_test
 run_one phase1_correctness_test
+run_one trusted_player_id_test
+run_one placement_authority_test
 run_one phase2_transfer_snapshot_test
 if [[ -x "$BIN/phase1_channel_hold_test" ]]; then
   run_one phase1_channel_hold_test

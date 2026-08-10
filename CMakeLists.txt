@@ -458,6 +458,19 @@ if(ENABLE_GAME_PROTOBUF)
     ${Protobuf_INCLUDE_DIRS} runtime game runtime/discovery base log timer)
   target_link_libraries(phase1_correctness_test ${Protobuf_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
 
+  add_executable(trusted_player_id_test
+    test/trusted_player_id_test.cpp
+    game/game.pb.cc)
+  target_compile_definitions(trusted_player_id_test PRIVATE WEBSERVER_ENABLE_GAME_PROTOBUF)
+  target_include_directories(trusted_player_id_test PRIVATE
+    ${Protobuf_INCLUDE_DIRS} game)
+  target_link_libraries(trusted_player_id_test ${Protobuf_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
+
+  add_executable(placement_authority_test
+    test/placement_authority_test.cpp)
+  target_include_directories(placement_authority_test PRIVATE game)
+  # header-only ValidateAuthorityWrite；无需 Redis 运行时
+
   add_executable(phase2_transfer_snapshot_test
     test/phase2_transfer_snapshot_test.cpp
     game/GameLogic.cpp

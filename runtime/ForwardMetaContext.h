@@ -11,6 +11,7 @@ struct ForwardRouteMeta {
     uint64_t map_instance_id = 0;
     uint64_t owner_epoch = 0;
     uint64_t route_version = 0;
+    uint64_t client_seq = 0;
     std::string gamelogic_instance_id;
     std::string session_id;
     std::string fence_token;

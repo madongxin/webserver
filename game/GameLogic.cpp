@@ -7,6 +7,7 @@
 #include "MapPlacement.h"
 
 #ifdef WEBSERVER_ENABLE_REDIS
+#include "PlacementAuthority.h"
 #include "PlacementStore.h"
 #include "SessionStore.h"
 #endif
@@ -36,6 +37,47 @@ int64_t NowMs() {
     return duration_cast<milliseconds>(steady_clock::now().time_since_epoch()).count();
 }
 
+#ifdef WEBSERVER_ENABLE_REDIS
+bool FetchAuthorityPlacement(uint64_t map_instance_id, PlacementRecord *out, std::string *err) {
+    if (!out || map_instance_id == 0) {
+        if (err)
+            *err = "ERR_INVALID_MAP";
+        return false;
+    }
+    if (PlacementStore::Instance().Available() &&
+        PlacementStore::Instance().Get(map_instance_id, out))
+        return true;
+#ifdef WEBSERVER_ENABLE_BRPC
+    if (SessionRpcClient::Instance().ready()) {
+        sess::GetPlacementResponse grsp;
+        if (SessionRpcClient::Instance().GetPlacement(map_instance_id, &grsp) && grsp.ok() &&
+            grsp.has_placement()) {
+            const auto &p = grsp.placement();
+            out->realm_id = p.realm_id();
+            out->map_template_id = p.map_template_id();
+            out->map_instance_id = p.map_instance_id();
+            out->owner_logic_server_id = p.owner_logic_server_id();
+            out->owner_epoch = p.owner_epoch();
+            out->route_version = p.route_version();
+            out->state = PlacementStore::StateFromString(p.state());
+            out->updated_at = p.updated_at();
+            out->lease_until = p.lease_until();
+            return true;
+        }
+    }
+#endif
+    if (err)
+        *err = "ERR_PLACEMENT_NOT_FOUND";
+    return false;
+}
+
+bool ValidateLocalAuthorityWrite(const PlacementRecord &auth, uint64_t req_epoch,
+                                 uint64_t req_route_ver, std::string *err_code) {
+    return ValidateAuthorityWrite(auth, req_epoch, req_route_ver,
+                                  MapInstanceRegistry::Instance().local_instance_id(), err_code);
+}
+#endif
+
 }  // namespace
 
 GameLogic &GameLogic::Instance() {
@@ -43,59 +85,80 @@ GameLogic &GameLogic::Instance() {
     return g;
 }
 
-void GameLogic::EnsurePlayer(uint64_t player_id) {
+bool GameLogic::EnsurePlayerLoaded(uint64_t player_id, std::string *err) {
+    // 已有内存态（含 Import/迁移）视为已加载
     if (inventory_.count(player_id) != 0) {
+        player_load_ok_[player_id] = true;
         if (skill_cd_until_ms_.count(player_id) == 0)
             skill_cd_until_ms_[player_id] = {};
-        return;
+        return true;
     }
-    auto &inv = inventory_[player_id];
-    bool loaded_ok = false;
+    if (player_load_ok_.count(player_id) && !player_load_ok_[player_id]) {
+        if (err)
+            *err = "player load previously failed";
+        return false;
+    }
 #if defined(WEBSERVER_ENABLE_BRPC)
-    if (FormalModeEnabled() && BrpcGameDbRepository::Instance().started()) {
+    if (FormalModeEnabled()) {
+        if (!BrpcGameDbRepository::Instance().started()) {
+            player_load_ok_[player_id] = false;
+            if (err)
+                *err = "gamedb unavailable";
+            LOG_WARN << "EnsurePlayerLoaded GameDB not started player_id=" << player_id;
+            return false;
+        }
         std::map<uint32_t, uint32_t> loaded;
         uint64_t ver = 1;
-        std::string err;
-        if (BrpcGameDbRepository::Instance().LoadInventory(player_id, &loaded, &ver, &err)) {
-            inv = std::move(loaded);
-            asset_version_[player_id] = ver == 0 ? 1 : ver;
-            loaded_ok = true;
-            LOG_INFO << "EnsurePlayer loaded bag from GameDB player_id=" << player_id
-                     << " kinds=" << inv.size() << " ver=" << asset_version_[player_id];
-        } else {
-            inv.clear();
-            asset_version_[player_id] = 1;
-            loaded_ok = true;  // Formal：不以本地 MySQL 作事实源
-            LOG_WARN << "EnsurePlayer GameDB load failed player_id=" << player_id << " err=" << err;
+        std::string load_err;
+        if (!BrpcGameDbRepository::Instance().LoadInventory(player_id, &loaded, &ver, &load_err)) {
+            player_load_ok_[player_id] = false;
+            if (err)
+                *err = load_err.empty() ? "gamedb load failed" : load_err;
+            LOG_WARN << "EnsurePlayerLoaded GameDB fail player_id=" << player_id
+                     << " err=" << (err ? *err : load_err);
+            return false;
         }
+        inventory_[player_id] = std::move(loaded);
+        asset_version_[player_id] = ver == 0 ? 1 : ver;
+        skill_cd_until_ms_[player_id] = {};
+        player_load_ok_[player_id] = true;
+        LOG_INFO << "EnsurePlayerLoaded from GameDB player_id=" << player_id
+                 << " kinds=" << inventory_[player_id].size() << " ver=" << asset_version_[player_id];
+        return true;
     }
 #endif
+    auto &inv = inventory_[player_id];
 #ifdef WEBSERVER_ENABLE_MYSQL
-    if (!loaded_ok && !FormalModeEnabled()) {
-        std::map<uint32_t, uint32_t> loaded;
-        if (PlayerItemStore::Instance().LoadInventoryAggregate(player_id, &loaded) &&
-            !loaded.empty()) {
-            inv = std::move(loaded);
-            LOG_INFO << "EnsurePlayer loaded bag from DB player_id=" << player_id
-                     << " kinds=" << inv.size();
-        } else {
-            inv.clear();
-        }
-        loaded_ok = true;
-    }
-#endif
-    if (!loaded_ok) {
-#ifdef WEBSERVER_ENABLE_MYSQL
+    std::map<uint32_t, uint32_t> loaded;
+    if (PlayerItemStore::Instance().LoadInventoryAggregate(player_id, &loaded) && !loaded.empty()) {
+        inv = std::move(loaded);
+        LOG_INFO << "EnsurePlayer loaded bag from DB player_id=" << player_id
+                 << " kinds=" << inv.size();
+    } else {
         inv.clear();
-#else
-        inv[1001] = 10;
-        inv[1002] = 5;
-#endif
     }
+#else
+    inv[1001] = 10;
+    inv[1002] = 5;
+#endif
     if (skill_cd_until_ms_.count(player_id) == 0)
         skill_cd_until_ms_[player_id] = {};
     if (asset_version_.count(player_id) == 0)
         asset_version_[player_id] = 1;
+    player_load_ok_[player_id] = true;
+    return true;
+}
+
+void GameLogic::EnsurePlayer(uint64_t player_id) {
+    std::string err;
+    (void)EnsurePlayerLoaded(player_id, &err);
+    // 非 Formal 兼容：保证 key 存在，避免调用方 operator[] 歧义
+    if (inventory_.count(player_id) == 0 && !FormalModeEnabled()) {
+        inventory_[player_id] = {};
+        skill_cd_until_ms_[player_id] = {};
+        asset_version_[player_id] = 1;
+        player_load_ok_[player_id] = true;
+    }
 }
 
 uint32_t GameLogic::GetItemCount(uint64_t player_id, uint32_t item_id) {
@@ -157,6 +220,7 @@ bool GameLogic::ImportRuntimeState(uint64_t player_id, const std::map<uint32_t, 
     inventory_[player_id] = bag;
     skill_cd_until_ms_[player_id] = skill_cds;
     asset_version_[player_id] = asset_version == 0 ? 1 : asset_version;
+    player_load_ok_[player_id] = true;
     return true;
 }
 
@@ -200,9 +264,15 @@ bool GameLogic::HandleConsumeItem(const game::ConsumeItemReq &req, game::GameRes
             EnsurePlayer(req.player_id());
             expect = asset_version_[req.player_id()];
         }
-        const std::string idem = "logic:consume:" + std::to_string(req.player_id()) + ":" +
-                                 std::to_string(req.item_id()) + ":" + std::to_string(req.count()) +
-                                 ":" + std::to_string(expect) + ":" + std::to_string(NowMs());
+        std::string idem = "logic:consume:";
+        if (const ForwardRouteMeta *m = ForwardMetaContext::Get()) {
+            idem += m->session_id + ":" + std::to_string(m->client_seq) + ":consume:" +
+                    std::to_string(req.player_id()) + ":" + std::to_string(req.item_id()) + ":" +
+                    std::to_string(req.count());
+        } else {
+            idem += std::to_string(req.player_id()) + ":" + std::to_string(req.item_id()) + ":" +
+                    std::to_string(req.count()) + ":v" + std::to_string(expect);
+        }
         BrpcGameDbRepository::AssetMutationResult mr;
         if (!BrpcGameDbRepository::Instance().ApplyAssetMutation(
                 req.player_id(), idem, expect, "CONSUME", req.item_id(), req.count(), "", &mr)) {
@@ -358,9 +428,15 @@ bool GameLogic::HandleGrantItem(const game::GrantItemReq &req, game::GameRespons
             EnsurePlayer(req.player_id());
             expect = asset_version_[req.player_id()];
         }
-        const std::string idem = "logic:grant:" + std::to_string(req.player_id()) + ":" +
-                                 std::to_string(item_id) + ":" + std::to_string(req.count()) + ":" +
-                                 std::to_string(expect) + ":" + std::to_string(NowMs());
+        std::string idem = "logic:grant:";
+        if (const ForwardRouteMeta *m = ForwardMetaContext::Get()) {
+            idem += m->session_id + ":" + std::to_string(m->client_seq) + ":grant:" +
+                    std::to_string(req.player_id()) + ":" + std::to_string(item_id) + ":" +
+                    std::to_string(req.count());
+        } else {
+            idem += std::to_string(req.player_id()) + ":" + std::to_string(item_id) + ":" +
+                    std::to_string(req.count()) + ":v" + std::to_string(expect);
+        }
         BrpcGameDbRepository::AssetMutationResult mr;
         if (!BrpcGameDbRepository::Instance().ApplyAssetMutation(
                 req.player_id(), idem, expect, "GRANT", item_id, req.count(), "", &mr)) {
@@ -490,12 +566,16 @@ bool GameLogic::HandleLogin(const game::LoginReq &req, game::GameResponse *rsp) 
     return false;
 }
 
-void GameLogic::BindAuthenticatedPlayer(uint64_t player_id) {
+bool GameLogic::BindAuthenticatedPlayer(uint64_t player_id, std::string *err) {
     std::lock_guard<std::mutex> lk(mu_);
-    EnsurePlayer(player_id);
+    player_load_ok_.erase(player_id);  // 允许重试重新加载
+    if (!EnsurePlayerLoaded(player_id, err))
+        return false;
 #ifdef WEBSERVER_ENABLE_MYSQL
-    PlayerItemPersistQueue::Instance().MarkOnline(player_id);
+    if (!FormalModeEnabled())
+        PlayerItemPersistQueue::Instance().MarkOnline(player_id);
 #endif
+    return true;
 }
 
 bool GameLogic::FlushBag(uint64_t player_id, const std::string &reason) {
@@ -642,34 +722,101 @@ bool GameLogic::HandleEnterMap(const game::EnterMapReq &req, game::GameResponse 
         meta_snap = *meta;
         have_meta = true;
     }
+    const bool formalish =
+        MapInstanceRegistry::Instance().require_lease() || FormalModeEnabled();
+
     if (have_meta && meta_snap.map_instance_id != 0) {
-        if (!meta_snap.gamelogic_instance_id.empty() &&
-            meta_snap.gamelogic_instance_id != MapInstanceRegistry::Instance().local_instance_id()) {
-            body->set_message("wrong logic owner");
+        if (formalish) {
+#ifdef WEBSERVER_ENABLE_REDIS
+            PlacementRecord auth;
+            std::string ferr;
+            if (!FetchAuthorityPlacement(meta_snap.map_instance_id, &auth, &ferr)) {
+                body->set_message(ferr);
+                rsp->set_ok(false);
+                rsp->set_message(body->message());
+                return false;
+            }
+            std::string code;
+            if (!ValidateLocalAuthorityWrite(auth, meta_snap.owner_epoch, meta_snap.route_version,
+                                             &code)) {
+                body->set_message(code);
+                rsp->set_ok(false);
+                rsp->set_message(body->message());
+                return false;
+            }
+            place.map_instance_id = auth.map_instance_id;
+            place.owner_epoch = auth.owner_epoch;
+            place.route_version = auth.route_version;
+            place.owner_gamelogic_id = auth.owner_logic_server_id;
+            place.map_template_id =
+                auth.map_template_id != 0 ? auth.map_template_id : req.map_template_id();
+            place.realm_id = auth.realm_id != 0 ? auth.realm_id : req.realm_id();
+            place.lease_until_unix = auth.lease_until;
+#else
+            body->set_message("ERR_PLACEMENT_UNAVAILABLE");
+            rsp->set_ok(false);
+            rsp->set_message(body->message());
+            return false;
+#endif
+        } else {
+            if (!meta_snap.gamelogic_instance_id.empty() &&
+                meta_snap.gamelogic_instance_id !=
+                    MapInstanceRegistry::Instance().local_instance_id()) {
+                body->set_message("ERR_WRONG_GAMELOGIC_OWNER");
+                rsp->set_ok(false);
+                rsp->set_message(body->message());
+                return false;
+            }
+            place.map_instance_id = meta_snap.map_instance_id;
+            place.owner_epoch = meta_snap.owner_epoch;
+            place.route_version = meta_snap.route_version;
+            place.owner_gamelogic_id = meta_snap.gamelogic_instance_id;
+            place.map_template_id = req.map_template_id();
+            place.realm_id = req.realm_id();
+#ifdef WEBSERVER_ENABLE_REDIS
+            PlacementRecord prec;
+            std::string ignore;
+            if (FetchAuthorityPlacement(place.map_instance_id, &prec, &ignore))
+                place.lease_until_unix = prec.lease_until;
+#endif
+        }
+    } else if (formalish) {
+        // Formal：GameLogic 不得 ResolveOrCreate 隐式 Claim；必须已有权威实例
+#ifdef WEBSERVER_ENABLE_REDIS
+        if (req.map_instance_id() == 0) {
+            body->set_message("ERR_PLACEMENT_REQUIRED");
             rsp->set_ok(false);
             rsp->set_message(body->message());
             return false;
         }
-        place.map_instance_id = meta_snap.map_instance_id;
-        place.owner_epoch = meta_snap.owner_epoch;
-        place.route_version = meta_snap.route_version;
-        place.owner_gamelogic_id = meta_snap.gamelogic_instance_id;
-        place.map_template_id = req.map_template_id();
-        place.realm_id = req.realm_id();
-#ifdef WEBSERVER_ENABLE_REDIS
-        if (PlacementStore::Instance().Available()) {
-            PlacementRecord prec;
-            if (PlacementStore::Instance().Get(place.map_instance_id, &prec))
-                place.lease_until_unix = prec.lease_until;
+        PlacementRecord auth;
+        std::string ferr;
+        if (!FetchAuthorityPlacement(req.map_instance_id(), &auth, &ferr)) {
+            body->set_message(ferr);
+            rsp->set_ok(false);
+            rsp->set_message(body->message());
+            return false;
         }
-#endif
-#ifdef WEBSERVER_ENABLE_BRPC
-        if (place.lease_until_unix == 0 && SessionRpcClient::Instance().ready()) {
-            sess::GetPlacementResponse grsp;
-            if (SessionRpcClient::Instance().GetPlacement(place.map_instance_id, &grsp) &&
-                grsp.ok() && grsp.has_placement())
-                place.lease_until_unix = grsp.placement().lease_until();
+        std::string code;
+        if (!ValidateLocalAuthorityWrite(auth, 0, 0, &code)) {
+            body->set_message(code);
+            rsp->set_ok(false);
+            rsp->set_message(body->message());
+            return false;
         }
+        place.map_instance_id = auth.map_instance_id;
+        place.owner_epoch = auth.owner_epoch;
+        place.route_version = auth.route_version;
+        place.owner_gamelogic_id = auth.owner_logic_server_id;
+        place.map_template_id =
+            auth.map_template_id != 0 ? auth.map_template_id : req.map_template_id();
+        place.realm_id = auth.realm_id != 0 ? auth.realm_id : req.realm_id();
+        place.lease_until_unix = auth.lease_until;
+#else
+        body->set_message("ERR_PLACEMENT_UNAVAILABLE");
+        rsp->set_ok(false);
+        rsp->set_message(body->message());
+        return false;
 #endif
     } else {
 #ifdef WEBSERVER_ENABLE_REDIS
@@ -685,20 +832,6 @@ bool GameLogic::HandleEnterMap(const game::EnterMapReq &req, game::GameResponse 
                 rsp->set_message(body->message());
                 return false;
             }
-            if (MapInstanceRegistry::Instance().require_lease() || FormalModeEnabled()) {
-                if (pout.placement.state != PlacementState::Ready) {
-                    body->set_message("placement not READY");
-                    rsp->set_ok(false);
-                    rsp->set_message(body->message());
-                    return false;
-                }
-                if (pout.placement.lease_until <= 0) {
-                    body->set_message("placement lease missing");
-                    rsp->set_ok(false);
-                    rsp->set_message(body->message());
-                    return false;
-                }
-            }
             place.map_instance_id = pout.placement.map_instance_id;
             place.owner_epoch = pout.placement.owner_epoch;
             place.route_version = pout.placement.route_version;
@@ -709,13 +842,6 @@ bool GameLogic::HandleEnterMap(const game::EnterMapReq &req, game::GameResponse 
         } else
 #endif
         {
-            // Formal / require_lease：禁止本地 MapPlacement 随意 Claim 成为 Owner
-            if (MapInstanceRegistry::Instance().require_lease() || FormalModeEnabled()) {
-                body->set_message("placement unavailable");
-                rsp->set_ok(false);
-                rsp->set_message(body->message());
-                return false;
-            }
             if (MapPlacement::Instance().owners().empty())
                 MapPlacement::Instance().ConfigureOwners(
                     {MapInstanceRegistry::Instance().local_instance_id()});
@@ -728,16 +854,15 @@ bool GameLogic::HandleEnterMap(const game::EnterMapReq &req, game::GameResponse 
             }
         }
         if (place.owner_gamelogic_id != MapInstanceRegistry::Instance().local_instance_id()) {
-            body->set_message("owner not local");
+            body->set_message("ERR_WRONG_GAMELOGIC_OWNER");
             rsp->set_ok(false);
             rsp->set_message(body->message());
             return false;
         }
     }
 
-    if ((MapInstanceRegistry::Instance().require_lease() || FormalModeEnabled()) &&
-        place.lease_until_unix <= 0) {
-        body->set_message("claim rejected: lease missing");
+    if (formalish && place.lease_until_unix <= 0) {
+        body->set_message("ERR_LEASE_MISSING");
         rsp->set_ok(false);
         rsp->set_message(body->message());
         return false;
@@ -854,14 +979,44 @@ bool GameLogic::HandleLeaveMap(const game::LeaveMapReq &req, game::GameResponse 
 bool GameLogic::HandleMapPing(const game::MapPingReq &req, game::GameResponse *rsp) {
     auto *body = rsp->mutable_map_ping();
     body->set_ok(false);
-    const ForwardRouteMeta *meta = ForwardMetaContext::Get();
-    if (meta && meta->map_instance_id != 0) {
-        if (!MapInstanceRegistry::Instance().AcceptWrite(meta->map_instance_id, meta->owner_epoch)) {
-            body->set_message("stale_owner_epoch");
+    ForwardRouteMeta meta_snap;
+    bool have_meta = false;
+    if (const ForwardRouteMeta *meta = ForwardMetaContext::Get()) {
+        meta_snap = *meta;
+        have_meta = true;
+    }
+    const bool formalish =
+        MapInstanceRegistry::Instance().require_lease() || FormalModeEnabled();
+    if (have_meta && meta_snap.map_instance_id != 0) {
+        if (!MapInstanceRegistry::Instance().AcceptWrite(meta_snap.map_instance_id,
+                                                        meta_snap.owner_epoch)) {
+            body->set_message("ERR_STALE_EPOCH");
             rsp->set_ok(false);
             rsp->set_message(body->message());
             return false;
         }
+#ifdef WEBSERVER_ENABLE_REDIS
+        if (formalish) {
+            PlacementRecord auth;
+            std::string ferr;
+            if (!FetchAuthorityPlacement(meta_snap.map_instance_id, &auth, &ferr)) {
+                body->set_message(ferr);
+                rsp->set_ok(false);
+                rsp->set_message(body->message());
+                return false;
+            }
+            std::string code;
+            if (!ValidateLocalAuthorityWrite(auth, meta_snap.owner_epoch, meta_snap.route_version,
+                                             &code)) {
+                body->set_message(code);
+                rsp->set_ok(false);
+                rsp->set_message(body->message());
+                return false;
+            }
+        }
+#else
+        (void)formalish;
+#endif
     }
     if (!MapInstanceRegistry::Instance().PlayerOnMap(req.map_instance_id(), req.player_id())) {
         body->set_message("not on map");

@@ -298,7 +298,7 @@ bool GameDbAssetStore::ApplyMutation(uint64_t player_id, const std::string &idem
     if (!GameDbOutbox::Instance().InsertOnConnection(
             conn.get(), "asset.mutated", "player", std::to_string(player_id), idempotency_key,
             payload.str(), NowSec())) {
-        LOG_WARN << "GameDbAssetStore outbox insert failed player=" << player_id;
+        return fail("OUTBOX_FAILED", "outbox insert failed; asset tx rolled back");
     }
 
     {

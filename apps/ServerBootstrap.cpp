@@ -915,12 +915,16 @@ int RunServer(const LaunchOpts &launch) {
         std::lock_guard<std::mutex> lk(g_local_regs_mu);
         for (const auto &r : g_local_regs) {
             StaticServiceRegistry::Get().SetInstanceStatus(r.service, r.instance_id, "DRAINING");
+            if (RedisServiceRegistry::Get().ready())
+                RedisServiceRegistry::Get().SetInstanceStatus(r.service, r.instance_id, "DRAINING");
         }
     };
     auto unregister_local = []() {
         std::lock_guard<std::mutex> lk(g_local_regs_mu);
         for (const auto &r : g_local_regs) {
             StaticServiceRegistry::Get().UnregisterInstance(r.service, r.instance_id);
+            if (RedisServiceRegistry::Get().ready())
+                RedisServiceRegistry::Get().UnregisterInstance(r.service, r.instance_id);
         }
         g_local_regs.clear();
     };
@@ -1327,6 +1331,8 @@ int RunServer(const LaunchOpts &launch) {
             inst.status = "UP";
             if (StaticServiceRegistry::Get().RegisterInstance(inst, 30))
                 track_reg("gateway_push", gw_id, 30);
+            if (RedisServiceRegistry::Get().ready())
+                RedisServiceRegistry::Get().RegisterInstance(inst, 30);
             GatewayPushClient::Instance().SetGatewayPushAddr(gw_id, adv);
         }
         {
@@ -1340,6 +1346,8 @@ int RunServer(const LaunchOpts &launch) {
             inst.status = "UP";
             if (StaticServiceRegistry::Get().RegisterInstance(inst, 30))
                 track_reg("gateway", gw_id, 30);
+            if (RedisServiceRegistry::Get().ready())
+                RedisServiceRegistry::Get().RegisterInstance(inst, 30);
             if (EtcdDiscovery::Instance().enabled())
                 EtcdDiscovery::Instance().Register("gateway", gw_id, adv, 30);
         }
@@ -1495,6 +1503,47 @@ int RunServer(const LaunchOpts &launch) {
                 StaticServiceRegistry::Get().RenewInstance(r.service, r.instance_id, r.ttl_sec);
                 if (RedisServiceRegistry::Get().ready())
                     RedisServiceRegistry::Get().RenewInstance(r.service, r.instance_id, r.ttl_sec);
+            }
+        });
+    }
+#ifdef WEBSERVER_ENABLE_REDIS
+    // Session：动态刷新健康 GameLogic Owner 列表（新增 gl-2 无需重启）
+    if (role == "session" || role == "all") {
+        loop.RunEvery(5.0, []() {
+            if (!RedisServiceRegistry::Get().ready())
+                return;
+            std::vector<IServiceRegistry::ServiceInstance> insts;
+            if (!RedisServiceRegistry::Get().Discover("gamelogic", &insts) || insts.empty())
+                return;
+            std::vector<std::string> ids;
+            std::vector<std::string> addrs;
+            ids.reserve(insts.size());
+            addrs.reserve(insts.size());
+            for (const auto &i : insts) {
+                if (i.instance_id.empty() || i.address.empty())
+                    continue;
+                ids.push_back(i.instance_id);
+                addrs.push_back(i.address);
+            }
+            if (ids.empty())
+                return;
+            SessionStore::Instance().SetLogicInstanceIds(ids);
+            PlacementStore::Instance().SetLogicOwners(ids);
+            StaticServiceRegistry::Get().SetStaticAddrs("gamelogic", addrs, ids);
+        });
+    }
+#endif
+    // GameLogic：动态发现 gateway_push，热更新 Push Channel
+    if (role == "gamelogic" || role == "all") {
+        loop.RunEvery(5.0, []() {
+            if (!RedisServiceRegistry::Get().ready())
+                return;
+            std::vector<IServiceRegistry::ServiceInstance> insts;
+            if (!RedisServiceRegistry::Get().Discover("gateway_push", &insts) || insts.empty())
+                return;
+            for (const auto &i : insts) {
+                if (!i.instance_id.empty() && !i.address.empty())
+                    GatewayPushClient::Instance().SetGatewayPushAddr(i.instance_id, i.address);
             }
         });
     }

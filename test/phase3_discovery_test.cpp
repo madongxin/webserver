@@ -93,6 +93,28 @@ int main() {
     Expect(StaticServiceRegistry::Get().DiscoverAddrs("gamelogic", &addrs) && addrs.size() == 1,
            "empty static keep");
 
+    // gateway_push 动态发现（GameLogic Push Channel 热更新依赖）
+    {
+        IServiceRegistry::ServiceInstance gp;
+        gp.service = "gateway_push";
+        gp.instance_id = "gw-p3-0";
+        gp.address = "127.0.0.1:18181";
+        gp.port = 18181;
+        gp.status = "UP";
+        Expect(RedisServiceRegistry::Get().RegisterInstance(gp, 30), "register gateway_push");
+        std::vector<IServiceRegistry::ServiceInstance> gps;
+        Expect(RedisServiceRegistry::Get().Discover("gateway_push", &gps) && !gps.empty(),
+               "discover gateway_push");
+        bool found = false;
+        for (const auto &x : gps) {
+            if (x.instance_id == "gw-p3-0" && x.address == "127.0.0.1:18181")
+                found = true;
+        }
+        Expect(found, "gateway_push instance visible");
+        Expect(RedisServiceRegistry::Get().UnregisterInstance("gateway_push", "gw-p3-0"),
+               "unreg gateway_push");
+    }
+
     Expect(RedisServiceRegistry::Get().UnregisterInstance("gamelogic", "gl-p3-a"), "unreg a");
     Expect(RedisServiceRegistry::Get().UnregisterInstance("gamelogic", "gl-p3-b"), "unreg b");
 

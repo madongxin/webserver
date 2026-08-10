@@ -1,6 +1,7 @@
 #include "GameLogicServiceImpl.h"
 
 #include "ClientSeqGate.h"
+#include "FormalMode.h"
 #include "ForwardMetaContext.h"
 #include "GameLogic.h"
 #include "GameService.h"
@@ -189,10 +190,12 @@ void ExecuteDispatch(const glrpc::ClientCommand &request, glrpc::CommandResult *
     if (request.map_instance_id() != 0) {
         const MapWriteFence fence = MapInstanceRegistry::Instance().CheckWrite(
             request.map_instance_id(), request.map_owner_epoch());
-        const bool allow_first_claim =
-            fence == MapWriteFence::NotClaimed &&
-            (request.message_type() == "enter_map" || request.message_type().empty());
-        if (fence != MapWriteFence::Ok && !allow_first_claim) {
+        // Formal 禁止隐式 Claim，但仍须放行 enter_map：由 HandleEnterMap 校验权威 Placement 后再 Claim。
+        // 非 Formal 保留空 message_type 兼容旧客户端。
+        const bool is_enter_map = request.message_type() == "enter_map" ||
+                                  (!FormalModeEnabled() && request.message_type().empty());
+        const bool allow_enter_claim = fence == MapWriteFence::NotClaimed && is_enter_map;
+        if (fence != MapWriteFence::Ok && !allow_enter_claim) {
             response->set_ok(false);
             if (fence == MapWriteFence::LeaseExpired) {
                 response->set_error_code("LEASE_EXPIRED");
@@ -217,6 +220,7 @@ void ExecuteDispatch(const glrpc::ClientCommand &request, glrpc::CommandResult *
     meta.map_instance_id = request.map_instance_id();
     meta.owner_epoch = request.map_owner_epoch();
     meta.route_version = request.route_version();
+    meta.client_seq = request.client_seq();
     meta.gamelogic_instance_id = request.gamelogic_instance_id();
     meta.session_id = request.session_id();
     meta.fence_token = request.fence_token();
@@ -312,12 +316,39 @@ void GameLogicServiceImpl::BindPlayer(::google::protobuf::RpcController *control
         // 新 fence/session：重置 client_seq
         g_bound[player_id] = bp;
     }
-    GameLogic::Instance().BindAuthenticatedPlayer(player_id);
-    response->set_ok(true);
-    response->set_message("player ready");
-    response->set_bag_item_kinds(0);
-    LOG_INFO << "BindPlayer ok player_id=" << player_id << " session=" << request->session_id()
-             << " gen=" << request->generation() << " gw=" << request->gateway_instance_id();
+    done_guard.release();
+    auto *rsp = response;
+    auto *closure = done;
+    const auto req_copy = *request;
+    if (!PlayerSerialQueue::Instance().TryPost(player_id, [player_id, req_copy, rsp, closure]() {
+            brpc::ClosureGuard g(closure);
+            std::string load_err;
+            if (!GameLogic::Instance().BindAuthenticatedPlayer(player_id, &load_err)) {
+                {
+                    std::lock_guard<std::mutex> lk(g_bound_mu);
+                    g_bound.erase(player_id);
+                }
+                rsp->set_ok(false);
+                rsp->set_error_code("ERR_PLAYER_LOAD_FAILED");
+                rsp->set_message(load_err.empty() ? "player load failed" : load_err);
+                return;
+            }
+            rsp->set_ok(true);
+            rsp->set_message("player ready");
+            rsp->set_bag_item_kinds(0);
+            LOG_INFO << "BindPlayer ok player_id=" << player_id
+                     << " session=" << req_copy.session_id() << " gen=" << req_copy.generation()
+                     << " gw=" << req_copy.gateway_instance_id();
+        })) {
+        brpc::ClosureGuard g(closure);
+        {
+            std::lock_guard<std::mutex> lk(g_bound_mu);
+            g_bound.erase(player_id);
+        }
+        rsp->set_ok(false);
+        rsp->set_error_code("ERR_OVERLOAD");
+        rsp->set_message("player serial queue full");
+    }
 }
 
 void GameLogicServiceImpl::Dispatch(::google::protobuf::RpcController *controller,
@@ -404,14 +435,8 @@ void GameLogicServiceImpl::UnbindPlayer(::google::protobuf::RpcController *contr
             rsp->set_message("unbound");
         })) {
         brpc::ClosureGuard g(closure);
-        // 过载时仍同步解绑，避免泄漏绑定
-        {
-            std::lock_guard<std::mutex> lk(g_bound_mu);
-            g_bound.erase(pid);
-        }
-        GameLogic::Instance().FlushBag(pid, reason);
-        rsp->set_ok(true);
-        rsp->set_message("unbound_sync");
+        rsp->set_ok(false);
+        rsp->set_message("ERR_OVERLOAD: player serial queue full; unbind not applied");
     }
 }
 
@@ -434,27 +459,40 @@ void GameLogicServiceImpl::FreezePlayer(::google::protobuf::RpcController *contr
         response->set_message(err);
         return;
     }
-    std::lock_guard<std::mutex> lk(g_bound_mu);
-    auto it = g_bound.find(request->player_id());
-    if (it == g_bound.end()) {
-        response->set_ok(false);
-        response->set_error_code("NOT_BOUND");
-        response->set_message("player not bound");
-        return;
+    // 串行队列屏障：入队后排在冻结前 Dispatch 之后执行，再拒绝新写
+    const uint64_t pid = request->player_id();
+    const std::string transfer_id = request->transfer_id();
+    done_guard.release();
+    auto *rsp = response;
+    auto *closure = done;
+    if (!PlayerSerialQueue::Instance().TryPost(pid, [pid, transfer_id, rsp, closure]() {
+            brpc::ClosureGuard g(closure);
+            std::lock_guard<std::mutex> lk(g_bound_mu);
+            auto it = g_bound.find(pid);
+            if (it == g_bound.end()) {
+                rsp->set_ok(false);
+                rsp->set_error_code("NOT_BOUND");
+                rsp->set_message("player not bound");
+                return;
+            }
+            if (it->second.frozen &&
+                (transfer_id.empty() || it->second.transfer_id == transfer_id)) {
+                rsp->set_ok(true);
+                rsp->set_message("already frozen");
+                return;
+            }
+            it->second.frozen = true;
+            if (!transfer_id.empty())
+                it->second.transfer_id = transfer_id;
+            rsp->set_ok(true);
+            rsp->set_message("frozen");
+            LOG_INFO << "FreezePlayer ok player_id=" << pid << " transfer=" << transfer_id;
+        })) {
+        brpc::ClosureGuard g(closure);
+        rsp->set_ok(false);
+        rsp->set_error_code("ERR_OVERLOAD");
+        rsp->set_message("player serial queue full");
     }
-    if (it->second.frozen &&
-        (request->transfer_id().empty() || it->second.transfer_id == request->transfer_id())) {
-        response->set_ok(true);
-        response->set_message("already frozen");
-        return;
-    }
-    it->second.frozen = true;
-    if (!request->transfer_id().empty())
-        it->second.transfer_id = request->transfer_id();
-    response->set_ok(true);
-    response->set_message("frozen");
-    LOG_INFO << "FreezePlayer ok player_id=" << request->player_id()
-             << " transfer=" << request->transfer_id();
 }
 
 void GameLogicServiceImpl::ExportPlayerSnapshot(
@@ -476,70 +514,83 @@ void GameLogicServiceImpl::ExportPlayerSnapshot(
         response->set_message(err);
         return;
     }
-    BoundPlayer bp;
-    {
-        std::lock_guard<std::mutex> lk(g_bound_mu);
-        auto it = g_bound.find(request->player_id());
-        if (it == g_bound.end()) {
-            response->set_ok(false);
-            response->set_error_code("NOT_BOUND");
-            response->set_message("player not bound");
-            return;
-        }
-        // 迁移路径必须先 Freeze；重连全量快照允许未 Freeze 导出只读态
-        const bool reconnect_snap =
-            request->transfer_id().find("reconnect") != std::string::npos;
-        if (!it->second.frozen && !reconnect_snap) {
-            response->set_ok(false);
-            response->set_error_code("NOT_FROZEN");
-            response->set_message("export requires freeze");
-            return;
-        }
-        bp = it->second;
+    const auto req_copy = *request;
+    const uint64_t pid = request->player_id();
+    done_guard.release();
+    auto *rsp = response;
+    auto *closure = done;
+    if (!PlayerSerialQueue::Instance().TryPost(pid, [req_copy, rsp, closure]() {
+            brpc::ClosureGuard g(closure);
+            BoundPlayer bp;
+            {
+                std::lock_guard<std::mutex> lk(g_bound_mu);
+                auto it = g_bound.find(req_copy.player_id());
+                if (it == g_bound.end()) {
+                    rsp->set_ok(false);
+                    rsp->set_error_code("NOT_BOUND");
+                    rsp->set_message("player not bound");
+                    return;
+                }
+                const bool reconnect_snap =
+                    req_copy.transfer_id().find("reconnect") != std::string::npos;
+                if (!it->second.frozen && !reconnect_snap) {
+                    rsp->set_ok(false);
+                    rsp->set_error_code("NOT_FROZEN");
+                    rsp->set_message("export requires freeze");
+                    return;
+                }
+                bp = it->second;
+            }
+            std::map<uint32_t, uint32_t> bag;
+            std::map<uint32_t, int64_t> cds;
+            uint64_t asset_ver = 0;
+            if (!GameLogic::Instance().ExportRuntimeState(req_copy.player_id(), &bag, &cds,
+                                                          &asset_ver)) {
+                rsp->set_ok(false);
+                rsp->set_error_code("EXPORT_FAILED");
+                rsp->set_message("runtime export failed");
+                return;
+            }
+            auto *snap = rsp->mutable_snapshot();
+            snap->set_player_id(req_copy.player_id());
+            snap->set_session_id(bp.session_id);
+            snap->set_fence_token(bp.fence_token);
+            snap->set_generation(bp.generation);
+            snap->set_source_gamelogic_id(MapInstanceRegistry::Instance().local_instance_id());
+            snap->set_target_gamelogic_id(req_copy.target_gamelogic_id());
+            snap->set_source_map_instance_id(bp.map_instance_id);
+            snap->set_target_map_instance_id(req_copy.target_map_instance_id());
+            snap->set_target_owner_epoch(req_copy.target_owner_epoch());
+            snap->set_route_version(bp.route_version);
+            snap->set_snapshot_version(1);
+            snap->set_transfer_id(req_copy.transfer_id());
+            auto *st = snap->mutable_state();
+            st->set_last_client_seq(bp.last_client_seq);
+            st->set_asset_version(asset_ver);
+            for (const auto &kv : bag) {
+                if (kv.second == 0)
+                    continue;
+                auto *e = st->add_bag();
+                e->set_item_id(kv.first);
+                e->set_count(kv.second);
+            }
+            for (const auto &kv : cds) {
+                auto *e = st->add_skill_cds();
+                e->set_skill_id(kv.first);
+                e->set_cd_until_ms(kv.second);
+            }
+            snap->set_checksum(ChecksumRuntimeState(*st));
+            rsp->set_ok(true);
+            rsp->set_message("exported");
+            LOG_INFO << "ExportPlayerSnapshot player=" << req_copy.player_id()
+                     << " transfer=" << req_copy.transfer_id() << " bag=" << st->bag_size()
+                     << " client_seq=" << bp.last_client_seq;
+        })) {
+        brpc::ClosureGuard g(closure);
+        rsp->set_ok(false);
+        rsp->set_error_code("ERR_OVERLOAD");
+        rsp->set_message("player serial queue full");
     }
-    std::map<uint32_t, uint32_t> bag;
-    std::map<uint32_t, int64_t> cds;
-    uint64_t asset_ver = 0;
-    if (!GameLogic::Instance().ExportRuntimeState(request->player_id(), &bag, &cds, &asset_ver)) {
-        response->set_ok(false);
-        response->set_error_code("EXPORT_FAILED");
-        response->set_message("runtime export failed");
-        return;
-    }
-    auto *snap = response->mutable_snapshot();
-    snap->set_player_id(request->player_id());
-    snap->set_session_id(bp.session_id);
-    snap->set_fence_token(bp.fence_token);
-    snap->set_generation(bp.generation);
-    snap->set_source_gamelogic_id(MapInstanceRegistry::Instance().local_instance_id());
-    snap->set_target_gamelogic_id(request->target_gamelogic_id());
-    snap->set_source_map_instance_id(bp.map_instance_id);
-    snap->set_target_map_instance_id(request->target_map_instance_id());
-    snap->set_target_owner_epoch(request->target_owner_epoch());
-    snap->set_route_version(bp.route_version);
-    snap->set_snapshot_version(1);
-    snap->set_transfer_id(request->transfer_id());
-    auto *st = snap->mutable_state();
-    st->set_last_client_seq(bp.last_client_seq);
-    st->set_asset_version(asset_ver);
-    for (const auto &kv : bag) {
-        if (kv.second == 0)
-            continue;
-        auto *e = st->add_bag();
-        e->set_item_id(kv.first);
-        e->set_count(kv.second);
-    }
-    for (const auto &kv : cds) {
-        auto *e = st->add_skill_cds();
-        e->set_skill_id(kv.first);
-        e->set_cd_until_ms(kv.second);
-    }
-    snap->set_checksum(ChecksumRuntimeState(*st));
-    response->set_ok(true);
-    response->set_message("exported");
-    LOG_INFO << "ExportPlayerSnapshot player=" << request->player_id()
-             << " transfer=" << request->transfer_id() << " bag=" << st->bag_size()
-             << " client_seq=" << bp.last_client_seq;
 }
 
 void GameLogicServiceImpl::ImportPlayerSnapshot(
@@ -554,68 +605,83 @@ void GameLogicServiceImpl::ImportPlayerSnapshot(
         response->set_error_code("INVALID_ARG");
         return;
     }
-    const auto &snap = request->snapshot();
-    if (!snap.target_gamelogic_id().empty() &&
-        snap.target_gamelogic_id() != MapInstanceRegistry::Instance().local_instance_id()) {
-        response->set_ok(false);
-        response->set_error_code("ERR_WRONG_GAMELOGIC_OWNER");
-        response->set_message("import target mismatch");
-        return;
+    const auto req_copy = *request;
+    const uint64_t pid = request->snapshot().player_id();
+    done_guard.release();
+    auto *rsp = response;
+    auto *closure = done;
+    if (!PlayerSerialQueue::Instance().TryPost(pid, [req_copy, rsp, closure]() {
+            brpc::ClosureGuard g(closure);
+            const auto &snap = req_copy.snapshot();
+            if (!snap.target_gamelogic_id().empty() &&
+                snap.target_gamelogic_id() != MapInstanceRegistry::Instance().local_instance_id()) {
+                rsp->set_ok(false);
+                rsp->set_error_code("ERR_WRONG_GAMELOGIC_OWNER");
+                rsp->set_message("import target mismatch");
+                return;
+            }
+            const std::string expect = ChecksumRuntimeState(snap.state());
+            if (!snap.checksum().empty() && snap.checksum() != expect) {
+                rsp->set_ok(false);
+                rsp->set_error_code("CHECKSUM_MISMATCH");
+                rsp->set_message("snapshot checksum mismatch");
+                return;
+            }
+            {
+                std::lock_guard<std::mutex> lk(g_bound_mu);
+                auto it = g_bound.find(snap.player_id());
+                if (it == g_bound.end()) {
+                    rsp->set_ok(false);
+                    rsp->set_error_code("NOT_BOUND");
+                    rsp->set_message("import requires Bind/Prepare first");
+                    return;
+                }
+                if (!it->second.last_import_checksum.empty() &&
+                    it->second.last_import_checksum == snap.checksum()) {
+                    rsp->set_ok(true);
+                    rsp->set_already_applied(true);
+                    rsp->set_message("import idempotent");
+                    return;
+                }
+            }
+            std::map<uint32_t, uint32_t> bag;
+            std::map<uint32_t, int64_t> cds;
+            for (const auto &e : snap.state().bag())
+                bag[e.item_id()] = e.count();
+            for (const auto &e : snap.state().skill_cds())
+                cds[e.skill_id()] = e.cd_until_ms();
+            if (!GameLogic::Instance().ImportRuntimeState(snap.player_id(), bag, cds,
+                                                          snap.state().asset_version())) {
+                rsp->set_ok(false);
+                rsp->set_error_code("IMPORT_FAILED");
+                return;
+            }
+            {
+                std::lock_guard<std::mutex> lk(g_bound_mu);
+                auto it = g_bound.find(snap.player_id());
+                if (it != g_bound.end()) {
+                    it->second.last_client_seq = snap.state().last_client_seq();
+                    it->second.last_import_checksum =
+                        snap.checksum().empty() ? expect : snap.checksum();
+                    it->second.frozen = false;
+                    if (!snap.transfer_id().empty())
+                        it->second.transfer_id = snap.transfer_id();
+                    if (snap.target_map_instance_id() != 0)
+                        it->second.map_instance_id = snap.target_map_instance_id();
+                    if (snap.target_owner_epoch() != 0)
+                        it->second.map_owner_epoch = snap.target_owner_epoch();
+                }
+            }
+            rsp->set_ok(true);
+            rsp->set_already_applied(false);
+            rsp->set_message("imported");
+            LOG_INFO << "ImportPlayerSnapshot player=" << snap.player_id()
+                     << " transfer=" << snap.transfer_id()
+                     << " client_seq=" << snap.state().last_client_seq();
+        })) {
+        brpc::ClosureGuard g(closure);
+        rsp->set_ok(false);
+        rsp->set_error_code("ERR_OVERLOAD");
+        rsp->set_message("player serial queue full");
     }
-    const std::string expect = ChecksumRuntimeState(snap.state());
-    if (!snap.checksum().empty() && snap.checksum() != expect) {
-        response->set_ok(false);
-        response->set_error_code("CHECKSUM_MISMATCH");
-        response->set_message("snapshot checksum mismatch");
-        return;
-    }
-    {
-        std::lock_guard<std::mutex> lk(g_bound_mu);
-        auto it = g_bound.find(snap.player_id());
-        if (it == g_bound.end()) {
-            response->set_ok(false);
-            response->set_error_code("NOT_BOUND");
-            response->set_message("import requires Bind/Prepare first");
-            return;
-        }
-        if (!it->second.last_import_checksum.empty() &&
-            it->second.last_import_checksum == snap.checksum()) {
-            response->set_ok(true);
-            response->set_already_applied(true);
-            response->set_message("import idempotent");
-            return;
-        }
-    }
-    std::map<uint32_t, uint32_t> bag;
-    std::map<uint32_t, int64_t> cds;
-    for (const auto &e : snap.state().bag())
-        bag[e.item_id()] = e.count();
-    for (const auto &e : snap.state().skill_cds())
-        cds[e.skill_id()] = e.cd_until_ms();
-    if (!GameLogic::Instance().ImportRuntimeState(snap.player_id(), bag, cds,
-                                                  snap.state().asset_version())) {
-        response->set_ok(false);
-        response->set_error_code("IMPORT_FAILED");
-        return;
-    }
-    {
-        std::lock_guard<std::mutex> lk(g_bound_mu);
-        auto it = g_bound.find(snap.player_id());
-        if (it != g_bound.end()) {
-            it->second.last_client_seq = snap.state().last_client_seq();
-            it->second.last_import_checksum = snap.checksum().empty() ? expect : snap.checksum();
-            it->second.frozen = false;  // TARGET_READY：可接受后续 Dispatch
-            if (!snap.transfer_id().empty())
-                it->second.transfer_id = snap.transfer_id();
-            if (snap.target_map_instance_id() != 0)
-                it->second.map_instance_id = snap.target_map_instance_id();
-            if (snap.target_owner_epoch() != 0)
-                it->second.map_owner_epoch = snap.target_owner_epoch();
-        }
-    }
-    response->set_ok(true);
-    response->set_already_applied(false);
-    response->set_message("imported");
-    LOG_INFO << "ImportPlayerSnapshot player=" << snap.player_id()
-             << " transfer=" << snap.transfer_id() << " client_seq=" << snap.state().last_client_seq();
 }

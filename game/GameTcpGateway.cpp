@@ -409,28 +409,26 @@ void GameTcpGateway::OnMessage(const std::shared_ptr<TcpConnection> &conn) {
                         if (GatewayAuthFlow::Instance().AcceptCallback(conn_id, flow_gen)) {
                             RememberBind(conn_id, route.player_id, route.fence_token,
                                          route.session_id, route.generation, sink, &route);
-                            // 先回写 ReconnectRsp，再按序补发可靠 Push（绑定后才能 SendBySession）
+                            // ReconnectRsp → Replay 或 FullSnapshot（need_full_snapshot 时也必须发送）
                             if (!out.empty() && sink &&
                                 GatewayAuthFlow::Instance().Alive(conn_id)) {
                                 sink->SendFrame(out);
                                 out.clear();
-                                if (!route.need_full_snapshot) {
-                                    for (const auto &pl : route.pending_push_payloads) {
-                                        std::string frame;
-                                        if (pl.size() >= 4) {
-                                            const uint32_t be =
-                                                (static_cast<uint8_t>(pl[0]) << 24) |
-                                                (static_cast<uint8_t>(pl[1]) << 16) |
-                                                (static_cast<uint8_t>(pl[2]) << 8) |
-                                                static_cast<uint8_t>(pl[3]);
-                                            if (be + 4 == pl.size())
-                                                frame = pl;
-                                        }
-                                        if (frame.empty() && !gameproto::EncodeFrame(pl, &frame))
-                                            continue;
-                                        GatewayConnRegistry::Instance().SendBySession(
-                                            route.session_id, frame);
+                                for (const auto &pl : route.pending_push_payloads) {
+                                    std::string frame;
+                                    if (pl.size() >= 4) {
+                                        const uint32_t be =
+                                            (static_cast<uint8_t>(pl[0]) << 24) |
+                                            (static_cast<uint8_t>(pl[1]) << 16) |
+                                            (static_cast<uint8_t>(pl[2]) << 8) |
+                                            static_cast<uint8_t>(pl[3]);
+                                        if (be + 4 == pl.size())
+                                            frame = pl;
                                     }
+                                    if (frame.empty() && !gameproto::EncodeFrame(pl, &frame))
+                                        continue;
+                                    GatewayConnRegistry::Instance().SendBySession(route.session_id,
+                                                                                frame);
                                 }
                             }
                         } else {

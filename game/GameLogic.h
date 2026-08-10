@@ -24,8 +24,8 @@ public:
     /** 事务失败时回退内存（尽力而为） */
     bool RollbackItemReward(uint64_t player_id, uint32_t item_id, uint32_t count);
 
-    /** Gateway BindPlayer：已认证玩家加载内存态（不接收凭证） */
-    void BindAuthenticatedPlayer(uint64_t player_id);
+    /** Gateway BindPlayer：已认证玩家加载内存态（不接收凭证）；失败 fail-closed */
+    bool BindAuthenticatedPlayer(uint64_t player_id, std::string *err = nullptr);
     bool FlushBag(uint64_t player_id, const std::string &reason);
 
     /** 跨 Logic 迁移：导出/导入运行时背包与技能 CD（不含凭证） */
@@ -55,11 +55,14 @@ private:
     bool HandleChatSend(const game::ChatSendReq &req, game::GameResponse *rsp);
     bool HandleFriendList(const game::FriendListReq &req, game::GameResponse *rsp);
     bool RequireSessionToken(const game::GameRequest &req, uint64_t player_id, game::GameResponse *rsp);
+    /** @return false：Formal 下 GameDB 加载失败，不得当作空背包成功 */
+    bool EnsurePlayerLoaded(uint64_t player_id, std::string *err);
     void EnsurePlayer(uint64_t player_id);
 
     std::mutex mu_;
-    /** 内存背包：player_id -> (item_config_id -> 聚合数量)，与 consume_item 共用 */
+    /** 内存背包：player_id -> (item_config_id -> 聚合数量），与 consume_item 共用 */
     std::map<uint64_t, std::map<uint32_t, uint32_t>> inventory_;
     std::map<uint64_t, std::map<uint32_t, int64_t>> skill_cd_until_ms_;
     std::map<uint64_t, uint64_t> asset_version_;
+    std::map<uint64_t, bool> player_load_ok_;
 };

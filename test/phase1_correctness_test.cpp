@@ -142,9 +142,13 @@ void TestLeaseAndFormalNoLocalClaim() {
     req.mutable_enter_map()->set_map_template_id(1001);
     game::GameResponse rsp;
     Expect(!GameLogic::Instance().Handle(req, &rsp), "formal reject local claim");
-    Expect(rsp.enter_map().message().find("placement") != std::string::npos ||
-               rsp.message().find("placement") != std::string::npos,
-           "formal message placement unavailable");
+    {
+        const std::string &m =
+            !rsp.enter_map().message().empty() ? rsp.enter_map().message() : rsp.message();
+        Expect(m.find("ERR_PLACEMENT_") != std::string::npos ||
+                   m.find("placement") != std::string::npos,
+               "formal message placement required/unavailable");
+    }
     ::unsetenv("GAMEMESH_FORMAL");
     reg.SetRequireLease(false);
     reg.ClearForTest();
