@@ -329,7 +329,7 @@ bool BrpcGameDbRepository::QueryOperationResult(uint64_t player_id,
                                                 const std::string &operation_type, bool *found,
                                                 bool *completed_ok, bool *idempotent_hit,
                                                 uint64_t *asset_version, uint32_t *remain_count,
-                                                std::string *err) {
+                                                std::string *err, std::string *status) {
     const size_t n = channel_count();
     for (size_t i = 0; i < n; ++i) {
         auto ch = ChannelAt((static_cast<size_t>(player_id) + i) % n);
@@ -363,6 +363,18 @@ bool BrpcGameDbRepository::QueryOperationResult(uint64_t player_id,
             *asset_version = rsp.asset_version();
         if (remain_count)
             *remain_count = rsp.remain_count();
+        if (status) {
+            if (!rsp.status().empty())
+                *status = rsp.status();
+            else if (!rsp.found())
+                *status = "NOT_FOUND";
+            else if (rsp.completed_ok())
+                *status = "SUCCEEDED";
+            else if (rsp.error_code() == "IN_PROGRESS")
+                *status = "IN_PROGRESS";
+            else
+                *status = "FAILED";
+        }
         return true;
     }
     if (err && err->empty())
@@ -380,18 +392,29 @@ bool BrpcGameDbRepository::FillMutationFromQuery(uint64_t player_id,
     uint64_t ver = 0;
     uint32_t remain = 0;
     std::string err;
+    std::string status;
     if (!QueryOperationResult(player_id, idempotency_key, mutation_type, &found, &completed_ok,
-                              &idempotent_hit, &ver, &remain, &err))
+                              &idempotent_hit, &ver, &remain, &err, &status))
         return false;
-    if (!found)
+    if (!found || status == "NOT_FOUND")
         return false;
-    out->ok = completed_ok;
-    out->idempotent_hit = idempotent_hit || completed_ok;
+    if (status == "IN_PROGRESS") {
+        out->ok = false;
+        out->idempotent_hit = true;
+        out->unknown_result = true;
+        out->error_code = "IN_PROGRESS";
+        out->message = "operation still in progress";
+        out->asset_version = ver;
+        out->remain_count = remain;
+        return true;
+    }
+    out->ok = completed_ok || status == "SUCCEEDED";
+    out->idempotent_hit = idempotent_hit || out->ok;
     out->unknown_result = false;
     out->asset_version = ver;
     out->remain_count = remain;
-    out->error_code = completed_ok ? "" : "OPERATION_FAILED";
-    out->message = completed_ok ? "recovered_from_query" : "operation recorded as failed";
+    out->error_code = out->ok ? "" : (err.empty() ? "OPERATION_FAILED" : err);
+    out->message = out->ok ? "recovered_from_query" : "operation recorded as failed";
     return true;
 }
 
@@ -433,8 +456,13 @@ bool BrpcGameDbRepository::ApplyAssetMutation(uint64_t player_id, const std::str
             saw_rpc_fail = true;
             last_rpc_err = cntl.ErrorText();
             // 未知结果：先查幂等记录再决定是否换节点重试
-            if (FillMutationFromQuery(player_id, idempotency_key, mutation_type, out))
+            if (FillMutationFromQuery(player_id, idempotency_key, mutation_type, out)) {
+                if (out->unknown_result) {
+                    OpsMetrics::Instance().IncGamedbUnknownResult();
+                    return false;
+                }
                 return out->ok;
+            }
             continue;
         }
         out->ok = rsp.ok();
@@ -446,8 +474,13 @@ bool BrpcGameDbRepository::ApplyAssetMutation(uint64_t player_id, const std::str
         return out->ok;
     }
 
-    if (saw_rpc_fail && FillMutationFromQuery(player_id, idempotency_key, mutation_type, out))
+    if (saw_rpc_fail && FillMutationFromQuery(player_id, idempotency_key, mutation_type, out)) {
+        if (out->unknown_result) {
+            OpsMetrics::Instance().IncGamedbUnknownResult();
+            return false;
+        }
         return out->ok;
+    }
 
     out->unknown_result = saw_rpc_fail;
     out->error_code = saw_rpc_fail ? "UNKNOWN_RESULT" : "GAMEDB_UNAVAILABLE";

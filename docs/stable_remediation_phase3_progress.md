@@ -1,6 +1,6 @@
 # 稳定整改三阶段 — 阶段三进度
 
-对照：`docs/GameMesh_Cursor_Server_Stable_Remediation_3_Phases.md`  
+对照：`docs/GameMesh_Cursor_Server_Stable_Remediation_3_Phases.md`
 基线含阶段一/二工作区改动。**阶段三门禁未全部达标 → `STABLE BLOCKED`。**
 
 | 项 | 内容 | 状态 |
@@ -42,11 +42,11 @@
 
 ### STABLE BLOCKED 阻塞项
 
-1. **E2E 未满 20 轮**  
+1. **E2E 未满 20 轮**
    复现正式：`START_CLUSTER=1 E2E_ROUNDS=20 ./scripts/test_e2e_20x.sh`
-2. **负载未满 30 分钟**  
+2. **负载未满 30 分钟**
    `LOAD_DURATION_SEC=1800 LOAD_CONCURRENCY=32 ./scripts/load_tcp_baseline.sh`
-3. **soak 未满 2 小时**（或同 commit 的 `SOAK_REPORT`）  
+3. **soak 未满 2 小时**（或同 commit 的 `SOAK_REPORT`）
    `SOAK_DURATION_SEC=7200 ./scripts/soak_test.sh`
 4. **完整 `./scripts/stable_gate.sh --full`** 未在本机一次跑通（含 Phase2 failover 全集）
 5. **未创建 tag / 未人工审核**（文档要求）

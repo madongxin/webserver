@@ -53,4 +53,7 @@ public:
 
     /** 异步领取：完成回调在 GameDB worker 线程触发 */
     virtual void ClaimMailAttachmentsAsync(GameDbMailClaimRequest req, MailClaimDone done) = 0;
+
+    /** 同步领取（MailBrpc/单测；禁止在 Reactor IO / 玩家串行线程调用） */
+    virtual GameDbMailClaimResult ClaimMailAttachments(GameDbMailClaimRequest req) = 0;
 };

@@ -9,6 +9,8 @@
 #include <cstdio>
 #include <cstdlib>
 #include <string>
+#include <utility>
+#include <vector>
 
 namespace {
 
@@ -26,7 +28,27 @@ int main(int argc, char **argv) {
         return 3;
     }
     PlacementStore::Instance().InitFromSessionPrefix(SessionStore::Instance().key_prefix());
-    PlacementStore::Instance().SetLogicOwners({"gl-0", "gl-1", "gl-2"});
+    // SEED_OWNERS=gl-0,gl-1 可排除 DRAINING 实例；默认含 gl-2 便于扩容演练
+    {
+        std::vector<std::string> owners{"gl-0", "gl-1", "gl-2"};
+        if (const char *env = std::getenv("SEED_OWNERS")) {
+            owners.clear();
+            std::string csv = env;
+            for (size_t i = 0; i < csv.size();) {
+                const size_t j = csv.find(',', i);
+                const std::string part =
+                    j == std::string::npos ? csv.substr(i) : csv.substr(i, j - i);
+                if (!part.empty())
+                    owners.push_back(part);
+                if (j == std::string::npos)
+                    break;
+                i = j + 1;
+            }
+        }
+        if (owners.empty())
+            owners = {"gl-0", "gl-1"};
+        PlacementStore::Instance().SetLogicOwners(std::move(owners));
+    }
 
     ResolveOrCreateInput in;
     in.map_template_id = std::strtoull(argv[1], nullptr, 10);

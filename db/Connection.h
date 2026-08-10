@@ -16,6 +16,9 @@ public:
     bool update(const std::string &sql);
     MYSQL_RES *query(const std::string &sql);
 
+    /** mysql_real_escape_string；连接未就绪返回空串 */
+    std::string EscapeSql(const std::string &s) const;
+
     /** 显式事务（Outbox SKIP LOCKED claim 等） */
     bool begin();
     bool commit();

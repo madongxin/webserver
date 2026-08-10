@@ -374,40 +374,55 @@ bool OrchestrateGatewayReconnect(const std::string &gateway_instance_id, uint64_
                 fs->add_item_counts(it.count());
             }
             std::string snap_payload;
-            if (!snap_rsp.SerializeToString(&snap_payload)) {
-                body->set_message("reconnect ok; full_snapshot_encode_failed_retry");
-            } else {
-                uint64_t seq = 0;
-                bool stored = true;
+            uint64_t seq = 0;
+            bool stored = true;
 #ifdef WEBSERVER_ENABLE_REDIS
-                if (PushReplayStore::Instance().Available()) {
-                    seq = PushReplayStore::Instance().AppendReliable(
-                        req.reconnect().player_id(), sid, "full_snapshot", snap_payload);
-                    stored = seq != 0;
-                    if (stored) {
-                        fs->set_baseline_server_seq(seq);
-                        snap_rsp.SerializeToString(&snap_payload);
-                    } else {
+            if (PushReplayStore::Instance().Available()) {
+                seq = PushReplayStore::Instance().ReserveSeq(req.reconnect().player_id(), sid);
+                if (seq == 0) {
+                    body->set_need_full_snapshot(true);
+                    body->set_message("reconnect ok; full_snapshot_reserve_failed_retry");
+                    stored = false;
+                } else {
+                    fs->set_baseline_server_seq(seq);
+                    if (!snap_rsp.SerializeToString(&snap_payload)) {
+                        body->set_need_full_snapshot(true);
+                        body->set_message("reconnect ok; full_snapshot_encode_failed_retry");
+                        stored = false;
+                    } else if (!PushReplayStore::Instance().AppendReserved(
+                                   req.reconnect().player_id(), sid, seq, "full_snapshot",
+                                   snap_payload)) {
                         body->set_need_full_snapshot(true);
                         body->set_message("reconnect ok; full_snapshot_store_failed_retry");
+                        stored = false;
                     }
                 }
+            } else if (!snap_rsp.SerializeToString(&snap_payload)) {
+                body->set_need_full_snapshot(true);
+                body->set_message("reconnect ok; full_snapshot_encode_failed_retry");
+                stored = false;
+            }
+#else
+            if (!snap_rsp.SerializeToString(&snap_payload)) {
+                body->set_need_full_snapshot(true);
+                body->set_message("reconnect ok; full_snapshot_encode_failed_retry");
+                stored = false;
+            }
 #endif
-                if (stored) {
-                    game::GameResponse env;
-                    env.set_ok(true);
-                    env.set_message("server_push");
-                    auto *p = env.mutable_server_push();
-                    p->set_server_seq(seq);
-                    p->set_message_type("full_snapshot");
-                    p->set_payload(snap_payload);
-                    p->set_reliable(true);
-                    std::string env_bytes;
-                    if (env.SerializeToString(&env_bytes))
-                        route_out->pending_push_payloads.push_back(std::move(env_bytes));
-                    else
-                        route_out->pending_push_payloads.push_back(std::move(snap_payload));
-                }
+            if (stored) {
+                game::GameResponse env;
+                env.set_ok(true);
+                env.set_message("server_push");
+                auto *p = env.mutable_server_push();
+                p->set_server_seq(seq);
+                p->set_message_type("full_snapshot");
+                p->set_payload(snap_payload);
+                p->set_reliable(true);
+                std::string env_bytes;
+                if (env.SerializeToString(&env_bytes))
+                    route_out->pending_push_payloads.push_back(std::move(env_bytes));
+                else
+                    route_out->pending_push_payloads.push_back(std::move(snap_payload));
             }
         }
     }

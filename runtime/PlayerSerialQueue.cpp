@@ -151,12 +151,12 @@ bool PlayerSerialQueue::CompleteAsyncInFlight(uint64_t player_id,
                                                std::function<void()> completion) {
     Shard *shard = ShardFor(player_id);
     if (!shard) {
+        // Stop 后：仍执行 completion，避免泄漏；调用方应保证此时不做业务状态写入依赖
         if (completion)
             completion();
         return true;
     }
-    if (pending_global_.load(std::memory_order_relaxed) >= max_global_ && completion)
-        return false;
+    // completion 不受外部 max_global 限制：已开始的异步必须能回投原玩家串行上下文
     {
         std::lock_guard<std::mutex> lk(shard->mu);
         shard->async_inflight.erase(player_id);

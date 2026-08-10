@@ -70,10 +70,18 @@ if [[ "${ENABLE_ASAN}" == "ON" && "${ENABLE_TSAN}" == "ON" ]]; then
 fi
 
 if [[ "${ENABLE_BRPC}" == "ON" ]]; then
-  if [[ ! -f /usr/local/include/brpc/server.h && ! -f /usr/include/brpc/server.h ]]; then
+  DEPS_PREFIX="${GAMEMESH_DEPS_PREFIX:-$HOME/.local/gamemesh-deps}"
+  if [[ ! -f /usr/local/include/brpc/server.h && ! -f /usr/include/brpc/server.h && \
+        ! -f "$DEPS_PREFIX/include/brpc/server.h" ]]; then
     echo "ERROR: ENABLE_BRPC=ON but brpc headers not found." >&2
     echo "       Install via ./scripts/install_deps.sh --build-brpc, or: ./scripts/build.sh ${BUILD_TYPE} --lowlevel" >&2
     exit 1
+  fi
+  if [[ -f "$DEPS_PREFIX/include/brpc/server.h" ]]; then
+    export CMAKE_PREFIX_PATH="${DEPS_PREFIX}${CMAKE_PREFIX_PATH:+:$CMAKE_PREFIX_PATH}"
+    export CPATH="${DEPS_PREFIX}/include${CPATH:+:$CPATH}"
+    export LIBRARY_PATH="${DEPS_PREFIX}/lib:${DEPS_PREFIX}/lib64${LIBRARY_PATH:+:$LIBRARY_PATH}"
+    export LD_LIBRARY_PATH="${DEPS_PREFIX}/lib:${DEPS_PREFIX}/lib64${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
   fi
 fi
 

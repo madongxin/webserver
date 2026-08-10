@@ -11,7 +11,7 @@ WORKDIR /src
 COPY . .
 # 若镜像未带 brpc：尝试 PREFIX 构建（需网络）；已存在则跳过
 RUN if [ ! -f /usr/local/include/brpc/server.h ] && [ ! -f /usr/include/brpc/server.h ]; then \
-      ./scripts/install_deps.sh --build-brpc --skip-checksum \
+      ./scripts/install_deps.sh --build-brpc \
       && export CPATH=/root/.local/gamemesh-deps/include:${CPATH:-} \
       && export LIBRARY_PATH=/root/.local/gamemesh-deps/lib:/root/.local/gamemesh-deps/lib64:${LIBRARY_PATH:-} \
       && export LD_LIBRARY_PATH=/root/.local/gamemesh-deps/lib:/root/.local/gamemesh-deps/lib64:${LD_LIBRARY_PATH:-} \

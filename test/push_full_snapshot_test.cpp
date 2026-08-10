@@ -1,6 +1,5 @@
 /**
- * 阶段一：FullSnapshot 失败语义 — 导出失败不得当作成功 baseline
- * （轻量：验证 PushReplayStore 在 Append 失败时 seq=0，调用方不得宣称成功）
+ * FullSnapshot 序列：Reserve → 编码 baseline → AppendReserved；Replay payload 一致
  */
 #include "PushReplayStore.h"
 #include "RedisConfigPath.h"
@@ -64,20 +63,23 @@ int main() {
         std::printf("FAIL init\n");
         return 1;
     }
-    // 无效参数 Append → seq=0，模拟 store 失败路径：不得当作 baseline 成功
-    const uint64_t bad = PushReplayStore::Instance().AppendReliable(0, "s", "full_snapshot", "x");
-    if (bad != 0) {
+    if (PushReplayStore::Instance().AppendReliable(0, "s", "full_snapshot", "x") != 0) {
         std::printf("FAIL expect seq=0 on invalid append\n");
         return 1;
     }
     const uint64_t player = 880001;
     const std::string sid = "snap-sess";
     PushReplayStore::Instance().InvalidateSession(player, sid);
-    const std::string payload = "full-snapshot-body";
-    const uint64_t seq =
-        PushReplayStore::Instance().AppendReliable(player, sid, "full_snapshot", payload);
+
+    const uint64_t seq = PushReplayStore::Instance().ReserveSeq(player, sid);
     if (seq == 0) {
-        std::printf("FAIL append snapshot\n");
+        std::printf("FAIL reserve\n");
+        return 1;
+    }
+    // 模拟 Orchestrator：先设 baseline=seq 再编码
+    const std::string payload = "full-snapshot-body|baseline=" + std::to_string(seq);
+    if (!PushReplayStore::Instance().AppendReserved(player, sid, seq, "full_snapshot", payload)) {
+        std::printf("FAIL append reserved\n");
         return 1;
     }
     std::vector<PushReplayEntry> out;
@@ -88,7 +90,13 @@ int main() {
     }
     if (out[0].server_seq != seq || out[0].message_type != "full_snapshot" ||
         out[0].payload != payload) {
-        std::printf("FAIL snapshot envelope mismatch\n");
+        std::printf("FAIL snapshot envelope mismatch seq=%llu payload=%s\n",
+                    (unsigned long long)out[0].server_seq, out[0].payload.c_str());
+        return 1;
+    }
+    // 错误 reserved seq 不得写入
+    if (PushReplayStore::Instance().AppendReserved(player, sid, seq + 99, "full_snapshot", "bad")) {
+        std::printf("FAIL mismatch should reject\n");
         return 1;
     }
     std::printf("OK push_full_snapshot_test seq=%llu\n", (unsigned long long)seq);

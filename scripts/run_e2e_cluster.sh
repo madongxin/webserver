@@ -10,6 +10,9 @@ export GAMEMESH_ADVERTISE_HOST="${GAMEMESH_ADVERTISE_HOST:-127.0.0.1}"
 export GAMEMESH_FORMAL="${GAMEMESH_FORMAL:-1}"
 export GAMEMESH_HTTP_BIND="${GAMEMESH_HTTP_BIND:-127.0.0.1}"
 export GAMEMESH_DRAIN_SEC="${GAMEMESH_DRAIN_SEC:-1}"
+# Placement 自动恢复：E2E 提高 SCAN 批量、缩短 Tick，减轻历史 map 键积压
+export GAMEMESH_PLACEMENT_SCAN_COUNT="${GAMEMESH_PLACEMENT_SCAN_COUNT:-256}"
+export GAMEMESH_PLACEMENT_RECOVER_IV="${GAMEMESH_PLACEMENT_RECOVER_IV:-2}"
 
 # 端口
 export GAMEMESH_HTTP_G0="${GAMEMESH_HTTP_G0:-19080}"
@@ -47,6 +50,8 @@ elif [[ -x "$ROOT/build/test/server" ]]; then
 fi
 mkdir -p "$GAMEMESH_RUN_DIR/logs"
 if [[ -n "$SESSION_BIN" ]]; then
+  # shellcheck disable=SC1090
+  source "$ROOT/scripts/e2e_inventory.sh"
   if [[ "$(basename "$SESSION_BIN")" == "server" ]]; then
     GAMEMESH_INSTANCE_ID=sess-1 nohup "$SESSION_BIN" session "$GAMEMESH_HTTP_S2" "$GAMEMESH_SESSION2" \
       >"$GAMEMESH_RUN_DIR/logs/session2.log" 2>&1 &
@@ -54,7 +59,9 @@ if [[ -n "$SESSION_BIN" ]]; then
     GAMEMESH_INSTANCE_ID=sess-1 nohup "$SESSION_BIN" "$GAMEMESH_HTTP_S2" "$GAMEMESH_SESSION2" \
       >"$GAMEMESH_RUN_DIR/logs/session2.log" 2>&1 &
   fi
-  echo $! >>"$GAMEMESH_RUN_DIR/pids"
+  pid=$!
+  echo "$pid" >>"$GAMEMESH_RUN_DIR/pids"
+  e2e_inv_append session sess-1 "$pid" "127.0.0.1:${GAMEMESH_SESSION2}" "$GAMEMESH_HTTP_S2" -
 fi
 
 # 写出客户端端口约定

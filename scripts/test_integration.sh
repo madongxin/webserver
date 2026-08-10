@@ -34,6 +34,7 @@ if [[ ! -x ./build/test/gamedb_snapshot_idempotency_test ]]; then
   exit 1
 fi
 ./build/test/gamedb_snapshot_idempotency_test
+./build/test/gamedb_mutation_idempotency_test
 ./build/test/gamedb_unknown_result_test
 if [[ -x ./build/test/phase3_gamedb_asset_test ]]; then
   ./build/test/phase3_gamedb_asset_test

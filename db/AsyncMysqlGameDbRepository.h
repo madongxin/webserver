@@ -25,7 +25,7 @@ public:
     void ClaimMailAttachmentsAsync(GameDbMailClaimRequest req, MailClaimDone done) override;
 
     /** 同步等待（供 MailService / 测试；勿在 Reactor IO 线程调用） */
-    GameDbMailClaimResult ClaimMailAttachments(GameDbMailClaimRequest req);
+    GameDbMailClaimResult ClaimMailAttachments(GameDbMailClaimRequest req) override;
 
     /** 测试：立刻跑一轮 outbox 发布 */
     int PublishOnceForTest(int limit = 100);

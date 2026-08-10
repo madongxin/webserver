@@ -14,6 +14,7 @@ run_asan() {
   ASAN_OPTIONS=detect_leaks=0 "$b/test/reactor_unit_test"
   ASAN_OPTIONS=detect_leaks=0 "$b/test/password_hash_test"
   ASAN_OPTIONS=detect_leaks=0 "$b/test/player_serial_async_test"
+  rm -rf "$b"
   echo "ASan PASS"
 }
 
@@ -25,6 +26,7 @@ run_ubsan() {
     GAMEMESH_BUILD_DIR="$b" ./scripts/build.sh Debug
   UBSAN_OPTIONS=print_stacktrace=1 "$b/test/reactor_unit_test"
   UBSAN_OPTIONS=print_stacktrace=1 "$b/test/password_hash_test"
+  rm -rf "$b"
   echo "UBSan PASS"
 }
 
@@ -33,18 +35,28 @@ run_tsan() {
   local b="$ROOT/build-tsan"
   rm -rf "$b"
   local tsan_opts="halt_on_error=1:suppressions=${ROOT}/tools/tsan_suppressions.txt"
-  if [[ -f /usr/local/include/brpc/server.h || -f /usr/include/brpc/server.h ]]; then
-    # ENABLE_BRPC 要求 MYSQL=ON（见 CMakeLists）；需系统 libtsan 运行时
+  local deps="${GAMEMESH_DEPS_PREFIX:-$HOME/.local/gamemesh-deps}"
+  local has_brpc=0
+  if [[ -f /usr/local/include/brpc/server.h || -f /usr/include/brpc/server.h || \
+        -f "$deps/include/brpc/server.h" ]]; then
+    has_brpc=1
+  fi
+  if [[ "$has_brpc" -eq 1 ]]; then
     ENABLE_TSAN=ON ENABLE_BRPC=ON ENABLE_MYSQL=ON ENABLE_REDIS=ON \
       GAMEMESH_BUILD_DIR="$b" ./scripts/build.sh Debug
     TSAN_OPTIONS="$tsan_opts" "$b/test/channel_snapshot_race_test"
     TSAN_OPTIONS="$tsan_opts" "$b/test/player_serial_async_test"
   else
+    if [[ "${GAMEMESH_REQUIRE_BRPC_TSAN:-0}" == "1" ]]; then
+      echo "ERROR: brpc required for TSan channel_snapshot_race_test (GAMEMESH_REQUIRE_BRPC_TSAN=1)" >&2
+      exit 1
+    fi
     ENABLE_TSAN=ON ENABLE_BRPC=OFF ENABLE_MYSQL=OFF ENABLE_REDIS=ON \
       GAMEMESH_BUILD_DIR="$b" ./scripts/build.sh Debug
     TSAN_OPTIONS="$tsan_opts" "$b/test/player_serial_async_test"
     echo "WARN: brpc missing — TSan channel_snapshot_race_test skipped"
   fi
+  rm -rf "$b"
   echo "TSan PASS"
 }
 

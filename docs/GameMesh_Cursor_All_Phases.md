@@ -1,8 +1,8 @@
 # GameMesh 分布式 MMO 游戏服务器：Cursor 全阶段实施提示词
 
-> 目标仓库：`https://github.com/madongxin/webserver`  
-> 目标分支：`main`  
-> 已确认基线提交：`7553123`  
+> 目标仓库：`https://github.com/madongxin/webserver`
+> 目标分支：`main`
+> 已确认基线提交：`7553123`
 > 技术基线：C++17、Reactor、ProtoFraming、brpc、Redis、MySQL、可选 etcd
 
 ## 如何使用

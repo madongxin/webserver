@@ -1,0 +1,36 @@
+# GameMesh toolchain image：固定 brpc 1.9.0 + protobuf/OpenSSL/MySQL client/hiredis/jsoncpp
+# 构建（需网络）:
+#   docker build -f Dockerfile.toolchain -t gamemesh-toolchain:brpc-1.9.0 .
+# CI/开发可将此镜像作为 build 基座，避免依赖 runner 预装 /usr/local/include/brpc。
+# 发布时请记录镜像 digest：docker image inspect --format='{{index .RepoDigests 0}}' ...
+FROM centos:8
+
+LABEL org.opencontainers.image.title="gamemesh-toolchain" \
+      org.opencontainers.image.description="GameMesh build toolchain with pinned brpc 1.9.0" \
+      gamemesh.brpc.version="1.9.0"
+
+RUN sed -i 's/mirrorlist/#mirrorlist/g; s|#baseurl=http://mirror.centos.org|baseurl=http://vault.centos.org|g' /etc/yum.repos.d/CentOS-*.repo \
+ && yum install -y gcc-c++ cmake make openssl-devel jsoncpp-devel protobuf-devel \
+      mysql-devel hiredis-devel leveldb-devel gflags-devel zlib-devel \
+      curl wget git ShellCheck \
+ && yum clean all
+
+WORKDIR /src
+COPY scripts/install_deps.sh scripts/check_deps.sh /tmp/gamemesh-scripts/
+# 仅构建 brpc：复制最小上下文时由外层 build 传入完整仓库更稳妥
+# 此处假定 build context 为仓库根：
+COPY . /src
+ENV GAMEMESH_DEPS_PREFIX=/opt/gamemesh-deps
+RUN ./scripts/install_deps.sh --build-brpc \
+ && ln -sfn /opt/gamemesh-deps/include/brpc /usr/local/include/brpc \
+ && ln -sfn /opt/gamemesh-deps/lib/libbrpc* /usr/local/lib64/ 2>/dev/null || true \
+ && ln -sfn /opt/gamemesh-deps/lib64/libbrpc* /usr/local/lib64/ 2>/dev/null || true \
+ && ./scripts/check_deps.sh --full
+
+ENV CMAKE_PREFIX_PATH=/opt/gamemesh-deps \
+    CPATH=/opt/gamemesh-deps/include \
+    LIBRARY_PATH=/opt/gamemesh-deps/lib:/opt/gamemesh-deps/lib64 \
+    LD_LIBRARY_PATH=/opt/gamemesh-deps/lib:/opt/gamemesh-deps/lib64
+
+WORKDIR /work
+CMD ["/bin/bash"]

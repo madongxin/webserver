@@ -1,9 +1,9 @@
 # GameMesh 分布式架构改造方案（正式基线）
 
-> **地位：** 后续所有架构改造以本文为准。  
-> **版本：** v1.0  
-> **日期：** 2026-08-06  
-> **输入材料：** `docs/archive/mmo_distributed_architecture_cpp17_gamelogic.md`（历史任务书，仅作参考）  
+> **地位：** 后续所有架构改造以本文为准。
+> **版本：** v1.0
+> **日期：** 2026-08-06
+> **输入材料：** `docs/archive/mmo_distributed_architecture_cpp17_gamelogic.md`（历史任务书，仅作参考）
 > **范围：** 本文只定义方案与阶段；**不要求立刻改代码**。实施时按阶段逐个垂直切片推进。
 
 ---
@@ -85,7 +85,7 @@
 
 ### 3.3 总体可行性一句话
 
-> ChatGPT 文档的**架构方向正确、适合作为目标态参考**；但按仓库现状，必须把「地图池 / etcd / NATS / 完整 Actor / 生产化」后移，**前 3～4 个阶段聚焦：解耦 IO、拆 Gateway/GameLogic、brpc 转发、Session 重连**。  
+> ChatGPT 文档的**架构方向正确、适合作为目标态参考**；但按仓库现状，必须把「地图池 / etcd / NATS / 完整 Actor / 生产化」后移，**前 3～4 个阶段聚焦：解耦 IO、拆 Gateway/GameLogic、brpc 转发、Session 重连**。
 > 在此约束下，方案**可行**，且与已有 Reactor + MySQL + Redis + brpc 高度契合。
 
 ---
@@ -253,7 +253,7 @@ Redis           MySQL ←───────────┘
 
 ## 8. 分阶段实施路线（后续按此改架构）
 
-> 每阶段结束必须：**可编译、有验收、可回滚到上一阶段行为**。  
+> 每阶段结束必须：**可编译、有验收、可回滚到上一阶段行为**。
 > 未完成上一阶段验收，不启动下一阶段。
 
 ### 阶段 0 — 基线冻结（不改行为）
@@ -392,12 +392,12 @@ Redis           MySQL ←───────────┘
 
 ### 11.1 登录（目标态）
 
-1. 客户端连任意 Gateway。  
-2. Auth 发短票据（密码不进 GameLogic）。  
-3. Session 串行占用 `player_id`，生成 `session_id/fence_token`。  
-4. 解析目标 GameLogic（无地图：按玩家绑定；有地图：经 MapPlacement）。  
-5. Logic `ClaimPlayer` → 异步加载 → Ready。  
-6. Gateway 原子绑定 `conn → session → logic(+map epoch)`。  
+1. 客户端连任意 Gateway。
+2. Auth 发短票据（密码不进 GameLogic）。
+3. Session 串行占用 `player_id`，生成 `session_id/fence_token`。
+4. 解析目标 GameLogic（无地图：按玩家绑定；有地图：经 MapPlacement）。
+5. Logic `ClaimPlayer` → 异步加载 → Ready。
+6. Gateway 原子绑定 `conn → session → logic(+map epoch)`。
 7. 后续命令由 Gateway 填可信路由字段，**不信任客户端自报**。
 
 ### 11.2 主动下线
@@ -469,7 +469,7 @@ Redis           MySQL ←───────────┘
 
 ## 16. 下一行动（人工触发）
 
-1. ~~阶段 0–6~~ 已完成 — 见 `docs/mmo-migration/STATUS.md`。  
-2. ~~独立 Session/GameDB + 薄生产化 + 多二进制（1B/2B）~~ — 已完成：零前缀多二进制、etcd/NATS/SSL 可选、kill/gray runbook、`run_midterm_local.sh`。  
-3. **完成标准（本切片）：** 五进程可启；Gateway→Session Login；邮件 Gateway→World→GameDB；无可选组件时行为与现网一致。  
+1. ~~阶段 0–6~~ 已完成 — 见 `docs/mmo-migration/STATUS.md`。
+2. ~~独立 Session/GameDB + 薄生产化 + 多二进制（1B/2B）~~ — 已完成：零前缀多二进制、etcd/NATS/SSL 可选、kill/gray runbook、`run_midterm_local.sh`。
+3. **完成标准（本切片）：** 五进程可启；Gateway→Session Login；邮件 Gateway→World→GameDB；无可选组件时行为与现网一致。
 4. 后续可选：Chat/Friend 产品逻辑、AOI/Tick、K8s 清单、etcd 热更（无需重启 Gateway）。

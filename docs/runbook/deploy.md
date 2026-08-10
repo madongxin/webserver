@@ -25,11 +25,15 @@
 ## Docker
 
 ```bash
-# 构建机需已具备 brpc（或先 ./scripts/install_deps.sh --build-brpc 并挂载 /usr/local）
+# 推荐：先构建工具链镜像（钉 brpc 1.9.0），再以其为 base 或挂载 PREFIX
+docker build -f Dockerfile.toolchain -t gamemesh-toolchain:brpc-1.9.0 .
+# 应用镜像：build 阶段会执行 install_deps.sh --build-brpc（需网络）
 docker build -t gamemesh:local .
 docker compose -f compose.yml config
 # 角色: gateway|session|gamelogic|world|gamedb （entrypoint argv）
 ```
+
+报告与候选发布：`./scripts/stable_gate.sh --full` → `run/release/<commit>/manifest.json`。
 
 ## 滚动升级要点
 

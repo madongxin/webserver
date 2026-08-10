@@ -58,6 +58,34 @@ redis.call('EXPIRE', seq_key, ttl)
 return {tostring(seq)}
 )LUA";
 
+const char kLuaReserve[] = R"LUA(
+local seq_key = KEYS[1]
+local ttl = tonumber(ARGV[1])
+local seq = redis.call('INCR', seq_key)
+if ttl and ttl > 0 then redis.call('EXPIRE', seq_key, ttl) end
+return {tostring(seq)}
+)LUA";
+
+const char kLuaAppendReserved[] = R"LUA(
+local seq_key = KEYS[1]
+local list_key = KEYS[2]
+local want = tonumber(ARGV[1])
+local typ = ARGV[2]
+local payload = ARGV[3]
+local cap = tonumber(ARGV[4])
+local ttl = tonumber(ARGV[5])
+local cur = tonumber(redis.call('GET', seq_key) or '0') or 0
+if cur ~= want then
+  return {'0', 'SEQ_MISMATCH'}
+end
+local entry = tostring(want) .. '\t' .. tostring(string.len(typ)) .. '\t' .. typ .. '\t' .. tostring(string.len(payload)) .. '\t' .. payload
+redis.call('RPUSH', list_key, entry)
+redis.call('LTRIM', list_key, -cap, -1)
+redis.call('EXPIRE', list_key, ttl)
+redis.call('EXPIRE', seq_key, ttl)
+return {'1', 'OK'}
+)LUA";
+
 const char kLuaReplay[] = R"LUA(
 local list_key = KEYS[1]
 local seq_key = KEYS[2]
@@ -172,6 +200,37 @@ uint64_t PushReplayStore::AppendReliable(uint64_t player_id, const std::string &
     if (!lease->Eval(kLuaAppend, keys, args, &reply) || reply.empty())
         return 0;
     return std::strtoull(reply[0].c_str(), nullptr, 10);
+}
+
+uint64_t PushReplayStore::ReserveSeq(uint64_t player_id, const std::string &session_id) {
+    if (!available_ || player_id == 0 || session_id.empty())
+        return 0;
+    auto lease = RedisPool::Instance().Acquire();
+    if (!lease)
+        return 0;
+    std::vector<std::string> keys{SeqKey(player_id, session_id)};
+    std::vector<std::string> args{std::to_string(ttl_sec_)};
+    std::vector<std::string> reply;
+    if (!lease->Eval(kLuaReserve, keys, args, &reply) || reply.empty())
+        return 0;
+    return std::strtoull(reply[0].c_str(), nullptr, 10);
+}
+
+bool PushReplayStore::AppendReserved(uint64_t player_id, const std::string &session_id,
+                                     uint64_t reserved_seq, const std::string &message_type,
+                                     const std::string &payload) {
+    if (!available_ || player_id == 0 || session_id.empty() || reserved_seq == 0)
+        return false;
+    auto lease = RedisPool::Instance().Acquire();
+    if (!lease)
+        return false;
+    std::vector<std::string> keys{SeqKey(player_id, session_id), ListKey(player_id, session_id)};
+    std::vector<std::string> args{std::to_string(reserved_seq), message_type, payload,
+                                  std::to_string(cap_), std::to_string(ttl_sec_)};
+    std::vector<std::string> reply;
+    if (!lease->Eval(kLuaAppendReserved, keys, args, &reply) || reply.empty())
+        return false;
+    return reply[0] == "1";
 }
 
 bool PushReplayStore::ReplayAfter(uint64_t player_id, const std::string &session_id,

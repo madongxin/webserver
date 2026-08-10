@@ -1,6 +1,6 @@
 # 三阶段整改：多步骤拆解与进度
 
-> 对照：`docs/GameMesh_Cursor_Three_Phase_Remediation.md`  
+> 对照：`docs/GameMesh_Cursor_Three_Phase_Remediation.md`
 > 规则：阶段一门禁通过前不开始阶段二；阶段二通过前不开始阶段三。默认不 git commit/push。
 
 ## 阶段一 — 分布式核心正确性（完成）

@@ -18,12 +18,22 @@ if [[ ! -f "$RUN_DIR/pids" ]]; then
   exit 1
 fi
 
-mapfile -t PIDS <"$RUN_DIR/pids"
-# start_formal: [1]=gamedb0
-DB0_PID="${GAMEDB0_PID:-${PIDS[1]:-}}"
+# shellcheck disable=SC1090
+source "$ROOT/scripts/e2e_inventory.sh"
+export GAMEMESH_RUN_DIR="$RUN_DIR"
+DB0_PID="${GAMEDB0_PID:-}"
+if [[ -z "$DB0_PID" ]]; then
+  DB0_PID="$(e2e_pid_of gamedb gamedb-0 2>/dev/null || true)"
+fi
+if [[ -z "$DB0_PID" ]]; then
+  mapfile -t PIDS <"$RUN_DIR/pids"
+  DB0_PID="${PIDS[1]:-}"
+fi
+DB0_HTTP="$(e2e_http_of gamedb gamedb-0 2>/dev/null || echo "$DB0")"
+DB1_HTTP="$(e2e_http_of gamedb gamedb-1 2>/dev/null || echo "$DB1")"
 if [[ -z "$DB0_PID" ]] || ! kill -0 "$DB0_PID" 2>/dev/null; then
   if command -v ss >/dev/null 2>&1; then
-    DB0_PID="$(ss -lptn "sport = :${DB0}" 2>/dev/null | sed -n 's/.*pid=\([0-9]*\).*/\1/p' | head -1 || true)"
+    DB0_PID="$(ss -lptn "sport = :${DB0_HTTP}" 2>/dev/null | sed -n 's/.*pid=\([0-9]*\).*/\1/p' | head -1 || true)"
   fi
 fi
 if [[ -z "$DB0_PID" ]] || ! kill -0 "$DB0_PID" 2>/dev/null; then
@@ -31,7 +41,7 @@ if [[ -z "$DB0_PID" ]] || ! kill -0 "$DB0_PID" 2>/dev/null; then
   exit 1
 fi
 
-curl -fsS -m 3 "http://${HOST}:${DB0}/health/ready" | grep -q '"ready":true' || {
+curl -fsS -m 3 "http://${HOST}:${DB0_HTTP}/health/ready" | grep -q '"ready":true' || {
   echo "ERROR: gamedb0 not ready before kill" >&2
   exit 1
 }
@@ -43,17 +53,18 @@ if kill -0 "$DB0_PID" 2>/dev/null; then
   echo "ERROR: gamedb0 still alive" >&2
   exit 1
 fi
-if curl -fsS -m 2 "http://${HOST}:${DB0}/health/live" >/dev/null 2>&1; then
+if curl -fsS -m 2 "http://${HOST}:${DB0_HTTP}/health/live" >/dev/null 2>&1; then
   echo "ERROR: killed gamedb0 still answering" >&2
   exit 1
 fi
 
 # 若有 gamedb1：必须仍 ready（多实例分担）
-if curl -fsS -m 2 "http://${HOST}:${DB1}/api/version" 2>/dev/null | grep -q gamedb; then
-  curl -fsS -m 3 "http://${HOST}:${DB1}/health/ready" | grep -q '"ready":true'
+if curl -fsS -m 2 "http://${HOST}:${DB1_HTTP}/api/version" 2>/dev/null | grep -q gamedb; then
+  curl -fsS -m 3 "http://${HOST}:${DB1_HTTP}/health/ready" | grep -q '"ready":true'
   echo "gamedb1 survivor ready"
 else
-  echo "WARN: no gamedb1 on ${DB1}; single-node GameDB SPOF confirmed for this topology"
+  echo "ERROR: no gamedb1 on ${DB1_HTTP}; HA topology required" >&2
+  exit 1
 fi
 
 echo "kill_gamedb_drill.sh PASS"

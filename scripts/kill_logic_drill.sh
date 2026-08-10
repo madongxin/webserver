@@ -1,51 +1,35 @@
 #!/usr/bin/env bash
-# 阶段 4 门禁：真实 SIGKILL Owner GameLogic，再 MarkRecovering+Migrate 校验更高 epoch
+# SIGKILL gl-0；按 inventory 查 PID（兼容旧 pids[4]）
 set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
+# shellcheck disable=SC1090
+source "$ROOT/scripts/e2e_inventory.sh"
 
-RUN_DIR="${GAMEMESH_RUN_DIR:-$ROOT/run/cluster}"
-if [[ ! -f "$RUN_DIR/pids" ]]; then
-  RUN_DIR="$ROOT/run/formal"
-fi
-if [[ ! -f "$RUN_DIR/pids" ]]; then
-  RUN_DIR="$ROOT/run/e2e"
-fi
+RUN_DIR="${GAMEMESH_RUN_DIR:-$ROOT/run/e2e}"
+export GAMEMESH_RUN_DIR="$RUN_DIR"
 PREFIX="${GAMEMESH_REDIS_PREFIX:-gamemesh:dev:}"
 NEW_OWNER="${NEW_OWNER:-gl-1}"
 LEASE_WAIT="${LEASE_WAIT:-1}"
 DRILL_BIN="$ROOT/build/test/map_lease_drill"
 
 REDIS_PASS=""
-if [[ -f "$ROOT/config/redis.cnf" ]]; then
-  REDIS_PASS="$(awk -F= '/^password=/{print $2; exit}' "$ROOT/config/redis.cnf")"
-fi
+[[ -f "$ROOT/config/redis.cnf" ]] && REDIS_PASS="$(awk -F= '/^password=/{print $2; exit}' "$ROOT/config/redis.cnf")"
 RCLI=(redis-cli)
 [[ -n "$REDIS_PASS" ]] && RCLI=(redis-cli -a "$REDIS_PASS" --no-auth-warning)
 
-if [[ ! -f "$RUN_DIR/pids" ]]; then
-  echo "ERROR: cluster not running. Start: ./scripts/run_cluster_local.sh" >&2
-  exit 1
-fi
-if [[ ! -x "$DRILL_BIN" ]]; then
-  echo "ERROR: missing $DRILL_BIN (./scripts/build.sh Debug)" >&2
-  exit 1
-fi
-if ! command -v redis-cli >/dev/null 2>&1; then
-  echo "ERROR: redis-cli required" >&2
-  exit 1
-fi
+[[ -f "$RUN_DIR/pids" ]] || { echo "ERROR: cluster not running"; exit 1; }
+[[ -x "$DRILL_BIN" ]] || { echo "ERROR: missing map_lease_drill"; exit 1; }
 
-mapfile -t PIDS <"$RUN_DIR/pids"
-if (( ${#PIDS[@]} < 6 )); then
-  echo "ERROR: unexpected pid count=${#PIDS[@]}" >&2
-  exit 1
+LOGIC0_PID=""
+if LOGIC0_PID="$(e2e_pid_of gamelogic gl-0 2>/dev/null)"; then
+  :
+else
+  mapfile -t PIDS <"$RUN_DIR/pids"
+  LOGIC0_PID="${PIDS[4]:-}"
 fi
-LOGIC0_PID="${PIDS[4]}"
-if ! kill -0 "$LOGIC0_PID" 2>/dev/null; then
-  echo "ERROR: logic0 pid=$LOGIC0_PID not alive" >&2
-  exit 1
-fi
+[[ -n "$LOGIC0_PID" ]] || { echo "ERROR: gl-0 pid missing"; exit 1; }
+kill -0 "$LOGIC0_PID" 2>/dev/null || { echo "ERROR: gl-0 not alive"; exit 1; }
 
 MAP_ID="${MAP_ID:-}"
 if [[ -z "$MAP_ID" ]]; then
@@ -58,27 +42,32 @@ if [[ -z "$MAP_ID" ]]; then
     fi
   done || true)"
 fi
-if [[ -z "$MAP_ID" ]]; then
-  echo "ERROR: no READY map owned by gl-0; EnterMap first or set MAP_ID=" >&2
-  exit 1
-fi
+[[ -n "$MAP_ID" ]] || { echo "ERROR: no READY map on gl-0"; exit 1; }
 
 KEY="${PREFIX}map:inst:${MAP_ID}"
 OLD_EPOCH="$("${RCLI[@]}" HGET "$KEY" ownerEpoch)"
-[[ "$OLD_EPOCH" =~ ^[0-9]+$ ]] || { echo "ERROR: bad ownerEpoch='$OLD_EPOCH'"; exit 1; }
-echo "drill: map=$MAP_ID old_epoch=$OLD_EPOCH SIGKILL logic0=$LOGIC0_PID -> $NEW_OWNER"
+[[ "$OLD_EPOCH" =~ ^[0-9]+$ ]] || { echo "ERROR: bad epoch"; exit 1; }
+echo "drill: map=$MAP_ID old_epoch=$OLD_EPOCH SIGKILL gl-0=$LOGIC0_PID -> $NEW_OWNER"
 
 kill -9 "$LOGIC0_PID"
 sleep "$LEASE_WAIT"
 if kill -0 "$LOGIC0_PID" 2>/dev/null; then
-  echo "ERROR: process still alive after SIGKILL" >&2
-  exit 1
+  echo "ERROR: still alive"; exit 1
+fi
+
+# 立刻摘除死实例发现，避免 Session 继续把新登录 sticky 到 gl-0
+"${RCLI[@]}" DEL "${PREFIX}svc:gamelogic:gl-0" >/dev/null 2>&1 || true
+"${RCLI[@]}" SREM "${PREFIX}svcidx:gamelogic" gl-0 >/dev/null 2>&1 || true
+
+# 加速本 map 的 lease 过期，仍由 PlacementRecoveryScheduler 自动 Migrate（非手工 drill）
+if [[ "${AUTO_RECOVER:-0}" == "1" ]]; then
+  "${RCLI[@]}" HSET "$KEY" leaseUntil 1 >/dev/null || true
 fi
 
 if [[ "${AUTO_RECOVER:-0}" == "1" ]]; then
-  echo "waiting auto PlacementRecoveryScheduler..."
   ok=0
-  for _ in $(seq 1 40); do
+  # 默认扫描积压时可能多轮 Tick；最多约 2 分钟
+  for _ in $(seq 1 "${RECOVER_POLL_SEC:-120}"); do
     st="$("${RCLI[@]}" HGET "$KEY" state || true)"
     own="$("${RCLI[@]}" HGET "$KEY" ownerLogicServerId || true)"
     ep="$("${RCLI[@]}" HGET "$KEY" ownerEpoch || true)"
@@ -88,17 +77,16 @@ if [[ "${AUTO_RECOVER:-0}" == "1" ]]; then
     fi
     sleep 1
   done
-  if [[ "$ok" -ne 1 ]]; then
-    echo "ERROR: auto recover timeout state=$("${RCLI[@]}" HGET "$KEY" state) owner=$("${RCLI[@]}" HGET "$KEY" ownerLogicServerId)" >&2
+  [[ "$ok" -eq 1 ]] || {
+    echo "ERROR: auto recover timeout state=$(${RCLI[@]} HGET "$KEY" state) owner=$(${RCLI[@]} HGET "$KEY" ownerLogicServerId) epoch=$(${RCLI[@]} HGET "$KEY" ownerEpoch)"
     exit 1
-  fi
+  }
 else
   "$DRILL_BIN" "$MAP_ID" "$NEW_OWNER" "$OLD_EPOCH"
 fi
 
 NEW_EPOCH="$("${RCLI[@]}" HGET "$KEY" ownerEpoch)"
 NEW_OWNER_GOT="$("${RCLI[@]}" HGET "$KEY" ownerLogicServerId)"
-echo "after: owner=$NEW_OWNER_GOT epoch=$NEW_EPOCH"
 [[ "$NEW_OWNER_GOT" == "$NEW_OWNER" ]]
 [[ "$NEW_EPOCH" -gt "$OLD_EPOCH" ]]
-echo "kill_logic_drill.sh PASS (real SIGKILL + epoch bump; auto=${AUTO_RECOVER:-0})"
+echo "kill_logic_drill.sh PASS auto=${AUTO_RECOVER:-0}"

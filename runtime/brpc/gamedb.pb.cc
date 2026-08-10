@@ -746,6 +746,7 @@ const ::google::protobuf::uint32 TableStruct::offsets[] GOOGLE_PROTOBUF_ATTRIBUT
   GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::gdb::QueryOperationResultRsp, asset_version_),
   GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::gdb::QueryOperationResultRsp, remain_count_),
   GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::gdb::QueryOperationResultRsp, request_hash_),
+  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::gdb::QueryOperationResultRsp, status_),
 };
 static const ::google::protobuf::internal::MigrationSchema schemas[] GOOGLE_PROTOBUF_ATTRIBUTE_SECTION_VARIABLE(protodesc_cold) = {
   { 0, -1, sizeof(::gdb::GrantedItem)},
@@ -869,30 +870,31 @@ void AddDescriptorsImpl() {
       "\001(\t\022\025\n\rasset_version\030\004 \001(\004\"]\n\027QueryOpera"
       "tionResultReq\022\021\n\tplayer_id\030\001 \001(\004\022\027\n\017idem"
       "potency_key\030\002 \001(\t\022\026\n\016operation_type\030\003 \001("
-      "\t\"\312\001\n\027QueryOperationResultRsp\022\n\n\002ok\030\001 \001("
+      "\t\"\332\001\n\027QueryOperationResultRsp\022\n\n\002ok\030\001 \001("
       "\010\022\017\n\007message\030\002 \001(\t\022\022\n\nerror_code\030\003 \001(\t\022\r"
       "\n\005found\030\004 \001(\010\022\024\n\014completed_ok\030\005 \001(\010\022\026\n\016i"
       "dempotent_hit\030\006 \001(\010\022\025\n\rasset_version\030\007 \001"
       "(\004\022\024\n\014remain_count\030\010 \001(\r\022\024\n\014request_hash"
-      "\030\t \001(\t2\345\004\n\rGameDbService\022<\n\024ClaimMailAtt"
-      "achments\022\021.gdb.ClaimMailReq\032\021.gdb.ClaimM"
-      "ailRsp\022=\n\rLookupAccount\022\025.gdb.LookupAcco"
-      "untReq\032\025.gdb.LookupAccountRsp\022C\n\017Registe"
-      "rAccount\022\027.gdb.RegisterAccountReq\032\027.gdb."
-      "RegisterAccountRsp\0224\n\nLoadPlayer\022\022.gdb.L"
-      "oadPlayerReq\032\022.gdb.LoadPlayerRsp\022=\n\rLoad"
-      "Inventory\022\025.gdb.LoadInventoryReq\032\025.gdb.L"
-      "oadInventoryRsp\022B\n\022ApplyAssetMutation\022\025."
-      "gdb.AssetMutationReq\032\025.gdb.AssetMutation"
-      "Rsp\022L\n\022SavePlayerSnapshot\022\032.gdb.SavePlay"
-      "erSnapshotReq\032\032.gdb.SavePlayerSnapshotRs"
-      "p\0227\n\013FlushPlayer\022\023.gdb.FlushPlayerReq\032\023."
-      "gdb.FlushPlayerRsp\022R\n\024QueryOperationResu"
-      "lt\022\034.gdb.QueryOperationResultReq\032\034.gdb.Q"
-      "ueryOperationResultRspB\003\200\001\001b\006proto3"
+      "\030\t \001(\t\022\016\n\006status\030\n \001(\t2\345\004\n\rGameDbService"
+      "\022<\n\024ClaimMailAttachments\022\021.gdb.ClaimMail"
+      "Req\032\021.gdb.ClaimMailRsp\022=\n\rLookupAccount\022"
+      "\025.gdb.LookupAccountReq\032\025.gdb.LookupAccou"
+      "ntRsp\022C\n\017RegisterAccount\022\027.gdb.RegisterA"
+      "ccountReq\032\027.gdb.RegisterAccountRsp\0224\n\nLo"
+      "adPlayer\022\022.gdb.LoadPlayerReq\032\022.gdb.LoadP"
+      "layerRsp\022=\n\rLoadInventory\022\025.gdb.LoadInve"
+      "ntoryReq\032\025.gdb.LoadInventoryRsp\022B\n\022Apply"
+      "AssetMutation\022\025.gdb.AssetMutationReq\032\025.g"
+      "db.AssetMutationRsp\022L\n\022SavePlayerSnapsho"
+      "t\022\032.gdb.SavePlayerSnapshotReq\032\032.gdb.Save"
+      "PlayerSnapshotRsp\0227\n\013FlushPlayer\022\023.gdb.F"
+      "lushPlayerReq\032\023.gdb.FlushPlayerRsp\022R\n\024Qu"
+      "eryOperationResult\022\034.gdb.QueryOperationR"
+      "esultReq\032\034.gdb.QueryOperationResultRspB\003"
+      "\200\001\001b\006proto3"
   };
   ::google::protobuf::DescriptorPool::InternalAddGeneratedFile(
-      descriptor, 2995);
+      descriptor, 3011);
   ::google::protobuf::MessageFactory::InternalRegisterGeneratedFile(
     "gamedb.proto", &protobuf_RegisterTypes);
 }
@@ -8678,6 +8680,7 @@ const int QueryOperationResultRsp::kIdempotentHitFieldNumber;
 const int QueryOperationResultRsp::kAssetVersionFieldNumber;
 const int QueryOperationResultRsp::kRemainCountFieldNumber;
 const int QueryOperationResultRsp::kRequestHashFieldNumber;
+const int QueryOperationResultRsp::kStatusFieldNumber;
 #endif  // !defined(_MSC_VER) || _MSC_VER >= 1900
 
 QueryOperationResultRsp::QueryOperationResultRsp()
@@ -8705,6 +8708,10 @@ QueryOperationResultRsp::QueryOperationResultRsp(const QueryOperationResultRsp& 
   if (from.request_hash().size() > 0) {
     request_hash_.AssignWithDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), from.request_hash_);
   }
+  status_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  if (from.status().size() > 0) {
+    status_.AssignWithDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), from.status_);
+  }
   ::memcpy(&ok_, &from.ok_,
     static_cast<size_t>(reinterpret_cast<char*>(&asset_version_) -
     reinterpret_cast<char*>(&ok_)) + sizeof(asset_version_));
@@ -8715,6 +8722,7 @@ void QueryOperationResultRsp::SharedCtor() {
   message_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
   error_code_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
   request_hash_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  status_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
   ::memset(&ok_, 0, static_cast<size_t>(
       reinterpret_cast<char*>(&asset_version_) -
       reinterpret_cast<char*>(&ok_)) + sizeof(asset_version_));
@@ -8730,6 +8738,7 @@ void QueryOperationResultRsp::SharedDtor() {
   message_.DestroyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
   error_code_.DestroyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
   request_hash_.DestroyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  status_.DestroyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
 }
 
 void QueryOperationResultRsp::SetCachedSize(int size) const {
@@ -8764,6 +8773,7 @@ void QueryOperationResultRsp::Clear() {
   message_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
   error_code_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
   request_hash_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  status_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
   ::memset(&ok_, 0, static_cast<size_t>(
       reinterpret_cast<char*>(&asset_version_) -
       reinterpret_cast<char*>(&ok_)) + sizeof(asset_version_));
@@ -8912,6 +8922,22 @@ bool QueryOperationResultRsp::MergePartialFromCodedStream(
         break;
       }
 
+      // string status = 10;
+      case 10: {
+        if (static_cast< ::google::protobuf::uint8>(tag) ==
+            static_cast< ::google::protobuf::uint8>(82u /* 82 & 0xFF */)) {
+          DO_(::google::protobuf::internal::WireFormatLite::ReadString(
+                input, this->mutable_status()));
+          DO_(::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+            this->status().data(), static_cast<int>(this->status().length()),
+            ::google::protobuf::internal::WireFormatLite::PARSE,
+            "gdb.QueryOperationResultRsp.status"));
+        } else {
+          goto handle_unusual;
+        }
+        break;
+      }
+
       default: {
       handle_unusual:
         if (tag == 0) {
@@ -8998,6 +9024,16 @@ void QueryOperationResultRsp::SerializeWithCachedSizes(
       9, this->request_hash(), output);
   }
 
+  // string status = 10;
+  if (this->status().size() > 0) {
+    ::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+      this->status().data(), static_cast<int>(this->status().length()),
+      ::google::protobuf::internal::WireFormatLite::SERIALIZE,
+      "gdb.QueryOperationResultRsp.status");
+    ::google::protobuf::internal::WireFormatLite::WriteStringMaybeAliased(
+      10, this->status(), output);
+  }
+
   if ((_internal_metadata_.have_unknown_fields() &&  ::google::protobuf::internal::GetProto3PreserveUnknownsDefault())) {
     ::google::protobuf::internal::WireFormat::SerializeUnknownFields(
         (::google::protobuf::internal::GetProto3PreserveUnknownsDefault()   ? _internal_metadata_.unknown_fields()   : _internal_metadata_.default_instance()), output);
@@ -9075,6 +9111,17 @@ void QueryOperationResultRsp::SerializeWithCachedSizes(
         9, this->request_hash(), target);
   }
 
+  // string status = 10;
+  if (this->status().size() > 0) {
+    ::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+      this->status().data(), static_cast<int>(this->status().length()),
+      ::google::protobuf::internal::WireFormatLite::SERIALIZE,
+      "gdb.QueryOperationResultRsp.status");
+    target =
+      ::google::protobuf::internal::WireFormatLite::WriteStringToArray(
+        10, this->status(), target);
+  }
+
   if ((_internal_metadata_.have_unknown_fields() &&  ::google::protobuf::internal::GetProto3PreserveUnknownsDefault())) {
     target = ::google::protobuf::internal::WireFormat::SerializeUnknownFieldsToArray(
         (::google::protobuf::internal::GetProto3PreserveUnknownsDefault()   ? _internal_metadata_.unknown_fields()   : _internal_metadata_.default_instance()), target);
@@ -9111,6 +9158,13 @@ size_t QueryOperationResultRsp::ByteSizeLong() const {
     total_size += 1 +
       ::google::protobuf::internal::WireFormatLite::StringSize(
         this->request_hash());
+  }
+
+  // string status = 10;
+  if (this->status().size() > 0) {
+    total_size += 1 +
+      ::google::protobuf::internal::WireFormatLite::StringSize(
+        this->status());
   }
 
   // bool ok = 1;
@@ -9188,6 +9242,10 @@ void QueryOperationResultRsp::MergeFrom(const QueryOperationResultRsp& from) {
 
     request_hash_.AssignWithDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), from.request_hash_);
   }
+  if (from.status().size() > 0) {
+
+    status_.AssignWithDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), from.status_);
+  }
   if (from.ok() != 0) {
     set_ok(from.ok());
   }
@@ -9235,6 +9293,7 @@ void QueryOperationResultRsp::InternalSwap(QueryOperationResultRsp* other) {
   message_.Swap(&other->message_);
   error_code_.Swap(&other->error_code_);
   request_hash_.Swap(&other->request_hash_);
+  status_.Swap(&other->status_);
   swap(ok_, other->ok_);
   swap(found_, other->found_);
   swap(completed_ok_, other->completed_ok_);

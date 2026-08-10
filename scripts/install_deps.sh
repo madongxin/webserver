@@ -14,9 +14,8 @@ cd "$ROOT"
 
 PREFIX="${GAMEMESH_DEPS_PREFIX:-$HOME/.local/gamemesh-deps}"
 BRPC_VER="${GAMEMESH_BRPC_VERSION:-1.9.0}"
-# apache/brpc release tarball sha256 for 1.9.0 (update when bumping)
-BRPC_SHA256="${GAMEMESH_BRPC_SHA256:-2e5c7e9e9c0e8c0c8f0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0}"
-# 真实校验：下载后用 sha256sum 对账；未知时 --skip-checksum
+# apache/brpc 1.9.0 tarball sha256 (github tags/1.9.0); bump with version
+BRPC_SHA256="${GAMEMESH_BRPC_SHA256:-85856da0216773e1296834116f69f9e80007b7ff421db3be5c9d1890ecfaea74}"
 SKIP_CHECKSUM=0
 BUILD_BRPC=0
 CHECK_ONLY=0
@@ -97,13 +96,9 @@ if [[ ! -f "$TGZ" ]]; then
 fi
 
 if [[ "$SKIP_CHECKSUM" -eq 0 ]]; then
-  if [[ "$BRPC_SHA256" == 2e5c7e9e* ]]; then
-    warn "BRPC_SHA256 placeholder — computing and printing actual digest (set GAMEMESH_BRPC_SHA256 to pin)"
-    sha256sum "$TGZ"
-    SKIP_CHECKSUM=1
-  else
-    echo "${BRPC_SHA256}  ${TGZ}" | sha256sum -c -
-  fi
+  echo "${BRPC_SHA256}  ${TGZ}" | sha256sum -c -
+else
+  warn "checksum skipped (--skip-checksum); not for release CI"
 fi
 
 if [[ ! -d "$SRC" ]]; then

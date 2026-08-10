@@ -1,6 +1,6 @@
 # 工作包一进度（稳定服务器）
 
-对照：`docs/GameMesh_Cursor_Stable_Server_And_Unity_Preparation.md`  
+对照：`docs/GameMesh_Cursor_Stable_Server_And_Unity_Preparation.md`
 基线：`57e9393` + 本工作区未提交改动；**未宣称稳定版本通过**（Release/ASan/20×E2E/soak 未全跑前保持 BLOCKED）。
 
 | 章节 | 内容 | 状态 |

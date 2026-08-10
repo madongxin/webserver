@@ -1,6 +1,6 @@
 # Distributed Remediation Progress
 
-> 对照：`docs/GameMesh_Cursor_Distributed_Server_Remediation.md`  
+> 对照：`docs/GameMesh_Cursor_Distributed_Server_Remediation.md`
 > 说明：本文件阶段编号与 `PHASE*_STATUS.md`（All_Phases MVP）**不是同一套编号**。
 
 ## Baseline

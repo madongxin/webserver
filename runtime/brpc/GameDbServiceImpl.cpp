@@ -3,11 +3,14 @@
 #include "AsyncMysqlGameDbRepository.h"
 #include "GameDbAssetStore.h"
 #include "IGameDbRepository.h"
+#include "Logging.h"
 #include "PlayerAccountStore.h"
 
 #include <brpc/controller.h>
 
+#include <cstdlib>
 #include <map>
+#include <unistd.h>
 
 void GameDbServiceImpl::ClaimMailAttachments(::google::protobuf::RpcController *controller,
                                              const ::gdb::ClaimMailReq *request,
@@ -219,6 +222,18 @@ void GameDbServiceImpl::ApplyAssetMutation(::google::protobuf::RpcController *co
         response->set_remain_count(r.remain_count);
         return;
     }
+    // 测试 failpoint：提交后、响应前延迟/退出（正式环境勿设）
+    if (const char *delay = std::getenv("GAMEMESH_FAILPOINT_DELAY_MS")) {
+        const int ms = std::atoi(delay);
+        if (ms > 0)
+            ::usleep(static_cast<useconds_t>(ms) * 1000);
+    }
+    if (const char *abort = std::getenv("GAMEMESH_FAILPOINT_ABORT_AFTER_COMMIT")) {
+        if (abort[0] == '1') {
+            LOG_ERROR << "FAILPOINT abort after commit player=" << request->player_id();
+            ::_exit(97);
+        }
+    }
     response->set_ok(true);
     response->set_idempotent_hit(r.idempotent_hit);
     response->set_message(r.message);
@@ -297,6 +312,9 @@ void GameDbServiceImpl::QueryOperationResult(::google::protobuf::RpcController *
     response->set_asset_version(q.asset_version);
     response->set_remain_count(q.remain_count);
     response->set_request_hash(q.request_hash);
+    response->set_status(q.status.empty() ? (q.found ? (q.completed_ok ? "SUCCEEDED" : "FAILED")
+                                                     : "NOT_FOUND")
+                                          : q.status);
 #else
     response->set_ok(false);
     response->set_error_code("MYSQL_DISABLED");

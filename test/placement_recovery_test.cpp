@@ -70,6 +70,10 @@ int main() {
     if (!PlacementStore::Instance().InitFromSessionPrefix(prefix, 2))
         return Fail("init");
     PlacementStore::Instance().SetLogicOwners({"gl-0", "gl-1"});
+    // 隔离 leader key，避免被线上/E2E Session 占用导致 Tick 空跑
+    PlacementRecoveryScheduler::Instance().SetKeyPrefix(prefix);
+    PlacementRecoveryScheduler::Instance().SetInstanceId("placement-recovery-test");
+    PlacementRecoveryScheduler::Instance().SetLeaderLeaseSec(5);
 
     ResolveOrCreateInput in;
     in.realm_id = 1;
@@ -86,18 +90,21 @@ int main() {
     std::this_thread::sleep_for(std::chrono::seconds(3));
 
     PlacementRecoveryScheduler::Instance().SetScanCount(64);
-    for (int i = 0; i < 5; ++i)
-        PlacementRecoveryScheduler::Instance().Tick();
-
     PlacementRecord rec;
-    if (!PlacementStore::Instance().Get(mid, &rec))
-        return Fail("get after recover");
-    if (rec.state != PlacementState::Ready)
-        return Fail("not READY after auto migrate");
-    if (rec.owner_logic_server_id.empty() || rec.owner_logic_server_id == old_owner)
+    bool switched = false;
+    const auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds(10);
+    while (std::chrono::steady_clock::now() < deadline) {
+        PlacementRecoveryScheduler::Instance().Tick();
+        if (PlacementStore::Instance().Get(mid, &rec) && rec.state == PlacementState::Ready &&
+            !rec.owner_logic_server_id.empty() && rec.owner_logic_server_id != old_owner &&
+            rec.owner_epoch > epoch) {
+            switched = true;
+            break;
+        }
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    }
+    if (!switched)
         return Fail("owner not switched away from old");
-    if (rec.owner_epoch <= epoch)
-        return Fail("epoch not bumped");
     if (PlacementRecoveryScheduler::Instance().recover_ok() == 0)
         return Fail("recover_ok counter");
 

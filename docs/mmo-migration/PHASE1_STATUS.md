@@ -1,6 +1,6 @@
 # 阶段 1 状态（GameMesh_Cursor_All_Phases）
 
-> 更新：2026-08-08  
+> 更新：2026-08-08
 > 对照：`docs/GameMesh_Cursor_All_Phases.md` 阶段 1
 
 ## 已落地

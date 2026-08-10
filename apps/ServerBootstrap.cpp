@@ -1591,9 +1591,18 @@ int RunServer(const LaunchOpts &launch) {
             PlacementRecoveryScheduler::Instance().SetInstanceId(env);
         if (const char *pfx = std::getenv("GAMEMESH_REDIS_PREFIX"))
             PlacementRecoveryScheduler::Instance().SetKeyPrefix(pfx);
-        const double recover_iv = 5.0;
-        loop.RunEvery(recover_iv, []() { PlacementRecoveryScheduler::Instance().Tick(); });
-        LOG_INFO << "PlacementRecoveryScheduler interval_sec=" << recover_iv;
+        if (const char *sc = std::getenv("GAMEMESH_PLACEMENT_SCAN_COUNT")) {
+            const int n = std::atoi(sc);
+            if (n > 0)
+                PlacementRecoveryScheduler::Instance().SetScanCount(static_cast<size_t>(n));
+        }
+        const double recover_iv =
+            (std::getenv("GAMEMESH_PLACEMENT_RECOVER_IV") != nullptr)
+                ? std::atof(std::getenv("GAMEMESH_PLACEMENT_RECOVER_IV"))
+                : 5.0;
+        const double iv = recover_iv > 0.5 ? recover_iv : 5.0;
+        loop.RunEvery(iv, []() { PlacementRecoveryScheduler::Instance().Tick(); });
+        LOG_INFO << "PlacementRecoveryScheduler interval_sec=" << iv;
     }
 #endif
 #endif

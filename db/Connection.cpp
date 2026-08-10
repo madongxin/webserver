@@ -41,6 +41,17 @@ MYSQL_RES *Connection::query(const std::string &sql) {
     return mysql_use_result(_conn);
 }
 
+std::string Connection::EscapeSql(const std::string &s) const {
+    if (!_conn)
+        return {};
+    std::string out;
+    out.resize(s.size() * 2 + 1);
+    const unsigned long n =
+        mysql_real_escape_string(_conn, &out[0], s.data(), static_cast<unsigned long>(s.size()));
+    out.resize(n);
+    return out;
+}
+
 bool Connection::begin() { return update("START TRANSACTION"); }
 
 bool Connection::commit() { return update("COMMIT"); }

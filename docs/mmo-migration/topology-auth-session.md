@@ -1,8 +1,8 @@
 # GameMesh 拓扑（登录边界 / Push / LB 修正）
 
-> 二进制 `world` = 逻辑服务 **GlobalService**（邮件等）。  
-> Session/Auth、GlobalService、Redis、MySQL 标注为 **MVP 单点**。  
-> `GameDB ×2` 只是访问层多实例，**不代表 MySQL HA**。  
+> 二进制 `world` = 逻辑服务 **GlobalService**（邮件等）。
+> Session/Auth、GlobalService、Redis、MySQL 标注为 **MVP 单点**。
+> `GameDB ×2` 只是访问层多实例，**不代表 MySQL HA**。
 > etcd 未启用时使用静态 `logic_addrs` / `session_addrs` / `world_addrs` / `gamedb_addrs` 降级。
 
 ```mermaid

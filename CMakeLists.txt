@@ -558,6 +558,14 @@ if(ENABLE_GAME_PROTOBUF)
       runtime runtime/brpc base log timer ${BRPC_INCLUDE_DIR} ${Protobuf_INCLUDE_DIRS})
     target_link_libraries(channel_snapshot_race_test
       ${BRPC_LINK_LIBS} ${Protobuf_LIBRARIES} ${OPENSSL_CRYPTO_LIB} ${CMAKE_THREAD_LIBS_INIT})
+
+    add_executable(gamedb_rpc_tool
+      test/gamedb_rpc_tool.cpp
+      runtime/brpc/gamedb.pb.cc)
+    target_include_directories(gamedb_rpc_tool PRIVATE
+      runtime/brpc ${BRPC_INCLUDE_DIR} ${Protobuf_INCLUDE_DIRS})
+    target_link_libraries(gamedb_rpc_tool
+      ${BRPC_LINK_LIBS} ${Protobuf_LIBRARIES} ${OPENSSL_CRYPTO_LIB} ${CMAKE_THREAD_LIBS_INIT})
   endif()
 
   add_executable(player_serial_async_test
@@ -907,6 +915,24 @@ if(ENABLE_MYSQL AND ENABLE_GAME_PROTOBUF)
   target_include_directories(gamedb_snapshot_idempotency_test PRIVATE
     ${MYSQL_INCLUDE_DIR} db base log timer)
   target_link_libraries(gamedb_snapshot_idempotency_test
+    ${CMAKE_THREAD_LIBS_INIT} ${MYSQL_CLIENT_LIB})
+
+  add_executable(gamedb_mutation_idempotency_test
+    test/gamedb_mutation_idempotency_test.cpp
+    db/Connection.cpp
+    db/ConnectionPool.cpp
+    db/GameDbOutbox.cpp
+    db/GameDbAssetStore.cpp
+    db/PlayerItemStore.cpp
+    base/CurrentThread.cpp
+    log/Logging.cpp
+    log/LogStream.cpp
+    log/LogFile.cpp
+    log/AsyncLogging.cpp)
+  target_compile_definitions(gamedb_mutation_idempotency_test PRIVATE WEBSERVER_ENABLE_MYSQL)
+  target_include_directories(gamedb_mutation_idempotency_test PRIVATE
+    ${MYSQL_INCLUDE_DIR} db base log timer)
+  target_link_libraries(gamedb_mutation_idempotency_test
     ${CMAKE_THREAD_LIBS_INIT} ${MYSQL_CLIENT_LIB})
 
   add_executable(gamedb_unknown_result_test

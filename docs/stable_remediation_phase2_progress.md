@@ -1,6 +1,6 @@
 # 稳定整改三阶段 — 阶段二进度
 
-对照：`docs/GameMesh_Cursor_Server_Stable_Remediation_3_Phases.md`  
+对照：`docs/GameMesh_Cursor_Server_Stable_Remediation_3_Phases.md`
 基线含阶段一工作区改动；**阶段二完成后停止，等待用户确认再进入阶段三**。
 
 | 项 | 内容 | 状态 |

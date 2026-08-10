@@ -108,6 +108,39 @@ int main() {
             helper_a2.join();
     }
 
+    // completion 在外部队列已满时仍必须回投（不得跨线程改状态）
+    q.SetLimits(2, 2);
+    std::atomic<int> on_serial{0};
+    std::atomic<bool> saw_worker{false};
+    std::thread::id worker_id;
+    q.TryPost(a, [&]() {
+        worker_id = std::this_thread::get_id();
+        saw_worker.store(true);
+        q.MarkAsyncInFlight(a);
+    });
+    for (int i = 0; i < 100 && !saw_worker.load(); ++i)
+        std::this_thread::sleep_for(std::chrono::milliseconds(5));
+    // 填满外部队列
+    q.TryPost(b, []() { std::this_thread::sleep_for(std::chrono::milliseconds(50)); });
+    q.TryPost(b, []() {});
+    std::atomic<bool> completed{false};
+    std::thread completer([&]() {
+        const bool ok = q.CompleteAsyncInFlight(a, [&]() {
+            if (std::this_thread::get_id() == worker_id)
+                on_serial.fetch_add(1);
+            completed.store(true);
+        });
+        if (!ok)
+            std::_Exit(2);
+    });
+    completer.join();
+    for (int i = 0; i < 200 && !completed.load(); ++i)
+        std::this_thread::sleep_for(std::chrono::milliseconds(5));
+    if (!completed.load() || on_serial.load() != 1) {
+        std::printf("FAIL completion under overload on_serial=%d\n", on_serial.load());
+        return 1;
+    }
+
     q.DrainForTest();
     q.Stop();
     std::printf("PASS player_serial_async_test b_latency_ms=%lld\n", static_cast<long long>(ms));

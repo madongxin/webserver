@@ -1,6 +1,6 @@
 # GameMesh 分布式游戏服务器三阶段 Cursor 实施提示词
 
-> 适用仓库：`madongxin/webserver` 当前 `main` 分支  
+> 适用仓库：`madongxin/webserver` 当前 `main` 分支
 > 执行方式：严格依次把“阶段一、阶段二、阶段三”完整发送给 Cursor。每个阶段必须通过真实构建和测试门禁后，才能执行下一阶段。
 
 ## 总体目标

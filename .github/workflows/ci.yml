@@ -1,8 +1,11 @@
 name: ci
+# PR 快速门禁：lowlevel（无 brpc）
+# push main：full（install_deps --build-brpc + 缓存）
 on:
   push:
     branches: [main, master]
   pull_request:
+
 jobs:
   lowlevel:
     runs-on: ubuntu-latest
@@ -22,10 +25,14 @@ jobs:
         run: ./scripts/build.sh Debug --lowlevel
       - name: test lowlevel
         run: ./scripts/test.sh lowlevel
-      - name: git diff --check
+      - name: git show --check HEAD
         run: |
-          git diff --check
-          git diff --cached --check || true
+          git show --check --oneline HEAD -- . \
+            ':(exclude)runtime/brpc/*.pb.cc' ':(exclude)runtime/brpc/*.pb.h' \
+            ':(exclude)game/*.pb.cc' ':(exclude)game/*.pb.h' || true
+          # 工作树手写路径不得有尾随空白/冲突标记
+          git diff --check -- scripts docs deploy .github CMakeLists.txt AGENTS.md apps game db runtime \
+            ':(exclude)*.pb.cc' ':(exclude)*.pb.h'
       - name: shell syntax
         run: |
           bash -n scripts/*.sh
@@ -34,6 +41,8 @@ jobs:
         run: shellcheck -x scripts/*.sh deploy/docker-entrypoint.sh
 
   full:
+    # PR 只跑 lowlevel；main/master push 跑完整依赖构建
+    if: github.event_name == 'push'
     runs-on: ubuntu-latest
     services:
       redis:
@@ -41,22 +50,52 @@ jobs:
         ports: ["6379:6379"]
     steps:
       - uses: actions/checkout@v4
-      - name: deps
+      - name: deps apt
         run: |
           sudo apt-get update
           sudo apt-get install -y g++ cmake protobuf-compiler libprotobuf-dev \
             libssl-dev libjsoncpp-dev libhiredis-dev libmysqlclient-dev \
-            libgflags-dev libleveldb-dev zlib1g-dev shellcheck
-          if [[ ! -f /usr/local/include/brpc/server.h && ! -f /usr/include/brpc/server.h ]]; then
-            echo "ERROR: full CI requires brpc. Use a toolchain image or scripts/install_deps.sh --build-brpc." >&2
-            exit 1
+            libgflags-dev libleveldb-dev zlib1g-dev shellcheck \
+            libasan6 libubsan1 libtsan0
+      - name: cache gamemesh-deps (brpc)
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.local/gamemesh-deps
+            .deps
+          key: gamemesh-brpc-1.9.0-${{ runner.os }}-v1
+          restore-keys: |
+            gamemesh-brpc-1.9.0-${{ runner.os }}-
+      - name: install brpc if missing
+        run: |
+          export GAMEMESH_DEPS_PREFIX="${HOME}/.local/gamemesh-deps"
+          if [[ ! -f /usr/local/include/brpc/server.h && ! -f "${GAMEMESH_DEPS_PREFIX}/include/brpc/server.h" ]]; then
+            ./scripts/install_deps.sh --build-brpc
           fi
+          # 可写则链到 /usr/local，便于旧路径检测
+          if [[ -w /usr/local/include && ! -f /usr/local/include/brpc/server.h && -d "${GAMEMESH_DEPS_PREFIX}/include/brpc" ]]; then
+            sudo ln -sfn "${GAMEMESH_DEPS_PREFIX}/include/brpc" /usr/local/include/brpc
+            sudo ln -sfn ${GAMEMESH_DEPS_PREFIX}/lib/libbrpc* /usr/local/lib/ 2>/dev/null || true
+            sudo ln -sfn ${GAMEMESH_DEPS_PREFIX}/lib64/libbrpc* /usr/local/lib/ 2>/dev/null || true
+          fi
+          echo "GAMEMESH_DEPS_PREFIX=${GAMEMESH_DEPS_PREFIX}" >> "$GITHUB_ENV"
+          echo "CMAKE_PREFIX_PATH=${GAMEMESH_DEPS_PREFIX}" >> "$GITHUB_ENV"
+          echo "CPATH=${GAMEMESH_DEPS_PREFIX}/include" >> "$GITHUB_ENV"
+          echo "LD_LIBRARY_PATH=${GAMEMESH_DEPS_PREFIX}/lib:${GAMEMESH_DEPS_PREFIX}/lib64" >> "$GITHUB_ENV"
+      - name: protoc vs generated pb
+        run: |
+          protoc --version
+          # 粗检：仓库已提交的 pb 与当前 protoc 同属 3.x 即可；大版本漂移失败
+          pv="$(protoc --version | awk '{print $2}' | cut -d. -f1)"
+          [[ "$pv" == "3" ]] || { echo "ERROR: expect protoc 3.x, got $(protoc --version)"; exit 1; }
       - name: check_deps full
         run: ./scripts/check_deps.sh --full
       - name: bootstrap config
         run: ./scripts/bootstrap_local_config.sh
       - name: git diff --check
-        run: git diff --check
+        run: |
+          git diff --check -- scripts docs deploy .github CMakeLists.txt AGENTS.md \
+            ':(exclude)*.pb.cc' ':(exclude)*.pb.h'
       - name: build Debug
         run: ./scripts/build.sh Debug
       - name: build Release
@@ -70,6 +109,8 @@ jobs:
       - name: compose config
         run: docker compose -f compose.yml config >/dev/null
       - name: sanitizers
+        env:
+          GAMEMESH_REQUIRE_BRPC_TSAN: "1"
         run: ./scripts/test_sanitizers.sh all
       - name: shellcheck
         run: shellcheck -x scripts/*.sh deploy/docker-entrypoint.sh

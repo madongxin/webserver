@@ -1,7 +1,7 @@
 # 00 — 仓库审计（阶段 0 / W0）
 
-> 日期：2026-08-07  
-> 基线方案：`docs/mmo-distributed-architecture.md`  
+> 日期：2026-08-07
+> 基线方案：`docs/mmo-distributed-architecture.md`
 > 原则：仓库事实高于外部任务书假设
 
 ---
@@ -139,8 +139,8 @@ curl -s http://127.0.0.1:8080/metrics
 
 ## 8. 地图相关
 
-仓库中 **无** `map_template_id` / `map_instance_id` / AOI / 场景 Tick。  
-现有 ID：`player_id`、邮件 id、item 配置 id。  
+仓库中 **无** `map_template_id` / `map_instance_id` / AOI / 场景 Tick。
+现有 ID：`player_id`、邮件 id、item 配置 id。
 → 阶段 5 前一律按 `player_id → logic` 路由（正式方案 D3）。
 
 ---

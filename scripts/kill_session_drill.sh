@@ -17,23 +17,32 @@ S0="${GAMEMESH_SMOKE_SESSION0:-8093}"
 S1="${GAMEMESH_SMOKE_SESSION1:-8096}"
 
 if [[ -f "$RUN_DIR/pids" ]]; then
-  mapfile -t PIDS <"$RUN_DIR/pids"
-  # run_cluster_local 常见顺序：gw0 gw1 session0 session1 ... — 允许 SESSION0_PID 覆盖
-  # start_formal [0]=session0；run_cluster 另追加 session2 到末尾 → S1 用 HTTP 8096
-  S0_PID="${SESSION0_PID:-${PIDS[0]:-}}"
+  # shellcheck disable=SC1090
+  source "$ROOT/scripts/e2e_inventory.sh"
+  export GAMEMESH_RUN_DIR="$RUN_DIR"
+  S0_PID="${SESSION0_PID:-}"
+  if [[ -z "$S0_PID" ]]; then
+    S0_PID="$(e2e_pid_of session sess-0 2>/dev/null || true)"
+  fi
+  if [[ -z "$S0_PID" ]]; then
+    mapfile -t PIDS <"$RUN_DIR/pids"
+    S0_PID="${PIDS[0]:-}"
+  fi
+  S1_HTTP_PORT="$(e2e_http_of session sess-1 2>/dev/null || echo "$S1")"
+  S0_HTTP_PORT="$(e2e_http_of session sess-0 2>/dev/null || echo "$S0")"
   if [[ -n "$S0_PID" ]] && kill -0 "$S0_PID" 2>/dev/null; then
-    if curl -fsS -m 2 "http://${HOST}:${S1}/api/version" 2>/dev/null | grep -q session; then
-      curl -fsS -m 3 "http://${HOST}:${S1}/health/ready" | grep -q '"ready":true' || true
+    if curl -fsS -m 2 "http://${HOST}:${S1_HTTP_PORT}/api/version" 2>/dev/null | grep -q session; then
+      curl -fsS -m 3 "http://${HOST}:${S1_HTTP_PORT}/health/ready" | grep -q '"ready":true' || true
       kill -9 "$S0_PID"
       sleep 1
-      if curl -fsS -m 2 "http://${HOST}:${S0}/api/version" >/dev/null 2>&1; then
+      if curl -fsS -m 2 "http://${HOST}:${S0_HTTP_PORT}/api/version" >/dev/null 2>&1; then
         echo "ERROR: killed session0 still answering" >&2
         exit 1
       fi
-      curl -fsS -m 3 "http://${HOST}:${S1}/health/ready" | grep -q '"ready":true'
+      curl -fsS -m 3 "http://${HOST}:${S1_HTTP_PORT}/health/ready" | grep -q '"ready":true'
       echo "cluster session survivor ready"
     else
-      echo "INFO: no session1 on ${S1}; HA covered by test_session_ha.sh only"
+      echo "INFO: no session1 on ${S1_HTTP_PORT}; HA covered by test_session_ha.sh only"
     fi
   fi
 fi

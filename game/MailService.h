@@ -42,6 +42,12 @@ public:
      */
     bool BeginHandleMailClaimAsync(const game::MailClaimReq &req, game::GameResponse *rsp,
                                    std::function<void(game::GameResponse)> done);
+    /**
+     * 真异步批量领取：逐封异步 GameDB，completion 回投 PlayerSerialQueue。
+     * @return true 已启动；false 同步失败已写入 *rsp
+     */
+    bool BeginHandleMailBatchClaimAsync(const game::MailBatchClaimReq &req, game::GameResponse *rsp,
+                                        std::function<void(game::GameResponse)> done);
     bool HandleMailBatchClaim(const game::MailBatchClaimReq &req, game::GameResponse *rsp);
     bool HandleMailFavorite(const game::MailFavoriteReq &req, game::GameResponse *rsp);
     bool HandleMailBatchRead(const game::MailBatchReadReq &req, game::GameResponse *rsp);

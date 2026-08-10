@@ -34,7 +34,7 @@ public:
     size_t channel_count() const;
 
     void ClaimMailAttachmentsAsync(GameDbMailClaimRequest req, MailClaimDone done) override;
-    GameDbMailClaimResult ClaimMailAttachments(GameDbMailClaimRequest req);
+    GameDbMailClaimResult ClaimMailAttachments(GameDbMailClaimRequest req) override;
 
     struct AssetMutationResult {
         bool ok = false;
@@ -61,7 +61,7 @@ public:
     bool QueryOperationResult(uint64_t player_id, const std::string &idempotency_key,
                               const std::string &operation_type, bool *found, bool *completed_ok,
                               bool *idempotent_hit, uint64_t *asset_version, uint32_t *remain_count,
-                              std::string *err);
+                              std::string *err, std::string *status = nullptr);
 
 private:
     BrpcGameDbRepository() = default;

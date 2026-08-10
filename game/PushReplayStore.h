@@ -22,6 +22,16 @@ public:
     uint64_t AppendReliable(uint64_t player_id, const std::string &session_id,
                             const std::string &message_type, const std::string &payload);
 
+    /** 仅 INCR 预留 seq（用于先编码 baseline 再写入，避免存后再改 payload） */
+    uint64_t ReserveSeq(uint64_t player_id, const std::string &session_id);
+
+    /**
+     * 将已预留的 seq 与完整 payload 写入 replay list。
+     * 若当前 seq 计数与 reserved 不一致返回 false（产生 gap，由重连检测）。
+     */
+    bool AppendReserved(uint64_t player_id, const std::string &session_id, uint64_t reserved_seq,
+                        const std::string &message_type, const std::string &payload);
+
     bool ReplayAfter(uint64_t player_id, const std::string &session_id, uint64_t last_acked_seq,
                      std::vector<PushReplayEntry> *out, bool *need_snapshot);
 

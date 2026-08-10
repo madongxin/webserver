@@ -1,0 +1,82 @@
+name: nightly-stable
+# 夜间 / 手工长稳门禁（耗时长：20×E2E + 30min load + 2h soak）
+on:
+  schedule:
+    - cron: "0 18 * * *"  # UTC 18:00 ≈ 北京时间次日 02:00
+  workflow_dispatch:
+
+jobs:
+  stable-full:
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    services:
+      redis:
+        image: redis:7
+        ports: ["6379:6379"]
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: gamemesh
+        ports: ["3306:3306"]
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -proot"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+    steps:
+      - uses: actions/checkout@v4
+      - name: deps apt
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y g++ cmake protobuf-compiler libprotobuf-dev \
+            libssl-dev libjsoncpp-dev libhiredis-dev libmysqlclient-dev \
+            libgflags-dev libleveldb-dev zlib1g-dev shellcheck \
+            libasan6 libubsan1 libtsan0 redis-tools mysql-client
+      - name: cache gamemesh-deps (brpc)
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.local/gamemesh-deps
+            .deps
+          key: gamemesh-brpc-1.9.0-${{ runner.os }}-v1
+      - name: install brpc
+        run: |
+          export GAMEMESH_DEPS_PREFIX="${HOME}/.local/gamemesh-deps"
+          ./scripts/install_deps.sh --build-brpc
+          if [[ ! -f /usr/local/include/brpc/server.h && ! -f "${GAMEMESH_DEPS_PREFIX}/include/brpc/server.h" ]]; then
+            echo "ERROR: brpc install failed"; exit 1
+          fi
+          if [[ -d "${GAMEMESH_DEPS_PREFIX}/include/brpc" && ! -f /usr/local/include/brpc/server.h ]]; then
+            sudo ln -sfn "${GAMEMESH_DEPS_PREFIX}/include/brpc" /usr/local/include/brpc
+            sudo ln -sfn ${GAMEMESH_DEPS_PREFIX}/lib/libbrpc* /usr/local/lib/ 2>/dev/null || true
+            sudo ln -sfn ${GAMEMESH_DEPS_PREFIX}/lib64/libbrpc* /usr/local/lib/ 2>/dev/null || true
+          fi
+          echo "GAMEMESH_DEPS_PREFIX=${GAMEMESH_DEPS_PREFIX}" >> "$GITHUB_ENV"
+          echo "CMAKE_PREFIX_PATH=${GAMEMESH_DEPS_PREFIX}" >> "$GITHUB_ENV"
+          echo "LD_LIBRARY_PATH=${GAMEMESH_DEPS_PREFIX}/lib:${GAMEMESH_DEPS_PREFIX}/lib64" >> "$GITHUB_ENV"
+      - name: bootstrap + mysql cnf
+        run: |
+          ./scripts/bootstrap_local_config.sh
+          # CI MySQL service
+          if [[ -f config/mysql.cnf ]]; then
+            sed -i 's/^ip=.*/ip=127.0.0.1/' config/mysql.cnf || true
+            sed -i 's/^password=.*/password=root/' config/mysql.cnf || true
+            grep -q '^user=' config/mysql.cnf || echo 'user=root' >> config/mysql.cnf
+          fi
+      - name: stable_gate --full
+        env:
+          GAMEMESH_REQUIRE_BRPC_TSAN: "1"
+          GAMEMESH_JOBS: "2"
+        run: ./scripts/stable_gate.sh --full
+      - name: upload release reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: stable-release-reports
+          path: |
+            run/release/
+            run/stable_gate/
+            run/load/
+            run/soak/
+          if-no-files-found: warn

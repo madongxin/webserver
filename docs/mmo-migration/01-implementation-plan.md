@@ -1,6 +1,6 @@
 # 01 — 实施计划（对照正式基线）
 
-> 权威步骤见：`docs/mmo-distributed-architecture.md` §8 / §9  
+> 权威步骤见：`docs/mmo-distributed-architecture.md` §8 / §9
 > 本文只跟踪执行状态与本仓库命令，不另起炉灶。
 
 ---

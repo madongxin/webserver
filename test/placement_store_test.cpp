@@ -12,6 +12,7 @@
 #include <fstream>
 #include <string>
 #include <thread>
+#include <unistd.h>
 #include <vector>
 
 namespace {
@@ -65,7 +66,11 @@ int main() {
         std::printf("SKIP placement_store_test (Redis unavailable)\n");
         return 0;
     }
-    if (!PlacementStore::Instance().InitFromSessionPrefix("gamemesh:dev:"))
+    // 隔离前缀，避免与 E2E/正式拓扑共享 map:tpl 键导致并发唯一性假失败
+    const std::string prefix =
+        "gamemesh:test:placement_store:" + std::to_string(static_cast<unsigned long long>(::getpid())) +
+        ":";
+    if (!PlacementStore::Instance().InitFromSessionPrefix(prefix))
         return Fail("PlacementStore init");
 
     PlacementStore::Instance().SetLogicOwners({"gl-0", "gl-1"});
@@ -75,11 +80,12 @@ int main() {
     std::atomic<int> ok{0};
     std::vector<uint64_t> ids(static_cast<size_t>(kN), 0);
     std::vector<std::thread> th;
+    const uint64_t tpl = 420000ULL + static_cast<uint64_t>(::getpid() % 100000);
     for (int i = 0; i < kN; ++i) {
         th.emplace_back([&, i]() {
             ResolveOrCreateInput in;
             in.realm_id = 1;
-            in.map_template_id = 42;
+            in.map_template_id = tpl;
             ResolveOrCreateResult out;
             if (PlacementStore::Instance().ResolveOrCreate(in, &out) && out.ok) {
                 ids[static_cast<size_t>(i)] = out.placement.map_instance_id;

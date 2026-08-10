@@ -19,8 +19,8 @@
 | `GET /api/version` | service / server_id / build | 200 |
 | `GET /metrics` | Prometheus（含 OpsMetrics） | 200 |
 
-正式模式 HTTP 默认 `127.0.0.1`；探活请本机 curl。  
-`GAMEMESH_FORCE_NOT_READY=1`：强制 ready 失败（演练）。  
+正式模式 HTTP 默认 `127.0.0.1`；探活请本机 curl。
+`GAMEMESH_FORCE_NOT_READY=1`：强制 ready 失败（演练）。
 `GAMEMESH_DRAIN_SEC`：SIGTERM 后等待在途秒数（默认 2）。
 
 ## 优雅停服（SIGTERM）

@@ -58,15 +58,31 @@ if [[ "$MODE" != "lowlevel" ]]; then
 fi
 
 has_brpc=0
-if [[ -f /usr/local/include/brpc/server.h ]] || [[ -f /usr/include/brpc/server.h ]]; then
+DEPS_PREFIX="${GAMEMESH_DEPS_PREFIX:-$HOME/.local/gamemesh-deps}"
+brpc_hint=""
+if [[ -f /usr/local/include/brpc/server.h ]]; then
   has_brpc=1
-  ok "brpc headers"
+  brpc_hint=/usr/local/include/brpc
+elif [[ -f /usr/include/brpc/server.h ]]; then
+  has_brpc=1
+  brpc_hint=/usr/include/brpc
+elif [[ -f "$DEPS_PREFIX/include/brpc/server.h" ]]; then
+  has_brpc=1
+  brpc_hint="$DEPS_PREFIX/include/brpc"
+  # 便于后续 cmake/链接
+  export CMAKE_PREFIX_PATH="${DEPS_PREFIX}${CMAKE_PREFIX_PATH:+:$CMAKE_PREFIX_PATH}"
+  export CPATH="${DEPS_PREFIX}/include${CPATH:+:$CPATH}"
+  export LIBRARY_PATH="${DEPS_PREFIX}/lib:${DEPS_PREFIX}/lib64${LIBRARY_PATH:+:$LIBRARY_PATH}"
+  export LD_LIBRARY_PATH="${DEPS_PREFIX}/lib:${DEPS_PREFIX}/lib64${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+fi
+if [[ "$has_brpc" -eq 1 ]]; then
+  ok "brpc headers ($brpc_hint)"
   if command -v pkg-config >/dev/null 2>&1 && pkg-config --exists brpc 2>/dev/null; then
     ok "brpc pkg-config $(pkg-config --modversion brpc 2>/dev/null || echo unknown)"
   fi
 else
   if [[ "$MODE" == "full" ]]; then
-    bad "brpc headers (required for --full / ENABLE_BRPC=ON)"
+    bad "brpc headers (required for --full / ENABLE_BRPC=ON; run ./scripts/install_deps.sh --build-brpc)"
   else
     warn "brpc headers not found (required for ENABLE_BRPC=ON full build)"
   fi

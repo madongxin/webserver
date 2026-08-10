@@ -15,6 +15,9 @@ public:
     bool LoadMeta(uint64_t player_id, uint64_t *version, bool *exists);
     bool LoadInventory(uint64_t player_id, std::map<uint32_t, uint32_t> *bag, uint64_t *version);
 
+    /** 幂等键：1..128，禁止控制字符；超长/非法返回 false */
+    static bool ValidateIdempotencyKey(const std::string &key, std::string *err);
+
     struct MutationResult {
         bool ok = false;
         bool idempotent_hit = false;
@@ -38,9 +41,11 @@ public:
                       const std::map<uint32_t, uint32_t> &bag, const std::string &idempotency_key,
                       SnapshotResult *out);
 
+    /** status: NOT_FOUND | IN_PROGRESS | SUCCEEDED | FAILED */
     struct OperationQuery {
         bool found = false;
         bool completed_ok = false;
+        std::string status;
         std::string error_code;
         std::string message;
         uint64_t asset_version = 0;
