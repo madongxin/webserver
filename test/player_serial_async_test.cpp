@@ -1,0 +1,115 @@
+/**
+ * 阶段二：PlayerSerialQueue 异步 inflight — A 慢任务不阻塞同 shard B。
+ */
+#include "PlayerSerialQueue.h"
+
+#include <atomic>
+#include <chrono>
+#include <cstdio>
+#include <mutex>
+#include <thread>
+
+int main() {
+    auto &q = PlayerSerialQueue::Instance();
+    q.Stop();
+    q.SetLimits(64, 256);
+    q.Start(1);  // 单 shard：A 与 B 同 worker
+
+    std::atomic<int> b_done{0};
+    std::atomic<int> a_done{0};
+    std::atomic<bool> a_started{false};
+    std::mutex helper_mu;
+    std::thread helper_a;
+    std::thread helper_a2;
+
+    const uint64_t a = 1;
+    const uint64_t b = 2;  // same shard when shard_count=1
+
+    if (!q.TryPost(a, [&]() {
+            a_started.store(true);
+            q.MarkAsyncInFlight(a);
+            // 模拟慢下游：不阻塞 worker，稍后 Complete
+            std::lock_guard<std::mutex> lk(helper_mu);
+            helper_a = std::thread([&]() {
+                std::this_thread::sleep_for(std::chrono::milliseconds(300));
+                q.CompleteAsyncInFlight(a, [&]() { a_done.fetch_add(1); });
+            });
+        })) {
+        std::printf("FAIL post A\n");
+        return 1;
+    }
+
+    // 等 A 进入 inflight
+    for (int i = 0; i < 100 && !a_started.load(); ++i)
+        std::this_thread::sleep_for(std::chrono::milliseconds(5));
+
+    const auto t0 = std::chrono::steady_clock::now();
+    if (!q.TryPost(b, [&]() { b_done.fetch_add(1); })) {
+        std::printf("FAIL post B\n");
+        return 1;
+    }
+
+    for (int i = 0; i < 200 && b_done.load() == 0; ++i)
+        std::this_thread::sleep_for(std::chrono::milliseconds(5));
+    const auto ms =
+        std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - t0)
+            .count();
+
+    if (b_done.load() != 1) {
+        std::printf("FAIL B not done\n");
+        return 1;
+    }
+    if (ms > 200) {
+        std::printf("FAIL B blocked ms=%lld (A should not block shard)\n",
+                    static_cast<long long>(ms));
+        return 1;
+    }
+
+    for (int i = 0; i < 200 && a_done.load() == 0; ++i)
+        std::this_thread::sleep_for(std::chrono::milliseconds(5));
+    if (a_done.load() != 1) {
+        std::printf("FAIL A completion missing\n");
+        return 1;
+    }
+    {
+        std::lock_guard<std::mutex> lk(helper_mu);
+        if (helper_a.joinable())
+            helper_a.join();
+    }
+
+    // 同玩家有序：A inflight 期间再投递 A2，须在 Complete 之后
+    std::atomic<int> order{0};
+    std::atomic<int> a2{0};
+    q.TryPost(a, [&]() {
+        q.MarkAsyncInFlight(a);
+        std::lock_guard<std::mutex> lk(helper_mu);
+        helper_a2 = std::thread([&]() {
+            std::this_thread::sleep_for(std::chrono::milliseconds(50));
+            q.CompleteAsyncInFlight(a, [&]() { order.store(1); });
+        });
+    });
+    std::this_thread::sleep_for(std::chrono::milliseconds(10));
+    q.TryPost(a, [&]() {
+        if (order.load() != 1) {
+            std::printf("FAIL A2 ran before A1 complete\n");
+            std::_Exit(1);
+        }
+        a2.store(1);
+    });
+    for (int i = 0; i < 100 && a2.load() == 0; ++i)
+        std::this_thread::sleep_for(std::chrono::milliseconds(10));
+    if (a2.load() != 1) {
+        std::printf("FAIL A2 missing\n");
+        return 1;
+    }
+    {
+        std::lock_guard<std::mutex> lk(helper_mu);
+        if (helper_a2.joinable())
+            helper_a2.join();
+    }
+
+    q.DrainForTest();
+    q.Stop();
+    std::printf("PASS player_serial_async_test b_latency_ms=%lld\n", static_cast<long long>(ms));
+    return 0;
+}

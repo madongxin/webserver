@@ -12,7 +12,14 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
 
 BUILD_TYPE="${1:-${GAMEMESH_BUILD_TYPE:-${MMO_BUILD_TYPE:-Debug}}}"
-BUILD_DIR="${GAMEMESH_BUILD_DIR:-${MMO_BUILD_DIR:-$ROOT/build}}"
+# Release 默认独立目录，避免覆盖 Debug 的 build/test 业务二进制
+if [[ -n "${GAMEMESH_BUILD_DIR:-${MMO_BUILD_DIR:-}}" ]]; then
+  BUILD_DIR="${GAMEMESH_BUILD_DIR:-${MMO_BUILD_DIR}}"
+elif [[ "$BUILD_TYPE" == "Release" ]]; then
+  BUILD_DIR="$ROOT/build-release"
+else
+  BUILD_DIR="$ROOT/build"
+fi
 JOBS="${GAMEMESH_JOBS:-${MMO_JOBS:-$(nproc 2>/dev/null || echo 4)}}"
 TARGET=""
 LOWLEVEL=0
@@ -54,11 +61,18 @@ else
 fi
 : "${ENABLE_ROCKSDB:=OFF}"
 : "${ENABLE_ASAN:=OFF}"
+: "${ENABLE_UBSAN:=OFF}"
+: "${ENABLE_TSAN:=OFF}"
+
+if [[ "${ENABLE_ASAN}" == "ON" && "${ENABLE_TSAN}" == "ON" ]]; then
+  echo "ERROR: ENABLE_ASAN and ENABLE_TSAN are mutually exclusive" >&2
+  exit 1
+fi
 
 if [[ "${ENABLE_BRPC}" == "ON" ]]; then
   if [[ ! -f /usr/local/include/brpc/server.h && ! -f /usr/include/brpc/server.h ]]; then
     echo "ERROR: ENABLE_BRPC=ON but brpc headers not found." >&2
-    echo "       Install brpc, or use: ./scripts/build.sh ${BUILD_TYPE} --lowlevel" >&2
+    echo "       Install via ./scripts/install_deps.sh --build-brpc, or: ./scripts/build.sh ${BUILD_TYPE} --lowlevel" >&2
     exit 1
   fi
 fi
@@ -72,6 +86,8 @@ echo "  cxx std  : C++17 (CMAKE_CXX_STANDARD=17)"
 echo "  dir      : ${BUILD_DIR}"
 echo "  brpc     : ${ENABLE_BRPC}"
 echo "  asan     : ${ENABLE_ASAN}"
+echo "  ubsan    : ${ENABLE_UBSAN}"
+echo "  tsan     : ${ENABLE_TSAN}"
 
 echo "== configure: type=$BUILD_TYPE dir=$BUILD_DIR =="
 cmake -S "$ROOT" -B "$BUILD_DIR" \
@@ -84,7 +100,9 @@ cmake -S "$ROOT" -B "$BUILD_DIR" \
   -DENABLE_REDIS="$ENABLE_REDIS" \
   -DENABLE_BRPC="$ENABLE_BRPC" \
   -DENABLE_ROCKSDB="$ENABLE_ROCKSDB" \
-  -DENABLE_ASAN="$ENABLE_ASAN"
+  -DENABLE_ASAN="$ENABLE_ASAN" \
+  -DENABLE_UBSAN="$ENABLE_UBSAN" \
+  -DENABLE_TSAN="$ENABLE_TSAN"
 
 echo "== build: jobs=$JOBS target=${TARGET:-all} =="
 if [[ -n "$TARGET" ]]; then
@@ -93,5 +111,5 @@ else
   cmake --build "$BUILD_DIR" -j"$JOBS"
 fi
 
-echo "== done: binaries under $ROOT/build/test/ =="
-ls -la "$ROOT/build/test/" 2>/dev/null | head -20 || true
+echo "== done: binaries under ${BUILD_DIR}/test/ =="
+ls -la "${BUILD_DIR}/test/" 2>/dev/null | head -20 || true

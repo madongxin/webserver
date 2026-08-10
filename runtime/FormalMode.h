@@ -18,6 +18,18 @@ inline bool AdminHttpEnabled() {
 }
 
 /**
+ * 联调危险公网命令（GrantItem/MailDeliver）：仅非 Formal 且显式开启。
+ * Formal 时即使环境变量误开也必须拒绝（见 CommandPolicy）。
+ */
+inline bool AllowUnsafeDebugCommandsEnv() {
+    if (FormalModeEnabled())
+        return false;
+    const char *v = std::getenv("GAMEMESH_ALLOW_UNSAFE_DEBUG_COMMANDS");
+    return v && (std::strcmp(v, "1") == 0 || std::strcmp(v, "true") == 0 ||
+                 std::strcmp(v, "TRUE") == 0 || std::strcmp(v, "on") == 0);
+}
+
+/**
  * 正式模式下是否允许本进程初始化 MySQL 连接池。
  * 仅 gamedb（及紧急 role=all）可直连；gateway/session/gamelogic/world 必须经 GameDB brpc。
  */

@@ -25,18 +25,17 @@ fi
 ./build/test/placement_recovery_test
 ./build/test/phase3_discovery_test
 ./scripts/test_push_reconnect.sh
-# MySQL 资产测：不可用则 SKIP（exit 0）；可用则必须通过
+./build/test/push_ack_redis_test
+./build/test/push_full_snapshot_test
+
+# 阶段一必需 MySQL 门禁：不可用必须失败
+if [[ ! -x ./build/test/gamedb_snapshot_idempotency_test ]]; then
+  echo "ERROR: missing gamedb_snapshot_idempotency_test"
+  exit 1
+fi
+./build/test/gamedb_snapshot_idempotency_test
+./build/test/gamedb_unknown_result_test
 if [[ -x ./build/test/phase3_gamedb_asset_test ]]; then
-  if timeout 15 ./build/test/phase3_gamedb_asset_test; then
-    :
-  else
-    ec=$?
-    if [[ "$ec" -eq 124 ]]; then
-      echo "SKIP: phase3_gamedb_asset_test timed out (MySQL unreachable?)"
-    else
-      echo "ERROR: phase3_gamedb_asset_test failed ec=$ec"
-      exit "$ec"
-    fi
-  fi
+  ./build/test/phase3_gamedb_asset_test
 fi
 echo "test_integration.sh PASS"

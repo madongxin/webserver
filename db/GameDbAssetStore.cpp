@@ -9,6 +9,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <sstream>
+#include <thread>
 
 namespace {
 
@@ -27,6 +28,24 @@ std::string Escape(const std::string &s) {
             o.push_back(c);
     }
     return o;
+}
+
+std::string SnapshotRequestHash(uint64_t expected_version,
+                                const std::map<uint32_t, uint32_t> &bag) {
+    std::ostringstream os;
+    os << "SAVE_SNAPSHOT|v=" << expected_version;
+    for (const auto &kv : bag)
+        os << "|" << kv.first << ":" << kv.second;
+    // 简单 FNV-1a 64
+    uint64_t h = 14695981039346656037ull;
+    const std::string s = os.str();
+    for (unsigned char c : s) {
+        h ^= c;
+        h *= 1099511628211ull;
+    }
+    char buf[32];
+    std::snprintf(buf, sizeof(buf), "%016llx", (unsigned long long)h);
+    return buf;
 }
 
 }  // namespace
@@ -65,7 +84,10 @@ bool GameDbAssetStore::EnsureTables() {
         "message VARCHAR(256) NOT NULL DEFAULT '',"
         "asset_version BIGINT UNSIGNED NOT NULL DEFAULT 0,"
         "remain_count INT UNSIGNED NOT NULL DEFAULT 0,"
-        "created_at BIGINT NOT NULL"
+        "operation_type VARCHAR(32) NOT NULL DEFAULT '',"
+        "request_hash VARCHAR(128) NOT NULL DEFAULT '',"
+        "created_at BIGINT NOT NULL,"
+        "KEY idx_player_op (player_id, operation_type)"
         ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4";
     const char *bag =
         "CREATE TABLE IF NOT EXISTS player_asset_bag ("
@@ -75,6 +97,35 @@ bool GameDbAssetStore::EnsureTables() {
         "PRIMARY KEY (player_id, item_id)"
         ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4";
     available_ = conn->update(meta) && conn->update(idem) && conn->update(bag);
+    // 兼容旧表：仅当缺列时补齐（避免重复 ALTER 抢元数据锁）
+    {
+        MYSQL_RES *cols = conn->query(
+            "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() "
+            "AND TABLE_NAME='player_asset_idem' AND COLUMN_NAME='operation_type'");
+        bool need_op = true;
+        if (cols) {
+            MYSQL_ROW r = mysql_fetch_row(cols);
+            if (r && r[0] && std::atoi(r[0]) > 0)
+                need_op = false;
+            mysql_free_result(cols);
+        }
+        if (need_op)
+            conn->update("ALTER TABLE player_asset_idem ADD COLUMN operation_type VARCHAR(32) NOT "
+                         "NULL DEFAULT ''");
+        MYSQL_RES *cols2 = conn->query(
+            "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() "
+            "AND TABLE_NAME='player_asset_idem' AND COLUMN_NAME='request_hash'");
+        bool need_hash = true;
+        if (cols2) {
+            MYSQL_ROW r = mysql_fetch_row(cols2);
+            if (r && r[0] && std::atoi(r[0]) > 0)
+                need_hash = false;
+            mysql_free_result(cols2);
+        }
+        if (need_hash)
+            conn->update("ALTER TABLE player_asset_idem ADD COLUMN request_hash VARCHAR(128) NOT "
+                         "NULL DEFAULT ''");
+    }
     tables_ready_ = available_;
     if (available_)
         LOG_INFO << "GameDbAssetStore tables ready";
@@ -337,35 +388,140 @@ bool GameDbAssetStore::ApplyMutation(uint64_t player_id, const std::string &idem
 
 bool GameDbAssetStore::SaveSnapshot(uint64_t player_id, uint64_t expected_version,
                                     const std::map<uint32_t, uint32_t> &bag,
-                                    const std::string &idempotency_key, uint64_t *new_version,
-                                    std::string *err) {
+                                    const std::string &idempotency_key, SnapshotResult *out) {
 #ifdef WEBSERVER_ENABLE_MYSQL
+    if (!out)
+        return false;
+    *out = SnapshotResult{};
     if (!EnsureTables() || player_id == 0) {
-        if (err)
-            *err = "unavailable";
+        out->error_code = "INVALID_ARG";
+        out->message = "unavailable";
         return false;
     }
+    if (idempotency_key.empty()) {
+        out->error_code = "IDEMPOTENCY_REQUIRED";
+        out->message = "idempotency_key required";
+        return false;
+    }
+    const std::string req_hash = SnapshotRequestHash(expected_version, bag);
     auto conn = ConnectionPool::getconnectionPool()->getConnection();
     if (!conn) {
-        if (err)
-            *err = "no connection";
+        out->error_code = "DB_UNAVAILABLE";
+        out->message = "no connection";
         return false;
+    }
+    {
+        char q[640];
+        std::snprintf(q, sizeof(q),
+                      "SELECT ok,error_code,message,asset_version,request_hash,player_id FROM "
+                      "player_asset_idem WHERE idempotency_key='%s'",
+                      Escape(idempotency_key).c_str());
+        MYSQL_RES *res = conn->query(q);
+        if (res) {
+            MYSQL_ROW row = mysql_fetch_row(res);
+            if (row && row[0]) {
+                const uint64_t pid =
+                    row[5] ? std::strtoull(row[5], nullptr, 10) : 0;
+                const std::string old_hash = row[4] ? row[4] : "";
+                if (pid != 0 && pid != player_id) {
+                    out->idempotent_hit = true;
+                    out->ok = false;
+                    out->error_code = "IDEMPOTENCY_CONFLICT";
+                    out->message = "idempotency_key bound to other player";
+                    mysql_free_result(res);
+                    return false;
+                }
+                if (!old_hash.empty() && old_hash != req_hash) {
+                    out->idempotent_hit = true;
+                    out->ok = false;
+                    out->error_code = "IDEMPOTENCY_CONFLICT";
+                    out->message = "same key different payload";
+                    mysql_free_result(res);
+                    return false;
+                }
+                if (std::atoi(row[0]) != 0) {
+                    out->idempotent_hit = true;
+                    out->ok = true;
+                    out->error_code = row[1] ? row[1] : "";
+                    out->message = row[2] ? row[2] : "idempotent";
+                    out->asset_version = row[3] ? std::strtoull(row[3], nullptr, 10) : 0;
+                    mysql_free_result(res);
+                    return true;
+                }
+                // ok=0：进行中，落到下方短等回读
+                mysql_free_result(res);
+            } else {
+                mysql_free_result(res);
+            }
+        }
     }
     if (!conn->begin()) {
-        if (err)
-            *err = "tx";
+        out->error_code = "TX_BEGIN";
         return false;
     }
+    // 先占幂等键，避免并发双写资产
+    {
+        char claim[768];
+        std::snprintf(claim, sizeof(claim),
+                      "INSERT INTO player_asset_idem(idempotency_key,player_id,ok,error_code,message,"
+                      "asset_version,remain_count,operation_type,request_hash,created_at) "
+                      "VALUES('%s',%llu,0,'IN_PROGRESS','in progress',0,0,'SAVE_SNAPSHOT','%s',%lld)",
+                      Escape(idempotency_key).c_str(), (unsigned long long)player_id,
+                      Escape(req_hash).c_str(), (long long)NowSec());
+        if (!conn->update(claim)) {
+            conn->rollback();
+            for (int i = 0; i < 40; ++i) {
+                char q2[640];
+                std::snprintf(q2, sizeof(q2),
+                              "SELECT ok,error_code,message,asset_version,request_hash FROM "
+                              "player_asset_idem WHERE idempotency_key='%s'",
+                              Escape(idempotency_key).c_str());
+                MYSQL_RES *res2 = conn->query(q2);
+                if (res2) {
+                    MYSQL_ROW row2 = mysql_fetch_row(res2);
+                    if (row2 && row2[0] && std::atoi(row2[0]) != 0) {
+                        const std::string old_hash = row2[4] ? row2[4] : "";
+                        if (!old_hash.empty() && old_hash != req_hash) {
+                            out->ok = false;
+                            out->idempotent_hit = true;
+                            out->error_code = "IDEMPOTENCY_CONFLICT";
+                            out->message = "same key different payload";
+                            mysql_free_result(res2);
+                            return false;
+                        }
+                        out->idempotent_hit = true;
+                        out->ok = true;
+                        out->error_code = row2[1] ? row2[1] : "";
+                        out->message = row2[2] ? row2[2] : "idempotent";
+                        out->asset_version = row2[3] ? std::strtoull(row2[3], nullptr, 10) : 0;
+                        mysql_free_result(res2);
+                        return true;
+                    }
+                    mysql_free_result(res2);
+                }
+                std::this_thread::sleep_for(std::chrono::milliseconds(10));
+            }
+            out->ok = false;
+            out->error_code = "IDEMPOTENCY_BUSY";
+            out->message = "idempotency in progress";
+            return false;
+        }
+    }
+    auto fail = [&](const char *code, const char *msg) -> bool {
+        conn->rollback();
+        out->ok = false;
+        out->error_code = code;
+        out->message = msg;
+        return false;
+    };
     uint64_t ver = 1;
     char q[256];
     std::snprintf(q, sizeof(q),
                   "SELECT asset_version FROM player_asset_meta WHERE player_id=%llu FOR UPDATE",
                   (unsigned long long)player_id);
     MYSQL_RES *res = conn->query(q);
-    if (!res) {
-        conn->rollback();
-        return false;
-    }
+    if (!res)
+        return fail("DB_ERROR", "meta query");
     MYSQL_ROW row = mysql_fetch_row(res);
     if (!row || !row[0]) {
         mysql_free_result(res);
@@ -374,25 +530,20 @@ bool GameDbAssetStore::SaveSnapshot(uint64_t player_id, uint64_t expected_versio
                       "INSERT INTO player_asset_meta(player_id,asset_version,updated_at) "
                       "VALUES(%llu,1,%lld)",
                       (unsigned long long)player_id, (long long)NowSec());
-        if (!conn->update(ins)) {
-            conn->rollback();
-            return false;
-        }
+        if (!conn->update(ins))
+            return fail("DB_ERROR", "meta insert");
         ver = 1;
     } else {
         ver = std::strtoull(row[0], nullptr, 10);
         mysql_free_result(res);
     }
-    if (expected_version != 0 && expected_version != ver) {
-        conn->rollback();
-        if (err)
-            *err = "VERSION_CONFLICT";
-        return false;
-    }
+    if (expected_version != 0 && expected_version != ver)
+        return fail("VERSION_CONFLICT", "expected_version mismatch");
     char del[128];
     std::snprintf(del, sizeof(del), "DELETE FROM player_asset_bag WHERE player_id=%llu",
                   (unsigned long long)player_id);
-    conn->update(del);
+    if (!conn->update(del))
+        return fail("DB_ERROR", "bag clear");
     for (const auto &kv : bag) {
         if (kv.second == 0)
             continue;
@@ -400,10 +551,8 @@ bool GameDbAssetStore::SaveSnapshot(uint64_t player_id, uint64_t expected_versio
         std::snprintf(ups, sizeof(ups),
                       "INSERT INTO player_asset_bag(player_id,item_id,count) VALUES(%llu,%u,%u)",
                       (unsigned long long)player_id, kv.first, kv.second);
-        if (!conn->update(ups)) {
-            conn->rollback();
-            return false;
-        }
+        if (!conn->update(ups))
+            return fail("DB_ERROR", "bag upsert");
     }
     const uint64_t nv = ver + 1;
     char ups[256];
@@ -411,22 +560,89 @@ bool GameDbAssetStore::SaveSnapshot(uint64_t player_id, uint64_t expected_versio
                   "UPDATE player_asset_meta SET asset_version=%llu,updated_at=%lld WHERE "
                   "player_id=%llu",
                   (unsigned long long)nv, (long long)NowSec(), (unsigned long long)player_id);
-    if (!conn->update(ups) || !conn->commit()) {
-        conn->rollback();
-        return false;
-    }
-    (void)idempotency_key;
-    if (new_version)
-        *new_version = nv;
+    if (!conn->update(ups))
+        return fail("DB_ERROR", "meta bump");
+    GameDbOutbox::Instance().EnsureTable();
+    if (!GameDbOutbox::Instance().InsertOnConnection(
+            conn.get(), "asset.snapshot", "player", std::to_string(player_id), idempotency_key,
+            "{\"asset_version\":" + std::to_string(nv) + "}", NowSec()))
+        return fail("OUTBOX_FAIL", "outbox insert failed");
+    char ups_idem[512];
+    std::snprintf(ups_idem, sizeof(ups_idem),
+                  "UPDATE player_asset_idem SET ok=1,error_code='',message='ok',"
+                  "asset_version=%llu WHERE idempotency_key='%s'",
+                  (unsigned long long)nv, Escape(idempotency_key).c_str());
+    if (!conn->update(ups_idem))
+        return fail("IDEMPOTENCY_FAIL", "idem finalize failed");
+    if (!conn->commit())
+        return fail("TX_COMMIT", "commit failed");
+    out->ok = true;
+    out->asset_version = nv;
+    out->message = "ok";
     return true;
 #else
     (void)player_id;
     (void)expected_version;
     (void)bag;
     (void)idempotency_key;
-    (void)new_version;
-    if (err)
-        *err = "MYSQL_DISABLED";
+    if (out) {
+        out->error_code = "MYSQL_DISABLED";
+        out->message = "mysql not enabled";
+    }
+    return false;
+#endif
+}
+
+bool GameDbAssetStore::QueryOperationResult(uint64_t player_id, const std::string &idempotency_key,
+                                            const std::string &operation_type,
+                                            OperationQuery *out) {
+#ifdef WEBSERVER_ENABLE_MYSQL
+    if (!out)
+        return false;
+    *out = OperationQuery{};
+    if (!EnsureTables() || player_id == 0 || idempotency_key.empty())
+        return false;
+    auto conn = ConnectionPool::getconnectionPool()->getConnection();
+    if (!conn)
+        return false;
+    char q[640];
+    std::snprintf(q, sizeof(q),
+                  "SELECT ok,error_code,message,asset_version,remain_count,request_hash,"
+                  "operation_type,player_id FROM player_asset_idem WHERE idempotency_key='%s'",
+                  Escape(idempotency_key).c_str());
+    MYSQL_RES *res = conn->query(q);
+    if (!res)
+        return false;
+    MYSQL_ROW row = mysql_fetch_row(res);
+    if (!row) {
+        mysql_free_result(res);
+        out->found = false;
+        return true;
+    }
+    const uint64_t pid = row[7] ? std::strtoull(row[7], nullptr, 10) : 0;
+    const std::string op = row[6] ? row[6] : "";
+    if (pid != player_id || (!operation_type.empty() && !op.empty() && op != operation_type)) {
+        mysql_free_result(res);
+        out->found = false;
+        return true;
+    }
+    out->found = true;
+    out->completed_ok = row[0] && std::atoi(row[0]) != 0;
+    out->error_code = row[1] ? row[1] : "";
+    out->message = row[2] ? row[2] : "";
+    out->asset_version = row[3] ? std::strtoull(row[3], nullptr, 10) : 0;
+    out->remain_count =
+        row[4] ? static_cast<uint32_t>(std::strtoul(row[4], nullptr, 10)) : 0;
+    out->request_hash = row[5] ? row[5] : "";
+    out->operation_type = op;
+    mysql_free_result(res);
+    return true;
+#else
+    (void)player_id;
+    (void)idempotency_key;
+    (void)operation_type;
+    if (out)
+        out->found = false;
     return false;
 #endif
 }

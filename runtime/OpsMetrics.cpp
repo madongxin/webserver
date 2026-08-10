@@ -42,11 +42,31 @@ std::string OpsMetrics::PrometheusText() const {
         push_accepted_.load(std::memory_order_relaxed));
     ctr("gamemesh_push_rejected_total", "Push rejected.",
         push_rejected_.load(std::memory_order_relaxed));
+    ctr("gamemesh_push_ack_ok_total", "Reliable push ACK ok.",
+        push_ack_ok_.load(std::memory_order_relaxed));
+    ctr("gamemesh_push_ack_duplicate_total", "Reliable push ACK duplicate.",
+        push_ack_duplicate_.load(std::memory_order_relaxed));
+    ctr("gamemesh_push_ack_ahead_rejected_total", "Reliable push ACK ahead of server_seq.",
+        push_ack_ahead_rejected_.load(std::memory_order_relaxed));
+    ctr("gamemesh_push_ack_stale_rejected_total", "Reliable push ACK behind last_ack.",
+        push_ack_stale_rejected_.load(std::memory_order_relaxed));
     ctr("gamemesh_identity_mismatch_total", "Client player_id mismatch vs trusted binding.",
         identity_mismatch_.load(std::memory_order_relaxed));
+    ctr("gamemesh_queue_overload_total", "PlayerSerialQueue TryPost rejected.",
+        queue_overload_.load(std::memory_order_relaxed));
+    ctr("gamemesh_command_forbidden_total", "Client command policy rejects.",
+        command_forbidden_.load(std::memory_order_relaxed));
     gauge("gamemesh_online_players", "Bound gateway connections (approx).",
           online_players_.load(std::memory_order_relaxed));
     gauge("gamemesh_outbox_backlog", "Unpublished outbox rows (GameDB).",
           outbox_backlog_.load(std::memory_order_relaxed));
+    gauge("gamemesh_mailbox_pending", "PlayerSerialQueue pending_global.",
+          mailbox_pending_.load(std::memory_order_relaxed));
+    ctr("gamemesh_placement_recover_ok_total", "Placement auto recover success.",
+        placement_recover_ok_.load(std::memory_order_relaxed));
+    ctr("gamemesh_placement_recover_fail_total", "Placement auto recover failure.",
+        placement_recover_fail_.load(std::memory_order_relaxed));
+    ctr("gamemesh_gamedb_unknown_result_total", "GameDB write unknown-result outcomes.",
+        gamedb_unknown_result_.load(std::memory_order_relaxed));
     return os.str();
 }

@@ -13,27 +13,25 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y g++ cmake protobuf-compiler libprotobuf-dev \
             libssl-dev libjsoncpp-dev libhiredis-dev libmysqlclient-dev \
-            libgflags-dev libleveldb-dev zlib1g-dev
+            libgflags-dev libleveldb-dev zlib1g-dev shellcheck
       - name: check_deps lowlevel
         run: ./scripts/check_deps.sh --lowlevel
-      - name: bootstrap
-        run: ./scripts/bootstrap.sh || true
+      - name: bootstrap config
+        run: ./scripts/bootstrap_local_config.sh
       - name: build Debug lowlevel
         run: ./scripts/build.sh Debug --lowlevel
       - name: test lowlevel
         run: ./scripts/test.sh lowlevel
+      - name: git diff --check
+        run: |
+          git diff --check
+          git diff --cached --check || true
       - name: shell syntax
         run: |
           bash -n scripts/*.sh
           bash -n deploy/docker-entrypoint.sh
       - name: shellcheck
-        run: |
-          if command -v shellcheck >/dev/null 2>&1; then
-            shellcheck -x scripts/*.sh deploy/docker-entrypoint.sh
-          else
-            sudo apt-get install -y shellcheck
-            shellcheck -x scripts/*.sh deploy/docker-entrypoint.sh
-          fi
+        run: shellcheck -x scripts/*.sh deploy/docker-entrypoint.sh
 
   full:
     runs-on: ubuntu-latest
@@ -48,18 +46,21 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y g++ cmake protobuf-compiler libprotobuf-dev \
             libssl-dev libjsoncpp-dev libhiredis-dev libmysqlclient-dev \
-            libgflags-dev libleveldb-dev zlib1g-dev
+            libgflags-dev libleveldb-dev zlib1g-dev shellcheck
           if [[ ! -f /usr/local/include/brpc/server.h && ! -f /usr/include/brpc/server.h ]]; then
-            echo "ERROR: full CI job requires brpc headers/libs in the runner image." >&2
-            echo "Provide a toolchain image with brpc, or install brpc before this job." >&2
+            echo "ERROR: full CI requires brpc. Use a toolchain image or scripts/install_deps.sh --build-brpc." >&2
             exit 1
           fi
       - name: check_deps full
         run: ./scripts/check_deps.sh --full
-      - name: bootstrap
-        run: ./scripts/bootstrap.sh || true
+      - name: bootstrap config
+        run: ./scripts/bootstrap_local_config.sh
+      - name: git diff --check
+        run: git diff --check
       - name: build Debug
         run: ./scripts/build.sh Debug
+      - name: build Release
+        run: ./scripts/build.sh Release
       - name: unit
         run: ./scripts/test.sh unit
       - name: reactor
@@ -68,12 +69,7 @@ jobs:
         run: ./scripts/test_integration.sh
       - name: compose config
         run: docker compose -f compose.yml config >/dev/null
-      - name: ASan build+smoke
-        run: |
-          cmake -S . -B build-asan -DCMAKE_BUILD_TYPE=Debug \
-            -DENABLE_BRPC=OFF -DENABLE_MYSQL=OFF -DENABLE_REDIS=ON \
-            -DCMAKE_CXX_FLAGS="-fsanitize=address -fno-omit-frame-pointer" \
-            -DCMAKE_EXE_LINKER_FLAGS="-fsanitize=address"
-          cmake --build build-asan -j"$(nproc)" --target reactor_unit_test password_hash_test
-          ASAN_OPTIONS=detect_leaks=0 ./build-asan/test/reactor_unit_test
-          ASAN_OPTIONS=detect_leaks=0 ./build-asan/test/password_hash_test
+      - name: sanitizers
+        run: ./scripts/test_sanitizers.sh all
+      - name: shellcheck
+        run: shellcheck -x scripts/*.sh deploy/docker-entrypoint.sh

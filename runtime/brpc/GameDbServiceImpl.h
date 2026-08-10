@@ -32,4 +32,8 @@ public:
     void FlushPlayer(::google::protobuf::RpcController *controller,
                      const ::gdb::FlushPlayerReq *request, ::gdb::FlushPlayerRsp *response,
                      ::google::protobuf::Closure *done) override;
+    void QueryOperationResult(::google::protobuf::RpcController *controller,
+                              const ::gdb::QueryOperationResultReq *request,
+                              ::gdb::QueryOperationResultRsp *response,
+                              ::google::protobuf::Closure *done) override;
 };

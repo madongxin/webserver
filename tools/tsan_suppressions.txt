@@ -1,0 +1,7 @@
+# brpc/bthread 未以 TSan 重编时的已知内部竞态（非 GameMesh 业务代码）
+# 业务侧 channel snapshot / player serial 仍由测试逻辑断言覆盖。
+race:bthread::
+race:brpc::
+race:butil::
+deadlock:bthread::
+deadlock:brpc::

@@ -8,9 +8,23 @@
 
 #include <brpc/channel.h>
 
+#include <atomic>
+
 SessionRpcClient &SessionRpcClient::Instance() {
     static SessionRpcClient g;
     return g;
+}
+
+std::shared_ptr<brpc::Channel> SessionRpcClient::CurrentChannel() const {
+    return std::atomic_load_explicit(&channel_, std::memory_order_acquire);
+}
+
+bool SessionRpcClient::ready() const {
+    return CurrentChannel() != nullptr;
+}
+
+size_t SessionRpcClient::peer_count() const {
+    return peer_count_.load(std::memory_order_relaxed);
 }
 
 bool SessionRpcClient::Init(const std::string &addr_or_csv, int timeout_ms) {
@@ -24,13 +38,14 @@ bool SessionRpcClient::Init(const std::string &addr_or_csv, int timeout_ms) {
 }
 
 bool SessionRpcClient::Init(const std::vector<std::string> &addrs, int timeout_ms) {
-    Shutdown();
-    if (addrs.empty())
-        return false;
+    if (addrs.empty()) {
+        LOG_WARN << "SessionRpcClient: ignore empty Init (keep last channel)";
+        return ready();
+    }
     const std::string naming = BuildListNamingUrl(addrs);
     if (naming.empty())
         return false;
-    auto ch = std::make_unique<brpc::Channel>();
+    auto ch = std::make_shared<brpc::Channel>();
     brpc::ChannelOptions opt;
     opt.protocol = "baidu_std";
     opt.timeout_ms = timeout_ms > 0 ? timeout_ms : 3000;
@@ -51,57 +66,62 @@ bool SessionRpcClient::Init(const std::vector<std::string> &addrs, int timeout_m
     const int rc = lb.empty() ? ch->Init(naming.c_str(), &opt)
                               : ch->Init(naming.c_str(), lb.c_str(), &opt);
     if (rc != 0) {
-        LOG_ERROR << "SessionRpcClient Init failed naming=" << naming << " lb=" << lb;
+        LOG_ERROR << "SessionRpcClient Init failed naming=" << naming << " lb=" << lb
+                  << " (keep last channel)";
         return false;
     }
-    channel_ = std::move(ch);
-    peer_count_ = addrs.size();
-    LOG_INFO << "SessionRpcClient ready naming=" << naming << " peers=" << peer_count_
+    std::atomic_store_explicit(&channel_, ch, std::memory_order_release);
+    peer_count_.store(addrs.size(), std::memory_order_relaxed);
+    LOG_INFO << "SessionRpcClient ready naming=" << naming << " peers=" << addrs.size()
              << " lb=" << (lb.empty() ? "none" : lb);
     return true;
 }
 
 void SessionRpcClient::Shutdown() {
-    channel_.reset();
-    peer_count_ = 0;
+    std::atomic_store_explicit(&channel_, std::shared_ptr<brpc::Channel>(), std::memory_order_release);
+    peer_count_.store(0, std::memory_order_relaxed);
 }
 
 bool SessionRpcClient::Login(const game::LoginReq &req, game::LoginRsp *rsp) {
-    if (!channel_ || !rsp)
+    auto ch = CurrentChannel();
+    if (!ch || !rsp)
         return false;
     brpc::Controller cntl;
-    sess::SessionService_Stub stub(channel_.get());
+    sess::SessionService_Stub stub(ch.get());
     stub.Login(&cntl, &req, rsp, nullptr);
     return !cntl.Failed();
 }
 
 bool SessionRpcClient::Reconnect(const game::ReconnectReq &req, game::ReconnectRsp *rsp) {
-    if (!channel_ || !rsp)
+    auto ch = CurrentChannel();
+    if (!ch || !rsp)
         return false;
     brpc::Controller cntl;
-    sess::SessionService_Stub stub(channel_.get());
+    sess::SessionService_Stub stub(ch.get());
     stub.Reconnect(&cntl, &req, rsp, nullptr);
     return !cntl.Failed();
 }
 
 bool SessionRpcClient::Logout(const game::LogoutReq &req, game::LogoutRsp *rsp) {
-    if (!channel_ || !rsp)
+    auto ch = CurrentChannel();
+    if (!ch || !rsp)
         return false;
     brpc::Controller cntl;
-    sess::SessionService_Stub stub(channel_.get());
+    sess::SessionService_Stub stub(ch.get());
     stub.Logout(&cntl, &req, rsp, nullptr);
     return !cntl.Failed();
 }
 
 bool SessionRpcClient::ValidateToken(uint64_t player_id, const std::string &token, std::string *err) {
-    if (!channel_)
+    auto ch = CurrentChannel();
+    if (!ch)
         return false;
     sess::ValidateTokenReq req;
     sess::ValidateTokenRsp rsp;
     req.set_player_id(player_id);
     req.set_token(token);
     brpc::Controller cntl;
-    sess::SessionService_Stub stub(channel_.get());
+    sess::SessionService_Stub stub(ch.get());
     stub.ValidateToken(&cntl, &req, &rsp, nullptr);
     if (cntl.Failed()) {
         if (err)
@@ -115,7 +135,8 @@ bool SessionRpcClient::ValidateToken(uint64_t player_id, const std::string &toke
 
 bool SessionRpcClient::BindConnection(uint64_t player_id, const std::string &token,
                                       const std::string &gateway_id, uint64_t connection_id) {
-    if (!channel_)
+    auto ch = CurrentChannel();
+    if (!ch)
         return false;
     sess::BindConnectionReq req;
     sess::BindConnectionRsp rsp;
@@ -124,14 +145,15 @@ bool SessionRpcClient::BindConnection(uint64_t player_id, const std::string &tok
     req.set_gateway_id(gateway_id);
     req.set_connection_id(connection_id);
     brpc::Controller cntl;
-    sess::SessionService_Stub stub(channel_.get());
+    sess::SessionService_Stub stub(ch.get());
     stub.BindConnection(&cntl, &req, &rsp, nullptr);
     return !cntl.Failed() && rsp.ok();
 }
 
 bool SessionRpcClient::MarkDisconnected(uint64_t player_id, const std::string &token,
                                         uint64_t generation) {
-    if (!channel_)
+    auto ch = CurrentChannel();
+    if (!ch)
         return false;
     sess::MarkDisconnectedReq req;
     sess::MarkDisconnectedRsp rsp;
@@ -139,50 +161,54 @@ bool SessionRpcClient::MarkDisconnected(uint64_t player_id, const std::string &t
     req.set_token(token);
     req.set_generation(generation);
     brpc::Controller cntl;
-    sess::SessionService_Stub stub(channel_.get());
+    sess::SessionService_Stub stub(ch.get());
     stub.MarkDisconnected(&cntl, &req, &rsp, nullptr);
     return !cntl.Failed() && rsp.ok();
 }
 
 bool SessionRpcClient::ResolveOrCreateMap(const sess::ResolveOrCreateMapRequest &req,
                                           sess::ResolveOrCreateMapResponse *rsp) {
-    if (!channel_ || !rsp)
+    auto ch = CurrentChannel();
+    if (!ch || !rsp)
         return false;
     brpc::Controller cntl;
-    sess::SessionService_Stub stub(channel_.get());
+    sess::SessionService_Stub stub(ch.get());
     stub.ResolveOrCreateMap(&cntl, &req, rsp, nullptr);
     return !cntl.Failed() && rsp->ok();
 }
 
 bool SessionRpcClient::GetPlacement(uint64_t map_instance_id, sess::GetPlacementResponse *rsp) {
-    if (!channel_ || !rsp)
+    auto ch = CurrentChannel();
+    if (!ch || !rsp)
         return false;
     sess::GetPlacementRequest req;
     req.set_map_instance_id(map_instance_id);
     brpc::Controller cntl;
-    sess::SessionService_Stub stub(channel_.get());
+    sess::SessionService_Stub stub(ch.get());
     stub.GetPlacement(&cntl, &req, rsp, nullptr);
     return !cntl.Failed() && rsp->ok();
 }
 
 bool SessionRpcClient::MigrateMap(const sess::MigrateMapRequest &req, sess::MigrateMapResponse *rsp) {
-    if (!channel_ || !rsp)
+    auto ch = CurrentChannel();
+    if (!ch || !rsp)
         return false;
     brpc::Controller cntl;
-    sess::SessionService_Stub stub(channel_.get());
+    sess::SessionService_Stub stub(ch.get());
     stub.MigrateMap(&cntl, &req, rsp, nullptr);
     return !cntl.Failed() && rsp->ok();
 }
 
 bool SessionRpcClient::MarkRecovering(uint64_t map_instance_id, const std::string &reason,
                                       sess::MarkRecoveringResponse *rsp) {
-    if (!channel_ || !rsp)
+    auto ch = CurrentChannel();
+    if (!ch || !rsp)
         return false;
     sess::MarkRecoveringRequest req;
     req.set_map_instance_id(map_instance_id);
     req.set_reason(reason);
     brpc::Controller cntl;
-    sess::SessionService_Stub stub(channel_.get());
+    sess::SessionService_Stub stub(ch.get());
     stub.MarkRecovering(&cntl, &req, rsp, nullptr);
     return !cntl.Failed() && rsp->ok();
 }
@@ -190,7 +216,8 @@ bool SessionRpcClient::MarkRecovering(uint64_t map_instance_id, const std::strin
 bool SessionRpcClient::HeartbeatOwner(uint64_t map_instance_id, const std::string &owner_logic_id,
                                       uint64_t owner_epoch, uint32_t lease_sec,
                                       int64_t *lease_until_out) {
-    if (!channel_ || owner_logic_id.empty())
+    auto ch = CurrentChannel();
+    if (!ch || owner_logic_id.empty())
         return false;
     sess::HeartbeatOwnerRequest req;
     req.set_map_instance_id(map_instance_id);
@@ -199,7 +226,7 @@ bool SessionRpcClient::HeartbeatOwner(uint64_t map_instance_id, const std::strin
     req.set_lease_sec(lease_sec);
     sess::HeartbeatOwnerResponse rsp;
     brpc::Controller cntl;
-    sess::SessionService_Stub stub(channel_.get());
+    sess::SessionService_Stub stub(ch.get());
     stub.HeartbeatOwner(&cntl, &req, &rsp, nullptr);
     if (cntl.Failed() || !rsp.ok())
         return false;
@@ -210,10 +237,11 @@ bool SessionRpcClient::HeartbeatOwner(uint64_t map_instance_id, const std::strin
 
 bool SessionRpcClient::UpdatePlayerRoute(const sess::UpdatePlayerRouteRequest &req,
                                          sess::UpdatePlayerRouteResponse *rsp) {
-    if (!channel_ || !rsp)
+    auto ch = CurrentChannel();
+    if (!ch || !rsp)
         return false;
     brpc::Controller cntl;
-    sess::SessionService_Stub stub(channel_.get());
+    sess::SessionService_Stub stub(ch.get());
     stub.UpdatePlayerRoute(&cntl, &req, rsp, nullptr);
     return !cntl.Failed() && rsp->ok();
 }

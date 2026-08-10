@@ -1,30 +1,32 @@
 #pragma once
 
+#include "RpcChannelSnapshot.h"
 #include "auth.pb.h"
 #include "gamelogic_rpc.pb.h"
 #include "session.pb.h"
 
+#include <atomic>
 #include <memory>
 #include <string>
-#include <unordered_map>
 #include <vector>
 
 namespace brpc {
 class Channel;
 }
 
-/** Gateway 侧编排客户端：Auth / Session / GameLogic BindPlayer（复用 Channel）。 */
+/** Gateway 侧编排客户端：Auth / Session / GameLogic（不可变 Channel 快照）。 */
 class GatewayAuthClients {
 public:
     static GatewayAuthClients &Instance();
 
-    /** 单地址、CSV 或多地址；多 Session 使用 list:// + rr */
     bool InitAuthSession(const std::string &session_addr_or_csv, int timeout_ms = 3000);
     bool InitAuthSession(const std::vector<std::string> &session_addrs, int timeout_ms = 3000);
-    size_t session_peer_count() const { return session_peer_count_; }
+    size_t session_peer_count() const;
     bool InitLogicChannels(const std::vector<std::string> &logic_addrs,
                            const std::vector<std::string> &logic_ids, int timeout_ms = 3000);
-    bool ready() const { return session_channel_ != nullptr; }
+    bool ready() const;
+
+    std::shared_ptr<const RpcChannelSnapshot> CurrentSnapshot() const;
 
     bool AuthLogin(const auth::LoginRequest &req, auth::LoginResponse *rsp);
     bool AuthRegister(const auth::RegisterRequest &req, auth::RegisterResponse *rsp);
@@ -62,9 +64,9 @@ public:
 private:
     GatewayAuthClients() = default;
     std::shared_ptr<brpc::Channel> SharedLogicChannel(const std::string &id);
+    void Publish(std::shared_ptr<RpcChannelSnapshot> next);
 
-    std::shared_ptr<brpc::Channel> session_channel_;
-    size_t session_peer_count_ = 0;
-    std::unordered_map<std::string, std::shared_ptr<brpc::Channel>> logic_channels_;
+    std::shared_ptr<const RpcChannelSnapshot> snap_{std::make_shared<RpcChannelSnapshot>()};
+    std::atomic<uint64_t> version_{0};
     int timeout_ms_ = 3000;
 };

@@ -35,18 +35,33 @@ set(CMAKE_CXX_FLAGS "-g -Wall -Werror")
 set(CMAKE_CXX_FLAGS_DEBUG "-O0")
 message(STATUS "C++ standard: ${CMAKE_CXX_STANDARD} (required=${CMAKE_CXX_STANDARD_REQUIRED})")
 
-option(ENABLE_ASAN "Build with AddressSanitizer" OFF)
-if(ENABLE_ASAN)
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address -fno-omit-frame-pointer")
-  set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fsanitize=address")
-endif()
-
-set(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/build/test/)
-
+# Threads 探测必须在 -fsanitize=* 之前，否则 TSan 会让 FindThreads 失败
 find_package(Threads REQUIRED)
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(JSONCPP jsoncpp)
 link_libraries(${JSONCPP_LIBRARIES})
+
+option(ENABLE_ASAN "Build with AddressSanitizer" OFF)
+option(ENABLE_UBSAN "Build with UndefinedBehaviorSanitizer" OFF)
+option(ENABLE_TSAN "Build with ThreadSanitizer" OFF)
+if(ENABLE_ASAN AND ENABLE_TSAN)
+  message(FATAL_ERROR "ENABLE_ASAN and ENABLE_TSAN are mutually exclusive")
+endif()
+if(ENABLE_ASAN)
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address -fno-omit-frame-pointer")
+  set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fsanitize=address")
+endif()
+if(ENABLE_UBSAN)
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=undefined -fno-omit-frame-pointer")
+  set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fsanitize=undefined")
+endif()
+if(ENABLE_TSAN)
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=thread -fno-omit-frame-pointer")
+  set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fsanitize=thread")
+endif()
+
+# 随 -B 构建目录变化，避免 build-asan 等污染默认 build/test
+set(EXECUTABLE_OUTPUT_PATH ${CMAKE_BINARY_DIR}/test/)
 
 # 流式文件哈希 FileHash（OpenSSL EVP）
 find_path(OPENSSL_INCLUDE_DIR openssl/evp.h PATHS /usr/include /usr/local/include)
@@ -76,6 +91,7 @@ if(ENABLE_GAME_PROTOBUF)
     game/GameTcpGateway.cpp
     game/GatewayConnRegistry.cpp
     game/GatewayAuthPolicy.cpp
+    game/CommandPolicy.cpp
     runtime/PlayerSerialQueue.cpp
     runtime/InProcessTransport.cpp
     runtime/TcpReplySink.cpp
@@ -471,6 +487,30 @@ if(ENABLE_GAME_PROTOBUF)
   target_include_directories(placement_authority_test PRIVATE game)
   # header-only ValidateAuthorityWrite；无需 Redis 运行时
 
+  add_executable(placement_formal_fence_test
+    test/placement_formal_fence_test.cpp)
+  target_include_directories(placement_formal_fence_test PRIVATE game)
+
+  add_executable(command_policy_test
+    test/command_policy_test.cpp
+    game/CommandPolicy.cpp
+    game/game.pb.cc)
+  target_compile_definitions(command_policy_test PRIVATE WEBSERVER_ENABLE_GAME_PROTOBUF)
+  target_include_directories(command_policy_test PRIVATE
+    ${Protobuf_INCLUDE_DIRS} game runtime)
+  target_link_libraries(command_policy_test ${Protobuf_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
+
+  add_executable(gateway_overload_test
+    test/gateway_overload_test.cpp
+    runtime/PlayerSerialQueue.cpp
+    base/CurrentThread.cpp
+    log/Logging.cpp
+    log/LogStream.cpp
+    log/LogFile.cpp
+    log/AsyncLogging.cpp)
+  target_include_directories(gateway_overload_test PRIVATE runtime base log timer)
+  target_link_libraries(gateway_overload_test ${CMAKE_THREAD_LIBS_INIT})
+
   add_executable(phase2_transfer_snapshot_test
     test/phase2_transfer_snapshot_test.cpp
     game/GameLogic.cpp
@@ -505,7 +545,31 @@ if(ENABLE_GAME_PROTOBUF)
       runtime runtime/brpc base log timer ${BRPC_INCLUDE_DIR} ${Protobuf_INCLUDE_DIRS})
     target_link_libraries(phase1_channel_hold_test
       ${BRPC_LINK_LIBS} ${Protobuf_LIBRARIES} ${OPENSSL_CRYPTO_LIB} ${CMAKE_THREAD_LIBS_INIT})
+
+    add_executable(channel_snapshot_race_test
+      test/channel_snapshot_race_test.cpp
+      runtime/brpc/BrpcChannelManager.cpp
+      base/CurrentThread.cpp
+      log/Logging.cpp
+      log/LogStream.cpp
+      log/LogFile.cpp
+      log/AsyncLogging.cpp)
+    target_include_directories(channel_snapshot_race_test PRIVATE
+      runtime runtime/brpc base log timer ${BRPC_INCLUDE_DIR} ${Protobuf_INCLUDE_DIRS})
+    target_link_libraries(channel_snapshot_race_test
+      ${BRPC_LINK_LIBS} ${Protobuf_LIBRARIES} ${OPENSSL_CRYPTO_LIB} ${CMAKE_THREAD_LIBS_INIT})
   endif()
+
+  add_executable(player_serial_async_test
+    test/player_serial_async_test.cpp
+    runtime/PlayerSerialQueue.cpp
+    base/CurrentThread.cpp
+    log/Logging.cpp
+    log/LogStream.cpp
+    log/LogFile.cpp
+    log/AsyncLogging.cpp)
+  target_include_directories(player_serial_async_test PRIVATE runtime base log timer)
+  target_link_libraries(player_serial_async_test ${CMAKE_THREAD_LIBS_INIT})
 
   add_executable(gateway_conn_race_test
     test/gateway_conn_race_test.cpp
@@ -590,6 +654,7 @@ if(ENABLE_GAME_PROTOBUF AND ENABLE_REDIS)
     test/placement_recovery_test.cpp
     game/PlacementStore.cpp
     runtime/PlacementRecoveryScheduler.cpp
+    runtime/OpsMetrics.cpp
     redis/RedisClient.cpp
     redis/RedisPool.cpp
     base/CurrentThread.cpp
@@ -648,6 +713,38 @@ if(ENABLE_GAME_PROTOBUF AND ENABLE_REDIS)
   target_include_directories(push_replay_store_test PRIVATE
     game redis base log timer runtime ${HIREDIS_INCLUDE_DIR})
   target_link_libraries(push_replay_store_test ${CMAKE_THREAD_LIBS_INIT} ${HIREDIS_LIB})
+
+  add_executable(push_ack_redis_test
+    test/push_ack_redis_test.cpp
+    game/PushReplayStore.cpp
+    runtime/PushReplayCache.cpp
+    redis/RedisClient.cpp
+    redis/RedisPool.cpp
+    base/CurrentThread.cpp
+    log/Logging.cpp
+    log/LogStream.cpp
+    log/LogFile.cpp
+    log/AsyncLogging.cpp)
+  target_compile_definitions(push_ack_redis_test PRIVATE WEBSERVER_ENABLE_REDIS)
+  target_include_directories(push_ack_redis_test PRIVATE
+    game redis base log timer runtime ${HIREDIS_INCLUDE_DIR})
+  target_link_libraries(push_ack_redis_test ${CMAKE_THREAD_LIBS_INIT} ${HIREDIS_LIB})
+
+  add_executable(push_full_snapshot_test
+    test/push_full_snapshot_test.cpp
+    game/PushReplayStore.cpp
+    runtime/PushReplayCache.cpp
+    redis/RedisClient.cpp
+    redis/RedisPool.cpp
+    base/CurrentThread.cpp
+    log/Logging.cpp
+    log/LogStream.cpp
+    log/LogFile.cpp
+    log/AsyncLogging.cpp)
+  target_compile_definitions(push_full_snapshot_test PRIVATE WEBSERVER_ENABLE_REDIS)
+  target_include_directories(push_full_snapshot_test PRIVATE
+    game redis base log timer runtime ${HIREDIS_INCLUDE_DIR})
+  target_link_libraries(push_full_snapshot_test ${CMAKE_THREAD_LIBS_INIT} ${HIREDIS_LIB})
 
   add_executable(push_replay_cache_test
     test/push_replay_cache_test.cpp
@@ -764,6 +861,7 @@ if(ENABLE_MYSQL AND ENABLE_GAME_PROTOBUF)
     db/PlayerAccountStore.cpp
     db/GameDbAssetStore.cpp
     runtime/OpsMetrics.cpp
+    runtime/PlayerSerialQueue.cpp
     runtime/discovery/NatsThinClient.cpp
     runtime/MapPlacement.cpp
     runtime/MapInstanceRegistry.cpp
@@ -791,6 +889,42 @@ if(ENABLE_MYSQL AND ENABLE_GAME_PROTOBUF)
   target_include_directories(phase3_gamedb_asset_test PRIVATE
     ${MYSQL_INCLUDE_DIR} db base log timer)
   target_link_libraries(phase3_gamedb_asset_test
+    ${CMAKE_THREAD_LIBS_INIT} ${MYSQL_CLIENT_LIB})
+
+  add_executable(gamedb_snapshot_idempotency_test
+    test/gamedb_snapshot_idempotency_test.cpp
+    db/Connection.cpp
+    db/ConnectionPool.cpp
+    db/GameDbOutbox.cpp
+    db/GameDbAssetStore.cpp
+    db/PlayerItemStore.cpp
+    base/CurrentThread.cpp
+    log/Logging.cpp
+    log/LogStream.cpp
+    log/LogFile.cpp
+    log/AsyncLogging.cpp)
+  target_compile_definitions(gamedb_snapshot_idempotency_test PRIVATE WEBSERVER_ENABLE_MYSQL)
+  target_include_directories(gamedb_snapshot_idempotency_test PRIVATE
+    ${MYSQL_INCLUDE_DIR} db base log timer)
+  target_link_libraries(gamedb_snapshot_idempotency_test
+    ${CMAKE_THREAD_LIBS_INIT} ${MYSQL_CLIENT_LIB})
+
+  add_executable(gamedb_unknown_result_test
+    test/gamedb_unknown_result_test.cpp
+    db/Connection.cpp
+    db/ConnectionPool.cpp
+    db/GameDbOutbox.cpp
+    db/GameDbAssetStore.cpp
+    db/PlayerItemStore.cpp
+    base/CurrentThread.cpp
+    log/Logging.cpp
+    log/LogStream.cpp
+    log/LogFile.cpp
+    log/AsyncLogging.cpp)
+  target_compile_definitions(gamedb_unknown_result_test PRIVATE WEBSERVER_ENABLE_MYSQL)
+  target_include_directories(gamedb_unknown_result_test PRIVATE
+    ${MYSQL_INCLUDE_DIR} db base log timer)
+  target_link_libraries(gamedb_unknown_result_test
     ${CMAKE_THREAD_LIBS_INIT} ${MYSQL_CLIENT_LIB})
 
   add_executable(mail_claim_integration_test

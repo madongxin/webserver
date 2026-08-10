@@ -8,11 +8,13 @@
 #include "Logging.h"
 #include "MailConfig.h"
 #include "MailStore.h"
+#include "PlayerSerialQueue.h"
 
 #include <algorithm>
 #include <chrono>
 #include <future>
 #include <sstream>
+#include <utility>
 
 namespace {
 
@@ -591,25 +593,97 @@ bool MailService::ClaimOne(uint64_t player_id, uint64_t mail_id, const std::stri
     db_req.inventory_soft_cap = kInventorySoftCap;
     GameLogic::Instance().CopyInventory(player_id, &db_req.bag_snapshot);
 
-    // SQL 在 GameDB worker / 独立 GameDB 进程；此处同步等待
-    std::promise<GameDbMailClaimResult> prom;
-    auto fut = prom.get_future();
+    // 同步兼容路径（batch）；单封领取优先 BeginHandleMailClaimAsync
+    auto prom = std::make_shared<std::promise<GameDbMailClaimResult>>();
+    auto fut = prom->get_future();
     repo->ClaimMailAttachmentsAsync(std::move(db_req),
-                                    [&prom](GameDbMailClaimResult r) { prom.set_value(std::move(r)); });
+                                    [prom](GameDbMailClaimResult r) { prom->set_value(std::move(r)); });
     GameDbMailClaimResult db_rsp = fut.get();
 
     result->set_ok(db_rsp.ok);
     result->set_error_code(db_rsp.error_code);
     result->set_message(db_rsp.message);
     result->set_attachment_state(db_rsp.attachment_state);
-
-    if (db_rsp.should_apply_memory) {
-        for (const auto &g : db_rsp.grants)
-            GameLogic::Instance().ApplyItemReward(player_id, static_cast<uint32_t>(g.asset_id),
-                                                  g.count);
-        BumpVersion(player_id);
-    }
+    ApplyClaimMemory(player_id, db_rsp);
     return db_rsp.ok;
+}
+
+void MailService::ApplyClaimMemory(uint64_t player_id, const GameDbMailClaimResult &db_rsp) {
+    if (!db_rsp.should_apply_memory)
+        return;
+    for (const auto &g : db_rsp.grants)
+        GameLogic::Instance().ApplyItemReward(player_id, static_cast<uint32_t>(g.asset_id), g.count);
+    BumpVersion(player_id);
+}
+
+bool MailService::BeginHandleMailClaimAsync(const game::MailClaimReq &req, game::GameResponse *rsp,
+                                            std::function<void(game::GameResponse)> done) {
+    if (!rsp || !done)
+        return false;
+    auto *body = rsp->mutable_mail_claim();
+    body->set_server_time_utc(NowUtc());
+    auto fail_sync = [&](const std::string &code, const std::string &msg) {
+        rsp->set_ok(false);
+        body->set_ok(false);
+        body->set_error_code(code);
+        body->set_message(msg);
+        rsp->set_message(msg);
+    };
+    if (!ready_ && !Init()) {
+        fail_sync(mail::err::kInternal, "mail not ready");
+        return false;
+    }
+    if (req.idempotency_key().empty()) {
+        fail_sync(mail::err::kInvalidArgument, "idempotency_key required");
+        return false;
+    }
+    auto *repo = GameDbRepository::Get();
+    if (!repo) {
+        fail_sync(mail::err::kInternal, "gamedb unavailable");
+        return false;
+    }
+
+    GameDbMailClaimRequest db_req;
+    db_req.player_id = req.player_id();
+    db_req.mail_id = req.mail_id();
+    db_req.idempotency_key = req.idempotency_key();
+    db_req.trace_id = req.trace_id();
+    db_req.inventory_soft_cap = kInventorySoftCap;
+    GameLogic::Instance().CopyInventory(req.player_id(), &db_req.bag_snapshot);
+
+    const uint64_t player_id = req.player_id();
+    const uint64_t mail_id = req.mail_id();
+    repo->ClaimMailAttachmentsAsync(
+        std::move(db_req), [player_id, mail_id, done = std::move(done)](GameDbMailClaimResult db_rsp) {
+            auto apply = std::make_shared<std::function<void()>>();
+            *apply = [player_id, mail_id, db_rsp = std::move(db_rsp), done = std::move(done)]() mutable {
+                MailService::Instance().ApplyClaimMemory(player_id, db_rsp);
+                game::GameResponse out;
+                auto *body = out.mutable_mail_claim();
+                using namespace std::chrono;
+                body->set_server_time_utc(
+                    duration_cast<seconds>(system_clock::now().time_since_epoch()).count());
+                game::MailClaimResult result;
+                result.set_mail_id(mail_id);
+                result.set_ok(db_rsp.ok);
+                result.set_error_code(db_rsp.error_code);
+                result.set_message(db_rsp.message);
+                result.set_attachment_state(db_rsp.attachment_state);
+                *body->mutable_result() = result;
+                body->set_ok(db_rsp.ok);
+                body->set_error_code(db_rsp.error_code);
+                body->set_message(db_rsp.message);
+                body->set_mailbox_version(MailService::Instance().MailboxVersion(player_id));
+                out.set_ok(db_rsp.ok);
+                out.set_message(db_rsp.message);
+                done(std::move(out));
+            };
+            if (!PlayerSerialQueue::Instance().CompleteAsyncInFlight(player_id, [apply]() { (*apply)(); })) {
+                PlayerSerialQueue::Instance().ClearAsyncInFlight(player_id);
+                (*apply)();
+            }
+        });
+    return true;
 }
 
 bool MailService::HandleMailClaim(const game::MailClaimReq &req, game::GameResponse *rsp) {

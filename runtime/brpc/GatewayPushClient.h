@@ -1,10 +1,11 @@
 #pragma once
 
+#include "RpcChannelSnapshot.h"
 #include "gateway_push.pb.h"
 
+#include <atomic>
 #include <memory>
 #include <string>
-#include <unordered_map>
 
 namespace brpc {
 class Channel;
@@ -18,8 +19,13 @@ public:
     bool EnsureChannel(const std::string &gateway_instance_id);
     bool PushBatch(const std::string &gateway_instance_id, const gwpush::PushBatchRequest &req,
                    gwpush::PushBatchResponse *rsp);
+    uint64_t snapshot_version() const;
 
 private:
     GatewayPushClient() = default;
-    std::unordered_map<std::string, std::unique_ptr<brpc::Channel>> channels_;
+    std::shared_ptr<const GatewayPushSnapshot> Current() const;
+    void Publish(std::shared_ptr<GatewayPushSnapshot> next);
+
+    std::shared_ptr<const GatewayPushSnapshot> snap_{std::make_shared<GatewayPushSnapshot>()};
+    std::atomic<uint64_t> version_{0};
 };

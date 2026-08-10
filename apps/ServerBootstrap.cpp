@@ -855,7 +855,9 @@ int RunServer(const LaunchOpts &launch) {
     const std::string &role = opts.role;
     const int port = opts.http_port;
     int game_port = opts.game_port;
+#ifdef WEBSERVER_ENABLE_BRPC
     const int logic_port_override = opts.logic_port_override;
+#endif
     if (game_port <= 0 && role != "gamelogic" && role != "world" && role != "session" &&
         role != "gamedb")
         game_port = port + 1;
@@ -1409,11 +1411,32 @@ int RunServer(const LaunchOpts &launch) {
                         sess_addrs.push_back(i.address);
                         sess_ids.push_back(i.instance_id);
                     }
-                } else {
-                    std::string sc = GatewayConfigPath::ReadValue("session_addrs");
-                    GatewayConfigPath::SplitCsv(sc, &sess_addrs);
+                }
+                // 与静态 cnf 求并集：避免 Redis 注册滞后时把双 Session 收成单点
+                {
+                    std::vector<std::string> static_addrs, static_ids;
+                    GatewayConfigPath::SplitCsv(GatewayConfigPath::ReadValue("session_addrs"),
+                                                &static_addrs);
                     GatewayConfigPath::SplitCsv(GatewayConfigPath::ReadValue("session_instance_ids"),
-                                                &sess_ids);
+                                                &static_ids);
+                    for (size_t i = 0; i < static_addrs.size(); ++i) {
+                        bool found = false;
+                        for (const auto &a : sess_addrs) {
+                            if (a == static_addrs[i]) {
+                                found = true;
+                                break;
+                            }
+                        }
+                        if (!found && !static_addrs[i].empty()) {
+                            sess_addrs.push_back(static_addrs[i]);
+                            if (i < static_ids.size())
+                                sess_ids.push_back(static_ids[i]);
+                        }
+                    }
+                    if (sess_addrs.empty()) {
+                        sess_addrs = std::move(static_addrs);
+                        sess_ids = std::move(static_ids);
+                    }
                 }
                 std::string sess_key;
                 for (size_t i = 0; i < sess_addrs.size(); ++i) {
@@ -1562,8 +1585,12 @@ int RunServer(const LaunchOpts &launch) {
         LOG_INFO << "MapLeaseKeeper interval_sec=" << hb << " lease_sec=" << lease_sec;
     }
 #ifdef WEBSERVER_ENABLE_REDIS
-    // Session：Placement 过期 lease 自动 RECOVERING + Migrate
+    // Session：Placement 过期 lease 自动 RECOVERING + Migrate（多实例 leader CAS）
     if (role == "session" || role == "all") {
+        if (const char *env = std::getenv("GAMEMESH_INSTANCE_ID"))
+            PlacementRecoveryScheduler::Instance().SetInstanceId(env);
+        if (const char *pfx = std::getenv("GAMEMESH_REDIS_PREFIX"))
+            PlacementRecoveryScheduler::Instance().SetKeyPrefix(pfx);
         const double recover_iv = 5.0;
         loop.RunEvery(recover_iv, []() { PlacementRecoveryScheduler::Instance().Tick(); });
         LOG_INFO << "PlacementRecoveryScheduler interval_sec=" << recover_iv;

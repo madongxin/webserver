@@ -85,8 +85,24 @@ return out
 const char kLuaAck[] = R"LUA(
 local list_key = KEYS[1]
 local meta_key = KEYS[2]
+local seq_key = KEYS[3]
 local ack = tonumber(ARGV[1])
 local ttl = tonumber(ARGV[2])
+if not ack or ack <= 0 then
+  return {'0', 'ERR_ACK_INVALID'}
+end
+local cur = tonumber(redis.call('GET', seq_key) or '0') or 0
+local last = tonumber(redis.call('HGET', meta_key, 'lastAck') or '0') or 0
+if ack > cur then
+  return {'0', 'ERR_ACK_AHEAD', tostring(cur), tostring(last)}
+end
+if ack < last then
+  return {'0', 'ERR_ACK_STALE', tostring(cur), tostring(last)}
+end
+if ack == last then
+  redis.call('EXPIRE', meta_key, ttl)
+  return {'1', 'DUP', tostring(ack)}
+end
 while true do
   local v = redis.call('LINDEX', list_key, 0)
   if not v then break end
@@ -96,7 +112,9 @@ while true do
 end
 redis.call('HSET', meta_key, 'lastAck', tostring(ack))
 redis.call('EXPIRE', meta_key, ttl)
-return {'1', 'OK'}
+redis.call('EXPIRE', list_key, ttl)
+redis.call('EXPIRE', seq_key, ttl)
+return {'1', 'OK', tostring(ack)}
 )LUA";
 
 const char kLuaGetSeq[] = R"LUA(
@@ -187,16 +205,48 @@ bool PushReplayStore::ReplayAfter(uint64_t player_id, const std::string &session
     return true;
 }
 
-bool PushReplayStore::Ack(uint64_t player_id, const std::string &session_id, uint64_t ack_seq) {
-    if (!available_ || player_id == 0 || session_id.empty() || ack_seq == 0)
-        return false;
+PushReplayStore::AckResult PushReplayStore::Ack(uint64_t player_id, const std::string &session_id,
+                                                uint64_t ack_seq) {
+    AckResult r;
+    if (!available_ || player_id == 0 || session_id.empty() || ack_seq == 0) {
+        r.status = AckStatus::Invalid;
+        r.error_code = "ERR_ACK_INVALID";
+        return r;
+    }
     auto lease = RedisPool::Instance().Acquire();
-    if (!lease)
-        return false;
-    std::vector<std::string> keys{ListKey(player_id, session_id), MetaKey(player_id, session_id)};
+    if (!lease) {
+        r.status = AckStatus::Unavailable;
+        r.error_code = "ERR_ACK_UNAVAILABLE";
+        return r;
+    }
+    std::vector<std::string> keys{ListKey(player_id, session_id), MetaKey(player_id, session_id),
+                                  SeqKey(player_id, session_id)};
     std::vector<std::string> args{std::to_string(ack_seq), std::to_string(ttl_sec_)};
     std::vector<std::string> reply;
-    return lease->Eval(kLuaAck, keys, args, &reply) && !reply.empty() && reply[0] == "1";
+    if (!lease->Eval(kLuaAck, keys, args, &reply) || reply.size() < 2) {
+        r.status = AckStatus::Unavailable;
+        r.error_code = "ERR_ACK_UNAVAILABLE";
+        return r;
+    }
+    if (reply[0] == "1") {
+        if (reply[1] == "DUP") {
+            r.status = AckStatus::Duplicate;
+            r.error_code = "ERR_ACK_DUPLICATE";
+        } else {
+            r.status = AckStatus::Ok;
+            r.error_code.clear();
+        }
+        r.trimmed_to_seq = ack_seq;
+        return r;
+    }
+    r.error_code = reply[1];
+    if (reply[1] == "ERR_ACK_AHEAD")
+        r.status = AckStatus::Ahead;
+    else if (reply[1] == "ERR_ACK_STALE")
+        r.status = AckStatus::Stale;
+    else
+        r.status = AckStatus::Invalid;
+    return r;
 }
 
 uint64_t PushReplayStore::CurrentSeq(uint64_t player_id, const std::string &session_id) {

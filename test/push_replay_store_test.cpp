@@ -93,12 +93,10 @@ int main() {
     if (!out.empty())
         return Fail("session isolation broken");
 
-    if (!PushReplayStore::Instance().Ack(player, sid_a, s1))
+    if (!PushReplayStore::Instance().Ack(player, sid_a, s1).ok())
         return Fail("ack");
-    // 旧 session ACK 不能裁新 session（新 session 无消息，Ack 仍应成功/无害）
-    if (PushReplayStore::Instance().Ack(player, sid_b, s1)) {
-        // ok if empty list ack succeeds
-    }
+    // 旧 session ACK 不能裁新 session（新 session 无消息且 cur=0 → ahead/invalid）
+    (void)PushReplayStore::Instance().Ack(player, sid_b, s1);
     out.clear();
     if (!PushReplayStore::Instance().ReplayAfter(player, sid_a, s1, &out, &need_snap) || need_snap)
         return Fail("replay after ack");

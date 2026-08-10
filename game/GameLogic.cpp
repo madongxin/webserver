@@ -72,9 +72,11 @@ bool FetchAuthorityPlacement(uint64_t map_instance_id, PlacementRecord *out, std
 }
 
 bool ValidateLocalAuthorityWrite(const PlacementRecord &auth, uint64_t req_epoch,
-                                 uint64_t req_route_ver, std::string *err_code) {
+                                 uint64_t req_route_ver, std::string *err_code,
+                                 bool require_complete_fence) {
     return ValidateAuthorityWrite(auth, req_epoch, req_route_ver,
-                                  MapInstanceRegistry::Instance().local_instance_id(), err_code);
+                                  MapInstanceRegistry::Instance().local_instance_id(), err_code, 0,
+                                  require_complete_fence);
 }
 #endif
 
@@ -396,6 +398,14 @@ bool GameLogic::HandleGrantItem(const game::GrantItemReq &req, game::GameRespons
     LOG_INFO << "[grant_item] recv player_id=" << req.player_id() << " item_id=" << req.item_id()
              << " count=" << req.count();
     auto *body = rsp->mutable_grant_item();
+    // 公网命令面封闭：仅显式联调开关允许（Formal 恒拒绝）
+    if (!AllowUnsafeDebugCommandsEnv()) {
+        rsp->set_ok(false);
+        rsp->set_message("ERR_COMMAND_FORBIDDEN");
+        body->set_ok(false);
+        body->set_message(rsp->message());
+        return false;
+    }
     if (req.player_id() == 0 || req.item_id() == 0 || req.count() == 0) {
         rsp->set_ok(false);
         rsp->set_message("invalid player_id, item_id or count");
@@ -738,7 +748,7 @@ bool GameLogic::HandleEnterMap(const game::EnterMapReq &req, game::GameResponse 
             }
             std::string code;
             if (!ValidateLocalAuthorityWrite(auth, meta_snap.owner_epoch, meta_snap.route_version,
-                                             &code)) {
+                                             &code, formalish)) {
                 body->set_message(code);
                 rsp->set_ok(false);
                 rsp->set_message(body->message());
@@ -798,7 +808,7 @@ bool GameLogic::HandleEnterMap(const game::EnterMapReq &req, game::GameResponse 
             return false;
         }
         std::string code;
-        if (!ValidateLocalAuthorityWrite(auth, 0, 0, &code)) {
+        if (!ValidateLocalAuthorityWrite(auth, 0, 0, &code, formalish)) {
             body->set_message(code);
             rsp->set_ok(false);
             rsp->set_message(body->message());
@@ -1007,7 +1017,7 @@ bool GameLogic::HandleMapPing(const game::MapPingReq &req, game::GameResponse *r
             }
             std::string code;
             if (!ValidateLocalAuthorityWrite(auth, meta_snap.owner_epoch, meta_snap.route_version,
-                                             &code)) {
+                                             &code, formalish)) {
                 body->set_message(code);
                 rsp->set_ok(false);
                 rsp->set_message(body->message());
@@ -1178,7 +1188,12 @@ bool GameLogic::Handle(const game::GameRequest &req, game::GameResponse *rsp) {
                 return false;
             return MailService::Instance().HandleMailBatchDelete(req.mail_batch_delete(), rsp);
         case game::GameRequest::kMailDeliver:
-            // TCP 投递仅作联调：校验 session 属于 receiver；正式玩法请调 MailService::Deliver
+            // TCP 投递仅作联调；Formal/默认拒绝（系统投递走 MailService::Deliver / 内部 brpc）
+            if (!AllowUnsafeDebugCommandsEnv()) {
+                rsp->set_ok(false);
+                rsp->set_message("ERR_COMMAND_FORBIDDEN");
+                return false;
+            }
             if (!RequireSessionToken(req, req.mail_deliver().receiver_id(), rsp))
                 return false;
             return MailService::Instance().HandleMailDeliver(req.mail_deliver(), rsp);

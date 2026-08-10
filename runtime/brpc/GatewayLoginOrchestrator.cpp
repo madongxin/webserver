@@ -344,15 +344,8 @@ bool OrchestrateGatewayReconnect(const std::string &gateway_instance_id, uint64_
         body->set_replay_from_seq(0);
     }
 
-    // 缺口：真正生成并下发全量状态快照（非仅标志）；Gateway 侧必须发送 pending
+    // 缺口：真正生成并下发全量状态快照；导出失败不得发送 ok=true 伪快照
     if (need_snap) {
-        game::GameResponse snap_rsp;
-        snap_rsp.set_ok(true);
-        snap_rsp.set_message("full_snapshot");
-        auto *fs = snap_rsp.mutable_full_snapshot();
-        fs->set_ok(true);
-        fs->set_message("FULL_SNAPSHOT_REQUIRED");
-        fs->set_player_id(req.reconnect().player_id());
         glrpc::ExportPlayerSnapshotRequest er;
         er.set_player_id(req.reconnect().player_id());
         er.set_session_id(v2rsp.session_id());
@@ -360,42 +353,62 @@ bool OrchestrateGatewayReconnect(const std::string &gateway_instance_id, uint64_
         er.set_transfer_id("reconnect-full-snap");
         er.set_target_gamelogic_id(v2rsp.gamelogic_instance_id());
         glrpc::ExportPlayerSnapshotResponse xrsp;
-        if (GatewayAuthClients::Instance().ExportPlayerSnapshot(v2rsp.gamelogic_instance_id(), er,
+        const bool export_ok =
+            GatewayAuthClients::Instance().ExportPlayerSnapshot(v2rsp.gamelogic_instance_id(), er,
                                                                 &xrsp) &&
-            xrsp.ok() && xrsp.has_snapshot()) {
+            xrsp.ok() && xrsp.has_snapshot();
+        if (!export_ok) {
+            body->set_need_full_snapshot(true);
+            body->set_message("reconnect ok; full_snapshot_export_failed_retry");
+        } else if (route_out) {
+            game::GameResponse snap_rsp;
+            snap_rsp.set_ok(true);
+            snap_rsp.set_message("full_snapshot");
+            auto *fs = snap_rsp.mutable_full_snapshot();
+            fs->set_ok(true);
+            fs->set_message("FULL_SNAPSHOT");
+            fs->set_player_id(req.reconnect().player_id());
             fs->set_asset_version(xrsp.snapshot().state().asset_version());
             for (const auto &it : xrsp.snapshot().state().bag()) {
                 fs->add_item_ids(it.item_id());
                 fs->add_item_counts(it.count());
             }
-        } else {
-            fs->set_message("full_snapshot_export_failed_retry");
-        }
-        std::string snap_payload;
-        if (snap_rsp.SerializeToString(&snap_payload) && route_out) {
-            uint64_t seq = 0;
+            std::string snap_payload;
+            if (!snap_rsp.SerializeToString(&snap_payload)) {
+                body->set_message("reconnect ok; full_snapshot_encode_failed_retry");
+            } else {
+                uint64_t seq = 0;
+                bool stored = true;
 #ifdef WEBSERVER_ENABLE_REDIS
-            if (PushReplayStore::Instance().Available()) {
-                seq = PushReplayStore::Instance().AppendReliable(
-                    req.reconnect().player_id(), sid, "full_snapshot", snap_payload);
-                fs->set_baseline_server_seq(seq);
-                snap_rsp.mutable_full_snapshot()->set_baseline_server_seq(seq);
-                snap_rsp.SerializeToString(&snap_payload);
-            }
+                if (PushReplayStore::Instance().Available()) {
+                    seq = PushReplayStore::Instance().AppendReliable(
+                        req.reconnect().player_id(), sid, "full_snapshot", snap_payload);
+                    stored = seq != 0;
+                    if (stored) {
+                        fs->set_baseline_server_seq(seq);
+                        snap_rsp.SerializeToString(&snap_payload);
+                    } else {
+                        body->set_need_full_snapshot(true);
+                        body->set_message("reconnect ok; full_snapshot_store_failed_retry");
+                    }
+                }
 #endif
-            game::GameResponse env;
-            env.set_ok(true);
-            env.set_message("server_push");
-            auto *p = env.mutable_server_push();
-            p->set_server_seq(seq);
-            p->set_message_type("full_snapshot");
-            p->set_payload(snap_payload);
-            p->set_reliable(true);
-            std::string env_bytes;
-            if (env.SerializeToString(&env_bytes))
-                route_out->pending_push_payloads.push_back(std::move(env_bytes));
-            else
-                route_out->pending_push_payloads.push_back(std::move(snap_payload));
+                if (stored) {
+                    game::GameResponse env;
+                    env.set_ok(true);
+                    env.set_message("server_push");
+                    auto *p = env.mutable_server_push();
+                    p->set_server_seq(seq);
+                    p->set_message_type("full_snapshot");
+                    p->set_payload(snap_payload);
+                    p->set_reliable(true);
+                    std::string env_bytes;
+                    if (env.SerializeToString(&env_bytes))
+                        route_out->pending_push_payloads.push_back(std::move(env_bytes));
+                    else
+                        route_out->pending_push_payloads.push_back(std::move(snap_payload));
+                }
+            }
         }
     }
 

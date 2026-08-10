@@ -3,6 +3,7 @@
 #include "game.pb.h"
 #include "session.pb.h"
 
+#include <atomic>
 #include <memory>
 #include <string>
 #include <vector>
@@ -19,8 +20,8 @@ public:
     /** 单地址或 CSV；多地址使用 list:// + rr，不得只取首地址 */
     bool Init(const std::string &addr_or_csv, int timeout_ms = 3000);
     bool Init(const std::vector<std::string> &addrs, int timeout_ms = 3000);
-    bool ready() const { return channel_ != nullptr; }
-    size_t peer_count() const { return peer_count_; }
+    bool ready() const;
+    size_t peer_count() const;
     void Shutdown();
 
     bool Login(const game::LoginReq &req, game::LoginRsp *rsp);
@@ -44,6 +45,8 @@ public:
 
 private:
     SessionRpcClient() = default;
-    std::unique_ptr<brpc::Channel> channel_;
-    size_t peer_count_ = 0;
+    std::shared_ptr<brpc::Channel> CurrentChannel() const;
+
+    std::shared_ptr<brpc::Channel> channel_;
+    std::atomic<size_t> peer_count_{0};
 };

@@ -7,6 +7,7 @@
 #include "GameService.h"
 #include "Logging.h"
 #include "MapInstanceRegistry.h"
+#include "MailService.h"
 #include "PlayerSerialQueue.h"
 #include "game.pb.h"
 
@@ -388,6 +389,49 @@ void GameLogicServiceImpl::Dispatch(::google::protobuf::RpcController *controlle
     done_guard.release();
     const uint64_t pid = cmd->player_id();
     const bool posted = PlayerSerialQueue::Instance().TryPost(pid, [cmd, rsp, closure]() {
+        // MailClaim：真异步 GameDB，不阻塞同 shard 其他玩家
+        game::GameRequest greq;
+        if (greq.ParseFromString(cmd->payload()) && greq.has_mail_claim()) {
+            std::string err;
+            if (!LocalLogicOk(cmd->gamelogic_instance_id(), &err) ||
+                !FenceOk(cmd->player_id(), cmd->session_id(), cmd->fence_token(), cmd->generation(),
+                         &err)) {
+                brpc::ClosureGuard g(closure);
+                rsp->Clear();
+                rsp->set_ok(false);
+                rsp->set_error_code("FENCE_REJECT");
+                rsp->set_message(err);
+                return;
+            }
+            PlayerSerialQueue::Instance().MarkAsyncInFlight(cmd->player_id());
+            game::GameResponse placeholder;
+            const bool started = MailService::Instance().BeginHandleMailClaimAsync(
+                greq.mail_claim(), &placeholder,
+                [cmd, rsp, closure](game::GameResponse gr) {
+                    brpc::ClosureGuard g(closure);
+                    std::string out_frame;
+                    gr.SerializeToString(&out_frame);
+                    rsp->Clear();
+                    rsp->set_ok(gr.ok());
+                    rsp->set_message(gr.message());
+                    if (!out_frame.empty())
+                        rsp->set_response_frame(out_frame);
+                    if (gr.ok())
+                        CommitClientSeq(cmd->player_id(), cmd->client_seq(), out_frame);
+                });
+            if (!started) {
+                PlayerSerialQueue::Instance().ClearAsyncInFlight(cmd->player_id());
+                brpc::ClosureGuard g(closure);
+                std::string out_frame;
+                placeholder.SerializeToString(&out_frame);
+                rsp->Clear();
+                rsp->set_ok(placeholder.ok());
+                rsp->set_message(placeholder.message());
+                if (!out_frame.empty())
+                    rsp->set_response_frame(out_frame);
+            }
+            return;
+        }
         brpc::ClosureGuard g(closure);
         ExecuteDispatch(*cmd, rsp);
     });

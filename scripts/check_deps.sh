@@ -78,6 +78,28 @@ else
   bad "game/game.pb.cc (run: protoc -I proto --cpp_out=game proto/game.proto)"
 fi
 
+# sanitizer 运行时（缺失时仍可普通构建；TSan 链接会失败）
+if [[ -e /usr/lib64/libasan.so.6 || -e /usr/lib/libasan.so.6 ]]; then
+  ok "libasan runtime"
+else
+  warn "libasan runtime missing (needed for ENABLE_ASAN)"
+fi
+if [[ -e /usr/lib64/libubsan.so.1 || -e /usr/lib/libubsan.so.1 ]]; then
+  ok "libubsan runtime"
+else
+  warn "libubsan runtime missing (needed for ENABLE_UBSAN)"
+fi
+if [[ -e /usr/lib64/libtsan.so.0 || -e /usr/lib/libtsan.so.0 ]]; then
+  ok "libtsan runtime"
+else
+  warn "libtsan runtime missing (needed for ENABLE_TSAN; yum install libtsan)"
+fi
+if command -v shellcheck >/dev/null 2>&1 || command -v ShellCheck >/dev/null 2>&1; then
+  ok "shellcheck"
+else
+  warn "shellcheck missing (stable_gate --full requires it)"
+fi
+
 if [[ -f "$ROOT/config/mysql.cnf" ]]; then
   ok "config/mysql.cnf present"
 else

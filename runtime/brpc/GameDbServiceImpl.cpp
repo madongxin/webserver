@@ -247,22 +247,59 @@ void GameDbServiceImpl::SavePlayerSnapshot(::google::protobuf::RpcController *co
     std::map<uint32_t, uint32_t> bag;
     for (int i = 0; i < request->bag_size(); ++i)
         bag[request->bag(i).item_id()] = request->bag(i).count();
-    uint64_t nv = 0;
-    std::string err;
+    GameDbAssetStore::SnapshotResult sr;
     if (!GameDbAssetStore::Instance().SaveSnapshot(request->player_id(), request->expected_version(),
-                                                   bag, request->idempotency_key(), &nv, &err)) {
+                                                   bag, request->idempotency_key(), &sr)) {
         response->set_ok(false);
-        response->set_error_code(err.empty() ? "SAVE_FAILED" : err);
-        response->set_message(err);
+        response->set_idempotent_hit(sr.idempotent_hit);
+        response->set_error_code(sr.error_code.empty() ? "SAVE_FAILED" : sr.error_code);
+        response->set_message(sr.message.empty() ? sr.error_code : sr.message);
+        response->set_asset_version(sr.asset_version);
         return;
     }
     response->set_ok(true);
-    response->set_asset_version(nv);
-    response->set_message("ok");
+    response->set_idempotent_hit(sr.idempotent_hit);
+    response->set_asset_version(sr.asset_version);
+    response->set_message(sr.message.empty() ? "ok" : sr.message);
 #else
     response->set_ok(false);
     response->set_error_code("MYSQL_DISABLED");
     response->set_message("mysql not enabled");
+#endif
+}
+
+void GameDbServiceImpl::QueryOperationResult(::google::protobuf::RpcController *controller,
+                                             const ::gdb::QueryOperationResultReq *request,
+                                             ::gdb::QueryOperationResultRsp *response,
+                                             ::google::protobuf::Closure *done) {
+    (void)controller;
+    brpc::ClosureGuard done_guard(done);
+    response->Clear();
+    if (!request || request->player_id() == 0 || request->idempotency_key().empty()) {
+        response->set_ok(false);
+        response->set_error_code("INVALID_ARG");
+        return;
+    }
+#ifdef WEBSERVER_ENABLE_MYSQL
+    GameDbAssetStore::OperationQuery q;
+    if (!GameDbAssetStore::Instance().QueryOperationResult(
+            request->player_id(), request->idempotency_key(), request->operation_type(), &q)) {
+        response->set_ok(false);
+        response->set_error_code("QUERY_FAILED");
+        response->set_message("query failed");
+        return;
+    }
+    response->set_ok(true);
+    response->set_found(q.found);
+    response->set_completed_ok(q.completed_ok);
+    response->set_error_code(q.error_code);
+    response->set_message(q.message);
+    response->set_asset_version(q.asset_version);
+    response->set_remain_count(q.remain_count);
+    response->set_request_hash(q.request_hash);
+#else
+    response->set_ok(false);
+    response->set_error_code("MYSQL_DISABLED");
 #endif
 }
 

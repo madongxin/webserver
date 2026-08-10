@@ -6,13 +6,16 @@
 #include "GameTcpGateway.h"
 
 #include "Buffer.h"
+#include "CommandPolicy.h"
 #include "EventLoop.h"
+#include "FormalMode.h"
 #include "GameRequestPlayerId.h"
 #include "GameRequestTransport.h"
 #include "GatewayAuthFlow.h"
 #include "GatewayAuthPolicy.h"
 #include "GatewayConnRegistry.h"
 #include "GatewayIdentity.h"
+#include "GatewayLoginRoute.h"
 #include "InProcessTransport.h"
 #include "Logging.h"
 #include "OpsMetrics.h"
@@ -367,8 +370,8 @@ void GameTcpGateway::OnMessage(const std::shared_ptr<TcpConnection> &conn) {
                 continue;
             }
 
-            PlayerSerialQueue::Instance().Post(
-                shard_key, [gw, conn_id, payload, sink, flow_gen, needs_flow]() {
+            if (!PlayerSerialQueue::Instance().TryPost(
+                    shard_key, [gw, conn_id, payload, sink, flow_gen, needs_flow]() {
                 std::string out;
                 gameproto::GatewayLoginRoute route;
                 game::GameRequest req;
@@ -452,10 +455,35 @@ void GameTcpGateway::OnMessage(const std::shared_ptr<TcpConnection> &conn) {
                     (!needs_flow || GatewayAuthFlow::Instance().Alive(conn_id))) {
                     sink->SendFrame(out);
                 }
-            });
+            })) {
+                if (needs_flow)
+                    GatewayAuthFlow::Instance().End(conn_id, flow_gen);
+                OpsMetrics::Instance().IncQueueOverload();
+                game::GameResponse ov;
+                ov.set_ok(false);
+                ov.set_message("ERR_OVERLOAD");
+                std::string body, out;
+                if (ov.SerializeToString(&body) && gameproto::EncodeFrame(body, &out))
+                    tcp_sink->SendFrame(out);
+            }
             continue;
         }
 #endif
+
+        // 公网命令策略：Formal 封闭 GrantItem/MailDeliver；未登记 body 默认拒绝
+        {
+            std::string cerr;
+            if (!gameproto::AllowClientTcpPayload(frame, bound, FormalModeEnabled(), &cerr)) {
+                OpsMetrics::Instance().IncCommandForbidden();
+                game::GameResponse fr;
+                fr.set_ok(false);
+                fr.set_message(cerr.empty() ? "ERR_COMMAND_FORBIDDEN" : cerr);
+                std::string body, out;
+                if (fr.SerializeToString(&body) && gameproto::EncodeFrame(body, &out))
+                    tcp_sink->SendFrame(out);
+                continue;
+            }
+        }
 
         SessionHandle handle;
         handle.connection_id = conn->id();
@@ -494,18 +522,45 @@ void GameTcpGateway::OnMessage(const std::shared_ptr<TcpConnection> &conn) {
                                             ? peek.push_ack().generation()
                                             : sticky.generation;
                 bool ok_ack = false;
+                std::string ack_msg = "ack rejected";
+                uint64_t trimmed = 0;
                 // 仅当前 session/fence/generation 可裁剪；旧 Session ACK 不得影响新 Session
                 if (pid == sticky.player_id && aseq > 0 && ack_sid == sticky.session_id &&
                     (ack_fence.empty() || ack_fence == sticky.token) &&
                     (ack_gen == 0 || ack_gen == sticky.generation)) {
 #ifdef WEBSERVER_ENABLE_REDIS
-                    if (PushReplayStore::Instance().Available())
-                        ok_ack = PushReplayStore::Instance().Ack(pid, ack_sid, aseq);
+                    if (PushReplayStore::Instance().Available()) {
+                        auto ar = PushReplayStore::Instance().Ack(pid, ack_sid, aseq);
+                        ok_ack = ar.ok();
+                        trimmed = ar.trimmed_to_seq;
+                        if (ar.status == PushReplayStore::AckStatus::Ok) {
+                            OpsMetrics::Instance().IncPushAckOk();
+                            ack_msg = "acked";
+                        } else if (ar.status == PushReplayStore::AckStatus::Duplicate) {
+                            OpsMetrics::Instance().IncPushAckDuplicate();
+                            ack_msg = "acked";
+                        } else if (ar.status == PushReplayStore::AckStatus::Ahead) {
+                            OpsMetrics::Instance().IncPushAckAheadRejected();
+                            ack_msg = ar.error_code.empty() ? "ERR_ACK_AHEAD" : ar.error_code;
+                        } else if (ar.status == PushReplayStore::AckStatus::Stale) {
+                            OpsMetrics::Instance().IncPushAckStaleRejected();
+                            ack_msg = ar.error_code.empty() ? "ERR_ACK_STALE" : ar.error_code;
+                        } else {
+                            ack_msg = ar.error_code.empty() ? "ack rejected" : ar.error_code;
+                        }
+                    } else {
+                        ack_msg = "ERR_ACK_UNAVAILABLE";
+                    }
+#else
+                    ack_msg = "ERR_ACK_UNAVAILABLE";
 #endif
+                } else {
+                    OpsMetrics::Instance().IncPushAckStaleRejected();
+                    ack_msg = "ERR_ACK_STALE";
                 }
                 ack->set_ok(ok_ack);
-                ack->set_message(ok_ack ? "acked" : "ack rejected");
-                ack->set_trimmed_to_seq(ok_ack ? aseq : 0);
+                ack->set_message(ack_msg);
+                ack->set_trimmed_to_seq(ok_ack ? trimmed : 0);
                 rsp.set_ok(ok_ack);
                 rsp.set_message(ack->message());
                 std::string body, out;
@@ -530,21 +585,30 @@ void GameTcpGateway::OnMessage(const std::shared_ptr<TcpConnection> &conn) {
                 auto sink = tcp_sink;
                 SessionHandle h = handle;
                 std::string payload = frame;
-                PlayerSerialQueue::Instance().Post(h.player_id, [h, conn_id, payload, sink]() {
-                    std::string out;
-                    SessionHandle route = h;
-                    const bool ok =
-                        gameproto::OrchestrateGatewayEnterMap(h, payload, &out, &route);
-                    if (ok || !out.empty()) {
-                        GatewayConnRegistry::Instance().ApplyRoute(
-                            conn_id, route.gamelogic_instance_id, route.map_instance_id,
-                            route.owner_epoch, route.route_version);
-                        // 同步 g_conn_bind generation 不变，仅 registry 路由
-                    }
-                    (void)ok;
-                    if (!out.empty() && sink)
-                        sink->SendFrame(out);
-                });
+                if (!PlayerSerialQueue::Instance().TryPost(h.player_id, [h, conn_id, payload,
+                                                                        sink]() {
+                        std::string out;
+                        SessionHandle route = h;
+                        const bool ok =
+                            gameproto::OrchestrateGatewayEnterMap(h, payload, &out, &route);
+                        if (ok || !out.empty()) {
+                            GatewayConnRegistry::Instance().ApplyRoute(
+                                conn_id, route.gamelogic_instance_id, route.map_instance_id,
+                                route.owner_epoch, route.route_version);
+                        }
+                        (void)ok;
+                        if (!out.empty() && sink)
+                            sink->SendFrame(out);
+                    })) {
+                    OpsMetrics::Instance().IncQueueOverload();
+                    game::GameResponse ov;
+                    ov.set_ok(false);
+                    ov.set_seq(peek.seq());
+                    ov.set_message("ERR_OVERLOAD");
+                    std::string body, out;
+                    if (ov.SerializeToString(&body) && gameproto::EncodeFrame(body, &out))
+                        tcp_sink->SendFrame(out);
+                }
                 continue;
             }
         }

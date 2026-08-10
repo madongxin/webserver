@@ -13,10 +13,13 @@
 #include "game.pb.h"
 
 #include <cstdint>
+#include <functional>
 #include <map>
 #include <mutex>
 #include <string>
 #include <vector>
+
+struct GameDbMailClaimResult;
 
 class MailService {
 public:
@@ -33,6 +36,12 @@ public:
     bool HandleMailGet(const game::MailGetReq &req, game::GameResponse *rsp);
     bool HandleMailRead(const game::MailReadReq &req, game::GameResponse *rsp);
     bool HandleMailClaim(const game::MailClaimReq &req, game::GameResponse *rsp);
+    /**
+     * 真异步领取：启动 GameDB RPC 后立即返回；完成后调用 done（已在 PlayerSerialQueue 上）。
+     * @return true 已启动异步（调用方勿同步写 rsp）；false 同步失败已写入 *rsp
+     */
+    bool BeginHandleMailClaimAsync(const game::MailClaimReq &req, game::GameResponse *rsp,
+                                   std::function<void(game::GameResponse)> done);
     bool HandleMailBatchClaim(const game::MailBatchClaimReq &req, game::GameResponse *rsp);
     bool HandleMailFavorite(const game::MailFavoriteReq &req, game::GameResponse *rsp);
     bool HandleMailBatchRead(const game::MailBatchReadReq &req, game::GameResponse *rsp);
@@ -43,6 +52,9 @@ public:
     int ScanExpire(int limit = 200);
 
     int64_t MailboxVersion(uint64_t player_id) const;
+
+    /** 供异步 callback 在 PlayerSerialQueue 上应用内存奖励 */
+    void ApplyClaimMemory(uint64_t player_id, const GameDbMailClaimResult &db_rsp);
 
 private:
     MailService() = default;

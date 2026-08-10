@@ -66,7 +66,7 @@ PID_DB0="${PIDS[1]:-}"
 PID_L1="${PIDS[5]:-}"
 PID_GW0="${PIDS[6]:-}"
 
-SCENARIOS="${SCENARIOS:-1,2,3,4,5,6,8,9}"
+SCENARIOS="${SCENARIOS:-1,2,3,4,5,6,7,8,9}"
 IFS=',' read -r -a WANT <<<"$SCENARIOS"
 fail=0
 pass=0
@@ -254,14 +254,23 @@ run_sc 9 "SIGTERM drain ready" sc9
 run_sc 6 "kill logic + lease migrate" sc6
 run_sc 8 "kill gamedb0" sc8
 
+# 场景 7：动态发现 / DRAINING 契约（完整启 gl-2 进程见 test_dynamic_logic_scale）
+run_sc 7 "dynamic logic scale / DRAINING" bash "$ROOT/scripts/test_dynamic_logic_scale.sh"
+
+# 场景 10：短混沌（完整 2h 见 soak_test.sh）；默认 SCENARIOS 不含 10
+run_sc 10 "chaos short dual-gw burst" bash -c '
+  set -euo pipefail
+  source "${GAMEMESH_RUN_DIR}/E2E_PORTS.env" 2>/dev/null || true
+  H="${E2E_HOST:-127.0.0.1}"
+  G0="${E2E_GW0_GAME:-8081}"
+  G1="${E2E_GW1_GAME:-8083}"
+  C="'"$CLIENT"'"
+  for i in $(seq 1 5); do
+    "$C" dual-gw "$H" "$G0" "$H" "$G1" "$((940000 + i))" 0 | grep -q dual_gw_ok=1
+  done
+'
+
 echo "==== final e2e: pass=$pass fail=$fail (requested: ${SCENARIOS}) ===="
-# 场景 7/10 默认不跑：7 需动态加 gl-2；10 为混沌长跑
-if echo ",${SCENARIOS}," | grep -q ',7,'; then
-  echo "INFO scenario 7 (add gl-2 discovery): not automated in this slice" >&2
-fi
-if echo ",${SCENARIOS}," | grep -q ',10,'; then
-  echo "INFO scenario 10 (chaos load): not automated in this slice" >&2
-fi
 
 [[ "$fail" -eq 0 ]]
 echo "test_final_e2e.sh PASS"

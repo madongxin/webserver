@@ -25,8 +25,24 @@ public:
     bool ReplayAfter(uint64_t player_id, const std::string &session_id, uint64_t last_acked_seq,
                      std::vector<PushReplayEntry> *out, bool *need_snapshot);
 
-    /** 裁剪 seq<=ack_seq；调用方已校验 session/fence/generation */
-    bool Ack(uint64_t player_id, const std::string &session_id, uint64_t ack_seq);
+    enum class AckStatus {
+        Ok = 0,
+        Duplicate = 1,
+        Ahead = 2,
+        Stale = 3,
+        Unavailable = 4,
+        Invalid = 5,
+    };
+    struct AckResult {
+        AckStatus status = AckStatus::Invalid;
+        std::string error_code;
+        uint64_t trimmed_to_seq = 0;
+        bool ok() const {
+            return status == AckStatus::Ok || status == AckStatus::Duplicate;
+        }
+    };
+    /** 原子校验 current_seq / last_ack 后裁剪；Redis 不可用返回 Unavailable（失败）。 */
+    AckResult Ack(uint64_t player_id, const std::string &session_id, uint64_t ack_seq);
 
     uint64_t CurrentSeq(uint64_t player_id, const std::string &session_id);
 

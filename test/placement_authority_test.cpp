@@ -76,8 +76,12 @@ int main() {
     }
     {
         auto a = ReadyAuth();
-        // req_route_ver == 0：不强制比对（直连/缺 meta）
-        Expect(ValidateAuthorityWrite(a, 0, 0, "gl-0", &code, now), "zero meta skips epoch/route");
+        // 非 Formal：req_route_ver == 0 不强制比对
+        Expect(ValidateAuthorityWrite(a, 0, 0, "gl-0", &code, now, false),
+               "compat zero meta skips epoch/route");
+        Expect(!ValidateAuthorityWrite(a, 0, 0, "gl-0", &code, now, true) &&
+                   code == "ERR_PLACEMENT_FENCE_REQUIRED",
+               "formal rejects zero fence");
     }
 
     if (fails) {

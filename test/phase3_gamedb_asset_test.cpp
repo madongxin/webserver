@@ -114,5 +114,6 @@ int main() {
         return 1;
     }
     std::printf("OK phase3_gamedb_asset_test\n");
-    return 0;
+    std::fflush(stdout);
+    std::_Exit(0);
 }

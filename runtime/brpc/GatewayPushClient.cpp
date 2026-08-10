@@ -5,15 +5,29 @@
 
 #include <brpc/channel.h>
 
-#include <mutex>
-
-namespace {
-std::mutex g_push_mu;
-}
+#include <atomic>
+#include <vector>
 
 GatewayPushClient &GatewayPushClient::Instance() {
     static GatewayPushClient g;
     return g;
+}
+
+std::shared_ptr<const GatewayPushSnapshot> GatewayPushClient::Current() const {
+    return std::atomic_load_explicit(&snap_, std::memory_order_acquire);
+}
+
+void GatewayPushClient::Publish(std::shared_ptr<GatewayPushSnapshot> next) {
+    if (!next)
+        return;
+    next->version = version_.fetch_add(1, std::memory_order_relaxed) + 1;
+    std::atomic_store_explicit(&snap_, std::shared_ptr<const GatewayPushSnapshot>(std::move(next)),
+                               std::memory_order_release);
+}
+
+uint64_t GatewayPushClient::snapshot_version() const {
+    auto s = Current();
+    return s ? s->version : 0;
 }
 
 void GatewayPushClient::SetGatewayPushAddr(const std::string &gateway_instance_id,
@@ -25,23 +39,41 @@ void GatewayPushClient::SetGatewayPushAddr(const std::string &gateway_instance_i
         LOG_WARN << "GatewayPushClient refuse 0.0.0.0 advertise for " << gateway_instance_id;
         return;
     }
-    auto ch = std::make_unique<brpc::Channel>();
+
+    auto prev = Current();
+    if (prev) {
+        auto ait = prev->addrs.find(gateway_instance_id);
+        auto cit = prev->by_gateway_id.find(gateway_instance_id);
+        if (ait != prev->addrs.end() && ait->second == addr && cit != prev->by_gateway_id.end() &&
+            cit->second) {
+            return;  // 无变化
+        }
+    }
+
+    auto ch = std::make_shared<brpc::Channel>();
     brpc::ChannelOptions opt;
     opt.timeout_ms = 2000;
     opt.max_retry = 0;
     if (ch->Init(addr.c_str(), &opt) != 0) {
-        LOG_ERROR << "GatewayPushClient Init failed " << addr;
+        LOG_ERROR << "GatewayPushClient Init failed " << addr << " (keep last snapshot)";
         return;
     }
-    std::lock_guard<std::mutex> lk(g_push_mu);
-    channels_[gateway_instance_id] = std::move(ch);
+
+    auto next = std::make_shared<GatewayPushSnapshot>();
+    if (prev) {
+        next->by_gateway_id = prev->by_gateway_id;
+        next->addrs = prev->addrs;
+    }
+    next->by_gateway_id[gateway_instance_id] = std::move(ch);
+    next->addrs[gateway_instance_id] = addr;
+    Publish(std::move(next));
     LOG_INFO << "GatewayPushClient mapped " << gateway_instance_id << " -> " << addr;
 }
 
 bool GatewayPushClient::EnsureChannel(const std::string &gateway_instance_id) {
     {
-        std::lock_guard<std::mutex> lk(g_push_mu);
-        if (channels_.count(gateway_instance_id))
+        auto s = Current();
+        if (s && s->by_gateway_id.count(gateway_instance_id))
             return true;
     }
     std::vector<IServiceRegistry::ServiceInstance> insts;
@@ -53,8 +85,8 @@ bool GatewayPushClient::EnsureChannel(const std::string &gateway_instance_id) {
             break;
         }
     }
-    std::lock_guard<std::mutex> lk(g_push_mu);
-    return channels_.count(gateway_instance_id) > 0;
+    auto s = Current();
+    return s && s->by_gateway_id.count(gateway_instance_id) > 0;
 }
 
 bool GatewayPushClient::PushBatch(const std::string &gateway_instance_id,
@@ -67,18 +99,20 @@ bool GatewayPushClient::PushBatch(const std::string &gateway_instance_id,
         rsp->set_message("gateway push addr unknown (no discovery/static mapping)");
         return false;
     }
-    brpc::Channel *ch = nullptr;
-    {
-        std::lock_guard<std::mutex> lk(g_push_mu);
-        auto it = channels_.find(gateway_instance_id);
-        if (it == channels_.end()) {
-            rsp->set_ok(false);
-            rsp->set_message("gateway push channel missing");
-            return false;
-        }
-        ch = it->second.get();
+    auto s = Current();
+    if (!s) {
+        rsp->set_ok(false);
+        rsp->set_message("gateway push snapshot missing");
+        return false;
     }
-    gwpush::GatewayPushService_Stub stub(ch);
+    auto it = s->by_gateway_id.find(gateway_instance_id);
+    if (it == s->by_gateway_id.end() || !it->second) {
+        rsp->set_ok(false);
+        rsp->set_message("gateway push channel missing");
+        return false;
+    }
+    auto ch = it->second;  // 持有在途
+    gwpush::GatewayPushService_Stub stub(ch.get());
     brpc::Controller cntl;
     stub.PushBatch(&cntl, &req, rsp, nullptr);
     if (cntl.Failed()) {

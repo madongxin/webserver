@@ -19,6 +19,12 @@ size_t PlayerSerialQueue::ShardIndex(uint64_t player_id, size_t n) {
     return static_cast<size_t>(player_id % n);
 }
 
+PlayerSerialQueue::Shard *PlayerSerialQueue::ShardFor(uint64_t player_id) {
+    if (!started_ || shards_.empty())
+        return nullptr;
+    return shards_[ShardIndex(player_id, shards_.size())].get();
+}
+
 void PlayerSerialQueue::SetLimits(size_t max_per_shard, size_t max_global) {
     if (max_per_shard > 0)
         max_per_shard_ = max_per_shard;
@@ -53,6 +59,8 @@ void PlayerSerialQueue::Stop() {
     std::lock_guard<std::mutex> lk(life_mu_);
     if (!started_)
         return;
+    // 先切断 ShardFor / TryPost，避免异步 Complete 在析构 cv 后仍 notify
+    started_ = false;
     for (auto &s : shards_) {
         {
             std::lock_guard<std::mutex> qlk(s->mu);
@@ -65,7 +73,6 @@ void PlayerSerialQueue::Stop() {
             s->worker.join();
     }
     shards_.clear();
-    started_ = false;
     pending_global_.store(0, std::memory_order_relaxed);
     LOG_INFO << "PlayerSerialQueue stopped";
 }
@@ -106,9 +113,19 @@ bool PlayerSerialQueue::TryPost(uint64_t player_id, std::function<void()> task) 
     }
     if (pending_global_.load(std::memory_order_relaxed) >= max_global_)
         return false;
-    Shard *shard = shards_[ShardIndex(player_id, shards_.size())].get();
+    Shard *shard = ShardFor(player_id);
+    if (!shard)
+        return false;
     {
         std::lock_guard<std::mutex> lk(shard->mu);
+        if (shard->async_inflight.count(player_id)) {
+            auto &dq = shard->deferred[player_id];
+            if (dq.size() + shard->q.size() >= max_per_shard_)
+                return false;
+            dq.push_back(std::move(task));
+            pending_global_.fetch_add(1, std::memory_order_relaxed);
+            return true;
+        }
         if (shard->q.size() >= max_per_shard_)
             return false;
         shard->q.push_back(std::move(task));
@@ -116,6 +133,56 @@ bool PlayerSerialQueue::TryPost(uint64_t player_id, std::function<void()> task) 
     }
     shard->cv.notify_one();
     return true;
+}
+
+void PlayerSerialQueue::MarkAsyncInFlight(uint64_t player_id) {
+    Shard *shard = ShardFor(player_id);
+    if (!shard)
+        return;
+    std::lock_guard<std::mutex> lk(shard->mu);
+    shard->async_inflight.insert(player_id);
+}
+
+void PlayerSerialQueue::ClearAsyncInFlight(uint64_t player_id) {
+    CompleteAsyncInFlight(player_id, nullptr);
+}
+
+bool PlayerSerialQueue::CompleteAsyncInFlight(uint64_t player_id,
+                                               std::function<void()> completion) {
+    Shard *shard = ShardFor(player_id);
+    if (!shard) {
+        if (completion)
+            completion();
+        return true;
+    }
+    if (pending_global_.load(std::memory_order_relaxed) >= max_global_ && completion)
+        return false;
+    {
+        std::lock_guard<std::mutex> lk(shard->mu);
+        shard->async_inflight.erase(player_id);
+        if (completion) {
+            shard->q.push_front(std::move(completion));
+            pending_global_.fetch_add(1, std::memory_order_relaxed);
+        }
+        auto it = shard->deferred.find(player_id);
+        if (it != shard->deferred.end()) {
+            while (!it->second.empty()) {
+                shard->q.push_back(std::move(it->second.front()));
+                it->second.pop_front();
+            }
+            shard->deferred.erase(it);
+        }
+    }
+    shard->cv.notify_one();
+    return true;
+}
+
+bool PlayerSerialQueue::IsAsyncInFlight(uint64_t player_id) const {
+    if (!started_ || shards_.empty())
+        return false;
+    Shard *shard = shards_[ShardIndex(player_id, shards_.size())].get();
+    std::lock_guard<std::mutex> lk(shard->mu);
+    return shard->async_inflight.count(player_id) > 0;
 }
 
 void PlayerSerialQueue::Post(uint64_t player_id, std::function<void()> task) {
@@ -130,6 +197,9 @@ void PlayerSerialQueue::DrainForTest() {
         return;
     for (auto &s : shards_) {
         std::unique_lock<std::mutex> lk(s->mu);
-        s->cv.wait(lk, [&]() { return s->q.empty() && s->inflight == 0; });
+        s->cv.wait(lk, [&]() {
+            return s->q.empty() && s->inflight == 0 && s->async_inflight.empty() &&
+                   s->deferred.empty();
+        });
     }
 }

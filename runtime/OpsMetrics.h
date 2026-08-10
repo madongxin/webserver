@@ -24,10 +24,28 @@ public:
     void IncDrainReject() { drain_reject_.fetch_add(1, std::memory_order_relaxed); }
     void IncPushAccepted() { push_accepted_.fetch_add(1, std::memory_order_relaxed); }
     void IncPushRejected() { push_rejected_.fetch_add(1, std::memory_order_relaxed); }
+    void IncPushAckOk() { push_ack_ok_.fetch_add(1, std::memory_order_relaxed); }
+    void IncPushAckDuplicate() { push_ack_duplicate_.fetch_add(1, std::memory_order_relaxed); }
+    void IncPushAckAheadRejected() {
+        push_ack_ahead_rejected_.fetch_add(1, std::memory_order_relaxed);
+    }
+    void IncPushAckStaleRejected() {
+        push_ack_stale_rejected_.fetch_add(1, std::memory_order_relaxed);
+    }
     void IncIdentityMismatch() { identity_mismatch_.fetch_add(1, std::memory_order_relaxed); }
+    void IncQueueOverload() { queue_overload_.fetch_add(1, std::memory_order_relaxed); }
+    void IncCommandForbidden() { command_forbidden_.fetch_add(1, std::memory_order_relaxed); }
 
     void SetOnlinePlayers(int64_t n) { online_players_.store(n, std::memory_order_relaxed); }
     void SetOutboxBacklog(int64_t n) { outbox_backlog_.store(n, std::memory_order_relaxed); }
+    void SetMailboxPending(int64_t n) { mailbox_pending_.store(n, std::memory_order_relaxed); }
+    void IncPlacementRecoverOk() { placement_recover_ok_.fetch_add(1, std::memory_order_relaxed); }
+    void IncPlacementRecoverFail() {
+        placement_recover_fail_.fetch_add(1, std::memory_order_relaxed);
+    }
+    void IncGamedbUnknownResult() {
+        gamedb_unknown_result_.fetch_add(1, std::memory_order_relaxed);
+    }
 
     std::string PrometheusText() const;
 
@@ -46,7 +64,17 @@ private:
     std::atomic<uint64_t> drain_reject_{0};
     std::atomic<uint64_t> push_accepted_{0};
     std::atomic<uint64_t> push_rejected_{0};
+    std::atomic<uint64_t> push_ack_ok_{0};
+    std::atomic<uint64_t> push_ack_duplicate_{0};
+    std::atomic<uint64_t> push_ack_ahead_rejected_{0};
+    std::atomic<uint64_t> push_ack_stale_rejected_{0};
     std::atomic<uint64_t> identity_mismatch_{0};
+    std::atomic<uint64_t> queue_overload_{0};
+    std::atomic<uint64_t> command_forbidden_{0};
     std::atomic<int64_t> online_players_{0};
     std::atomic<int64_t> outbox_backlog_{0};
+    std::atomic<int64_t> mailbox_pending_{0};
+    std::atomic<uint64_t> placement_recover_ok_{0};
+    std::atomic<uint64_t> placement_recover_fail_{0};
+    std::atomic<uint64_t> gamedb_unknown_result_{0};
 };

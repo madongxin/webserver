@@ -37,7 +37,7 @@ namespace protobuf_gamedb_2eproto {
 struct TableStruct {
   static const ::google::protobuf::internal::ParseTableField entries[];
   static const ::google::protobuf::internal::AuxillaryParseTableField aux[];
-  static const ::google::protobuf::internal::ParseTable schema[18];
+  static const ::google::protobuf::internal::ParseTable schema[20];
   static const ::google::protobuf::internal::FieldMetadata field_metadata[];
   static const ::google::protobuf::internal::SerializationTable serialization_table[];
   static const ::google::protobuf::uint32 offsets[];
@@ -79,6 +79,10 @@ void InitDefaultsFlushPlayerReqImpl();
 void InitDefaultsFlushPlayerReq();
 void InitDefaultsFlushPlayerRspImpl();
 void InitDefaultsFlushPlayerRsp();
+void InitDefaultsQueryOperationResultReqImpl();
+void InitDefaultsQueryOperationResultReq();
+void InitDefaultsQueryOperationResultRspImpl();
+void InitDefaultsQueryOperationResultRsp();
 inline void InitDefaults() {
   InitDefaultsGrantedItem();
   InitDefaultsBagEntry();
@@ -98,6 +102,8 @@ inline void InitDefaults() {
   InitDefaultsSavePlayerSnapshotRsp();
   InitDefaultsFlushPlayerReq();
   InitDefaultsFlushPlayerRsp();
+  InitDefaultsQueryOperationResultReq();
+  InitDefaultsQueryOperationResultRsp();
 }
 }  // namespace protobuf_gamedb_2eproto
 namespace gdb {
@@ -143,6 +149,12 @@ extern LookupAccountReqDefaultTypeInternal _LookupAccountReq_default_instance_;
 class LookupAccountRsp;
 class LookupAccountRspDefaultTypeInternal;
 extern LookupAccountRspDefaultTypeInternal _LookupAccountRsp_default_instance_;
+class QueryOperationResultReq;
+class QueryOperationResultReqDefaultTypeInternal;
+extern QueryOperationResultReqDefaultTypeInternal _QueryOperationResultReq_default_instance_;
+class QueryOperationResultRsp;
+class QueryOperationResultRspDefaultTypeInternal;
+extern QueryOperationResultRspDefaultTypeInternal _QueryOperationResultRsp_default_instance_;
 class RegisterAccountReq;
 class RegisterAccountReqDefaultTypeInternal;
 extern RegisterAccountReqDefaultTypeInternal _RegisterAccountReq_default_instance_;
@@ -2413,6 +2425,12 @@ class SavePlayerSnapshotRsp : public ::google::protobuf::Message /* @@protoc_ins
   bool ok() const;
   void set_ok(bool value);
 
+  // bool idempotent_hit = 5;
+  void clear_idempotent_hit();
+  static const int kIdempotentHitFieldNumber = 5;
+  bool idempotent_hit() const;
+  void set_idempotent_hit(bool value);
+
   // @@protoc_insertion_point(class_scope:gdb.SavePlayerSnapshotRsp)
  private:
 
@@ -2421,6 +2439,7 @@ class SavePlayerSnapshotRsp : public ::google::protobuf::Message /* @@protoc_ins
   ::google::protobuf::internal::ArenaStringPtr error_code_;
   ::google::protobuf::uint64 asset_version_;
   bool ok_;
+  bool idempotent_hit_;
   mutable int _cached_size_;
   friend struct ::protobuf_gamedb_2eproto::TableStruct;
   friend void ::protobuf_gamedb_2eproto::InitDefaultsSavePlayerSnapshotRspImpl();
@@ -2675,6 +2694,314 @@ class FlushPlayerRsp : public ::google::protobuf::Message /* @@protoc_insertion_
   friend struct ::protobuf_gamedb_2eproto::TableStruct;
   friend void ::protobuf_gamedb_2eproto::InitDefaultsFlushPlayerRspImpl();
 };
+// -------------------------------------------------------------------
+
+class QueryOperationResultReq : public ::google::protobuf::Message /* @@protoc_insertion_point(class_definition:gdb.QueryOperationResultReq) */ {
+ public:
+  QueryOperationResultReq();
+  virtual ~QueryOperationResultReq();
+
+  QueryOperationResultReq(const QueryOperationResultReq& from);
+
+  inline QueryOperationResultReq& operator=(const QueryOperationResultReq& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  #if LANG_CXX11
+  QueryOperationResultReq(QueryOperationResultReq&& from) noexcept
+    : QueryOperationResultReq() {
+    *this = ::std::move(from);
+  }
+
+  inline QueryOperationResultReq& operator=(QueryOperationResultReq&& from) noexcept {
+    if (GetArenaNoVirtual() == from.GetArenaNoVirtual()) {
+      if (this != &from) InternalSwap(&from);
+    } else {
+      CopyFrom(from);
+    }
+    return *this;
+  }
+  #endif
+  static const ::google::protobuf::Descriptor* descriptor();
+  static const QueryOperationResultReq& default_instance();
+
+  static void InitAsDefaultInstance();  // FOR INTERNAL USE ONLY
+  static inline const QueryOperationResultReq* internal_default_instance() {
+    return reinterpret_cast<const QueryOperationResultReq*>(
+               &_QueryOperationResultReq_default_instance_);
+  }
+  static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
+    18;
+
+  void Swap(QueryOperationResultReq* other);
+  friend void swap(QueryOperationResultReq& a, QueryOperationResultReq& b) {
+    a.Swap(&b);
+  }
+
+  // implements Message ----------------------------------------------
+
+  inline QueryOperationResultReq* New() const PROTOBUF_FINAL { return New(NULL); }
+
+  QueryOperationResultReq* New(::google::protobuf::Arena* arena) const PROTOBUF_FINAL;
+  void CopyFrom(const ::google::protobuf::Message& from) PROTOBUF_FINAL;
+  void MergeFrom(const ::google::protobuf::Message& from) PROTOBUF_FINAL;
+  void CopyFrom(const QueryOperationResultReq& from);
+  void MergeFrom(const QueryOperationResultReq& from);
+  void Clear() PROTOBUF_FINAL;
+  bool IsInitialized() const PROTOBUF_FINAL;
+
+  size_t ByteSizeLong() const PROTOBUF_FINAL;
+  bool MergePartialFromCodedStream(
+      ::google::protobuf::io::CodedInputStream* input) PROTOBUF_FINAL;
+  void SerializeWithCachedSizes(
+      ::google::protobuf::io::CodedOutputStream* output) const PROTOBUF_FINAL;
+  ::google::protobuf::uint8* InternalSerializeWithCachedSizesToArray(
+      bool deterministic, ::google::protobuf::uint8* target) const PROTOBUF_FINAL;
+  int GetCachedSize() const PROTOBUF_FINAL { return _cached_size_; }
+  private:
+  void SharedCtor();
+  void SharedDtor();
+  void SetCachedSize(int size) const PROTOBUF_FINAL;
+  void InternalSwap(QueryOperationResultReq* other);
+  private:
+  inline ::google::protobuf::Arena* GetArenaNoVirtual() const {
+    return NULL;
+  }
+  inline void* MaybeArenaPtr() const {
+    return NULL;
+  }
+  public:
+
+  ::google::protobuf::Metadata GetMetadata() const PROTOBUF_FINAL;
+
+  // nested types ----------------------------------------------------
+
+  // accessors -------------------------------------------------------
+
+  // string idempotency_key = 2;
+  void clear_idempotency_key();
+  static const int kIdempotencyKeyFieldNumber = 2;
+  const ::std::string& idempotency_key() const;
+  void set_idempotency_key(const ::std::string& value);
+  #if LANG_CXX11
+  void set_idempotency_key(::std::string&& value);
+  #endif
+  void set_idempotency_key(const char* value);
+  void set_idempotency_key(const char* value, size_t size);
+  ::std::string* mutable_idempotency_key();
+  ::std::string* release_idempotency_key();
+  void set_allocated_idempotency_key(::std::string* idempotency_key);
+
+  // string operation_type = 3;
+  void clear_operation_type();
+  static const int kOperationTypeFieldNumber = 3;
+  const ::std::string& operation_type() const;
+  void set_operation_type(const ::std::string& value);
+  #if LANG_CXX11
+  void set_operation_type(::std::string&& value);
+  #endif
+  void set_operation_type(const char* value);
+  void set_operation_type(const char* value, size_t size);
+  ::std::string* mutable_operation_type();
+  ::std::string* release_operation_type();
+  void set_allocated_operation_type(::std::string* operation_type);
+
+  // uint64 player_id = 1;
+  void clear_player_id();
+  static const int kPlayerIdFieldNumber = 1;
+  ::google::protobuf::uint64 player_id() const;
+  void set_player_id(::google::protobuf::uint64 value);
+
+  // @@protoc_insertion_point(class_scope:gdb.QueryOperationResultReq)
+ private:
+
+  ::google::protobuf::internal::InternalMetadataWithArena _internal_metadata_;
+  ::google::protobuf::internal::ArenaStringPtr idempotency_key_;
+  ::google::protobuf::internal::ArenaStringPtr operation_type_;
+  ::google::protobuf::uint64 player_id_;
+  mutable int _cached_size_;
+  friend struct ::protobuf_gamedb_2eproto::TableStruct;
+  friend void ::protobuf_gamedb_2eproto::InitDefaultsQueryOperationResultReqImpl();
+};
+// -------------------------------------------------------------------
+
+class QueryOperationResultRsp : public ::google::protobuf::Message /* @@protoc_insertion_point(class_definition:gdb.QueryOperationResultRsp) */ {
+ public:
+  QueryOperationResultRsp();
+  virtual ~QueryOperationResultRsp();
+
+  QueryOperationResultRsp(const QueryOperationResultRsp& from);
+
+  inline QueryOperationResultRsp& operator=(const QueryOperationResultRsp& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  #if LANG_CXX11
+  QueryOperationResultRsp(QueryOperationResultRsp&& from) noexcept
+    : QueryOperationResultRsp() {
+    *this = ::std::move(from);
+  }
+
+  inline QueryOperationResultRsp& operator=(QueryOperationResultRsp&& from) noexcept {
+    if (GetArenaNoVirtual() == from.GetArenaNoVirtual()) {
+      if (this != &from) InternalSwap(&from);
+    } else {
+      CopyFrom(from);
+    }
+    return *this;
+  }
+  #endif
+  static const ::google::protobuf::Descriptor* descriptor();
+  static const QueryOperationResultRsp& default_instance();
+
+  static void InitAsDefaultInstance();  // FOR INTERNAL USE ONLY
+  static inline const QueryOperationResultRsp* internal_default_instance() {
+    return reinterpret_cast<const QueryOperationResultRsp*>(
+               &_QueryOperationResultRsp_default_instance_);
+  }
+  static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
+    19;
+
+  void Swap(QueryOperationResultRsp* other);
+  friend void swap(QueryOperationResultRsp& a, QueryOperationResultRsp& b) {
+    a.Swap(&b);
+  }
+
+  // implements Message ----------------------------------------------
+
+  inline QueryOperationResultRsp* New() const PROTOBUF_FINAL { return New(NULL); }
+
+  QueryOperationResultRsp* New(::google::protobuf::Arena* arena) const PROTOBUF_FINAL;
+  void CopyFrom(const ::google::protobuf::Message& from) PROTOBUF_FINAL;
+  void MergeFrom(const ::google::protobuf::Message& from) PROTOBUF_FINAL;
+  void CopyFrom(const QueryOperationResultRsp& from);
+  void MergeFrom(const QueryOperationResultRsp& from);
+  void Clear() PROTOBUF_FINAL;
+  bool IsInitialized() const PROTOBUF_FINAL;
+
+  size_t ByteSizeLong() const PROTOBUF_FINAL;
+  bool MergePartialFromCodedStream(
+      ::google::protobuf::io::CodedInputStream* input) PROTOBUF_FINAL;
+  void SerializeWithCachedSizes(
+      ::google::protobuf::io::CodedOutputStream* output) const PROTOBUF_FINAL;
+  ::google::protobuf::uint8* InternalSerializeWithCachedSizesToArray(
+      bool deterministic, ::google::protobuf::uint8* target) const PROTOBUF_FINAL;
+  int GetCachedSize() const PROTOBUF_FINAL { return _cached_size_; }
+  private:
+  void SharedCtor();
+  void SharedDtor();
+  void SetCachedSize(int size) const PROTOBUF_FINAL;
+  void InternalSwap(QueryOperationResultRsp* other);
+  private:
+  inline ::google::protobuf::Arena* GetArenaNoVirtual() const {
+    return NULL;
+  }
+  inline void* MaybeArenaPtr() const {
+    return NULL;
+  }
+  public:
+
+  ::google::protobuf::Metadata GetMetadata() const PROTOBUF_FINAL;
+
+  // nested types ----------------------------------------------------
+
+  // accessors -------------------------------------------------------
+
+  // string message = 2;
+  void clear_message();
+  static const int kMessageFieldNumber = 2;
+  const ::std::string& message() const;
+  void set_message(const ::std::string& value);
+  #if LANG_CXX11
+  void set_message(::std::string&& value);
+  #endif
+  void set_message(const char* value);
+  void set_message(const char* value, size_t size);
+  ::std::string* mutable_message();
+  ::std::string* release_message();
+  void set_allocated_message(::std::string* message);
+
+  // string error_code = 3;
+  void clear_error_code();
+  static const int kErrorCodeFieldNumber = 3;
+  const ::std::string& error_code() const;
+  void set_error_code(const ::std::string& value);
+  #if LANG_CXX11
+  void set_error_code(::std::string&& value);
+  #endif
+  void set_error_code(const char* value);
+  void set_error_code(const char* value, size_t size);
+  ::std::string* mutable_error_code();
+  ::std::string* release_error_code();
+  void set_allocated_error_code(::std::string* error_code);
+
+  // string request_hash = 9;
+  void clear_request_hash();
+  static const int kRequestHashFieldNumber = 9;
+  const ::std::string& request_hash() const;
+  void set_request_hash(const ::std::string& value);
+  #if LANG_CXX11
+  void set_request_hash(::std::string&& value);
+  #endif
+  void set_request_hash(const char* value);
+  void set_request_hash(const char* value, size_t size);
+  ::std::string* mutable_request_hash();
+  ::std::string* release_request_hash();
+  void set_allocated_request_hash(::std::string* request_hash);
+
+  // bool ok = 1;
+  void clear_ok();
+  static const int kOkFieldNumber = 1;
+  bool ok() const;
+  void set_ok(bool value);
+
+  // bool found = 4;
+  void clear_found();
+  static const int kFoundFieldNumber = 4;
+  bool found() const;
+  void set_found(bool value);
+
+  // bool completed_ok = 5;
+  void clear_completed_ok();
+  static const int kCompletedOkFieldNumber = 5;
+  bool completed_ok() const;
+  void set_completed_ok(bool value);
+
+  // bool idempotent_hit = 6;
+  void clear_idempotent_hit();
+  static const int kIdempotentHitFieldNumber = 6;
+  bool idempotent_hit() const;
+  void set_idempotent_hit(bool value);
+
+  // uint32 remain_count = 8;
+  void clear_remain_count();
+  static const int kRemainCountFieldNumber = 8;
+  ::google::protobuf::uint32 remain_count() const;
+  void set_remain_count(::google::protobuf::uint32 value);
+
+  // uint64 asset_version = 7;
+  void clear_asset_version();
+  static const int kAssetVersionFieldNumber = 7;
+  ::google::protobuf::uint64 asset_version() const;
+  void set_asset_version(::google::protobuf::uint64 value);
+
+  // @@protoc_insertion_point(class_scope:gdb.QueryOperationResultRsp)
+ private:
+
+  ::google::protobuf::internal::InternalMetadataWithArena _internal_metadata_;
+  ::google::protobuf::internal::ArenaStringPtr message_;
+  ::google::protobuf::internal::ArenaStringPtr error_code_;
+  ::google::protobuf::internal::ArenaStringPtr request_hash_;
+  bool ok_;
+  bool found_;
+  bool completed_ok_;
+  bool idempotent_hit_;
+  ::google::protobuf::uint32 remain_count_;
+  ::google::protobuf::uint64 asset_version_;
+  mutable int _cached_size_;
+  friend struct ::protobuf_gamedb_2eproto::TableStruct;
+  friend void ::protobuf_gamedb_2eproto::InitDefaultsQueryOperationResultRspImpl();
+};
 // ===================================================================
 
 class GameDbService_Stub;
@@ -2721,6 +3048,10 @@ class GameDbService : public ::google::protobuf::Service {
   virtual void FlushPlayer(::google::protobuf::RpcController* controller,
                        const ::gdb::FlushPlayerReq* request,
                        ::gdb::FlushPlayerRsp* response,
+                       ::google::protobuf::Closure* done);
+  virtual void QueryOperationResult(::google::protobuf::RpcController* controller,
+                       const ::gdb::QueryOperationResultReq* request,
+                       ::gdb::QueryOperationResultRsp* response,
                        ::google::protobuf::Closure* done);
 
   // implements Service ----------------------------------------------
@@ -2782,6 +3113,10 @@ class GameDbService_Stub : public GameDbService {
   void FlushPlayer(::google::protobuf::RpcController* controller,
                        const ::gdb::FlushPlayerReq* request,
                        ::gdb::FlushPlayerRsp* response,
+                       ::google::protobuf::Closure* done);
+  void QueryOperationResult(::google::protobuf::RpcController* controller,
+                       const ::gdb::QueryOperationResultReq* request,
+                       ::gdb::QueryOperationResultRsp* response,
                        ::google::protobuf::Closure* done);
  private:
   ::google::protobuf::RpcChannel* channel_;
@@ -5134,6 +5469,20 @@ inline void SavePlayerSnapshotRsp::set_asset_version(::google::protobuf::uint64 
   // @@protoc_insertion_point(field_set:gdb.SavePlayerSnapshotRsp.asset_version)
 }
 
+// bool idempotent_hit = 5;
+inline void SavePlayerSnapshotRsp::clear_idempotent_hit() {
+  idempotent_hit_ = false;
+}
+inline bool SavePlayerSnapshotRsp::idempotent_hit() const {
+  // @@protoc_insertion_point(field_get:gdb.SavePlayerSnapshotRsp.idempotent_hit)
+  return idempotent_hit_;
+}
+inline void SavePlayerSnapshotRsp::set_idempotent_hit(bool value) {
+  
+  idempotent_hit_ = value;
+  // @@protoc_insertion_point(field_set:gdb.SavePlayerSnapshotRsp.idempotent_hit)
+}
+
 // -------------------------------------------------------------------
 
 // FlushPlayerReq
@@ -5343,9 +5692,384 @@ inline void FlushPlayerRsp::set_asset_version(::google::protobuf::uint64 value) 
   // @@protoc_insertion_point(field_set:gdb.FlushPlayerRsp.asset_version)
 }
 
+// -------------------------------------------------------------------
+
+// QueryOperationResultReq
+
+// uint64 player_id = 1;
+inline void QueryOperationResultReq::clear_player_id() {
+  player_id_ = GOOGLE_ULONGLONG(0);
+}
+inline ::google::protobuf::uint64 QueryOperationResultReq::player_id() const {
+  // @@protoc_insertion_point(field_get:gdb.QueryOperationResultReq.player_id)
+  return player_id_;
+}
+inline void QueryOperationResultReq::set_player_id(::google::protobuf::uint64 value) {
+  
+  player_id_ = value;
+  // @@protoc_insertion_point(field_set:gdb.QueryOperationResultReq.player_id)
+}
+
+// string idempotency_key = 2;
+inline void QueryOperationResultReq::clear_idempotency_key() {
+  idempotency_key_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline const ::std::string& QueryOperationResultReq::idempotency_key() const {
+  // @@protoc_insertion_point(field_get:gdb.QueryOperationResultReq.idempotency_key)
+  return idempotency_key_.GetNoArena();
+}
+inline void QueryOperationResultReq::set_idempotency_key(const ::std::string& value) {
+  
+  idempotency_key_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), value);
+  // @@protoc_insertion_point(field_set:gdb.QueryOperationResultReq.idempotency_key)
+}
+#if LANG_CXX11
+inline void QueryOperationResultReq::set_idempotency_key(::std::string&& value) {
+  
+  idempotency_key_.SetNoArena(
+    &::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::move(value));
+  // @@protoc_insertion_point(field_set_rvalue:gdb.QueryOperationResultReq.idempotency_key)
+}
+#endif
+inline void QueryOperationResultReq::set_idempotency_key(const char* value) {
+  GOOGLE_DCHECK(value != NULL);
+  
+  idempotency_key_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::string(value));
+  // @@protoc_insertion_point(field_set_char:gdb.QueryOperationResultReq.idempotency_key)
+}
+inline void QueryOperationResultReq::set_idempotency_key(const char* value, size_t size) {
+  
+  idempotency_key_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(),
+      ::std::string(reinterpret_cast<const char*>(value), size));
+  // @@protoc_insertion_point(field_set_pointer:gdb.QueryOperationResultReq.idempotency_key)
+}
+inline ::std::string* QueryOperationResultReq::mutable_idempotency_key() {
+  
+  // @@protoc_insertion_point(field_mutable:gdb.QueryOperationResultReq.idempotency_key)
+  return idempotency_key_.MutableNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline ::std::string* QueryOperationResultReq::release_idempotency_key() {
+  // @@protoc_insertion_point(field_release:gdb.QueryOperationResultReq.idempotency_key)
+  
+  return idempotency_key_.ReleaseNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline void QueryOperationResultReq::set_allocated_idempotency_key(::std::string* idempotency_key) {
+  if (idempotency_key != NULL) {
+    
+  } else {
+    
+  }
+  idempotency_key_.SetAllocatedNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), idempotency_key);
+  // @@protoc_insertion_point(field_set_allocated:gdb.QueryOperationResultReq.idempotency_key)
+}
+
+// string operation_type = 3;
+inline void QueryOperationResultReq::clear_operation_type() {
+  operation_type_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline const ::std::string& QueryOperationResultReq::operation_type() const {
+  // @@protoc_insertion_point(field_get:gdb.QueryOperationResultReq.operation_type)
+  return operation_type_.GetNoArena();
+}
+inline void QueryOperationResultReq::set_operation_type(const ::std::string& value) {
+  
+  operation_type_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), value);
+  // @@protoc_insertion_point(field_set:gdb.QueryOperationResultReq.operation_type)
+}
+#if LANG_CXX11
+inline void QueryOperationResultReq::set_operation_type(::std::string&& value) {
+  
+  operation_type_.SetNoArena(
+    &::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::move(value));
+  // @@protoc_insertion_point(field_set_rvalue:gdb.QueryOperationResultReq.operation_type)
+}
+#endif
+inline void QueryOperationResultReq::set_operation_type(const char* value) {
+  GOOGLE_DCHECK(value != NULL);
+  
+  operation_type_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::string(value));
+  // @@protoc_insertion_point(field_set_char:gdb.QueryOperationResultReq.operation_type)
+}
+inline void QueryOperationResultReq::set_operation_type(const char* value, size_t size) {
+  
+  operation_type_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(),
+      ::std::string(reinterpret_cast<const char*>(value), size));
+  // @@protoc_insertion_point(field_set_pointer:gdb.QueryOperationResultReq.operation_type)
+}
+inline ::std::string* QueryOperationResultReq::mutable_operation_type() {
+  
+  // @@protoc_insertion_point(field_mutable:gdb.QueryOperationResultReq.operation_type)
+  return operation_type_.MutableNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline ::std::string* QueryOperationResultReq::release_operation_type() {
+  // @@protoc_insertion_point(field_release:gdb.QueryOperationResultReq.operation_type)
+  
+  return operation_type_.ReleaseNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline void QueryOperationResultReq::set_allocated_operation_type(::std::string* operation_type) {
+  if (operation_type != NULL) {
+    
+  } else {
+    
+  }
+  operation_type_.SetAllocatedNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), operation_type);
+  // @@protoc_insertion_point(field_set_allocated:gdb.QueryOperationResultReq.operation_type)
+}
+
+// -------------------------------------------------------------------
+
+// QueryOperationResultRsp
+
+// bool ok = 1;
+inline void QueryOperationResultRsp::clear_ok() {
+  ok_ = false;
+}
+inline bool QueryOperationResultRsp::ok() const {
+  // @@protoc_insertion_point(field_get:gdb.QueryOperationResultRsp.ok)
+  return ok_;
+}
+inline void QueryOperationResultRsp::set_ok(bool value) {
+  
+  ok_ = value;
+  // @@protoc_insertion_point(field_set:gdb.QueryOperationResultRsp.ok)
+}
+
+// string message = 2;
+inline void QueryOperationResultRsp::clear_message() {
+  message_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline const ::std::string& QueryOperationResultRsp::message() const {
+  // @@protoc_insertion_point(field_get:gdb.QueryOperationResultRsp.message)
+  return message_.GetNoArena();
+}
+inline void QueryOperationResultRsp::set_message(const ::std::string& value) {
+  
+  message_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), value);
+  // @@protoc_insertion_point(field_set:gdb.QueryOperationResultRsp.message)
+}
+#if LANG_CXX11
+inline void QueryOperationResultRsp::set_message(::std::string&& value) {
+  
+  message_.SetNoArena(
+    &::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::move(value));
+  // @@protoc_insertion_point(field_set_rvalue:gdb.QueryOperationResultRsp.message)
+}
+#endif
+inline void QueryOperationResultRsp::set_message(const char* value) {
+  GOOGLE_DCHECK(value != NULL);
+  
+  message_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::string(value));
+  // @@protoc_insertion_point(field_set_char:gdb.QueryOperationResultRsp.message)
+}
+inline void QueryOperationResultRsp::set_message(const char* value, size_t size) {
+  
+  message_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(),
+      ::std::string(reinterpret_cast<const char*>(value), size));
+  // @@protoc_insertion_point(field_set_pointer:gdb.QueryOperationResultRsp.message)
+}
+inline ::std::string* QueryOperationResultRsp::mutable_message() {
+  
+  // @@protoc_insertion_point(field_mutable:gdb.QueryOperationResultRsp.message)
+  return message_.MutableNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline ::std::string* QueryOperationResultRsp::release_message() {
+  // @@protoc_insertion_point(field_release:gdb.QueryOperationResultRsp.message)
+  
+  return message_.ReleaseNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline void QueryOperationResultRsp::set_allocated_message(::std::string* message) {
+  if (message != NULL) {
+    
+  } else {
+    
+  }
+  message_.SetAllocatedNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), message);
+  // @@protoc_insertion_point(field_set_allocated:gdb.QueryOperationResultRsp.message)
+}
+
+// string error_code = 3;
+inline void QueryOperationResultRsp::clear_error_code() {
+  error_code_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline const ::std::string& QueryOperationResultRsp::error_code() const {
+  // @@protoc_insertion_point(field_get:gdb.QueryOperationResultRsp.error_code)
+  return error_code_.GetNoArena();
+}
+inline void QueryOperationResultRsp::set_error_code(const ::std::string& value) {
+  
+  error_code_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), value);
+  // @@protoc_insertion_point(field_set:gdb.QueryOperationResultRsp.error_code)
+}
+#if LANG_CXX11
+inline void QueryOperationResultRsp::set_error_code(::std::string&& value) {
+  
+  error_code_.SetNoArena(
+    &::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::move(value));
+  // @@protoc_insertion_point(field_set_rvalue:gdb.QueryOperationResultRsp.error_code)
+}
+#endif
+inline void QueryOperationResultRsp::set_error_code(const char* value) {
+  GOOGLE_DCHECK(value != NULL);
+  
+  error_code_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::string(value));
+  // @@protoc_insertion_point(field_set_char:gdb.QueryOperationResultRsp.error_code)
+}
+inline void QueryOperationResultRsp::set_error_code(const char* value, size_t size) {
+  
+  error_code_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(),
+      ::std::string(reinterpret_cast<const char*>(value), size));
+  // @@protoc_insertion_point(field_set_pointer:gdb.QueryOperationResultRsp.error_code)
+}
+inline ::std::string* QueryOperationResultRsp::mutable_error_code() {
+  
+  // @@protoc_insertion_point(field_mutable:gdb.QueryOperationResultRsp.error_code)
+  return error_code_.MutableNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline ::std::string* QueryOperationResultRsp::release_error_code() {
+  // @@protoc_insertion_point(field_release:gdb.QueryOperationResultRsp.error_code)
+  
+  return error_code_.ReleaseNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline void QueryOperationResultRsp::set_allocated_error_code(::std::string* error_code) {
+  if (error_code != NULL) {
+    
+  } else {
+    
+  }
+  error_code_.SetAllocatedNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), error_code);
+  // @@protoc_insertion_point(field_set_allocated:gdb.QueryOperationResultRsp.error_code)
+}
+
+// bool found = 4;
+inline void QueryOperationResultRsp::clear_found() {
+  found_ = false;
+}
+inline bool QueryOperationResultRsp::found() const {
+  // @@protoc_insertion_point(field_get:gdb.QueryOperationResultRsp.found)
+  return found_;
+}
+inline void QueryOperationResultRsp::set_found(bool value) {
+  
+  found_ = value;
+  // @@protoc_insertion_point(field_set:gdb.QueryOperationResultRsp.found)
+}
+
+// bool completed_ok = 5;
+inline void QueryOperationResultRsp::clear_completed_ok() {
+  completed_ok_ = false;
+}
+inline bool QueryOperationResultRsp::completed_ok() const {
+  // @@protoc_insertion_point(field_get:gdb.QueryOperationResultRsp.completed_ok)
+  return completed_ok_;
+}
+inline void QueryOperationResultRsp::set_completed_ok(bool value) {
+  
+  completed_ok_ = value;
+  // @@protoc_insertion_point(field_set:gdb.QueryOperationResultRsp.completed_ok)
+}
+
+// bool idempotent_hit = 6;
+inline void QueryOperationResultRsp::clear_idempotent_hit() {
+  idempotent_hit_ = false;
+}
+inline bool QueryOperationResultRsp::idempotent_hit() const {
+  // @@protoc_insertion_point(field_get:gdb.QueryOperationResultRsp.idempotent_hit)
+  return idempotent_hit_;
+}
+inline void QueryOperationResultRsp::set_idempotent_hit(bool value) {
+  
+  idempotent_hit_ = value;
+  // @@protoc_insertion_point(field_set:gdb.QueryOperationResultRsp.idempotent_hit)
+}
+
+// uint64 asset_version = 7;
+inline void QueryOperationResultRsp::clear_asset_version() {
+  asset_version_ = GOOGLE_ULONGLONG(0);
+}
+inline ::google::protobuf::uint64 QueryOperationResultRsp::asset_version() const {
+  // @@protoc_insertion_point(field_get:gdb.QueryOperationResultRsp.asset_version)
+  return asset_version_;
+}
+inline void QueryOperationResultRsp::set_asset_version(::google::protobuf::uint64 value) {
+  
+  asset_version_ = value;
+  // @@protoc_insertion_point(field_set:gdb.QueryOperationResultRsp.asset_version)
+}
+
+// uint32 remain_count = 8;
+inline void QueryOperationResultRsp::clear_remain_count() {
+  remain_count_ = 0u;
+}
+inline ::google::protobuf::uint32 QueryOperationResultRsp::remain_count() const {
+  // @@protoc_insertion_point(field_get:gdb.QueryOperationResultRsp.remain_count)
+  return remain_count_;
+}
+inline void QueryOperationResultRsp::set_remain_count(::google::protobuf::uint32 value) {
+  
+  remain_count_ = value;
+  // @@protoc_insertion_point(field_set:gdb.QueryOperationResultRsp.remain_count)
+}
+
+// string request_hash = 9;
+inline void QueryOperationResultRsp::clear_request_hash() {
+  request_hash_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline const ::std::string& QueryOperationResultRsp::request_hash() const {
+  // @@protoc_insertion_point(field_get:gdb.QueryOperationResultRsp.request_hash)
+  return request_hash_.GetNoArena();
+}
+inline void QueryOperationResultRsp::set_request_hash(const ::std::string& value) {
+  
+  request_hash_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), value);
+  // @@protoc_insertion_point(field_set:gdb.QueryOperationResultRsp.request_hash)
+}
+#if LANG_CXX11
+inline void QueryOperationResultRsp::set_request_hash(::std::string&& value) {
+  
+  request_hash_.SetNoArena(
+    &::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::move(value));
+  // @@protoc_insertion_point(field_set_rvalue:gdb.QueryOperationResultRsp.request_hash)
+}
+#endif
+inline void QueryOperationResultRsp::set_request_hash(const char* value) {
+  GOOGLE_DCHECK(value != NULL);
+  
+  request_hash_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::string(value));
+  // @@protoc_insertion_point(field_set_char:gdb.QueryOperationResultRsp.request_hash)
+}
+inline void QueryOperationResultRsp::set_request_hash(const char* value, size_t size) {
+  
+  request_hash_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(),
+      ::std::string(reinterpret_cast<const char*>(value), size));
+  // @@protoc_insertion_point(field_set_pointer:gdb.QueryOperationResultRsp.request_hash)
+}
+inline ::std::string* QueryOperationResultRsp::mutable_request_hash() {
+  
+  // @@protoc_insertion_point(field_mutable:gdb.QueryOperationResultRsp.request_hash)
+  return request_hash_.MutableNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline ::std::string* QueryOperationResultRsp::release_request_hash() {
+  // @@protoc_insertion_point(field_release:gdb.QueryOperationResultRsp.request_hash)
+  
+  return request_hash_.ReleaseNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline void QueryOperationResultRsp::set_allocated_request_hash(::std::string* request_hash) {
+  if (request_hash != NULL) {
+    
+  } else {
+    
+  }
+  request_hash_.SetAllocatedNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), request_hash);
+  // @@protoc_insertion_point(field_set_allocated:gdb.QueryOperationResultRsp.request_hash)
+}
+
 #ifdef __GNUC__
   #pragma GCC diagnostic pop
 #endif  // __GNUC__
+// -------------------------------------------------------------------
+
+// -------------------------------------------------------------------
+
 // -------------------------------------------------------------------
 
 // -------------------------------------------------------------------

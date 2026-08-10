@@ -127,6 +127,7 @@ message SavePlayerSnapshotRsp {
   string message = 2;
   string error_code = 3;
   uint64 asset_version = 4;
+  bool idempotent_hit = 5;
 }
 
 message FlushPlayerReq {
@@ -141,6 +142,24 @@ message FlushPlayerRsp {
   uint64 asset_version = 4;
 }
 
+message QueryOperationResultReq {
+  uint64 player_id = 1;
+  string idempotency_key = 2;
+  string operation_type = 3;  // GRANT|CONSUME|SAVE_SNAPSHOT|CLAIM_MAIL|...
+}
+
+message QueryOperationResultRsp {
+  bool ok = 1;
+  string message = 2;
+  string error_code = 3;
+  bool found = 4;
+  bool completed_ok = 5;
+  bool idempotent_hit = 6;
+  uint64 asset_version = 7;
+  uint32 remain_count = 8;
+  string request_hash = 9;
+}
+
 service GameDbService {
   rpc ClaimMailAttachments(ClaimMailReq) returns (ClaimMailRsp);
   /** Auth 账号查询（持久化层；不经 GameLogic） */
@@ -152,4 +171,5 @@ service GameDbService {
   rpc ApplyAssetMutation(AssetMutationReq) returns (AssetMutationRsp);
   rpc SavePlayerSnapshot(SavePlayerSnapshotReq) returns (SavePlayerSnapshotRsp);
   rpc FlushPlayer(FlushPlayerReq) returns (FlushPlayerRsp);
+  rpc QueryOperationResult(QueryOperationResultReq) returns (QueryOperationResultRsp);
 }

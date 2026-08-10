@@ -25,9 +25,16 @@ run_one phase1_gateway_boundary_test
 run_one phase1_correctness_test
 run_one trusted_player_id_test
 run_one placement_authority_test
+run_one placement_formal_fence_test
+run_one command_policy_test
+run_one gateway_overload_test
 run_one phase2_transfer_snapshot_test
+run_one player_serial_async_test
 if [[ -x "$BIN/phase1_channel_hold_test" ]]; then
   run_one phase1_channel_hold_test
+fi
+if [[ -x "$BIN/channel_snapshot_race_test" ]]; then
+  run_one channel_snapshot_race_test
 fi
 run_one gateway_conn_race_test
 run_one discovery_ha_test
