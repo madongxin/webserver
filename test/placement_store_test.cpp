@@ -184,6 +184,55 @@ int main() {
                                             &err))
         return Fail(("migrate after expire: " + err).c_str());
 
+    // 模板复用 + lease 过期：ResolveOrCreate 必须 reclaim（刷新 lease/epoch），不得返回过期记录
+    ResolveOrCreateInput expired_in;
+    expired_in.realm_id = 1;
+    expired_in.map_template_id = 880001ULL + static_cast<uint64_t>(::getpid() % 1000);
+    expired_in.preferred_owner = "gl-0";
+    ResolveOrCreateResult expired_a;
+    if (!PlacementStore::Instance().ResolveOrCreate(expired_in, &expired_a) || !expired_a.ok)
+        return Fail("expire-reclaim create");
+    int64_t tiny = 0;
+    if (!PlacementStore::Instance().Heartbeat(expired_a.placement.map_instance_id, "gl-0",
+                                              expired_a.placement.owner_epoch, 1, &tiny))
+        return Fail("expire-reclaim short hb");
+    std::this_thread::sleep_for(std::chrono::seconds(2));
+    ResolveOrCreateResult expired_b;
+    if (!PlacementStore::Instance().ResolveOrCreate(expired_in, &expired_b) || !expired_b.ok)
+        return Fail("expire-reclaim resolve");
+    if (expired_b.placement.map_instance_id != expired_a.placement.map_instance_id)
+        return Fail("expire-reclaim id changed");
+    // READY+过期：软续租，epoch 保持不变
+    if (expired_b.placement.owner_epoch != expired_a.placement.owner_epoch)
+        return Fail("expire-reclaim soft renew should keep epoch");
+    if (expired_b.placement.owner_logic_server_id != expired_a.placement.owner_logic_server_id)
+        return Fail("expire-reclaim owner changed");
+    const int64_t now =
+        std::chrono::duration_cast<std::chrono::seconds>(
+            std::chrono::system_clock::now().time_since_epoch())
+            .count();
+    if (expired_b.placement.lease_until <= now)
+        return Fail("expire-reclaim lease still stale");
+    if (expired_b.placement.state != PlacementState::Ready)
+        return Fail("expire-reclaim not READY");
+
+    // RECOVERING：硬 reclaim 升 epoch
+    ResolveOrCreateInput hard_in = expired_in;
+    hard_in.map_template_id = expired_in.map_template_id + 1;
+    ResolveOrCreateResult hard_a;
+    if (!PlacementStore::Instance().ResolveOrCreate(hard_in, &hard_a) || !hard_a.ok)
+        return Fail("hard-reclaim create");
+    PlacementRecord hard_rec;
+    if (!PlacementStore::Instance().MarkRecovering(hard_a.placement.map_instance_id, "t", &hard_rec))
+        return Fail("hard-reclaim mark");
+    ResolveOrCreateResult hard_b;
+    if (!PlacementStore::Instance().ResolveOrCreate(hard_in, &hard_b) || !hard_b.ok)
+        return Fail("hard-reclaim resolve");
+    if (hard_b.placement.owner_epoch <= hard_a.placement.owner_epoch)
+        return Fail("hard-reclaim epoch not bumped");
+    if (hard_b.placement.state != PlacementState::Ready)
+        return Fail("hard-reclaim not READY");
+
     std::printf("OK placement_store_test concurrent/unique/lease/migrate/recover\n");
     std::printf("PASS placement_store_test\n");
     return 0;

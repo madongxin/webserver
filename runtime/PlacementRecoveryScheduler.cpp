@@ -46,6 +46,7 @@ void PlacementRecoveryScheduler::SetInstanceId(const std::string &id) {
 void PlacementRecoveryScheduler::SetKeyPrefix(const std::string &prefix) {
     if (!prefix.empty())
         key_prefix_ = prefix;
+    cursor_ = "0";
 }
 
 void PlacementRecoveryScheduler::SetLeaderLeaseSec(int sec) {

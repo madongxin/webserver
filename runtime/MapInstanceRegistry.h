@@ -57,6 +57,8 @@ public:
 
     bool AddPlayer(uint64_t map_instance_id, uint64_t player_id);
     bool RemovePlayer(uint64_t map_instance_id, uint64_t player_id);
+    /** 断线 Unbind：从所有本地地图移除玩家，并释放空地图 Claim。 */
+    size_t RemovePlayerFromAll(uint64_t player_id);
     bool PlayerOnMap(uint64_t map_instance_id, uint64_t player_id) const;
     uint32_t PlayerCount(uint64_t map_instance_id) const;
 

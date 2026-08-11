@@ -115,7 +115,24 @@ bool MapInstanceRegistry::RemovePlayer(uint64_t map_instance_id, uint64_t player
     if (it == maps_.end())
         return false;
     it->second.players.erase(player_id);
+    // 无人地图不再占用本地 Claim/续租配额；Redis lease 到期后由 ResolveOrCreate reclaim
+    if (it->second.players.empty())
+        maps_.erase(it);
     return true;
+}
+
+size_t MapInstanceRegistry::RemovePlayerFromAll(uint64_t player_id) {
+    std::lock_guard<std::mutex> lk(mu_);
+    size_t n = 0;
+    for (auto it = maps_.begin(); it != maps_.end();) {
+        if (it->second.players.erase(player_id) > 0)
+            ++n;
+        if (it->second.players.empty())
+            it = maps_.erase(it);
+        else
+            ++it;
+    }
+    return n;
 }
 
 bool MapInstanceRegistry::PlayerOnMap(uint64_t map_instance_id, uint64_t player_id) const {

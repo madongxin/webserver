@@ -370,6 +370,8 @@ bool OrchestrateGatewayEnterMap(const SessionHandle &sticky, const std::string &
     dispatch_h.gamelogic_instance_id = target_logic;
     dispatch_h.map_instance_id = map_id;
     dispatch_h.owner_epoch = epoch;
+    if (placement_rv != 0)
+        dispatch_h.route_version = placement_rv;
 
     glrpc::ClientCommand cmd;
     cmd.set_request_id(sticky.connection_id);

@@ -40,7 +40,9 @@ bool FillFromReply(const std::vector<std::string> &r, PlacementRecord *out) {
     return true;
 }
 
-// ResolveOrCreate：template 索引原子创建；force_new 跳过索引
+// ResolveOrCreate：template 索引原子创建；force_new 跳过索引。
+// 已存在但 lease 过期 / 非 READY 时必须 reclaim（刷新 owner+epoch+lease），
+// 禁止把过期 Placement 当作可进图权威返回（否则 EnterMap → ERR_LEASE_EXPIRED）。
 const char kLuaResolveOrCreate[] = R"LUA(
 local tpl_key = KEYS[1]
 local idgen_key = KEYS[2]
@@ -60,17 +62,79 @@ local function load_inst(id)
   local f = {}
   for i = 1, #raw, 2 do f[raw[i]] = raw[i + 1] end
   return {
-    id, f['realmId'] or realm, f['mapTemplateId'] or tpl,
+    tostring(id), f['realmId'] or realm, f['mapTemplateId'] or tpl,
     f['ownerLogicServerId'] or '', f['ownerEpoch'] or '0',
     f['routeVersion'] or '0', f['state'] or 'CLOSED',
     f['updatedAt'] or '0', f['leaseUntil'] or '0'
   }
 end
 
+local function usable(L)
+  local state = L[7] or ''
+  local lease_until = tonumber(L[9]) or 0
+  return state == 'READY' and lease_until > now
+end
+
+local function reclaim(id, L)
+  local key = prefix .. 'map:inst:' .. tostring(id)
+  local epoch = tonumber(L[5]) or 0
+  local rv = (tonumber(L[6]) or 0) + 1
+  local new_epoch = epoch + 1
+  local lease_until = now + lease
+  local realm_v = L[2] or realm
+  local tpl_v = L[3] or tpl
+  redis.call('HMSET', key,
+    'mapInstanceId', tostring(id),
+    'realmId', tostring(realm_v),
+    'mapTemplateId', tostring(tpl_v),
+    'ownerLogicServerId', owner,
+    'ownerEpoch', tostring(new_epoch),
+    'routeVersion', tostring(rv),
+    'state', 'READY',
+    'updatedAt', tostring(now),
+    'leaseUntil', tostring(lease_until))
+  redis.call('EXPIRE', key, 86400)
+  return {'1', 'OK', tostring(id), tostring(realm_v), tostring(tpl_v), owner,
+          tostring(new_epoch), tostring(rv), 'READY', tostring(now), tostring(lease_until)}
+end
+
+local function return_or_reclaim(L)
+  if usable(L) then
+    return {'1', 'OK', L[1], L[2], L[3], L[4], L[5], L[6], L[7], L[8], L[9]}
+  end
+  local state = L[7] or ''
+  if state == 'CLOSED' then
+    return nil
+  end
+  -- READY 但 lease 过期：软续租（保持 owner/epoch/route），避免并发 EnterMap 因 epoch 狂涨 STALE。
+  -- RECOVERING/FROZEN 等非 READY：硬 reclaim（升 epoch，换 owner）。
+  if state == 'READY' then
+    local key = prefix .. 'map:inst:' .. tostring(L[1])
+    local lease_until = now + lease
+    redis.call('HMSET', key, 'leaseUntil', tostring(lease_until), 'updatedAt', tostring(now),
+               'state', 'READY')
+    redis.call('EXPIRE', key, 86400)
+    return {'1', 'OK', L[1], L[2], L[3], L[4], L[5], L[6], 'READY', tostring(now), tostring(lease_until)}
+  end
+  return reclaim(L[1], L)
+end
+
 if want_id ~= '0' and want_id ~= '' then
   local L = load_inst(want_id)
   if not L then return {'0', 'NOT_FOUND', 'map instance not found'} end
-  return {'1', 'OK', L[1], L[2], L[3], L[4], L[5], L[6], L[7], L[8], L[9]}
+  if usable(L) then
+    return {'1', 'OK', L[1], L[2], L[3], L[4], L[5], L[6], L[7], L[8], L[9]}
+  end
+  if (L[7] or '') == 'CLOSED' then return {'0', 'CLOSED', 'closed'} end
+  if (L[7] or '') == 'READY' then
+    local key = prefix .. 'map:inst:' .. tostring(want_id)
+    local lease_until = now + lease
+    redis.call('HMSET', key, 'leaseUntil', tostring(lease_until), 'updatedAt', tostring(now),
+               'state', 'READY')
+    redis.call('EXPIRE', key, 86400)
+    return {'1', 'OK', L[1], L[2], L[3], L[4], L[5], L[6], 'READY', tostring(now), tostring(lease_until)}
+  end
+  return reclaim(want_id, L)
 end
 
 if force_new == 0 and tpl_key ~= '' then
@@ -78,7 +142,10 @@ if force_new == 0 and tpl_key ~= '' then
   if existing then
     local L = load_inst(existing)
     if L then
-      return {'1', 'OK', L[1], L[2], L[3], L[4], L[5], L[6], L[7], L[8], L[9]}
+      local R = return_or_reclaim(L)
+      if R then return R end
+      -- CLOSED：删索引后重建
+      redis.call('DEL', tpl_key)
     end
   end
 end
@@ -104,7 +171,21 @@ if force_new == 0 and tpl_key ~= '' then
     redis.call('DEL', ikey)
     local L = load_inst(canonical)
     if L then
-      return {'1', 'OK', L[1], L[2], L[3], L[4], L[5], L[6], L[7], L[8], L[9]}
+      local R = return_or_reclaim(L)
+      if R then return R end
+      -- CLOSED race：覆盖索引到本 id 并重建记录
+      redis.call('SET', tpl_key, tostring(id))
+      redis.call('HMSET', ikey,
+        'mapInstanceId', tostring(id),
+        'realmId', realm,
+        'mapTemplateId', tpl,
+        'ownerLogicServerId', owner,
+        'ownerEpoch', '1',
+        'routeVersion', '1',
+        'state', 'READY',
+        'updatedAt', tostring(now),
+        'leaseUntil', tostring(lease_until))
+      redis.call('EXPIRE', ikey, 86400)
     end
   end
 end

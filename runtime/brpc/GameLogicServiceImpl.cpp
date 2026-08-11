@@ -192,11 +192,19 @@ void ExecuteDispatch(const glrpc::ClientCommand &request, glrpc::CommandResult *
         const MapWriteFence fence = MapInstanceRegistry::Instance().CheckWrite(
             request.map_instance_id(), request.map_owner_epoch());
         // Formal 禁止隐式 Claim，但仍须放行 enter_map：由 HandleEnterMap 校验权威 Placement 后再 Claim。
+        // 本地 lease 过期/缺失时同样放行 enter_map（先 Release 再让 HandleEnterMap 按权威记录 Claim）。
         // 非 Formal 保留空 message_type 兼容旧客户端。
         const bool is_enter_map = request.message_type() == "enter_map" ||
                                   (!FormalModeEnabled() && request.message_type().empty());
-        const bool allow_enter_claim = fence == MapWriteFence::NotClaimed && is_enter_map;
-        if (fence != MapWriteFence::Ok && !allow_enter_claim) {
+        const bool allow_enter_reclaim =
+            is_enter_map && (fence == MapWriteFence::NotClaimed ||
+                             fence == MapWriteFence::LeaseExpired ||
+                             fence == MapWriteFence::LeaseMissing);
+        if (allow_enter_reclaim &&
+            (fence == MapWriteFence::LeaseExpired || fence == MapWriteFence::LeaseMissing)) {
+            MapInstanceRegistry::Instance().Release(request.map_instance_id());
+        }
+        if (fence != MapWriteFence::Ok && !allow_enter_reclaim) {
             response->set_ok(false);
             if (fence == MapWriteFence::LeaseExpired) {
                 response->set_error_code("LEASE_EXPIRED");
@@ -481,6 +489,7 @@ void GameLogicServiceImpl::UnbindPlayer(::google::protobuf::RpcController *contr
                 std::lock_guard<std::mutex> lk(g_bound_mu);
                 g_bound.erase(pid);
             }
+            MapInstanceRegistry::Instance().RemovePlayerFromAll(pid);
             GameLogic::Instance().FlushBag(pid, reason);
             rsp->set_ok(true);
             rsp->set_message("unbound");

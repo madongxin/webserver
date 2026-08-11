@@ -33,6 +33,7 @@
 #include "PushReplayStore.h"
 #include "SessionStore.h"
 #ifdef WEBSERVER_ENABLE_BRPC
+#include "GatewayAuthClients.h"
 #include "GatewayEnterMapOrchestrator.h"
 #include "GatewayLoginOrchestrator.h"
 #include "SessionRpcClient.h"
@@ -246,6 +247,25 @@ void GameTcpGateway::Run() {
         }
 #endif
         if (bind.player_id != 0) {
+#ifdef WEBSERVER_ENABLE_BRPC
+            GatewayConnRegistry::Bind reg;
+            if (GatewayConnRegistry::Instance().FindByConnection(c->id(), &reg) &&
+                !reg.gamelogic_instance_id.empty() && GatewayAuthClients::Instance().ready()) {
+                glrpc::UnbindPlayerRequest ureq;
+                ureq.set_player_id(bind.player_id);
+                ureq.set_session_id(bind.session_id);
+                ureq.set_fence_token(bind.token);
+                ureq.set_reason("tcp_disconnect");
+                glrpc::UnbindPlayerResponse ursp;
+                if (!GatewayAuthClients::Instance().UnbindPlayer(reg.gamelogic_instance_id, ureq,
+                                                                &ursp) ||
+                    !ursp.ok()) {
+                    LOG_WARN << "Gateway disconnect UnbindPlayer failed player=" << bind.player_id
+                             << " logic=" << reg.gamelogic_instance_id
+                             << " msg=" << ursp.message();
+                }
+            }
+#endif
             game::GameRequest flush_req;
             flush_req.set_seq(0);
             flush_req.set_session_token(bind.token);
