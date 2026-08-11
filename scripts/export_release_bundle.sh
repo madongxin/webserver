@@ -145,6 +145,11 @@ with open(path, "w", encoding="utf-8") as f:
     f.write("\n")
 print(path)
 print(manifest["verdict"])
+if missing and os.environ.get("EXIT_CODE", "1") == "0" and os.environ.get("VERDICT", "").startswith("STABLE PASS"):
+    # 完整 STABLE PASS 不得缺少负载/soak/summary 产物
+    raise SystemExit(f"export_release_bundle missing artifacts: {missing}")
+if os.environ["DIRTY"] == "1" and os.environ.get("VERDICT", "").startswith("STABLE PASS"):
+    raise SystemExit("export_release_bundle: dirty tree cannot be STABLE PASS")
 PY
 rm -f "$MISSING_FILE"
 echo "export_release_bundle.sh PASS dir=$OUT"

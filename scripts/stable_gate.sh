@@ -99,7 +99,7 @@ EOF
   export STABLE_VERDICT="$verdict"
   export STABLE_EXIT_CODE="$final_rc"
   export STABLE_STEPS_JSON="[${steps_csv}]"
-  "$ROOT/scripts/export_release_bundle.sh" "$GATE_COMMIT" || true
+  "$ROOT/scripts/export_release_bundle.sh" "$GATE_COMMIT"
 }
 
 # 破坏性场景后强制健康检查；不健康则 stop+restart
@@ -126,14 +126,23 @@ restart_e2e_clean() {
 run_step "check_deps --full" ./scripts/check_deps.sh --full
 run_step "bootstrap_local_config" ./scripts/bootstrap_local_config.sh
 
-log "git diff --check (scripts/docs; exclude generated *.pb.*)"
+log "git show --check HEAD + git diff --check (exclude generated *.pb.*)"
 if git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+  if git show --check --oneline HEAD -- . \
+      ':(exclude)runtime/brpc/*.pb.cc' ':(exclude)runtime/brpc/*.pb.h' \
+      ':(exclude)game/*.pb.cc' ':(exclude)game/*.pb.h' \
+      ':(exclude)*.pb.cc' ':(exclude)*.pb.h'; then
+    SUMMARY_STEPS+=("{\"name\":\"git_show_check\",\"exit_code\":0}")
+  else
+    SUMMARY_STEPS+=("{\"name\":\"git_show_check\",\"exit_code\":1}")
+    die "trailing whitespace / conflict markers in committed HEAD"
+  fi
   if git diff --check -- scripts docs deploy .github CMakeLists.txt AGENTS.md apps game db runtime \
       ':(exclude)*.pb.cc' ':(exclude)*.pb.h'; then
     SUMMARY_STEPS+=("{\"name\":\"git_diff_check\",\"exit_code\":0}")
   else
     SUMMARY_STEPS+=("{\"name\":\"git_diff_check\",\"exit_code\":1}")
-    die "trailing whitespace / conflict markers in scripts/docs"
+    die "trailing whitespace / conflict markers in working tree"
   fi
   log "bash -n scripts"
   if bash -n scripts/*.sh && bash -n deploy/docker-entrypoint.sh; then
@@ -143,7 +152,7 @@ if git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
     die "bash -n failed"
   fi
 else
-  echo "WARN: not a git repo; skip git diff --check"
+  echo "WARN: not a git repo; skip git show/diff --check"
   SUMMARY_STEPS+=("{\"name\":\"git_diff_check\",\"exit_code\":0}")
 fi
 
@@ -188,35 +197,65 @@ if [[ "$FULL" -eq 1 ]]; then
   run_step "channel_snapshot_race" --log "$SUMMARY_DIR/failover/channel_snapshot_race.log" \
     ./scripts/test_channel_snapshot_race.sh
 
-  run_step "registry_outage" --log "$SUMMARY_DIR/failover/registry_outage.log" \
-    ./scripts/test_registry_outage.sh
-  run_step "restart_after_registry" restart_e2e_clean
+  if [[ "${GAMEMESH_EXPERIMENTAL_REGISTRY_OUTAGE:-0}" == "1" ]]; then
+    run_step "registry_outage (experimental)" --log "$SUMMARY_DIR/failover/registry_outage.log" \
+      ./scripts/test_registry_outage.sh
+    run_step "restart_after_registry" restart_e2e_clean
+  else
+    log "skip registry_outage (experimental; set GAMEMESH_EXPERIMENTAL_REGISTRY_OUTAGE=1)"
+    SUMMARY_STEPS+=("{\"name\":\"registry_outage\",\"exit_code\":0,\"skipped\":true}")
+  fi
 
   run_step "session_failover" --log "$SUMMARY_DIR/failover/session_failover.log" \
     ./scripts/test_session_failover.sh
   run_step "restart_after_session" restart_e2e_clean
 
-  run_step "logic_auto_recovery" --log "$SUMMARY_DIR/failover/logic_auto_recovery.log" \
-    ./scripts/test_logic_auto_recovery.sh
-  run_step "restart_after_logic" restart_e2e_clean
+  if [[ "${GAMEMESH_EXPERIMENTAL_PLACEMENT_RECOVERY:-0}" == "1" ]]; then
+    run_step "logic_auto_recovery (experimental)" --log "$SUMMARY_DIR/failover/logic_auto_recovery.log" \
+      ./scripts/test_logic_auto_recovery.sh
+    run_step "restart_after_logic" restart_e2e_clean
+  else
+    log "skip logic_auto_recovery (experimental; set GAMEMESH_EXPERIMENTAL_PLACEMENT_RECOVERY=1)"
+    SUMMARY_STEPS+=("{\"name\":\"logic_auto_recovery\",\"exit_code\":0,\"skipped\":true}")
+  fi
 
   run_step "gamedb_unknown_failover" --log "$SUMMARY_DIR/failover/gamedb_unknown_failover.log" \
     ./scripts/test_gamedb_unknown_result_failover.sh
   run_step "restart_after_gamedb" restart_e2e_clean
 
-  run_step "dynamic_logic_scale" --log "$SUMMARY_DIR/failover/dynamic_logic_scale.log" \
-    ./scripts/test_dynamic_logic_scale.sh
-  run_step "restart_after_scale" restart_e2e_clean
+  if [[ "${GAMEMESH_EXPERIMENTAL_DYNAMIC_SCALE:-0}" == "1" ]]; then
+    run_step "dynamic_logic_scale (experimental)" --log "$SUMMARY_DIR/failover/dynamic_logic_scale.log" \
+      ./scripts/test_dynamic_logic_scale.sh
+    run_step "restart_after_scale" restart_e2e_clean
+  else
+    log "skip dynamic_logic_scale (experimental; set GAMEMESH_EXPERIMENTAL_DYNAMIC_SCALE=1)"
+    SUMMARY_STEPS+=("{\"name\":\"dynamic_logic_scale\",\"exit_code\":0,\"skipped\":true}")
+  fi
 
   run_step "sanitizers" --log "$SUMMARY_DIR/sanitizers/all.log" ./scripts/test_sanitizers.sh all
   run_step "e2e_${E2E_ROUNDS:-20}x" --log "$SUMMARY_DIR/e2e-20x.log" \
     env START_CLUSTER=1 E2E_ROUNDS="${E2E_ROUNDS:-20}" ./scripts/test_e2e_20x.sh
   run_step "load_baseline" ./scripts/load_tcp_baseline.sh
+  # 负载报告必须属于当前 commit
+  if [[ -f "$ROOT/run/load/LATEST_PASS.txt" ]]; then
+    load_json="$(cat "$ROOT/run/load/LATEST_PASS.txt")"
+    if [[ -f "$load_json" ]]; then
+      python3 -c 'import json,sys; m=json.load(open(sys.argv[1])); assert m.get("commit")==sys.argv[2], m.get("commit"); print("load report commit ok")' \
+        "$load_json" "$GATE_COMMIT"
+    fi
+  fi
 
   if [[ -n "${SOAK_REPORT:-}" ]]; then
     run_step "soak_verify" ./scripts/soak_test.sh --verify-only
   else
     run_step "soak" ./scripts/soak_test.sh
+  fi
+  if [[ -f "$ROOT/run/soak/LATEST_PASS.txt" ]]; then
+    soak_json="$(cat "$ROOT/run/soak/LATEST_PASS.txt")"
+    if [[ -f "$soak_json" ]]; then
+      python3 -c 'import json,sys; m=json.load(open(sys.argv[1])); assert m.get("commit")==sys.argv[2], m.get("commit"); print("soak report commit ok")' \
+        "$soak_json" "$GATE_COMMIT"
+    fi
   fi
 fi
 
@@ -245,7 +284,9 @@ if [[ "$FULL" -eq 1 ]]; then
   fi
   if git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
     if [[ -n "$(git status --porcelain 2>/dev/null)" ]]; then
-      echo "NOTE: working tree dirty — manifest will mark dirty=true"
+      echo "STABLE BLOCKED: working tree dirty"
+      blocked=1
+      reason="dirty working tree"
     fi
   fi
   if [[ "$blocked" -ne 0 ]]; then

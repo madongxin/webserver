@@ -1,10 +1,12 @@
 #pragma once
 
 #include <atomic>
+#include <chrono>
 #include <condition_variable>
 #include <cstdint>
 #include <deque>
 #include <functional>
+#include <memory>
 #include <mutex>
 #include <thread>
 #include <unordered_map>
@@ -15,20 +17,42 @@
  * 按 player_id 分片的串行队列：同一 player 严格有序，不同 player 可并行。
  * 有界：分片深度 + 全局待处理上限；满则 TryPost 失败（调用方返回过载）。
  * 异步下游：MarkAsyncInFlight 后同玩家后续任务进入 deferred，直到 ClearAsyncInFlight。
+ *
+ * 生命周期：RUNNING → DRAINING → STOPPED
+ * - DRAINING：拒绝新外部任务；已开始的 async completion 仍可入队
+ * - STOPPED：不得 inline 执行会改玩家状态的 completion（Complete 返回 false）
  */
 class PlayerSerialQueue {
 public:
+    enum class LifeState : uint8_t {
+        kStopped = 0,
+        kRunning = 1,
+        kDraining = 2,
+    };
+
     static PlayerSerialQueue &Instance();
 
     /** shard_count<=0 时按硬件并发估算 */
     void Start(int shard_count = 0);
+
+    /**
+     * 进入 DRAINING：拒绝新 TryPost，等待队列/async 排空或超时。
+     * 超时仅记录；真正停线程由 Stop() 完成。
+     */
+    void BeginDrain(std::chrono::milliseconds deadline = std::chrono::milliseconds(3000));
+
+    /** DRAINING（若仍 RUNNING 则先 BeginDrain）后强制停 worker；有界，不永久 join */
     void Stop();
 
-    bool started() const { return started_; }
+    bool started() const {
+        const auto s = life_.load(std::memory_order_acquire);
+        return s == LifeState::kRunning || s == LifeState::kDraining;
+    }
+    LifeState life_state() const { return life_.load(std::memory_order_acquire); }
 
     void SetLimits(size_t max_per_shard, size_t max_global);
 
-    /** 投递成功返回 true；队列满返回 false（不占用内存追加） */
+    /** 投递成功返回 true；队列满或非 RUNNING 返回 false（不 inline 执行） */
     bool TryPost(uint64_t player_id, std::function<void()> task);
 
     /** 兼容旧路径：满时丢弃并打日志（Gateway 编排应改用 TryPost） */
@@ -44,7 +68,9 @@ public:
     void ClearAsyncInFlight(uint64_t player_id);
 
     /**
-     * 异步完成投递：completion 插到队首，再拼回 deferred，保证先收尾再跑同玩家后续任务。
+     * 异步完成投递：completion 插到队首，再拼回 deferred。
+     * RUNNING/DRAINING：入队并返回 true（不受外部 max_global 限制）。
+     * STOPPED：不执行 completion，返回 false（调用方应取消 done，勿改玩家状态）。
      */
     bool CompleteAsyncInFlight(uint64_t player_id, std::function<void()> completion);
 
@@ -73,9 +99,10 @@ private:
     void WorkerLoop(Shard *shard);
     static size_t ShardIndex(uint64_t player_id, size_t n);
     Shard *ShardFor(uint64_t player_id);
+    void WaitUntilDrainedOrDeadline(std::chrono::steady_clock::time_point deadline);
 
     std::mutex life_mu_;
-    bool started_ = false;
+    std::atomic<LifeState> life_{LifeState::kStopped};
     std::vector<std::unique_ptr<Shard>> shards_;
     size_t max_per_shard_ = 256;
     size_t max_global_ = 4096;

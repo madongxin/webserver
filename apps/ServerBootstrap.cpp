@@ -1585,8 +1585,9 @@ int RunServer(const LaunchOpts &launch) {
         LOG_INFO << "MapLeaseKeeper interval_sec=" << hb << " lease_sec=" << lease_sec;
     }
 #ifdef WEBSERVER_ENABLE_REDIS
-    // Session：Placement 过期 lease 自动 RECOVERING + Migrate（多实例 leader CAS）
-    if (role == "session" || role == "all") {
+    // Session：Placement 自动恢复（experimental；正式稳定版默认关闭）
+    if ((role == "session" || role == "all") &&
+        ExperimentalFeatureEnabled("GAMEMESH_EXPERIMENTAL_PLACEMENT_RECOVERY")) {
         if (const char *env = std::getenv("GAMEMESH_INSTANCE_ID"))
             PlacementRecoveryScheduler::Instance().SetInstanceId(env);
         if (const char *pfx = std::getenv("GAMEMESH_REDIS_PREFIX"))
@@ -1602,7 +1603,7 @@ int RunServer(const LaunchOpts &launch) {
                 : 5.0;
         const double iv = recover_iv > 0.5 ? recover_iv : 5.0;
         loop.RunEvery(iv, []() { PlacementRecoveryScheduler::Instance().Tick(); });
-        LOG_INFO << "PlacementRecoveryScheduler interval_sec=" << iv;
+        LOG_INFO << "PlacementRecoveryScheduler (experimental) interval_sec=" << iv;
     }
 #endif
 #endif

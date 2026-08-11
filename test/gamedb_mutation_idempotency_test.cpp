@@ -105,5 +105,6 @@ int main() {
 
     std::printf("OK gamedb_mutation_idempotency_test ver=%llu remain=%u\n",
                 (unsigned long long)ver.load(), remain.load());
-    return 0;
+    std::fflush(stdout);
+    std::_Exit(0);
 }

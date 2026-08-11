@@ -29,7 +29,8 @@ jobs:
         run: |
           git show --check --oneline HEAD -- . \
             ':(exclude)runtime/brpc/*.pb.cc' ':(exclude)runtime/brpc/*.pb.h' \
-            ':(exclude)game/*.pb.cc' ':(exclude)game/*.pb.h' || true
+            ':(exclude)game/*.pb.cc' ':(exclude)game/*.pb.h' \
+            ':(exclude)*.pb.cc' ':(exclude)*.pb.h'
           # 工作树手写路径不得有尾随空白/冲突标记
           git diff --check -- scripts docs deploy .github CMakeLists.txt AGENTS.md apps game db runtime \
             ':(exclude)*.pb.cc' ':(exclude)*.pb.h'
@@ -48,15 +49,42 @@ jobs:
       redis:
         image: redis:7
         ports: ["6379:6379"]
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: gamemesh
+        ports: ["3306:3306"]
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -proot"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=12
     steps:
       - uses: actions/checkout@v4
       - name: deps apt
         run: |
           sudo apt-get update
-          sudo apt-get install -y g++ cmake protobuf-compiler libprotobuf-dev \
+          sudo apt-get install -y g++ cmake make pkg-config curl git \
+            protobuf-compiler libprotobuf-dev \
             libssl-dev libjsoncpp-dev libhiredis-dev libmysqlclient-dev \
             libgflags-dev libleveldb-dev zlib1g-dev shellcheck \
-            libasan6 libubsan1 libtsan0
+            redis-tools mysql-client
+          # 按 runner/compiler 可用包安装 sanitizer 运行时（禁止写死仅 libasan6）
+          SAN_PKGS=()
+          for c in libasan8 libasan6 libasan; do
+            if apt-cache show "$c" >/dev/null 2>&1; then SAN_PKGS+=("$c"); break; fi
+          done
+          for c in libubsan1 libubsan2 libubsan; do
+            if apt-cache show "$c" >/dev/null 2>&1; then SAN_PKGS+=("$c"); break; fi
+          done
+          for c in libtsan2 libtsan0 libtsan; do
+            if apt-cache show "$c" >/dev/null 2>&1; then SAN_PKGS+=("$c"); break; fi
+          done
+          echo "sanitizer packages: ${SAN_PKGS[*]:-none}"
+          if [[ ${#SAN_PKGS[@]} -gt 0 ]]; then
+            sudo apt-get install -y "${SAN_PKGS[@]}"
+          fi
       - name: cache gamemesh-deps (brpc)
         uses: actions/cache@v4
         with:
@@ -69,10 +97,19 @@ jobs:
       - name: install brpc if missing
         run: |
           export GAMEMESH_DEPS_PREFIX="${HOME}/.local/gamemesh-deps"
+          export GAMEMESH_JOBS="${GAMEMESH_JOBS:-2}"
+          need=0
           if [[ ! -f /usr/local/include/brpc/server.h && ! -f "${GAMEMESH_DEPS_PREFIX}/include/brpc/server.h" ]]; then
+            need=1
+          elif [[ ! -f "${GAMEMESH_DEPS_PREFIX}/lib/libbrpc.a" && ! -f "${GAMEMESH_DEPS_PREFIX}/lib64/libbrpc.a" && ! -f /usr/local/lib/libbrpc.a && ! -f /usr/local/lib64/libbrpc.a ]]; then
+            need=1
+          fi
+          if [[ "$need" -eq 1 ]]; then
             ./scripts/install_deps.sh --build-brpc
           fi
-          # 可写则链到 /usr/local，便于旧路径检测
+          if [[ ! -f /usr/local/include/brpc/server.h && ! -f "${GAMEMESH_DEPS_PREFIX}/include/brpc/server.h" ]]; then
+            echo "ERROR: brpc install failed"; exit 1
+          fi
           if [[ -w /usr/local/include && ! -f /usr/local/include/brpc/server.h && -d "${GAMEMESH_DEPS_PREFIX}/include/brpc" ]]; then
             sudo ln -sfn "${GAMEMESH_DEPS_PREFIX}/include/brpc" /usr/local/include/brpc
             sudo ln -sfn ${GAMEMESH_DEPS_PREFIX}/lib/libbrpc* /usr/local/lib/ 2>/dev/null || true
@@ -85,15 +122,36 @@ jobs:
       - name: protoc vs generated pb
         run: |
           protoc --version
-          # 粗检：仓库已提交的 pb 与当前 protoc 同属 3.x 即可；大版本漂移失败
           pv="$(protoc --version | awk '{print $2}' | cut -d. -f1)"
           [[ "$pv" == "3" ]] || { echo "ERROR: expect protoc 3.x, got $(protoc --version)"; exit 1; }
       - name: check_deps full
         run: ./scripts/check_deps.sh --full
-      - name: bootstrap config
-        run: ./scripts/bootstrap_local_config.sh
-      - name: git diff --check
+      - name: bootstrap config + mysql/redis wait
         run: |
+          ./scripts/bootstrap_local_config.sh
+          if [[ -f config/mysql.cnf ]]; then
+            sed -i 's/^ip=.*/ip=127.0.0.1/' config/mysql.cnf
+            sed -i 's/^password=.*/password=root/' config/mysql.cnf
+            sed -i 's/^username=.*/username=root/' config/mysql.cnf || true
+            grep -q '^username=' config/mysql.cnf || echo 'username=root' >> config/mysql.cnf
+            sed -i 's/^dbname=.*/dbname=gamemesh/' config/mysql.cnf
+          fi
+          for i in $(seq 1 60); do
+            redis-cli ping 2>/dev/null | grep -q PONG && break
+            sleep 1
+            [[ "$i" -eq 60 ]] && { echo "ERROR: Redis not ready"; exit 1; }
+          done
+          for i in $(seq 1 60); do
+            mysqladmin ping -h127.0.0.1 -uroot -proot --silent && break
+            sleep 1
+            [[ "$i" -eq 60 ]] && { echo "ERROR: MySQL not ready"; exit 1; }
+          done
+      - name: git show --check HEAD
+        run: |
+          git show --check --oneline HEAD -- . \
+            ':(exclude)runtime/brpc/*.pb.cc' ':(exclude)runtime/brpc/*.pb.h' \
+            ':(exclude)game/*.pb.cc' ':(exclude)game/*.pb.h' \
+            ':(exclude)*.pb.cc' ':(exclude)*.pb.h'
           git diff --check -- scripts docs deploy .github CMakeLists.txt AGENTS.md \
             ':(exclude)*.pb.cc' ':(exclude)*.pb.h'
       - name: build Debug
@@ -104,7 +162,7 @@ jobs:
         run: ./scripts/test.sh unit
       - name: reactor
         run: ./scripts/test_reactor.sh
-      - name: integration (redis)
+      - name: integration (redis+mysql)
         run: ./scripts/test_integration.sh
       - name: compose config
         run: docker compose -f compose.yml config >/dev/null

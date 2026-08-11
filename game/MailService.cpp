@@ -675,9 +675,18 @@ bool MailService::BeginHandleMailClaimAsync(const game::MailClaimReq &req, game:
             };
             if (!PlayerSerialQueue::Instance().CompleteAsyncInFlight(player_id,
                                                                      [apply]() { (*apply)(); })) {
-                // 理论上 completion 必入队；若 Stop 后 inline，仍在回调线程执行
-                PlayerSerialQueue::Instance().ClearAsyncInFlight(player_id);
-                (*apply)();
+                // STOPPED：不改玩家状态；brpc done 恰好一次
+                game::GameResponse out;
+                auto *body = out.mutable_mail_claim();
+                using namespace std::chrono;
+                body->set_server_time_utc(
+                    duration_cast<seconds>(system_clock::now().time_since_epoch()).count());
+                body->set_ok(false);
+                body->set_error_code(mail::err::kServerStopping);
+                body->set_message("server stopping");
+                out.set_ok(false);
+                out.set_message("server stopping");
+                done(std::move(out));
             }
         });
     return true;
@@ -775,9 +784,21 @@ bool MailService::BeginHandleMailBatchClaimAsync(const game::MailBatchClaimReq &
     auto start_next = std::make_shared<std::function<void()>>();
     *start_next = [st, start_next, finish, repo]() {
         if (st->index >= st->mail_ids.size()) {
-            PlayerSerialQueue::Instance().CompleteAsyncInFlight(st->player_id, [st, finish]() {
-                finish(st);
-            });
+            if (!PlayerSerialQueue::Instance().CompleteAsyncInFlight(st->player_id, [st, finish]() {
+                    finish(st);
+                })) {
+                game::GameResponse out;
+                auto *b = out.mutable_mail_batch_claim();
+                using namespace std::chrono;
+                b->set_server_time_utc(
+                    duration_cast<seconds>(system_clock::now().time_since_epoch()).count());
+                b->set_ok(false);
+                b->set_error_code(mail::err::kServerStopping);
+                b->set_message("server stopping");
+                out.set_ok(false);
+                out.set_message("server stopping");
+                st->done(std::move(out));
+            }
             return;
         }
         const uint64_t mid = st->mail_ids[st->index];
@@ -794,23 +815,33 @@ bool MailService::BeginHandleMailBatchClaimAsync(const game::MailBatchClaimReq &
 
         repo->ClaimMailAttachmentsAsync(
             std::move(db_req), [st, start_next, mid](GameDbMailClaimResult db_rsp) {
-                PlayerSerialQueue::Instance().CompleteAsyncInFlight(st->player_id, [st, start_next,
-                                                                                    mid,
-                                                                                    db_rsp = std::move(
-                                                                                        db_rsp)]() mutable {
-                    MailService::Instance().ApplyClaimMemory(st->player_id, db_rsp);
-                    game::MailClaimResult r;
-                    r.set_mail_id(mid);
-                    r.set_ok(db_rsp.ok);
-                    r.set_error_code(db_rsp.error_code);
-                    r.set_message(db_rsp.message);
-                    r.set_attachment_state(db_rsp.attachment_state);
-                    st->results.push_back(std::move(r));
-                    ++st->index;
-                    // Complete 已清 inflight；下一封 RPC 前重新标记
-                    PlayerSerialQueue::Instance().MarkAsyncInFlight(st->player_id);
-                    (*start_next)();
-                });
+                if (!PlayerSerialQueue::Instance().CompleteAsyncInFlight(
+                        st->player_id, [st, start_next, mid, db_rsp = std::move(db_rsp)]() mutable {
+                            MailService::Instance().ApplyClaimMemory(st->player_id, db_rsp);
+                            game::MailClaimResult r;
+                            r.set_mail_id(mid);
+                            r.set_ok(db_rsp.ok);
+                            r.set_error_code(db_rsp.error_code);
+                            r.set_message(db_rsp.message);
+                            r.set_attachment_state(db_rsp.attachment_state);
+                            st->results.push_back(std::move(r));
+                            ++st->index;
+                            // Complete 已清 inflight；下一封 RPC 前重新标记
+                            PlayerSerialQueue::Instance().MarkAsyncInFlight(st->player_id);
+                            (*start_next)();
+                        })) {
+                    game::GameResponse out;
+                    auto *b = out.mutable_mail_batch_claim();
+                    using namespace std::chrono;
+                    b->set_server_time_utc(
+                        duration_cast<seconds>(system_clock::now().time_since_epoch()).count());
+                    b->set_ok(false);
+                    b->set_error_code(mail::err::kServerStopping);
+                    b->set_message("server stopping");
+                    out.set_ok(false);
+                    out.set_message("server stopping");
+                    st->done(std::move(out));
+                }
             });
     };
 

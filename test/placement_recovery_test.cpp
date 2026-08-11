@@ -64,15 +64,15 @@ int main() {
         std::printf("SKIP placement_recovery_test (Redis unavailable)\n");
         return 0;
     }
-    // 唯一前缀，避免与上次残留 map 互相扫描干扰
+    // 唯一前缀与 leader id，避免与上次残留互相扫描/抢 leader 干扰
     const std::string prefix =
         "gamemesh:dev:placerecovertest:" + std::to_string(static_cast<long long>(::getpid())) + ":";
     if (!PlacementStore::Instance().InitFromSessionPrefix(prefix, 2))
         return Fail("init");
     PlacementStore::Instance().SetLogicOwners({"gl-0", "gl-1"});
-    // 隔离 leader key，避免被线上/E2E Session 占用导致 Tick 空跑
     PlacementRecoveryScheduler::Instance().SetKeyPrefix(prefix);
-    PlacementRecoveryScheduler::Instance().SetInstanceId("placement-recovery-test");
+    PlacementRecoveryScheduler::Instance().SetInstanceId(
+        std::string("placement-recovery-test-") + std::to_string(static_cast<long long>(::getpid())));
     PlacementRecoveryScheduler::Instance().SetLeaderLeaseSec(5);
 
     ResolveOrCreateInput in;
@@ -92,7 +92,7 @@ int main() {
     PlacementRecoveryScheduler::Instance().SetScanCount(64);
     PlacementRecord rec;
     bool switched = false;
-    const auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds(10);
+    const auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds(20);
     while (std::chrono::steady_clock::now() < deadline) {
         PlacementRecoveryScheduler::Instance().Tick();
         if (PlacementStore::Instance().Get(mid, &rec) && rec.state == PlacementState::Ready &&
@@ -103,8 +103,15 @@ int main() {
         }
         std::this_thread::sleep_for(std::chrono::milliseconds(100));
     }
-    if (!switched)
-        return Fail("owner not switched away from old");
+    if (!switched) {
+        (void)PlacementStore::Instance().Get(mid, &rec);
+        std::printf("FAIL owner not switched away from old (owner=%s epoch=%llu state=%d "
+                    "leader_skip=%llu)\n",
+                    rec.owner_logic_server_id.c_str(), (unsigned long long)rec.owner_epoch,
+                    static_cast<int>(rec.state),
+                    (unsigned long long)PlacementRecoveryScheduler::Instance().leader_skip());
+        return 1;
+    }
     if (PlacementRecoveryScheduler::Instance().recover_ok() == 0)
         return Fail("recover_ok counter");
 

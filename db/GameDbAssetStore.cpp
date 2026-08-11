@@ -8,6 +8,7 @@
 #include <chrono>
 #include <cstdio>
 #include <cstdlib>
+#include <cstring>
 #include <sstream>
 #include <thread>
 
@@ -270,6 +271,55 @@ bool GameDbAssetStore::ApplyMutation(uint64_t player_id, const std::string &idem
         out->message = msg;
     };
 
+    // 处理已有幂等行：SUCCEEDED / FAILED / CONFLICT；IN_PROGRESS 返回 false 继续占键/轮询
+    auto consume_idem_row = [&](MYSQL_ROW row) -> bool {
+        if (!row || !row[0])
+            return false;
+        const uint64_t pid = row[6] ? std::strtoull(row[6], nullptr, 10) : 0;
+        const std::string old_hash = row[5] ? row[5] : "";
+        const std::string old_op = row[7] ? row[7] : "";
+        if (pid != 0 && pid != player_id) {
+            fill_conflict("idempotency_key bound to other player");
+            return true;
+        }
+        // 旧数据缺 operation_type / request_hash：禁止默认匹配任意新请求
+        if (old_op.empty() || old_hash.empty()) {
+            fill_conflict("legacy idempotency row incomplete");
+            return true;
+        }
+        if (old_op != mutation_type) {
+            fill_conflict("same key different operation_type");
+            return true;
+        }
+        if (old_hash != req_hash) {
+            fill_conflict("same key different payload");
+            return true;
+        }
+        if (std::atoi(row[0]) != 0) {
+            out->ok = true;
+            out->idempotent_hit = true;
+            out->error_code = row[1] ? row[1] : "";
+            out->message = row[2] ? row[2] : "idempotent";
+            out->asset_version = row[3] ? std::strtoull(row[3], nullptr, 10) : 0;
+            out->remain_count =
+                row[4] ? static_cast<uint32_t>(std::strtoul(row[4], nullptr, 10)) : 0;
+            return true;
+        }
+        const char *ecode = row[1] ? row[1] : "";
+        if (std::strcmp(ecode, "IN_PROGRESS") != 0) {
+            // 已持久化 FAILED：直接返回原始失败，禁止当成 BUSY
+            out->ok = false;
+            out->idempotent_hit = true;
+            out->error_code = ecode;
+            out->message = row[2] ? row[2] : "failed";
+            out->asset_version = row[3] ? std::strtoull(row[3], nullptr, 10) : 0;
+            out->remain_count =
+                row[4] ? static_cast<uint32_t>(std::strtoul(row[4], nullptr, 10)) : 0;
+            return true;
+        }
+        return false;
+    };
+
     {
         char q[768];
         std::snprintf(q, sizeof(q),
@@ -279,41 +329,11 @@ bool GameDbAssetStore::ApplyMutation(uint64_t player_id, const std::string &idem
         MYSQL_RES *res = conn->query(q);
         if (res) {
             MYSQL_ROW row = mysql_fetch_row(res);
-            if (row && row[0]) {
-                const uint64_t pid = row[6] ? std::strtoull(row[6], nullptr, 10) : 0;
-                const std::string old_hash = row[5] ? row[5] : "";
-                const std::string old_op = row[7] ? row[7] : "";
-                if (pid != 0 && pid != player_id) {
-                    fill_conflict("idempotency_key bound to other player");
-                    mysql_free_result(res);
-                    return false;
-                }
-                if (!old_op.empty() && old_op != mutation_type) {
-                    fill_conflict("same key different operation_type");
-                    mysql_free_result(res);
-                    return false;
-                }
-                if (!old_hash.empty() && old_hash != req_hash) {
-                    fill_conflict("same key different payload");
-                    mysql_free_result(res);
-                    return false;
-                }
-                if (std::atoi(row[0]) != 0) {
-                    out->ok = true;
-                    out->idempotent_hit = true;
-                    out->error_code = row[1] ? row[1] : "";
-                    out->message = row[2] ? row[2] : "idempotent";
-                    out->asset_version = row[3] ? std::strtoull(row[3], nullptr, 10) : 0;
-                    out->remain_count =
-                        row[4] ? static_cast<uint32_t>(std::strtoul(row[4], nullptr, 10)) : 0;
-                    mysql_free_result(res);
-                    return true;
-                }
-                // ok=0 IN_PROGRESS：占键冲突路径下方短等
+            if (row && row[0] && consume_idem_row(row)) {
                 mysql_free_result(res);
-            } else {
-                mysql_free_result(res);
+                return out->ok;
             }
+            mysql_free_result(res);
         }
     }
 
@@ -341,34 +361,9 @@ bool GameDbAssetStore::ApplyMutation(uint64_t player_id, const std::string &idem
                 MYSQL_RES *res2 = conn->query(q2);
                 if (res2) {
                     MYSQL_ROW row2 = mysql_fetch_row(res2);
-                    if (row2 && row2[0]) {
-                        const uint64_t pid = row2[6] ? std::strtoull(row2[6], nullptr, 10) : 0;
-                        const std::string old_hash = row2[5] ? row2[5] : "";
-                        const std::string old_op = row2[7] ? row2[7] : "";
-                        if (pid != 0 && pid != player_id) {
-                            fill_conflict("idempotency_key bound to other player");
-                            mysql_free_result(res2);
-                            return false;
-                        }
-                        if ((!old_op.empty() && old_op != mutation_type) ||
-                            (!old_hash.empty() && old_hash != req_hash)) {
-                            fill_conflict("same key different payload");
-                            mysql_free_result(res2);
-                            return false;
-                        }
-                        if (std::atoi(row2[0]) != 0) {
-                            out->idempotent_hit = true;
-                            out->ok = true;
-                            out->error_code = row2[1] ? row2[1] : "";
-                            out->message = row2[2] ? row2[2] : "idempotent";
-                            out->asset_version =
-                                row2[3] ? std::strtoull(row2[3], nullptr, 10) : 0;
-                            out->remain_count =
-                                row2[4] ? static_cast<uint32_t>(std::strtoul(row2[4], nullptr, 10))
-                                        : 0;
-                            mysql_free_result(res2);
-                            return true;
-                        }
+                    if (row2 && row2[0] && consume_idem_row(row2)) {
+                        mysql_free_result(res2);
+                        return out->ok;
                     }
                     mysql_free_result(res2);
                 }
@@ -381,20 +376,18 @@ bool GameDbAssetStore::ApplyMutation(uint64_t player_id, const std::string &idem
         }
     }
 
+    // 资产事务内任一步失败必须 ROLLBACK；禁止在含资产修改的事务里 COMMIT FAILED
     auto fail = [&](const char *code, const char *msg) -> bool {
-        // 已占键：标记 FAILED 再提交，避免永久 IN_PROGRESS；失败则 rollback
-        char fin[512];
-        std::snprintf(fin, sizeof(fin),
-                      "UPDATE player_asset_idem SET ok=0,error_code='%s',message='%s' WHERE "
-                      "idempotency_key='%s'",
-                      conn->EscapeSql(code).c_str(), conn->EscapeSql(msg).c_str(), esc_key.c_str());
-        conn->update(fin);
-        if (!conn->commit())
-            conn->rollback();
+        conn->rollback();
         out->ok = false;
         out->error_code = code;
         out->message = msg;
         return false;
+    };
+
+    auto failpoint = [](const char *env) -> bool {
+        const char *v = std::getenv(env);
+        return v && v[0] != '\0' && v[0] != '0';
     };
 
     uint64_t ver = 1;
@@ -459,6 +452,9 @@ bool GameDbAssetStore::ApplyMutation(uint64_t player_id, const std::string &idem
         if (!conn->update(ups))
             return fail("DB_ERROR", "bag upsert");
     }
+    if (failpoint("GAMEMESH_FAILPOINT_MUTATION_AFTER_BAG"))
+        return fail("FAILPOINT", "after bag");
+
     const uint64_t new_ver = ver + 1;
     {
         char ups[256];
@@ -470,13 +466,16 @@ bool GameDbAssetStore::ApplyMutation(uint64_t player_id, const std::string &idem
         if (!conn->update(ups))
             return fail("DB_ERROR", "meta bump");
     }
+    if (failpoint("GAMEMESH_FAILPOINT_MUTATION_AFTER_VERSION"))
+        return fail("FAILPOINT", "after version");
 
     GameDbOutbox::Instance().EnsureTable();
     std::ostringstream payload;
     payload << "{\"player_id\":" << player_id << ",\"type\":\"" << mutation_type
             << "\",\"item_id\":" << item_id << ",\"count\":" << count << ",\"version\":" << new_ver
             << "}";
-    if (!GameDbOutbox::Instance().InsertOnConnection(
+    if (failpoint("GAMEMESH_FAILPOINT_MUTATION_OUTBOX_FAIL") ||
+        !GameDbOutbox::Instance().InsertOnConnection(
             conn.get(), "asset.mutated", "player", std::to_string(player_id), idempotency_key,
             payload.str(), NowSec())) {
         return fail("OUTBOX_FAILED", "outbox insert failed; asset tx rolled back");
@@ -488,11 +487,53 @@ bool GameDbAssetStore::ApplyMutation(uint64_t player_id, const std::string &idem
                       "UPDATE player_asset_idem SET ok=1,error_code='',message='ok',"
                       "asset_version=%llu,remain_count=%u WHERE idempotency_key='%s'",
                       (unsigned long long)new_ver, remain, esc_key.c_str());
-        if (!conn->update(fin))
+        if (failpoint("GAMEMESH_FAILPOINT_MUTATION_FINALIZE_FAIL") || !conn->update(fin))
             return fail("DB_ERROR", "idem finalize");
     }
-    if (!conn->commit())
-        return fail("TX_COMMIT", "commit failed");
+
+    // COMMIT 失败：结果未知。禁止二次 COMMIT / 禁止直接标 FAILED；新连接查询。
+    if (failpoint("GAMEMESH_FAILPOINT_MUTATION_COMMIT_FAIL")) {
+        conn->rollback();
+        conn.reset();
+        out->ok = false;
+        out->error_code = "UNKNOWN_RESULT";
+        out->message = "commit failpoint; result unknown";
+        return false;
+    }
+    if (!conn->commit()) {
+        (void)conn->rollback();
+        conn.reset();
+        OperationQuery q;
+        if (QueryOperationResult(player_id, idempotency_key, mutation_type, &q) && q.found) {
+            if (q.status == "SUCCEEDED") {
+                out->ok = true;
+                out->idempotent_hit = true;
+                out->message = "recovered_after_commit";
+                out->asset_version = q.asset_version;
+                out->remain_count = q.remain_count;
+                return true;
+            }
+            if (q.status == "FAILED") {
+                out->ok = false;
+                out->idempotent_hit = true;
+                out->error_code = q.error_code.empty() ? "OPERATION_FAILED" : q.error_code;
+                out->message = q.message.empty() ? "operation recorded as failed" : q.message;
+                out->asset_version = q.asset_version;
+                out->remain_count = q.remain_count;
+                return false;
+            }
+            if (q.status == "IN_PROGRESS") {
+                out->ok = false;
+                out->error_code = "UNKNOWN_RESULT";
+                out->message = "commit unknown; still in progress";
+                return false;
+            }
+        }
+        out->ok = false;
+        out->error_code = "UNKNOWN_RESULT";
+        out->message = "commit result unknown";
+        return false;
+    }
 
     out->ok = true;
     out->message = "ok";

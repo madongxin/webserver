@@ -32,6 +32,7 @@ constexpr const char *kFavoriteLimit = "FAVORITE_LIMIT";
 constexpr const char *kHasUnclaimed = "HAS_UNCLAIMED_ATTACHMENT";
 constexpr const char *kInternal = "INTERNAL_ERROR";
 constexpr const char *kInvalidArgument = "INVALID_ARGUMENT";
+constexpr const char *kServerStopping = "SERVER_STOPPING";
 }  // namespace err
 
 enum class OwnerScope { kRole, kAccount };

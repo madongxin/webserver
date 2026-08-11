@@ -78,6 +78,17 @@ local cur = tonumber(redis.call('GET', seq_key) or '0') or 0
 if cur ~= want then
   return {'0', 'SEQ_MISMATCH'}
 end
+-- 同 reserved seq 幂等：已存在则不重复 RPUSH
+local n = redis.call('LLEN', list_key)
+if n > 0 then
+  local last_entry = redis.call('LINDEX', list_key, -1)
+  local last_seq = tonumber(string.match(last_entry or '', '^(%d+)')) or 0
+  if last_seq == want then
+    redis.call('EXPIRE', list_key, ttl)
+    redis.call('EXPIRE', seq_key, ttl)
+    return {'1', 'OK'}
+  end
+end
 local entry = tostring(want) .. '\t' .. tostring(string.len(typ)) .. '\t' .. typ .. '\t' .. tostring(string.len(payload)) .. '\t' .. payload
 redis.call('RPUSH', list_key, entry)
 redis.call('LTRIM', list_key, -cap, -1)
@@ -90,22 +101,26 @@ const char kLuaReplay[] = R"LUA(
 local list_key = KEYS[1]
 local seq_key = KEYS[2]
 local last = tonumber(ARGV[1]) or 0
+local cur = tonumber(redis.call('GET', seq_key) or '0') or 0
 local entries = redis.call('LRANGE', list_key, 0, -1)
-if #entries == 0 then
-  local cur = tonumber(redis.call('GET', seq_key) or '0') or 0
-  if last == 0 or last >= cur then return {'1', 'OK'} end
-  return {'0', 'NEED_SNAPSHOT'}
-end
-local first_seq = tonumber(string.match(entries[1], '^(%d+)')) or 0
-if last > 0 and first_seq > last + 1 then
-  return {'0', 'NEED_SNAPSHOT'}
-end
+local expected = last + 1
 local out = {'1', 'OK'}
 for _, v in ipairs(entries) do
   local seq = tonumber(string.match(v, '^(%d+)'))
-  if seq and seq > last then
-    out[#out + 1] = v
+  if seq then
+    if seq <= last then
+      -- skip already acked
+    elseif seq == expected then
+      out[#out + 1] = v
+      expected = expected + 1
+    elseif seq > expected then
+      return {'0', 'NEED_SNAPSHOT'}
+    end
   end
+end
+-- 尾部已 Reserve 但未写入 / 空洞：cur 仍领先 expected
+if cur >= expected then
+  return {'0', 'NEED_SNAPSHOT'}
 end
 return out
 )LUA";
@@ -130,6 +145,19 @@ end
 if ack == last then
   redis.call('EXPIRE', meta_key, ttl)
   return {'1', 'DUP', tostring(ack)}
+end
+-- 必须确认 ack 对应条目曾成功写入；禁止 ACK 仅 Reserve 的空洞
+local found = false
+local entries = redis.call('LRANGE', list_key, 0, -1)
+for _, v in ipairs(entries) do
+  local seq = tonumber(string.match(v, '^(%d+)'))
+  if seq and seq == ack then
+    found = true
+    break
+  end
+end
+if not found then
+  return {'0', 'ERR_ACK_GAP', tostring(cur), tostring(last)}
 end
 while true do
   local v = redis.call('LINDEX', list_key, 0)
@@ -303,6 +331,8 @@ PushReplayStore::AckResult PushReplayStore::Ack(uint64_t player_id, const std::s
         r.status = AckStatus::Ahead;
     else if (reply[1] == "ERR_ACK_STALE")
         r.status = AckStatus::Stale;
+    else if (reply[1] == "ERR_ACK_GAP")
+        r.status = AckStatus::Gap;
     else
         r.status = AckStatus::Invalid;
     return r;

@@ -110,6 +110,7 @@ own2="$(echo "$seed2" | sed -n 's/^owner=//p' | head -1)"
 echo "== stop gl-2 =="
 kill -9 "$GL2_PID" 2>/dev/null || true
 GL2_PID=""
+e2e_inv_remove gamelogic gl-2 2>/dev/null || true
 "${RCLI[@]}" DEL "${PREFIX}svc:gamelogic:gl-2" >/dev/null || true
 "${RCLI[@]}" SREM "${PREFIX}svcidx:gamelogic" gl-2 >/dev/null || true
 trap - EXIT

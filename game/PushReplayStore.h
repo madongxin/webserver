@@ -42,6 +42,7 @@ public:
         Stale = 3,
         Unavailable = 4,
         Invalid = 5,
+        Gap = 6,  // ACK 指向未成功写入的 reserved/空洞 seq
     };
     struct AckResult {
         AckStatus status = AckStatus::Invalid;

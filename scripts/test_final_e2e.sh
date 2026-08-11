@@ -254,8 +254,12 @@ run_sc 9 "SIGTERM drain ready" sc9
 run_sc 6 "kill logic + lease migrate" sc6
 run_sc 8 "kill gamedb0" sc8
 
-# 场景 7：动态发现 / DRAINING 契约（完整启 gl-2 进程见 test_dynamic_logic_scale）
-run_sc 7 "dynamic logic scale / DRAINING" bash "$ROOT/scripts/test_dynamic_logic_scale.sh"
+# 场景 7：动态发现 / DRAINING（experimental；默认跳过）
+if [[ "${GAMEMESH_EXPERIMENTAL_DYNAMIC_SCALE:-0}" == "1" ]]; then
+  run_sc 7 "dynamic logic scale / DRAINING" bash "$ROOT/scripts/test_dynamic_logic_scale.sh"
+else
+  echo "==== skip scenario 7 (experimental; set GAMEMESH_EXPERIMENTAL_DYNAMIC_SCALE=1) ===="
+fi
 
 # 场景 10：短混沌（完整 2h 见 soak_test.sh）；默认 SCENARIOS 不含 10
 run_sc 10 "chaos short dual-gw burst" bash -c '

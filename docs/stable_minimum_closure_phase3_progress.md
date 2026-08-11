@@ -1,6 +1,6 @@
 # 稳定最小闭环 — 阶段三进度与结论
 
-对照：`docs/GameMesh_Cursor_Server_Stable_Minimum_Closure_e8ab08f.md`  
+对照：`docs/GameMesh_Cursor_Server_Stable_Minimum_Closure_e8ab08f.md`
 工作树 commit（dirty）：`e8ab08fc1b2beef59d106fd1ac75bb9e43860ba5` + 阶段一/二/三未提交改动。
 
 ## 工程交付（已落地）
@@ -38,7 +38,7 @@
 STABLE BLOCKED
 ```
 
-报告：`run/release/e8ab08fc1b2beef59d106fd1ac75bb9e43860ba5/manifest.json`  
+报告：`run/release/e8ab08fc1b2beef59d106fd1ac75bb9e43860ba5/manifest.json`
 门禁日志：`/tmp/p3_stable_full.log`；load 摘要见该日志末尾。
 
 ## 是否达到 server-stable-v0.1.0-rc1

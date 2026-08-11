@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# 阶段二：GameDB 未知结果 + 进程故障后的真实资产业务
+# 阶段二：GameDB 未知结果 + 进程故障后的真实资产业务（硬断言）
 set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
@@ -32,6 +32,24 @@ HOST="${E2E_HOST:-127.0.0.1}"
 GAMEDB_BIN="$ROOT/build/test/gamedb"
 [[ -x "$GAMEDB_BIN" ]] || { echo "ERROR: missing gamedb binary"; exit 1; }
 
+mysql_q() {
+  local sql="$1"
+  python3 - <<PY
+import subprocess
+kv={}
+for line in open("$ROOT/config/mysql.cnf"):
+    line=line.strip()
+    if not line or line.startswith("#") or "=" not in line: continue
+    k,v=line.split("=",1); kv[k.strip()]=v.strip()
+host=kv.get("ip","127.0.0.1"); port=kv.get("port","3306")
+user=kv.get("username", kv.get("user","root")); pw=kv.get("password","")
+db=kv.get("dbname","metrics")
+cmd=["mysql","-N","-h",host,"-P",str(port),"-u",user,db,"-e","""$sql"""]
+if pw: cmd.insert(-2, f"-p{pw}")
+print(subprocess.check_output(cmd, universal_newlines=True).strip())
+PY
+}
+
 FP_PID=""
 cleanup_fp() {
   if [[ -n "${FP_PID:-}" ]] && kill -0 "$FP_PID" 2>/dev/null; then
@@ -45,6 +63,7 @@ kill -9 "$PID_DB0" 2>/dev/null || true
 sleep 1
 http_port="$HTTP_DB0"
 rpc_port="${RPC_DB0##*:}"
+: >"$GAMEMESH_RUN_DIR/logs/gamedb0_fp.log"
 GAMEMESH_INSTANCE_ID=gamedb-0 \
   GAMEMESH_FAILPOINT_DELAY_MS=2500 \
   GAMEMESH_FAILPOINT_ABORT_AFTER_COMMIT=1 \
@@ -52,23 +71,50 @@ GAMEMESH_INSTANCE_ID=gamedb-0 \
 FP_PID=$!
 echo "$FP_PID" >>"$GAMEMESH_RUN_DIR/pids"
 e2e_inv_replace gamedb gamedb-0 "$FP_PID" "$RPC_DB0" "$HTTP_DB0" -
-# wait listen
-for _ in $(seq 1 40); do
+ready_fp=0
+for _ in $(seq 1 60); do
   if grep -qE 'GameDbBrpcServer listening|role=gamedb' "$GAMEMESH_RUN_DIR/logs/gamedb0_fp.log" 2>/dev/null; then
+    ready_fp=1
+    break
+  fi
+  if ! kill -0 "$FP_PID" 2>/dev/null; then
+    echo "ERROR: gamedb-0 failpoint process exited early"; tail -40 "$GAMEMESH_RUN_DIR/logs/gamedb0_fp.log" || true; exit 1
+  fi
+  sleep 0.25
+done
+[[ "$ready_fp" -eq 1 ]] || {
+  echo "ERROR: gamedb-0 failpoint not listening"; tail -40 "$GAMEMESH_RUN_DIR/logs/gamedb0_fp.log" || true; exit 1
+}
+live=0
+for _ in $(seq 1 40); do
+  if curl -fsS -m 2 "http://${HOST}:${HTTP_DB0}/health/live" >/dev/null 2>&1; then
+    live=1
     break
   fi
   sleep 0.25
 done
-curl -fsS -m 3 "http://${HOST}:${HTTP_DB0}/health/live" >/dev/null
+[[ "$live" -eq 1 ]] || {
+  echo "ERROR: gamedb-0 failpoint health/live refused"; tail -40 "$GAMEMESH_RUN_DIR/logs/gamedb0_fp.log" || true; exit 1
+}
 
 player="$((940000000 + RANDOM % 100000))"
 key="gdb_fail_$$_$RANDOM"
+item=1001
+count=3
 echo "== mutate via gamedb-0 (expect abort after commit) player=$player =="
 set +e
-"$TOOL" mutate "$RPC_DB0" "$player" "$key" GRANT 1001 3
+mout="$("$TOOL" mutate "$RPC_DB0" "$player" "$key" GRANT "$item" "$count" 2>&1)"
 mut_rc=$?
 set -e
-# 进程可能已 _exit；更新 inventory 若已死
+echo "$mout"
+# failpoint 提交后 _exit：客户端必须看到 RPC failure / 非成功
+if [[ "$mut_rc" -eq 0 ]] && echo "$mout" | grep -q 'ok=1'; then
+  echo "ERROR: mutate unexpectedly succeeded without RPC failure"; exit 1
+fi
+if ! echo "$mout" | grep -qE 'rpc_failed=1|UNKNOWN_RESULT|error='; then
+  # 允许进程被杀导致非零且无标准输出
+  [[ "$mut_rc" -ne 0 ]] || { echo "ERROR: expected RPC failure/UNKNOWN_RESULT"; exit 1; }
+fi
 if ! kill -0 "$FP_PID" 2>/dev/null; then
   FP_PID=""
 fi
@@ -91,7 +137,20 @@ for _ in $(seq 1 30); do
 done
 [[ "$ok_q" -eq 1 ]] || { echo "ERROR: query did not see SUCCEEDED after unknown"; exit 1; }
 ver="$(echo "$qout" | sed -n 's/.*ver=\([0-9]*\).*/\1/p' | head -1)"
+remain="$(echo "$qout" | sed -n 's/.*remain=\([0-9]*\).*/\1/p' | head -1)"
 [[ -n "$ver" && "$ver" -gt 0 ]] || { echo "ERROR: bad version"; exit 1; }
+[[ "$remain" == "$count" ]] || { echo "ERROR: remain=$remain want=$count"; exit 1; }
+
+echo "== inventory / outbox invariants =="
+inv="$("$TOOL" inventory "$RPC_DB1" "$player" "$item")"
+echo "$inv"
+echo "$inv" | grep -q 'ok=1' || { echo "ERROR: inventory failed"; exit 1; }
+bag="$(echo "$inv" | sed -n 's/.*bag_count=\([0-9]*\).*/\1/p' | head -1)"
+iver="$(echo "$inv" | sed -n 's/.*ver=\([0-9]*\).*/\1/p' | head -1)"
+[[ "$bag" == "$count" ]] || { echo "ERROR: bag_count=$bag want=$count (must grant once)"; exit 1; }
+[[ "$iver" == "$ver" ]] || { echo "ERROR: inventory ver=$iver query ver=$ver"; exit 1; }
+outbox_n="$(mysql_q "SELECT COUNT(*) FROM gamedb_outbox WHERE idempotency_key='${key}'")"
+[[ "$outbox_n" == "1" ]] || { echo "ERROR: outbox count=$outbox_n want=1"; exit 1; }
 
 echo "== ensure gamedb-0 dead; survivor write on gamedb-1 =="
 if [[ -n "${FP_PID:-}" ]]; then
@@ -105,13 +164,21 @@ fi
 curl -fsS -m 3 "http://${HOST}:${HTTP_DB1}/health/ready" | grep -qi ready
 
 key2="${key}_next"
-out2="$("$TOOL" mutate "$RPC_DB1" "$player" "$key2" GRANT 1001 1)"
+out2="$("$TOOL" mutate "$RPC_DB1" "$player" "$key2" GRANT "$item" 1)"
 echo "$out2"
 echo "$out2" | grep -q 'ok=1' || { echo "ERROR: survivor mutate failed"; exit 1; }
 ver2="$(echo "$out2" | sed -n 's/.*ver=\([0-9]*\).*/\1/p' | head -1)"
 [[ -n "$ver2" && "$ver2" -gt "$ver" ]] || {
   echo "ERROR: version did not advance ($ver -> $ver2)"; exit 1
 }
+inv2="$("$TOOL" inventory "$RPC_DB1" "$player" "$item")"
+bag2="$(echo "$inv2" | sed -n 's/.*bag_count=\([0-9]*\).*/\1/p' | head -1)"
+[[ "$bag2" == "$((count + 1))" ]] || { echo "ERROR: bag after survivor=$bag2"; exit 1; }
+outbox2="$(mysql_q "SELECT COUNT(*) FROM gamedb_outbox WHERE idempotency_key='${key2}'")"
+[[ "$outbox2" == "1" ]] || { echo "ERROR: key2 outbox=$outbox2"; exit 1; }
+# 原 key 仍恰好一条
+outbox_n2="$(mysql_q "SELECT COUNT(*) FROM gamedb_outbox WHERE idempotency_key='${key}'")"
+[[ "$outbox_n2" == "1" ]] || { echo "ERROR: original outbox duplicated ($outbox_n2)"; exit 1; }
 
 trap - EXIT
 echo "test_gamedb_unknown_result_failover.sh PASS (mut_rc=$mut_rc)"

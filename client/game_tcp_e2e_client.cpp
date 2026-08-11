@@ -103,10 +103,22 @@ bool Exchange(int fd, const game::GameRequest &req, game::GameResponse *rsp, int
     return RecvFrame(fd, rsp, timeout_ms);
 }
 
-void PrintKv(const char *k, const std::string &v) { std::printf("%s=%s\n", k, v.c_str()); }
-void PrintKv(const char *k, uint64_t v) { std::printf("%s=%llu\n", k, static_cast<unsigned long long>(v)); }
-void PrintKv(const char *k, int v) { std::printf("%s=%d\n", k, v); }
-void PrintKv(const char *k, bool v) { std::printf("%s=%d\n", k, v ? 1 : 0); }
+void PrintKv(const char *k, const std::string &v) {
+    std::printf("%s=%s\n", k, v.c_str());
+    std::fflush(stdout);
+}
+void PrintKv(const char *k, uint64_t v) {
+    std::printf("%s=%llu\n", k, static_cast<unsigned long long>(v));
+    std::fflush(stdout);
+}
+void PrintKv(const char *k, int v) {
+    std::printf("%s=%d\n", k, v);
+    std::fflush(stdout);
+}
+void PrintKv(const char *k, bool v) {
+    std::printf("%s=%d\n", k, v ? 1 : 0);
+    std::fflush(stdout);
+}
 
 struct SessionState {
     uint64_t player_id = 0;
@@ -130,6 +142,7 @@ bool DoRegisterLogin(int fd, const std::string &device, const std::string &passw
     game::GameResponse rr;
     if (!Exchange(fd, reg, &rr) || !rr.ok() || !rr.has_register_() || !rr.register_().ok()) {
         std::printf("error=register msg=%s\n", rr.message().c_str());
+        std::fflush(stdout);
         return false;
     }
     st->player_id = rr.register_().player_id();
@@ -145,6 +158,7 @@ bool DoRegisterLogin(int fd, const std::string &device, const std::string &passw
     game::GameResponse lr;
     if (!Exchange(fd, login, &lr) || !lr.ok() || !lr.has_login() || !lr.login().ok()) {
         std::printf("error=login msg=%s\n", lr.message().c_str());
+        std::fflush(stdout);
         return false;
     }
     st->token = lr.login().token();
@@ -170,6 +184,7 @@ bool DoEnterMap(int fd, SessionState *st, uint64_t map_tpl, uint64_t map_inst) {
     if (!Exchange(fd, req, &rsp, 15000) || !rsp.ok() || !rsp.has_enter_map() ||
         !rsp.enter_map().ok()) {
         std::printf("error=enter_map msg=%s\n", rsp.message().c_str());
+        std::fflush(stdout);
         return false;
     }
     st->map_instance_id = rsp.enter_map().map_instance_id();
@@ -207,6 +222,7 @@ bool DoReconnect(int fd, SessionState *st, uint64_t last_seq, int *replay_n, boo
     if (!Exchange(fd, req, &rsp, 15000) || !rsp.ok() || !rsp.has_reconnect() ||
         !rsp.reconnect().ok()) {
         std::printf("error=reconnect msg=%s\n", rsp.message().c_str());
+        std::fflush(stdout);
         return false;
     }
     st->token = rsp.reconnect().token();
@@ -279,6 +295,7 @@ int CmdEnterMap(int argc, char **argv) {
     game::GameResponse lr;
     if (!Exchange(fd, login, &lr) || !lr.ok() || !lr.has_login()) {
         std::printf("error=relogin\n");
+        std::fflush(stdout);
         ::close(fd);
         return 12;
     }
@@ -305,6 +322,14 @@ int CmdReconnect(int argc, char **argv) {
     int rn = 0;
     bool snap = false;
     const bool ok = DoReconnect(fd, &st, last, &rn, &snap);
+    // 故障演练：保持连接一段时间，便于脚本断言 Redis ONLINE
+    if (ok) {
+        if (const char *hold = std::getenv("E2E_HOLD_MS")) {
+            const int ms = std::atoi(hold);
+            if (ms > 0)
+                usleep(static_cast<useconds_t>(ms) * 1000);
+        }
+    }
     ::close(fd);
     return ok ? 0 : 12;
 }
@@ -393,6 +418,7 @@ int CmdDrainLogin(int argc, char **argv) {
         return 0;
     }
     std::printf("error=login_succeeded_while_draining\n");
+    std::fflush(stdout);
     return 15;
 }
 

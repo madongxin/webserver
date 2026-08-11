@@ -566,6 +566,14 @@ if(ENABLE_GAME_PROTOBUF)
       runtime/brpc ${BRPC_INCLUDE_DIR} ${Protobuf_INCLUDE_DIRS})
     target_link_libraries(gamedb_rpc_tool
       ${BRPC_LINK_LIBS} ${Protobuf_LIBRARIES} ${OPENSSL_CRYPTO_LIB} ${CMAKE_THREAD_LIBS_INIT})
+
+    add_executable(logic_dispatch_tool
+      test/logic_dispatch_tool.cpp
+      runtime/brpc/gamelogic_rpc.pb.cc)
+    target_include_directories(logic_dispatch_tool PRIVATE
+      runtime/brpc ${BRPC_INCLUDE_DIR} ${Protobuf_INCLUDE_DIRS})
+    target_link_libraries(logic_dispatch_tool
+      ${BRPC_LINK_LIBS} ${Protobuf_LIBRARIES} ${OPENSSL_CRYPTO_LIB} ${CMAKE_THREAD_LIBS_INIT})
   endif()
 
   add_executable(player_serial_async_test
@@ -744,15 +752,18 @@ if(ENABLE_GAME_PROTOBUF AND ENABLE_REDIS)
     runtime/PushReplayCache.cpp
     redis/RedisClient.cpp
     redis/RedisPool.cpp
+    game/game.pb.cc
     base/CurrentThread.cpp
     log/Logging.cpp
     log/LogStream.cpp
     log/LogFile.cpp
     log/AsyncLogging.cpp)
-  target_compile_definitions(push_full_snapshot_test PRIVATE WEBSERVER_ENABLE_REDIS)
+  target_compile_definitions(push_full_snapshot_test PRIVATE
+    WEBSERVER_ENABLE_REDIS WEBSERVER_ENABLE_GAME_PROTOBUF)
   target_include_directories(push_full_snapshot_test PRIVATE
-    game redis base log timer runtime ${HIREDIS_INCLUDE_DIR})
-  target_link_libraries(push_full_snapshot_test ${CMAKE_THREAD_LIBS_INIT} ${HIREDIS_LIB})
+    game redis base log timer runtime ${HIREDIS_INCLUDE_DIR} ${Protobuf_INCLUDE_DIRS})
+  target_link_libraries(push_full_snapshot_test
+    ${CMAKE_THREAD_LIBS_INIT} ${HIREDIS_LIB} ${Protobuf_LIBRARIES})
 
   add_executable(push_replay_cache_test
     test/push_replay_cache_test.cpp
@@ -933,6 +944,24 @@ if(ENABLE_MYSQL AND ENABLE_GAME_PROTOBUF)
   target_include_directories(gamedb_mutation_idempotency_test PRIVATE
     ${MYSQL_INCLUDE_DIR} db base log timer)
   target_link_libraries(gamedb_mutation_idempotency_test
+    ${CMAKE_THREAD_LIBS_INIT} ${MYSQL_CLIENT_LIB})
+
+  add_executable(gamedb_mutation_atomicity_test
+    test/gamedb_mutation_atomicity_test.cpp
+    db/Connection.cpp
+    db/ConnectionPool.cpp
+    db/GameDbOutbox.cpp
+    db/GameDbAssetStore.cpp
+    db/PlayerItemStore.cpp
+    base/CurrentThread.cpp
+    log/Logging.cpp
+    log/LogStream.cpp
+    log/LogFile.cpp
+    log/AsyncLogging.cpp)
+  target_compile_definitions(gamedb_mutation_atomicity_test PRIVATE WEBSERVER_ENABLE_MYSQL)
+  target_include_directories(gamedb_mutation_atomicity_test PRIVATE
+    ${MYSQL_INCLUDE_DIR} db base log timer)
+  target_link_libraries(gamedb_mutation_atomicity_test
     ${CMAKE_THREAD_LIBS_INIT} ${MYSQL_CLIENT_LIB})
 
   add_executable(gamedb_unknown_result_test

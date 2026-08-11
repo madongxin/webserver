@@ -142,6 +142,66 @@ int main() {
     }
 
     q.DrainForTest();
+
+    // DRAINING：拒绝新任务，已开始的 async completion 仍在 worker 完成
+    {
+        q.SetLimits(64, 256);
+        std::atomic<int> drained_done{0};
+        std::atomic<bool> marked{false};
+        std::thread::id wid;
+        q.TryPost(a, [&]() {
+            wid = std::this_thread::get_id();
+            q.MarkAsyncInFlight(a);
+            marked.store(true);
+        });
+        for (int i = 0; i < 100 && !marked.load(); ++i)
+            std::this_thread::sleep_for(std::chrono::milliseconds(5));
+        q.BeginDrain(std::chrono::milliseconds(2000));
+        if (q.TryPost(b, []() {})) {
+            std::printf("FAIL drain still accepts TryPost\n");
+            return 1;
+        }
+        std::atomic<bool> on_worker{false};
+        std::thread late([&]() {
+            q.CompleteAsyncInFlight(a, [&]() {
+                on_worker.store(std::this_thread::get_id() == wid);
+                drained_done.fetch_add(1);
+            });
+        });
+        late.join();
+        for (int i = 0; i < 200 && drained_done.load() == 0; ++i)
+            std::this_thread::sleep_for(std::chrono::milliseconds(5));
+        if (drained_done.load() != 1 || !on_worker.load()) {
+            std::printf("FAIL drain completion\n");
+            return 1;
+        }
+    }
+
+    // STOPPED 后迟到 callback：不执行 completion（调用方负责取消）
+    {
+        q.Stop();
+        std::atomic<int> applied{0};
+        const bool enq = q.CompleteAsyncInFlight(a, [&]() { applied.fetch_add(1); });
+        if (enq || applied.load() != 0) {
+            std::printf("FAIL stopped inline completion\n");
+            return 1;
+        }
+        if (q.TryPost(a, [&]() { applied.fetch_add(1); })) {
+            std::printf("FAIL stopped TryPost\n");
+            return 1;
+        }
+    }
+
+    // 重新 Start 验证仍可用
+    q.Start(1);
+    std::atomic<int> once{0};
+    q.TryPost(a, [&]() { once.fetch_add(1); });
+    q.DrainForTest();
+    if (once.load() != 1) {
+        std::printf("FAIL restart\n");
+        return 1;
+    }
+
     q.Stop();
     std::printf("PASS player_serial_async_test b_latency_ms=%lld\n", static_cast<long long>(ms));
     return 0;

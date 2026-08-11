@@ -20,7 +20,8 @@ size_t PlayerSerialQueue::ShardIndex(uint64_t player_id, size_t n) {
 }
 
 PlayerSerialQueue::Shard *PlayerSerialQueue::ShardFor(uint64_t player_id) {
-    if (!started_ || shards_.empty())
+    const auto s = life_.load(std::memory_order_acquire);
+    if ((s != LifeState::kRunning && s != LifeState::kDraining) || shards_.empty())
         return nullptr;
     return shards_[ShardIndex(player_id, shards_.size())].get();
 }
@@ -34,7 +35,7 @@ void PlayerSerialQueue::SetLimits(size_t max_per_shard, size_t max_global) {
 
 void PlayerSerialQueue::Start(int shard_count) {
     std::lock_guard<std::mutex> lk(life_mu_);
-    if (started_)
+    if (life_.load(std::memory_order_relaxed) != LifeState::kStopped)
         return;
     if (shard_count <= 0) {
         unsigned hc = std::thread::hardware_concurrency();
@@ -49,21 +50,92 @@ void PlayerSerialQueue::Start(int shard_count) {
         shard->worker = std::thread([this, raw]() { WorkerLoop(raw); });
         shards_.push_back(std::move(shard));
     }
-    started_ = true;
     pending_global_.store(0, std::memory_order_relaxed);
+    life_.store(LifeState::kRunning, std::memory_order_release);
     LOG_INFO << "PlayerSerialQueue started shards=" << shard_count
              << " max_per_shard=" << max_per_shard_ << " max_global=" << max_global_;
 }
 
+void PlayerSerialQueue::WaitUntilDrainedOrDeadline(std::chrono::steady_clock::time_point deadline) {
+    while (std::chrono::steady_clock::now() < deadline) {
+        bool all_clear = true;
+        size_t pending_players = 0;
+        size_t pending_tasks = 0;
+        for (auto &s : shards_) {
+            std::lock_guard<std::mutex> qlk(s->mu);
+            if (!s->q.empty() || s->inflight != 0 || !s->async_inflight.empty() ||
+                !s->deferred.empty()) {
+                all_clear = false;
+                pending_players += s->async_inflight.size();
+                pending_tasks += s->q.size();
+                for (const auto &kv : s->deferred)
+                    pending_tasks += kv.second.size();
+            }
+        }
+        if (all_clear)
+            return;
+        (void)pending_players;
+        (void)pending_tasks;
+        std::this_thread::sleep_for(std::chrono::milliseconds(5));
+    }
+    size_t leftover_players = 0;
+    size_t leftover_tasks = 0;
+    for (auto &s : shards_) {
+        std::lock_guard<std::mutex> qlk(s->mu);
+        leftover_players += s->async_inflight.size();
+        leftover_tasks += s->q.size() + static_cast<size_t>(s->inflight);
+        for (const auto &kv : s->deferred)
+            leftover_tasks += kv.second.size();
+    }
+    LOG_WARN << "PlayerSerialQueue drain deadline: async_players=" << leftover_players
+             << " pending_tasks~=" << leftover_tasks;
+}
+
+void PlayerSerialQueue::BeginDrain(std::chrono::milliseconds deadline) {
+    {
+        std::lock_guard<std::mutex> lk(life_mu_);
+        if (life_.load(std::memory_order_relaxed) != LifeState::kRunning)
+            return;
+        life_.store(LifeState::kDraining, std::memory_order_release);
+        LOG_INFO << "PlayerSerialQueue draining";
+    }
+    WaitUntilDrainedOrDeadline(std::chrono::steady_clock::now() + deadline);
+}
+
 void PlayerSerialQueue::Stop() {
-    std::lock_guard<std::mutex> lk(life_mu_);
-    if (!started_)
+    std::unique_lock<std::mutex> lk(life_mu_);
+    if (life_.load(std::memory_order_relaxed) == LifeState::kStopped)
         return;
-    // 先切断 ShardFor / TryPost，避免异步 Complete 在析构 cv 后仍 notify
-    started_ = false;
+    if (life_.load(std::memory_order_relaxed) == LifeState::kRunning)
+        life_.store(LifeState::kDraining, std::memory_order_release);
+    lk.unlock();
+
+    WaitUntilDrainedOrDeadline(std::chrono::steady_clock::now() + std::chrono::milliseconds(3000));
+
+    lk.lock();
+    if (life_.load(std::memory_order_relaxed) == LifeState::kStopped)
+        return;
+
+    // 先切断 Complete/TryPost，避免 join 期间 callback 再改状态
+    life_.store(LifeState::kStopped, std::memory_order_release);
+
     for (auto &s : shards_) {
         {
             std::lock_guard<std::mutex> qlk(s->mu);
+            // 超时强制取消：丢掉未完成 deferred/async，避免永久 join
+            size_t dropped = 0;
+            for (auto &kv : s->deferred) {
+                dropped += kv.second.size();
+                while (!kv.second.empty()) {
+                    kv.second.pop_front();
+                    pending_global_.fetch_sub(1, std::memory_order_relaxed);
+                }
+            }
+            s->deferred.clear();
+            dropped += s->async_inflight.size();
+            s->async_inflight.clear();
+            if (dropped > 0)
+                LOG_WARN << "PlayerSerialQueue force-stop dropped~=" << dropped;
             s->stop = true;
         }
         s->cv.notify_all();
@@ -82,9 +154,19 @@ void PlayerSerialQueue::WorkerLoop(Shard *shard) {
         std::function<void()> task;
         {
             std::unique_lock<std::mutex> lk(shard->mu);
-            shard->cv.wait(lk, [&]() { return shard->stop || !shard->q.empty(); });
-            if (shard->stop && shard->q.empty())
+            shard->cv.wait(lk, [&]() {
+                if (!shard->q.empty())
+                    return true;
+                if (!shard->stop)
+                    return false;
+                return shard->async_inflight.empty() && shard->deferred.empty() &&
+                       shard->inflight == 0;
+            });
+            if (shard->stop && shard->q.empty() && shard->async_inflight.empty() &&
+                shard->deferred.empty() && shard->inflight == 0)
                 return;
+            if (shard->q.empty())
+                continue;
             task = std::move(shard->q.front());
             shard->q.pop_front();
             ++shard->inflight;
@@ -106,11 +188,8 @@ void PlayerSerialQueue::WorkerLoop(Shard *shard) {
 }
 
 bool PlayerSerialQueue::TryPost(uint64_t player_id, std::function<void()> task) {
-    if (!started_) {
-        if (task)
-            task();
-        return true;
-    }
+    if (life_.load(std::memory_order_acquire) != LifeState::kRunning)
+        return false;
     if (pending_global_.load(std::memory_order_relaxed) >= max_global_)
         return false;
     Shard *shard = ShardFor(player_id);
@@ -118,6 +197,8 @@ bool PlayerSerialQueue::TryPost(uint64_t player_id, std::function<void()> task) 
         return false;
     {
         std::lock_guard<std::mutex> lk(shard->mu);
+        if (shard->stop)
+            return false;
         if (shard->async_inflight.count(player_id)) {
             auto &dq = shard->deferred[player_id];
             if (dq.size() + shard->q.size() >= max_per_shard_)
@@ -148,13 +229,11 @@ void PlayerSerialQueue::ClearAsyncInFlight(uint64_t player_id) {
 }
 
 bool PlayerSerialQueue::CompleteAsyncInFlight(uint64_t player_id,
-                                               std::function<void()> completion) {
+                                             std::function<void()> completion) {
     Shard *shard = ShardFor(player_id);
     if (!shard) {
-        // Stop 后：仍执行 completion，避免泄漏；调用方应保证此时不做业务状态写入依赖
-        if (completion)
-            completion();
-        return true;
+        // STOPPED：禁止 inline 执行业务 completion；调用方取消 done
+        return false;
     }
     // completion 不受外部 max_global 限制：已开始的异步必须能回投原玩家串行上下文
     {
@@ -178,7 +257,8 @@ bool PlayerSerialQueue::CompleteAsyncInFlight(uint64_t player_id,
 }
 
 bool PlayerSerialQueue::IsAsyncInFlight(uint64_t player_id) const {
-    if (!started_ || shards_.empty())
+    const auto s = life_.load(std::memory_order_acquire);
+    if ((s != LifeState::kRunning && s != LifeState::kDraining) || shards_.empty())
         return false;
     Shard *shard = shards_[ShardIndex(player_id, shards_.size())].get();
     std::lock_guard<std::mutex> lk(shard->mu);
@@ -193,7 +273,7 @@ void PlayerSerialQueue::Post(uint64_t player_id, std::function<void()> task) {
 }
 
 void PlayerSerialQueue::DrainForTest() {
-    if (!started_)
+    if (!started())
         return;
     for (auto &s : shards_) {
         std::unique_lock<std::mutex> lk(s->mu);

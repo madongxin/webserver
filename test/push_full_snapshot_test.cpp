@@ -1,14 +1,18 @@
 /**
- * FullSnapshot 序列：Reserve → 编码 baseline → AppendReserved；Replay payload 一致
+ * FullSnapshot 序列 + Replay 空洞检测 + ACK gap + 真实 Protobuf baseline
  */
 #include "PushReplayStore.h"
 #include "RedisConfigPath.h"
 #include "RedisPool.h"
 
+#include "game.pb.h"
+
+#include <atomic>
 #include <cstdio>
 #include <cstdlib>
 #include <fstream>
 #include <string>
+#include <thread>
 #include <unistd.h>
 #include <vector>
 
@@ -50,6 +54,11 @@ bool InitRedis() {
     return RedisPool::Instance().Init(host, port, password, 4);
 }
 
+int Fail(const char *m) {
+    std::printf("FAIL %s\n", m);
+    return 1;
+}
+
 }  // namespace
 
 int main() {
@@ -59,46 +68,157 @@ int main() {
     }
     const std::string prefix =
         "gamemesh:dev:pushsnap:" + std::to_string(static_cast<long long>(::getpid())) + ":";
-    if (!PushReplayStore::Instance().InitFromSessionPrefix(prefix, 8, 600)) {
-        std::printf("FAIL init\n");
-        return 1;
-    }
-    if (PushReplayStore::Instance().AppendReliable(0, "s", "full_snapshot", "x") != 0) {
-        std::printf("FAIL expect seq=0 on invalid append\n");
-        return 1;
-    }
+    if (!PushReplayStore::Instance().InitFromSessionPrefix(prefix, 64, 600))
+        return Fail("init");
+
     const uint64_t player = 880001;
     const std::string sid = "snap-sess";
     PushReplayStore::Instance().InvalidateSession(player, sid);
 
-    const uint64_t seq = PushReplayStore::Instance().ReserveSeq(player, sid);
-    if (seq == 0) {
-        std::printf("FAIL reserve\n");
-        return 1;
+    // 1) Reserve 1 不 Append，再写 seq2 → ReplayAfter(0) NEED_SNAPSHOT
+    {
+        const uint64_t p = player + 1;
+        const std::string s = sid + "-gap1";
+        PushReplayStore::Instance().InvalidateSession(p, s);
+        if (PushReplayStore::Instance().ReserveSeq(p, s) != 1)
+            return Fail("reserve1");
+        if (PushReplayStore::Instance().AppendReliable(p, s, "push", "body2") != 2)
+            return Fail("append2");
+        std::vector<PushReplayEntry> out;
+        bool need = false;
+        if (PushReplayStore::Instance().ReplayAfter(p, s, 0, &out, &need) || !need)
+            return Fail("reserve hole need snapshot");
     }
-    // 模拟 Orchestrator：先设 baseline=seq 再编码
-    const std::string payload = "full-snapshot-body|baseline=" + std::to_string(seq);
-    if (!PushReplayStore::Instance().AppendReserved(player, sid, seq, "full_snapshot", payload)) {
-        std::printf("FAIL append reserved\n");
-        return 1;
+
+    // 2) seq 1、3 存在，缺 2 → ReplayAfter(1) NEED_SNAPSHOT
+    {
+        const uint64_t p = player + 2;
+        const std::string s = sid + "-gap2";
+        PushReplayStore::Instance().InvalidateSession(p, s);
+        if (PushReplayStore::Instance().AppendReliable(p, s, "push", "a") != 1)
+            return Fail("seq1");
+        if (PushReplayStore::Instance().ReserveSeq(p, s) != 2)
+            return Fail("reserve2");
+        if (PushReplayStore::Instance().AppendReliable(p, s, "push", "c") != 3)
+            return Fail("seq3");
+        std::vector<PushReplayEntry> out;
+        bool need = false;
+        if (PushReplayStore::Instance().ReplayAfter(p, s, 1, &out, &need) || !need)
+            return Fail("mid gap need snapshot");
     }
-    std::vector<PushReplayEntry> out;
-    bool need = false;
-    if (!PushReplayStore::Instance().ReplayAfter(player, sid, 0, &out, &need) || out.empty()) {
-        std::printf("FAIL replay snapshot\n");
-        return 1;
+
+    // 3) Reserve 与普通 Push 并发：不得静默漏消息（最终要么连续可回放，要么 NEED_SNAPSHOT）
+    {
+        const uint64_t p = player + 3;
+        const std::string s = sid + "-race";
+        PushReplayStore::Instance().InvalidateSession(p, s);
+        std::atomic<uint64_t> reserved{0};
+        std::thread t1([&]() {
+            reserved.store(PushReplayStore::Instance().ReserveSeq(p, s));
+        });
+        std::thread t2([&]() {
+            PushReplayStore::Instance().AppendReliable(p, s, "push", "race");
+        });
+        t1.join();
+        t2.join();
+        const uint64_t rseq = reserved.load();
+        if (rseq > 0) {
+            game::GameResponse inner;
+            auto *fs = inner.mutable_full_snapshot();
+            fs->set_ok(true);
+            fs->set_player_id(p);
+            fs->set_baseline_server_seq(rseq);
+            std::string payload;
+            inner.SerializeToString(&payload);
+            (void)PushReplayStore::Instance().AppendReserved(p, s, rseq, "full_snapshot", payload);
+        }
+        std::vector<PushReplayEntry> out;
+        bool need = false;
+        const bool ok = PushReplayStore::Instance().ReplayAfter(p, s, 0, &out, &need);
+        if (!ok && !need)
+            return Fail("race replay hard fail");
+        if (ok) {
+            uint64_t expect = 1;
+            for (const auto &e : out) {
+                if (e.server_seq != expect)
+                    return Fail("race silent gap");
+                ++expect;
+            }
+        }
     }
-    if (out[0].server_seq != seq || out[0].message_type != "full_snapshot" ||
-        out[0].payload != payload) {
-        std::printf("FAIL snapshot envelope mismatch seq=%llu payload=%s\n",
-                    (unsigned long long)out[0].server_seq, out[0].payload.c_str());
-        return 1;
+
+    // 4) 重复 AppendReserved 不产生重复条目
+    {
+        const uint64_t p = player + 4;
+        const std::string s = sid + "-dup";
+        PushReplayStore::Instance().InvalidateSession(p, s);
+        const uint64_t seq = PushReplayStore::Instance().ReserveSeq(p, s);
+        if (!PushReplayStore::Instance().AppendReserved(p, s, seq, "full_snapshot", "once"))
+            return Fail("append reserved");
+        if (!PushReplayStore::Instance().AppendReserved(p, s, seq, "full_snapshot", "once"))
+            return Fail("dup append should idempotent ok");
+        std::vector<PushReplayEntry> out;
+        bool need = false;
+        if (!PushReplayStore::Instance().ReplayAfter(p, s, 0, &out, &need) || need || out.size() != 1)
+            return Fail("dup append list size");
     }
-    // 错误 reserved seq 不得写入
-    if (PushReplayStore::Instance().AppendReserved(player, sid, seq + 99, "full_snapshot", "bad")) {
-        std::printf("FAIL mismatch should reject\n");
-        return 1;
+
+    // 5) ACK reserved-but-not-stored 被拒绝
+    {
+        const uint64_t p = player + 5;
+        const std::string s = sid + "-ackgap";
+        PushReplayStore::Instance().InvalidateSession(p, s);
+        if (PushReplayStore::Instance().ReserveSeq(p, s) != 1)
+            return Fail("ack reserve");
+        auto ar = PushReplayStore::Instance().Ack(p, s, 1);
+        if (ar.ok() || ar.status != PushReplayStore::AckStatus::Gap)
+            return Fail("ack gap rejected");
     }
-    std::printf("OK push_full_snapshot_test seq=%llu\n", (unsigned long long)seq);
+
+    // 6) 真实 FullSnapshot protobuf：envelope seq / baseline / replay 一致
+    {
+        const uint64_t p = player + 6;
+        const std::string s = sid + "-pb";
+        PushReplayStore::Instance().InvalidateSession(p, s);
+        const uint64_t seq = PushReplayStore::Instance().ReserveSeq(p, s);
+        if (seq == 0)
+            return Fail("pb reserve");
+
+        game::GameResponse inner;
+        auto *fs = inner.mutable_full_snapshot();
+        fs->set_ok(true);
+        fs->set_player_id(p);
+        fs->set_asset_version(7);
+        fs->set_baseline_server_seq(seq);
+        fs->add_item_ids(1001);
+        fs->add_item_counts(3);
+        std::string payload;
+        if (!inner.SerializeToString(&payload))
+            return Fail("serialize");
+
+        game::ServerPushEnvelope env;
+        env.set_server_seq(seq);
+        env.set_message_type("full_snapshot");
+        env.set_payload(payload);
+        env.set_reliable(true);
+
+        if (!PushReplayStore::Instance().AppendReserved(p, s, seq, "full_snapshot", payload))
+            return Fail("pb append");
+
+        std::vector<PushReplayEntry> out;
+        bool need = false;
+        if (!PushReplayStore::Instance().ReplayAfter(p, s, 0, &out, &need) || need || out.size() != 1)
+            return Fail("pb replay");
+        if (out[0].server_seq != seq || out[0].server_seq != env.server_seq())
+            return Fail("pb seq mismatch");
+
+        game::GameResponse decoded;
+        if (!decoded.ParseFromString(out[0].payload) || !decoded.has_full_snapshot())
+            return Fail("pb parse");
+        if (decoded.full_snapshot().baseline_server_seq() != seq)
+            return Fail("pb baseline mismatch");
+    }
+
+    std::printf("OK push_full_snapshot_test\n");
     return 0;
 }

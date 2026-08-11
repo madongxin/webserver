@@ -2,23 +2,51 @@
 set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
-# 集成项：依赖 Redis/MySQL 的必需测试；Redis 不可用必须失败（禁止 SKIP→成功）
-need_redis=0
-REDIS_PASS=""
-if [[ -f "$ROOT/config/redis.cnf" ]]; then
-  REDIS_PASS="$(grep -E '^password=' "$ROOT/config/redis.cnf" | head -1 | cut -d= -f2- || true)"
-fi
-if command -v redis-cli >/dev/null 2>&1; then
-  if [[ -n "$REDIS_PASS" ]]; then
-    redis-cli -a "$REDIS_PASS" ping 2>/dev/null | grep -q PONG && need_redis=1
-  else
-    redis-cli ping 2>/dev/null | grep -q PONG && need_redis=1
-  fi
-fi
-if [[ "$need_redis" -ne 1 ]]; then
-  echo "ERROR: Redis required for integration tests (redis-cli PING)"
+# 集成项：依赖 Redis/MySQL 的必需测试；Redis/MySQL 不可用必须失败（禁止 SKIP→成功）
+wait_redis() {
+  local pass="" i
+  [[ -f "$ROOT/config/redis.cnf" ]] && pass="$(grep -E '^password=' "$ROOT/config/redis.cnf" | head -1 | cut -d= -f2- || true)"
+  command -v redis-cli >/dev/null 2>&1 || { echo "ERROR: redis-cli missing"; exit 1; }
+  for i in $(seq 1 30); do
+    if [[ -n "$pass" ]]; then
+      redis-cli -a "$pass" --no-auth-warning ping 2>/dev/null | grep -q PONG && return 0
+    else
+      redis-cli ping 2>/dev/null | grep -q PONG && return 0
+    fi
+    sleep 1
+  done
+  echo "ERROR: Redis not ready after wait"
   exit 1
-fi
+}
+wait_mysql() {
+  local i
+  [[ -f "$ROOT/config/mysql.cnf" ]] || { echo "ERROR: config/mysql.cnf missing"; exit 1; }
+  command -v mysql >/dev/null 2>&1 || { echo "ERROR: mysql client missing"; exit 1; }
+  for i in $(seq 1 30); do
+    if python3 - <<'PY'
+import subprocess
+kv={}
+for line in open("config/mysql.cnf"):
+    line=line.strip()
+    if not line or line.startswith("#") or "=" not in line: continue
+    k,v=line.split("=",1); kv[k.strip()]=v.strip()
+host=kv.get("ip","127.0.0.1"); port=kv.get("port","3306")
+user=kv.get("username", kv.get("user","root")); pw=kv.get("password","")
+db=kv.get("dbname","metrics")
+cmd=["mysql","-h",host,"-P",str(port),"-u",user,db,"-e","SELECT 1"]
+if pw: cmd.insert(-2, f"-p{pw}")
+raise SystemExit(0 if subprocess.call(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)==0 else 1)
+PY
+    then
+      return 0
+    fi
+    sleep 1
+  done
+  echo "ERROR: MySQL not ready after wait"
+  exit 1
+}
+wait_redis
+wait_mysql
 ./scripts/test_placement.sh
 ./build/test/session_store_test
 ./build/test/player_transfer_test
@@ -35,6 +63,7 @@ if [[ ! -x ./build/test/gamedb_snapshot_idempotency_test ]]; then
 fi
 ./build/test/gamedb_snapshot_idempotency_test
 ./build/test/gamedb_mutation_idempotency_test
+./build/test/gamedb_mutation_atomicity_test
 ./build/test/gamedb_unknown_result_test
 if [[ -x ./build/test/phase3_gamedb_asset_test ]]; then
   ./build/test/phase3_gamedb_asset_test

@@ -59,7 +59,9 @@ EOF
 }
 
 log "check existing toolchain"
-./scripts/check_deps.sh --full || true
+if ! ./scripts/check_deps.sh --full; then
+  warn "pre-install check_deps incomplete (expected before first --build-brpc)"
+fi
 print_system_packages
 
 if [[ "$CHECK_ONLY" -eq 1 ]]; then

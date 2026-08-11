@@ -11,6 +11,15 @@ inline bool FormalModeEnabled() {
                  std::strcmp(v, "TRUE") == 0 || std::strcmp(v, "on") == 0);
 }
 
+/** 实验能力显式开关：仅当 env=1/true/on 时开启（默认关闭）。 */
+inline bool ExperimentalFeatureEnabled(const char *env_name) {
+    if (!env_name || !*env_name)
+        return false;
+    const char *v = std::getenv(env_name);
+    return v && (std::strcmp(v, "1") == 0 || std::strcmp(v, "true") == 0 ||
+                 std::strcmp(v, "TRUE") == 0 || std::strcmp(v, "on") == 0);
+}
+
 /** 危险 HTTP 管理接口：默认关闭；GAMEMESH_ENABLE_ADMIN=1 开启。 */
 inline bool AdminHttpEnabled() {
     const char *v = std::getenv("GAMEMESH_ENABLE_ADMIN");

@@ -140,8 +140,11 @@ bool GameLogicBrpcServer::Start(const std::string &listen_addr, int idle_timeout
 void GameLogicBrpcServer::Stop() {
     if (!server_)
         return;
+    // 先排空玩家串行队列，再停 brpc，避免 callback 在 Stop 后改状态
+    PlayerSerialQueue::Instance().BeginDrain(std::chrono::milliseconds(3000));
     server_->Stop(0);
     server_->Join();
+    PlayerSerialQueue::Instance().Stop();
     server_.reset();
     service_.reset();
     gl_service_.reset();

@@ -66,6 +66,7 @@ fd0=0
 thr0=0
 
 sample_once() {
+  # 在父 shell 更新 rss0/fd0/thr0/proc_exits（禁止命令替换子 shell）
   local rss=0 fd=0 thr=0 dead=0
   if [[ -f "$RUN_DIR/pids" ]]; then
     while read -r p; do
@@ -81,24 +82,26 @@ sample_once() {
   fi
   echo "$(date -u +%H:%M:%S) rss_kb=$rss fd=$fd threads=$thr ok=$ok fail=$fail dead=$dead" >>"$SAMPLE_LOG"
   if [[ "$rss0" -eq 0 ]]; then
-    rss0=$rss; fd0=$fd; thr0=$thr
+    rss0=$rss
+    fd0=$fd
+    thr0=$thr
   fi
+  rss_end=$rss
+  fd_end=$fd
+  thr_end=$thr
   if (( dead > 0 )); then
     proc_exits=$((proc_exits + dead))
     echo "ERROR: process exit detected dead=$dead" >&2
     return 1
   fi
-  # 粗泄漏：RSS 增长 > 8x 且绝对值 > 2GB
-  if (( rss > rss0 * 8 && rss > 2000000 )); then
+  if (( rss0 > 0 && rss > rss0 * 8 && rss > 2000000 )); then
     echo "ERROR: RSS growth suspicious rss0=$rss0 rss=$rss" >&2
     return 1
   fi
-  # 持续增长：相对起点 RSS>3x 且 FD>2x 且线程>2x（长 soak 防呆）
-  if (( DUR >= 1800 && rss > rss0 * 3 && fd > fd0 * 2 && thr > thr0 * 2 && rss > 500000 )); then
+  if (( DUR >= 1800 && rss0 > 0 && rss > rss0 * 3 && fd > fd0 * 2 && thr > thr0 * 2 && rss > 500000 )); then
     echo "ERROR: sustained growth rss=$rss/$rss0 fd=$fd/$fd0 thr=$thr/$thr0" >&2
     return 1
   fi
-  echo "$rss $fd $thr"
   return 0
 }
 
@@ -106,10 +109,11 @@ next_sample=$start
 rss_end=0
 fd_end=0
 thr_end=0
+sample_once || exit 1
 while (( $(date +%s) < end )); do
   now=$(date +%s)
   if (( now >= next_sample )); then
-    read -r rss_end fd_end thr_end <<<"$(sample_once)" || exit 1
+    sample_once || exit 1
     next_sample=$((now + SAMPLE))
   fi
   t0=$(date +%s%N)
@@ -126,7 +130,7 @@ while (( $(date +%s) < end )); do
     (( ms >= 8000 )) && timeout_n=$((timeout_n + 1))
   fi
 done
-read -r rss_end fd_end thr_end <<<"$(sample_once)" || true
+sample_once || exit 1
 
 total=$((ok + fail))
 rate=0

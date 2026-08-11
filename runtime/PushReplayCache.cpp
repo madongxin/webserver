@@ -38,21 +38,36 @@ bool PushReplayCache::ReplayAfter(uint64_t player_id, uint64_t last_acked_seq,
     std::lock_guard<std::mutex> lk(mu_);
     auto it = by_player_.find(player_id);
     if (it == by_player_.end() || it->second.empty()) {
-        if (last_acked_seq == 0)
-            return true;
-        if (need_snapshot)
-            *need_snapshot = true;
-        return false;
+        auto nit = next_seq_.find(player_id);
+        const uint64_t cur = nit != next_seq_.end() ? nit->second : 0;
+        if (cur > last_acked_seq) {
+            if (need_snapshot)
+                *need_snapshot = true;
+            return false;
+        }
+        return true;
     }
     const auto &q = it->second;
-    if (last_acked_seq + 1 < q.front().server_seq) {
+    uint64_t expected = last_acked_seq + 1;
+    for (const auto &e : q) {
+        if (e.server_seq <= last_acked_seq)
+            continue;
+        if (e.server_seq > expected) {
+            if (need_snapshot)
+                *need_snapshot = true;
+            return false;
+        }
+        if (e.server_seq == expected) {
+            out->push_back(e);
+            ++expected;
+        }
+    }
+    auto nit = next_seq_.find(player_id);
+    const uint64_t cur = nit != next_seq_.end() ? nit->second : 0;
+    if (cur >= expected) {
         if (need_snapshot)
             *need_snapshot = true;
         return false;
-    }
-    for (const auto &e : q) {
-        if (e.server_seq > last_acked_seq)
-            out->push_back(e);
     }
     return true;
 }
