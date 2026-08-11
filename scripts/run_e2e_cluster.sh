@@ -66,6 +66,14 @@ if [[ -n "$SESSION_BIN" ]]; then
   pid=$!
   echo "$pid" >>"$GAMEMESH_RUN_DIR/pids"
   e2e_inv_append session sess-1 "$pid" "127.0.0.1:${GAMEMESH_SESSION2}" "$GAMEMESH_HTTP_S2" -
+  # Gateway Auth RR 含 sess-1：须等端口就绪，否则首批 Register 会 Connection refused
+  for _ in $(seq 1 50); do
+    if (echo >/dev/tcp/127.0.0.1/"${GAMEMESH_SESSION2}") >/dev/null 2>&1; then
+      break
+    fi
+    sleep 0.2
+  done
+  sleep 0.5
 fi
 
 # 写出客户端端口约定
@@ -87,3 +95,7 @@ EOF
 echo "run_e2e_cluster.sh PASS"
 echo "  source $GAMEMESH_RUN_DIR/E2E_PORTS.env"
 echo "  game ports: $GAMEMESH_GAME_G0 / $GAMEMESH_GAME_G1"
+
+# 额外等待：双 Session + Gateway 热通道（失败不阻断启动，由调用方 warm 登录探测）
+sleep 1
+

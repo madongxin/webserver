@@ -18,6 +18,23 @@ if [[ "${START_CLUSTER:-0}" == "1" ]]; then
   fi
   ./scripts/run_e2e_cluster.sh
   sleep 2
+  # 冷启动：等 Register/Login 真正可用（避免 Auth RR / GameDB 通道未热）
+  CLIENT="${ROOT}/build/test/game_tcp_e2e_client"
+  # shellcheck disable=SC1090
+  [[ -f "$GAMEMESH_RUN_DIR/E2E_PORTS.env" ]] && source "$GAMEMESH_RUN_DIR/E2E_PORTS.env"
+  GW="${E2E_GW0_GAME:-19081}"
+  ready=0
+  for _ in $(seq 1 60); do
+    if [[ -x "$CLIENT" ]] && "$CLIENT" register-login 127.0.0.1 "$GW" "e2e_warm_$$_$_" e2epass1 2>/dev/null | grep -q login_ok=1; then
+      ready=1
+      break
+    fi
+    sleep 1
+  done
+  if [[ "$ready" -ne 1 ]]; then
+    echo "ERROR: cluster started but register-login not ready within 60s" >&2
+    exit 1
+  fi
 elif [[ ! -f "${GAMEMESH_RUN_DIR:-$ROOT/run/e2e}/pids" ]]; then
   export GAMEMESH_RUN_DIR="${GAMEMESH_RUN_DIR:-$ROOT/run/e2e}"
   ./scripts/run_e2e_cluster.sh

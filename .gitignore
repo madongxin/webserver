@@ -1,5 +1,9 @@
 # Build / CMake
 build/
+build-release/
+build-asan/
+build-ubsan/
+build-tsan/
 out/
 CMakeFiles/
 CMakeCache.txt
