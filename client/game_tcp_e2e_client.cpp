@@ -196,10 +196,10 @@ bool DoEnterMap(int fd, SessionState *st, uint64_t map_tpl, uint64_t map_inst) {
     PrintKv("route_version", rsp.enter_map().route_version());
     PrintKv("enter_map_ok", true);
 
-    // 可能紧随可靠 Push（enter_map_notify）
+    // 可能紧随可靠 Push（enter_map_notify）；短超时避免压测把空等算进失败
     for (int i = 0; i < 3; ++i) {
         game::GameResponse push;
-        if (!RecvFrame(fd, &push, 1500))
+        if (!RecvFrame(fd, &push, 200))
             break;
         if (push.message() == "enter_map_notify" || push.has_enter_map()) {
             st->last_server_seq = 1;  // ReplayStore 从 1 起；精确 seq 由 reconnect 侧验证
@@ -240,7 +240,7 @@ bool DoReconnect(int fd, SessionState *st, uint64_t last_seq, int *replay_n, boo
     int n = 0;
     for (int i = 0; i < 8; ++i) {
         game::GameResponse push;
-        if (!RecvFrame(fd, &push, 1200))
+        if (!RecvFrame(fd, &push, 200))
             break;
         ++n;
         PrintKv("replay_frame", static_cast<uint64_t>(n));
@@ -365,7 +365,7 @@ int CmdDualGw(int argc, char **argv) {
     // 故意不 PushAck，关闭连接触发 MarkDisconnected
     ::close(fd0);
     PrintKv("gw0_closed", 1);
-    ::usleep(300000);  // 300ms 宽限断线落库
+    ::usleep(80000);  // 80ms：覆盖 MarkDisconnected/Unbind 落库，避免压测空等
 
     const int fd1 = Connect(h1, p1);
     if (fd1 < 0) {
