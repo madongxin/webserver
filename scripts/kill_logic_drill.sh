@@ -59,12 +59,13 @@ fi
 "${RCLI[@]}" DEL "${PREFIX}svc:gamelogic:gl-0" >/dev/null 2>&1 || true
 "${RCLI[@]}" SREM "${PREFIX}svcidx:gamelogic" gl-0 >/dev/null 2>&1 || true
 
-# 加速本 map 的 lease 过期，仍由 PlacementRecoveryScheduler 自动 Migrate（非手工 drill）
-if [[ "${AUTO_RECOVER:-0}" == "1" ]]; then
-  "${RCLI[@]}" HSET "$KEY" leaseUntil 1 >/dev/null || true
-fi
+# 加速本 map 的 lease 过期
+"${RCLI[@]}" HSET "$KEY" leaseUntil 1 >/dev/null || true
 
-if [[ "${AUTO_RECOVER:-0}" == "1" ]]; then
+if [[ "${RESOLVE_RECLAIM:-0}" == "1" ]]; then
+  # 稳定路径：不 MarkRecovering / 不启用实验调度器；靠 ResolveOrCreate 硬 reclaim
+  "$DRILL_BIN" resolve-reclaim "$MAP_ID" "$NEW_OWNER"
+elif [[ "${AUTO_RECOVER:-0}" == "1" ]]; then
   ok=0
   # 默认扫描积压时可能多轮 Tick；最多约 2 分钟
   for _ in $(seq 1 "${RECOVER_POLL_SEC:-120}"); do
@@ -89,4 +90,4 @@ NEW_EPOCH="$("${RCLI[@]}" HGET "$KEY" ownerEpoch)"
 NEW_OWNER_GOT="$("${RCLI[@]}" HGET "$KEY" ownerLogicServerId)"
 [[ "$NEW_OWNER_GOT" == "$NEW_OWNER" ]]
 [[ "$NEW_EPOCH" -gt "$OLD_EPOCH" ]]
-echo "kill_logic_drill.sh PASS auto=${AUTO_RECOVER:-0}"
+echo "kill_logic_drill.sh PASS auto=${AUTO_RECOVER:-0} resolve_reclaim=${RESOLVE_RECLAIM:-0}"

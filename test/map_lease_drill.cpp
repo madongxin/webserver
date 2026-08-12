@@ -1,6 +1,8 @@
 /**
- * 阶段 4 演练辅助：MarkRecovering + Migrate，校验 epoch 递增。
- * 用法：map_lease_drill <map_id> <new_owner> [expect_old_epoch]
+ * 阶段 4 / 稳定评估阶段二演练辅助。
+ * 用法：
+ *   map_lease_drill <map_id> <new_owner> [expect_old_epoch]   # MarkRecovering+Migrate
+ *   map_lease_drill resolve-reclaim <map_id> <healthy_owner>  # 不 MarkRecovering，靠 Resolve 硬 reclaim
  */
 #include "PlacementStore.h"
 #include "RedisConfigPath.h"
@@ -50,20 +52,71 @@ bool InitRedis() {
     return RedisPool::Instance().Init(host, port, password, 4);
 }
 
+int RunResolveReclaim(uint64_t map_id, const std::string &healthy_owner) {
+    PlacementRecord before;
+    if (!PlacementStore::Instance().Get(map_id, &before)) {
+        std::fprintf(stderr, "map not found\n");
+        return 1;
+    }
+    PlacementStore::Instance().SetLogicOwners({healthy_owner});
+    ResolveOrCreateInput in;
+    in.realm_id = before.realm_id;
+    in.map_template_id = before.map_template_id;
+    in.map_instance_id = map_id;
+    in.preferred_owner = healthy_owner;
+    ResolveOrCreateResult out;
+    if (!PlacementStore::Instance().ResolveOrCreate(in, &out) || !out.ok) {
+        std::fprintf(stderr, "ResolveOrCreate failed: %s\n", out.message.c_str());
+        return 1;
+    }
+    if (out.placement.owner_epoch <= before.owner_epoch ||
+        out.placement.owner_logic_server_id != healthy_owner) {
+        std::fprintf(stderr, "resolve-reclaim invalid epoch=%llu owner=%s (want >%llu %s)\n",
+                     (unsigned long long)out.placement.owner_epoch,
+                     out.placement.owner_logic_server_id.c_str(),
+                     (unsigned long long)before.owner_epoch, healthy_owner.c_str());
+        return 1;
+    }
+    int64_t until = 0;
+    if (PlacementStore::Instance().Heartbeat(map_id, before.owner_logic_server_id,
+                                             before.owner_epoch, 30, &until)) {
+        std::fprintf(stderr, "old owner heartbeat should fail\n");
+        return 1;
+    }
+    std::printf("OK resolve-reclaim map=%llu %s epoch %llu -> %llu owner=%s\n",
+                (unsigned long long)map_id, before.owner_logic_server_id.c_str(),
+                (unsigned long long)before.owner_epoch,
+                (unsigned long long)out.placement.owner_epoch,
+                out.placement.owner_logic_server_id.c_str());
+    return 0;
+}
+
 }  // namespace
 
 int main(int argc, char **argv) {
     if (argc < 3) {
-        std::fprintf(stderr, "usage: %s <map_id> <new_owner> [expect_old_epoch]\n", argv[0]);
+        std::fprintf(stderr,
+                     "usage: %s <map_id> <new_owner> [expect_old_epoch]\n"
+                     "       %s resolve-reclaim <map_id> <healthy_owner>\n",
+                     argv[0], argv[0]);
         return 2;
     }
-    const uint64_t map_id = std::strtoull(argv[1], nullptr, 10);
-    const std::string new_owner = argv[2];
-    const uint64_t expect_old = argc > 3 ? std::strtoull(argv[3], nullptr, 10) : 0;
     if (!InitRedis() || !PlacementStore::Instance().InitFromSessionPrefix("gamemesh:dev:")) {
         std::fprintf(stderr, "redis/placement init failed\n");
         return 1;
     }
+
+    if (std::string(argv[1]) == "resolve-reclaim") {
+        if (argc < 4) {
+            std::fprintf(stderr, "usage: %s resolve-reclaim <map_id> <healthy_owner>\n", argv[0]);
+            return 2;
+        }
+        return RunResolveReclaim(std::strtoull(argv[2], nullptr, 10), argv[3]);
+    }
+
+    const uint64_t map_id = std::strtoull(argv[1], nullptr, 10);
+    const std::string new_owner = argv[2];
+    const uint64_t expect_old = argc > 3 ? std::strtoull(argv[3], nullptr, 10) : 0;
     PlacementRecord before;
     if (!PlacementStore::Instance().Get(map_id, &before)) {
         std::fprintf(stderr, "map not found\n");
@@ -91,7 +144,6 @@ int main(int argc, char **argv) {
                      (unsigned long long)mig.owner_epoch, mig.owner_logic_server_id.c_str());
         return 1;
     }
-    // 旧 epoch Heartbeat 必须失败
     int64_t until = 0;
     if (PlacementStore::Instance().Heartbeat(map_id, before.owner_logic_server_id,
                                              before.owner_epoch, 30, &until)) {

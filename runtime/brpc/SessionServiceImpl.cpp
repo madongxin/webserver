@@ -2,9 +2,12 @@
 
 #include "Logging.h"
 #include "PlacementStore.h"
+#include "RedisServiceRegistry.h"
 #include "SessionStore.h"
 
 #include <brpc/controller.h>
+
+#include <vector>
 
 namespace {
 
@@ -20,6 +23,25 @@ void FillPlacementPb(const PlacementRecord &r, sess::PlacementRecord *pb) {
     pb->set_state(PlacementStore::StateToString(r.state));
     pb->set_updated_at(r.updated_at);
     pb->set_lease_until(r.lease_until);
+}
+
+/** Resolve 前刷新健康 Logic，避免死 Owner 仍被软续租 */
+void RefreshHealthyLogicOwners() {
+    if (!RedisServiceRegistry::Get().ready())
+        return;
+    std::vector<IServiceRegistry::ServiceInstance> insts;
+    if (!RedisServiceRegistry::Get().Discover("gamelogic", &insts) || insts.empty())
+        return;
+    std::vector<std::string> ids;
+    ids.reserve(insts.size());
+    for (const auto &i : insts) {
+        if (!i.instance_id.empty())
+            ids.push_back(i.instance_id);
+    }
+    if (ids.empty())
+        return;
+    SessionStore::Instance().SetLogicInstanceIds(ids);
+    PlacementStore::Instance().SetLogicOwners(std::move(ids));
 }
 
 }  // namespace
@@ -180,6 +202,7 @@ void SessionServiceImpl::ResolveOrCreateMap(::google::protobuf::RpcController *c
     (void)controller;
     brpc::ClosureGuard done_guard(done);
     response->Clear();
+    RefreshHealthyLogicOwners();
     ResolveOrCreateInput in;
     in.realm_id = request->realm_id();
     in.map_template_id = request->map_template_id();

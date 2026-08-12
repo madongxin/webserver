@@ -36,6 +36,9 @@ fi
 if [[ -x "$BIN/channel_snapshot_race_test" ]]; then
   run_one channel_snapshot_race_test
 fi
+if [[ -x "$BIN/gateway_disconnect_async_test" ]]; then
+  run_one gateway_disconnect_async_test
+fi
 run_one gateway_conn_race_test
 run_one discovery_ha_test
 run_one push_replay_cache_test

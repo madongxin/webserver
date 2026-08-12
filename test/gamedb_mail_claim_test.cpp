@@ -1,19 +1,19 @@
 /**
  * @file gamedb_mail_claim_test.cpp
- * @brief 阶段 4：GameDB 邮件领取幂等 + outbox + 提交后重复请求不重复入账
+ * @brief 阶段 4 / 稳定评估阶段1：邮件领取写入正式 player_asset_bag + 幂等/崩溃重试
  *
  * 运行：./build/test/gamedb_mail_claim_test
  */
 
 #include "AsyncMysqlGameDbRepository.h"
 #include "ConnectionPool.h"
+#include "GameDbAssetStore.h"
 #include "GameDbOutbox.h"
 #include "GameLogic.h"
 #include "Logging.h"
 #include "MailService.h"
 #include "MailStore.h"
 #include "MailTypes.h"
-#include "PlayerItemStore.h"
 #include "game.pb.h"
 
 #include <mysql/mysql.h>
@@ -22,6 +22,7 @@
 #include <chrono>
 #include <cstdio>
 #include <cstdlib>
+#include <map>
 #include <sstream>
 #include <string>
 #include <thread>
@@ -44,20 +45,21 @@ int64_t NowMs() {
     return duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count();
 }
 
-int CountMailAssetRows(uint64_t mail_id) {
-    auto conn = ConnectionPool::getconnectionPool()->getConnection();
-    if (!conn)
-        return -1;
-    std::ostringstream sql;
-    sql << "SELECT COUNT(*) FROM player_item WHERE JSON_EXTRACT(extra_data,'$.mail_id')="
-        << mail_id;
-    MYSQL_RES *res = conn->query(sql.str());
-    if (!res)
-        return -1;
-    MYSQL_ROW row = mysql_fetch_row(res);
-    const int n = row && row[0] ? std::atoi(row[0]) : 0;
-    mysql_free_result(res);
-    return n;
+uint32_t BagCount(uint64_t player_id, uint32_t item_id) {
+    std::map<uint32_t, uint32_t> bag;
+    uint64_t ver = 0;
+    if (!GameDbAssetStore::Instance().LoadInventory(player_id, &bag, &ver))
+        return 0;
+    auto it = bag.find(item_id);
+    return it == bag.end() ? 0 : it->second;
+}
+
+uint64_t BagVersion(uint64_t player_id) {
+    uint64_t ver = 0;
+    bool exists = false;
+    if (!GameDbAssetStore::Instance().LoadMeta(player_id, &ver, &exists) || !exists)
+        return 0;
+    return ver;
 }
 
 uint64_t DeliverTestMail(uint64_t player_id, uint32_t item_id, int count, const std::string &biz) {
@@ -68,7 +70,7 @@ uint64_t DeliverTestMail(uint64_t player_id, uint32_t item_id, int count, const 
     d.receiver_id = player_id;
     d.category = "SYSTEM";
     d.title = "gamedb claim";
-    d.body = "phase4";
+    d.body = "phase1_asset";
     d.sender_name = "Test";
     mail::DeliverAttachment a;
     a.asset_type = "ITEM";
@@ -95,12 +97,13 @@ int main() {
         std::fprintf(stderr, "FAIL: MailService::Init\n");
         return 1;
     }
-    PlayerItemStore::Instance().EnsureTable();
+    EXPECT_TRUE(GameDbAssetStore::Instance().EnsureTables());
     EXPECT_TRUE(AsyncMysqlGameDbRepository::Instance().started());
 
     const uint32_t item_id = 2101;
+    const uint32_t seed_item = 2102;
 
-    // ---------- A: 首次领取 + outbox + 幂等重试不重复入账 ----------
+    // ---------- A: 首次领取写入正式 bag + outbox + 幂等重试不重复入账 ----------
     {
         const uint64_t player_id = 910001;
         const std::string biz = "gamedb_idem_" + std::to_string(NowMs());
@@ -110,7 +113,9 @@ int main() {
             return 1;
 
         const std::string idem = "gamedb_claim_" + std::to_string(mail_id);
-        const uint32_t bag_before = GameLogic::Instance().GetItemCount(player_id, item_id);
+        const uint32_t bag_before = BagCount(player_id, item_id);
+        const uint32_t mem_before = GameLogic::Instance().GetItemCount(player_id, item_id);
+        const uint64_t ver_before = BagVersion(player_id);
 
         game::GameResponse rsp1;
         game::MailClaimReq req1;
@@ -121,19 +126,19 @@ int main() {
         EXPECT_TRUE(MailService::Instance().HandleMailClaim(req1, &rsp1));
         EXPECT_TRUE(rsp1.ok());
         EXPECT_TRUE(rsp1.mail_claim().result().error_code() == mail::err::kOk);
-        EXPECT_TRUE(CountMailAssetRows(mail_id) == 1);
+        EXPECT_TRUE(BagCount(player_id, item_id) == bag_before + 5);
+        EXPECT_TRUE(BagVersion(player_id) == (ver_before == 0 ? 2 : ver_before + 1));
         EXPECT_TRUE(GameDbOutbox::Instance().CountByIdempotency(idem) == 1);
-        EXPECT_TRUE(GameLogic::Instance().GetItemCount(player_id, item_id) == bag_before + 5);
+        EXPECT_TRUE(GameLogic::Instance().GetItemCount(player_id, item_id) == mem_before + 5);
 
-        const uint32_t bag_mid = GameLogic::Instance().GetItemCount(player_id, item_id);
+        const uint32_t bag_mid = BagCount(player_id, item_id);
         game::GameResponse rsp2;
         game::MailClaimReq req2 = req1;
         req2.set_trace_id("t2");
         EXPECT_TRUE(MailService::Instance().HandleMailClaim(req2, &rsp2));
         EXPECT_TRUE(rsp2.ok());
-        EXPECT_TRUE(CountMailAssetRows(mail_id) == 1);
+        EXPECT_TRUE(BagCount(player_id, item_id) == bag_mid);
         EXPECT_TRUE(GameDbOutbox::Instance().CountByIdempotency(idem) == 1);
-        EXPECT_TRUE(GameLogic::Instance().GetItemCount(player_id, item_id) == bag_mid);
 
         const int published = AsyncMysqlGameDbRepository::Instance().PublishOnceForTest(10);
         EXPECT_TRUE(published >= 1);
@@ -146,6 +151,7 @@ int main() {
         const uint64_t mail_id = DeliverTestMail(pid, item_id, 2, biz);
         EXPECT_TRUE(mail_id > 0);
         const std::string idem = "gamedb_crash_" + std::to_string(mail_id);
+        const uint32_t before = BagCount(pid, item_id);
 
         GameDbMailClaimRequest db_req;
         db_req.player_id = pid;
@@ -156,23 +162,66 @@ int main() {
         auto first = AsyncMysqlGameDbRepository::Instance().ClaimMailAttachments(db_req);
         EXPECT_TRUE(first.ok);
         EXPECT_TRUE(first.should_apply_memory);
-        EXPECT_TRUE(CountMailAssetRows(mail_id) == 1);
+        EXPECT_TRUE(BagCount(pid, item_id) == before + 2);
 
         auto second = AsyncMysqlGameDbRepository::Instance().ClaimMailAttachments(db_req);
         EXPECT_TRUE(second.ok);
         EXPECT_TRUE(second.idempotent_hit);
         EXPECT_TRUE(!second.should_apply_memory);
-        EXPECT_TRUE(CountMailAssetRows(mail_id) == 1);
+        EXPECT_TRUE(BagCount(pid, item_id) == before + 2);
         EXPECT_TRUE(GameDbOutbox::Instance().CountByIdempotency(idem) == 1);
     }
 
-    // ---------- C: 并发同 key ----------
+    // ---------- C: 已有正式背包 → 领邮件 → 模拟 kill/relogin 只从 bag 恢复 ----------
+    {
+        const uint64_t pid = 910004;
+        GameDbAssetStore::MutationResult seed;
+        const std::string seed_key = "mail_seed_" + std::to_string(NowMs());
+        EXPECT_TRUE(GameDbAssetStore::Instance().ApplyMutation(pid, seed_key, 0, "GRANT", seed_item,
+                                                               7, &seed) &&
+                    seed.ok);
+        const uint32_t seed_before = BagCount(pid, seed_item);
+        EXPECT_TRUE(seed_before >= 7);
+
+        const std::string biz = "gamedb_relogin_" + std::to_string(NowMs());
+        const uint64_t mail_id = DeliverTestMail(pid, item_id, 4, biz);
+        EXPECT_TRUE(mail_id > 0);
+        const std::string idem = "gamedb_relogin_" + std::to_string(mail_id);
+        const uint32_t reward_before = BagCount(pid, item_id);
+
+        GameDbMailClaimRequest db_req;
+        db_req.player_id = pid;
+        db_req.mail_id = mail_id;
+        db_req.idempotency_key = idem;
+        db_req.trace_id = "relogin1";
+        auto first = AsyncMysqlGameDbRepository::Instance().ClaimMailAttachments(db_req);
+        EXPECT_TRUE(first.ok);
+        EXPECT_TRUE(first.should_apply_memory);
+        EXPECT_TRUE(BagCount(pid, item_id) == reward_before + 4);
+        EXPECT_TRUE(BagCount(pid, seed_item) == seed_before);
+
+        // 模拟 GameLogic 崩溃：不 ApplyClaimMemory；重登只读正式 bag
+        std::map<uint32_t, uint32_t> reloaded;
+        uint64_t ver = 0;
+        EXPECT_TRUE(GameDbAssetStore::Instance().LoadInventory(pid, &reloaded, &ver));
+        EXPECT_TRUE(reloaded[item_id] == reward_before + 4);
+        EXPECT_TRUE(reloaded[seed_item] == seed_before);
+
+        auto second = AsyncMysqlGameDbRepository::Instance().ClaimMailAttachments(db_req);
+        EXPECT_TRUE(second.ok);
+        EXPECT_TRUE(second.idempotent_hit);
+        EXPECT_TRUE(!second.should_apply_memory);
+        EXPECT_TRUE(BagCount(pid, item_id) == reward_before + 4);
+    }
+
+    // ---------- D: 并发同 key ----------
     {
         const uint64_t pid = 910003;
         const std::string biz = "gamedb_conc_" + std::to_string(NowMs());
         const uint64_t mail_id = DeliverTestMail(pid, item_id, 3, biz);
         EXPECT_TRUE(mail_id > 0);
         const std::string idem = "gamedb_conc_" + std::to_string(mail_id);
+        const uint32_t before = BagCount(pid, item_id);
         std::atomic<int> ok_n{0};
         std::vector<std::thread> ths;
         for (int i = 0; i < 8; ++i) {
@@ -190,7 +239,7 @@ int main() {
         for (auto &t : ths)
             t.join();
         EXPECT_TRUE(ok_n.load() >= 1);
-        EXPECT_TRUE(CountMailAssetRows(mail_id) == 1);
+        EXPECT_TRUE(BagCount(pid, item_id) == before + 3);
         EXPECT_TRUE(GameDbOutbox::Instance().CountByIdempotency(idem) == 1);
     }
 
@@ -198,7 +247,6 @@ int main() {
 
     if (g_fail) {
         std::fprintf(stderr, "FAILED %d checks\n", g_fail);
-        // ConnectionPool 后台线程会拖死静态析构，直接退出
         std::_Exit(1);
     }
     std::printf("OK gamedb_mail_claim_test\n");

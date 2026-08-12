@@ -9,6 +9,7 @@
 
 #include <algorithm>
 #include <atomic>
+#include <memory>
 
 GatewayAuthClients &GatewayAuthClients::Instance() {
     static GatewayAuthClients g;
@@ -347,6 +348,40 @@ bool GatewayAuthClients::UnbindPlayer(const std::string &logic_instance_id,
     brpc::Controller cntl;
     stub.UnbindPlayer(&cntl, &req, rsp, nullptr);
     return !cntl.Failed();
+}
+
+void GatewayAuthClients::UnbindPlayerAsync(const std::string &logic_instance_id,
+                                           const glrpc::UnbindPlayerRequest &req) {
+    auto ch = SharedLogicChannel(logic_instance_id);
+    if (!ch)
+        return;
+    struct UnbindCtx {
+        brpc::Controller cntl;
+        glrpc::UnbindPlayerRequest req;
+        glrpc::UnbindPlayerResponse rsp;
+        std::shared_ptr<brpc::Channel> channel_keep;
+        std::string logic_id;
+        uint64_t player_id = 0;
+    };
+    auto *ctx = new UnbindCtx();
+    ctx->channel_keep = ch;
+    ctx->logic_id = logic_instance_id;
+    ctx->player_id = req.player_id();
+    ctx->req = req;
+    glrpc::GameLogicService_Stub stub(ch.get());
+    stub.UnbindPlayer(&ctx->cntl, &ctx->req, &ctx->rsp,
+                      brpc::NewCallback(
+                          +[](UnbindCtx *c) {
+                              std::unique_ptr<UnbindCtx> guard(c);
+                              if (c->cntl.Failed() || !c->rsp.ok()) {
+                                  LOG_WARN << "UnbindPlayerAsync failed player=" << c->player_id
+                                           << " logic=" << c->logic_id
+                                           << " err="
+                                           << (c->cntl.Failed() ? c->cntl.ErrorText()
+                                                                : c->rsp.message());
+                              }
+                          },
+                          ctx));
 }
 
 bool GatewayAuthClients::FreezePlayer(const std::string &logic_instance_id,

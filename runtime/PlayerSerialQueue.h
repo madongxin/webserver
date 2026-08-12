@@ -10,7 +10,6 @@
 #include <mutex>
 #include <thread>
 #include <unordered_map>
-#include <unordered_set>
 #include <vector>
 
 /**
@@ -59,16 +58,17 @@ public:
     void Post(uint64_t player_id, std::function<void()> task);
 
     /**
-     * 在任务内调用：标记该玩家异步在途，释放 shard worker；
+     * 在任务内调用：标记该玩家进入一段异步（depth++），释放 shard worker；
      * 同玩家后续 TryPost 进入 deferred，保证有序。
      */
     void MarkAsyncInFlight(uint64_t player_id);
 
-    /** 异步完成时调用：清 inflight 并将 deferred 拼回主队列 */
+    /** 异步链结束：depth--；归零时将 deferred 拼回主队列 */
     void ClearAsyncInFlight(uint64_t player_id);
 
     /**
-     * 异步完成投递：completion 插到队首，再拼回 deferred。
+     * 异步完成投递：completion 插到队首；depth 在 completion 执行后再减一。
+     * 若 completion 内再次 MarkAsyncInFlight（链式异步），deferred 不会被提前释放。
      * RUNNING/DRAINING：入队并返回 true（不受外部 max_global 限制）。
      * STOPPED：不执行 completion，返回 false（调用方应取消 done，勿改玩家状态）。
      */
@@ -90,7 +90,8 @@ private:
         std::condition_variable cv;
         std::deque<std::function<void()>> q;
         std::unordered_map<uint64_t, std::deque<std::function<void()>>> deferred;
-        std::unordered_set<uint64_t> async_inflight;
+        /** 同玩家异步嵌套深度；>0 时 TryPost 进 deferred */
+        std::unordered_map<uint64_t, int> async_depth;
         bool stop = false;
         int inflight = 0;
         std::thread worker;
@@ -100,6 +101,8 @@ private:
     static size_t ShardIndex(uint64_t player_id, size_t n);
     Shard *ShardFor(uint64_t player_id);
     void WaitUntilDrainedOrDeadline(std::chrono::steady_clock::time_point deadline);
+    /** 持有 shard->mu：完成一层异步；归零时 splice deferred */
+    void FinishAsyncLevelLocked(Shard *shard, uint64_t player_id);
 
     std::mutex life_mu_;
     std::atomic<LifeState> life_{LifeState::kStopped};

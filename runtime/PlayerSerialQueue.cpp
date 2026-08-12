@@ -33,6 +33,32 @@ void PlayerSerialQueue::SetLimits(size_t max_per_shard, size_t max_global) {
         max_global_ = max_global;
 }
 
+void PlayerSerialQueue::FinishAsyncLevelLocked(Shard *shard, uint64_t player_id) {
+    auto it = shard->async_depth.find(player_id);
+    if (it == shard->async_depth.end()) {
+        auto dit = shard->deferred.find(player_id);
+        if (dit != shard->deferred.end()) {
+            while (!dit->second.empty()) {
+                shard->q.push_back(std::move(dit->second.front()));
+                dit->second.pop_front();
+            }
+            shard->deferred.erase(dit);
+        }
+        return;
+    }
+    if (--(it->second) > 0)
+        return;
+    shard->async_depth.erase(it);
+    auto dit = shard->deferred.find(player_id);
+    if (dit != shard->deferred.end()) {
+        while (!dit->second.empty()) {
+            shard->q.push_back(std::move(dit->second.front()));
+            dit->second.pop_front();
+        }
+        shard->deferred.erase(dit);
+    }
+}
+
 void PlayerSerialQueue::Start(int shard_count) {
     std::lock_guard<std::mutex> lk(life_mu_);
     if (life_.load(std::memory_order_relaxed) != LifeState::kStopped)
@@ -63,10 +89,10 @@ void PlayerSerialQueue::WaitUntilDrainedOrDeadline(std::chrono::steady_clock::ti
         size_t pending_tasks = 0;
         for (auto &s : shards_) {
             std::lock_guard<std::mutex> qlk(s->mu);
-            if (!s->q.empty() || s->inflight != 0 || !s->async_inflight.empty() ||
+            if (!s->q.empty() || s->inflight != 0 || !s->async_depth.empty() ||
                 !s->deferred.empty()) {
                 all_clear = false;
-                pending_players += s->async_inflight.size();
+                pending_players += s->async_depth.size();
                 pending_tasks += s->q.size();
                 for (const auto &kv : s->deferred)
                     pending_tasks += kv.second.size();
@@ -82,7 +108,7 @@ void PlayerSerialQueue::WaitUntilDrainedOrDeadline(std::chrono::steady_clock::ti
     size_t leftover_tasks = 0;
     for (auto &s : shards_) {
         std::lock_guard<std::mutex> qlk(s->mu);
-        leftover_players += s->async_inflight.size();
+        leftover_players += s->async_depth.size();
         leftover_tasks += s->q.size() + static_cast<size_t>(s->inflight);
         for (const auto &kv : s->deferred)
             leftover_tasks += kv.second.size();
@@ -132,8 +158,8 @@ void PlayerSerialQueue::Stop() {
                 }
             }
             s->deferred.clear();
-            dropped += s->async_inflight.size();
-            s->async_inflight.clear();
+            dropped += s->async_depth.size();
+            s->async_depth.clear();
             if (dropped > 0)
                 LOG_WARN << "PlayerSerialQueue force-stop dropped~=" << dropped;
             s->stop = true;
@@ -159,10 +185,10 @@ void PlayerSerialQueue::WorkerLoop(Shard *shard) {
                     return true;
                 if (!shard->stop)
                     return false;
-                return shard->async_inflight.empty() && shard->deferred.empty() &&
+                return shard->async_depth.empty() && shard->deferred.empty() &&
                        shard->inflight == 0;
             });
-            if (shard->stop && shard->q.empty() && shard->async_inflight.empty() &&
+            if (shard->stop && shard->q.empty() && shard->async_depth.empty() &&
                 shard->deferred.empty() && shard->inflight == 0)
                 return;
             if (shard->q.empty())
@@ -199,7 +225,8 @@ bool PlayerSerialQueue::TryPost(uint64_t player_id, std::function<void()> task) 
         std::lock_guard<std::mutex> lk(shard->mu);
         if (shard->stop)
             return false;
-        if (shard->async_inflight.count(player_id)) {
+        const auto dit = shard->async_depth.find(player_id);
+        if (dit != shard->async_depth.end() && dit->second > 0) {
             auto &dq = shard->deferred[player_id];
             if (dq.size() + shard->q.size() >= max_per_shard_)
                 return false;
@@ -221,7 +248,7 @@ void PlayerSerialQueue::MarkAsyncInFlight(uint64_t player_id) {
     if (!shard)
         return;
     std::lock_guard<std::mutex> lk(shard->mu);
-    shard->async_inflight.insert(player_id);
+    shard->async_depth[player_id] += 1;
 }
 
 void PlayerSerialQueue::ClearAsyncInFlight(uint64_t player_id) {
@@ -235,22 +262,32 @@ bool PlayerSerialQueue::CompleteAsyncInFlight(uint64_t player_id,
         // STOPPED：禁止 inline 执行业务 completion；调用方取消 done
         return false;
     }
-    // completion 不受外部 max_global 限制：已开始的异步必须能回投原玩家串行上下文
+    if (!completion) {
+        {
+            std::lock_guard<std::mutex> lk(shard->mu);
+            FinishAsyncLevelLocked(shard, player_id);
+        }
+        shard->cv.notify_one();
+        return true;
+    }
+    // completion 不受外部 max_global 限制：已开始的异步必须能回投原玩家串行上下文。
+    // 关键：先入队 completion，depth 在其执行后再减；链式 Mark 会使 depth 保持 >0，deferred 不提前释放。
+    auto wrapped = [this, player_id, completion = std::move(completion)]() mutable {
+        if (completion)
+            completion();
+        Shard *s = ShardFor(player_id);
+        if (!s)
+            return;
+        {
+            std::lock_guard<std::mutex> lk(s->mu);
+            FinishAsyncLevelLocked(s, player_id);
+        }
+        s->cv.notify_one();
+    };
     {
         std::lock_guard<std::mutex> lk(shard->mu);
-        shard->async_inflight.erase(player_id);
-        if (completion) {
-            shard->q.push_front(std::move(completion));
-            pending_global_.fetch_add(1, std::memory_order_relaxed);
-        }
-        auto it = shard->deferred.find(player_id);
-        if (it != shard->deferred.end()) {
-            while (!it->second.empty()) {
-                shard->q.push_back(std::move(it->second.front()));
-                it->second.pop_front();
-            }
-            shard->deferred.erase(it);
-        }
+        shard->q.push_front(std::move(wrapped));
+        pending_global_.fetch_add(1, std::memory_order_relaxed);
     }
     shard->cv.notify_one();
     return true;
@@ -262,7 +299,8 @@ bool PlayerSerialQueue::IsAsyncInFlight(uint64_t player_id) const {
         return false;
     Shard *shard = shards_[ShardIndex(player_id, shards_.size())].get();
     std::lock_guard<std::mutex> lk(shard->mu);
-    return shard->async_inflight.count(player_id) > 0;
+    const auto it = shard->async_depth.find(player_id);
+    return it != shard->async_depth.end() && it->second > 0;
 }
 
 void PlayerSerialQueue::Post(uint64_t player_id, std::function<void()> task) {
@@ -278,7 +316,7 @@ void PlayerSerialQueue::DrainForTest() {
     for (auto &s : shards_) {
         std::unique_lock<std::mutex> lk(s->mu);
         s->cv.wait(lk, [&]() {
-            return s->q.empty() && s->inflight == 0 && s->async_inflight.empty() &&
+            return s->q.empty() && s->inflight == 0 && s->async_depth.empty() &&
                    s->deferred.empty();
         });
     }

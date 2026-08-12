@@ -559,6 +559,27 @@ if(ENABLE_GAME_PROTOBUF)
     target_link_libraries(channel_snapshot_race_test
       ${BRPC_LINK_LIBS} ${Protobuf_LIBRARIES} ${OPENSSL_CRYPTO_LIB} ${CMAKE_THREAD_LIBS_INIT})
 
+    add_executable(gateway_disconnect_async_test
+      test/gateway_disconnect_async_test.cpp
+      runtime/brpc/SessionRpcClient.cpp
+      runtime/brpc/GatewayAuthClients.cpp
+      runtime/brpc/session.pb.cc
+      runtime/brpc/auth.pb.cc
+      runtime/brpc/gamelogic_rpc.pb.cc
+      game/game.pb.cc
+      base/CurrentThread.cpp
+      log/Logging.cpp
+      log/LogStream.cpp
+      log/LogFile.cpp
+      log/AsyncLogging.cpp)
+    target_compile_definitions(gateway_disconnect_async_test PRIVATE
+      WEBSERVER_ENABLE_BRPC WEBSERVER_ENABLE_GAME_PROTOBUF)
+    target_include_directories(gateway_disconnect_async_test PRIVATE
+      runtime runtime/brpc game base log timer
+      ${BRPC_INCLUDE_DIR} ${Protobuf_INCLUDE_DIRS} ${OPENSSL_INCLUDE_DIR})
+    target_link_libraries(gateway_disconnect_async_test
+      ${BRPC_LINK_LIBS} ${Protobuf_LIBRARIES} ${OPENSSL_CRYPTO_LIB} ${CMAKE_THREAD_LIBS_INIT})
+
     add_executable(gamedb_rpc_tool
       test/gamedb_rpc_tool.cpp
       runtime/brpc/gamedb.pb.cc)

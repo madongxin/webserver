@@ -173,6 +173,29 @@ int main() {
         auto ar = PushReplayStore::Instance().Ack(p, s, 1);
         if (ar.ok() || ar.status != PushReplayStore::AckStatus::Gap)
             return Fail("ack gap rejected");
+        if (ar.error_code != "NEED_SNAPSHOT" && ar.error_code != "ERR_ACK_GAP")
+            return Fail("ack gap code");
+    }
+
+    // 5b) 中间空洞：有 1、3 缺 2 时 ACK 3 必须拒绝（不得跳过）
+    {
+        const uint64_t p = player + 55;
+        const std::string s = sid + "-ackmid";
+        PushReplayStore::Instance().InvalidateSession(p, s);
+        if (PushReplayStore::Instance().AppendReliable(p, s, "t", "a") != 1)
+            return Fail("mid append1");
+        if (PushReplayStore::Instance().ReserveSeq(p, s) != 2)
+            return Fail("mid reserve2");
+        if (PushReplayStore::Instance().ReserveSeq(p, s) != 3)
+            return Fail("mid reserve3");
+        if (!PushReplayStore::Instance().AppendReserved(p, s, 3, "t", "c"))
+            return Fail("mid append3");
+        auto ar = PushReplayStore::Instance().Ack(p, s, 3);
+        if (ar.ok() || ar.status != PushReplayStore::AckStatus::Gap)
+            return Fail("mid ack skip rejected");
+        auto a1 = PushReplayStore::Instance().Ack(p, s, 1);
+        if (!a1.ok())
+            return Fail("mid ack1");
     }
 
     // 6) 真实 FullSnapshot protobuf：envelope seq / baseline / replay 一致

@@ -41,7 +41,7 @@ bool FillFromReply(const std::vector<std::string> &r, PlacementRecord *out) {
 }
 
 // ResolveOrCreate：template 索引原子创建；force_new 跳过索引。
-// 已存在但 lease 过期 / 非 READY 时必须 reclaim（刷新 owner+epoch+lease），
+// READY+lease 过期：仅当旧 Owner 仍在健康列表（ARGV[9] CSV）时软续租；否则硬 reclaim。
 // 禁止把过期 Placement 当作可进图权威返回（否则 EnterMap → ERR_LEASE_EXPIRED）。
 const char kLuaResolveOrCreate[] = R"LUA(
 local tpl_key = KEYS[1]
@@ -54,6 +54,7 @@ local now = tonumber(ARGV[5])
 local lease = tonumber(ARGV[6])
 local force_new = tonumber(ARGV[7])
 local want_id = ARGV[8]
+local healthy_csv = ARGV[9] or ''
 
 local function load_inst(id)
   local key = prefix .. 'map:inst:' .. id
@@ -67,6 +68,14 @@ local function load_inst(id)
     f['routeVersion'] or '0', f['state'] or 'CLOSED',
     f['updatedAt'] or '0', f['leaseUntil'] or '0'
   }
+end
+
+local function owner_alive(id)
+  if id == nil or id == '' or healthy_csv == '' then return false end
+  for token in string.gmatch(healthy_csv, '[^,]+') do
+    if token == id then return true end
+  end
+  return false
 end
 
 local function usable(L)
@@ -98,6 +107,15 @@ local function reclaim(id, L)
           tostring(new_epoch), tostring(rv), 'READY', tostring(now), tostring(lease_until)}
 end
 
+local function soft_renew(L)
+  local key = prefix .. 'map:inst:' .. tostring(L[1])
+  local lease_until = now + lease
+  redis.call('HMSET', key, 'leaseUntil', tostring(lease_until), 'updatedAt', tostring(now),
+             'state', 'READY')
+  redis.call('EXPIRE', key, 86400)
+  return {'1', 'OK', L[1], L[2], L[3], L[4], L[5], L[6], 'READY', tostring(now), tostring(lease_until)}
+end
+
 local function return_or_reclaim(L)
   if usable(L) then
     return {'1', 'OK', L[1], L[2], L[3], L[4], L[5], L[6], L[7], L[8], L[9]}
@@ -106,15 +124,12 @@ local function return_or_reclaim(L)
   if state == 'CLOSED' then
     return nil
   end
-  -- READY 但 lease 过期：软续租（保持 owner/epoch/route），避免并发 EnterMap 因 epoch 狂涨 STALE。
-  -- RECOVERING/FROZEN 等非 READY：硬 reclaim（升 epoch，换 owner）。
+  -- READY+过期：存活 Owner 软续租；死亡 Owner 硬 reclaim（升 epoch/route，换健康 Owner）
   if state == 'READY' then
-    local key = prefix .. 'map:inst:' .. tostring(L[1])
-    local lease_until = now + lease
-    redis.call('HMSET', key, 'leaseUntil', tostring(lease_until), 'updatedAt', tostring(now),
-               'state', 'READY')
-    redis.call('EXPIRE', key, 86400)
-    return {'1', 'OK', L[1], L[2], L[3], L[4], L[5], L[6], 'READY', tostring(now), tostring(lease_until)}
+    if owner_alive(L[4]) then
+      return soft_renew(L)
+    end
+    return reclaim(L[1], L)
   end
   return reclaim(L[1], L)
 end
@@ -127,12 +142,10 @@ if want_id ~= '0' and want_id ~= '' then
   end
   if (L[7] or '') == 'CLOSED' then return {'0', 'CLOSED', 'closed'} end
   if (L[7] or '') == 'READY' then
-    local key = prefix .. 'map:inst:' .. tostring(want_id)
-    local lease_until = now + lease
-    redis.call('HMSET', key, 'leaseUntil', tostring(lease_until), 'updatedAt', tostring(now),
-               'state', 'READY')
-    redis.call('EXPIRE', key, 86400)
-    return {'1', 'OK', L[1], L[2], L[3], L[4], L[5], L[6], 'READY', tostring(now), tostring(lease_until)}
+    if owner_alive(L[4]) then
+      return soft_renew(L)
+    end
+    return reclaim(want_id, L)
   end
   return reclaim(want_id, L)
 end
@@ -384,6 +397,19 @@ std::string PlacementStore::PickOwner(const std::string &preferred) const {
     return owners_[idx];
 }
 
+std::string PlacementStore::HealthyOwnersCsv() const {
+    std::lock_guard<std::mutex> lk(cfg_mu_);
+    if (owners_.empty())
+        return {};
+    std::ostringstream os;
+    for (size_t i = 0; i < owners_.size(); ++i) {
+        if (i)
+            os << ',';
+        os << owners_[i];
+    }
+    return os.str();
+}
+
 bool PlacementStore::ResolveOrCreate(const ResolveOrCreateInput &in, ResolveOrCreateResult *out) {
     if (!out)
         return false;
@@ -399,6 +425,7 @@ bool PlacementStore::ResolveOrCreate(const ResolveOrCreateInput &in, ResolveOrCr
         return false;
     }
     const std::string owner = PickOwner(in.preferred_owner);
+    const std::string healthy_csv = HealthyOwnersCsv();
     auto lease = RedisPool::Instance().Acquire();
     if (!lease) {
         out->message = "redis pool exhausted";
@@ -421,6 +448,7 @@ bool PlacementStore::ResolveOrCreate(const ResolveOrCreateInput &in, ResolveOrCr
         std::to_string(default_lease_sec_),
         in.force_new ? "1" : "0",
         std::to_string(in.map_instance_id),
+        healthy_csv,
     };
     // force_new：Lua 里 tpl_key 仍可能 SET NX — 用 force_new=1 跳过索引
     std::vector<std::string> reply;

@@ -146,18 +146,19 @@ if ack == last then
   redis.call('EXPIRE', meta_key, ttl)
   return {'1', 'DUP', tostring(ack)}
 end
--- 必须确认 ack 对应条目曾成功写入；禁止 ACK 仅 Reserve 的空洞
-local found = false
+-- 连续性：last+1 .. ack 每一个序号都必须已成功写入；禁止跳过空洞
+local present = {}
 local entries = redis.call('LRANGE', list_key, 0, -1)
 for _, v in ipairs(entries) do
   local seq = tonumber(string.match(v, '^(%d+)'))
-  if seq and seq == ack then
-    found = true
-    break
+  if seq and seq > last and seq <= ack then
+    present[seq] = true
   end
 end
-if not found then
-  return {'0', 'ERR_ACK_GAP', tostring(cur), tostring(last)}
+for s = last + 1, ack do
+  if not present[s] then
+    return {'0', 'NEED_SNAPSHOT', tostring(cur), tostring(last)}
+  end
 end
 while true do
   local v = redis.call('LINDEX', list_key, 0)
@@ -331,7 +332,7 @@ PushReplayStore::AckResult PushReplayStore::Ack(uint64_t player_id, const std::s
         r.status = AckStatus::Ahead;
     else if (reply[1] == "ERR_ACK_STALE")
         r.status = AckStatus::Stale;
-    else if (reply[1] == "ERR_ACK_GAP")
+    else if (reply[1] == "ERR_ACK_GAP" || reply[1] == "NEED_SNAPSHOT")
         r.status = AckStatus::Gap;
     else
         r.status = AckStatus::Invalid;

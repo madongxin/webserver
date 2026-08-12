@@ -232,38 +232,36 @@ void GameTcpGateway::Run() {
             bind = it->second;
             g_conn_bind.erase(it);
         }
-#ifdef WEBSERVER_ENABLE_REDIS
+#ifdef WEBSERVER_ENABLE_BRPC
+        GatewayConnRegistry::Bind reg;
+        const bool has_reg = GatewayConnRegistry::Instance().FindByConnection(c->id(), &reg);
+#endif
+        // 先解绑连接映射；后续 RPC 仅用快照字段，禁止跨线程碰 TcpConnection
+        ForgetBind(c->id());
+
         if (bind.player_id != 0) {
+#ifdef WEBSERVER_ENABLE_REDIS
 #ifdef WEBSERVER_ENABLE_BRPC
             if (SessionRpcClient::Instance().ready()) {
-                SessionRpcClient::Instance().MarkDisconnected(bind.player_id, bind.token,
-                                                             bind.generation);
+                SessionRpcClient::Instance().MarkDisconnectedAsync(bind.player_id, bind.token,
+                                                                   bind.generation);
             } else
 #endif
                 if (SessionStore::Instance().Available()) {
+                // 本地 Redis 兜底：短路径；正式拓扑走上面 Async
                 SessionStore::Instance().MarkDisconnected(bind.player_id, bind.token,
                                                          bind.generation);
             }
-        }
 #endif
-        if (bind.player_id != 0) {
 #ifdef WEBSERVER_ENABLE_BRPC
-            GatewayConnRegistry::Bind reg;
-            if (GatewayConnRegistry::Instance().FindByConnection(c->id(), &reg) &&
-                !reg.gamelogic_instance_id.empty() && GatewayAuthClients::Instance().ready()) {
+            if (has_reg && !reg.gamelogic_instance_id.empty() &&
+                GatewayAuthClients::Instance().ready()) {
                 glrpc::UnbindPlayerRequest ureq;
                 ureq.set_player_id(bind.player_id);
                 ureq.set_session_id(bind.session_id);
                 ureq.set_fence_token(bind.token);
                 ureq.set_reason("tcp_disconnect");
-                glrpc::UnbindPlayerResponse ursp;
-                if (!GatewayAuthClients::Instance().UnbindPlayer(reg.gamelogic_instance_id, ureq,
-                                                                &ursp) ||
-                    !ursp.ok()) {
-                    LOG_WARN << "Gateway disconnect UnbindPlayer failed player=" << bind.player_id
-                             << " logic=" << reg.gamelogic_instance_id
-                             << " msg=" << ursp.message();
-                }
+                GatewayAuthClients::Instance().UnbindPlayerAsync(reg.gamelogic_instance_id, ureq);
             }
 #endif
             game::GameRequest flush_req;
@@ -287,7 +285,6 @@ void GameTcpGateway::Run() {
         }
         LOG_INFO << "Gateway disconnect conn#" << c->id() << " player_id=" << bind.player_id
                  << " generation=" << bind.generation;
-        ForgetBind(c->id());
     });
     LOG_INFO << "GameTcpGateway ready on " << ip_ << ":" << port_
              << " id=" << g_gateway_id << " (session bind + grace disconnect)";
@@ -565,6 +562,8 @@ void GameTcpGateway::OnMessage(const std::shared_ptr<TcpConnection> &conn) {
                         } else if (ar.status == PushReplayStore::AckStatus::Stale) {
                             OpsMetrics::Instance().IncPushAckStaleRejected();
                             ack_msg = ar.error_code.empty() ? "ERR_ACK_STALE" : ar.error_code;
+                        } else if (ar.status == PushReplayStore::AckStatus::Gap) {
+                            ack_msg = ar.error_code.empty() ? "NEED_SNAPSHOT" : ar.error_code;
                         } else {
                             ack_msg = ar.error_code.empty() ? "ack rejected" : ar.error_code;
                         }

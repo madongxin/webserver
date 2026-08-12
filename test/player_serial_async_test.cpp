@@ -141,6 +141,87 @@ int main() {
         return 1;
     }
 
+    // 链式异步：completion 内再次 MarkAsyncInFlight 时，同玩家其它任务不得并发
+    {
+        std::atomic<int> concurrent{0};
+        std::atomic<int> max_concurrent{0};
+        std::atomic<bool> chain_done{false};
+        std::atomic<bool> other_ran{false};
+        std::atomic<bool> other_before_chain{false};
+        std::thread helper_chain;
+        std::thread helper_chain2;
+
+        q.SetLimits(64, 256);
+        if (!q.TryPost(a, [&]() {
+                q.MarkAsyncInFlight(a);
+                helper_chain = std::thread([&]() {
+                    std::this_thread::sleep_for(std::chrono::milliseconds(30));
+                    q.CompleteAsyncInFlight(a, [&]() {
+                        const int c = concurrent.fetch_add(1) + 1;
+                        int prev = max_concurrent.load();
+                        while (c > prev && !max_concurrent.compare_exchange_weak(prev, c)) {
+                        }
+                        q.MarkAsyncInFlight(a);  // 链式第二段
+                        concurrent.fetch_sub(1);
+                        helper_chain2 = std::thread([&]() {
+                            std::this_thread::sleep_for(std::chrono::milliseconds(80));
+                            q.CompleteAsyncInFlight(a, [&]() {
+                                const int c2 = concurrent.fetch_add(1) + 1;
+                                int prev2 = max_concurrent.load();
+                                while (c2 > prev2 &&
+                                       !max_concurrent.compare_exchange_weak(prev2, c2)) {
+                                }
+                                std::this_thread::sleep_for(std::chrono::milliseconds(20));
+                                concurrent.fetch_sub(1);
+                                chain_done.store(true);
+                            });
+                        });
+                    });
+                });
+            })) {
+            std::printf("FAIL post chain A\n");
+            return 1;
+        }
+        std::this_thread::sleep_for(std::chrono::milliseconds(10));
+        if (!q.TryPost(a, [&]() {
+                if (!chain_done.load())
+                    other_before_chain.store(true);
+                const int c = concurrent.fetch_add(1) + 1;
+                int prev = max_concurrent.load();
+                while (c > prev && !max_concurrent.compare_exchange_weak(prev, c)) {
+                }
+                if (c > 1) {
+                    std::printf("FAIL chain_serialization_violated=%d\n", c);
+                    std::_Exit(1);
+                }
+                concurrent.fetch_sub(1);
+                other_ran.store(true);
+            })) {
+            std::printf("FAIL post deferred A\n");
+            return 1;
+        }
+        for (int i = 0; i < 200 && (!chain_done.load() || !other_ran.load()); ++i)
+            std::this_thread::sleep_for(std::chrono::milliseconds(10));
+        if (helper_chain.joinable())
+            helper_chain.join();
+        if (helper_chain2.joinable())
+            helper_chain2.join();
+        if (!chain_done.load() || !other_ran.load()) {
+            std::printf("FAIL chain incomplete chain=%d other=%d\n", chain_done.load(),
+                        other_ran.load());
+            return 1;
+        }
+        if (other_before_chain.load()) {
+            std::printf("FAIL chain_serialization_violated deferred ran early\n");
+            return 1;
+        }
+        if (max_concurrent.load() > 1) {
+            std::printf("FAIL chain_serialization_violated max_concurrent=%d\n",
+                        max_concurrent.load());
+            return 1;
+        }
+    }
+
     q.DrainForTest();
 
     // DRAINING：拒绝新任务，已开始的 async completion 仍在 worker 完成

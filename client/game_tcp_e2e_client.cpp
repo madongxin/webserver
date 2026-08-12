@@ -201,8 +201,17 @@ bool DoEnterMap(int fd, SessionState *st, uint64_t map_tpl, uint64_t map_inst) {
         game::GameResponse push;
         if (!RecvFrame(fd, &push, 200))
             break;
-        if (push.message() == "enter_map_notify" || push.has_enter_map()) {
-            st->last_server_seq = 1;  // ReplayStore 从 1 起；精确 seq 由 reconnect 侧验证
+        if (push.has_server_push()) {
+            const uint64_t seq = push.server_push().server_seq();
+            if (seq > st->last_server_seq)
+                st->last_server_seq = seq;
+            PrintKv("push_recv", 1);
+            PrintKv("server_seq", seq);
+            PrintKv("push_msg", push.server_push().message_type());
+        } else if (push.message() == "enter_map_notify" || push.has_enter_map()) {
+            // 兼容旧路径：无 envelope 时至少记到 1
+            if (st->last_server_seq == 0)
+                st->last_server_seq = 1;
             PrintKv("push_recv", 1);
             PrintKv("push_msg", push.message());
         }
@@ -238,14 +247,49 @@ bool DoReconnect(int fd, SessionState *st, uint64_t last_seq, int *replay_n, boo
     PrintKv("generation", st->generation);
 
     int n = 0;
+    uint64_t max_seq = last_seq;
     for (int i = 0; i < 8; ++i) {
         game::GameResponse push;
         if (!RecvFrame(fd, &push, 200))
             break;
+        if (!push.has_server_push()) {
+            // 非 envelope 帧不算可靠回放成功
+            PrintKv("replay_non_envelope", 1);
+            PrintKv("replay_msg", push.message());
+            continue;
+        }
+        const uint64_t seq = push.server_push().server_seq();
+        if (seq == 0) {
+            std::printf("error=replay_missing_server_seq\n");
+            std::fflush(stdout);
+            return false;
+        }
+        if (seq <= last_seq) {
+            std::printf("error=replay_seq_not_after_last seq=%llu last=%llu\n",
+                        static_cast<unsigned long long>(seq),
+                        static_cast<unsigned long long>(last_seq));
+            std::fflush(stdout);
+            return false;
+        }
+        if (max_seq != last_seq && seq != max_seq + 1 && !rsp.reconnect().need_full_snapshot()) {
+            // 回放路径要求连续；snapshot 路径可能只有一个 baseline
+            if (push.server_push().message_type() != "full_snapshot") {
+                std::printf("error=replay_seq_gap got=%llu expect=%llu\n",
+                            static_cast<unsigned long long>(seq),
+                            static_cast<unsigned long long>(max_seq + 1));
+                std::fflush(stdout);
+                return false;
+            }
+        }
+        if (seq > max_seq)
+            max_seq = seq;
         ++n;
         PrintKv("replay_frame", static_cast<uint64_t>(n));
-        PrintKv("replay_msg", push.message());
+        PrintKv("server_seq", seq);
+        PrintKv("replay_msg", push.server_push().message_type());
     }
+    if (max_seq > st->last_server_seq)
+        st->last_server_seq = max_seq;
     if (replay_n)
         *replay_n = n;
     PrintKv("replay_n", n);
@@ -381,10 +425,11 @@ int CmdDualGw(int argc, char **argv) {
     }
     ::close(fd1);
 
-    // 门禁：reconnect 成功；有回放或明确 need_full_snapshot（缺口路径也合法）
+    // 门禁：reconnect 成功；必须有可靠回放（真实 server_seq）或明确 need_full_snapshot
     if (replay_n == 0 && !need_snap) {
-        // 宽松：Push 可能因 bind meta 暂未推成功；仍要求跨 GW reconnect 成功
-        PrintKv("warn", "no_replay_and_no_snapshot");
+        std::printf("error=no_replay_and_no_snapshot\n");
+        std::fflush(stdout);
+        return 16;
     }
     PrintKv("dual_gw_ok", 1);
     PrintKv("map_tpl", map_tpl);

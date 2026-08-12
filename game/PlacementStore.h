@@ -87,6 +87,8 @@ private:
     std::string TplKey(uint32_t realm, uint64_t tpl) const;
     std::string IdGenKey() const;
     std::string PickOwner(const std::string &preferred) const;
+    /** 当前健康 Owner 列表 CSV，供 ResolveOrCreate Lua 判断软续租 */
+    std::string HealthyOwnersCsv() const;
 
     bool available_ = false;
     int default_lease_sec_ = 30;

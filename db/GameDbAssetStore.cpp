@@ -198,30 +198,49 @@ bool GameDbAssetStore::LoadInventory(uint64_t player_id, std::map<uint32_t, uint
     if (!EnsureTables() || !bag)
         return false;
     bag->clear();
-    uint64_t ver = 1;
-    bool exists = false;
-    if (!LoadMeta(player_id, &ver, &exists))
-        return false;
-    if (!exists)
-        ver = 1;
     auto conn = ConnectionPool::getconnectionPool()->getConnection();
     if (!conn)
         return false;
-    char sql[256];
-    std::snprintf(sql, sizeof(sql),
-                  "SELECT item_id,count FROM player_asset_bag WHERE player_id=%llu AND count>0",
-                  (unsigned long long)player_id);
-    MYSQL_RES *res = conn->query(sql);
-    if (!res)
+    // meta + bag 同一连接事务读取，避免双源/跨连接撕裂
+    if (!conn->begin())
         return false;
-    while (MYSQL_ROW row = mysql_fetch_row(res)) {
-        if (row[0] && row[1])
-            (*bag)[static_cast<uint32_t>(std::strtoul(row[0], nullptr, 10))] =
-                static_cast<uint32_t>(std::strtoul(row[1], nullptr, 10));
+    uint64_t ver = 1;
+    {
+        char sql[256];
+        std::snprintf(sql, sizeof(sql),
+                      "SELECT asset_version FROM player_asset_meta WHERE player_id=%llu",
+                      (unsigned long long)player_id);
+        MYSQL_RES *res = conn->query(sql);
+        if (!res) {
+            conn->rollback();
+            return false;
+        }
+        MYSQL_ROW row = mysql_fetch_row(res);
+        if (row && row[0])
+            ver = std::strtoull(row[0], nullptr, 10);
+        mysql_free_result(res);
     }
-    mysql_free_result(res);
-    if (bag->empty())
-        PlayerItemStore::Instance().LoadInventoryAggregate(player_id, bag);
+    {
+        char sql[256];
+        std::snprintf(sql, sizeof(sql),
+                      "SELECT item_id,count FROM player_asset_bag WHERE player_id=%llu AND count>0",
+                      (unsigned long long)player_id);
+        MYSQL_RES *res = conn->query(sql);
+        if (!res) {
+            conn->rollback();
+            return false;
+        }
+        while (MYSQL_ROW row = mysql_fetch_row(res)) {
+            if (row[0] && row[1])
+                (*bag)[static_cast<uint32_t>(std::strtoul(row[0], nullptr, 10))] =
+                    static_cast<uint32_t>(std::strtoul(row[1], nullptr, 10));
+        }
+        mysql_free_result(res);
+    }
+    if (!conn->commit()) {
+        conn->rollback();
+        return false;
+    }
     if (version)
         *version = ver;
     return true;
@@ -229,6 +248,118 @@ bool GameDbAssetStore::LoadInventory(uint64_t player_id, std::map<uint32_t, uint
     (void)player_id;
     (void)bag;
     (void)version;
+    return false;
+#endif
+}
+
+bool GameDbAssetStore::GrantItemsOnConnection(Connection *conn, uint64_t player_id,
+                                              uint64_t expected_version,
+                                              const std::map<uint32_t, uint32_t> &grants,
+                                              int64_t soft_cap, uint64_t *new_version,
+                                              std::string *err_code, std::string *err_msg) {
+#ifdef WEBSERVER_ENABLE_MYSQL
+    auto fail = [&](const char *code, const char *msg) -> bool {
+        if (err_code)
+            *err_code = code;
+        if (err_msg)
+            *err_msg = msg;
+        return false;
+    };
+    if (!conn || player_id == 0 || grants.empty())
+        return fail("INVALID_ARG", "invalid grant");
+    if (!EnsureTables())
+        return fail("DB_UNAVAILABLE", "asset tables");
+
+    uint64_t ver = 1;
+    {
+        char q[256];
+        std::snprintf(q, sizeof(q),
+                      "SELECT asset_version FROM player_asset_meta WHERE player_id=%llu FOR UPDATE",
+                      (unsigned long long)player_id);
+        MYSQL_RES *res = conn->query(q);
+        if (!res)
+            return fail("DB_ERROR", "meta query");
+        MYSQL_ROW row = mysql_fetch_row(res);
+        if (!row || !row[0]) {
+            mysql_free_result(res);
+            char ins[256];
+            std::snprintf(ins, sizeof(ins),
+                          "INSERT INTO player_asset_meta(player_id,asset_version,updated_at) "
+                          "VALUES(%llu,1,%lld)",
+                          (unsigned long long)player_id, (long long)NowSec());
+            if (!conn->update(ins))
+                return fail("DB_ERROR", "meta insert");
+            ver = 1;
+        } else {
+            ver = std::strtoull(row[0], nullptr, 10);
+            mysql_free_result(res);
+        }
+    }
+    if (expected_version != 0 && expected_version != ver)
+        return fail("VERSION_CONFLICT", "expected_version mismatch");
+
+    for (const auto &kv : grants) {
+        const uint32_t item_id = kv.first;
+        const uint32_t add = kv.second;
+        if (item_id == 0 || add == 0)
+            return fail("INVALID_ARG", "invalid item grant");
+        uint32_t cur = 0;
+        {
+            char q[256];
+            std::snprintf(q, sizeof(q),
+                          "SELECT count FROM player_asset_bag WHERE player_id=%llu AND item_id=%u "
+                          "FOR UPDATE",
+                          (unsigned long long)player_id, item_id);
+            MYSQL_RES *res = conn->query(q);
+            if (res) {
+                MYSQL_ROW row = mysql_fetch_row(res);
+                if (row && row[0])
+                    cur = static_cast<uint32_t>(std::strtoul(row[0], nullptr, 10));
+                mysql_free_result(res);
+            }
+        }
+        const int64_t next = static_cast<int64_t>(cur) + static_cast<int64_t>(add);
+        if (soft_cap > 0 && next > soft_cap)
+            return fail("INVENTORY_FULL", "inventory soft cap");
+        const uint32_t remain = static_cast<uint32_t>(next);
+        char ups[320];
+        std::snprintf(ups, sizeof(ups),
+                      "INSERT INTO player_asset_bag(player_id,item_id,count) VALUES(%llu,%u,%u) "
+                      "ON DUPLICATE KEY UPDATE count=%u",
+                      (unsigned long long)player_id, item_id, remain, remain);
+        if (!conn->update(ups))
+            return fail("DB_ERROR", "bag upsert");
+    }
+
+    const uint64_t new_ver = ver + 1;
+    {
+        char ups[256];
+        std::snprintf(ups, sizeof(ups),
+                      "UPDATE player_asset_meta SET asset_version=%llu,updated_at=%lld WHERE "
+                      "player_id=%llu",
+                      (unsigned long long)new_ver, (long long)NowSec(),
+                      (unsigned long long)player_id);
+        if (!conn->update(ups))
+            return fail("DB_ERROR", "meta bump");
+    }
+    if (new_version)
+        *new_version = new_ver;
+    if (err_code)
+        err_code->clear();
+    if (err_msg)
+        err_msg->clear();
+    return true;
+#else
+    (void)conn;
+    (void)player_id;
+    (void)expected_version;
+    (void)grants;
+    (void)soft_cap;
+    (void)new_version;
+    if (err_code)
+        *err_code = "MYSQL_DISABLED";
+    if (err_msg)
+        *err_msg = "mysql disabled";
     return false;
 #endif
 }

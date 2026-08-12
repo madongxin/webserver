@@ -2,16 +2,17 @@
 
 #include "Connection.h"
 #include "ConnectionPool.h"
+#include "GameDbAssetStore.h"
 #include "GameDbOutbox.h"
 #include "GameDbRepository.h"
 #include "Logging.h"
 #include "MailStore.h"
 #include "MailTypes.h"
 #include "NatsThinClient.h"
-#include "PlayerItemStore.h"
 
 #include <chrono>
 #include <future>
+#include <map>
 #include <sstream>
 
 namespace {
@@ -49,8 +50,8 @@ void AsyncMysqlGameDbRepository::Start(int worker_count) {
         LOG_WARN << "GameDB: outbox EnsureTable failed";
         return;
     }
-    if (!PlayerItemStore::Instance().EnsureTable()) {
-        LOG_WARN << "GameDB: player_item EnsureTable failed";
+    if (!GameDbAssetStore::Instance().EnsureTables()) {
+        LOG_WARN << "GameDB: asset EnsureTables failed";
         return;
     }
     stop_ = false;
@@ -332,6 +333,8 @@ GameDbMailClaimResult AsyncMysqlGameDbRepository::DoClaimMail(const GameDbMailCl
         return result;
     }
 
+    std::map<uint32_t, uint32_t> grant_map;
+    std::vector<GameDbGrantedItem> grants;
     for (const auto &a : atts) {
         if (a.asset_type != "ITEM" || a.asset_id == 0 || a.count == 0) {
             MailStore::Instance().Rollback(conn.get());
@@ -344,37 +347,32 @@ GameDbMailClaimResult AsyncMysqlGameDbRepository::DoClaimMail(const GameDbMailCl
             return result;
         }
         const uint32_t item_id = static_cast<uint32_t>(a.asset_id);
-        uint32_t cur = 0;
-        auto it = req.bag_snapshot.find(item_id);
-        if (it != req.bag_snapshot.end())
-            cur = it->second;
-        if (static_cast<int64_t>(cur) + a.count > req.inventory_soft_cap) {
-            MailStore::Instance().Rollback(conn.get());
-            FillFail(&result, mail::err::kInventoryFull, "inventory soft cap");
-            return result;
-        }
+        const uint32_t add = static_cast<uint32_t>(a.count);
+        grant_map[item_id] += add;
+        GameDbGrantedItem g;
+        g.asset_id = a.asset_id;
+        g.count = add;
+        grants.push_back(g);
     }
 
     std::ostringstream tx;
     tx << "mail:" << req.mail_id << ":" << now;
     const std::string asset_tx = tx.str();
-    std::vector<GameDbGrantedItem> grants;
-    for (const auto &a : atts) {
-        uint64_t instance_id = 0;
-        std::ostringstream extra;
-        extra << "{\"source\":\"mail_claim\",\"mail_id\":" << req.mail_id << ",\"tx\":\""
-              << asset_tx << "\"}";
-        if (!PlayerItemStore::Instance().InsertOnConnection(conn.get(), req.player_id, a.asset_id,
-                                                            a.count, 0, extra.str(), &instance_id)) {
-            MailStore::Instance().Rollback(conn.get());
-            FillFail(&result, mail::err::kAssetTransactionFailed, "asset insert failed");
-            return result;
-        }
-        GameDbGrantedItem g;
-        g.asset_id = a.asset_id;
-        g.count = static_cast<uint32_t>(a.count);
-        grants.push_back(g);
+    // 正式背包：与邮件 CLAIMED / op log / outbox 同一 MySQL 事务
+    uint64_t new_asset_ver = 0;
+    std::string asset_err, asset_msg;
+    if (!GameDbAssetStore::Instance().GrantItemsOnConnection(
+            conn.get(), req.player_id, 0, grant_map, req.inventory_soft_cap, &new_asset_ver,
+            &asset_err, &asset_msg)) {
+        MailStore::Instance().Rollback(conn.get());
+        if (asset_err == mail::err::kInventoryFull)
+            FillFail(&result, mail::err::kInventoryFull, asset_msg.c_str());
+        else
+            FillFail(&result, mail::err::kAssetTransactionFailed,
+                     asset_msg.empty() ? "asset grant failed" : asset_msg.c_str());
+        return result;
     }
+    (void)new_asset_ver;
 
     row.attachment_state = "CLAIMED";
     if (row.read_state != "READ") {

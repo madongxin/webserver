@@ -202,7 +202,7 @@ int main() {
         return Fail("expire-reclaim resolve");
     if (expired_b.placement.map_instance_id != expired_a.placement.map_instance_id)
         return Fail("expire-reclaim id changed");
-    // READY+过期：软续租，epoch 保持不变
+    // READY+过期且 Owner 仍健康：软续租，epoch 保持不变
     if (expired_b.placement.owner_epoch != expired_a.placement.owner_epoch)
         return Fail("expire-reclaim soft renew should keep epoch");
     if (expired_b.placement.owner_logic_server_id != expired_a.placement.owner_logic_server_id)
@@ -215,6 +215,35 @@ int main() {
         return Fail("expire-reclaim lease still stale");
     if (expired_b.placement.state != PlacementState::Ready)
         return Fail("expire-reclaim not READY");
+
+    // READY+过期但 Owner 已不在健康列表：硬 reclaim（升 epoch，换新 Owner）
+    {
+        ResolveOrCreateInput dead_in;
+        dead_in.realm_id = 1;
+        dead_in.map_template_id = expired_in.map_template_id + 7;
+        dead_in.preferred_owner = "gl-0";
+        ResolveOrCreateResult dead_a;
+        if (!PlacementStore::Instance().ResolveOrCreate(dead_in, &dead_a) || !dead_a.ok)
+            return Fail("dead-owner create");
+        int64_t tiny2 = 0;
+        if (!PlacementStore::Instance().Heartbeat(dead_a.placement.map_instance_id, "gl-0",
+                                                  dead_a.placement.owner_epoch, 1, &tiny2))
+            return Fail("dead-owner short hb");
+        std::this_thread::sleep_for(std::chrono::seconds(2));
+        PlacementStore::Instance().SetLogicOwners({"gl-1"});  // gl-0 视为死亡
+        ResolveOrCreateResult dead_b;
+        if (!PlacementStore::Instance().ResolveOrCreate(dead_in, &dead_b) || !dead_b.ok)
+            return Fail("dead-owner resolve");
+        if (dead_b.placement.map_instance_id != dead_a.placement.map_instance_id)
+            return Fail("dead-owner id changed");
+        if (dead_b.placement.owner_epoch <= dead_a.placement.owner_epoch)
+            return Fail("dead-owner epoch not bumped");
+        if (dead_b.placement.owner_logic_server_id != "gl-1")
+            return Fail("dead-owner not reclaimed to healthy");
+        if (dead_b.placement.route_version <= dead_a.placement.route_version)
+            return Fail("dead-owner route_version not bumped");
+        PlacementStore::Instance().SetLogicOwners({"gl-0", "gl-1"});
+    }
 
     // RECOVERING：硬 reclaim 升 epoch
     ResolveOrCreateInput hard_in = expired_in;

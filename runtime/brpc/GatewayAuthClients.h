@@ -50,6 +50,9 @@ public:
                     glrpc::BindPlayerResponse *rsp);
     bool UnbindPlayer(const std::string &logic_instance_id, const glrpc::UnbindPlayerRequest &req,
                       glrpc::UnbindPlayerResponse *rsp);
+    /** 异步 UnbindPlayer：不阻塞调用线程；失败仅记日志 */
+    void UnbindPlayerAsync(const std::string &logic_instance_id,
+                           const glrpc::UnbindPlayerRequest &req);
     bool FreezePlayer(const std::string &logic_instance_id, const glrpc::FreezePlayerRequest &req,
                       glrpc::FreezePlayerResponse *rsp);
     bool ExportPlayerSnapshot(const std::string &logic_instance_id,

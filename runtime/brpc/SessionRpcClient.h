@@ -31,6 +31,8 @@ public:
     bool BindConnection(uint64_t player_id, const std::string &token, const std::string &gateway_id,
                         uint64_t connection_id);
     bool MarkDisconnected(uint64_t player_id, const std::string &token, uint64_t generation);
+    /** 异步 MarkDisconnected：不阻塞调用线程；失败仅记日志 */
+    void MarkDisconnectedAsync(uint64_t player_id, const std::string &token, uint64_t generation);
 
     bool ResolveOrCreateMap(const sess::ResolveOrCreateMapRequest &req,
                             sess::ResolveOrCreateMapResponse *rsp);

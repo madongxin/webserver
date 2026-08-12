@@ -9,6 +9,7 @@
 #include <brpc/channel.h>
 
 #include <atomic>
+#include <memory>
 
 SessionRpcClient &SessionRpcClient::Instance() {
     static SessionRpcClient g;
@@ -164,6 +165,40 @@ bool SessionRpcClient::MarkDisconnected(uint64_t player_id, const std::string &t
     sess::SessionService_Stub stub(ch.get());
     stub.MarkDisconnected(&cntl, &req, &rsp, nullptr);
     return !cntl.Failed() && rsp.ok();
+}
+
+void SessionRpcClient::MarkDisconnectedAsync(uint64_t player_id, const std::string &token,
+                                             uint64_t generation) {
+    auto ch = CurrentChannel();
+    if (!ch)
+        return;
+    struct MarkDisconnectedCtx {
+        brpc::Controller cntl;
+        sess::MarkDisconnectedReq req;
+        sess::MarkDisconnectedRsp rsp;
+        std::shared_ptr<brpc::Channel> channel_keep;
+        uint64_t player_id = 0;
+    };
+    auto *ctx = new MarkDisconnectedCtx();
+    ctx->channel_keep = ch;
+    ctx->player_id = player_id;
+    ctx->req.set_player_id(player_id);
+    ctx->req.set_token(token);
+    ctx->req.set_generation(generation);
+    sess::SessionService_Stub stub(ch.get());
+    stub.MarkDisconnected(&ctx->cntl, &ctx->req, &ctx->rsp,
+                          brpc::NewCallback(
+                              +[](MarkDisconnectedCtx *c) {
+                                  std::unique_ptr<MarkDisconnectedCtx> guard(c);
+                                  if (c->cntl.Failed() || !c->rsp.ok()) {
+                                      LOG_WARN << "MarkDisconnectedAsync failed player="
+                                               << c->player_id
+                                               << " err=" << (c->cntl.Failed()
+                                                                  ? c->cntl.ErrorText()
+                                                                  : c->rsp.message());
+                                  }
+                              },
+                              ctx));
 }
 
 bool SessionRpcClient::ResolveOrCreateMap(const sess::ResolveOrCreateMapRequest &req,
