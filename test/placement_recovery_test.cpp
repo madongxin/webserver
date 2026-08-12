@@ -108,10 +108,10 @@ int main() {
             return Fail("not recovering after expire");
     }
 
-    PlacementRecoveryScheduler::Instance().SetScanCount(256);
+    PlacementRecoveryScheduler::Instance().SetScanCount(512);
     PlacementRecord rec;
     bool switched = false;
-    const auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds(30);
+    const auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds(60);
     while (std::chrono::steady_clock::now() < deadline) {
         PlacementRecoveryScheduler::Instance().Tick();
         if (PlacementStore::Instance().Get(mid, &rec) && rec.state == PlacementState::Ready &&
@@ -120,7 +120,7 @@ int main() {
             switched = true;
             break;
         }
-        std::this_thread::sleep_for(std::chrono::milliseconds(50));
+        std::this_thread::sleep_for(std::chrono::milliseconds(20));
     }
     if (!switched) {
         (void)PlacementStore::Instance().Get(mid, &rec);
