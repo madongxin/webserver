@@ -261,6 +261,35 @@ int main() {
         PlacementStore::Instance().SetLogicOwners({"gl-0", "gl-1"});
     }
 
+    // 孤儿 tpl 索引（inst 已删）：Resolve 必须重建可用 Placement，不能返回幽灵 id
+    {
+        ResolveOrCreateInput orphan_in;
+        orphan_in.realm_id = 1;
+        orphan_in.map_template_id = expired_in.map_template_id + 123;
+        ResolveOrCreateResult orphan_a;
+        if (!PlacementStore::Instance().ResolveOrCreate(orphan_in, &orphan_a) || !orphan_a.ok)
+            return Fail("orphan-setup create");
+        const uint64_t ghost = orphan_a.placement.map_instance_id;
+        // 模拟 inst TTL 过期但 tpl 索引残留
+        {
+            auto lease = RedisPool::Instance().Acquire();
+            if (!lease)
+                return Fail("orphan-setup redis");
+            char buf[96];
+            std::snprintf(buf, sizeof(buf), "%smap:inst:%llu", prefix.c_str(),
+                          static_cast<unsigned long long>(ghost));
+            lease->Del(buf);
+        }
+        ResolveOrCreateResult orphan_b;
+        if (!PlacementStore::Instance().ResolveOrCreate(orphan_in, &orphan_b) || !orphan_b.ok)
+            return Fail("orphan-resolve");
+        PlacementRecord got;
+        if (!PlacementStore::Instance().Get(orphan_b.placement.map_instance_id, &got))
+            return Fail("orphan-resolve ghost id not readable");
+        if (got.state != PlacementState::Ready)
+            return Fail("orphan-resolve not READY");
+    }
+
     // RECOVERING：硬 reclaim 升 epoch
     ResolveOrCreateInput hard_in = expired_in;
     hard_in.map_template_id = expired_in.map_template_id + 1;

@@ -159,6 +159,9 @@ if force_new == 0 and tpl_key ~= '' then
       if R then return R end
       -- CLOSED：删索引后重建
       redis.call('DEL', tpl_key)
+    else
+      -- 孤儿索引（inst 已过期/删除）：清掉再创建，避免后续返回幽灵 id
+      redis.call('DEL', tpl_key)
     end
   end
 end
@@ -166,19 +169,23 @@ end
 local id = redis.call('INCR', idgen_key)
 local ikey = prefix .. 'map:inst:' .. tostring(id)
 local lease_until = now + lease
-redis.call('HMSET', ikey,
-  'mapInstanceId', tostring(id),
-  'realmId', realm,
-  'mapTemplateId', tpl,
-  'ownerLogicServerId', owner,
-  'ownerEpoch', '1',
-  'routeVersion', '1',
-  'state', 'READY',
-  'updatedAt', tostring(now),
-  'leaseUntil', tostring(lease_until))
-redis.call('EXPIRE', ikey, 86400)
+local function write_new_inst()
+  redis.call('HMSET', ikey,
+    'mapInstanceId', tostring(id),
+    'realmId', realm,
+    'mapTemplateId', tpl,
+    'ownerLogicServerId', owner,
+    'ownerEpoch', '1',
+    'routeVersion', '1',
+    'state', 'READY',
+    'updatedAt', tostring(now),
+    'leaseUntil', tostring(lease_until))
+  redis.call('EXPIRE', ikey, 86400)
+end
+write_new_inst()
 if force_new == 0 and tpl_key ~= '' then
   redis.call('SET', tpl_key, tostring(id), 'NX')
+  redis.call('EXPIRE', tpl_key, 86400)
   local canonical = redis.call('GET', tpl_key)
   if canonical and canonical ~= tostring(id) then
     redis.call('DEL', ikey)
@@ -188,17 +195,13 @@ if force_new == 0 and tpl_key ~= '' then
       if R then return R end
       -- CLOSED race：覆盖索引到本 id 并重建记录
       redis.call('SET', tpl_key, tostring(id))
-      redis.call('HMSET', ikey,
-        'mapInstanceId', tostring(id),
-        'realmId', realm,
-        'mapTemplateId', tpl,
-        'ownerLogicServerId', owner,
-        'ownerEpoch', '1',
-        'routeVersion', '1',
-        'state', 'READY',
-        'updatedAt', tostring(now),
-        'leaseUntil', tostring(lease_until))
-      redis.call('EXPIRE', ikey, 86400)
+      redis.call('EXPIRE', tpl_key, 86400)
+      write_new_inst()
+    else
+      -- 并发窗口内 canonical 变孤儿：认领本 id，禁止返回已 DEL 的幽灵记录
+      redis.call('SET', tpl_key, tostring(id))
+      redis.call('EXPIRE', tpl_key, 86400)
+      write_new_inst()
     end
   end
 end
