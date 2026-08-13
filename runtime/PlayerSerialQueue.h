@@ -16,6 +16,7 @@
  * 按 player_id 分片的串行队列：同一 player 严格有序，不同 player 可并行。
  * 有界：分片深度 + 全局待处理上限；满则 TryPost 失败（调用方返回过载）。
  * 异步下游：MarkAsyncInFlight 后同玩家后续任务进入 deferred，直到 ClearAsyncInFlight。
+ * 预排队防护：Worker 取 External 任务时若该玩家已 async_depth>0，改入 deferred。
  *
  * 生命周期：RUNNING → DRAINING → STOPPED
  * - DRAINING：拒绝新外部任务；已开始的 async completion 仍可入队
@@ -59,7 +60,7 @@ public:
 
     /**
      * 在任务内调用：标记该玩家进入一段异步（depth++），释放 shard worker；
-     * 同玩家后续 TryPost 进入 deferred，保证有序。
+     * 同玩家后续 TryPost / 已预排队 External 进入 deferred，保证有序。
      */
     void MarkAsyncInFlight(uint64_t player_id);
 
@@ -85,12 +86,23 @@ private:
     PlayerSerialQueue() = default;
     ~PlayerSerialQueue();
 
+    enum class TaskKind : uint8_t {
+        kExternal = 0,
+        kAsyncCompletion = 1,
+    };
+
+    struct TaskEntry {
+        uint64_t player_id = 0;
+        TaskKind kind = TaskKind::kExternal;
+        std::function<void()> fn;
+    };
+
     struct Shard {
         std::mutex mu;
         std::condition_variable cv;
-        std::deque<std::function<void()>> q;
-        std::unordered_map<uint64_t, std::deque<std::function<void()>>> deferred;
-        /** 同玩家异步嵌套深度；>0 时 TryPost 进 deferred */
+        std::deque<TaskEntry> q;
+        std::unordered_map<uint64_t, std::deque<TaskEntry>> deferred;
+        /** 同玩家异步嵌套深度；>0 时 External 进 deferred */
         std::unordered_map<uint64_t, int> async_depth;
         bool stop = false;
         int inflight = 0;

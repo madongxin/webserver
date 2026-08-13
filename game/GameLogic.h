@@ -1,12 +1,14 @@
 #pragma once
 
 #include "game.pb.h"
+#include "IGameDbRepository.h"
 
 #include <cstdint>
 #include <map>
 #include <mutex>
 #include <string>
 #include <unordered_map>
+#include <vector>
 
 /** 游戏业务单例：由 GameService::HandleFrame 在反序列化 GameRequest 后调用 */
 class GameLogic {
@@ -21,6 +23,14 @@ public:
     void CopyInventory(uint64_t player_id, std::unordered_map<uint32_t, uint32_t> *out);
     /** 邮件领取事务提交后同步增加内存背包 */
     bool ApplyItemReward(uint64_t player_id, uint32_t item_id, uint32_t count);
+    /**
+     * 邮件领取成功：同锁内应用 grants 并设为 DB 提交后的 asset_version（禁止回退）。
+     * 版本无法衔接时从 GameDB 重载完整背包。
+     */
+    bool ApplyItemRewardsWithVersion(uint64_t player_id, const std::vector<GameDbGrantedItem> &grants,
+                                     uint64_t committed_asset_version);
+    /** 当前内存资产版本（测试/调试） */
+    uint64_t GetAssetVersion(uint64_t player_id);
     /** 事务失败时回退内存（尽力而为） */
     bool RollbackItemReward(uint64_t player_id, uint32_t item_id, uint32_t count);
 
@@ -58,6 +68,8 @@ private:
     /** @return false：Formal 下 GameDB 加载失败，不得当作空背包成功 */
     bool EnsurePlayerLoaded(uint64_t player_id, std::string *err);
     void EnsurePlayer(uint64_t player_id);
+    /** 从正式资产重载背包+版本（调用方已持 mu_） */
+    bool ReloadAssetsFromGameDbLocked(uint64_t player_id);
 
     std::mutex mu_;
     /** 内存背包：player_id -> (item_config_id -> 聚合数量），与 consume_item 共用 */

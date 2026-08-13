@@ -11,6 +11,7 @@
 #include "NatsThinClient.h"
 
 #include <chrono>
+#include <cstdlib>
 #include <future>
 #include <map>
 #include <sstream>
@@ -27,6 +28,30 @@ void FillFail(GameDbMailClaimResult *r, const char *code, const char *msg) {
     r->should_apply_memory = false;
     r->error_code = code;
     r->message = msg;
+}
+
+uint64_t ParseAssetVersionFromAfterState(const std::string &after) {
+    const char *key = "\"asset_version\":";
+    const auto p = after.find(key);
+    if (p == std::string::npos)
+        return 0;
+    return static_cast<uint64_t>(std::strtoull(after.c_str() + p + 16, nullptr, 10));
+}
+
+/** 幂等命中：优先 op log 中的 asset_version，旧日志回退 LoadMeta（可能略新于本次） */
+void FillIdempotentAssetVersion(GameDbMailClaimResult *result, const MailOpLogRow &existed) {
+    if (!result)
+        return;
+    result->asset_version = ParseAssetVersionFromAfterState(existed.after_state);
+    if (result->asset_version != 0)
+        return;
+    if (!(existed.result_code == mail::err::kOk ||
+          existed.result_code == mail::err::kAlreadyClaimed))
+        return;
+    uint64_t ver = 0;
+    bool exists = false;
+    if (GameDbAssetStore::Instance().LoadMeta(existed.actor_id, &ver, &exists) && exists)
+        result->asset_version = ver;
 }
 
 }  // namespace
@@ -207,6 +232,7 @@ GameDbMailClaimResult AsyncMysqlGameDbRepository::DoClaimMail(const GameDbMailCl
                 ? "CLAIMED"
                 : "";
         result.should_apply_memory = false;
+        FillIdempotentAssetVersion(&result, existed);
         return result;
     }
 
@@ -256,13 +282,17 @@ GameDbMailClaimResult AsyncMysqlGameDbRepository::DoClaimMail(const GameDbMailCl
     }
     if (row.attachment_state == "CLAIMED") {
         // 已领取：尽量写幂等日志；冲突则读已有记录（并发同 key）
+        uint64_t cur_ver = 0;
+        bool meta_exists = false;
+        (void)GameDbAssetStore::Instance().LoadMeta(req.player_id, &cur_ver, &meta_exists);
         MailOpLogRow op;
         op.mail_id = req.mail_id;
         op.actor_id = req.player_id;
         op.operation_type = "CLAIM";
         op.idempotency_key = req.idempotency_key;
         op.before_state = "{\"attachment\":\"CLAIMED\"}";
-        op.after_state = "{\"attachment\":\"CLAIMED\"}";
+        op.after_state = "{\"attachment\":\"CLAIMED\",\"asset_version\":" +
+                         std::to_string(cur_ver) + "}";
         op.result_code = mail::err::kAlreadyClaimed;
         op.trace_id = req.trace_id;
         op.created_at = now;
@@ -278,6 +308,7 @@ GameDbMailClaimResult AsyncMysqlGameDbRepository::DoClaimMail(const GameDbMailCl
             result.message = "already claimed";
             result.attachment_state = "CLAIMED";
             result.mail_row_version = row.row_version;
+            result.asset_version = cur_ver;
             return result;
         }
         MailStore::Instance().Rollback(conn.get());
@@ -287,6 +318,7 @@ GameDbMailClaimResult AsyncMysqlGameDbRepository::DoClaimMail(const GameDbMailCl
             result.error_code = existed.result_code;
             result.message = "idempotent";
             result.attachment_state = "CLAIMED";
+            FillIdempotentAssetVersion(&result, existed);
             return result;
         }
         // 他线程已领完但本 key 未落日志：仍视为已领取成功（资产只入账一次）
@@ -295,6 +327,7 @@ GameDbMailClaimResult AsyncMysqlGameDbRepository::DoClaimMail(const GameDbMailCl
         result.message = "already claimed";
         result.attachment_state = "CLAIMED";
         result.mail_row_version = row.row_version;
+        result.asset_version = cur_ver;
         return result;
     }
     if (row.attachment_state == "CLAIMING") {
@@ -372,7 +405,6 @@ GameDbMailClaimResult AsyncMysqlGameDbRepository::DoClaimMail(const GameDbMailCl
                      asset_msg.empty() ? "asset grant failed" : asset_msg.c_str());
         return result;
     }
-    (void)new_asset_ver;
 
     row.attachment_state = "CLAIMED";
     if (row.read_state != "READ") {
@@ -396,7 +428,8 @@ GameDbMailClaimResult AsyncMysqlGameDbRepository::DoClaimMail(const GameDbMailCl
     op.before_state = "{\"attachment\":\"UNCLAIMED\",\"row_version\":" +
                       std::to_string(version_before) + "}";
     op.after_state = "{\"attachment\":\"CLAIMED\",\"tx\":\"" + asset_tx +
-                     "\",\"row_version\":" + std::to_string(row.row_version) + "}";
+                     "\",\"row_version\":" + std::to_string(row.row_version) +
+                     ",\"asset_version\":" + std::to_string(new_asset_ver) + "}";
     op.result_code = mail::err::kOk;
     op.trace_id = req.trace_id;
     op.created_at = now;
@@ -410,6 +443,7 @@ GameDbMailClaimResult AsyncMysqlGameDbRepository::DoClaimMail(const GameDbMailCl
             result.message = "idempotent";
             result.attachment_state = "CLAIMED";
             result.should_apply_memory = false;
+            FillIdempotentAssetVersion(&result, existed);
             return result;
         }
         FillFail(&result, mail::err::kInternal, "op log failed");
@@ -436,6 +470,7 @@ GameDbMailClaimResult AsyncMysqlGameDbRepository::DoClaimMail(const GameDbMailCl
             result.error_code = existed.result_code;
             result.message = "idempotent";
             result.attachment_state = "CLAIMED";
+            FillIdempotentAssetVersion(&result, existed);
             return result;
         }
         FillFail(&result, mail::err::kInternal, "outbox insert failed");
@@ -444,6 +479,18 @@ GameDbMailClaimResult AsyncMysqlGameDbRepository::DoClaimMail(const GameDbMailCl
 
     if (!MailStore::Instance().Commit(conn.get())) {
         MailStore::Instance().Rollback(conn.get());
+        // UNKNOWN_RESULT：按幂等键查询最终结果，不得武断失败
+        if (MailStore::Instance().FindOpByIdempotency(req.idempotency_key, &existed)) {
+            result.idempotent_hit = true;
+            result.ok = (existed.result_code == mail::err::kOk ||
+                         existed.result_code == mail::err::kAlreadyClaimed);
+            result.error_code = existed.result_code;
+            result.message = "idempotent_after_commit_unknown";
+            result.attachment_state = "CLAIMED";
+            result.should_apply_memory = false;
+            FillIdempotentAssetVersion(&result, existed);
+            return result;
+        }
         FillFail(&result, mail::err::kInternal, "commit failed");
         return result;
     }
@@ -456,5 +503,6 @@ GameDbMailClaimResult AsyncMysqlGameDbRepository::DoClaimMail(const GameDbMailCl
     result.grants = std::move(grants);
     result.should_apply_memory = true;
     result.idempotent_hit = false;
+    result.asset_version = new_asset_ver;
     return result;
 }

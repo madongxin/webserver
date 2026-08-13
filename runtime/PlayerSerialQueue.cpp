@@ -142,13 +142,11 @@ void PlayerSerialQueue::Stop() {
     if (life_.load(std::memory_order_relaxed) == LifeState::kStopped)
         return;
 
-    // 先切断 Complete/TryPost，避免 join 期间 callback 再改状态
     life_.store(LifeState::kStopped, std::memory_order_release);
 
     for (auto &s : shards_) {
         {
             std::lock_guard<std::mutex> qlk(s->mu);
-            // 超时强制取消：丢掉未完成 deferred/async，避免永久 join
             size_t dropped = 0;
             for (auto &kv : s->deferred) {
                 dropped += kv.second.size();
@@ -177,29 +175,41 @@ void PlayerSerialQueue::Stop() {
 
 void PlayerSerialQueue::WorkerLoop(Shard *shard) {
     for (;;) {
-        std::function<void()> task;
+        TaskEntry entry;
         {
             std::unique_lock<std::mutex> lk(shard->mu);
-            shard->cv.wait(lk, [&]() {
-                if (!shard->q.empty())
-                    return true;
-                if (!shard->stop)
-                    return false;
-                return shard->async_depth.empty() && shard->deferred.empty() &&
-                       shard->inflight == 0;
-            });
-            if (shard->stop && shard->q.empty() && shard->async_depth.empty() &&
-                shard->deferred.empty() && shard->inflight == 0)
-                return;
-            if (shard->q.empty())
-                continue;
-            task = std::move(shard->q.front());
-            shard->q.pop_front();
-            ++shard->inflight;
+            for (;;) {
+                shard->cv.wait(lk, [&]() {
+                    if (!shard->q.empty())
+                        return true;
+                    if (!shard->stop)
+                        return false;
+                    return shard->async_depth.empty() && shard->deferred.empty() &&
+                           shard->inflight == 0;
+                });
+                if (shard->stop && shard->q.empty() && shard->async_depth.empty() &&
+                    shard->deferred.empty() && shard->inflight == 0)
+                    return;
+                if (shard->q.empty())
+                    continue;
+                entry = std::move(shard->q.front());
+                shard->q.pop_front();
+                // 预排队防护：Mark 前已入主队列的 External，在 depth>0 时改入 deferred
+                if (entry.kind == TaskKind::kExternal) {
+                    const auto dit = shard->async_depth.find(entry.player_id);
+                    if (dit != shard->async_depth.end() && dit->second > 0) {
+                        shard->deferred[entry.player_id].push_back(std::move(entry));
+                        // pending_global 已在 TryPost 计入，不重复增减
+                        continue;
+                    }
+                }
+                ++shard->inflight;
+                break;
+            }
         }
         try {
-            if (task)
-                task();
+            if (entry.fn)
+                entry.fn();
         } catch (...) {
             LOG_ERROR << "PlayerSerialQueue: task threw";
         }
@@ -221,6 +231,10 @@ bool PlayerSerialQueue::TryPost(uint64_t player_id, std::function<void()> task) 
     Shard *shard = ShardFor(player_id);
     if (!shard)
         return false;
+    TaskEntry entry;
+    entry.player_id = player_id;
+    entry.kind = TaskKind::kExternal;
+    entry.fn = std::move(task);
     {
         std::lock_guard<std::mutex> lk(shard->mu);
         if (shard->stop)
@@ -230,13 +244,13 @@ bool PlayerSerialQueue::TryPost(uint64_t player_id, std::function<void()> task) 
             auto &dq = shard->deferred[player_id];
             if (dq.size() + shard->q.size() >= max_per_shard_)
                 return false;
-            dq.push_back(std::move(task));
+            dq.push_back(std::move(entry));
             pending_global_.fetch_add(1, std::memory_order_relaxed);
             return true;
         }
         if (shard->q.size() >= max_per_shard_)
             return false;
-        shard->q.push_back(std::move(task));
+        shard->q.push_back(std::move(entry));
         pending_global_.fetch_add(1, std::memory_order_relaxed);
     }
     shard->cv.notify_one();
@@ -258,10 +272,8 @@ void PlayerSerialQueue::ClearAsyncInFlight(uint64_t player_id) {
 bool PlayerSerialQueue::CompleteAsyncInFlight(uint64_t player_id,
                                              std::function<void()> completion) {
     Shard *shard = ShardFor(player_id);
-    if (!shard) {
-        // STOPPED：禁止 inline 执行业务 completion；调用方取消 done
+    if (!shard)
         return false;
-    }
     if (!completion) {
         {
             std::lock_guard<std::mutex> lk(shard->mu);
@@ -270,8 +282,6 @@ bool PlayerSerialQueue::CompleteAsyncInFlight(uint64_t player_id,
         shard->cv.notify_one();
         return true;
     }
-    // completion 不受外部 max_global 限制：已开始的异步必须能回投原玩家串行上下文。
-    // 关键：先入队 completion，depth 在其执行后再减；链式 Mark 会使 depth 保持 >0，deferred 不提前释放。
     auto wrapped = [this, player_id, completion = std::move(completion)]() mutable {
         if (completion)
             completion();
@@ -284,9 +294,13 @@ bool PlayerSerialQueue::CompleteAsyncInFlight(uint64_t player_id,
         }
         s->cv.notify_one();
     };
+    TaskEntry entry;
+    entry.player_id = player_id;
+    entry.kind = TaskKind::kAsyncCompletion;
+    entry.fn = std::move(wrapped);
     {
         std::lock_guard<std::mutex> lk(shard->mu);
-        shard->q.push_front(std::move(wrapped));
+        shard->q.push_front(std::move(entry));
         pending_global_.fetch_add(1, std::memory_order_relaxed);
     }
     shard->cv.notify_one();

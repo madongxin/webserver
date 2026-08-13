@@ -32,6 +32,8 @@ message ClaimMailRsp {
   string attachment_state = 6;
   int64 mail_row_version = 7;
   repeated GrantedItem grants = 8;
+  /** 本次领取事务提交后的正式资产版本（幂等命中返回当时已提交版本） */
+  uint64 asset_version = 9;
 }
 
 message LookupAccountReq {

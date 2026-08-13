@@ -606,8 +606,14 @@ bool MailService::ClaimOne(uint64_t player_id, uint64_t mail_id, const std::stri
 void MailService::ApplyClaimMemory(uint64_t player_id, const GameDbMailClaimResult &db_rsp) {
     if (!db_rsp.should_apply_memory)
         return;
-    for (const auto &g : db_rsp.grants)
-        GameLogic::Instance().ApplyItemReward(player_id, static_cast<uint32_t>(g.asset_id), g.count);
+    if (db_rsp.asset_version != 0) {
+        (void)GameLogic::Instance().ApplyItemRewardsWithVersion(player_id, db_rsp.grants,
+                                                                db_rsp.asset_version);
+    } else {
+        for (const auto &g : db_rsp.grants)
+            GameLogic::Instance().ApplyItemReward(player_id, static_cast<uint32_t>(g.asset_id),
+                                                  g.count);
+    }
     BumpVersion(player_id);
 }
 

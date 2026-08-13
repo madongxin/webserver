@@ -166,6 +166,7 @@ void OnClaimMailDone(ClaimMailAsyncCtx *ctx) {
         out.message = ctx->rpc_rsp.message();
         out.attachment_state = ctx->rpc_rsp.attachment_state();
         out.mail_row_version = ctx->rpc_rsp.mail_row_version();
+        out.asset_version = ctx->rpc_rsp.asset_version();
         for (int i = 0; i < ctx->rpc_rsp.grants_size(); ++i) {
             GameDbGrantedItem g;
             g.asset_id = ctx->rpc_rsp.grants(i).asset_id();
@@ -244,6 +245,7 @@ GameDbMailClaimResult BrpcGameDbRepository::ClaimMailAttachments(GameDbMailClaim
     out.message = rpc_rsp.message();
     out.attachment_state = rpc_rsp.attachment_state();
     out.mail_row_version = rpc_rsp.mail_row_version();
+    out.asset_version = rpc_rsp.asset_version();
     for (int i = 0; i < rpc_rsp.grants_size(); ++i) {
         GameDbGrantedItem g;
         g.asset_id = rpc_rsp.grants(i).asset_id();

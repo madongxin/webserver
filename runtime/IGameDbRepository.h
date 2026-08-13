@@ -39,6 +39,8 @@ struct GameDbMailClaimResult {
     std::string attachment_state;
     int64_t mail_row_version = 0;
     std::vector<GameDbGrantedItem> grants;
+    /** MySQL 提交后的 asset_version；幂等命中为该次操作已提交版本 */
+    uint64_t asset_version = 0;
 };
 
 class IGameDbRepository {

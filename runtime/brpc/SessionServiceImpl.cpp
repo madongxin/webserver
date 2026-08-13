@@ -28,18 +28,17 @@ void FillPlacementPb(const PlacementRecord &r, sess::PlacementRecord *pb) {
 /** Resolve 前刷新健康 Logic，避免死 Owner 仍被软续租 */
 void RefreshHealthyLogicOwners() {
     if (!RedisServiceRegistry::Get().ready())
-        return;
+        return;  // A: 注册中心未就绪 — 保留最后快照/静态配置
     std::vector<IServiceRegistry::ServiceInstance> insts;
-    if (!RedisServiceRegistry::Get().Discover("gamelogic", &insts) || insts.empty())
-        return;
+    if (!RedisServiceRegistry::Get().Discover("gamelogic", &insts))
+        return;  // A: Discover 调用失败 — 保留快照，不 fail-open 清空
+    // B/C: Discover 成功（含零实例）— 原子替换；空列表 → fail-closed
     std::vector<std::string> ids;
     ids.reserve(insts.size());
     for (const auto &i : insts) {
         if (!i.instance_id.empty())
             ids.push_back(i.instance_id);
     }
-    if (ids.empty())
-        return;
     SessionStore::Instance().SetLogicInstanceIds(ids);
     PlacementStore::Instance().SetLogicOwners(std::move(ids));
 }

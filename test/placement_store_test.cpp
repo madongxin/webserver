@@ -245,6 +245,22 @@ int main() {
         PlacementStore::Instance().SetLogicOwners({"gl-0", "gl-1"});
     }
 
+    // 健康 Owner 清空：新建 Placement fail-closed
+    {
+        PlacementStore::Instance().SetLogicOwners({});
+        ResolveOrCreateInput no_in;
+        no_in.realm_id = 1;
+        no_in.map_template_id = expired_in.map_template_id + 99;
+        ResolveOrCreateResult no_out;
+        if (PlacementStore::Instance().ResolveOrCreate(no_in, &no_out))
+            return Fail("empty-owners resolve should fail");
+        if (no_out.error_code != "NO_HEALTHY_GAMELOGIC")
+            return Fail("empty-owners error_code");
+        if (!PlacementStore::Instance().PickHealthyOwner("").empty())
+            return Fail("empty-owners PickHealthyOwner");
+        PlacementStore::Instance().SetLogicOwners({"gl-0", "gl-1"});
+    }
+
     // RECOVERING：硬 reclaim 升 epoch
     ResolveOrCreateInput hard_in = expired_in;
     hard_in.map_template_id = expired_in.map_template_id + 1;

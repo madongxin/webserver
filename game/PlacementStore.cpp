@@ -358,10 +358,9 @@ bool PlacementStore::InitFromSessionPrefix(const std::string &key_prefix, int de
 
 void PlacementStore::SetLogicOwners(std::vector<std::string> owners) {
     std::lock_guard<std::mutex> lk(cfg_mu_);
-    if (!owners.empty()) {
-        owners_ = std::move(owners);
-        rr_ = 0;
-    }
+    // 允许显式清空（Discover 成功但零健康实例 → fail-closed）
+    owners_ = std::move(owners);
+    rr_ = 0;
 }
 
 std::string PlacementStore::InstKey(uint64_t id) const {
@@ -384,14 +383,14 @@ std::string PlacementStore::IdGenKey() const {
 
 std::string PlacementStore::PickOwner(const std::string &preferred) const {
     std::lock_guard<std::mutex> lk(cfg_mu_);
+    if (owners_.empty())
+        return {};
     if (!preferred.empty()) {
         for (const auto &o : owners_) {
             if (o == preferred)
                 return preferred;
         }
     }
-    if (owners_.empty())
-        return "gl-0";
     const size_t idx = rr_ % owners_.size();
     ++rr_;
     return owners_[idx];
@@ -425,6 +424,11 @@ bool PlacementStore::ResolveOrCreate(const ResolveOrCreateInput &in, ResolveOrCr
         return false;
     }
     const std::string owner = PickOwner(in.preferred_owner);
+    if (owner.empty()) {
+        out->message = "no healthy gamelogic";
+        out->error_code = "NO_HEALTHY_GAMELOGIC";
+        return false;
+    }
     const std::string healthy_csv = HealthyOwnersCsv();
     auto lease = RedisPool::Instance().Acquire();
     if (!lease) {
@@ -671,13 +675,14 @@ return out
 std::string PlacementStore::PickHealthyOwner(const std::string &exclude) const {
     std::lock_guard<std::mutex> lk(cfg_mu_);
     if (owners_.empty())
-        return "gl-0";
+        return {};
     for (size_t i = 0; i < owners_.size(); ++i) {
         const size_t idx = (rr_ + i) % owners_.size();
         if (owners_[idx] != exclude)
             return owners_[idx];
     }
-    return owners_[rr_ % owners_.size()];
+    // 仅剩 exclude 自身：无其它健康 Owner
+    return {};
 }
 
 void PlacementStore::AppendAudit(uint64_t map_instance_id, const std::string &event,

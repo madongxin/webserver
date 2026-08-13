@@ -682,6 +682,12 @@ class ClaimMailRsp : public ::google::protobuf::Message /* @@protoc_insertion_po
   ::google::protobuf::int64 mail_row_version() const;
   void set_mail_row_version(::google::protobuf::int64 value);
 
+  // uint64 asset_version = 9;
+  void clear_asset_version();
+  static const int kAssetVersionFieldNumber = 9;
+  ::google::protobuf::uint64 asset_version() const;
+  void set_asset_version(::google::protobuf::uint64 value);
+
   // bool ok = 1;
   void clear_ok();
   static const int kOkFieldNumber = 1;
@@ -709,6 +715,7 @@ class ClaimMailRsp : public ::google::protobuf::Message /* @@protoc_insertion_po
   ::google::protobuf::internal::ArenaStringPtr message_;
   ::google::protobuf::internal::ArenaStringPtr attachment_state_;
   ::google::protobuf::int64 mail_row_version_;
+  ::google::protobuf::uint64 asset_version_;
   bool ok_;
   bool idempotent_hit_;
   bool should_apply_memory_;
@@ -3640,6 +3647,20 @@ inline const ::google::protobuf::RepeatedPtrField< ::gdb::GrantedItem >&
 ClaimMailRsp::grants() const {
   // @@protoc_insertion_point(field_list:gdb.ClaimMailRsp.grants)
   return grants_;
+}
+
+// uint64 asset_version = 9;
+inline void ClaimMailRsp::clear_asset_version() {
+  asset_version_ = GOOGLE_ULONGLONG(0);
+}
+inline ::google::protobuf::uint64 ClaimMailRsp::asset_version() const {
+  // @@protoc_insertion_point(field_get:gdb.ClaimMailRsp.asset_version)
+  return asset_version_;
+}
+inline void ClaimMailRsp::set_asset_version(::google::protobuf::uint64 value) {
+
+  asset_version_ = value;
+  // @@protoc_insertion_point(field_set:gdb.ClaimMailRsp.asset_version)
 }
 
 // -------------------------------------------------------------------

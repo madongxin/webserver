@@ -14,6 +14,7 @@
 #include "GatewayAuthFlow.h"
 #include "GatewayAuthPolicy.h"
 #include "GatewayConnRegistry.h"
+#include "GatewayDisconnectAsync.h"
 #include "GatewayIdentity.h"
 #include "GatewayLoginRoute.h"
 #include "InProcessTransport.h"
@@ -197,6 +198,9 @@ void GameTcpGateway::RequestQuit() {
 
 void GameTcpGateway::Run() {
     InProcessTransport::Instance().EnsureStarted(0);
+#ifdef WEBSERVER_ENABLE_REDIS
+    GatewayDisconnectAsync::Instance().Start(4096);
+#endif
 
     EventLoop loop;
     auto server = std::make_unique<TcpServer>(&loop, ip_.c_str(), port_);
@@ -248,9 +252,11 @@ void GameTcpGateway::Run() {
             } else
 #endif
                 if (SessionStore::Instance().Available()) {
-                // 本地 Redis 兜底：短路径；正式拓扑走上面 Async
-                SessionStore::Instance().MarkDisconnected(bind.player_id, bind.token,
-                                                         bind.generation);
+                // 本地 Redis 兜底：后台队列，禁止在 Reactor 同步访问 Redis
+                if (!GatewayDisconnectAsync::Instance().EnqueueMarkDisconnected(
+                        bind.player_id, bind.token, bind.generation)) {
+                    LOG_WARN << "disconnect redis enqueue failed player=" << bind.player_id;
+                }
             }
 #endif
 #ifdef WEBSERVER_ENABLE_BRPC
@@ -291,6 +297,9 @@ void GameTcpGateway::Run() {
     server->Start();
     server_.store(nullptr);
     loop_.store(nullptr);
+#ifdef WEBSERVER_ENABLE_REDIS
+    GatewayDisconnectAsync::Instance().Stop(std::chrono::milliseconds(2000));
+#endif
 }
 
 void GameTcpGateway::OnMessage(const std::shared_ptr<TcpConnection> &conn) {

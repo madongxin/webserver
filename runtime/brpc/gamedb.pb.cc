@@ -588,6 +588,7 @@ const ::google::protobuf::uint32 TableStruct::offsets[] GOOGLE_PROTOBUF_ATTRIBUT
   GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::gdb::ClaimMailRsp, attachment_state_),
   GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::gdb::ClaimMailRsp, mail_row_version_),
   GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::gdb::ClaimMailRsp, grants_),
+  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::gdb::ClaimMailRsp, asset_version_),
   ~0u,  // no _has_bits_
   GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::gdb::LookupAccountReq, _internal_metadata_),
   ~0u,  // no _extensions_
@@ -753,22 +754,22 @@ static const ::google::protobuf::internal::MigrationSchema schemas[] GOOGLE_PROT
   { 7, -1, sizeof(::gdb::BagEntry)},
   { 14, -1, sizeof(::gdb::ClaimMailReq)},
   { 25, -1, sizeof(::gdb::ClaimMailRsp)},
-  { 38, -1, sizeof(::gdb::LookupAccountReq)},
-  { 45, -1, sizeof(::gdb::LookupAccountRsp)},
-  { 61, -1, sizeof(::gdb::RegisterAccountReq)},
-  { 72, -1, sizeof(::gdb::RegisterAccountRsp)},
-  { 82, -1, sizeof(::gdb::LoadPlayerReq)},
-  { 88, -1, sizeof(::gdb::LoadPlayerRsp)},
-  { 99, -1, sizeof(::gdb::LoadInventoryReq)},
-  { 105, -1, sizeof(::gdb::LoadInventoryRsp)},
-  { 116, -1, sizeof(::gdb::AssetMutationReq)},
-  { 128, -1, sizeof(::gdb::AssetMutationRsp)},
-  { 139, -1, sizeof(::gdb::SavePlayerSnapshotReq)},
-  { 148, -1, sizeof(::gdb::SavePlayerSnapshotRsp)},
-  { 158, -1, sizeof(::gdb::FlushPlayerReq)},
-  { 165, -1, sizeof(::gdb::FlushPlayerRsp)},
-  { 174, -1, sizeof(::gdb::QueryOperationResultReq)},
-  { 182, -1, sizeof(::gdb::QueryOperationResultRsp)},
+  { 39, -1, sizeof(::gdb::LookupAccountReq)},
+  { 46, -1, sizeof(::gdb::LookupAccountRsp)},
+  { 62, -1, sizeof(::gdb::RegisterAccountReq)},
+  { 73, -1, sizeof(::gdb::RegisterAccountRsp)},
+  { 83, -1, sizeof(::gdb::LoadPlayerReq)},
+  { 89, -1, sizeof(::gdb::LoadPlayerRsp)},
+  { 100, -1, sizeof(::gdb::LoadInventoryReq)},
+  { 106, -1, sizeof(::gdb::LoadInventoryRsp)},
+  { 117, -1, sizeof(::gdb::AssetMutationReq)},
+  { 129, -1, sizeof(::gdb::AssetMutationRsp)},
+  { 140, -1, sizeof(::gdb::SavePlayerSnapshotReq)},
+  { 149, -1, sizeof(::gdb::SavePlayerSnapshotRsp)},
+  { 159, -1, sizeof(::gdb::FlushPlayerReq)},
+  { 166, -1, sizeof(::gdb::FlushPlayerRsp)},
+  { 175, -1, sizeof(::gdb::QueryOperationResultReq)},
+  { 183, -1, sizeof(::gdb::QueryOperationResultRsp)},
 };
 
 static ::google::protobuf::Message const * const file_default_instances[] = {
@@ -822,79 +823,79 @@ void AddDescriptorsImpl() {
       "mMailReq\022\021\n\tplayer_id\030\001 \001(\004\022\017\n\007mail_id\030\002"
       " \001(\004\022\027\n\017idempotency_key\030\003 \001(\t\022\020\n\010trace_i"
       "d\030\004 \001(\t\022\032\n\022inventory_soft_cap\030\005 \001(\003\022#\n\014b"
-      "ag_snapshot\030\006 \003(\0132\r.gdb.BagEntry\"\312\001\n\014Cla"
+      "ag_snapshot\030\006 \003(\0132\r.gdb.BagEntry\"\341\001\n\014Cla"
       "imMailRsp\022\n\n\002ok\030\001 \001(\010\022\026\n\016idempotent_hit\030"
       "\002 \001(\010\022\033\n\023should_apply_memory\030\003 \001(\010\022\022\n\ner"
       "ror_code\030\004 \001(\t\022\017\n\007message\030\005 \001(\t\022\030\n\020attac"
       "hment_state\030\006 \001(\t\022\030\n\020mail_row_version\030\007 "
-      "\001(\003\022 \n\006grants\030\010 \003(\0132\020.gdb.GrantedItem\"8\n"
-      "\020LookupAccountReq\022\021\n\tplayer_id\030\001 \001(\004\022\021\n\t"
-      "device_id\030\002 \001(\t\"\346\001\n\020LookupAccountRsp\022\n\n\002"
-      "ok\030\001 \001(\010\022\017\n\007message\030\002 \001(\t\022\022\n\nerror_code\030"
-      "\003 \001(\t\022\016\n\006exists\030\004 \001(\010\022\016\n\006banned\030\005 \001(\010\022\022\n"
-      "\naccount_id\030\006 \001(\004\022\021\n\tplayer_id\030\007 \001(\004\022\025\n\r"
-      "password_hash\030\010 \001(\t\022\025\n\rpassword_salt\030\t \001"
-      "(\t\022\026\n\016password_iters\030\n \001(\005\022\024\n\014has_passwo"
-      "rd\030\013 \001(\010\"\234\001\n\022RegisterAccountReq\022\021\n\tdevic"
-      "e_id\030\001 \001(\t\022\024\n\014display_name\030\002 \001(\t\022\025\n\rpass"
-      "word_hash\030\003 \001(\t\022\025\n\rpassword_salt\030\004 \001(\t\022\026"
-      "\n\016password_iters\030\005 \001(\005\022\027\n\017idempotency_ke"
-      "y\030\006 \001(\t\"l\n\022RegisterAccountRsp\022\n\n\002ok\030\001 \001("
-      "\010\022\017\n\007message\030\002 \001(\t\022\022\n\nerror_code\030\003 \001(\t\022\022"
-      "\n\naccount_id\030\004 \001(\004\022\021\n\tplayer_id\030\005 \001(\004\"\"\n"
-      "\rLoadPlayerReq\022\021\n\tplayer_id\030\001 \001(\004\"z\n\rLoa"
-      "dPlayerRsp\022\n\n\002ok\030\001 \001(\010\022\017\n\007message\030\002 \001(\t\022"
-      "\022\n\nerror_code\030\003 \001(\t\022\021\n\tplayer_id\030\004 \001(\004\022\025"
-      "\n\rasset_version\030\005 \001(\004\022\016\n\006exists\030\006 \001(\010\"%\n"
-      "\020LoadInventoryReq\022\021\n\tplayer_id\030\001 \001(\004\"\211\001\n"
-      "\020LoadInventoryRsp\022\n\n\002ok\030\001 \001(\010\022\017\n\007message"
-      "\030\002 \001(\t\022\022\n\nerror_code\030\003 \001(\t\022\021\n\tplayer_id\030"
-      "\004 \001(\004\022\025\n\rasset_version\030\005 \001(\004\022\032\n\003bag\030\006 \003("
-      "\0132\r.gdb.BagEntry\"\241\001\n\020AssetMutationReq\022\021\n"
-      "\tplayer_id\030\001 \001(\004\022\027\n\017idempotency_key\030\002 \001("
-      "\t\022\030\n\020expected_version\030\003 \001(\004\022\025\n\rmutation_"
-      "type\030\004 \001(\t\022\017\n\007item_id\030\005 \001(\r\022\r\n\005count\030\006 \001"
-      "(\r\022\020\n\010trace_id\030\007 \001(\t\"\210\001\n\020AssetMutationRs"
-      "p\022\n\n\002ok\030\001 \001(\010\022\017\n\007message\030\002 \001(\t\022\022\n\nerror_"
-      "code\030\003 \001(\t\022\026\n\016idempotent_hit\030\004 \001(\010\022\025\n\ras"
-      "set_version\030\005 \001(\004\022\024\n\014remain_count\030\006 \001(\r\""
-      "y\n\025SavePlayerSnapshotReq\022\021\n\tplayer_id\030\001 "
-      "\001(\004\022\030\n\020expected_version\030\002 \001(\004\022\032\n\003bag\030\003 \003"
-      "(\0132\r.gdb.BagEntry\022\027\n\017idempotency_key\030\004 \001"
-      "(\t\"w\n\025SavePlayerSnapshotRsp\022\n\n\002ok\030\001 \001(\010\022"
-      "\017\n\007message\030\002 \001(\t\022\022\n\nerror_code\030\003 \001(\t\022\025\n\r"
-      "asset_version\030\004 \001(\004\022\026\n\016idempotent_hit\030\005 "
-      "\001(\010\"3\n\016FlushPlayerReq\022\021\n\tplayer_id\030\001 \001(\004"
-      "\022\016\n\006reason\030\002 \001(\t\"X\n\016FlushPlayerRsp\022\n\n\002ok"
-      "\030\001 \001(\010\022\017\n\007message\030\002 \001(\t\022\022\n\nerror_code\030\003 "
-      "\001(\t\022\025\n\rasset_version\030\004 \001(\004\"]\n\027QueryOpera"
-      "tionResultReq\022\021\n\tplayer_id\030\001 \001(\004\022\027\n\017idem"
-      "potency_key\030\002 \001(\t\022\026\n\016operation_type\030\003 \001("
-      "\t\"\332\001\n\027QueryOperationResultRsp\022\n\n\002ok\030\001 \001("
-      "\010\022\017\n\007message\030\002 \001(\t\022\022\n\nerror_code\030\003 \001(\t\022\r"
-      "\n\005found\030\004 \001(\010\022\024\n\014completed_ok\030\005 \001(\010\022\026\n\016i"
-      "dempotent_hit\030\006 \001(\010\022\025\n\rasset_version\030\007 \001"
-      "(\004\022\024\n\014remain_count\030\010 \001(\r\022\024\n\014request_hash"
-      "\030\t \001(\t\022\016\n\006status\030\n \001(\t2\345\004\n\rGameDbService"
-      "\022<\n\024ClaimMailAttachments\022\021.gdb.ClaimMail"
-      "Req\032\021.gdb.ClaimMailRsp\022=\n\rLookupAccount\022"
-      "\025.gdb.LookupAccountReq\032\025.gdb.LookupAccou"
-      "ntRsp\022C\n\017RegisterAccount\022\027.gdb.RegisterA"
-      "ccountReq\032\027.gdb.RegisterAccountRsp\0224\n\nLo"
-      "adPlayer\022\022.gdb.LoadPlayerReq\032\022.gdb.LoadP"
-      "layerRsp\022=\n\rLoadInventory\022\025.gdb.LoadInve"
-      "ntoryReq\032\025.gdb.LoadInventoryRsp\022B\n\022Apply"
-      "AssetMutation\022\025.gdb.AssetMutationReq\032\025.g"
-      "db.AssetMutationRsp\022L\n\022SavePlayerSnapsho"
-      "t\022\032.gdb.SavePlayerSnapshotReq\032\032.gdb.Save"
-      "PlayerSnapshotRsp\0227\n\013FlushPlayer\022\023.gdb.F"
-      "lushPlayerReq\032\023.gdb.FlushPlayerRsp\022R\n\024Qu"
-      "eryOperationResult\022\034.gdb.QueryOperationR"
-      "esultReq\032\034.gdb.QueryOperationResultRspB\003"
-      "\200\001\001b\006proto3"
+      "\001(\003\022 \n\006grants\030\010 \003(\0132\020.gdb.GrantedItem\022\025\n"
+      "\rasset_version\030\t \001(\004\"8\n\020LookupAccountReq"
+      "\022\021\n\tplayer_id\030\001 \001(\004\022\021\n\tdevice_id\030\002 \001(\t\"\346"
+      "\001\n\020LookupAccountRsp\022\n\n\002ok\030\001 \001(\010\022\017\n\007messa"
+      "ge\030\002 \001(\t\022\022\n\nerror_code\030\003 \001(\t\022\016\n\006exists\030\004"
+      " \001(\010\022\016\n\006banned\030\005 \001(\010\022\022\n\naccount_id\030\006 \001(\004"
+      "\022\021\n\tplayer_id\030\007 \001(\004\022\025\n\rpassword_hash\030\010 \001"
+      "(\t\022\025\n\rpassword_salt\030\t \001(\t\022\026\n\016password_it"
+      "ers\030\n \001(\005\022\024\n\014has_password\030\013 \001(\010\"\234\001\n\022Regi"
+      "sterAccountReq\022\021\n\tdevice_id\030\001 \001(\t\022\024\n\014dis"
+      "play_name\030\002 \001(\t\022\025\n\rpassword_hash\030\003 \001(\t\022\025"
+      "\n\rpassword_salt\030\004 \001(\t\022\026\n\016password_iters\030"
+      "\005 \001(\005\022\027\n\017idempotency_key\030\006 \001(\t\"l\n\022Regist"
+      "erAccountRsp\022\n\n\002ok\030\001 \001(\010\022\017\n\007message\030\002 \001("
+      "\t\022\022\n\nerror_code\030\003 \001(\t\022\022\n\naccount_id\030\004 \001("
+      "\004\022\021\n\tplayer_id\030\005 \001(\004\"\"\n\rLoadPlayerReq\022\021\n"
+      "\tplayer_id\030\001 \001(\004\"z\n\rLoadPlayerRsp\022\n\n\002ok\030"
+      "\001 \001(\010\022\017\n\007message\030\002 \001(\t\022\022\n\nerror_code\030\003 \001"
+      "(\t\022\021\n\tplayer_id\030\004 \001(\004\022\025\n\rasset_version\030\005"
+      " \001(\004\022\016\n\006exists\030\006 \001(\010\"%\n\020LoadInventoryReq"
+      "\022\021\n\tplayer_id\030\001 \001(\004\"\211\001\n\020LoadInventoryRsp"
+      "\022\n\n\002ok\030\001 \001(\010\022\017\n\007message\030\002 \001(\t\022\022\n\nerror_c"
+      "ode\030\003 \001(\t\022\021\n\tplayer_id\030\004 \001(\004\022\025\n\rasset_ve"
+      "rsion\030\005 \001(\004\022\032\n\003bag\030\006 \003(\0132\r.gdb.BagEntry\""
+      "\241\001\n\020AssetMutationReq\022\021\n\tplayer_id\030\001 \001(\004\022"
+      "\027\n\017idempotency_key\030\002 \001(\t\022\030\n\020expected_ver"
+      "sion\030\003 \001(\004\022\025\n\rmutation_type\030\004 \001(\t\022\017\n\007ite"
+      "m_id\030\005 \001(\r\022\r\n\005count\030\006 \001(\r\022\020\n\010trace_id\030\007 "
+      "\001(\t\"\210\001\n\020AssetMutationRsp\022\n\n\002ok\030\001 \001(\010\022\017\n\007"
+      "message\030\002 \001(\t\022\022\n\nerror_code\030\003 \001(\t\022\026\n\016ide"
+      "mpotent_hit\030\004 \001(\010\022\025\n\rasset_version\030\005 \001(\004"
+      "\022\024\n\014remain_count\030\006 \001(\r\"y\n\025SavePlayerSnap"
+      "shotReq\022\021\n\tplayer_id\030\001 \001(\004\022\030\n\020expected_v"
+      "ersion\030\002 \001(\004\022\032\n\003bag\030\003 \003(\0132\r.gdb.BagEntry"
+      "\022\027\n\017idempotency_key\030\004 \001(\t\"w\n\025SavePlayerS"
+      "napshotRsp\022\n\n\002ok\030\001 \001(\010\022\017\n\007message\030\002 \001(\t\022"
+      "\022\n\nerror_code\030\003 \001(\t\022\025\n\rasset_version\030\004 \001"
+      "(\004\022\026\n\016idempotent_hit\030\005 \001(\010\"3\n\016FlushPlaye"
+      "rReq\022\021\n\tplayer_id\030\001 \001(\004\022\016\n\006reason\030\002 \001(\t\""
+      "X\n\016FlushPlayerRsp\022\n\n\002ok\030\001 \001(\010\022\017\n\007message"
+      "\030\002 \001(\t\022\022\n\nerror_code\030\003 \001(\t\022\025\n\rasset_vers"
+      "ion\030\004 \001(\004\"]\n\027QueryOperationResultReq\022\021\n\t"
+      "player_id\030\001 \001(\004\022\027\n\017idempotency_key\030\002 \001(\t"
+      "\022\026\n\016operation_type\030\003 \001(\t\"\332\001\n\027QueryOperat"
+      "ionResultRsp\022\n\n\002ok\030\001 \001(\010\022\017\n\007message\030\002 \001("
+      "\t\022\022\n\nerror_code\030\003 \001(\t\022\r\n\005found\030\004 \001(\010\022\024\n\014"
+      "completed_ok\030\005 \001(\010\022\026\n\016idempotent_hit\030\006 \001"
+      "(\010\022\025\n\rasset_version\030\007 \001(\004\022\024\n\014remain_coun"
+      "t\030\010 \001(\r\022\024\n\014request_hash\030\t \001(\t\022\016\n\006status\030"
+      "\n \001(\t2\345\004\n\rGameDbService\022<\n\024ClaimMailAtta"
+      "chments\022\021.gdb.ClaimMailReq\032\021.gdb.ClaimMa"
+      "ilRsp\022=\n\rLookupAccount\022\025.gdb.LookupAccou"
+      "ntReq\032\025.gdb.LookupAccountRsp\022C\n\017Register"
+      "Account\022\027.gdb.RegisterAccountReq\032\027.gdb.R"
+      "egisterAccountRsp\0224\n\nLoadPlayer\022\022.gdb.Lo"
+      "adPlayerReq\032\022.gdb.LoadPlayerRsp\022=\n\rLoadI"
+      "nventory\022\025.gdb.LoadInventoryReq\032\025.gdb.Lo"
+      "adInventoryRsp\022B\n\022ApplyAssetMutation\022\025.g"
+      "db.AssetMutationReq\032\025.gdb.AssetMutationR"
+      "sp\022L\n\022SavePlayerSnapshot\022\032.gdb.SavePlaye"
+      "rSnapshotReq\032\032.gdb.SavePlayerSnapshotRsp"
+      "\0227\n\013FlushPlayer\022\023.gdb.FlushPlayerReq\032\023.g"
+      "db.FlushPlayerRsp\022R\n\024QueryOperationResul"
+      "t\022\034.gdb.QueryOperationResultReq\032\034.gdb.Qu"
+      "eryOperationResultRspB\003\200\001\001b\006proto3"
   };
   ::google::protobuf::DescriptorPool::InternalAddGeneratedFile(
-      descriptor, 3011);
+      descriptor, 3034);
   ::google::protobuf::MessageFactory::InternalRegisterGeneratedFile(
     "gamedb.proto", &protobuf_RegisterTypes);
 }
@@ -1957,6 +1958,7 @@ const int ClaimMailRsp::kMessageFieldNumber;
 const int ClaimMailRsp::kAttachmentStateFieldNumber;
 const int ClaimMailRsp::kMailRowVersionFieldNumber;
 const int ClaimMailRsp::kGrantsFieldNumber;
+const int ClaimMailRsp::kAssetVersionFieldNumber;
 #endif  // !defined(_MSC_VER) || _MSC_VER >= 1900
 
 ClaimMailRsp::ClaimMailRsp()
@@ -2176,6 +2178,20 @@ bool ClaimMailRsp::MergePartialFromCodedStream(
         break;
       }
 
+      // uint64 asset_version = 9;
+      case 9: {
+        if (static_cast< ::google::protobuf::uint8>(tag) ==
+            static_cast< ::google::protobuf::uint8>(72u /* 72 & 0xFF */)) {
+
+          DO_((::google::protobuf::internal::WireFormatLite::ReadPrimitive<
+                   ::google::protobuf::uint64, ::google::protobuf::internal::WireFormatLite::TYPE_UINT64>(
+                 input, &asset_version_)));
+        } else {
+          goto handle_unusual;
+        }
+        break;
+      }
+
       default: {
       handle_unusual:
         if (tag == 0) {
@@ -2259,6 +2275,11 @@ void ClaimMailRsp::SerializeWithCachedSizes(
       8, this->grants(static_cast<int>(i)), output);
   }
 
+  // uint64 asset_version = 9;
+  if (this->asset_version() != 0) {
+    ::google::protobuf::internal::WireFormatLite::WriteUInt64(9, this->asset_version(), output);
+  }
+
   if ((_internal_metadata_.have_unknown_fields() &&  ::google::protobuf::internal::GetProto3PreserveUnknownsDefault())) {
     ::google::protobuf::internal::WireFormat::SerializeUnknownFields(
         (::google::protobuf::internal::GetProto3PreserveUnknownsDefault()   ? _internal_metadata_.unknown_fields()   : _internal_metadata_.default_instance()), output);
@@ -2334,6 +2355,11 @@ void ClaimMailRsp::SerializeWithCachedSizes(
         8, this->grants(static_cast<int>(i)), deterministic, target);
   }
 
+  // uint64 asset_version = 9;
+  if (this->asset_version() != 0) {
+    target = ::google::protobuf::internal::WireFormatLite::WriteUInt64ToArray(9, this->asset_version(), target);
+  }
+
   if ((_internal_metadata_.have_unknown_fields() &&  ::google::protobuf::internal::GetProto3PreserveUnknownsDefault())) {
     target = ::google::protobuf::internal::WireFormat::SerializeUnknownFieldsToArray(
         (::google::protobuf::internal::GetProto3PreserveUnknownsDefault()   ? _internal_metadata_.unknown_fields()   : _internal_metadata_.default_instance()), target);
@@ -2388,6 +2414,13 @@ size_t ClaimMailRsp::ByteSizeLong() const {
     total_size += 1 +
       ::google::protobuf::internal::WireFormatLite::Int64Size(
         this->mail_row_version());
+  }
+
+  // uint64 asset_version = 9;
+  if (this->asset_version() != 0) {
+    total_size += 1 +
+      ::google::protobuf::internal::WireFormatLite::UInt64Size(
+        this->asset_version());
   }
 
   // bool ok = 1;
@@ -2450,6 +2483,9 @@ void ClaimMailRsp::MergeFrom(const ClaimMailRsp& from) {
   if (from.mail_row_version() != 0) {
     set_mail_row_version(from.mail_row_version());
   }
+  if (from.asset_version() != 0) {
+    set_asset_version(from.asset_version());
+  }
   if (from.ok() != 0) {
     set_ok(from.ok());
   }
@@ -2490,6 +2526,7 @@ void ClaimMailRsp::InternalSwap(ClaimMailRsp* other) {
   message_.Swap(&other->message_);
   attachment_state_.Swap(&other->attachment_state_);
   swap(mail_row_version_, other->mail_row_version_);
+  swap(asset_version_, other->asset_version_);
   swap(ok_, other->ok_);
   swap(idempotent_hit_, other->idempotent_hit_);
   swap(should_apply_memory_, other->should_apply_memory_);

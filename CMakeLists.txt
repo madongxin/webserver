@@ -93,6 +93,7 @@ if(ENABLE_GAME_PROTOBUF)
     game/GatewayAuthPolicy.cpp
     game/CommandPolicy.cpp
     runtime/PlayerSerialQueue.cpp
+    runtime/GatewayDisconnectAsync.cpp
     runtime/InProcessTransport.cpp
     runtime/TcpReplySink.cpp
     runtime/GameRequestPlayerId.cpp
@@ -561,6 +562,7 @@ if(ENABLE_GAME_PROTOBUF)
 
     add_executable(gateway_disconnect_async_test
       test/gateway_disconnect_async_test.cpp
+      runtime/GatewayDisconnectAsync.cpp
       runtime/brpc/SessionRpcClient.cpp
       runtime/brpc/GatewayAuthClients.cpp
       runtime/brpc/session.pb.cc

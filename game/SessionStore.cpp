@@ -713,8 +713,8 @@ bool SessionStore::ExpireIfGraceElapsed(uint64_t player_id, SessionRecord *rec) 
 
 void SessionStore::SetLogicInstanceIds(std::vector<std::string> ids) {
     std::lock_guard<std::mutex> lk(cfg_mu_);
-    if (!ids.empty())
-        logic_instance_ids_ = std::move(ids);
+    // 允许清空：Discover 成功零实例时 fail-closed，禁止回退 gl-0
+    logic_instance_ids_ = std::move(ids);
 }
 
 bool SessionStore::AcquireSessionUnlocked(const AcquireSessionInput &in, AcquireSessionResult *out) {
@@ -736,13 +736,29 @@ bool SessionStore::AcquireSessionUnlocked(const AcquireSessionInput &in, Acquire
     {
         std::lock_guard<std::mutex> lk(cfg_mu_);
         if (!in.preferred_gamelogic_instance_id.empty()) {
-            logic_id = in.preferred_gamelogic_instance_id;
+            // 偏好 Owner 必须仍在健康列表（空列表则拒绝）
+            bool preferred_ok = false;
+            for (const auto &id : logic_instance_ids_) {
+                if (id == in.preferred_gamelogic_instance_id) {
+                    preferred_ok = true;
+                    break;
+                }
+            }
+            if (preferred_ok) {
+                logic_id = in.preferred_gamelogic_instance_id;
+            } else if (!logic_instance_ids_.empty()) {
+                logic_id = logic_instance_ids_[static_cast<size_t>(
+                    in.player_id % logic_instance_ids_.size())];
+            }
         } else if (!logic_instance_ids_.empty()) {
             logic_id =
                 logic_instance_ids_[static_cast<size_t>(in.player_id % logic_instance_ids_.size())];
-        } else {
-            logic_id = "gl-0";
         }
+    }
+    if (logic_id.empty()) {
+        out->message = "no healthy gamelogic";
+        out->error_code = "NO_HEALTHY_GAMELOGIC";
+        return false;
     }
 
     const std::string token = GenHex(32);

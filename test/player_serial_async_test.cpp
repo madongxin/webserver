@@ -222,6 +222,97 @@ int main() {
         }
     }
 
+    // 预排队：B 在 A Mark 前已入主队列，仍不得在 A 异步完成前执行
+    {
+        q.SetLimits(64, 256);
+        std::atomic<bool> a_started{false};
+        std::atomic<bool> b_posted{false};
+        std::atomic<bool> a_complete{false};
+        std::atomic<bool> b_ran{false};
+        std::atomic<bool> violated{false};
+        std::thread helper;
+
+        if (!q.TryPost(a, [&]() {
+                a_started.store(true);
+                for (int i = 0; i < 200 && !b_posted.load(); ++i)
+                    std::this_thread::sleep_for(std::chrono::milliseconds(1));
+                if (!b_posted.load()) {
+                    std::printf("FAIL prequeued B not posted\n");
+                    std::_Exit(1);
+                }
+                q.MarkAsyncInFlight(a);
+                helper = std::thread([&]() {
+                    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+                    q.CompleteAsyncInFlight(a, [&]() { a_complete.store(true); });
+                });
+            })) {
+            std::printf("FAIL post prequeued A\n");
+            return 1;
+        }
+        for (int i = 0; i < 200 && !a_started.load(); ++i)
+            std::this_thread::sleep_for(std::chrono::milliseconds(1));
+        if (!q.TryPost(a, [&]() {
+                if (!a_complete.load()) {
+                    violated.store(true);
+                    std::printf("FAIL prequeued_serialization_violated=1\n");
+                    std::_Exit(1);
+                }
+                b_ran.store(true);
+            })) {
+            std::printf("FAIL post prequeued B\n");
+            return 1;
+        }
+        b_posted.store(true);
+        for (int i = 0; i < 300 && !b_ran.load(); ++i)
+            std::this_thread::sleep_for(std::chrono::milliseconds(5));
+        if (helper.joinable())
+            helper.join();
+        if (violated.load() || !b_ran.load() || !a_complete.load()) {
+            std::printf("FAIL prequeued incomplete violated=%d b=%d a_done=%d\n",
+                        violated.load(), b_ran.load(), a_complete.load());
+            return 1;
+        }
+    }
+
+    // 不同玩家：A async 不阻塞另一 shard 上的 B（用 2 shard）
+    {
+        q.Stop();
+        q.SetLimits(64, 256);
+        q.Start(2);
+        const uint64_t pa = 0;  // shard 0
+        const uint64_t pb = 1;  // shard 1
+        std::atomic<bool> a_inflight{false};
+        std::atomic<bool> b_done{false};
+        std::thread helper;
+        q.TryPost(pa, [&]() {
+            q.MarkAsyncInFlight(pa);
+            a_inflight.store(true);
+            helper = std::thread([&]() {
+                std::this_thread::sleep_for(std::chrono::milliseconds(200));
+                q.CompleteAsyncInFlight(pa, nullptr);
+            });
+        });
+        for (int i = 0; i < 100 && !a_inflight.load(); ++i)
+            std::this_thread::sleep_for(std::chrono::milliseconds(2));
+        const auto t0 = std::chrono::steady_clock::now();
+        q.TryPost(pb, [&]() { b_done.store(true); });
+        for (int i = 0; i < 100 && !b_done.load(); ++i)
+            std::this_thread::sleep_for(std::chrono::milliseconds(2));
+        const auto ms =
+            std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() -
+                                                                  t0)
+                .count();
+        if (helper.joinable())
+            helper.join();
+        if (!b_done.load() || ms > 100) {
+            std::printf("FAIL cross_player_blocked ms=%lld\n", static_cast<long long>(ms));
+            return 1;
+        }
+        q.DrainForTest();
+        q.Stop();
+        q.Start(1);
+    }
+
     q.DrainForTest();
 
     // DRAINING：拒绝新任务，已开始的 async completion 仍在 worker 完成
