@@ -1,8 +1,8 @@
 # GameMesh 稳定版本剩余闭环——Cursor 分阶段执行提示词
 
-> 仓库：`https://github.com/madongxin/webserver`  
-> 审计基线：`main@2e6a8b8c592296446f62a81ea940b5ed749eb30a`  
-> 当前结论：`STABLE BLOCKED`  
+> 仓库：`https://github.com/madongxin/webserver`
+> 审计基线：`main@2e6a8b8c592296446f62a81ea940b5ed749eb30a`
+> 当前结论：`STABLE BLOCKED`
 > 目标：在最小改动范围内形成可供客户端联调和后续业务开发使用的服务器稳定基线。
 
 请把本文件放在 GameMesh 仓库外阅读，或复制全文交给 Cursor。Cursor 必须直接修改工程、补测试并运行门禁，不能只输出方案。
