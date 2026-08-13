@@ -140,8 +140,15 @@ bool DoRegisterLogin(int fd, const std::string &device, const std::string &passw
     r->set_display_name("e2e");
     r->set_password(password);
     game::GameResponse rr;
-    if (!Exchange(fd, reg, &rr) || !rr.ok() || !rr.has_register_() || !rr.register_().ok()) {
-        std::printf("error=register msg=%s\n", rr.message().c_str());
+    if (!Exchange(fd, reg, &rr)) {
+        std::printf("error=register msg=no_response\n");
+        std::fflush(stdout);
+        return false;
+    }
+    if (!rr.ok() || !rr.has_register_() || !rr.register_().ok()) {
+        std::printf("error=register msg=%s\n",
+                    rr.message().empty() && rr.has_register_() ? rr.register_().message().c_str()
+                                                               : rr.message().c_str());
         std::fflush(stdout);
         return false;
     }

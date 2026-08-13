@@ -96,6 +96,17 @@ int main() {
     SessionStore::Instance().SetLogicInstanceIds({"gl-static"});
     PlacementStore::Instance().SetLogicOwners({"gl-static"});
 
+    {
+        auto boot = RefreshHealthyLogicOwners(false);
+        Expect(boot.status == HealthyLogicRefreshStatus::kNotReady,
+               "empty discover before first healthy keeps bootstrap");
+        const auto ids = SessionStore::Instance().LogicInstanceIds();
+        bool found = false;
+        for (const auto &id : ids)
+            found = found || (id == "gl-static");
+        Expect(found, "bootstrap static kept");
+    }
+
     IServiceRegistry::ServiceInstance a;
     a.service = "gamelogic";
     a.instance_id = "gl-hl-0";

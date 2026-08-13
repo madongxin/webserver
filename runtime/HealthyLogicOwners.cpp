@@ -7,8 +7,13 @@
 #include "RedisServiceRegistry.h"
 #include "SessionStore.h"
 
+#include <atomic>
 #include <string>
 #include <vector>
+
+namespace {
+std::atomic<bool> g_seen_nonempty_logic{false};
+}
 
 HealthyLogicRefreshResult RefreshHealthyLogicOwners(bool update_static_addrs) {
     HealthyLogicRefreshResult r;
@@ -42,17 +47,29 @@ HealthyLogicRefreshResult RefreshHealthyLogicOwners(bool update_static_addrs) {
     }
     r.status = HealthyLogicRefreshStatus::kApplied;
     r.instance_count = ids.size();
-    SessionStore::Instance().SetLogicInstanceIds(ids);
-    PlacementStore::Instance().SetLogicOwners(ids);
     if (ids.empty()) {
+        // 冷启动：Session 早于 GameLogic 注册，空 Discover 不得清掉 session.cnf 静态 owners。
+        if (!g_seen_nonempty_logic.load(std::memory_order_acquire) &&
+            !SessionStore::Instance().LogicInstanceIds().empty()) {
+            OpsMetrics::Instance().IncLogicDiscoverNotReady();
+            r.status = HealthyLogicRefreshStatus::kNotReady;
+            LOG_WARN << "HealthyLogicOwners: Discover empty before first healthy set; "
+                        "keep bootstrap snapshot";
+            return r;
+        }
+        SessionStore::Instance().SetLogicInstanceIds(ids);
+        PlacementStore::Instance().SetLogicOwners(ids);
         OpsMetrics::Instance().IncLogicDiscoverEmpty();
         LOG_WARN << "HealthyLogicOwners: Discover empty -> fail-closed "
                     "(NO_HEALTHY_GAMELOGIC)";
-    } else {
-        OpsMetrics::Instance().IncLogicDiscoverOk();
-        LOG_INFO << "HealthyLogicOwners: replaced count=" << ids.size();
-        if (update_static_addrs)
-            StaticServiceRegistry::Get().SetStaticAddrs("gamelogic", static_addrs, static_ids);
+        return r;
     }
+    g_seen_nonempty_logic.store(true, std::memory_order_release);
+    SessionStore::Instance().SetLogicInstanceIds(ids);
+    PlacementStore::Instance().SetLogicOwners(ids);
+    OpsMetrics::Instance().IncLogicDiscoverOk();
+    LOG_INFO << "HealthyLogicOwners: replaced count=" << ids.size();
+    if (update_static_addrs)
+        StaticServiceRegistry::Get().SetStaticAddrs("gamelogic", static_addrs, static_ids);
     return r;
 }

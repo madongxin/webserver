@@ -26,6 +26,22 @@ if [[ "$START_CLUSTER" -eq 1 ]]; then
   fi
   "$ROOT/scripts/run_e2e_cluster.sh"
   sleep 2
+  # 冷启动：等 Register/Login 真正可用（Session 先于 GameLogic 注册 Redis）
+  # shellcheck disable=SC1090
+  [[ -f "$GAMEMESH_RUN_DIR/E2E_PORTS.env" ]] && source "$GAMEMESH_RUN_DIR/E2E_PORTS.env"
+  GW="${E2E_GW0_GAME:-19081}"
+  ready=0
+  for _ in $(seq 1 60); do
+    if [[ -x "$CLIENT" ]] && "$CLIENT" register-login 127.0.0.1 "$GW" "e2e-final-warm-$$-$_" e2epass1 2>/dev/null | grep -q login_ok=1; then
+      ready=1
+      break
+    fi
+    sleep 1
+  done
+  if [[ "$ready" -ne 1 ]]; then
+    echo "ERROR: cluster started but register-login not ready within 60s" >&2
+    exit 1
+  fi
 fi
 
 RUN_DIR="${GAMEMESH_RUN_DIR:-}"
