@@ -115,17 +115,26 @@ int main() {
         Expect(found, "session owners replaced");
     }
 
+    const uint64_t pid_base =
+        920000000ull + static_cast<uint64_t>(::getpid()) * 10ull;
+    const uint64_t pid_a = pid_base + 1;
+    const uint64_t pid_fresh = pid_base + 2;
+    const uint64_t pid_b = pid_base + 3;
+    auto logout_pid = [](uint64_t pid) {
+        game::LogoutReq lo;
+        lo.set_player_id(pid);
+        game::LogoutRsp lorsp;
+        SessionStore::Instance().Logout(lo, &lorsp);
+    };
+    logout_pid(pid_a);
+    logout_pid(pid_fresh);
+    logout_pid(pid_b);
+
     AcquireSessionInput ain;
-    ain.player_id = 910501;
+    ain.player_id = pid_a;
     ain.device_id = "dev-hl";
     ain.server_id = 1;
     ain.kick_other_device = true;
-    {
-        game::LogoutReq lo;
-        lo.set_player_id(ain.player_id);
-        game::LogoutRsp lorsp;
-        SessionStore::Instance().Logout(lo, &lorsp);
-    }
     AcquireSessionResult aout;
     Expect(SessionStore::Instance().AcquireSession(ain, &aout) && aout.ok, "acquire with healthy");
     Expect(aout.gamelogic_instance_id == "gl-hl-0", "acquire routed to discovered");
@@ -152,15 +161,18 @@ int main() {
     Expect(SessionStore::Instance().LogicInstanceIds().empty(), "session cleared");
     Expect(PlacementStore::Instance().PickHealthyOwner("").empty(), "placement cleared");
 
+    AcquireSessionInput fresh_in = ain;
+    fresh_in.player_id = pid_fresh;
+    fresh_in.device_id = "dev-hl-fresh";
     AcquireSessionResult empty_out;
-    Expect(!SessionStore::Instance().AcquireSession(ain, &empty_out) && !empty_out.ok,
+    Expect(!SessionStore::Instance().AcquireSession(fresh_in, &empty_out) && !empty_out.ok,
            "login fail-closed");
     Expect(empty_out.error_code == "NO_HEALTHY_GAMELOGIC", "login error_code");
-    Expect(!SessionStore::Instance().IsPlayerOnline(ain.player_id + 1), "no extra session");
+    Expect(!SessionStore::Instance().IsPlayerOnline(pid_fresh), "no extra session");
 
     ResolveOrCreateInput pin;
     pin.realm_id = 1;
-    pin.map_template_id = 4242;
+    pin.map_template_id = 400000ull + static_cast<uint64_t>(::getpid());
     ResolveOrCreateResult pout;
     Expect(!PlacementStore::Instance().ResolveOrCreate(pin, &pout), "placement fail-closed");
     Expect(pout.error_code == "NO_HEALTHY_GAMELOGIC", "placement error_code");
@@ -174,7 +186,7 @@ int main() {
     Expect(recovered.status == HealthyLogicRefreshStatus::kApplied && recovered.instance_count >= 1,
            "recovered");
     AcquireSessionInput ain2 = ain;
-    ain2.player_id = 910502;
+    ain2.player_id = pid_b;
     ain2.device_id = "dev-hl-2";
     AcquireSessionResult aout2;
     Expect(SessionStore::Instance().AcquireSession(ain2, &aout2) && aout2.ok, "acquire after recover");
