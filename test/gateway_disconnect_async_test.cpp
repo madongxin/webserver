@@ -148,14 +148,22 @@ int main() {
         std::printf("OK bounded-stop elapsed_ms=%lld\n", static_cast<long long>(stop_ms));
     }
 
-    // 队列满：投递立即返回
+    // 队列满：投递立即返回（1 在执行 + max_queue 在队列）
     {
         GatewayDisconnectAsync::Instance().Start(4);
         GatewayDisconnectAsync::Instance().SetExecutorForTest(
             [](const GatewayDisconnectAsync::Task &) {
-                std::this_thread::sleep_for(std::chrono::milliseconds(200));
+                std::this_thread::sleep_for(std::chrono::milliseconds(400));
             });
-        int ok = 0;
+        if (!GatewayDisconnectAsync::Instance().EnqueueMarkDisconnected(3999, "tok", 1)) {
+            std::printf("FAIL queue-full seed\n");
+            GatewayDisconnectAsync::Instance().Stop();
+            return 1;
+        }
+        for (int i = 0; i < 200 && GatewayDisconnectAsync::Instance().pending() == 0; ++i)
+            std::this_thread::sleep_for(std::chrono::milliseconds(1));
+        const uint64_t drop0 = GatewayDisconnectAsync::Instance().dropped();
+        int ok = 1;
         const auto t0 = std::chrono::steady_clock::now();
         for (int i = 0; i < 16; ++i) {
             if (GatewayDisconnectAsync::Instance().EnqueueMarkDisconnected(
@@ -171,13 +179,15 @@ int main() {
             GatewayDisconnectAsync::Instance().Stop();
             return 1;
         }
-        if (ok > 4) {
+        // 1 in-flight + 4 queued
+        if (ok > 5) {
             std::printf("FAIL queue-full accepted=%d\n", ok);
             GatewayDisconnectAsync::Instance().Stop();
             return 1;
         }
-        if (GatewayDisconnectAsync::Instance().dropped() == 0) {
-            std::printf("FAIL queue-full dropped=0\n");
+        if (GatewayDisconnectAsync::Instance().dropped() <= drop0) {
+            std::printf("FAIL queue-full dropped=%llu\n",
+                        static_cast<unsigned long long>(GatewayDisconnectAsync::Instance().dropped()));
             GatewayDisconnectAsync::Instance().Stop();
             return 1;
         }
