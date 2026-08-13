@@ -59,8 +59,8 @@ public:
 
     int64_t MailboxVersion(uint64_t player_id) const;
 
-    /** 供异步 callback 在 PlayerSerialQueue 上应用内存奖励 */
-    void ApplyClaimMemory(uint64_t player_id, const GameDbMailClaimResult &db_rsp);
+    /** 供异步 callback 在 PlayerSerialQueue 上应用内存奖励；失败表示需 STATE_SYNC_REQUIRED */
+    bool ApplyClaimMemory(uint64_t player_id, const GameDbMailClaimResult &db_rsp);
 
 private:
     MailService() = default;

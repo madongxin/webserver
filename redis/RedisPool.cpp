@@ -102,6 +102,11 @@ RedisPool::Lease RedisPool::Acquire(int timeout_ms) {
 void RedisPool::Release(RedisClient *c) {
     if (!c)
         return;
+    if (!c->IsConnected()) {
+        if (!c->Connect(host_, port_, password_)) {
+            LOG_WARN << "RedisPool: reconnect on release failed " << host_ << ":" << port_;
+        }
+    }
     std::lock_guard<std::mutex> lk(mu_);
     free_.push_back(c);
     cv_.notify_one();

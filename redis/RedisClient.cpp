@@ -3,9 +3,29 @@
 #include <hiredis/hiredis.h>
 
 #include <arpa/inet.h>
+#include <cstdlib>
 #include <cstring>
+#include <sys/time.h>
 #include <string>
 #include <vector>
+
+namespace {
+
+timeval CommandTimeoutTv() {
+    long ms = 500;
+    if (const char *e = std::getenv("REDIS_CMD_TIMEOUT_MS")) {
+        char *end = nullptr;
+        const long parsed = std::strtol(e, &end, 10);
+        if (end != e && parsed >= 200 && parsed <= 5000)
+            ms = parsed;
+    }
+    timeval tv;
+    tv.tv_sec = ms / 1000;
+    tv.tv_usec = static_cast<suseconds_t>((ms % 1000) * 1000);
+    return tv;
+}
+
+}  // namespace
 
 RedisClient::~RedisClient() {
     Disconnect();
@@ -20,6 +40,11 @@ bool RedisClient::Connect(const std::string &host, int port, const std::string &
         return false;
     }
     auto *c = static_cast<redisContext *>(ctx_);
+    const timeval cmd_tv = CommandTimeoutTv();
+    if (redisSetTimeout(c, cmd_tv) != REDIS_OK) {
+        Disconnect();
+        return false;
+    }
     if (!password.empty()) {
         redisReply *auth =
             static_cast<redisReply *>(redisCommand(c, "AUTH %s", password.c_str()));
@@ -40,8 +65,10 @@ void RedisClient::Disconnect() {
 
 bool RedisClient::CheckReply(void *reply, const char *) {
     redisReply *r = static_cast<redisReply *>(reply);
-    if (!r)
+    if (!r) {
+        Disconnect();
         return false;
+    }
     const bool ok = !(r->type == REDIS_REPLY_ERROR);
     freeReplyObject(r);
     return ok;
@@ -52,8 +79,10 @@ bool RedisClient::Ping() {
         return false;
     redisReply *r =
         static_cast<redisReply *>(redisCommand(static_cast<redisContext *>(ctx_), "PING"));
-    if (!r)
+    if (!r) {
+        Disconnect();
         return false;
+    }
     const bool ok = r->type == REDIS_REPLY_STATUS && r->str && std::strcmp(r->str, "PONG") == 0;
     freeReplyObject(r);
     return ok;
@@ -65,7 +94,9 @@ bool RedisClient::Exists(const std::string &key) {
     redisReply *r = static_cast<redisReply *>(
         redisCommand(static_cast<redisContext *>(ctx_), "EXISTS %s", key.c_str()));
     if (!r || r->type != REDIS_REPLY_INTEGER) {
-        if (r)
+        if (!r)
+            Disconnect();
+        else
             freeReplyObject(r);
         return false;
     }
@@ -88,7 +119,9 @@ bool RedisClient::Expire(const std::string &key, int ttl_sec) {
     redisReply *r = static_cast<redisReply *>(redisCommand(static_cast<redisContext *>(ctx_),
                                                              "EXPIRE %s %d", key.c_str(), ttl_sec));
     if (!r || r->type != REDIS_REPLY_INTEGER) {
-        if (r)
+        if (!r)
+            Disconnect();
+        else
             freeReplyObject(r);
         return false;
     }
@@ -123,8 +156,10 @@ bool RedisClient::HGetAll(const std::string &key, std::map<std::string, std::str
     fields->clear();
     redisReply *r = static_cast<redisReply *>(
         redisCommand(static_cast<redisContext *>(ctx_), "HGETALL %s", key.c_str()));
-    if (!r)
+    if (!r) {
+        Disconnect();
         return false;
+    }
     if (r->type == REDIS_REPLY_NIL) {
         freeReplyObject(r);
         return true;
@@ -197,8 +232,10 @@ bool RedisClient::Eval(const std::string &script, const std::vector<std::string>
     }
     redisReply *r = static_cast<redisReply *>(redisCommandArgv(
         static_cast<redisContext *>(ctx_), static_cast<int>(argv.size()), argv.data(), argvlen.data()));
-    if (!r)
+    if (!r) {
+        Disconnect();
         return false;
+    }
     if (r->type == REDIS_REPLY_ERROR) {
         freeReplyObject(r);
         return false;

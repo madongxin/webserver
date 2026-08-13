@@ -46,6 +46,23 @@ public:
     void IncGamedbUnknownResult() {
         gamedb_unknown_result_.fetch_add(1, std::memory_order_relaxed);
     }
+    void IncLogicDiscoverNotReady() {
+        logic_discover_not_ready_.fetch_add(1, std::memory_order_relaxed);
+    }
+    void IncLogicDiscoverFail() {
+        logic_discover_fail_.fetch_add(1, std::memory_order_relaxed);
+    }
+    void IncLogicDiscoverEmpty() {
+        logic_discover_empty_.fetch_add(1, std::memory_order_relaxed);
+    }
+    void IncLogicDiscoverOk() { logic_discover_ok_.fetch_add(1, std::memory_order_relaxed); }
+
+    uint64_t logic_discover_fail() const {
+        return logic_discover_fail_.load(std::memory_order_relaxed);
+    }
+    uint64_t logic_discover_empty() const {
+        return logic_discover_empty_.load(std::memory_order_relaxed);
+    }
 
     std::string PrometheusText() const;
 
@@ -77,4 +94,8 @@ private:
     std::atomic<uint64_t> placement_recover_ok_{0};
     std::atomic<uint64_t> placement_recover_fail_{0};
     std::atomic<uint64_t> gamedb_unknown_result_{0};
+    std::atomic<uint64_t> logic_discover_not_ready_{0};
+    std::atomic<uint64_t> logic_discover_fail_{0};
+    std::atomic<uint64_t> logic_discover_empty_{0};
+    std::atomic<uint64_t> logic_discover_ok_{0};
 };

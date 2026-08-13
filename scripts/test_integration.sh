@@ -68,4 +68,14 @@ fi
 if [[ -x ./build/test/phase3_gamedb_asset_test ]]; then
   ./build/test/phase3_gamedb_asset_test
 fi
+if [[ ! -x ./build/test/gamedb_mail_claim_test ]]; then
+  echo "ERROR: missing gamedb_mail_claim_test"
+  exit 1
+fi
+./build/test/gamedb_mail_claim_test
+if [[ ! -x ./build/test/healthy_logic_refresh_test ]]; then
+  echo "ERROR: missing healthy_logic_refresh_test"
+  exit 1
+fi
+./build/test/healthy_logic_refresh_test
 echo "test_integration.sh PASS"

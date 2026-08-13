@@ -232,7 +232,8 @@ if(ENABLE_BRPC)
     db/BrpcGameDbRepository.cpp
     runtime/discovery/EtcdDiscovery.cpp
     runtime/discovery/IServiceRegistry.cpp
-    runtime/discovery/RedisServiceRegistry.cpp)
+    runtime/discovery/RedisServiceRegistry.cpp
+    runtime/HealthyLogicOwners.cpp)
   set(BRPC_LINK_LIBS ${BRPC_LIB} ${GFLAGS_LIB} ${LEVELDB_LIB} ${OPENSSL_SSL_LIB} ${ZLIB_LIB} dl)
   message(STATUS "brpc: include=${BRPC_INCLUDE_DIR} lib=${BRPC_LIB}")
 endif()
@@ -721,6 +722,30 @@ if(ENABLE_GAME_PROTOBUF AND ENABLE_REDIS)
   target_include_directories(phase3_discovery_test PRIVATE
     redis base log timer runtime runtime/discovery ${HIREDIS_INCLUDE_DIR})
   target_link_libraries(phase3_discovery_test ${CMAKE_THREAD_LIBS_INIT} ${HIREDIS_LIB})
+
+  add_executable(healthy_logic_refresh_test
+    test/healthy_logic_refresh_test.cpp
+    runtime/HealthyLogicOwners.cpp
+    runtime/OpsMetrics.cpp
+    runtime/discovery/RedisServiceRegistry.cpp
+    runtime/discovery/IServiceRegistry.cpp
+    game/SessionStore.cpp
+    game/PlacementStore.cpp
+    game/game.pb.cc
+    redis/RedisClient.cpp
+    redis/RedisPool.cpp
+    base/CurrentThread.cpp
+    log/Logging.cpp
+    log/LogStream.cpp
+    log/LogFile.cpp
+    log/AsyncLogging.cpp)
+  target_compile_definitions(healthy_logic_refresh_test PRIVATE WEBSERVER_ENABLE_REDIS
+                            WEBSERVER_ENABLE_GAME_PROTOBUF)
+  target_include_directories(healthy_logic_refresh_test PRIVATE
+    game redis base log timer runtime runtime/discovery ${HIREDIS_INCLUDE_DIR}
+    ${Protobuf_INCLUDE_DIRS})
+  target_link_libraries(healthy_logic_refresh_test
+    ${CMAKE_THREAD_LIBS_INIT} ${HIREDIS_LIB} ${Protobuf_LIBRARIES})
 
   add_executable(map_lease_drill
     test/map_lease_drill.cpp

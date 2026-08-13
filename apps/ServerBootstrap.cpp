@@ -63,6 +63,7 @@
 #include "BrpcGameDbRepository.h"
 #include "EtcdDiscovery.h"
 #include "RedisServiceRegistry.h"
+#include "HealthyLogicOwners.h"
 #include "AuthLoginRateLimit.h"
 #endif
 #ifdef WEBSERVER_ENABLE_MYSQL
@@ -1535,24 +1536,7 @@ int RunServer(const LaunchOpts &launch) {
         loop.RunEvery(5.0, []() {
             if (!RedisServiceRegistry::Get().ready())
                 return;
-            std::vector<IServiceRegistry::ServiceInstance> insts;
-            if (!RedisServiceRegistry::Get().Discover("gamelogic", &insts) || insts.empty())
-                return;
-            std::vector<std::string> ids;
-            std::vector<std::string> addrs;
-            ids.reserve(insts.size());
-            addrs.reserve(insts.size());
-            for (const auto &i : insts) {
-                if (i.instance_id.empty() || i.address.empty())
-                    continue;
-                ids.push_back(i.instance_id);
-                addrs.push_back(i.address);
-            }
-            if (ids.empty())
-                return;
-            SessionStore::Instance().SetLogicInstanceIds(ids);
-            PlacementStore::Instance().SetLogicOwners(ids);
-            StaticServiceRegistry::Get().SetStaticAddrs("gamelogic", addrs, ids);
+            RefreshHealthyLogicOwners(true);
         });
     }
 #endif

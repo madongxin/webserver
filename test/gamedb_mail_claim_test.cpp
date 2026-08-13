@@ -353,6 +353,85 @@ int main() {
         EXPECT_TRUE(GameDbOutbox::Instance().CountByIdempotency(idem) == 1);
     }
 
+    // ---------- E: 内存应用失败 + 权威重载成功 ----------
+    {
+        const uint64_t pid = 910020;
+        std::map<uint32_t, uint32_t> bag;
+        uint64_t ver = 0;
+        (void)GameDbAssetStore::Instance().LoadInventory(pid, &bag, &ver);
+        std::map<uint32_t, int64_t> cds;
+        GameLogic::Instance().ImportRuntimeState(pid, bag, cds, ver == 0 ? 1 : ver);
+        GameLogic::Instance().SetAssetApplyBlockedForTest(true);
+        const uint32_t before = GameLogic::Instance().GetItemCount(pid, item_id);
+        const std::string biz = "gamedb_reload_ok_" + std::to_string(NowMs());
+        const uint64_t mail_id = DeliverTestMail(pid, item_id, 2, biz);
+        EXPECT_TRUE(mail_id > 0);
+        game::GameResponse rsp;
+        game::MailClaimReq req;
+        req.set_player_id(pid);
+        req.set_mail_id(mail_id);
+        req.set_idempotency_key("reload_ok_" + std::to_string(mail_id));
+        req.set_trace_id("reload_ok");
+        EXPECT_TRUE(MailService::Instance().HandleMailClaim(req, &rsp));
+        EXPECT_TRUE(rsp.ok());
+        EXPECT_TRUE(GameLogic::Instance().GetItemCount(pid, item_id) == before + 2);
+        EXPECT_TRUE(GameLogic::Instance().GetAssetVersion(pid) == BagVersion(pid));
+        EXPECT_TRUE(!GameLogic::Instance().IsAssetDirty(pid));
+        GameLogic::Instance().SetAssetApplyBlockedForTest(false);
+    }
+
+    // ---------- F: 应用与重载都失败 → STATE_SYNC_REQUIRED，拒绝资产写；同键重试不重复发奖 ----------
+    {
+        const uint64_t pid = 910021;
+        std::map<uint32_t, uint32_t> bag;
+        uint64_t ver = 0;
+        (void)GameDbAssetStore::Instance().LoadInventory(pid, &bag, &ver);
+        std::map<uint32_t, int64_t> cds;
+        GameLogic::Instance().ImportRuntimeState(pid, bag, cds, ver == 0 ? 1 : ver);
+        const uint32_t db_before = BagCount(pid, item_id);
+        const uint32_t mem_before = GameLogic::Instance().GetItemCount(pid, item_id);
+        const std::string biz = "gamedb_sync_req_" + std::to_string(NowMs());
+        const uint64_t mail_id = DeliverTestMail(pid, item_id, 3, biz);
+        EXPECT_TRUE(mail_id > 0);
+        const std::string idem = "sync_req_" + std::to_string(mail_id);
+        GameLogic::Instance().SetAssetApplyBlockedForTest(true);
+        GameLogic::Instance().SetAssetReloadBlockedForTest(true);
+        game::GameResponse rsp;
+        game::MailClaimReq req;
+        req.set_player_id(pid);
+        req.set_mail_id(mail_id);
+        req.set_idempotency_key(idem);
+        req.set_trace_id("sync1");
+        EXPECT_TRUE(!MailService::Instance().HandleMailClaim(req, &rsp));
+        EXPECT_TRUE(rsp.mail_claim().result().error_code() == mail::err::kStateSyncRequired);
+        EXPECT_TRUE(BagCount(pid, item_id) == db_before + 3);
+        EXPECT_TRUE(GameLogic::Instance().GetItemCount(pid, item_id) == mem_before);
+        EXPECT_TRUE(GameLogic::Instance().IsAssetDirty(pid));
+
+        game::GameResponse crsp;
+        game::ConsumeItemReq creq;
+        creq.set_player_id(pid);
+        creq.set_item_id(item_id);
+        creq.set_count(1);
+        EXPECT_TRUE(!GameLogic::Instance().HandleConsumeItemForTest(creq, &crsp));
+        EXPECT_TRUE(crsp.message() == "STATE_SYNC_REQUIRED");
+
+        game::GameResponse rsp2;
+        EXPECT_TRUE(!MailService::Instance().HandleMailClaim(req, &rsp2));
+        EXPECT_TRUE(rsp2.mail_claim().result().error_code() == mail::err::kStateSyncRequired);
+        EXPECT_TRUE(BagCount(pid, item_id) == db_before + 3);
+
+        GameLogic::Instance().SetAssetReloadBlockedForTest(false);
+        GameLogic::Instance().SetAssetApplyBlockedForTest(false);
+        game::GameResponse rsp3;
+        const bool recovered = MailService::Instance().HandleMailClaim(req, &rsp3);
+        EXPECT_TRUE(recovered || rsp3.mail_claim().result().error_code() == mail::err::kAlreadyClaimed);
+        EXPECT_TRUE(BagCount(pid, item_id) == db_before + 3);
+        EXPECT_TRUE(GameLogic::Instance().GetItemCount(pid, item_id) == db_before + 3);
+        EXPECT_TRUE(GameLogic::Instance().GetAssetVersion(pid) == BagVersion(pid));
+        EXPECT_TRUE(!GameLogic::Instance().IsAssetDirty(pid));
+    }
+
     AsyncMysqlGameDbRepository::Instance().Stop();
 
     if (g_fail) {

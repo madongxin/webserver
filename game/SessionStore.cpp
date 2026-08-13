@@ -717,6 +717,11 @@ void SessionStore::SetLogicInstanceIds(std::vector<std::string> ids) {
     logic_instance_ids_ = std::move(ids);
 }
 
+std::vector<std::string> SessionStore::LogicInstanceIds() const {
+    std::lock_guard<std::mutex> lk(cfg_mu_);
+    return logic_instance_ids_;
+}
+
 bool SessionStore::AcquireSessionUnlocked(const AcquireSessionInput &in, AcquireSessionResult *out) {
     if (!out)
         return false;

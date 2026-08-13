@@ -1,8 +1,8 @@
 #include "SessionServiceImpl.h"
 
+#include "HealthyLogicOwners.h"
 #include "Logging.h"
 #include "PlacementStore.h"
-#include "RedisServiceRegistry.h"
 #include "SessionStore.h"
 
 #include <brpc/controller.h>
@@ -25,24 +25,6 @@ void FillPlacementPb(const PlacementRecord &r, sess::PlacementRecord *pb) {
     pb->set_lease_until(r.lease_until);
 }
 
-/** Resolve 前刷新健康 Logic，避免死 Owner 仍被软续租 */
-void RefreshHealthyLogicOwners() {
-    if (!RedisServiceRegistry::Get().ready())
-        return;  // A: 注册中心未就绪 — 保留最后快照/静态配置
-    std::vector<IServiceRegistry::ServiceInstance> insts;
-    if (!RedisServiceRegistry::Get().Discover("gamelogic", &insts))
-        return;  // A: Discover 调用失败 — 保留快照，不 fail-open 清空
-    // B/C: Discover 成功（含零实例）— 原子替换；空列表 → fail-closed
-    std::vector<std::string> ids;
-    ids.reserve(insts.size());
-    for (const auto &i : insts) {
-        if (!i.instance_id.empty())
-            ids.push_back(i.instance_id);
-    }
-    SessionStore::Instance().SetLogicInstanceIds(ids);
-    PlacementStore::Instance().SetLogicOwners(std::move(ids));
-}
-
 }  // namespace
 
 void SessionServiceImpl::AcquireSession(::google::protobuf::RpcController *controller,
@@ -62,6 +44,7 @@ void SessionServiceImpl::AcquireSession(::google::protobuf::RpcController *contr
     in.gateway_instance_id = request->gateway_instance_id();
     in.preferred_gamelogic_instance_id = request->preferred_gamelogic_instance_id();
     in.operation_id = request->operation_id();
+    RefreshHealthyLogicOwners();
     AcquireSessionResult out;
     SessionStore::Instance().AcquireSession(in, &out);
     response->set_ok(out.ok);

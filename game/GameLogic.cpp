@@ -189,31 +189,38 @@ bool GameLogic::ApplyItemReward(uint64_t player_id, uint32_t item_id, uint32_t c
     return true;
 }
 
-bool GameLogic::ReloadAssetsFromGameDbLocked(uint64_t player_id) {
-    std::map<uint32_t, uint32_t> loaded;
+bool GameLogic::LoadAssetsFromGameDbUnlocked(uint64_t player_id, std::map<uint32_t, uint32_t> *bag,
+                                             uint64_t *ver) {
+    if (!bag || !ver)
+        return false;
+    {
+        std::lock_guard<std::mutex> lk(mu_);
+        if (reload_blocked_for_test_)
+            return false;
+    }
+    bag->clear();
+    *ver = 0;
 #if defined(WEBSERVER_ENABLE_BRPC)
     if (FormalModeEnabled() && BrpcGameDbRepository::Instance().started()) {
-        uint64_t ver = 0;
         std::string load_err;
-        if (!BrpcGameDbRepository::Instance().LoadInventory(player_id, &loaded, &ver, &load_err)) {
-            LOG_WARN << "ReloadAssetsFromGameDb brpc fail player=" << player_id
+        if (!BrpcGameDbRepository::Instance().LoadInventory(player_id, bag, ver, &load_err)) {
+            LOG_WARN << "LoadAssetsFromGameDb brpc fail player=" << player_id
                      << " err=" << load_err;
             return false;
         }
-        inventory_[player_id] = std::move(loaded);
-        asset_version_[player_id] = ver == 0 ? 1 : ver;
+        if (*ver == 0)
+            *ver = 1;
         return true;
     }
 #endif
 #ifdef WEBSERVER_ENABLE_MYSQL
     if (GameDbAssetStore::Instance().Available() || GameDbAssetStore::Instance().EnsureTables()) {
-        uint64_t ver = 0;
-        if (!GameDbAssetStore::Instance().LoadInventory(player_id, &loaded, &ver)) {
-            LOG_WARN << "ReloadAssetsFromGameDb mysql fail player=" << player_id;
+        if (!GameDbAssetStore::Instance().LoadInventory(player_id, bag, ver)) {
+            LOG_WARN << "LoadAssetsFromGameDb mysql fail player=" << player_id;
             return false;
         }
-        inventory_[player_id] = std::move(loaded);
-        asset_version_[player_id] = ver == 0 ? 1 : ver;
+        if (*ver == 0)
+            *ver = 1;
         return true;
     }
 #endif
@@ -221,31 +228,95 @@ bool GameLogic::ReloadAssetsFromGameDbLocked(uint64_t player_id) {
     return false;
 }
 
+bool GameLogic::TryReloadAssets(uint64_t player_id) {
+    std::map<uint32_t, uint32_t> bag;
+    uint64_t ver = 0;
+    if (!LoadAssetsFromGameDbUnlocked(player_id, &bag, &ver))
+        return false;
+    std::lock_guard<std::mutex> lk(mu_);
+    inventory_[player_id] = std::move(bag);
+    asset_version_[player_id] = ver;
+    asset_dirty_.erase(player_id);
+    player_load_ok_[player_id] = true;
+    return true;
+}
+
+bool GameLogic::IsAssetDirty(uint64_t player_id) {
+    std::lock_guard<std::mutex> lk(mu_);
+    return asset_dirty_.count(player_id) != 0 && asset_dirty_[player_id];
+}
+
+bool GameLogic::EnsureAssetsSynced(uint64_t player_id) {
+    {
+        std::lock_guard<std::mutex> lk(mu_);
+        const auto it = asset_dirty_.find(player_id);
+        if (it == asset_dirty_.end() || !it->second)
+            return true;
+    }
+    if (TryReloadAssets(player_id))
+        return true;
+    LOG_WARN << "EnsureAssetsSynced failed player=" << player_id << " STATE_SYNC_REQUIRED";
+    return false;
+}
+
+void GameLogic::SetAssetReloadBlockedForTest(bool v) {
+    std::lock_guard<std::mutex> lk(mu_);
+    reload_blocked_for_test_ = v;
+}
+
+void GameLogic::SetAssetApplyBlockedForTest(bool v) {
+    std::lock_guard<std::mutex> lk(mu_);
+    apply_blocked_for_test_ = v;
+}
+
 bool GameLogic::ApplyItemRewardsWithVersion(uint64_t player_id,
                                             const std::vector<GameDbGrantedItem> &grants,
                                             uint64_t committed_asset_version) {
     if (player_id == 0 || committed_asset_version == 0)
         return false;
-    std::lock_guard<std::mutex> lk(mu_);
-    EnsurePlayer(player_id);
-    const uint64_t cur = asset_version_[player_id];
-    if (cur == committed_asset_version) {
-        // 已与 DB 对齐；禁止重复加道具
-        return true;
-    }
-    if (cur < committed_asset_version && committed_asset_version == cur + 1) {
-        for (const auto &g : grants) {
-            if (g.count == 0)
-                continue;
-            inventory_[player_id][static_cast<uint32_t>(g.asset_id)] += g.count;
+    bool need_reload = false;
+    {
+        std::lock_guard<std::mutex> lk(mu_);
+        EnsurePlayer(player_id);
+        const uint64_t cur = asset_version_[player_id];
+        const bool dirty = asset_dirty_.count(player_id) != 0 && asset_dirty_[player_id];
+        if (cur == committed_asset_version) {
+            asset_dirty_.erase(player_id);
+            return true;
         }
-        asset_version_[player_id] = committed_asset_version;
+        if (cur > committed_asset_version) {
+            // 内存已领先该幂等操作，禁止重复应用旧 grants
+            asset_dirty_.erase(player_id);
+            return true;
+        }
+        if (!dirty && !apply_blocked_for_test_ && committed_asset_version == cur + 1) {
+            for (const auto &g : grants) {
+                if (g.count == 0)
+                    continue;
+                inventory_[player_id][static_cast<uint32_t>(g.asset_id)] += g.count;
+            }
+            asset_version_[player_id] = committed_asset_version;
+            asset_dirty_.erase(player_id);
+            return true;
+        }
+        need_reload = true;
+        LOG_WARN << "ApplyItemRewardsWithVersion stale/gap player=" << player_id << " mem=" << cur
+                 << " committed=" << committed_asset_version << " apply_blocked="
+                 << (apply_blocked_for_test_ ? 1 : 0) << " -> reload";
+    }
+    (void)need_reload;
+    if (!TryReloadAssets(player_id)) {
+        std::lock_guard<std::mutex> lk(mu_);
+        asset_dirty_[player_id] = true;
+        return false;
+    }
+    std::lock_guard<std::mutex> lk(mu_);
+    if (asset_version_[player_id] >= committed_asset_version) {
+        asset_dirty_.erase(player_id);
         return true;
     }
-    // 版本回退或缺口：不得静默覆盖，整包重载
-    LOG_WARN << "ApplyItemRewardsWithVersion stale/gap player=" << player_id << " mem=" << cur
-             << " committed=" << committed_asset_version << " -> reload";
-    return ReloadAssetsFromGameDbLocked(player_id);
+    asset_dirty_[player_id] = true;
+    return false;
 }
 
 uint64_t GameLogic::GetAssetVersion(uint64_t player_id) {
@@ -289,6 +360,7 @@ bool GameLogic::ImportRuntimeState(uint64_t player_id, const std::map<uint32_t, 
     skill_cd_until_ms_[player_id] = skill_cds;
     asset_version_[player_id] = asset_version == 0 ? 1 : asset_version;
     player_load_ok_[player_id] = true;
+    asset_dirty_.erase(player_id);
     return true;
 }
 
@@ -317,6 +389,14 @@ bool GameLogic::HandleConsumeItem(const game::ConsumeItemReq &req, game::GameRes
     if (req.count() == 0) {
         rsp->set_ok(false);
         rsp->set_message("count must be > 0");
+        return false;
+    }
+    if (!EnsureAssetsSynced(req.player_id())) {
+        rsp->set_ok(false);
+        rsp->set_message("STATE_SYNC_REQUIRED");
+        auto *body = rsp->mutable_consume_item();
+        body->set_ok(false);
+        body->set_message("STATE_SYNC_REQUIRED");
         return false;
     }
 #if defined(WEBSERVER_ENABLE_BRPC)
@@ -470,6 +550,13 @@ bool GameLogic::HandleGrantItem(const game::GrantItemReq &req, game::GameRespons
         rsp->set_message("ERR_COMMAND_FORBIDDEN");
         body->set_ok(false);
         body->set_message(rsp->message());
+        return false;
+    }
+    if (!EnsureAssetsSynced(req.player_id())) {
+        rsp->set_ok(false);
+        rsp->set_message("STATE_SYNC_REQUIRED");
+        body->set_ok(false);
+        body->set_message("STATE_SYNC_REQUIRED");
         return false;
     }
     if (req.player_id() == 0 || req.item_id() == 0 || req.count() == 0) {

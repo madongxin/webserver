@@ -54,7 +54,7 @@ LogStream& LogStream:: operator<<(unsigned long long num){
 
 // 浮点类型数据转换成字符串
 LogStream& LogStream:: operator<<(const float & num){
-    return (*this) << static_cast<const double>(num);
+    return (*this) << static_cast<double>(num);
 }
 
 LogStream& LogStream:: operator<<(const double& num){

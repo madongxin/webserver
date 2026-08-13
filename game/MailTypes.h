@@ -33,6 +33,7 @@ constexpr const char *kHasUnclaimed = "HAS_UNCLAIMED_ATTACHMENT";
 constexpr const char *kInternal = "INTERNAL_ERROR";
 constexpr const char *kInvalidArgument = "INVALID_ARGUMENT";
 constexpr const char *kServerStopping = "SERVER_STOPPING";
+constexpr const char *kStateSyncRequired = "STATE_SYNC_REQUIRED";
 }  // namespace err
 
 enum class OwnerScope { kRole, kAccount };

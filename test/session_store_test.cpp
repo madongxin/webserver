@@ -201,6 +201,41 @@ int main() {
         st != SessionOpStatus::Done || kind != "acquire" || ig.session_id != i1.session_id)
         return Fail("GetSessionOperation acquire");
 
+    // 零健康 GameLogic：AcquireSession fail-closed，不创建半完成 Session
+    {
+        const uint64_t pid4 = 900004;
+        {
+            game::LogoutReq lo4;
+            lo4.set_player_id(pid4);
+            game::LogoutRsp lorsp4;
+            SessionStore::Instance().Logout(lo4, &lorsp4);
+        }
+        SessionStore::Instance().SetLogicInstanceIds({});
+        AcquireSessionInput empty_in;
+        empty_in.player_id = pid4;
+        empty_in.device_id = "dev-empty";
+        empty_in.server_id = 1;
+        empty_in.kick_other_device = true;
+        empty_in.preferred_gamelogic_instance_id = "gl-0";
+        AcquireSessionResult empty_out;
+        if (SessionStore::Instance().AcquireSession(empty_in, &empty_out) || empty_out.ok)
+            return Fail("empty owners acquire should fail");
+        if (empty_out.error_code != "NO_HEALTHY_GAMELOGIC")
+            return Fail("empty owners error_code");
+        if (SessionStore::Instance().IsPlayerOnline(pid4))
+            return Fail("empty owners created session");
+        SessionStore::Instance().SetLogicInstanceIds({"gl-0", "gl-1"});
+        AcquireSessionInput ok_in = empty_in;
+        ok_in.preferred_gamelogic_instance_id = "gl-dead";
+        AcquireSessionResult ok_out;
+        if (!SessionStore::Instance().AcquireSession(ok_in, &ok_out) || !ok_out.ok)
+            return Fail("restore owners acquire");
+        if (ok_out.gamelogic_instance_id == "gl-dead")
+            return Fail("preferred dead owner used");
+        if (ok_out.gamelogic_instance_id != "gl-0" && ok_out.gamelogic_instance_id != "gl-1")
+            return Fail("restore owners logic id");
+    }
+
     std::printf("OK session_store_test login/replace/disconnect/reconnect/route/concurrent/idem\n");
     std::printf("PASS session_store_test\n");
     return 0;

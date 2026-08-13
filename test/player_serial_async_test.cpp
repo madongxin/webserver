@@ -5,11 +5,133 @@
 
 #include <atomic>
 #include <chrono>
+#include <condition_variable>
 #include <cstdio>
 #include <mutex>
 #include <thread>
+#include <vector>
+
+namespace {
+
+int RunSandwichOnce() {
+    auto &q = PlayerSerialQueue::Instance();
+    q.Stop();
+    q.SetLimits(64, 256);
+    q.Start(1);
+
+    const uint64_t A = 10;
+    const uint64_t B = 20;
+    std::mutex mu;
+    std::condition_variable cv;
+    bool a1_started = false;
+    bool posted_rest = false;
+    bool b1_started = false;
+    bool b1_release = false;
+    std::vector<int> a_ext_order;
+
+    if (!q.TryPost(A, [&]() {
+            {
+                std::lock_guard<std::mutex> lk(mu);
+                a1_started = true;
+            }
+            cv.notify_all();
+            {
+                std::unique_lock<std::mutex> lk(mu);
+                cv.wait(lk, [&]() { return posted_rest; });
+            }
+            q.MarkAsyncInFlight(A);
+        })) {
+        std::printf("FAIL sandwich post A1\n");
+        q.Stop();
+        return 1;
+    }
+
+    {
+        std::unique_lock<std::mutex> lk(mu);
+        cv.wait(lk, [&]() { return a1_started; });
+    }
+
+    if (!q.TryPost(A, [&]() {
+            std::lock_guard<std::mutex> lk(mu);
+            a_ext_order.push_back(2);
+        })) {
+        std::printf("FAIL sandwich post A2\n");
+        q.Stop();
+        return 1;
+    }
+    if (!q.TryPost(B, [&]() {
+            {
+                std::lock_guard<std::mutex> lk(mu);
+                b1_started = true;
+            }
+            cv.notify_all();
+            {
+                std::unique_lock<std::mutex> lk(mu);
+                cv.wait(lk, [&]() { return b1_release; });
+            }
+        })) {
+        std::printf("FAIL sandwich post B1\n");
+        q.Stop();
+        return 1;
+    }
+    if (!q.TryPost(A, [&]() {
+            std::lock_guard<std::mutex> lk(mu);
+            a_ext_order.push_back(3);
+        })) {
+        std::printf("FAIL sandwich post A3\n");
+        q.Stop();
+        return 1;
+    }
+
+    {
+        std::lock_guard<std::mutex> lk(mu);
+        posted_rest = true;
+    }
+    cv.notify_all();
+
+    {
+        std::unique_lock<std::mutex> lk(mu);
+        cv.wait(lk, [&]() { return b1_started; });
+    }
+
+    if (!q.CompleteAsyncInFlight(A, []() {})) {
+        std::printf("FAIL sandwich complete A1\n");
+        q.Stop();
+        return 1;
+    }
+
+    {
+        std::lock_guard<std::mutex> lk(mu);
+        b1_release = true;
+    }
+    cv.notify_all();
+
+    q.DrainForTest();
+    int rc = 0;
+    {
+        std::lock_guard<std::mutex> lk(mu);
+        if (a_ext_order.size() != 2 || a_ext_order[0] != 2 || a_ext_order[1] != 3) {
+            std::printf("FAIL sandwich order");
+            for (int v : a_ext_order)
+                std::printf(" %d", v);
+            std::printf(" (want 2 3)\n");
+            rc = 1;
+        }
+    }
+    q.Stop();
+    return rc;
+}
+
+}  // namespace
 
 int main() {
+    for (int i = 0; i < 100; ++i) {
+        if (RunSandwichOnce() != 0) {
+            std::printf("FAIL sandwich iter=%d\n", i);
+            return 1;
+        }
+    }
+
     auto &q = PlayerSerialQueue::Instance();
     q.Stop();
     q.SetLimits(64, 256);

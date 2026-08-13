@@ -583,6 +583,11 @@ bool MailService::ClaimOne(uint64_t player_id, uint64_t mail_id, const std::stri
         result->set_message("gamedb unavailable");
         return false;
     }
+    if (!GameLogic::Instance().EnsureAssetsSynced(player_id)) {
+        result->set_error_code(mail::err::kStateSyncRequired);
+        result->set_message("asset memory sync required");
+        return false;
+    }
 
     GameDbMailClaimRequest db_req;
     db_req.player_id = player_id;
@@ -599,22 +604,36 @@ bool MailService::ClaimOne(uint64_t player_id, uint64_t mail_id, const std::stri
     result->set_error_code(db_rsp.error_code);
     result->set_message(db_rsp.message);
     result->set_attachment_state(db_rsp.attachment_state);
-    ApplyClaimMemory(player_id, db_rsp);
+    if (!ApplyClaimMemory(player_id, db_rsp)) {
+        result->set_ok(false);
+        result->set_error_code(mail::err::kStateSyncRequired);
+        result->set_message("asset memory sync required");
+        return false;
+    }
     return db_rsp.ok;
 }
 
-void MailService::ApplyClaimMemory(uint64_t player_id, const GameDbMailClaimResult &db_rsp) {
-    if (!db_rsp.should_apply_memory)
-        return;
+bool MailService::ApplyClaimMemory(uint64_t player_id, const GameDbMailClaimResult &db_rsp) {
+    if (!db_rsp.ok)
+        return true;
+    bool aligned = false;
     if (db_rsp.asset_version != 0) {
-        (void)GameLogic::Instance().ApplyItemRewardsWithVersion(player_id, db_rsp.grants,
-                                                                db_rsp.asset_version);
+        aligned = GameLogic::Instance().ApplyItemRewardsWithVersion(player_id, db_rsp.grants,
+                                                                    db_rsp.asset_version);
+    } else if (db_rsp.should_apply_memory) {
+        aligned = true;
+        for (const auto &g : db_rsp.grants) {
+            if (!GameLogic::Instance().ApplyItemReward(player_id, static_cast<uint32_t>(g.asset_id),
+                                                       g.count))
+                aligned = false;
+        }
     } else {
-        for (const auto &g : db_rsp.grants)
-            GameLogic::Instance().ApplyItemReward(player_id, static_cast<uint32_t>(g.asset_id),
-                                                  g.count);
+        aligned = GameLogic::Instance().EnsureAssetsSynced(player_id);
     }
+    if (!aligned)
+        return false;
     BumpVersion(player_id);
+    return true;
 }
 
 bool MailService::BeginHandleMailClaimAsync(const game::MailClaimReq &req, game::GameResponse *rsp,
@@ -658,7 +677,7 @@ bool MailService::BeginHandleMailClaimAsync(const game::MailClaimReq &req, game:
         std::move(db_req), [player_id, mail_id, done = std::move(done)](GameDbMailClaimResult db_rsp) {
             auto apply = std::make_shared<std::function<void()>>();
             *apply = [player_id, mail_id, db_rsp = std::move(db_rsp), done = std::move(done)]() mutable {
-                MailService::Instance().ApplyClaimMemory(player_id, db_rsp);
+                const bool mem_ok = MailService::Instance().ApplyClaimMemory(player_id, db_rsp);
                 game::GameResponse out;
                 auto *body = out.mutable_mail_claim();
                 using namespace std::chrono;
@@ -666,17 +685,24 @@ bool MailService::BeginHandleMailClaimAsync(const game::MailClaimReq &req, game:
                     duration_cast<seconds>(system_clock::now().time_since_epoch()).count());
                 game::MailClaimResult result;
                 result.set_mail_id(mail_id);
-                result.set_ok(db_rsp.ok);
-                result.set_error_code(db_rsp.error_code);
-                result.set_message(db_rsp.message);
+                const bool ok = db_rsp.ok && mem_ok;
+                if (db_rsp.ok && !mem_ok) {
+                    result.set_ok(false);
+                    result.set_error_code(mail::err::kStateSyncRequired);
+                    result.set_message("asset memory sync required");
+                } else {
+                    result.set_ok(db_rsp.ok);
+                    result.set_error_code(db_rsp.error_code);
+                    result.set_message(db_rsp.message);
+                }
                 result.set_attachment_state(db_rsp.attachment_state);
                 *body->mutable_result() = result;
-                body->set_ok(db_rsp.ok);
-                body->set_error_code(db_rsp.error_code);
-                body->set_message(db_rsp.message);
+                body->set_ok(ok);
+                body->set_error_code(result.error_code());
+                body->set_message(result.message());
                 body->set_mailbox_version(MailService::Instance().MailboxVersion(player_id));
-                out.set_ok(db_rsp.ok);
-                out.set_message(db_rsp.message);
+                out.set_ok(ok);
+                out.set_message(result.message());
                 done(std::move(out));
             };
             if (!PlayerSerialQueue::Instance().CompleteAsyncInFlight(player_id,
@@ -823,12 +849,19 @@ bool MailService::BeginHandleMailBatchClaimAsync(const game::MailBatchClaimReq &
             std::move(db_req), [st, start_next, mid](GameDbMailClaimResult db_rsp) {
                 if (!PlayerSerialQueue::Instance().CompleteAsyncInFlight(
                         st->player_id, [st, start_next, mid, db_rsp = std::move(db_rsp)]() mutable {
-                            MailService::Instance().ApplyClaimMemory(st->player_id, db_rsp);
+                            const bool mem_ok =
+                                MailService::Instance().ApplyClaimMemory(st->player_id, db_rsp);
                             game::MailClaimResult r;
                             r.set_mail_id(mid);
-                            r.set_ok(db_rsp.ok);
-                            r.set_error_code(db_rsp.error_code);
-                            r.set_message(db_rsp.message);
+                            if (db_rsp.ok && !mem_ok) {
+                                r.set_ok(false);
+                                r.set_error_code(mail::err::kStateSyncRequired);
+                                r.set_message("asset memory sync required");
+                            } else {
+                                r.set_ok(db_rsp.ok);
+                                r.set_error_code(db_rsp.error_code);
+                                r.set_message(db_rsp.message);
+                            }
                             r.set_attachment_state(db_rsp.attachment_state);
                             st->results.push_back(std::move(r));
                             ++st->index;

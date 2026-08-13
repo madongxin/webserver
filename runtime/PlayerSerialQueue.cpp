@@ -35,28 +35,35 @@ void PlayerSerialQueue::SetLimits(size_t max_per_shard, size_t max_global) {
 
 void PlayerSerialQueue::FinishAsyncLevelLocked(Shard *shard, uint64_t player_id) {
     auto it = shard->async_depth.find(player_id);
-    if (it == shard->async_depth.end()) {
-        auto dit = shard->deferred.find(player_id);
-        if (dit != shard->deferred.end()) {
-            while (!dit->second.empty()) {
-                shard->q.push_back(std::move(dit->second.front()));
-                dit->second.pop_front();
-            }
-            shard->deferred.erase(dit);
-        }
-        return;
+    if (it != shard->async_depth.end()) {
+        if (--(it->second) > 0)
+            return;
+        shard->async_depth.erase(it);
     }
-    if (--(it->second) > 0)
-        return;
-    shard->async_depth.erase(it);
     auto dit = shard->deferred.find(player_id);
-    if (dit != shard->deferred.end()) {
-        while (!dit->second.empty()) {
-            shard->q.push_back(std::move(dit->second.front()));
-            dit->second.pop_front();
-        }
-        shard->deferred.erase(dit);
+    if (dit == shard->deferred.end() || dit->second.empty()) {
+        if (dit != shard->deferred.end())
+            shard->deferred.erase(dit);
+        return;
     }
+    // 按 submit_seq 把 deferred 插回该玩家尚未执行 External 的正确位置，
+    // 禁止 push_back 与主队列里尚未扫描的同玩家任务倒置（夹心调度）。
+    std::deque<TaskEntry> merged;
+    auto &def = dit->second;
+    for (auto &t : shard->q) {
+        while (!def.empty() && t.kind == TaskKind::kExternal && t.player_id == player_id &&
+               def.front().submit_seq < t.submit_seq) {
+            merged.push_back(std::move(def.front()));
+            def.pop_front();
+        }
+        merged.push_back(std::move(t));
+    }
+    while (!def.empty()) {
+        merged.push_back(std::move(def.front()));
+        def.pop_front();
+    }
+    shard->q.swap(merged);
+    shard->deferred.erase(dit);
 }
 
 void PlayerSerialQueue::Start(int shard_count) {
@@ -239,6 +246,7 @@ bool PlayerSerialQueue::TryPost(uint64_t player_id, std::function<void()> task) 
         std::lock_guard<std::mutex> lk(shard->mu);
         if (shard->stop)
             return false;
+        entry.submit_seq = shard->next_submit_seq++;
         const auto dit = shard->async_depth.find(player_id);
         if (dit != shard->async_depth.end() && dit->second > 0) {
             auto &dq = shard->deferred[player_id];

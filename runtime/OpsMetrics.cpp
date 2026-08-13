@@ -68,5 +68,13 @@ std::string OpsMetrics::PrometheusText() const {
         placement_recover_fail_.load(std::memory_order_relaxed));
     ctr("gamemesh_gamedb_unknown_result_total", "GameDB write unknown-result outcomes.",
         gamedb_unknown_result_.load(std::memory_order_relaxed));
+    ctr("gamemesh_logic_discover_not_ready_total", "GameLogic discover skipped (registry not ready).",
+        logic_discover_not_ready_.load(std::memory_order_relaxed));
+    ctr("gamemesh_logic_discover_fail_total", "GameLogic discover RPC/IO failed (snapshot kept).",
+        logic_discover_fail_.load(std::memory_order_relaxed));
+    ctr("gamemesh_logic_discover_empty_total", "GameLogic discover succeeded with zero instances.",
+        logic_discover_empty_.load(std::memory_order_relaxed));
+    ctr("gamemesh_logic_discover_ok_total", "GameLogic discover succeeded nonempty.",
+        logic_discover_ok_.load(std::memory_order_relaxed));
     return os.str();
 }

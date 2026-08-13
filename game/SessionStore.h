@@ -87,6 +87,7 @@ public:
 
     /** 配置可分配的 GameLogic instance_id 列表（勿写死端口）。 */
     void SetLogicInstanceIds(std::vector<std::string> ids);
+    std::vector<std::string> LogicInstanceIds() const;
 
     bool AcquireSession(const AcquireSessionInput &in, AcquireSessionResult *out);
     bool Login(const game::LoginReq &req, game::LoginRsp *rsp);

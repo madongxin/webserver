@@ -93,6 +93,7 @@ private:
 
     struct TaskEntry {
         uint64_t player_id = 0;
+        uint64_t submit_seq = 0;
         TaskKind kind = TaskKind::kExternal;
         std::function<void()> fn;
     };
@@ -104,6 +105,8 @@ private:
         std::unordered_map<uint64_t, std::deque<TaskEntry>> deferred;
         /** 同玩家异步嵌套深度；>0 时 External 进 deferred */
         std::unordered_map<uint64_t, int> async_depth;
+        /** shard 内 External 提交序号，用于 deferred 按序合并 */
+        uint64_t next_submit_seq = 1;
         bool stop = false;
         int inflight = 0;
         std::thread worker;

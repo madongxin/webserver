@@ -12,6 +12,7 @@
 #include <atomic>
 #include <chrono>
 #include <cstdio>
+#include <memory>
 #include <thread>
 #include <vector>
 
@@ -95,6 +96,95 @@ int main() {
         GatewayDisconnectAsync::Instance().Stop();
         std::printf("OK redis-fallback disconnect storm enqueue_ms=%lld executed=%d\n",
                     static_cast<long long>(ms), ran.load());
+    }
+
+    // 有界 Stop：1.5s 阻塞 executor 下 Stop(50ms) 必须很快返回，且可再次 Start
+    {
+        GatewayDisconnectAsync::Instance().Start(64);
+        auto still_running = std::make_shared<std::atomic<bool>>(true);
+        GatewayDisconnectAsync::Instance().SetExecutorForTest(
+            [still_running](const GatewayDisconnectAsync::Task &) {
+                std::this_thread::sleep_for(std::chrono::milliseconds(1500));
+                still_running->store(false, std::memory_order_release);
+            });
+        if (!GatewayDisconnectAsync::Instance().EnqueueMarkDisconnected(3001, "tok", 1)) {
+            std::printf("FAIL bounded-stop enqueue\n");
+            GatewayDisconnectAsync::Instance().Stop();
+            return 1;
+        }
+        for (int i = 0; i < 200 && GatewayDisconnectAsync::Instance().pending() == 0; ++i)
+            std::this_thread::sleep_for(std::chrono::milliseconds(1));
+        const auto t0 = std::chrono::steady_clock::now();
+        GatewayDisconnectAsync::Instance().Stop(std::chrono::milliseconds(50));
+        const auto stop_ms = std::chrono::duration_cast<std::chrono::milliseconds>(
+                                 std::chrono::steady_clock::now() - t0)
+                                 .count();
+        if (stop_ms > 200) {
+            std::printf("FAIL bounded-stop elapsed_ms=%lld (limit 200, requested 50)\n",
+                        static_cast<long long>(stop_ms));
+            return 1;
+        }
+        if (!still_running->load(std::memory_order_acquire)) {
+            std::printf("FAIL bounded-stop finished executor before return\n");
+            return 1;
+        }
+        GatewayDisconnectAsync::Instance().Start(8);
+        std::atomic<int> ran2{0};
+        GatewayDisconnectAsync::Instance().SetExecutorForTest(
+            [&](const GatewayDisconnectAsync::Task &) { ran2.fetch_add(1); });
+        if (!GatewayDisconnectAsync::Instance().EnqueueMarkDisconnected(3002, "tok", 1)) {
+            std::printf("FAIL restart enqueue\n");
+            GatewayDisconnectAsync::Instance().Stop();
+            return 1;
+        }
+        for (int i = 0; i < 100 && ran2.load() == 0; ++i)
+            std::this_thread::sleep_for(std::chrono::milliseconds(5));
+        if (ran2.load() != 1) {
+            std::printf("FAIL restart execute\n");
+            GatewayDisconnectAsync::Instance().Stop();
+            return 1;
+        }
+        GatewayDisconnectAsync::Instance().Stop();
+        std::printf("OK bounded-stop elapsed_ms=%lld\n", static_cast<long long>(stop_ms));
+    }
+
+    // 队列满：投递立即返回
+    {
+        GatewayDisconnectAsync::Instance().Start(4);
+        GatewayDisconnectAsync::Instance().SetExecutorForTest(
+            [](const GatewayDisconnectAsync::Task &) {
+                std::this_thread::sleep_for(std::chrono::milliseconds(200));
+            });
+        int ok = 0;
+        const auto t0 = std::chrono::steady_clock::now();
+        for (int i = 0; i < 16; ++i) {
+            if (GatewayDisconnectAsync::Instance().EnqueueMarkDisconnected(
+                    4000 + static_cast<uint64_t>(i), "tok", 1))
+                ++ok;
+        }
+        const auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(
+                            std::chrono::steady_clock::now() - t0)
+                            .count();
+        if (ms > 50) {
+            std::printf("FAIL queue-full enqueue blocked ms=%lld\n",
+                        static_cast<long long>(ms));
+            GatewayDisconnectAsync::Instance().Stop();
+            return 1;
+        }
+        if (ok > 4) {
+            std::printf("FAIL queue-full accepted=%d\n", ok);
+            GatewayDisconnectAsync::Instance().Stop();
+            return 1;
+        }
+        if (GatewayDisconnectAsync::Instance().dropped() == 0) {
+            std::printf("FAIL queue-full dropped=0\n");
+            GatewayDisconnectAsync::Instance().Stop();
+            return 1;
+        }
+        GatewayDisconnectAsync::Instance().Stop(std::chrono::milliseconds(50));
+        std::printf("OK queue-full enqueue_ms=%lld accepted=%d dropped=%llu\n",
+                    static_cast<long long>(ms), ok,
+                    static_cast<unsigned long long>(GatewayDisconnectAsync::Instance().dropped()));
     }
 
     std::printf("PASS gateway_disconnect_async_test\n");
