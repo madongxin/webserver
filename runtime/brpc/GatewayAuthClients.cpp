@@ -176,6 +176,7 @@ bool GatewayAuthClients::AuthLogin(const auth::LoginRequest &req, auth::LoginRes
     for (size_t i = 0; i < tries; ++i) {
         auth::AuthService_Stub stub(s->session.get());
         brpc::Controller cntl;
+        cntl.set_timeout_ms(timeout_ms_);
         stub.Login(&cntl, &req, rsp, nullptr);
         if (!cntl.Failed())
             return true;
@@ -193,6 +194,7 @@ bool GatewayAuthClients::AuthRegister(const auth::RegisterRequest &req, auth::Re
     for (size_t i = 0; i < tries; ++i) {
         auth::AuthService_Stub stub(s->session.get());
         brpc::Controller cntl;
+        cntl.set_timeout_ms(timeout_ms_);
         stub.Register(&cntl, &req, rsp, nullptr);
         if (!cntl.Failed())
             return true;
@@ -212,6 +214,7 @@ bool GatewayAuthClients::AcquireSession(const sess::AcquireSessionRequest &req,
     for (size_t i = 0; i < tries; ++i) {
         sess::SessionService_Stub stub(s->session.get());
         brpc::Controller cntl;
+        cntl.set_timeout_ms(timeout_ms_);
         stub.AcquireSession(&cntl, &req, rsp, nullptr);
         if (!cntl.Failed())
             return true;
@@ -230,6 +233,7 @@ bool GatewayAuthClients::ReconnectV2(const sess::ReconnectRequest &req,
     for (size_t i = 0; i < tries; ++i) {
         sess::SessionService_Stub stub(s->session.get());
         brpc::Controller cntl;
+        cntl.set_timeout_ms(timeout_ms_);
         stub.ReconnectV2(&cntl, &req, rsp, nullptr);
         if (!cntl.Failed())
             return true;
@@ -248,6 +252,7 @@ bool GatewayAuthClients::PrepareReconnect(const sess::PrepareReconnectRequest &r
     for (size_t i = 0; i < tries; ++i) {
         sess::SessionService_Stub stub(s->session.get());
         brpc::Controller cntl;
+        cntl.set_timeout_ms(timeout_ms_);
         stub.PrepareReconnect(&cntl, &req, rsp, nullptr);
         if (!cntl.Failed())
             return true;
@@ -266,6 +271,7 @@ bool GatewayAuthClients::CommitReconnect(const sess::CommitReconnectRequest &req
     for (size_t i = 0; i < tries; ++i) {
         sess::SessionService_Stub stub(s->session.get());
         brpc::Controller cntl;
+        cntl.set_timeout_ms(timeout_ms_);
         stub.CommitReconnect(&cntl, &req, rsp, nullptr);
         if (!cntl.Failed())
             return true;
@@ -282,6 +288,7 @@ bool GatewayAuthClients::AbortReconnect(const sess::AbortReconnectRequest &req,
         return false;
     sess::SessionService_Stub stub(s->session.get());
     brpc::Controller cntl;
+    cntl.set_timeout_ms(timeout_ms_);
     stub.AbortReconnect(&cntl, &req, rsp, nullptr);
     return !cntl.Failed();
 }
@@ -293,6 +300,7 @@ bool GatewayAuthClients::MarkDisconnectedV2(const sess::MarkDisconnectedRequest 
         return false;
     sess::SessionService_Stub stub(s->session.get());
     brpc::Controller cntl;
+    cntl.set_timeout_ms(timeout_ms_);
     stub.MarkDisconnectedV2(&cntl, &req, rsp, nullptr);
     return !cntl.Failed();
 }
@@ -304,6 +312,7 @@ bool GatewayAuthClients::GetSessionOperation(const sess::GetSessionOperationRequ
         return false;
     sess::SessionService_Stub stub(s->session.get());
     brpc::Controller cntl;
+    cntl.set_timeout_ms(timeout_ms_);
     stub.GetSessionOperation(&cntl, &req, rsp, nullptr);
     return !cntl.Failed();
 }
@@ -314,6 +323,7 @@ bool GatewayAuthClients::LogoutV2(const sess::LogoutRequest &req, sess::LogoutRe
         return false;
     sess::SessionService_Stub stub(s->session.get());
     brpc::Controller cntl;
+    cntl.set_timeout_ms(timeout_ms_);
     stub.LogoutV2(&cntl, &req, rsp, nullptr);
     return !cntl.Failed();
 }
@@ -325,6 +335,7 @@ bool GatewayAuthClients::BeginPlayerTransfer(const sess::BeginPlayerTransferRequ
         return false;
     sess::SessionService_Stub stub(s->session.get());
     brpc::Controller cntl;
+    cntl.set_timeout_ms(timeout_ms_);
     stub.BeginPlayerTransfer(&cntl, &req, rsp, nullptr);
     return !cntl.Failed();
 }
@@ -336,6 +347,7 @@ bool GatewayAuthClients::CommitPlayerTransfer(const sess::CommitPlayerTransferRe
         return false;
     sess::SessionService_Stub stub(s->session.get());
     brpc::Controller cntl;
+    cntl.set_timeout_ms(timeout_ms_);
     stub.CommitPlayerTransfer(&cntl, &req, rsp, nullptr);
     return !cntl.Failed();
 }
@@ -347,6 +359,7 @@ bool GatewayAuthClients::AbortPlayerTransfer(const sess::AbortPlayerTransferRequ
         return false;
     sess::SessionService_Stub stub(s->session.get());
     brpc::Controller cntl;
+    cntl.set_timeout_ms(timeout_ms_);
     stub.AbortPlayerTransfer(&cntl, &req, rsp, nullptr);
     return !cntl.Failed();
 }
@@ -358,6 +371,7 @@ bool GatewayAuthClients::GetPlayerRoute(const sess::GetPlayerRouteRequest &req,
         return false;
     sess::SessionService_Stub stub(s->session.get());
     brpc::Controller cntl;
+    cntl.set_timeout_ms(timeout_ms_);
     stub.GetPlayerRoute(&cntl, &req, rsp, nullptr);
     return !cntl.Failed();
 }
@@ -369,6 +383,7 @@ bool GatewayAuthClients::UpdatePlayerRoute(const sess::UpdatePlayerRouteRequest 
         return false;
     sess::SessionService_Stub stub(s->session.get());
     brpc::Controller cntl;
+    cntl.set_timeout_ms(timeout_ms_);
     stub.UpdatePlayerRoute(&cntl, &req, rsp, nullptr);
     return !cntl.Failed() && rsp->ok();
 }
@@ -380,6 +395,7 @@ bool GatewayAuthClients::ResolveOrCreateMap(const sess::ResolveOrCreateMapReques
         return false;
     sess::SessionService_Stub stub(s->session.get());
     brpc::Controller cntl;
+    cntl.set_timeout_ms(timeout_ms_);
     stub.ResolveOrCreateMap(&cntl, &req, rsp, nullptr);
     return !cntl.Failed();
 }
@@ -392,6 +408,7 @@ bool GatewayAuthClients::BindPlayer(const std::string &logic_instance_id,
         return false;
     glrpc::GameLogicService_Stub stub(ch.get());
     brpc::Controller cntl;
+    cntl.set_timeout_ms(timeout_ms_);
     stub.BindPlayer(&cntl, &req, rsp, nullptr);
     return !cntl.Failed() && rsp->ok();
 }
@@ -404,6 +421,7 @@ bool GatewayAuthClients::UnbindPlayer(const std::string &logic_instance_id,
         return false;
     glrpc::GameLogicService_Stub stub(ch.get());
     brpc::Controller cntl;
+    cntl.set_timeout_ms(timeout_ms_);
     stub.UnbindPlayer(&cntl, &req, rsp, nullptr);
     return !cntl.Failed();
 }
@@ -426,6 +444,7 @@ void GatewayAuthClients::UnbindPlayerAsync(const std::string &logic_instance_id,
     ctx->logic_id = logic_instance_id;
     ctx->player_id = req.player_id();
     ctx->req = req;
+    ctx->cntl.set_timeout_ms(timeout_ms_);
     glrpc::GameLogicService_Stub stub(ch.get());
     stub.UnbindPlayer(&ctx->cntl, &ctx->req, &ctx->rsp,
                       brpc::NewCallback(
@@ -450,6 +469,7 @@ bool GatewayAuthClients::FreezePlayer(const std::string &logic_instance_id,
         return false;
     glrpc::GameLogicService_Stub stub(ch.get());
     brpc::Controller cntl;
+    cntl.set_timeout_ms(timeout_ms_);
     stub.FreezePlayer(&cntl, &req, rsp, nullptr);
     return !cntl.Failed() && rsp->ok();
 }
@@ -462,6 +482,7 @@ bool GatewayAuthClients::ExportPlayerSnapshot(const std::string &logic_instance_
         return false;
     glrpc::GameLogicService_Stub stub(ch.get());
     brpc::Controller cntl;
+    cntl.set_timeout_ms(timeout_ms_);
     stub.ExportPlayerSnapshot(&cntl, &req, rsp, nullptr);
     return !cntl.Failed() && rsp->ok();
 }
@@ -474,6 +495,7 @@ bool GatewayAuthClients::ImportPlayerSnapshot(const std::string &logic_instance_
         return false;
     glrpc::GameLogicService_Stub stub(ch.get());
     brpc::Controller cntl;
+    cntl.set_timeout_ms(timeout_ms_);
     stub.ImportPlayerSnapshot(&cntl, &req, rsp, nullptr);
     return !cntl.Failed() && rsp->ok();
 }
@@ -485,6 +507,7 @@ bool GatewayAuthClients::Dispatch(const std::string &logic_instance_id,
         return false;
     glrpc::GameLogicService_Stub stub(ch.get());
     brpc::Controller cntl;
+    cntl.set_timeout_ms(timeout_ms_);
     stub.Dispatch(&cntl, &req, rsp, nullptr);
     return !cntl.Failed();
 }

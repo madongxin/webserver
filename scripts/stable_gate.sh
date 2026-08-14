@@ -121,6 +121,25 @@ restart_e2e_clean() {
   # shellcheck disable=SC1090
   source "$GAMEMESH_RUN_DIR/E2E_PORTS.env"
   e2e_cluster_healthy || return 1
+  # HTTP live ≠ Register/Login 可用（负载后残留集群曾出现 ready 但 login 全超时）
+  local CLIENT="${ROOT}/build/test/game_tcp_e2e_client"
+  local GW="${E2E_GW0_GAME:-19081}"
+  local ready=0 last="" i
+  for i in $(seq 1 120); do
+    if [[ -x "$CLIENT" ]]; then
+      last="$("$CLIENT" register-login 127.0.0.1 "$GW" "gate_warm_$$_$i" e2epass1 2>&1 || true)"
+      if echo "$last" | grep -q login_ok=1; then
+        ready=1
+        break
+      fi
+    fi
+    sleep 1
+  done
+  if [[ "$ready" -ne 1 ]]; then
+    echo "ERROR: cluster restarted but register-login not ready within 120s" >&2
+    echo "$last" >&2
+    return 1
+  fi
 }
 
 run_step "check_deps --full" ./scripts/check_deps.sh --full
@@ -238,6 +257,7 @@ if [[ "$FULL" -eq 1 ]]; then
   run_step "e2e_${E2E_ROUNDS:-20}x" --log "$SUMMARY_DIR/e2e-20x.log" \
     env START_CLUSTER=1 E2E_ROUNDS="${E2E_ROUNDS:-20}" ./scripts/test_e2e_20x.sh
   run_step "load_baseline" ./scripts/load_tcp_baseline.sh
+  run_step "restart_after_load" restart_e2e_clean
   # 负载报告必须属于当前 commit
   if [[ -f "$ROOT/run/load/LATEST_PASS.txt" ]]; then
     load_json="$(cat "$ROOT/run/load/LATEST_PASS.txt")"

@@ -55,6 +55,23 @@ REPORT_JSON="$REPORT_DIR/soak_${STAMP}.json"
 SAMPLE_LOG="$REPORT_DIR/soak_${STAMP}.samples"
 
 echo "soak: duration=${DUR}s sample=${SAMPLE}s report=$REPORT_JSON"
+# 负载后复用集群可能进程仍活但 login 已卡死；先探测，避免空跑 2 小时
+CLIENT_WARM="$CLIENT"
+warm=0
+last_warm=""
+for _ in $(seq 1 30); do
+  last_warm="$("$CLIENT_WARM" register-login "$HOST" "$GW0" "soak_warm_$$_$_" e2epass1 2>&1 || true)"
+  if echo "$last_warm" | grep -q login_ok=1; then
+    warm=1
+    break
+  fi
+  sleep 1
+done
+if [[ "$warm" -ne 1 ]]; then
+  echo "ERROR: soak cluster not accepting register-login within 30s" >&2
+  echo "$last_warm" >&2
+  exit 1
+fi
 ok=0
 fail=0
 timeout_n=0

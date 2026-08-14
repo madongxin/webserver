@@ -26,10 +26,10 @@ public:
             return;
         if (n <= 0) {
             unsigned hc = std::thread::hardware_concurrency();
-            n = hc > 2 ? static_cast<int>(hc) : 2;
+            n = hc > 4 ? static_cast<int>(hc) : 8;
         }
-        if (n < 2)
-            n = 2;
+        if (n < 4)
+            n = 4;
         stop_.store(false, std::memory_order_release);
         workers_.reserve(static_cast<size_t>(n));
         for (int i = 0; i < n; ++i)
