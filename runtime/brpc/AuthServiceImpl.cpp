@@ -364,6 +364,7 @@ void AuthServiceImpl::Register(::google::protobuf::RpcController *controller,
     req.set_idempotency_key(idem);
     gdb::RegisterAccountRsp rsp;
     brpc::Controller cntl;
+    cntl.set_timeout_ms(2000);
     stub.RegisterAccount(&cntl, &req, &rsp, nullptr);
     if (cntl.Failed() || !rsp.ok()) {
         response->set_ok(false);

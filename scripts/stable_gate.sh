@@ -232,6 +232,8 @@ if [[ "$FULL" -eq 1 ]]; then
     SUMMARY_STEPS+=("{\"name\":\"dynamic_logic_scale\",\"exit_code\":0,\"skipped\":true}")
   fi
 
+  run_step "stop_cluster_before_sanitizers" bash -c "${ROOT}/scripts/stop_e2e_cluster.sh || true; sleep 1"
+
   run_step "sanitizers" --log "$SUMMARY_DIR/sanitizers/all.log" ./scripts/test_sanitizers.sh all
   run_step "e2e_${E2E_ROUNDS:-20}x" --log "$SUMMARY_DIR/e2e-20x.log" \
     env START_CLUSTER=1 E2E_ROUNDS="${E2E_ROUNDS:-20}" ./scripts/test_e2e_20x.sh
