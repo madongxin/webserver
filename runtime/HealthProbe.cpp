@@ -19,8 +19,10 @@
 #include "GatewayAuthClients.h"
 #endif
 #ifdef WEBSERVER_ENABLE_REDIS
-#include "IServiceRegistry.h"
 #include "ServiceHealth.h"
+#endif
+#ifdef WEBSERVER_ENABLE_BRPC
+#include "IServiceRegistry.h"
 #endif
 
 namespace {
@@ -163,6 +165,7 @@ void HealthProbeStore::Refresh(const std::string &role) {
     }
 
 #ifdef WEBSERVER_ENABLE_REDIS
+#ifdef WEBSERVER_ENABLE_BRPC
     if (next->consecutive_failures >= 2 && (!prev || prev->ok || prev->consecutive_failures < 2)) {
         const std::string svc = ServiceHealth::Instance().service();
         const std::string sid = ServiceHealth::Instance().server_id();
@@ -179,6 +182,7 @@ void HealthProbeStore::Refresh(const std::string &role) {
             StaticServiceRegistry::Get().SetInstanceStatus(svc, sid, "UP");
         }
     }
+#endif
 #endif
 
     std::atomic_store_explicit(&snap_, std::shared_ptr<const HealthProbeSnapshot>(next),

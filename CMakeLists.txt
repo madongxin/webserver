@@ -221,7 +221,6 @@ if(ENABLE_BRPC)
     runtime/brpc/GatewayAuthClients.cpp
     runtime/brpc/GatewayLoginOrchestrator.cpp
     runtime/brpc/GatewayEnterMapOrchestrator.cpp
-    runtime/RpcOffloadPool.cpp
     runtime/brpc/gamelogic_rpc.pb.cc
     runtime/brpc/gateway_push.pb.cc
     runtime/brpc/GatewayPushServer.cpp
@@ -242,7 +241,7 @@ endif()
 
 set(SRC_BOOTSTRAP apps/ServerBootstrap.cpp runtime/ServiceHealth.cpp runtime/PasswordHash.cpp
     runtime/GatewayIdentity.cpp runtime/GatewayAuthFlow.cpp runtime/OpsMetrics.cpp
-    runtime/HealthDeps.cpp runtime/HealthProbe.cpp)
+    runtime/HealthDeps.cpp runtime/HealthProbe.cpp runtime/RpcOffloadPool.cpp)
 set(GAMEMESH_COMMON_SRCS
   ${SRC_LIST1} ${SRC_LIST2} ${SRC_LIST3} ${SRC_LIST4} ${SRC_LIST5}
   ${SRC_DB} ${SRC_GAME} ${SRC_REDIS} ${SRC_ROCKSDB} ${SRC_BRPC} ${SRC_BOOTSTRAP})
