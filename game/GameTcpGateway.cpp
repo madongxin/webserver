@@ -240,18 +240,18 @@ void GameTcpGateway::Run() {
         {
             std::lock_guard<std::mutex> lk(g_bind_mu);
             auto it = g_conn_bind.find(c->id());
-            if (it == g_conn_bind.end()) {
-                ForgetBind(c->id());
-                return;
+            if (it != g_conn_bind.end()) {
+                bind = it->second;
+                g_conn_bind.erase(it);
             }
-            bind = it->second;
-            g_conn_bind.erase(it);
         }
 #ifdef WEBSERVER_ENABLE_BRPC
         GatewayConnRegistry::Bind reg;
         const bool has_reg = GatewayConnRegistry::Instance().FindByConnection(c->id(), &reg);
 #endif
-        // 先解绑连接映射；后续 RPC 仅用快照字段，禁止跨线程碰 TcpConnection
+        // 必须在 g_bind_mu 之外 Forget：ForgetBind 会再锁同一把非递归 mutex。
+        // 未绑定连接（Register 超时后客户端断开）走旧 early-return 会把 acceptor EventLoop 卡死，
+        // listen backlog 堆满后所有新登录 no_response。
         ForgetBind(c->id());
 
         if (bind.player_id != 0) {

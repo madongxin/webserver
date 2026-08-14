@@ -31,15 +31,20 @@ if [[ "$START_CLUSTER" -eq 1 ]]; then
   [[ -f "$GAMEMESH_RUN_DIR/E2E_PORTS.env" ]] && source "$GAMEMESH_RUN_DIR/E2E_PORTS.env"
   GW="${E2E_GW0_GAME:-19081}"
   ready=0
-  for _ in $(seq 1 60); do
-    if [[ -x "$CLIENT" ]] && "$CLIENT" register-login 127.0.0.1 "$GW" "e2e-final-warm-$$-$_" e2epass1 2>/dev/null | grep -q login_ok=1; then
-      ready=1
-      break
+  last=""
+  for _ in $(seq 1 120); do
+    if [[ -x "$CLIENT" ]]; then
+      last="$("$CLIENT" register-login 127.0.0.1 "$GW" "e2e-final-warm-$$-$_" e2epass1 2>&1 || true)"
+      if echo "$last" | grep -q login_ok=1; then
+        ready=1
+        break
+      fi
     fi
     sleep 1
   done
   if [[ "$ready" -ne 1 ]]; then
-    echo "ERROR: cluster started but register-login not ready within 60s" >&2
+    echo "ERROR: cluster started but register-login not ready within 120s" >&2
+    echo "$last" >&2
     exit 1
   fi
 fi
