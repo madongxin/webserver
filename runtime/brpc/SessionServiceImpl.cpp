@@ -1,7 +1,9 @@
 #include "SessionServiceImpl.h"
 
+#include "GatewayPushClient.h"
 #include "HealthyLogicOwners.h"
 #include "Logging.h"
+#include "OpsMetrics.h"
 #include "PlacementStore.h"
 #include "SessionStore.h"
 
@@ -107,6 +109,71 @@ void SessionServiceImpl::ReconnectV2(::google::protobuf::RpcController *controll
     }
 }
 
+void SessionServiceImpl::PrepareReconnect(::google::protobuf::RpcController *controller,
+                                          const ::sess::PrepareReconnectRequest *request,
+                                          ::sess::PrepareReconnectResponse *response,
+                                          ::google::protobuf::Closure *done) {
+    (void)controller;
+    brpc::ClosureGuard done_guard(done);
+    response->Clear();
+    ReconnectSessionInput in;
+    in.player_id = request->player_id();
+    in.session_id = request->session_id();
+    in.reconnect_ticket = request->reconnect_ticket();
+    in.gateway_instance_id = request->gateway_instance_id();
+    in.last_server_seq = request->last_server_seq();
+    in.operation_id = request->operation_id();
+    AcquireSessionResult out;
+    const bool ok = SessionStore::Instance().PrepareReconnect(in, &out);
+    response->set_ok(ok && out.ok);
+    response->set_message(out.message);
+    response->set_error_code(out.error_code);
+    response->set_session_id(out.session_id);
+    response->set_candidate_fence_token(out.fence_token);
+    response->set_candidate_generation(out.generation);
+    response->set_gamelogic_instance_id(out.gamelogic_instance_id);
+    response->set_map_instance_id(out.map_instance_id);
+    response->set_map_owner_epoch(out.map_owner_epoch);
+    response->set_route_version(out.route_version);
+    response->set_operation_id(request->operation_id());
+}
+
+void SessionServiceImpl::CommitReconnect(::google::protobuf::RpcController *controller,
+                                         const ::sess::CommitReconnectRequest *request,
+                                         ::sess::CommitReconnectResponse *response,
+                                         ::google::protobuf::Closure *done) {
+    (void)controller;
+    brpc::ClosureGuard done_guard(done);
+    response->Clear();
+    AcquireSessionResult out;
+    const bool ok = SessionStore::Instance().CommitReconnect(
+        request->player_id(), request->operation_id(), request->candidate_fence_token(),
+        request->candidate_generation(), request->gateway_instance_id(), request->connection_id(),
+        &out);
+    response->set_ok(ok && out.ok);
+    response->set_message(out.message);
+    response->set_error_code(out.error_code);
+    response->set_session_id(out.session_id);
+    response->set_fence_token(out.fence_token);
+    response->set_generation(out.generation);
+    response->set_gamelogic_instance_id(out.gamelogic_instance_id);
+    response->set_map_instance_id(out.map_instance_id);
+    response->set_map_owner_epoch(out.map_owner_epoch);
+    response->set_route_version(out.route_version);
+}
+
+void SessionServiceImpl::AbortReconnect(::google::protobuf::RpcController *controller,
+                                        const ::sess::AbortReconnectRequest *request,
+                                        ::sess::AbortReconnectResponse *response,
+                                        ::google::protobuf::Closure *done) {
+    (void)controller;
+    brpc::ClosureGuard done_guard(done);
+    const bool ok = SessionStore::Instance().AbortReconnect(
+        request->player_id(), request->operation_id(), request->candidate_fence_token());
+    response->set_ok(ok);
+    response->set_message(ok ? "aborted" : "abort failed");
+}
+
 void SessionServiceImpl::GetSessionOperation(::google::protobuf::RpcController *controller,
                                              const ::sess::GetSessionOperationRequest *request,
                                              ::sess::GetSessionOperationResponse *response,
@@ -172,9 +239,19 @@ void SessionServiceImpl::Kick(::google::protobuf::RpcController *controller,
                               ::google::protobuf::Closure *done) {
     (void)controller;
     brpc::ClosureGuard done_guard(done);
-    response->set_ok(false);
-    response->set_message(std::string("kick deferred: ") + request->reason());
-    LOG_WARN << "Kick stub player_id=" << request->player_id() << " reason=" << request->reason();
+    SessionStore::KickResult kr;
+    const bool ok = SessionStore::Instance().Kick(request->player_id(), request->reason(), &kr);
+    response->set_ok(ok);
+    response->set_message(ok ? "kicked" : (kr.message.empty() ? "kick failed" : kr.message));
+    if (ok && !kr.old_gateway_id.empty()) {
+        GatewayPushClient::Instance().KickConnectionAsync(
+            kr.old_gateway_id, request->player_id(), kr.old_session_id, kr.old_generation,
+            request->reason());
+        OpsMetrics::Instance().IncKickGatewayAttempt();
+    }
+    LOG_INFO << "Kick player_id=" << request->player_id() << " ok=" << ok
+             << " new_gen=" << kr.new_generation << " old_gw=" << kr.old_gateway_id
+             << " reason=" << request->reason();
 }
 
 void SessionServiceImpl::ResolveOrCreateMap(::google::protobuf::RpcController *controller,

@@ -65,9 +65,11 @@ fi
 ./build/test/gamedb_mutation_idempotency_test
 ./build/test/gamedb_mutation_atomicity_test
 ./build/test/gamedb_unknown_result_test
-if [[ -x ./build/test/phase3_gamedb_asset_test ]]; then
-  ./build/test/phase3_gamedb_asset_test
+if [[ ! -x ./build/test/phase3_gamedb_asset_test ]]; then
+  echo "ERROR: missing phase3_gamedb_asset_test"
+  exit 1
 fi
+./build/test/phase3_gamedb_asset_test
 if [[ ! -x ./build/test/gamedb_mail_claim_test ]]; then
   echo "ERROR: missing gamedb_mail_claim_test"
   exit 1
@@ -78,4 +80,9 @@ if [[ ! -x ./build/test/healthy_logic_refresh_test ]]; then
   exit 1
 fi
 ./build/test/healthy_logic_refresh_test
+./build/test/session_grace_cas_test
+./build/test/reconnect_transaction_test
+./build/test/redis_pool_shutdown_test
+./build/test/refresh_token_race_test
+./build/test/auth_token_store_test
 echo "test_integration.sh PASS"

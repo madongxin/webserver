@@ -17,12 +17,14 @@
 #include "GatewayDisconnectAsync.h"
 #include "GatewayIdentity.h"
 #include "GatewayLoginRoute.h"
+#include "HealthProbe.h"
 #include "InProcessTransport.h"
 #include "Logging.h"
 #include "OpsMetrics.h"
 #include "PlayerSerialQueue.h"
 #include "ProtoFraming.h"
 #include "ReplySink.h"
+#include "RpcOffloadPool.h"
 #include "ServiceHealth.h"
 #include "SessionHandle.h"
 #include "TcpConnection.h"
@@ -41,6 +43,7 @@
 #endif
 #endif
 
+#include <atomic>
 #include <memory>
 #include <mutex>
 #include <thread>
@@ -59,6 +62,7 @@ struct ConnBind {
 std::mutex g_bind_mu;
 std::unordered_map<uint64_t, ConnBind> g_conn_bind;  // connection_id -> bind
 std::string g_gateway_id = "gw-0";
+std::atomic<bool> g_tcp_listening{false};
 
 void RememberBind(uint64_t conn_id, uint64_t player_id, const std::string &token,
                   const std::string &session_id, uint64_t generation,
@@ -90,6 +94,10 @@ void RememberBind(uint64_t conn_id, uint64_t player_id, const std::string &token
         gb.send_frame = [weak](const std::string &frame) {
             if (auto s = weak.lock())
                 s->SendFrame(frame);
+        };
+        gb.close_conn = [weak]() {
+            if (auto s = weak.lock())
+                s->CloseConnection();
         };
     }
     GatewayConnRegistry::Instance().Remember(conn_id, std::move(gb));
@@ -171,6 +179,8 @@ GameTcpGateway::GameTcpGateway(const std::string &ip, int port, const std::strin
     g_gateway_id = instance_id_;
 }
 
+bool GameTcpGateway::TcpListening() { return g_tcp_listening.load(std::memory_order_acquire); }
+
 GameTcpGateway::~GameTcpGateway() {
     RequestQuit();
     if (thread_.joinable())
@@ -198,6 +208,7 @@ void GameTcpGateway::RequestQuit() {
 
 void GameTcpGateway::Run() {
     InProcessTransport::Instance().EnsureStarted(0);
+    RpcOffloadPool::Instance().Start(0);
 #ifdef WEBSERVER_ENABLE_REDIS
     GatewayDisconnectAsync::Instance().Start(4096);
 #endif
@@ -249,13 +260,29 @@ void GameTcpGateway::Run() {
             if (SessionRpcClient::Instance().ready()) {
                 SessionRpcClient::Instance().MarkDisconnectedAsync(bind.player_id, bind.token,
                                                                    bind.generation);
+                OpsMetrics::Instance().IncDisconnectAccepted();
             } else
 #endif
                 if (SessionStore::Instance().Available()) {
                 // 本地 Redis 兜底：后台队列，禁止在 Reactor 同步访问 Redis
-                if (!GatewayDisconnectAsync::Instance().EnqueueMarkDisconnected(
+                if (GatewayDisconnectAsync::Instance().EnqueueMarkDisconnected(
                         bind.player_id, bind.token, bind.generation)) {
-                    LOG_WARN << "disconnect redis enqueue failed player=" << bind.player_id;
+                    OpsMetrics::Instance().IncDisconnectAccepted();
+                } else {
+#ifdef WEBSERVER_ENABLE_BRPC
+                    if (SessionRpcClient::Instance().ready()) {
+                        SessionRpcClient::Instance().MarkDisconnectedAsync(
+                            bind.player_id, bind.token, bind.generation);
+                        OpsMetrics::Instance().IncDisconnectRetried();
+                        OpsMetrics::Instance().IncDisconnectAccepted();
+                        LOG_WARN << "disconnect queue full, rpc fallback player=" << bind.player_id;
+                    } else
+#endif
+                    {
+                        OpsMetrics::Instance().IncDisconnectDropped();
+                        OpsMetrics::Instance().IncDisconnectFailed();
+                        LOG_WARN << "disconnect redis enqueue failed player=" << bind.player_id;
+                    }
                 }
             }
 #endif
@@ -294,12 +321,17 @@ void GameTcpGateway::Run() {
     });
     LOG_INFO << "GameTcpGateway ready on " << ip_ << ":" << port_
              << " id=" << g_gateway_id << " (session bind + grace disconnect)";
+    g_tcp_listening.store(true, std::memory_order_release);
+    HealthProbeStore::SetGatewayTcpListening(true);
     server->Start();
+    g_tcp_listening.store(false, std::memory_order_release);
+    HealthProbeStore::SetGatewayTcpListening(false);
     server_.store(nullptr);
     loop_.store(nullptr);
 #ifdef WEBSERVER_ENABLE_REDIS
     GatewayDisconnectAsync::Instance().Stop(std::chrono::milliseconds(2000));
 #endif
+    RpcOffloadPool::Instance().Stop();
 }
 
 void GameTcpGateway::OnMessage(const std::shared_ptr<TcpConnection> &conn) {
@@ -396,15 +428,10 @@ void GameTcpGateway::OnMessage(const std::shared_ptr<TcpConnection> &conn) {
                 continue;
             }
 
-            if (!PlayerSerialQueue::Instance().TryPost(
-                    shard_key, [gw, conn_id, payload, sink, flow_gen, needs_flow]() {
-                std::string out;
-                gameproto::GatewayLoginRoute route;
-                game::GameRequest req;
-                req.ParseFromString(payload);
-                bool ok = false;
-                if (req.has_login()) {
-                    ok = gameproto::OrchestrateGatewayLogin(gw, conn_id, payload, &out, &route);
+            auto finish = [sink, conn_id, flow_gen, needs_flow](
+                              bool ok, std::string out, gameproto::GatewayLoginRoute route,
+                              bool is_login, bool is_reconnect, bool is_register) {
+                if (is_login) {
                     if (ok)
                         OpsMetrics::Instance().IncLoginOk();
                     else
@@ -414,22 +441,19 @@ void GameTcpGateway::OnMessage(const std::shared_ptr<TcpConnection> &conn) {
                             RememberBind(conn_id, route.player_id, route.fence_token,
                                          route.session_id, route.generation, sink, &route);
                         } else {
-                            // 迟到回调或连接已断：幂等补偿，避免残留 ONLINE
                             gameproto::CompensateGatewaySession(route.player_id, route.session_id,
-                                                                route.fence_token);
+                                                                route.fence_token, route.generation);
                             LOG_WARN << "login bind skipped (stale flow/conn) player="
                                      << route.player_id << " conn=" << conn_id;
                             out.clear();
                         }
                     }
-                } else if (req.has_register_()) {
-                    ok = gameproto::OrchestrateGatewayRegister(payload, &out);
+                } else if (is_register) {
                     if (ok)
                         OpsMetrics::Instance().IncRegisterOk();
                     else
                         OpsMetrics::Instance().IncRegisterFail();
-                } else if (req.has_reconnect()) {
-                    ok = gameproto::OrchestrateGatewayReconnect(gw, conn_id, payload, &out, &route);
+                } else if (is_reconnect) {
                     if (ok)
                         OpsMetrics::Instance().IncReconnectOk();
                     else
@@ -438,7 +462,6 @@ void GameTcpGateway::OnMessage(const std::shared_ptr<TcpConnection> &conn) {
                         if (GatewayAuthFlow::Instance().AcceptCallback(conn_id, flow_gen)) {
                             RememberBind(conn_id, route.player_id, route.fence_token,
                                          route.session_id, route.generation, sink, &route);
-                            // ReconnectRsp → Replay 或 FullSnapshot（need_full_snapshot 时也必须发送）
                             if (!out.empty() && sink &&
                                 GatewayAuthFlow::Instance().Alive(conn_id)) {
                                 sink->SendFrame(out);
@@ -462,26 +485,53 @@ void GameTcpGateway::OnMessage(const std::shared_ptr<TcpConnection> &conn) {
                             }
                         } else {
                             gameproto::CompensateGatewaySession(route.player_id, route.session_id,
-                                                                route.fence_token);
+                                                                route.fence_token, route.generation);
                             LOG_WARN << "reconnect bind skipped (stale flow/conn) player="
                                      << route.player_id << " conn=" << conn_id;
                             out.clear();
                         }
                     }
-                } else {
-                    ok = gameproto::OrchestrateGatewayLogout(gw, conn_id, payload, &out);
-                    if (ok)
-                        ForgetBind(conn_id);
                 }
                 if (needs_flow)
                     GatewayAuthFlow::Instance().End(conn_id, flow_gen);
-                (void)ok;
-                // 连接已断则不再回写客户端
                 if (!out.empty() && sink &&
                     (!needs_flow || GatewayAuthFlow::Instance().Alive(conn_id))) {
                     sink->SendFrame(out);
                 }
-            })) {
+            };
+
+            bool started = false;
+            if (peek.has_login()) {
+                started = gameproto::BeginOrchestrateGatewayLogin(
+                    gw, conn_id, payload, shard_key,
+                    [finish](bool ok, std::string out, gameproto::GatewayLoginRoute route) {
+                        finish(ok, std::move(out), std::move(route), true, false, false);
+                    });
+            } else if (peek.has_register_()) {
+                started = gameproto::BeginOrchestrateGatewayRegister(
+                    payload, shard_key,
+                    [finish](bool ok, std::string out, gameproto::GatewayLoginRoute route) {
+                        finish(ok, std::move(out), std::move(route), false, false, true);
+                    });
+            } else if (peek.has_reconnect()) {
+                started = gameproto::BeginOrchestrateGatewayReconnect(
+                    gw, conn_id, payload, shard_key,
+                    [finish](bool ok, std::string out, gameproto::GatewayLoginRoute route) {
+                        finish(ok, std::move(out), std::move(route), false, true, false);
+                    });
+            } else {
+                started = PlayerSerialQueue::Instance().TryPost(
+                    shard_key, [gw, conn_id, payload, sink]() {
+                        std::string out;
+                        const bool ok =
+                            gameproto::OrchestrateGatewayLogout(gw, conn_id, payload, &out);
+                        if (ok)
+                            ForgetBind(conn_id);
+                        if (!out.empty() && sink)
+                            sink->SendFrame(out);
+                    });
+            }
+            if (!started) {
                 if (needs_flow)
                     GatewayAuthFlow::Instance().End(conn_id, flow_gen);
                 OpsMetrics::Instance().IncQueueOverload();
@@ -613,21 +663,18 @@ void GameTcpGateway::OnMessage(const std::shared_ptr<TcpConnection> &conn) {
                 auto sink = tcp_sink;
                 SessionHandle h = handle;
                 std::string payload = frame;
-                if (!PlayerSerialQueue::Instance().TryPost(h.player_id, [h, conn_id, payload,
-                                                                        sink]() {
-                        std::string out;
-                        SessionHandle route = h;
-                        const bool ok =
-                            gameproto::OrchestrateGatewayEnterMap(h, payload, &out, &route);
-                        if (ok || !out.empty()) {
-                            GatewayConnRegistry::Instance().ApplyRoute(
-                                conn_id, route.gamelogic_instance_id, route.map_instance_id,
-                                route.owner_epoch, route.route_version);
-                        }
-                        (void)ok;
-                        if (!out.empty() && sink)
-                            sink->SendFrame(out);
-                    })) {
+                if (!gameproto::BeginOrchestrateGatewayEnterMap(
+                        h, payload,
+                        [conn_id, sink](bool ok, std::string out, SessionHandle route) {
+                            if (ok || !out.empty()) {
+                                GatewayConnRegistry::Instance().ApplyRoute(
+                                    conn_id, route.gamelogic_instance_id, route.map_instance_id,
+                                    route.owner_epoch, route.route_version);
+                            }
+                            (void)ok;
+                            if (!out.empty() && sink)
+                                sink->SendFrame(out);
+                        })) {
                     OpsMetrics::Instance().IncQueueOverload();
                     game::GameResponse ov;
                     ov.set_ok(false);

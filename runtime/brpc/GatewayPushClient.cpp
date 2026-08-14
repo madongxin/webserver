@@ -3,9 +3,11 @@
 #include "IServiceRegistry.h"
 #include "Logging.h"
 
+#include <brpc/callback.h>
 #include <brpc/channel.h>
 
 #include <atomic>
+#include <memory>
 #include <vector>
 
 GatewayPushClient &GatewayPushClient::Instance() {
@@ -121,4 +123,51 @@ bool GatewayPushClient::PushBatch(const std::string &gateway_instance_id,
         return false;
     }
     return rsp->ok();
+}
+
+void GatewayPushClient::KickConnectionAsync(const std::string &gateway_instance_id,
+                                            uint64_t player_id, const std::string &session_id,
+                                            uint64_t generation, const std::string &reason) {
+    if (gateway_instance_id.empty() || player_id == 0)
+        return;
+    if (!EnsureChannel(gateway_instance_id)) {
+        LOG_WARN << "KickConnectionAsync no channel gw=" << gateway_instance_id
+                 << " player=" << player_id;
+        return;
+    }
+    auto s = Current();
+    if (!s)
+        return;
+    auto it = s->by_gateway_id.find(gateway_instance_id);
+    if (it == s->by_gateway_id.end() || !it->second)
+        return;
+    struct KickCtx {
+        brpc::Controller cntl;
+        gwpush::KickConnectionRequest req;
+        gwpush::KickConnectionResponse rsp;
+        std::shared_ptr<brpc::Channel> ch;
+        std::string gw;
+        uint64_t player_id = 0;
+    };
+    auto *ctx = new KickCtx();
+    ctx->ch = it->second;
+    ctx->gw = gateway_instance_id;
+    ctx->player_id = player_id;
+    ctx->req.set_player_id(player_id);
+    ctx->req.set_session_id(session_id);
+    ctx->req.set_generation(generation);
+    ctx->req.set_reason(reason);
+    gwpush::GatewayPushService_Stub stub(ctx->ch.get());
+    stub.KickConnection(&ctx->cntl, &ctx->req, &ctx->rsp,
+                        brpc::NewCallback(
+                            +[](KickCtx *c) {
+                                std::unique_ptr<KickCtx> guard(c);
+                                if (c->cntl.Failed() || !c->rsp.ok()) {
+                                    LOG_WARN << "KickConnectionAsync failed gw=" << c->gw
+                                             << " player=" << c->player_id << " err="
+                                             << (c->cntl.Failed() ? c->cntl.ErrorText()
+                                                                  : c->rsp.message());
+                                }
+                            },
+                            ctx));
 }

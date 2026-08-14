@@ -3,6 +3,7 @@
 #include "game.pb.h"
 
 #include <cstdint>
+#include <functional>
 #include <mutex>
 #include <string>
 #include <vector>
@@ -86,7 +87,7 @@ public:
     const std::string &key_prefix() const { return key_prefix_; }
 
     /** 配置可分配的 GameLogic instance_id 列表（勿写死端口）。 */
-    void SetLogicInstanceIds(std::vector<std::string> ids);
+    void SetLogicInstanceIds(std::vector<std::string> ids, bool publish_snapshot = true);
     std::vector<std::string> LogicInstanceIds() const;
 
     bool AcquireSession(const AcquireSessionInput &in, AcquireSessionResult *out);
@@ -97,6 +98,13 @@ public:
     /** 带 operation_id 幂等的重连（Gateway ReconnectV2） */
     bool ReconnectSession(const ReconnectSessionInput &in, AcquireSessionResult *out,
                           SessionRecord *route_out);
+    bool PrepareReconnect(const ReconnectSessionInput &in, AcquireSessionResult *out);
+    bool CommitReconnect(uint64_t player_id, const std::string &operation_id,
+                         const std::string &candidate_fence, uint64_t candidate_generation,
+                         const std::string &gateway_instance_id, uint64_t connection_id,
+                         AcquireSessionResult *out);
+    bool AbortReconnect(uint64_t player_id, const std::string &operation_id,
+                        const std::string &candidate_fence);
     /** 查询幂等操作结果（超时后结果未知） */
     bool GetSessionOperation(const std::string &operation_id, SessionOpStatus *status,
                              std::string *op_kind, AcquireSessionResult *out);
@@ -117,6 +125,19 @@ public:
      * 不等于 Logout。
      */
     bool MarkDisconnected(uint64_t player_id, const std::string &token, uint64_t generation);
+    struct KickResult {
+        bool ok = false;
+        std::string message;
+        std::string error_code;
+        uint64_t new_generation = 0;
+        uint64_t old_generation = 0;
+        std::string old_gateway_id;
+        std::string old_session_id;
+        std::string old_token;
+    };
+    /** 顶号/踢人：CAS 抬升 generation 并使旧 fence 失效。 */
+    bool Kick(uint64_t player_id, const std::string &reason, std::string *err);
+    bool Kick(uint64_t player_id, const std::string &reason, KickResult *out);
 
     /** 进图/迁移后更新权威路由（fence CAS；route_version 单调） */
     bool UpdatePlayerRoute(uint64_t player_id, const std::string &fence_token,
@@ -172,10 +193,17 @@ public:
     bool GetPlayerRoute(uint64_t player_id, const std::string &fence_token, SessionRecord *out,
                         std::string *route_state, std::string *transfer_id, std::string *err);
 
+    void SetAfterGraceLoadHookForTest(std::function<void()> hook) {
+        grace_after_load_hook_ = std::move(hook);
+    }
+    /** 用过期本地快照走 CAS；Redis 权威记录可能已被重连更新。 */
+    bool ForceExpireGraceFromStaleLocalForTest(uint64_t player_id);
+
 private:
     SessionStore() = default;
     std::string SessionKey(uint64_t player_id) const;
     std::string OpKey(const std::string &operation_id) const;
+    std::string ReconnectPendingKey(const std::string &operation_id) const;
     bool LoadSession(uint64_t player_id, SessionRecord *out);
     bool ExpireIfGraceElapsed(uint64_t player_id, SessionRecord *rec);
     static std::string StateToString(SessionState s);
@@ -200,4 +228,5 @@ private:
     std::vector<std::string> logic_instance_ids_{"gl-0"};
     /** 保护 logic_instance_ids_ 等进程内配置；Redis 权威状态靠 Lua */
     mutable std::mutex cfg_mu_;
+    std::function<void()> grace_after_load_hook_;
 };

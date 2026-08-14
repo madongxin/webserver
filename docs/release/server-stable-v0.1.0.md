@@ -1,6 +1,6 @@
 # server-stable-v0.1.0（候选）
 
-状态：以 `./scripts/stable_gate.sh --full` 与 `run/release/<commit>/manifest.json` 为准；未满足全部硬门禁时必须输出 `STABLE BLOCKED`，不得宣称 STABLE。
+状态：**STABLE BLOCKED**。阶段一/二修复已在工作区落地并通过 Debug 单元、集成与双 GW 故障 E2E，但尚未提交，也尚未在同一最终 commit 上跑完 `./scripts/stable_gate.sh --full`（含 20×E2E、1800s 负载、7200s Soak、Sanitizer）。未满足全部硬门禁时不得宣称 STABLE。以 `run/release/<commit>/manifest.json` 为准。
 
 ## 本版定位
 

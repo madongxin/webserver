@@ -4,6 +4,8 @@
 #include <mutex>
 #include <string>
 
+class RedisClient;
+
 /** Auth 侧 access/refresh 存 Redis（仅摘要）；与 Session fence_token 分离，不创建在线 Session。 */
 class AuthTokenStore {
 public:
@@ -24,12 +26,20 @@ public:
     bool VerifyAccessToken(uint64_t player_id, const std::string &access_token, std::string *err);
 
     /**
-     * 用 refresh_token 轮换：校验 refresh 摘要后签发新 pair，吊销旧 refresh。
-     * new_refresh_out 可为 nullptr（仍会签发并吊销旧票）。
+     * 用 refresh_token 轮换：Redis Lua 原子校验并签发新 pair。
+     * 并发第二路返回 TOKEN_ALREADY_ROTATED。
      */
     bool RefreshAccessToken(uint64_t player_id, const std::string &refresh_token, int access_ttl_sec,
                             std::string *new_access_out, std::string *err,
                             std::string *new_refresh_out = nullptr);
+
+    /** 测试/跨连接：对指定 RedisClient 执行同一 Lua（不持有进程 mutex）。 */
+    static bool RotateRefreshWithClient(RedisClient *c, uint64_t player_id,
+                                        const std::string &old_refresh, int access_ttl_sec,
+                                        int refresh_ttl_sec, std::string *new_access_out,
+                                        std::string *new_refresh_out, std::string *err);
+
+    int default_refresh_ttl_sec() const { return default_refresh_ttl_sec_; }
 
 private:
     AuthTokenStore() = default;

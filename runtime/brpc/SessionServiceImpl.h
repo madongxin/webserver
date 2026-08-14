@@ -16,6 +16,18 @@ public:
                      const ::sess::ReconnectRequest *request,
                      ::sess::ReconnectResponse *response,
                      ::google::protobuf::Closure *done) override;
+    void PrepareReconnect(::google::protobuf::RpcController *controller,
+                          const ::sess::PrepareReconnectRequest *request,
+                          ::sess::PrepareReconnectResponse *response,
+                          ::google::protobuf::Closure *done) override;
+    void CommitReconnect(::google::protobuf::RpcController *controller,
+                         const ::sess::CommitReconnectRequest *request,
+                         ::sess::CommitReconnectResponse *response,
+                         ::google::protobuf::Closure *done) override;
+    void AbortReconnect(::google::protobuf::RpcController *controller,
+                        const ::sess::AbortReconnectRequest *request,
+                        ::sess::AbortReconnectResponse *response,
+                        ::google::protobuf::Closure *done) override;
     void GetSessionOperation(::google::protobuf::RpcController *controller,
                              const ::sess::GetSessionOperationRequest *request,
                              ::sess::GetSessionOperationResponse *response,

@@ -1,5 +1,6 @@
 #include "PlacementStore.h"
 
+#include "HealthyLogicSnapshot.h"
 #include "Logging.h"
 #include "RedisPool.h"
 
@@ -8,6 +9,7 @@
 #include <cstdlib>
 #include <map>
 #include <sstream>
+#include <vector>
 
 namespace {
 
@@ -359,11 +361,31 @@ bool PlacementStore::InitFromSessionPrefix(const std::string &key_prefix, int de
     return available_;
 }
 
-void PlacementStore::SetLogicOwners(std::vector<std::string> owners) {
+void PlacementStore::SetLogicOwners(std::vector<std::string> owners, bool publish_snapshot) {
+    {
+        std::lock_guard<std::mutex> lk(cfg_mu_);
+        owners_ = std::move(owners);
+        rr_ = 0;
+    }
+    if (publish_snapshot) {
+        auto snap = std::make_shared<HealthyLogicSnapshot>();
+        snap->source = HealthyLogicSnapshot::Source::kStatic;
+        snap->instance_ids = [&] {
+            std::lock_guard<std::mutex> lk(cfg_mu_);
+            return owners_;
+        }();
+        snap->state = snap->instance_ids.empty() ? HealthyLogicSnapshot::State::kEmpty
+                                                 : HealthyLogicSnapshot::State::kBootstrap;
+        HealthyLogicSnapshotStore::Instance().Publish(snap);
+    }
+}
+
+std::vector<std::string> PlacementStore::OwnersForPick() const {
+    auto snap = HealthyLogicSnapshotStore::Instance().Current();
+    if (snap && snap->version > 0)
+        return snap->instance_ids;
     std::lock_guard<std::mutex> lk(cfg_mu_);
-    // 允许显式清空（Discover 成功但零健康实例 → fail-closed）
-    owners_ = std::move(owners);
-    rr_ = 0;
+    return owners_;
 }
 
 std::string PlacementStore::InstKey(uint64_t id) const {
@@ -385,29 +407,30 @@ std::string PlacementStore::IdGenKey() const {
 }
 
 std::string PlacementStore::PickOwner(const std::string &preferred) const {
-    std::lock_guard<std::mutex> lk(cfg_mu_);
-    if (owners_.empty())
+    const auto owners = OwnersForPick();
+    if (owners.empty())
         return {};
     if (!preferred.empty()) {
-        for (const auto &o : owners_) {
+        for (const auto &o : owners) {
             if (o == preferred)
                 return preferred;
         }
     }
-    const size_t idx = rr_ % owners_.size();
+    std::lock_guard<std::mutex> lk(cfg_mu_);
+    const size_t idx = rr_ % owners.size();
     ++rr_;
-    return owners_[idx];
+    return owners[idx];
 }
 
 std::string PlacementStore::HealthyOwnersCsv() const {
-    std::lock_guard<std::mutex> lk(cfg_mu_);
-    if (owners_.empty())
+    const auto owners = OwnersForPick();
+    if (owners.empty())
         return {};
     std::ostringstream os;
-    for (size_t i = 0; i < owners_.size(); ++i) {
+    for (size_t i = 0; i < owners.size(); ++i) {
         if (i)
             os << ',';
-        os << owners_[i];
+        os << owners[i];
     }
     return os.str();
 }
@@ -676,15 +699,15 @@ return out
 }
 
 std::string PlacementStore::PickHealthyOwner(const std::string &exclude) const {
-    std::lock_guard<std::mutex> lk(cfg_mu_);
-    if (owners_.empty())
+    const auto owners = OwnersForPick();
+    if (owners.empty())
         return {};
-    for (size_t i = 0; i < owners_.size(); ++i) {
-        const size_t idx = (rr_ + i) % owners_.size();
-        if (owners_[idx] != exclude)
-            return owners_[idx];
+    std::lock_guard<std::mutex> lk(cfg_mu_);
+    for (size_t i = 0; i < owners.size(); ++i) {
+        const size_t idx = (rr_ + i) % owners.size();
+        if (owners[idx] != exclude)
+            return owners[idx];
     }
-    // 仅剩 exclude 自身：无其它健康 Owner
     return {};
 }
 

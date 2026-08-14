@@ -18,3 +18,6 @@ public:
                       ::auth::RefreshTokenResponse *response,
                       ::google::protobuf::Closure *done) override;
 };
+
+/** Auth 所用 GameDB 通道可达（Lookup/Load 无写副作用） */
+bool AuthGameDbReachable(int timeout_ms = 800);

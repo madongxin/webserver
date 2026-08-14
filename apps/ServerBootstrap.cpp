@@ -16,6 +16,7 @@
 #include "GameMeshPaths.h"
 #include "GatewayIdentity.h"
 #include "HealthDeps.h"
+#include "HealthProbe.h"
 #include "MapLeaseKeeper.h"
 #include "PlacementRecoveryScheduler.h"
 #include "OpsMetrics.h"
@@ -1531,8 +1532,10 @@ int RunServer(const LaunchOpts &launch) {
         });
     }
 #ifdef WEBSERVER_ENABLE_REDIS
-    // Session：动态刷新健康 GameLogic Owner 列表（新增 gl-2 无需重启）
-    if (role == "session" || role == "all") {
+    // Session / Gateway：动态刷新健康 GameLogic Owner 列表
+    if (role == "session" || role == "gateway" || role == "all") {
+        if (RedisServiceRegistry::Get().ready())
+            RefreshHealthyLogicOwners(true);
         loop.RunEvery(5.0, []() {
             if (!RedisServiceRegistry::Get().ready())
                 return;
@@ -1623,6 +1626,8 @@ int RunServer(const LaunchOpts &launch) {
 #endif
     // EventLoop 心跳：刷新 /health/live
     loop.RunEvery(1.0, []() { ServiceHealth::Instance().MarkAlive(); });
+    loop.RunEvery(2.0, [role]() { HealthProbeStore::Instance().Refresh(role); });
+    HealthProbeStore::Instance().Refresh(role);
 #ifdef WEBSERVER_ENABLE_MYSQL
     if (role == "gamedb" || role == "all") {
         loop.RunEvery(5.0, []() {

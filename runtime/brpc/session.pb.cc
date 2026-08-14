@@ -90,6 +90,36 @@ class ReconnectResponseDefaultTypeInternal {
   ::google::protobuf::internal::ExplicitlyConstructed<ReconnectResponse>
       _instance;
 } _ReconnectResponse_default_instance_;
+class PrepareReconnectRequestDefaultTypeInternal {
+ public:
+  ::google::protobuf::internal::ExplicitlyConstructed<PrepareReconnectRequest>
+      _instance;
+} _PrepareReconnectRequest_default_instance_;
+class PrepareReconnectResponseDefaultTypeInternal {
+ public:
+  ::google::protobuf::internal::ExplicitlyConstructed<PrepareReconnectResponse>
+      _instance;
+} _PrepareReconnectResponse_default_instance_;
+class CommitReconnectRequestDefaultTypeInternal {
+ public:
+  ::google::protobuf::internal::ExplicitlyConstructed<CommitReconnectRequest>
+      _instance;
+} _CommitReconnectRequest_default_instance_;
+class CommitReconnectResponseDefaultTypeInternal {
+ public:
+  ::google::protobuf::internal::ExplicitlyConstructed<CommitReconnectResponse>
+      _instance;
+} _CommitReconnectResponse_default_instance_;
+class AbortReconnectRequestDefaultTypeInternal {
+ public:
+  ::google::protobuf::internal::ExplicitlyConstructed<AbortReconnectRequest>
+      _instance;
+} _AbortReconnectRequest_default_instance_;
+class AbortReconnectResponseDefaultTypeInternal {
+ public:
+  ::google::protobuf::internal::ExplicitlyConstructed<AbortReconnectResponse>
+      _instance;
+} _AbortReconnectResponse_default_instance_;
 class LogoutRequestDefaultTypeInternal {
  public:
   ::google::protobuf::internal::ExplicitlyConstructed<LogoutRequest>
@@ -509,6 +539,132 @@ void InitDefaultsReconnectResponseImpl() {
 void InitDefaultsReconnectResponse() {
   static GOOGLE_PROTOBUF_DECLARE_ONCE(once);
   ::google::protobuf::GoogleOnceInit(&once, &InitDefaultsReconnectResponseImpl);
+}
+
+void InitDefaultsPrepareReconnectRequestImpl() {
+  GOOGLE_PROTOBUF_VERIFY_VERSION;
+
+#ifdef GOOGLE_PROTOBUF_ENFORCE_UNIQUENESS
+  ::google::protobuf::internal::InitProtobufDefaultsForceUnique();
+#else
+  ::google::protobuf::internal::InitProtobufDefaults();
+#endif  // GOOGLE_PROTOBUF_ENFORCE_UNIQUENESS
+  {
+    void* ptr = &::sess::_PrepareReconnectRequest_default_instance_;
+    new (ptr) ::sess::PrepareReconnectRequest();
+    ::google::protobuf::internal::OnShutdownDestroyMessage(ptr);
+  }
+  ::sess::PrepareReconnectRequest::InitAsDefaultInstance();
+}
+
+void InitDefaultsPrepareReconnectRequest() {
+  static GOOGLE_PROTOBUF_DECLARE_ONCE(once);
+  ::google::protobuf::GoogleOnceInit(&once, &InitDefaultsPrepareReconnectRequestImpl);
+}
+
+void InitDefaultsPrepareReconnectResponseImpl() {
+  GOOGLE_PROTOBUF_VERIFY_VERSION;
+
+#ifdef GOOGLE_PROTOBUF_ENFORCE_UNIQUENESS
+  ::google::protobuf::internal::InitProtobufDefaultsForceUnique();
+#else
+  ::google::protobuf::internal::InitProtobufDefaults();
+#endif  // GOOGLE_PROTOBUF_ENFORCE_UNIQUENESS
+  {
+    void* ptr = &::sess::_PrepareReconnectResponse_default_instance_;
+    new (ptr) ::sess::PrepareReconnectResponse();
+    ::google::protobuf::internal::OnShutdownDestroyMessage(ptr);
+  }
+  ::sess::PrepareReconnectResponse::InitAsDefaultInstance();
+}
+
+void InitDefaultsPrepareReconnectResponse() {
+  static GOOGLE_PROTOBUF_DECLARE_ONCE(once);
+  ::google::protobuf::GoogleOnceInit(&once, &InitDefaultsPrepareReconnectResponseImpl);
+}
+
+void InitDefaultsCommitReconnectRequestImpl() {
+  GOOGLE_PROTOBUF_VERIFY_VERSION;
+
+#ifdef GOOGLE_PROTOBUF_ENFORCE_UNIQUENESS
+  ::google::protobuf::internal::InitProtobufDefaultsForceUnique();
+#else
+  ::google::protobuf::internal::InitProtobufDefaults();
+#endif  // GOOGLE_PROTOBUF_ENFORCE_UNIQUENESS
+  {
+    void* ptr = &::sess::_CommitReconnectRequest_default_instance_;
+    new (ptr) ::sess::CommitReconnectRequest();
+    ::google::protobuf::internal::OnShutdownDestroyMessage(ptr);
+  }
+  ::sess::CommitReconnectRequest::InitAsDefaultInstance();
+}
+
+void InitDefaultsCommitReconnectRequest() {
+  static GOOGLE_PROTOBUF_DECLARE_ONCE(once);
+  ::google::protobuf::GoogleOnceInit(&once, &InitDefaultsCommitReconnectRequestImpl);
+}
+
+void InitDefaultsCommitReconnectResponseImpl() {
+  GOOGLE_PROTOBUF_VERIFY_VERSION;
+
+#ifdef GOOGLE_PROTOBUF_ENFORCE_UNIQUENESS
+  ::google::protobuf::internal::InitProtobufDefaultsForceUnique();
+#else
+  ::google::protobuf::internal::InitProtobufDefaults();
+#endif  // GOOGLE_PROTOBUF_ENFORCE_UNIQUENESS
+  {
+    void* ptr = &::sess::_CommitReconnectResponse_default_instance_;
+    new (ptr) ::sess::CommitReconnectResponse();
+    ::google::protobuf::internal::OnShutdownDestroyMessage(ptr);
+  }
+  ::sess::CommitReconnectResponse::InitAsDefaultInstance();
+}
+
+void InitDefaultsCommitReconnectResponse() {
+  static GOOGLE_PROTOBUF_DECLARE_ONCE(once);
+  ::google::protobuf::GoogleOnceInit(&once, &InitDefaultsCommitReconnectResponseImpl);
+}
+
+void InitDefaultsAbortReconnectRequestImpl() {
+  GOOGLE_PROTOBUF_VERIFY_VERSION;
+
+#ifdef GOOGLE_PROTOBUF_ENFORCE_UNIQUENESS
+  ::google::protobuf::internal::InitProtobufDefaultsForceUnique();
+#else
+  ::google::protobuf::internal::InitProtobufDefaults();
+#endif  // GOOGLE_PROTOBUF_ENFORCE_UNIQUENESS
+  {
+    void* ptr = &::sess::_AbortReconnectRequest_default_instance_;
+    new (ptr) ::sess::AbortReconnectRequest();
+    ::google::protobuf::internal::OnShutdownDestroyMessage(ptr);
+  }
+  ::sess::AbortReconnectRequest::InitAsDefaultInstance();
+}
+
+void InitDefaultsAbortReconnectRequest() {
+  static GOOGLE_PROTOBUF_DECLARE_ONCE(once);
+  ::google::protobuf::GoogleOnceInit(&once, &InitDefaultsAbortReconnectRequestImpl);
+}
+
+void InitDefaultsAbortReconnectResponseImpl() {
+  GOOGLE_PROTOBUF_VERIFY_VERSION;
+
+#ifdef GOOGLE_PROTOBUF_ENFORCE_UNIQUENESS
+  ::google::protobuf::internal::InitProtobufDefaultsForceUnique();
+#else
+  ::google::protobuf::internal::InitProtobufDefaults();
+#endif  // GOOGLE_PROTOBUF_ENFORCE_UNIQUENESS
+  {
+    void* ptr = &::sess::_AbortReconnectResponse_default_instance_;
+    new (ptr) ::sess::AbortReconnectResponse();
+    ::google::protobuf::internal::OnShutdownDestroyMessage(ptr);
+  }
+  ::sess::AbortReconnectResponse::InitAsDefaultInstance();
+}
+
+void InitDefaultsAbortReconnectResponse() {
+  static GOOGLE_PROTOBUF_DECLARE_ONCE(once);
+  ::google::protobuf::GoogleOnceInit(&once, &InitDefaultsAbortReconnectResponseImpl);
 }
 
 void InitDefaultsLogoutRequestImpl() {
@@ -1040,7 +1196,7 @@ void InitDefaultsGetPlayerRouteResponse() {
   ::google::protobuf::GoogleOnceInit(&once, &InitDefaultsGetPlayerRouteResponseImpl);
 }
 
-::google::protobuf::Metadata file_level_metadata[39];
+::google::protobuf::Metadata file_level_metadata[45];
 const ::google::protobuf::ServiceDescriptor* file_level_service_descriptors[1];
 
 const ::google::protobuf::uint32 TableStruct::offsets[] GOOGLE_PROTOBUF_ATTRIBUTE_SECTION_VARIABLE(protodesc_cold) = {
@@ -1190,6 +1346,77 @@ const ::google::protobuf::uint32 TableStruct::offsets[] GOOGLE_PROTOBUF_ATTRIBUT
   GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::sess::ReconnectResponse, map_instance_id_),
   GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::sess::ReconnectResponse, map_owner_epoch_),
   GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::sess::ReconnectResponse, route_version_),
+  ~0u,  // no _has_bits_
+  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::sess::PrepareReconnectRequest, _internal_metadata_),
+  ~0u,  // no _extensions_
+  ~0u,  // no _oneof_case_
+  ~0u,  // no _weak_field_map_
+  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::sess::PrepareReconnectRequest, player_id_),
+  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::sess::PrepareReconnectRequest, session_id_),
+  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::sess::PrepareReconnectRequest, reconnect_ticket_),
+  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::sess::PrepareReconnectRequest, gateway_instance_id_),
+  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::sess::PrepareReconnectRequest, last_server_seq_),
+  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::sess::PrepareReconnectRequest, operation_id_),
+  ~0u,  // no _has_bits_
+  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::sess::PrepareReconnectResponse, _internal_metadata_),
+  ~0u,  // no _extensions_
+  ~0u,  // no _oneof_case_
+  ~0u,  // no _weak_field_map_
+  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::sess::PrepareReconnectResponse, ok_),
+  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::sess::PrepareReconnectResponse, message_),
+  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::sess::PrepareReconnectResponse, error_code_),
+  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::sess::PrepareReconnectResponse, session_id_),
+  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::sess::PrepareReconnectResponse, candidate_fence_token_),
+  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::sess::PrepareReconnectResponse, candidate_generation_),
+  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::sess::PrepareReconnectResponse, gamelogic_instance_id_),
+  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::sess::PrepareReconnectResponse, map_instance_id_),
+  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::sess::PrepareReconnectResponse, map_owner_epoch_),
+  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::sess::PrepareReconnectResponse, route_version_),
+  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::sess::PrepareReconnectResponse, operation_id_),
+  ~0u,  // no _has_bits_
+  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::sess::CommitReconnectRequest, _internal_metadata_),
+  ~0u,  // no _extensions_
+  ~0u,  // no _oneof_case_
+  ~0u,  // no _weak_field_map_
+  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::sess::CommitReconnectRequest, player_id_),
+  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::sess::CommitReconnectRequest, session_id_),
+  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::sess::CommitReconnectRequest, operation_id_),
+  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::sess::CommitReconnectRequest, candidate_fence_token_),
+  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::sess::CommitReconnectRequest, candidate_generation_),
+  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::sess::CommitReconnectRequest, gateway_instance_id_),
+  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::sess::CommitReconnectRequest, connection_id_),
+  ~0u,  // no _has_bits_
+  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::sess::CommitReconnectResponse, _internal_metadata_),
+  ~0u,  // no _extensions_
+  ~0u,  // no _oneof_case_
+  ~0u,  // no _weak_field_map_
+  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::sess::CommitReconnectResponse, ok_),
+  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::sess::CommitReconnectResponse, message_),
+  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::sess::CommitReconnectResponse, error_code_),
+  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::sess::CommitReconnectResponse, session_id_),
+  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::sess::CommitReconnectResponse, fence_token_),
+  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::sess::CommitReconnectResponse, generation_),
+  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::sess::CommitReconnectResponse, gamelogic_instance_id_),
+  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::sess::CommitReconnectResponse, map_instance_id_),
+  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::sess::CommitReconnectResponse, map_owner_epoch_),
+  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::sess::CommitReconnectResponse, route_version_),
+  ~0u,  // no _has_bits_
+  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::sess::AbortReconnectRequest, _internal_metadata_),
+  ~0u,  // no _extensions_
+  ~0u,  // no _oneof_case_
+  ~0u,  // no _weak_field_map_
+  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::sess::AbortReconnectRequest, player_id_),
+  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::sess::AbortReconnectRequest, session_id_),
+  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::sess::AbortReconnectRequest, operation_id_),
+  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::sess::AbortReconnectRequest, candidate_fence_token_),
+  ~0u,  // no _has_bits_
+  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::sess::AbortReconnectResponse, _internal_metadata_),
+  ~0u,  // no _extensions_
+  ~0u,  // no _oneof_case_
+  ~0u,  // no _weak_field_map_
+  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::sess::AbortReconnectResponse, ok_),
+  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::sess::AbortReconnectResponse, message_),
+  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::sess::AbortReconnectResponse, error_code_),
   ~0u,  // no _has_bits_
   GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::sess::LogoutRequest, _internal_metadata_),
   ~0u,  // no _extensions_
@@ -1446,31 +1673,37 @@ static const ::google::protobuf::internal::MigrationSchema schemas[] GOOGLE_PROT
   { 104, -1, sizeof(::sess::GetSessionOperationRequest)},
   { 110, -1, sizeof(::sess::GetSessionOperationResponse)},
   { 132, -1, sizeof(::sess::ReconnectResponse)},
-  { 146, -1, sizeof(::sess::LogoutRequest)},
-  { 154, -1, sizeof(::sess::LogoutResponse)},
-  { 161, -1, sizeof(::sess::KickRequest)},
-  { 168, -1, sizeof(::sess::KickResponse)},
-  { 175, -1, sizeof(::sess::PlacementRecord)},
-  { 189, -1, sizeof(::sess::ResolveOrCreateMapRequest)},
-  { 199, -1, sizeof(::sess::ResolveOrCreateMapResponse)},
-  { 208, -1, sizeof(::sess::GetPlacementRequest)},
-  { 214, -1, sizeof(::sess::GetPlacementResponse)},
-  { 222, -1, sizeof(::sess::MigrateMapRequest)},
-  { 231, -1, sizeof(::sess::MigrateMapResponse)},
-  { 240, -1, sizeof(::sess::MarkRecoveringRequest)},
-  { 247, -1, sizeof(::sess::MarkRecoveringResponse)},
-  { 255, -1, sizeof(::sess::HeartbeatOwnerRequest)},
-  { 264, -1, sizeof(::sess::HeartbeatOwnerResponse)},
-  { 272, -1, sizeof(::sess::UpdatePlayerRouteRequest)},
-  { 285, -1, sizeof(::sess::UpdatePlayerRouteResponse)},
-  { 293, -1, sizeof(::sess::BeginPlayerTransferRequest)},
-  { 307, -1, sizeof(::sess::BeginPlayerTransferResponse)},
-  { 318, -1, sizeof(::sess::CommitPlayerTransferRequest)},
-  { 330, -1, sizeof(::sess::CommitPlayerTransferResponse)},
-  { 343, -1, sizeof(::sess::AbortPlayerTransferRequest)},
-  { 352, -1, sizeof(::sess::AbortPlayerTransferResponse)},
-  { 362, -1, sizeof(::sess::GetPlayerRouteRequest)},
-  { 369, -1, sizeof(::sess::GetPlayerRouteResponse)},
+  { 146, -1, sizeof(::sess::PrepareReconnectRequest)},
+  { 157, -1, sizeof(::sess::PrepareReconnectResponse)},
+  { 173, -1, sizeof(::sess::CommitReconnectRequest)},
+  { 185, -1, sizeof(::sess::CommitReconnectResponse)},
+  { 200, -1, sizeof(::sess::AbortReconnectRequest)},
+  { 209, -1, sizeof(::sess::AbortReconnectResponse)},
+  { 217, -1, sizeof(::sess::LogoutRequest)},
+  { 225, -1, sizeof(::sess::LogoutResponse)},
+  { 232, -1, sizeof(::sess::KickRequest)},
+  { 239, -1, sizeof(::sess::KickResponse)},
+  { 246, -1, sizeof(::sess::PlacementRecord)},
+  { 260, -1, sizeof(::sess::ResolveOrCreateMapRequest)},
+  { 270, -1, sizeof(::sess::ResolveOrCreateMapResponse)},
+  { 279, -1, sizeof(::sess::GetPlacementRequest)},
+  { 285, -1, sizeof(::sess::GetPlacementResponse)},
+  { 293, -1, sizeof(::sess::MigrateMapRequest)},
+  { 302, -1, sizeof(::sess::MigrateMapResponse)},
+  { 311, -1, sizeof(::sess::MarkRecoveringRequest)},
+  { 318, -1, sizeof(::sess::MarkRecoveringResponse)},
+  { 326, -1, sizeof(::sess::HeartbeatOwnerRequest)},
+  { 335, -1, sizeof(::sess::HeartbeatOwnerResponse)},
+  { 343, -1, sizeof(::sess::UpdatePlayerRouteRequest)},
+  { 356, -1, sizeof(::sess::UpdatePlayerRouteResponse)},
+  { 364, -1, sizeof(::sess::BeginPlayerTransferRequest)},
+  { 378, -1, sizeof(::sess::BeginPlayerTransferResponse)},
+  { 389, -1, sizeof(::sess::CommitPlayerTransferRequest)},
+  { 401, -1, sizeof(::sess::CommitPlayerTransferResponse)},
+  { 414, -1, sizeof(::sess::AbortPlayerTransferRequest)},
+  { 423, -1, sizeof(::sess::AbortPlayerTransferResponse)},
+  { 433, -1, sizeof(::sess::GetPlayerRouteRequest)},
+  { 440, -1, sizeof(::sess::GetPlayerRouteResponse)},
 };
 
 static ::google::protobuf::Message const * const file_default_instances[] = {
@@ -1488,6 +1721,12 @@ static ::google::protobuf::Message const * const file_default_instances[] = {
   reinterpret_cast<const ::google::protobuf::Message*>(&::sess::_GetSessionOperationRequest_default_instance_),
   reinterpret_cast<const ::google::protobuf::Message*>(&::sess::_GetSessionOperationResponse_default_instance_),
   reinterpret_cast<const ::google::protobuf::Message*>(&::sess::_ReconnectResponse_default_instance_),
+  reinterpret_cast<const ::google::protobuf::Message*>(&::sess::_PrepareReconnectRequest_default_instance_),
+  reinterpret_cast<const ::google::protobuf::Message*>(&::sess::_PrepareReconnectResponse_default_instance_),
+  reinterpret_cast<const ::google::protobuf::Message*>(&::sess::_CommitReconnectRequest_default_instance_),
+  reinterpret_cast<const ::google::protobuf::Message*>(&::sess::_CommitReconnectResponse_default_instance_),
+  reinterpret_cast<const ::google::protobuf::Message*>(&::sess::_AbortReconnectRequest_default_instance_),
+  reinterpret_cast<const ::google::protobuf::Message*>(&::sess::_AbortReconnectResponse_default_instance_),
   reinterpret_cast<const ::google::protobuf::Message*>(&::sess::_LogoutRequest_default_instance_),
   reinterpret_cast<const ::google::protobuf::Message*>(&::sess::_LogoutResponse_default_instance_),
   reinterpret_cast<const ::google::protobuf::Message*>(&::sess::_KickRequest_default_instance_),
@@ -1531,7 +1770,7 @@ void protobuf_AssignDescriptorsOnce() {
 void protobuf_RegisterTypes(const ::std::string&) GOOGLE_PROTOBUF_ATTRIBUTE_COLD;
 void protobuf_RegisterTypes(const ::std::string&) {
   protobuf_AssignDescriptorsOnce();
-  ::google::protobuf::internal::RegisterAllTypes(file_level_metadata, 39);
+  ::google::protobuf::internal::RegisterAllTypes(file_level_metadata, 45);
 }
 
 void AddDescriptorsImpl() {
@@ -1585,130 +1824,163 @@ void AddDescriptorsImpl() {
       "\022\023\n\013fence_token\030\004 \001(\t\022\022\n\ngeneration\030\005 \001("
       "\004\022\035\n\025gamelogic_instance_id\030\006 \001(\t\022\027\n\017map_"
       "instance_id\030\007 \001(\004\022\027\n\017map_owner_epoch\030\010 \001"
-      "(\004\022\025\n\rroute_version\030\t \001(\004\"K\n\rLogoutReque"
-      "st\022\021\n\tplayer_id\030\001 \001(\004\022\022\n\nsession_id\030\002 \001("
-      "\t\022\023\n\013fence_token\030\003 \001(\t\"-\n\016LogoutResponse"
-      "\022\n\n\002ok\030\001 \001(\010\022\017\n\007message\030\002 \001(\t\"0\n\013KickReq"
-      "uest\022\021\n\tplayer_id\030\001 \001(\004\022\016\n\006reason\030\002 \001(\t\""
-      "+\n\014KickResponse\022\n\n\002ok\030\001 \001(\010\022\017\n\007message\030\002"
-      " \001(\t\"\330\001\n\017PlacementRecord\022\020\n\010realm_id\030\001 \001"
-      "(\r\022\027\n\017map_template_id\030\002 \001(\004\022\027\n\017map_insta"
-      "nce_id\030\003 \001(\004\022\035\n\025owner_logic_server_id\030\004 "
-      "\001(\t\022\023\n\013owner_epoch\030\005 \001(\004\022\025\n\rroute_versio"
-      "n\030\006 \001(\004\022\r\n\005state\030\007 \001(\t\022\022\n\nupdated_at\030\010 \001"
-      "(\003\022\023\n\013lease_until\030\t \001(\003\"\213\001\n\031ResolveOrCre"
-      "ateMapRequest\022\020\n\010realm_id\030\001 \001(\r\022\027\n\017map_t"
-      "emplate_id\030\002 \001(\004\022\027\n\017map_instance_id\030\003 \001("
-      "\004\022\027\n\017preferred_owner\030\004 \001(\t\022\021\n\tforce_new\030"
-      "\005 \001(\010\"w\n\032ResolveOrCreateMapResponse\022\n\n\002o"
-      "k\030\001 \001(\010\022\017\n\007message\030\002 \001(\t\022\022\n\nerror_code\030\003"
-      " \001(\t\022(\n\tplacement\030\004 \001(\0132\025.sess.Placement"
-      "Record\".\n\023GetPlacementRequest\022\027\n\017map_ins"
-      "tance_id\030\001 \001(\004\"]\n\024GetPlacementResponse\022\n"
-      "\n\002ok\030\001 \001(\010\022\017\n\007message\030\002 \001(\t\022(\n\tplacement"
-      "\030\003 \001(\0132\025.sess.PlacementRecord\"~\n\021Migrate"
-      "MapRequest\022\027\n\017map_instance_id\030\001 \001(\004\022!\n\031n"
-      "ew_owner_logic_server_id\030\002 \001(\t\022\027\n\017idempo"
-      "tency_key\030\003 \001(\t\022\024\n\014expect_epoch\030\004 \001(\004\"o\n"
-      "\022MigrateMapResponse\022\n\n\002ok\030\001 \001(\010\022\017\n\007messa"
-      "ge\030\002 \001(\t\022\022\n\nerror_code\030\003 \001(\t\022(\n\tplacemen"
-      "t\030\004 \001(\0132\025.sess.PlacementRecord\"@\n\025MarkRe"
-      "coveringRequest\022\027\n\017map_instance_id\030\001 \001(\004"
-      "\022\016\n\006reason\030\002 \001(\t\"_\n\026MarkRecoveringRespon"
-      "se\022\n\n\002ok\030\001 \001(\010\022\017\n\007message\030\002 \001(\t\022(\n\tplace"
-      "ment\030\003 \001(\0132\025.sess.PlacementRecord\"w\n\025Hea"
-      "rtbeatOwnerRequest\022\027\n\017map_instance_id\030\001 "
-      "\001(\004\022\035\n\025owner_logic_server_id\030\002 \001(\t\022\023\n\013ow"
-      "ner_epoch\030\003 \001(\004\022\021\n\tlease_sec\030\004 \001(\r\"J\n\026He"
-      "artbeatOwnerResponse\022\n\n\002ok\030\001 \001(\010\022\017\n\007mess"
-      "age\030\002 \001(\t\022\023\n\013lease_until\030\003 \001(\003\"\336\001\n\030Updat"
-      "ePlayerRouteRequest\022\021\n\tplayer_id\030\001 \001(\004\022\023"
-      "\n\013fence_token\030\002 \001(\t\022\035\n\025gamelogic_instanc"
-      "e_id\030\003 \001(\t\022\027\n\017map_instance_id\030\004 \001(\004\022\027\n\017m"
-      "ap_owner_epoch\030\005 \001(\004\022\025\n\rroute_version\030\006 "
-      "\001(\004\022\033\n\023gateway_instance_id\030\007 \001(\t\022\025\n\rpush"
-      "_endpoint\030\010 \001(\t\"O\n\031UpdatePlayerRouteResp"
-      "onse\022\n\n\002ok\030\001 \001(\010\022\017\n\007message\030\002 \001(\t\022\025\n\rrou"
-      "te_version\030\003 \001(\004\"\216\002\n\032BeginPlayerTransfer"
+      "(\004\022\025\n\rroute_version\030\t \001(\004\"\246\001\n\027PrepareRec"
+      "onnectRequest\022\021\n\tplayer_id\030\001 \001(\004\022\022\n\nsess"
+      "ion_id\030\002 \001(\t\022\030\n\020reconnect_ticket\030\003 \001(\t\022\033"
+      "\n\023gateway_instance_id\030\004 \001(\t\022\027\n\017last_serv"
+      "er_seq\030\005 \001(\004\022\024\n\014operation_id\030\006 \001(\t\"\232\002\n\030P"
+      "repareReconnectResponse\022\n\n\002ok\030\001 \001(\010\022\017\n\007m"
+      "essage\030\002 \001(\t\022\022\n\nerror_code\030\003 \001(\t\022\022\n\nsess"
+      "ion_id\030\004 \001(\t\022\035\n\025candidate_fence_token\030\005 "
+      "\001(\t\022\034\n\024candidate_generation\030\006 \001(\004\022\035\n\025gam"
+      "elogic_instance_id\030\007 \001(\t\022\027\n\017map_instance"
+      "_id\030\010 \001(\004\022\027\n\017map_owner_epoch\030\t \001(\004\022\025\n\rro"
+      "ute_version\030\n \001(\004\022\024\n\014operation_id\030\013 \001(\t\""
+      "\306\001\n\026CommitReconnectRequest\022\021\n\tplayer_id\030"
+      "\001 \001(\004\022\022\n\nsession_id\030\002 \001(\t\022\024\n\014operation_i"
+      "d\030\003 \001(\t\022\035\n\025candidate_fence_token\030\004 \001(\t\022\034"
+      "\n\024candidate_generation\030\005 \001(\004\022\033\n\023gateway_"
+      "instance_id\030\006 \001(\t\022\025\n\rconnection_id\030\007 \001(\004"
+      "\"\357\001\n\027CommitReconnectResponse\022\n\n\002ok\030\001 \001(\010"
+      "\022\017\n\007message\030\002 \001(\t\022\022\n\nerror_code\030\003 \001(\t\022\022\n"
+      "\nsession_id\030\004 \001(\t\022\023\n\013fence_token\030\005 \001(\t\022\022"
+      "\n\ngeneration\030\006 \001(\004\022\035\n\025gamelogic_instance"
+      "_id\030\007 \001(\t\022\027\n\017map_instance_id\030\010 \001(\004\022\027\n\017ma"
+      "p_owner_epoch\030\t \001(\004\022\025\n\rroute_version\030\n \001"
+      "(\004\"s\n\025AbortReconnectRequest\022\021\n\tplayer_id"
+      "\030\001 \001(\004\022\022\n\nsession_id\030\002 \001(\t\022\024\n\014operation_"
+      "id\030\003 \001(\t\022\035\n\025candidate_fence_token\030\004 \001(\t\""
+      "I\n\026AbortReconnectResponse\022\n\n\002ok\030\001 \001(\010\022\017\n"
+      "\007message\030\002 \001(\t\022\022\n\nerror_code\030\003 \001(\t\"K\n\rLo"
+      "goutRequest\022\021\n\tplayer_id\030\001 \001(\004\022\022\n\nsessio"
+      "n_id\030\002 \001(\t\022\023\n\013fence_token\030\003 \001(\t\"-\n\016Logou"
+      "tResponse\022\n\n\002ok\030\001 \001(\010\022\017\n\007message\030\002 \001(\t\"0"
+      "\n\013KickRequest\022\021\n\tplayer_id\030\001 \001(\004\022\016\n\006reas"
+      "on\030\002 \001(\t\"+\n\014KickResponse\022\n\n\002ok\030\001 \001(\010\022\017\n\007"
+      "message\030\002 \001(\t\"\330\001\n\017PlacementRecord\022\020\n\010rea"
+      "lm_id\030\001 \001(\r\022\027\n\017map_template_id\030\002 \001(\004\022\027\n\017"
+      "map_instance_id\030\003 \001(\004\022\035\n\025owner_logic_ser"
+      "ver_id\030\004 \001(\t\022\023\n\013owner_epoch\030\005 \001(\004\022\025\n\rrou"
+      "te_version\030\006 \001(\004\022\r\n\005state\030\007 \001(\t\022\022\n\nupdat"
+      "ed_at\030\010 \001(\003\022\023\n\013lease_until\030\t \001(\003\"\213\001\n\031Res"
+      "olveOrCreateMapRequest\022\020\n\010realm_id\030\001 \001(\r"
+      "\022\027\n\017map_template_id\030\002 \001(\004\022\027\n\017map_instanc"
+      "e_id\030\003 \001(\004\022\027\n\017preferred_owner\030\004 \001(\t\022\021\n\tf"
+      "orce_new\030\005 \001(\010\"w\n\032ResolveOrCreateMapResp"
+      "onse\022\n\n\002ok\030\001 \001(\010\022\017\n\007message\030\002 \001(\t\022\022\n\nerr"
+      "or_code\030\003 \001(\t\022(\n\tplacement\030\004 \001(\0132\025.sess."
+      "PlacementRecord\".\n\023GetPlacementRequest\022\027"
+      "\n\017map_instance_id\030\001 \001(\004\"]\n\024GetPlacementR"
+      "esponse\022\n\n\002ok\030\001 \001(\010\022\017\n\007message\030\002 \001(\t\022(\n\t"
+      "placement\030\003 \001(\0132\025.sess.PlacementRecord\"~"
+      "\n\021MigrateMapRequest\022\027\n\017map_instance_id\030\001"
+      " \001(\004\022!\n\031new_owner_logic_server_id\030\002 \001(\t\022"
+      "\027\n\017idempotency_key\030\003 \001(\t\022\024\n\014expect_epoch"
+      "\030\004 \001(\004\"o\n\022MigrateMapResponse\022\n\n\002ok\030\001 \001(\010"
+      "\022\017\n\007message\030\002 \001(\t\022\022\n\nerror_code\030\003 \001(\t\022(\n"
+      "\tplacement\030\004 \001(\0132\025.sess.PlacementRecord\""
+      "@\n\025MarkRecoveringRequest\022\027\n\017map_instance"
+      "_id\030\001 \001(\004\022\016\n\006reason\030\002 \001(\t\"_\n\026MarkRecover"
+      "ingResponse\022\n\n\002ok\030\001 \001(\010\022\017\n\007message\030\002 \001(\t"
+      "\022(\n\tplacement\030\003 \001(\0132\025.sess.PlacementReco"
+      "rd\"w\n\025HeartbeatOwnerRequest\022\027\n\017map_insta"
+      "nce_id\030\001 \001(\004\022\035\n\025owner_logic_server_id\030\002 "
+      "\001(\t\022\023\n\013owner_epoch\030\003 \001(\004\022\021\n\tlease_sec\030\004 "
+      "\001(\r\"J\n\026HeartbeatOwnerResponse\022\n\n\002ok\030\001 \001("
+      "\010\022\017\n\007message\030\002 \001(\t\022\023\n\013lease_until\030\003 \001(\003\""
+      "\336\001\n\030UpdatePlayerRouteRequest\022\021\n\tplayer_i"
+      "d\030\001 \001(\004\022\023\n\013fence_token\030\002 \001(\t\022\035\n\025gamelogi"
+      "c_instance_id\030\003 \001(\t\022\027\n\017map_instance_id\030\004"
+      " \001(\004\022\027\n\017map_owner_epoch\030\005 \001(\004\022\025\n\rroute_v"
+      "ersion\030\006 \001(\004\022\033\n\023gateway_instance_id\030\007 \001("
+      "\t\022\025\n\rpush_endpoint\030\010 \001(\t\"O\n\031UpdatePlayer"
+      "RouteResponse\022\n\n\002ok\030\001 \001(\010\022\017\n\007message\030\002 \001"
+      "(\t\022\025\n\rroute_version\030\003 \001(\004\"\216\002\n\032BeginPlaye"
+      "rTransferRequest\022\021\n\tplayer_id\030\001 \001(\004\022\023\n\013f"
+      "ence_token\030\002 \001(\t\022\036\n\026expected_route_versi"
+      "on\030\003 \001(\004\022\"\n\032from_gamelogic_instance_id\030\004"
+      " \001(\t\022 \n\030to_gamelogic_instance_id\030\005 \001(\t\022\027"
+      "\n\017map_instance_id\030\006 \001(\004\022\027\n\017map_owner_epo"
+      "ch\030\007 \001(\004\022\023\n\013transfer_id\030\010 \001(\t\022\033\n\023gateway"
+      "_instance_id\030\t \001(\t\"\217\001\n\033BeginPlayerTransf"
+      "erResponse\022\n\n\002ok\030\001 \001(\010\022\017\n\007message\030\002 \001(\t\022"
+      "\022\n\nerror_code\030\003 \001(\t\022\023\n\013transfer_id\030\004 \001(\t"
+      "\022\025\n\rroute_version\030\005 \001(\004\022\023\n\013route_state\030\006"
+      " \001(\t\"\313\001\n\033CommitPlayerTransferRequest\022\021\n\t"
+      "player_id\030\001 \001(\004\022\023\n\013fence_token\030\002 \001(\t\022\023\n\013"
+      "transfer_id\030\003 \001(\t\022 \n\030to_gamelogic_instan"
+      "ce_id\030\004 \001(\t\022\027\n\017map_instance_id\030\005 \001(\004\022\027\n\017"
+      "map_owner_epoch\030\006 \001(\004\022\033\n\023gateway_instanc"
+      "e_id\030\007 \001(\t\"\314\001\n\034CommitPlayerTransferRespo"
+      "nse\022\n\n\002ok\030\001 \001(\010\022\017\n\007message\030\002 \001(\t\022\022\n\nerro"
+      "r_code\030\003 \001(\t\022\025\n\rroute_version\030\004 \001(\004\022\035\n\025g"
+      "amelogic_instance_id\030\005 \001(\t\022\027\n\017map_instan"
+      "ce_id\030\006 \001(\004\022\027\n\017map_owner_epoch\030\007 \001(\004\022\023\n\013"
+      "route_state\030\010 \001(\t\"i\n\032AbortPlayerTransfer"
       "Request\022\021\n\tplayer_id\030\001 \001(\004\022\023\n\013fence_toke"
-      "n\030\002 \001(\t\022\036\n\026expected_route_version\030\003 \001(\004\022"
-      "\"\n\032from_gamelogic_instance_id\030\004 \001(\t\022 \n\030t"
-      "o_gamelogic_instance_id\030\005 \001(\t\022\027\n\017map_ins"
-      "tance_id\030\006 \001(\004\022\027\n\017map_owner_epoch\030\007 \001(\004\022"
-      "\023\n\013transfer_id\030\010 \001(\t\022\033\n\023gateway_instance"
-      "_id\030\t \001(\t\"\217\001\n\033BeginPlayerTransferRespons"
-      "e\022\n\n\002ok\030\001 \001(\010\022\017\n\007message\030\002 \001(\t\022\022\n\nerror_"
-      "code\030\003 \001(\t\022\023\n\013transfer_id\030\004 \001(\t\022\025\n\rroute"
-      "_version\030\005 \001(\004\022\023\n\013route_state\030\006 \001(\t\"\313\001\n\033"
-      "CommitPlayerTransferRequest\022\021\n\tplayer_id"
-      "\030\001 \001(\004\022\023\n\013fence_token\030\002 \001(\t\022\023\n\013transfer_"
-      "id\030\003 \001(\t\022 \n\030to_gamelogic_instance_id\030\004 \001"
-      "(\t\022\027\n\017map_instance_id\030\005 \001(\004\022\027\n\017map_owner"
-      "_epoch\030\006 \001(\004\022\033\n\023gateway_instance_id\030\007 \001("
-      "\t\"\314\001\n\034CommitPlayerTransferResponse\022\n\n\002ok"
-      "\030\001 \001(\010\022\017\n\007message\030\002 \001(\t\022\022\n\nerror_code\030\003 "
-      "\001(\t\022\025\n\rroute_version\030\004 \001(\004\022\035\n\025gamelogic_"
-      "instance_id\030\005 \001(\t\022\027\n\017map_instance_id\030\006 \001"
-      "(\004\022\027\n\017map_owner_epoch\030\007 \001(\004\022\023\n\013route_sta"
-      "te\030\010 \001(\t\"i\n\032AbortPlayerTransferRequest\022\021"
-      "\n\tplayer_id\030\001 \001(\004\022\023\n\013fence_token\030\002 \001(\t\022\023"
-      "\n\013transfer_id\030\003 \001(\t\022\016\n\006reason\030\004 \001(\t\"z\n\033A"
-      "bortPlayerTransferResponse\022\n\n\002ok\030\001 \001(\010\022\017"
-      "\n\007message\030\002 \001(\t\022\022\n\nerror_code\030\003 \001(\t\022\025\n\rr"
-      "oute_version\030\004 \001(\004\022\023\n\013route_state\030\005 \001(\t\""
-      "\?\n\025GetPlayerRouteRequest\022\021\n\tplayer_id\030\001 "
-      "\001(\004\022\023\n\013fence_token\030\002 \001(\t\"\241\002\n\026GetPlayerRo"
-      "uteResponse\022\n\n\002ok\030\001 \001(\010\022\017\n\007message\030\002 \001(\t"
-      "\022\022\n\nsession_id\030\003 \001(\t\022\023\n\013fence_token\030\004 \001("
-      "\t\022\022\n\ngeneration\030\005 \001(\004\022\033\n\023gateway_instanc"
-      "e_id\030\006 \001(\t\022\035\n\025gamelogic_instance_id\030\007 \001("
-      "\t\022\027\n\017map_instance_id\030\010 \001(\004\022\027\n\017map_owner_"
-      "epoch\030\t \001(\004\022\025\n\rroute_version\030\n \001(\004\022\023\n\013ro"
-      "ute_state\030\013 \001(\t\022\023\n\013transfer_id\030\014 \001(\t2\302\014\n"
-      "\016SessionService\022K\n\016AcquireSession\022\033.sess"
-      ".AcquireSessionRequest\032\034.sess.AcquireSes"
-      "sionResponse\022S\n\022MarkDisconnectedV2\022\035.ses"
-      "s.MarkDisconnectedRequest\032\036.sess.MarkDis"
-      "connectedResponse\022>\n\013ReconnectV2\022\026.sess."
-      "ReconnectRequest\032\027.sess.ReconnectRespons"
-      "e\022Z\n\023GetSessionOperation\022 .sess.GetSessi"
-      "onOperationRequest\032!.sess.GetSessionOper"
-      "ationResponse\0225\n\010LogoutV2\022\023.sess.LogoutR"
-      "equest\032\024.sess.LogoutResponse\022-\n\004Kick\022\021.s"
-      "ess.KickRequest\032\022.sess.KickResponse\022W\n\022R"
-      "esolveOrCreateMap\022\037.sess.ResolveOrCreate"
-      "MapRequest\032 .sess.ResolveOrCreateMapResp"
-      "onse\022E\n\014GetPlacement\022\031.sess.GetPlacement"
-      "Request\032\032.sess.GetPlacementResponse\022\?\n\nM"
-      "igrateMap\022\027.sess.MigrateMapRequest\032\030.ses"
-      "s.MigrateMapResponse\022K\n\016MarkRecovering\022\033"
-      ".sess.MarkRecoveringRequest\032\034.sess.MarkR"
-      "ecoveringResponse\022K\n\016HeartbeatOwner\022\033.se"
-      "ss.HeartbeatOwnerRequest\032\034.sess.Heartbea"
-      "tOwnerResponse\022T\n\021UpdatePlayerRoute\022\036.se"
-      "ss.UpdatePlayerRouteRequest\032\037.sess.Updat"
-      "ePlayerRouteResponse\022Z\n\023BeginPlayerTrans"
-      "fer\022 .sess.BeginPlayerTransferRequest\032!."
-      "sess.BeginPlayerTransferResponse\022]\n\024Comm"
-      "itPlayerTransfer\022!.sess.CommitPlayerTran"
-      "sferRequest\032\".sess.CommitPlayerTransferR"
-      "esponse\022Z\n\023AbortPlayerTransfer\022 .sess.Ab"
-      "ortPlayerTransferRequest\032!.sess.AbortPla"
-      "yerTransferResponse\022K\n\016GetPlayerRoute\022\033."
-      "sess.GetPlayerRouteRequest\032\034.sess.GetPla"
-      "yerRouteResponse\022\'\n\005Login\022\016.game.LoginRe"
-      "q\032\016.game.LoginRsp\0223\n\tReconnect\022\022.game.Re"
-      "connectReq\032\022.game.ReconnectRsp\022*\n\006Logout"
-      "\022\017.game.LogoutReq\032\017.game.LogoutRsp\022\?\n\rVa"
-      "lidateToken\022\026.sess.ValidateTokenReq\032\026.se"
-      "ss.ValidateTokenRsp\022B\n\016BindConnection\022\027."
-      "sess.BindConnectionReq\032\027.sess.BindConnec"
-      "tionRsp\022H\n\020MarkDisconnected\022\031.sess.MarkD"
-      "isconnectedReq\032\031.sess.MarkDisconnectedRs"
-      "pB\003\200\001\001b\006proto3"
+      "n\030\002 \001(\t\022\023\n\013transfer_id\030\003 \001(\t\022\016\n\006reason\030\004"
+      " \001(\t\"z\n\033AbortPlayerTransferResponse\022\n\n\002o"
+      "k\030\001 \001(\010\022\017\n\007message\030\002 \001(\t\022\022\n\nerror_code\030\003"
+      " \001(\t\022\025\n\rroute_version\030\004 \001(\004\022\023\n\013route_sta"
+      "te\030\005 \001(\t\"\?\n\025GetPlayerRouteRequest\022\021\n\tpla"
+      "yer_id\030\001 \001(\004\022\023\n\013fence_token\030\002 \001(\t\"\241\002\n\026Ge"
+      "tPlayerRouteResponse\022\n\n\002ok\030\001 \001(\010\022\017\n\007mess"
+      "age\030\002 \001(\t\022\022\n\nsession_id\030\003 \001(\t\022\023\n\013fence_t"
+      "oken\030\004 \001(\t\022\022\n\ngeneration\030\005 \001(\004\022\033\n\023gatewa"
+      "y_instance_id\030\006 \001(\t\022\035\n\025gamelogic_instanc"
+      "e_id\030\007 \001(\t\022\027\n\017map_instance_id\030\010 \001(\004\022\027\n\017m"
+      "ap_owner_epoch\030\t \001(\004\022\025\n\rroute_version\030\n "
+      "\001(\004\022\023\n\013route_state\030\013 \001(\t\022\023\n\013transfer_id\030"
+      "\014 \001(\t2\262\016\n\016SessionService\022K\n\016AcquireSessi"
+      "on\022\033.sess.AcquireSessionRequest\032\034.sess.A"
+      "cquireSessionResponse\022S\n\022MarkDisconnecte"
+      "dV2\022\035.sess.MarkDisconnectedRequest\032\036.ses"
+      "s.MarkDisconnectedResponse\022>\n\013ReconnectV"
+      "2\022\026.sess.ReconnectRequest\032\027.sess.Reconne"
+      "ctResponse\022Q\n\020PrepareReconnect\022\035.sess.Pr"
+      "epareReconnectRequest\032\036.sess.PrepareReco"
+      "nnectResponse\022N\n\017CommitReconnect\022\034.sess."
+      "CommitReconnectRequest\032\035.sess.CommitReco"
+      "nnectResponse\022K\n\016AbortReconnect\022\033.sess.A"
+      "bortReconnectRequest\032\034.sess.AbortReconne"
+      "ctResponse\022Z\n\023GetSessionOperation\022 .sess"
+      ".GetSessionOperationRequest\032!.sess.GetSe"
+      "ssionOperationResponse\0225\n\010LogoutV2\022\023.ses"
+      "s.LogoutRequest\032\024.sess.LogoutResponse\022-\n"
+      "\004Kick\022\021.sess.KickRequest\032\022.sess.KickResp"
+      "onse\022W\n\022ResolveOrCreateMap\022\037.sess.Resolv"
+      "eOrCreateMapRequest\032 .sess.ResolveOrCrea"
+      "teMapResponse\022E\n\014GetPlacement\022\031.sess.Get"
+      "PlacementRequest\032\032.sess.GetPlacementResp"
+      "onse\022\?\n\nMigrateMap\022\027.sess.MigrateMapRequ"
+      "est\032\030.sess.MigrateMapResponse\022K\n\016MarkRec"
+      "overing\022\033.sess.MarkRecoveringRequest\032\034.s"
+      "ess.MarkRecoveringResponse\022K\n\016HeartbeatO"
+      "wner\022\033.sess.HeartbeatOwnerRequest\032\034.sess"
+      ".HeartbeatOwnerResponse\022T\n\021UpdatePlayerR"
+      "oute\022\036.sess.UpdatePlayerRouteRequest\032\037.s"
+      "ess.UpdatePlayerRouteResponse\022Z\n\023BeginPl"
+      "ayerTransfer\022 .sess.BeginPlayerTransferR"
+      "equest\032!.sess.BeginPlayerTransferRespons"
+      "e\022]\n\024CommitPlayerTransfer\022!.sess.CommitP"
+      "layerTransferRequest\032\".sess.CommitPlayer"
+      "TransferResponse\022Z\n\023AbortPlayerTransfer\022"
+      " .sess.AbortPlayerTransferRequest\032!.sess"
+      ".AbortPlayerTransferResponse\022K\n\016GetPlaye"
+      "rRoute\022\033.sess.GetPlayerRouteRequest\032\034.se"
+      "ss.GetPlayerRouteResponse\022\'\n\005Login\022\016.gam"
+      "e.LoginReq\032\016.game.LoginRsp\0223\n\tReconnect\022"
+      "\022.game.ReconnectReq\032\022.game.ReconnectRsp\022"
+      "*\n\006Logout\022\017.game.LogoutReq\032\017.game.Logout"
+      "Rsp\022\?\n\rValidateToken\022\026.sess.ValidateToke"
+      "nReq\032\026.sess.ValidateTokenRsp\022B\n\016BindConn"
+      "ection\022\027.sess.BindConnectionReq\032\027.sess.B"
+      "indConnectionRsp\022H\n\020MarkDisconnected\022\031.s"
+      "ess.MarkDisconnectedReq\032\031.sess.MarkDisco"
+      "nnectedRspB\003\200\001\001b\006proto3"
   };
   ::google::protobuf::DescriptorPool::InternalAddGeneratedFile(
-      descriptor, 6734);
+      descriptor, 8063);
   ::google::protobuf::MessageFactory::InternalRegisterGeneratedFile(
     "session.proto", &protobuf_RegisterTypes);
   ::protobuf_game_2eproto::AddDescriptors();
@@ -8065,6 +8337,3216 @@ void ReconnectResponse::InternalSwap(ReconnectResponse* other) {
 }
 
 ::google::protobuf::Metadata ReconnectResponse::GetMetadata() const {
+  protobuf_session_2eproto::protobuf_AssignDescriptorsOnce();
+  return ::protobuf_session_2eproto::file_level_metadata[kIndexInFileMessages];
+}
+
+
+// ===================================================================
+
+void PrepareReconnectRequest::InitAsDefaultInstance() {
+}
+#if !defined(_MSC_VER) || _MSC_VER >= 1900
+const int PrepareReconnectRequest::kPlayerIdFieldNumber;
+const int PrepareReconnectRequest::kSessionIdFieldNumber;
+const int PrepareReconnectRequest::kReconnectTicketFieldNumber;
+const int PrepareReconnectRequest::kGatewayInstanceIdFieldNumber;
+const int PrepareReconnectRequest::kLastServerSeqFieldNumber;
+const int PrepareReconnectRequest::kOperationIdFieldNumber;
+#endif  // !defined(_MSC_VER) || _MSC_VER >= 1900
+
+PrepareReconnectRequest::PrepareReconnectRequest()
+  : ::google::protobuf::Message(), _internal_metadata_(NULL) {
+  if (GOOGLE_PREDICT_TRUE(this != internal_default_instance())) {
+    ::protobuf_session_2eproto::InitDefaultsPrepareReconnectRequest();
+  }
+  SharedCtor();
+  // @@protoc_insertion_point(constructor:sess.PrepareReconnectRequest)
+}
+PrepareReconnectRequest::PrepareReconnectRequest(const PrepareReconnectRequest& from)
+  : ::google::protobuf::Message(),
+      _internal_metadata_(NULL),
+      _cached_size_(0) {
+  _internal_metadata_.MergeFrom(from._internal_metadata_);
+  session_id_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  if (from.session_id().size() > 0) {
+    session_id_.AssignWithDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), from.session_id_);
+  }
+  reconnect_ticket_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  if (from.reconnect_ticket().size() > 0) {
+    reconnect_ticket_.AssignWithDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), from.reconnect_ticket_);
+  }
+  gateway_instance_id_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  if (from.gateway_instance_id().size() > 0) {
+    gateway_instance_id_.AssignWithDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), from.gateway_instance_id_);
+  }
+  operation_id_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  if (from.operation_id().size() > 0) {
+    operation_id_.AssignWithDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), from.operation_id_);
+  }
+  ::memcpy(&player_id_, &from.player_id_,
+    static_cast<size_t>(reinterpret_cast<char*>(&last_server_seq_) -
+    reinterpret_cast<char*>(&player_id_)) + sizeof(last_server_seq_));
+  // @@protoc_insertion_point(copy_constructor:sess.PrepareReconnectRequest)
+}
+
+void PrepareReconnectRequest::SharedCtor() {
+  session_id_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  reconnect_ticket_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  gateway_instance_id_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  operation_id_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  ::memset(&player_id_, 0, static_cast<size_t>(
+      reinterpret_cast<char*>(&last_server_seq_) -
+      reinterpret_cast<char*>(&player_id_)) + sizeof(last_server_seq_));
+  _cached_size_ = 0;
+}
+
+PrepareReconnectRequest::~PrepareReconnectRequest() {
+  // @@protoc_insertion_point(destructor:sess.PrepareReconnectRequest)
+  SharedDtor();
+}
+
+void PrepareReconnectRequest::SharedDtor() {
+  session_id_.DestroyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  reconnect_ticket_.DestroyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  gateway_instance_id_.DestroyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  operation_id_.DestroyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+
+void PrepareReconnectRequest::SetCachedSize(int size) const {
+  GOOGLE_SAFE_CONCURRENT_WRITES_BEGIN();
+  _cached_size_ = size;
+  GOOGLE_SAFE_CONCURRENT_WRITES_END();
+}
+const ::google::protobuf::Descriptor* PrepareReconnectRequest::descriptor() {
+  ::protobuf_session_2eproto::protobuf_AssignDescriptorsOnce();
+  return ::protobuf_session_2eproto::file_level_metadata[kIndexInFileMessages].descriptor;
+}
+
+const PrepareReconnectRequest& PrepareReconnectRequest::default_instance() {
+  ::protobuf_session_2eproto::InitDefaultsPrepareReconnectRequest();
+  return *internal_default_instance();
+}
+
+PrepareReconnectRequest* PrepareReconnectRequest::New(::google::protobuf::Arena* arena) const {
+  PrepareReconnectRequest* n = new PrepareReconnectRequest;
+  if (arena != NULL) {
+    arena->Own(n);
+  }
+  return n;
+}
+
+void PrepareReconnectRequest::Clear() {
+// @@protoc_insertion_point(message_clear_start:sess.PrepareReconnectRequest)
+  ::google::protobuf::uint32 cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void) cached_has_bits;
+
+  session_id_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  reconnect_ticket_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  gateway_instance_id_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  operation_id_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  ::memset(&player_id_, 0, static_cast<size_t>(
+      reinterpret_cast<char*>(&last_server_seq_) -
+      reinterpret_cast<char*>(&player_id_)) + sizeof(last_server_seq_));
+  _internal_metadata_.Clear();
+}
+
+bool PrepareReconnectRequest::MergePartialFromCodedStream(
+    ::google::protobuf::io::CodedInputStream* input) {
+#define DO_(EXPRESSION) if (!GOOGLE_PREDICT_TRUE(EXPRESSION)) goto failure
+  ::google::protobuf::uint32 tag;
+  // @@protoc_insertion_point(parse_start:sess.PrepareReconnectRequest)
+  for (;;) {
+    ::std::pair< ::google::protobuf::uint32, bool> p = input->ReadTagWithCutoffNoLastTag(127u);
+    tag = p.first;
+    if (!p.second) goto handle_unusual;
+    switch (::google::protobuf::internal::WireFormatLite::GetTagFieldNumber(tag)) {
+      // uint64 player_id = 1;
+      case 1: {
+        if (static_cast< ::google::protobuf::uint8>(tag) ==
+            static_cast< ::google::protobuf::uint8>(8u /* 8 & 0xFF */)) {
+
+          DO_((::google::protobuf::internal::WireFormatLite::ReadPrimitive<
+                   ::google::protobuf::uint64, ::google::protobuf::internal::WireFormatLite::TYPE_UINT64>(
+                 input, &player_id_)));
+        } else {
+          goto handle_unusual;
+        }
+        break;
+      }
+
+      // string session_id = 2;
+      case 2: {
+        if (static_cast< ::google::protobuf::uint8>(tag) ==
+            static_cast< ::google::protobuf::uint8>(18u /* 18 & 0xFF */)) {
+          DO_(::google::protobuf::internal::WireFormatLite::ReadString(
+                input, this->mutable_session_id()));
+          DO_(::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+            this->session_id().data(), static_cast<int>(this->session_id().length()),
+            ::google::protobuf::internal::WireFormatLite::PARSE,
+            "sess.PrepareReconnectRequest.session_id"));
+        } else {
+          goto handle_unusual;
+        }
+        break;
+      }
+
+      // string reconnect_ticket = 3;
+      case 3: {
+        if (static_cast< ::google::protobuf::uint8>(tag) ==
+            static_cast< ::google::protobuf::uint8>(26u /* 26 & 0xFF */)) {
+          DO_(::google::protobuf::internal::WireFormatLite::ReadString(
+                input, this->mutable_reconnect_ticket()));
+          DO_(::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+            this->reconnect_ticket().data(), static_cast<int>(this->reconnect_ticket().length()),
+            ::google::protobuf::internal::WireFormatLite::PARSE,
+            "sess.PrepareReconnectRequest.reconnect_ticket"));
+        } else {
+          goto handle_unusual;
+        }
+        break;
+      }
+
+      // string gateway_instance_id = 4;
+      case 4: {
+        if (static_cast< ::google::protobuf::uint8>(tag) ==
+            static_cast< ::google::protobuf::uint8>(34u /* 34 & 0xFF */)) {
+          DO_(::google::protobuf::internal::WireFormatLite::ReadString(
+                input, this->mutable_gateway_instance_id()));
+          DO_(::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+            this->gateway_instance_id().data(), static_cast<int>(this->gateway_instance_id().length()),
+            ::google::protobuf::internal::WireFormatLite::PARSE,
+            "sess.PrepareReconnectRequest.gateway_instance_id"));
+        } else {
+          goto handle_unusual;
+        }
+        break;
+      }
+
+      // uint64 last_server_seq = 5;
+      case 5: {
+        if (static_cast< ::google::protobuf::uint8>(tag) ==
+            static_cast< ::google::protobuf::uint8>(40u /* 40 & 0xFF */)) {
+
+          DO_((::google::protobuf::internal::WireFormatLite::ReadPrimitive<
+                   ::google::protobuf::uint64, ::google::protobuf::internal::WireFormatLite::TYPE_UINT64>(
+                 input, &last_server_seq_)));
+        } else {
+          goto handle_unusual;
+        }
+        break;
+      }
+
+      // string operation_id = 6;
+      case 6: {
+        if (static_cast< ::google::protobuf::uint8>(tag) ==
+            static_cast< ::google::protobuf::uint8>(50u /* 50 & 0xFF */)) {
+          DO_(::google::protobuf::internal::WireFormatLite::ReadString(
+                input, this->mutable_operation_id()));
+          DO_(::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+            this->operation_id().data(), static_cast<int>(this->operation_id().length()),
+            ::google::protobuf::internal::WireFormatLite::PARSE,
+            "sess.PrepareReconnectRequest.operation_id"));
+        } else {
+          goto handle_unusual;
+        }
+        break;
+      }
+
+      default: {
+      handle_unusual:
+        if (tag == 0) {
+          goto success;
+        }
+        DO_(::google::protobuf::internal::WireFormat::SkipField(
+              input, tag, _internal_metadata_.mutable_unknown_fields()));
+        break;
+      }
+    }
+  }
+success:
+  // @@protoc_insertion_point(parse_success:sess.PrepareReconnectRequest)
+  return true;
+failure:
+  // @@protoc_insertion_point(parse_failure:sess.PrepareReconnectRequest)
+  return false;
+#undef DO_
+}
+
+void PrepareReconnectRequest::SerializeWithCachedSizes(
+    ::google::protobuf::io::CodedOutputStream* output) const {
+  // @@protoc_insertion_point(serialize_start:sess.PrepareReconnectRequest)
+  ::google::protobuf::uint32 cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  // uint64 player_id = 1;
+  if (this->player_id() != 0) {
+    ::google::protobuf::internal::WireFormatLite::WriteUInt64(1, this->player_id(), output);
+  }
+
+  // string session_id = 2;
+  if (this->session_id().size() > 0) {
+    ::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+      this->session_id().data(), static_cast<int>(this->session_id().length()),
+      ::google::protobuf::internal::WireFormatLite::SERIALIZE,
+      "sess.PrepareReconnectRequest.session_id");
+    ::google::protobuf::internal::WireFormatLite::WriteStringMaybeAliased(
+      2, this->session_id(), output);
+  }
+
+  // string reconnect_ticket = 3;
+  if (this->reconnect_ticket().size() > 0) {
+    ::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+      this->reconnect_ticket().data(), static_cast<int>(this->reconnect_ticket().length()),
+      ::google::protobuf::internal::WireFormatLite::SERIALIZE,
+      "sess.PrepareReconnectRequest.reconnect_ticket");
+    ::google::protobuf::internal::WireFormatLite::WriteStringMaybeAliased(
+      3, this->reconnect_ticket(), output);
+  }
+
+  // string gateway_instance_id = 4;
+  if (this->gateway_instance_id().size() > 0) {
+    ::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+      this->gateway_instance_id().data(), static_cast<int>(this->gateway_instance_id().length()),
+      ::google::protobuf::internal::WireFormatLite::SERIALIZE,
+      "sess.PrepareReconnectRequest.gateway_instance_id");
+    ::google::protobuf::internal::WireFormatLite::WriteStringMaybeAliased(
+      4, this->gateway_instance_id(), output);
+  }
+
+  // uint64 last_server_seq = 5;
+  if (this->last_server_seq() != 0) {
+    ::google::protobuf::internal::WireFormatLite::WriteUInt64(5, this->last_server_seq(), output);
+  }
+
+  // string operation_id = 6;
+  if (this->operation_id().size() > 0) {
+    ::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+      this->operation_id().data(), static_cast<int>(this->operation_id().length()),
+      ::google::protobuf::internal::WireFormatLite::SERIALIZE,
+      "sess.PrepareReconnectRequest.operation_id");
+    ::google::protobuf::internal::WireFormatLite::WriteStringMaybeAliased(
+      6, this->operation_id(), output);
+  }
+
+  if ((_internal_metadata_.have_unknown_fields() &&  ::google::protobuf::internal::GetProto3PreserveUnknownsDefault())) {
+    ::google::protobuf::internal::WireFormat::SerializeUnknownFields(
+        (::google::protobuf::internal::GetProto3PreserveUnknownsDefault()   ? _internal_metadata_.unknown_fields()   : _internal_metadata_.default_instance()), output);
+  }
+  // @@protoc_insertion_point(serialize_end:sess.PrepareReconnectRequest)
+}
+
+::google::protobuf::uint8* PrepareReconnectRequest::InternalSerializeWithCachedSizesToArray(
+    bool deterministic, ::google::protobuf::uint8* target) const {
+  (void)deterministic; // Unused
+  // @@protoc_insertion_point(serialize_to_array_start:sess.PrepareReconnectRequest)
+  ::google::protobuf::uint32 cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  // uint64 player_id = 1;
+  if (this->player_id() != 0) {
+    target = ::google::protobuf::internal::WireFormatLite::WriteUInt64ToArray(1, this->player_id(), target);
+  }
+
+  // string session_id = 2;
+  if (this->session_id().size() > 0) {
+    ::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+      this->session_id().data(), static_cast<int>(this->session_id().length()),
+      ::google::protobuf::internal::WireFormatLite::SERIALIZE,
+      "sess.PrepareReconnectRequest.session_id");
+    target =
+      ::google::protobuf::internal::WireFormatLite::WriteStringToArray(
+        2, this->session_id(), target);
+  }
+
+  // string reconnect_ticket = 3;
+  if (this->reconnect_ticket().size() > 0) {
+    ::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+      this->reconnect_ticket().data(), static_cast<int>(this->reconnect_ticket().length()),
+      ::google::protobuf::internal::WireFormatLite::SERIALIZE,
+      "sess.PrepareReconnectRequest.reconnect_ticket");
+    target =
+      ::google::protobuf::internal::WireFormatLite::WriteStringToArray(
+        3, this->reconnect_ticket(), target);
+  }
+
+  // string gateway_instance_id = 4;
+  if (this->gateway_instance_id().size() > 0) {
+    ::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+      this->gateway_instance_id().data(), static_cast<int>(this->gateway_instance_id().length()),
+      ::google::protobuf::internal::WireFormatLite::SERIALIZE,
+      "sess.PrepareReconnectRequest.gateway_instance_id");
+    target =
+      ::google::protobuf::internal::WireFormatLite::WriteStringToArray(
+        4, this->gateway_instance_id(), target);
+  }
+
+  // uint64 last_server_seq = 5;
+  if (this->last_server_seq() != 0) {
+    target = ::google::protobuf::internal::WireFormatLite::WriteUInt64ToArray(5, this->last_server_seq(), target);
+  }
+
+  // string operation_id = 6;
+  if (this->operation_id().size() > 0) {
+    ::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+      this->operation_id().data(), static_cast<int>(this->operation_id().length()),
+      ::google::protobuf::internal::WireFormatLite::SERIALIZE,
+      "sess.PrepareReconnectRequest.operation_id");
+    target =
+      ::google::protobuf::internal::WireFormatLite::WriteStringToArray(
+        6, this->operation_id(), target);
+  }
+
+  if ((_internal_metadata_.have_unknown_fields() &&  ::google::protobuf::internal::GetProto3PreserveUnknownsDefault())) {
+    target = ::google::protobuf::internal::WireFormat::SerializeUnknownFieldsToArray(
+        (::google::protobuf::internal::GetProto3PreserveUnknownsDefault()   ? _internal_metadata_.unknown_fields()   : _internal_metadata_.default_instance()), target);
+  }
+  // @@protoc_insertion_point(serialize_to_array_end:sess.PrepareReconnectRequest)
+  return target;
+}
+
+size_t PrepareReconnectRequest::ByteSizeLong() const {
+// @@protoc_insertion_point(message_byte_size_start:sess.PrepareReconnectRequest)
+  size_t total_size = 0;
+
+  if ((_internal_metadata_.have_unknown_fields() &&  ::google::protobuf::internal::GetProto3PreserveUnknownsDefault())) {
+    total_size +=
+      ::google::protobuf::internal::WireFormat::ComputeUnknownFieldsSize(
+        (::google::protobuf::internal::GetProto3PreserveUnknownsDefault()   ? _internal_metadata_.unknown_fields()   : _internal_metadata_.default_instance()));
+  }
+  // string session_id = 2;
+  if (this->session_id().size() > 0) {
+    total_size += 1 +
+      ::google::protobuf::internal::WireFormatLite::StringSize(
+        this->session_id());
+  }
+
+  // string reconnect_ticket = 3;
+  if (this->reconnect_ticket().size() > 0) {
+    total_size += 1 +
+      ::google::protobuf::internal::WireFormatLite::StringSize(
+        this->reconnect_ticket());
+  }
+
+  // string gateway_instance_id = 4;
+  if (this->gateway_instance_id().size() > 0) {
+    total_size += 1 +
+      ::google::protobuf::internal::WireFormatLite::StringSize(
+        this->gateway_instance_id());
+  }
+
+  // string operation_id = 6;
+  if (this->operation_id().size() > 0) {
+    total_size += 1 +
+      ::google::protobuf::internal::WireFormatLite::StringSize(
+        this->operation_id());
+  }
+
+  // uint64 player_id = 1;
+  if (this->player_id() != 0) {
+    total_size += 1 +
+      ::google::protobuf::internal::WireFormatLite::UInt64Size(
+        this->player_id());
+  }
+
+  // uint64 last_server_seq = 5;
+  if (this->last_server_seq() != 0) {
+    total_size += 1 +
+      ::google::protobuf::internal::WireFormatLite::UInt64Size(
+        this->last_server_seq());
+  }
+
+  int cached_size = ::google::protobuf::internal::ToCachedSize(total_size);
+  GOOGLE_SAFE_CONCURRENT_WRITES_BEGIN();
+  _cached_size_ = cached_size;
+  GOOGLE_SAFE_CONCURRENT_WRITES_END();
+  return total_size;
+}
+
+void PrepareReconnectRequest::MergeFrom(const ::google::protobuf::Message& from) {
+// @@protoc_insertion_point(generalized_merge_from_start:sess.PrepareReconnectRequest)
+  GOOGLE_DCHECK_NE(&from, this);
+  const PrepareReconnectRequest* source =
+      ::google::protobuf::internal::DynamicCastToGenerated<const PrepareReconnectRequest>(
+          &from);
+  if (source == NULL) {
+  // @@protoc_insertion_point(generalized_merge_from_cast_fail:sess.PrepareReconnectRequest)
+    ::google::protobuf::internal::ReflectionOps::Merge(from, this);
+  } else {
+  // @@protoc_insertion_point(generalized_merge_from_cast_success:sess.PrepareReconnectRequest)
+    MergeFrom(*source);
+  }
+}
+
+void PrepareReconnectRequest::MergeFrom(const PrepareReconnectRequest& from) {
+// @@protoc_insertion_point(class_specific_merge_from_start:sess.PrepareReconnectRequest)
+  GOOGLE_DCHECK_NE(&from, this);
+  _internal_metadata_.MergeFrom(from._internal_metadata_);
+  ::google::protobuf::uint32 cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  if (from.session_id().size() > 0) {
+
+    session_id_.AssignWithDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), from.session_id_);
+  }
+  if (from.reconnect_ticket().size() > 0) {
+
+    reconnect_ticket_.AssignWithDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), from.reconnect_ticket_);
+  }
+  if (from.gateway_instance_id().size() > 0) {
+
+    gateway_instance_id_.AssignWithDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), from.gateway_instance_id_);
+  }
+  if (from.operation_id().size() > 0) {
+
+    operation_id_.AssignWithDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), from.operation_id_);
+  }
+  if (from.player_id() != 0) {
+    set_player_id(from.player_id());
+  }
+  if (from.last_server_seq() != 0) {
+    set_last_server_seq(from.last_server_seq());
+  }
+}
+
+void PrepareReconnectRequest::CopyFrom(const ::google::protobuf::Message& from) {
+// @@protoc_insertion_point(generalized_copy_from_start:sess.PrepareReconnectRequest)
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+void PrepareReconnectRequest::CopyFrom(const PrepareReconnectRequest& from) {
+// @@protoc_insertion_point(class_specific_copy_from_start:sess.PrepareReconnectRequest)
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+bool PrepareReconnectRequest::IsInitialized() const {
+  return true;
+}
+
+void PrepareReconnectRequest::Swap(PrepareReconnectRequest* other) {
+  if (other == this) return;
+  InternalSwap(other);
+}
+void PrepareReconnectRequest::InternalSwap(PrepareReconnectRequest* other) {
+  using std::swap;
+  session_id_.Swap(&other->session_id_);
+  reconnect_ticket_.Swap(&other->reconnect_ticket_);
+  gateway_instance_id_.Swap(&other->gateway_instance_id_);
+  operation_id_.Swap(&other->operation_id_);
+  swap(player_id_, other->player_id_);
+  swap(last_server_seq_, other->last_server_seq_);
+  _internal_metadata_.Swap(&other->_internal_metadata_);
+  swap(_cached_size_, other->_cached_size_);
+}
+
+::google::protobuf::Metadata PrepareReconnectRequest::GetMetadata() const {
+  protobuf_session_2eproto::protobuf_AssignDescriptorsOnce();
+  return ::protobuf_session_2eproto::file_level_metadata[kIndexInFileMessages];
+}
+
+
+// ===================================================================
+
+void PrepareReconnectResponse::InitAsDefaultInstance() {
+}
+#if !defined(_MSC_VER) || _MSC_VER >= 1900
+const int PrepareReconnectResponse::kOkFieldNumber;
+const int PrepareReconnectResponse::kMessageFieldNumber;
+const int PrepareReconnectResponse::kErrorCodeFieldNumber;
+const int PrepareReconnectResponse::kSessionIdFieldNumber;
+const int PrepareReconnectResponse::kCandidateFenceTokenFieldNumber;
+const int PrepareReconnectResponse::kCandidateGenerationFieldNumber;
+const int PrepareReconnectResponse::kGamelogicInstanceIdFieldNumber;
+const int PrepareReconnectResponse::kMapInstanceIdFieldNumber;
+const int PrepareReconnectResponse::kMapOwnerEpochFieldNumber;
+const int PrepareReconnectResponse::kRouteVersionFieldNumber;
+const int PrepareReconnectResponse::kOperationIdFieldNumber;
+#endif  // !defined(_MSC_VER) || _MSC_VER >= 1900
+
+PrepareReconnectResponse::PrepareReconnectResponse()
+  : ::google::protobuf::Message(), _internal_metadata_(NULL) {
+  if (GOOGLE_PREDICT_TRUE(this != internal_default_instance())) {
+    ::protobuf_session_2eproto::InitDefaultsPrepareReconnectResponse();
+  }
+  SharedCtor();
+  // @@protoc_insertion_point(constructor:sess.PrepareReconnectResponse)
+}
+PrepareReconnectResponse::PrepareReconnectResponse(const PrepareReconnectResponse& from)
+  : ::google::protobuf::Message(),
+      _internal_metadata_(NULL),
+      _cached_size_(0) {
+  _internal_metadata_.MergeFrom(from._internal_metadata_);
+  message_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  if (from.message().size() > 0) {
+    message_.AssignWithDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), from.message_);
+  }
+  error_code_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  if (from.error_code().size() > 0) {
+    error_code_.AssignWithDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), from.error_code_);
+  }
+  session_id_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  if (from.session_id().size() > 0) {
+    session_id_.AssignWithDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), from.session_id_);
+  }
+  candidate_fence_token_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  if (from.candidate_fence_token().size() > 0) {
+    candidate_fence_token_.AssignWithDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), from.candidate_fence_token_);
+  }
+  gamelogic_instance_id_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  if (from.gamelogic_instance_id().size() > 0) {
+    gamelogic_instance_id_.AssignWithDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), from.gamelogic_instance_id_);
+  }
+  operation_id_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  if (from.operation_id().size() > 0) {
+    operation_id_.AssignWithDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), from.operation_id_);
+  }
+  ::memcpy(&candidate_generation_, &from.candidate_generation_,
+    static_cast<size_t>(reinterpret_cast<char*>(&ok_) -
+    reinterpret_cast<char*>(&candidate_generation_)) + sizeof(ok_));
+  // @@protoc_insertion_point(copy_constructor:sess.PrepareReconnectResponse)
+}
+
+void PrepareReconnectResponse::SharedCtor() {
+  message_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  error_code_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  session_id_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  candidate_fence_token_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  gamelogic_instance_id_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  operation_id_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  ::memset(&candidate_generation_, 0, static_cast<size_t>(
+      reinterpret_cast<char*>(&ok_) -
+      reinterpret_cast<char*>(&candidate_generation_)) + sizeof(ok_));
+  _cached_size_ = 0;
+}
+
+PrepareReconnectResponse::~PrepareReconnectResponse() {
+  // @@protoc_insertion_point(destructor:sess.PrepareReconnectResponse)
+  SharedDtor();
+}
+
+void PrepareReconnectResponse::SharedDtor() {
+  message_.DestroyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  error_code_.DestroyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  session_id_.DestroyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  candidate_fence_token_.DestroyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  gamelogic_instance_id_.DestroyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  operation_id_.DestroyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+
+void PrepareReconnectResponse::SetCachedSize(int size) const {
+  GOOGLE_SAFE_CONCURRENT_WRITES_BEGIN();
+  _cached_size_ = size;
+  GOOGLE_SAFE_CONCURRENT_WRITES_END();
+}
+const ::google::protobuf::Descriptor* PrepareReconnectResponse::descriptor() {
+  ::protobuf_session_2eproto::protobuf_AssignDescriptorsOnce();
+  return ::protobuf_session_2eproto::file_level_metadata[kIndexInFileMessages].descriptor;
+}
+
+const PrepareReconnectResponse& PrepareReconnectResponse::default_instance() {
+  ::protobuf_session_2eproto::InitDefaultsPrepareReconnectResponse();
+  return *internal_default_instance();
+}
+
+PrepareReconnectResponse* PrepareReconnectResponse::New(::google::protobuf::Arena* arena) const {
+  PrepareReconnectResponse* n = new PrepareReconnectResponse;
+  if (arena != NULL) {
+    arena->Own(n);
+  }
+  return n;
+}
+
+void PrepareReconnectResponse::Clear() {
+// @@protoc_insertion_point(message_clear_start:sess.PrepareReconnectResponse)
+  ::google::protobuf::uint32 cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void) cached_has_bits;
+
+  message_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  error_code_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  session_id_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  candidate_fence_token_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  gamelogic_instance_id_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  operation_id_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  ::memset(&candidate_generation_, 0, static_cast<size_t>(
+      reinterpret_cast<char*>(&ok_) -
+      reinterpret_cast<char*>(&candidate_generation_)) + sizeof(ok_));
+  _internal_metadata_.Clear();
+}
+
+bool PrepareReconnectResponse::MergePartialFromCodedStream(
+    ::google::protobuf::io::CodedInputStream* input) {
+#define DO_(EXPRESSION) if (!GOOGLE_PREDICT_TRUE(EXPRESSION)) goto failure
+  ::google::protobuf::uint32 tag;
+  // @@protoc_insertion_point(parse_start:sess.PrepareReconnectResponse)
+  for (;;) {
+    ::std::pair< ::google::protobuf::uint32, bool> p = input->ReadTagWithCutoffNoLastTag(127u);
+    tag = p.first;
+    if (!p.second) goto handle_unusual;
+    switch (::google::protobuf::internal::WireFormatLite::GetTagFieldNumber(tag)) {
+      // bool ok = 1;
+      case 1: {
+        if (static_cast< ::google::protobuf::uint8>(tag) ==
+            static_cast< ::google::protobuf::uint8>(8u /* 8 & 0xFF */)) {
+
+          DO_((::google::protobuf::internal::WireFormatLite::ReadPrimitive<
+                   bool, ::google::protobuf::internal::WireFormatLite::TYPE_BOOL>(
+                 input, &ok_)));
+        } else {
+          goto handle_unusual;
+        }
+        break;
+      }
+
+      // string message = 2;
+      case 2: {
+        if (static_cast< ::google::protobuf::uint8>(tag) ==
+            static_cast< ::google::protobuf::uint8>(18u /* 18 & 0xFF */)) {
+          DO_(::google::protobuf::internal::WireFormatLite::ReadString(
+                input, this->mutable_message()));
+          DO_(::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+            this->message().data(), static_cast<int>(this->message().length()),
+            ::google::protobuf::internal::WireFormatLite::PARSE,
+            "sess.PrepareReconnectResponse.message"));
+        } else {
+          goto handle_unusual;
+        }
+        break;
+      }
+
+      // string error_code = 3;
+      case 3: {
+        if (static_cast< ::google::protobuf::uint8>(tag) ==
+            static_cast< ::google::protobuf::uint8>(26u /* 26 & 0xFF */)) {
+          DO_(::google::protobuf::internal::WireFormatLite::ReadString(
+                input, this->mutable_error_code()));
+          DO_(::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+            this->error_code().data(), static_cast<int>(this->error_code().length()),
+            ::google::protobuf::internal::WireFormatLite::PARSE,
+            "sess.PrepareReconnectResponse.error_code"));
+        } else {
+          goto handle_unusual;
+        }
+        break;
+      }
+
+      // string session_id = 4;
+      case 4: {
+        if (static_cast< ::google::protobuf::uint8>(tag) ==
+            static_cast< ::google::protobuf::uint8>(34u /* 34 & 0xFF */)) {
+          DO_(::google::protobuf::internal::WireFormatLite::ReadString(
+                input, this->mutable_session_id()));
+          DO_(::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+            this->session_id().data(), static_cast<int>(this->session_id().length()),
+            ::google::protobuf::internal::WireFormatLite::PARSE,
+            "sess.PrepareReconnectResponse.session_id"));
+        } else {
+          goto handle_unusual;
+        }
+        break;
+      }
+
+      // string candidate_fence_token = 5;
+      case 5: {
+        if (static_cast< ::google::protobuf::uint8>(tag) ==
+            static_cast< ::google::protobuf::uint8>(42u /* 42 & 0xFF */)) {
+          DO_(::google::protobuf::internal::WireFormatLite::ReadString(
+                input, this->mutable_candidate_fence_token()));
+          DO_(::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+            this->candidate_fence_token().data(), static_cast<int>(this->candidate_fence_token().length()),
+            ::google::protobuf::internal::WireFormatLite::PARSE,
+            "sess.PrepareReconnectResponse.candidate_fence_token"));
+        } else {
+          goto handle_unusual;
+        }
+        break;
+      }
+
+      // uint64 candidate_generation = 6;
+      case 6: {
+        if (static_cast< ::google::protobuf::uint8>(tag) ==
+            static_cast< ::google::protobuf::uint8>(48u /* 48 & 0xFF */)) {
+
+          DO_((::google::protobuf::internal::WireFormatLite::ReadPrimitive<
+                   ::google::protobuf::uint64, ::google::protobuf::internal::WireFormatLite::TYPE_UINT64>(
+                 input, &candidate_generation_)));
+        } else {
+          goto handle_unusual;
+        }
+        break;
+      }
+
+      // string gamelogic_instance_id = 7;
+      case 7: {
+        if (static_cast< ::google::protobuf::uint8>(tag) ==
+            static_cast< ::google::protobuf::uint8>(58u /* 58 & 0xFF */)) {
+          DO_(::google::protobuf::internal::WireFormatLite::ReadString(
+                input, this->mutable_gamelogic_instance_id()));
+          DO_(::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+            this->gamelogic_instance_id().data(), static_cast<int>(this->gamelogic_instance_id().length()),
+            ::google::protobuf::internal::WireFormatLite::PARSE,
+            "sess.PrepareReconnectResponse.gamelogic_instance_id"));
+        } else {
+          goto handle_unusual;
+        }
+        break;
+      }
+
+      // uint64 map_instance_id = 8;
+      case 8: {
+        if (static_cast< ::google::protobuf::uint8>(tag) ==
+            static_cast< ::google::protobuf::uint8>(64u /* 64 & 0xFF */)) {
+
+          DO_((::google::protobuf::internal::WireFormatLite::ReadPrimitive<
+                   ::google::protobuf::uint64, ::google::protobuf::internal::WireFormatLite::TYPE_UINT64>(
+                 input, &map_instance_id_)));
+        } else {
+          goto handle_unusual;
+        }
+        break;
+      }
+
+      // uint64 map_owner_epoch = 9;
+      case 9: {
+        if (static_cast< ::google::protobuf::uint8>(tag) ==
+            static_cast< ::google::protobuf::uint8>(72u /* 72 & 0xFF */)) {
+
+          DO_((::google::protobuf::internal::WireFormatLite::ReadPrimitive<
+                   ::google::protobuf::uint64, ::google::protobuf::internal::WireFormatLite::TYPE_UINT64>(
+                 input, &map_owner_epoch_)));
+        } else {
+          goto handle_unusual;
+        }
+        break;
+      }
+
+      // uint64 route_version = 10;
+      case 10: {
+        if (static_cast< ::google::protobuf::uint8>(tag) ==
+            static_cast< ::google::protobuf::uint8>(80u /* 80 & 0xFF */)) {
+
+          DO_((::google::protobuf::internal::WireFormatLite::ReadPrimitive<
+                   ::google::protobuf::uint64, ::google::protobuf::internal::WireFormatLite::TYPE_UINT64>(
+                 input, &route_version_)));
+        } else {
+          goto handle_unusual;
+        }
+        break;
+      }
+
+      // string operation_id = 11;
+      case 11: {
+        if (static_cast< ::google::protobuf::uint8>(tag) ==
+            static_cast< ::google::protobuf::uint8>(90u /* 90 & 0xFF */)) {
+          DO_(::google::protobuf::internal::WireFormatLite::ReadString(
+                input, this->mutable_operation_id()));
+          DO_(::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+            this->operation_id().data(), static_cast<int>(this->operation_id().length()),
+            ::google::protobuf::internal::WireFormatLite::PARSE,
+            "sess.PrepareReconnectResponse.operation_id"));
+        } else {
+          goto handle_unusual;
+        }
+        break;
+      }
+
+      default: {
+      handle_unusual:
+        if (tag == 0) {
+          goto success;
+        }
+        DO_(::google::protobuf::internal::WireFormat::SkipField(
+              input, tag, _internal_metadata_.mutable_unknown_fields()));
+        break;
+      }
+    }
+  }
+success:
+  // @@protoc_insertion_point(parse_success:sess.PrepareReconnectResponse)
+  return true;
+failure:
+  // @@protoc_insertion_point(parse_failure:sess.PrepareReconnectResponse)
+  return false;
+#undef DO_
+}
+
+void PrepareReconnectResponse::SerializeWithCachedSizes(
+    ::google::protobuf::io::CodedOutputStream* output) const {
+  // @@protoc_insertion_point(serialize_start:sess.PrepareReconnectResponse)
+  ::google::protobuf::uint32 cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  // bool ok = 1;
+  if (this->ok() != 0) {
+    ::google::protobuf::internal::WireFormatLite::WriteBool(1, this->ok(), output);
+  }
+
+  // string message = 2;
+  if (this->message().size() > 0) {
+    ::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+      this->message().data(), static_cast<int>(this->message().length()),
+      ::google::protobuf::internal::WireFormatLite::SERIALIZE,
+      "sess.PrepareReconnectResponse.message");
+    ::google::protobuf::internal::WireFormatLite::WriteStringMaybeAliased(
+      2, this->message(), output);
+  }
+
+  // string error_code = 3;
+  if (this->error_code().size() > 0) {
+    ::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+      this->error_code().data(), static_cast<int>(this->error_code().length()),
+      ::google::protobuf::internal::WireFormatLite::SERIALIZE,
+      "sess.PrepareReconnectResponse.error_code");
+    ::google::protobuf::internal::WireFormatLite::WriteStringMaybeAliased(
+      3, this->error_code(), output);
+  }
+
+  // string session_id = 4;
+  if (this->session_id().size() > 0) {
+    ::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+      this->session_id().data(), static_cast<int>(this->session_id().length()),
+      ::google::protobuf::internal::WireFormatLite::SERIALIZE,
+      "sess.PrepareReconnectResponse.session_id");
+    ::google::protobuf::internal::WireFormatLite::WriteStringMaybeAliased(
+      4, this->session_id(), output);
+  }
+
+  // string candidate_fence_token = 5;
+  if (this->candidate_fence_token().size() > 0) {
+    ::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+      this->candidate_fence_token().data(), static_cast<int>(this->candidate_fence_token().length()),
+      ::google::protobuf::internal::WireFormatLite::SERIALIZE,
+      "sess.PrepareReconnectResponse.candidate_fence_token");
+    ::google::protobuf::internal::WireFormatLite::WriteStringMaybeAliased(
+      5, this->candidate_fence_token(), output);
+  }
+
+  // uint64 candidate_generation = 6;
+  if (this->candidate_generation() != 0) {
+    ::google::protobuf::internal::WireFormatLite::WriteUInt64(6, this->candidate_generation(), output);
+  }
+
+  // string gamelogic_instance_id = 7;
+  if (this->gamelogic_instance_id().size() > 0) {
+    ::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+      this->gamelogic_instance_id().data(), static_cast<int>(this->gamelogic_instance_id().length()),
+      ::google::protobuf::internal::WireFormatLite::SERIALIZE,
+      "sess.PrepareReconnectResponse.gamelogic_instance_id");
+    ::google::protobuf::internal::WireFormatLite::WriteStringMaybeAliased(
+      7, this->gamelogic_instance_id(), output);
+  }
+
+  // uint64 map_instance_id = 8;
+  if (this->map_instance_id() != 0) {
+    ::google::protobuf::internal::WireFormatLite::WriteUInt64(8, this->map_instance_id(), output);
+  }
+
+  // uint64 map_owner_epoch = 9;
+  if (this->map_owner_epoch() != 0) {
+    ::google::protobuf::internal::WireFormatLite::WriteUInt64(9, this->map_owner_epoch(), output);
+  }
+
+  // uint64 route_version = 10;
+  if (this->route_version() != 0) {
+    ::google::protobuf::internal::WireFormatLite::WriteUInt64(10, this->route_version(), output);
+  }
+
+  // string operation_id = 11;
+  if (this->operation_id().size() > 0) {
+    ::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+      this->operation_id().data(), static_cast<int>(this->operation_id().length()),
+      ::google::protobuf::internal::WireFormatLite::SERIALIZE,
+      "sess.PrepareReconnectResponse.operation_id");
+    ::google::protobuf::internal::WireFormatLite::WriteStringMaybeAliased(
+      11, this->operation_id(), output);
+  }
+
+  if ((_internal_metadata_.have_unknown_fields() &&  ::google::protobuf::internal::GetProto3PreserveUnknownsDefault())) {
+    ::google::protobuf::internal::WireFormat::SerializeUnknownFields(
+        (::google::protobuf::internal::GetProto3PreserveUnknownsDefault()   ? _internal_metadata_.unknown_fields()   : _internal_metadata_.default_instance()), output);
+  }
+  // @@protoc_insertion_point(serialize_end:sess.PrepareReconnectResponse)
+}
+
+::google::protobuf::uint8* PrepareReconnectResponse::InternalSerializeWithCachedSizesToArray(
+    bool deterministic, ::google::protobuf::uint8* target) const {
+  (void)deterministic; // Unused
+  // @@protoc_insertion_point(serialize_to_array_start:sess.PrepareReconnectResponse)
+  ::google::protobuf::uint32 cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  // bool ok = 1;
+  if (this->ok() != 0) {
+    target = ::google::protobuf::internal::WireFormatLite::WriteBoolToArray(1, this->ok(), target);
+  }
+
+  // string message = 2;
+  if (this->message().size() > 0) {
+    ::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+      this->message().data(), static_cast<int>(this->message().length()),
+      ::google::protobuf::internal::WireFormatLite::SERIALIZE,
+      "sess.PrepareReconnectResponse.message");
+    target =
+      ::google::protobuf::internal::WireFormatLite::WriteStringToArray(
+        2, this->message(), target);
+  }
+
+  // string error_code = 3;
+  if (this->error_code().size() > 0) {
+    ::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+      this->error_code().data(), static_cast<int>(this->error_code().length()),
+      ::google::protobuf::internal::WireFormatLite::SERIALIZE,
+      "sess.PrepareReconnectResponse.error_code");
+    target =
+      ::google::protobuf::internal::WireFormatLite::WriteStringToArray(
+        3, this->error_code(), target);
+  }
+
+  // string session_id = 4;
+  if (this->session_id().size() > 0) {
+    ::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+      this->session_id().data(), static_cast<int>(this->session_id().length()),
+      ::google::protobuf::internal::WireFormatLite::SERIALIZE,
+      "sess.PrepareReconnectResponse.session_id");
+    target =
+      ::google::protobuf::internal::WireFormatLite::WriteStringToArray(
+        4, this->session_id(), target);
+  }
+
+  // string candidate_fence_token = 5;
+  if (this->candidate_fence_token().size() > 0) {
+    ::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+      this->candidate_fence_token().data(), static_cast<int>(this->candidate_fence_token().length()),
+      ::google::protobuf::internal::WireFormatLite::SERIALIZE,
+      "sess.PrepareReconnectResponse.candidate_fence_token");
+    target =
+      ::google::protobuf::internal::WireFormatLite::WriteStringToArray(
+        5, this->candidate_fence_token(), target);
+  }
+
+  // uint64 candidate_generation = 6;
+  if (this->candidate_generation() != 0) {
+    target = ::google::protobuf::internal::WireFormatLite::WriteUInt64ToArray(6, this->candidate_generation(), target);
+  }
+
+  // string gamelogic_instance_id = 7;
+  if (this->gamelogic_instance_id().size() > 0) {
+    ::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+      this->gamelogic_instance_id().data(), static_cast<int>(this->gamelogic_instance_id().length()),
+      ::google::protobuf::internal::WireFormatLite::SERIALIZE,
+      "sess.PrepareReconnectResponse.gamelogic_instance_id");
+    target =
+      ::google::protobuf::internal::WireFormatLite::WriteStringToArray(
+        7, this->gamelogic_instance_id(), target);
+  }
+
+  // uint64 map_instance_id = 8;
+  if (this->map_instance_id() != 0) {
+    target = ::google::protobuf::internal::WireFormatLite::WriteUInt64ToArray(8, this->map_instance_id(), target);
+  }
+
+  // uint64 map_owner_epoch = 9;
+  if (this->map_owner_epoch() != 0) {
+    target = ::google::protobuf::internal::WireFormatLite::WriteUInt64ToArray(9, this->map_owner_epoch(), target);
+  }
+
+  // uint64 route_version = 10;
+  if (this->route_version() != 0) {
+    target = ::google::protobuf::internal::WireFormatLite::WriteUInt64ToArray(10, this->route_version(), target);
+  }
+
+  // string operation_id = 11;
+  if (this->operation_id().size() > 0) {
+    ::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+      this->operation_id().data(), static_cast<int>(this->operation_id().length()),
+      ::google::protobuf::internal::WireFormatLite::SERIALIZE,
+      "sess.PrepareReconnectResponse.operation_id");
+    target =
+      ::google::protobuf::internal::WireFormatLite::WriteStringToArray(
+        11, this->operation_id(), target);
+  }
+
+  if ((_internal_metadata_.have_unknown_fields() &&  ::google::protobuf::internal::GetProto3PreserveUnknownsDefault())) {
+    target = ::google::protobuf::internal::WireFormat::SerializeUnknownFieldsToArray(
+        (::google::protobuf::internal::GetProto3PreserveUnknownsDefault()   ? _internal_metadata_.unknown_fields()   : _internal_metadata_.default_instance()), target);
+  }
+  // @@protoc_insertion_point(serialize_to_array_end:sess.PrepareReconnectResponse)
+  return target;
+}
+
+size_t PrepareReconnectResponse::ByteSizeLong() const {
+// @@protoc_insertion_point(message_byte_size_start:sess.PrepareReconnectResponse)
+  size_t total_size = 0;
+
+  if ((_internal_metadata_.have_unknown_fields() &&  ::google::protobuf::internal::GetProto3PreserveUnknownsDefault())) {
+    total_size +=
+      ::google::protobuf::internal::WireFormat::ComputeUnknownFieldsSize(
+        (::google::protobuf::internal::GetProto3PreserveUnknownsDefault()   ? _internal_metadata_.unknown_fields()   : _internal_metadata_.default_instance()));
+  }
+  // string message = 2;
+  if (this->message().size() > 0) {
+    total_size += 1 +
+      ::google::protobuf::internal::WireFormatLite::StringSize(
+        this->message());
+  }
+
+  // string error_code = 3;
+  if (this->error_code().size() > 0) {
+    total_size += 1 +
+      ::google::protobuf::internal::WireFormatLite::StringSize(
+        this->error_code());
+  }
+
+  // string session_id = 4;
+  if (this->session_id().size() > 0) {
+    total_size += 1 +
+      ::google::protobuf::internal::WireFormatLite::StringSize(
+        this->session_id());
+  }
+
+  // string candidate_fence_token = 5;
+  if (this->candidate_fence_token().size() > 0) {
+    total_size += 1 +
+      ::google::protobuf::internal::WireFormatLite::StringSize(
+        this->candidate_fence_token());
+  }
+
+  // string gamelogic_instance_id = 7;
+  if (this->gamelogic_instance_id().size() > 0) {
+    total_size += 1 +
+      ::google::protobuf::internal::WireFormatLite::StringSize(
+        this->gamelogic_instance_id());
+  }
+
+  // string operation_id = 11;
+  if (this->operation_id().size() > 0) {
+    total_size += 1 +
+      ::google::protobuf::internal::WireFormatLite::StringSize(
+        this->operation_id());
+  }
+
+  // uint64 candidate_generation = 6;
+  if (this->candidate_generation() != 0) {
+    total_size += 1 +
+      ::google::protobuf::internal::WireFormatLite::UInt64Size(
+        this->candidate_generation());
+  }
+
+  // uint64 map_instance_id = 8;
+  if (this->map_instance_id() != 0) {
+    total_size += 1 +
+      ::google::protobuf::internal::WireFormatLite::UInt64Size(
+        this->map_instance_id());
+  }
+
+  // uint64 map_owner_epoch = 9;
+  if (this->map_owner_epoch() != 0) {
+    total_size += 1 +
+      ::google::protobuf::internal::WireFormatLite::UInt64Size(
+        this->map_owner_epoch());
+  }
+
+  // uint64 route_version = 10;
+  if (this->route_version() != 0) {
+    total_size += 1 +
+      ::google::protobuf::internal::WireFormatLite::UInt64Size(
+        this->route_version());
+  }
+
+  // bool ok = 1;
+  if (this->ok() != 0) {
+    total_size += 1 + 1;
+  }
+
+  int cached_size = ::google::protobuf::internal::ToCachedSize(total_size);
+  GOOGLE_SAFE_CONCURRENT_WRITES_BEGIN();
+  _cached_size_ = cached_size;
+  GOOGLE_SAFE_CONCURRENT_WRITES_END();
+  return total_size;
+}
+
+void PrepareReconnectResponse::MergeFrom(const ::google::protobuf::Message& from) {
+// @@protoc_insertion_point(generalized_merge_from_start:sess.PrepareReconnectResponse)
+  GOOGLE_DCHECK_NE(&from, this);
+  const PrepareReconnectResponse* source =
+      ::google::protobuf::internal::DynamicCastToGenerated<const PrepareReconnectResponse>(
+          &from);
+  if (source == NULL) {
+  // @@protoc_insertion_point(generalized_merge_from_cast_fail:sess.PrepareReconnectResponse)
+    ::google::protobuf::internal::ReflectionOps::Merge(from, this);
+  } else {
+  // @@protoc_insertion_point(generalized_merge_from_cast_success:sess.PrepareReconnectResponse)
+    MergeFrom(*source);
+  }
+}
+
+void PrepareReconnectResponse::MergeFrom(const PrepareReconnectResponse& from) {
+// @@protoc_insertion_point(class_specific_merge_from_start:sess.PrepareReconnectResponse)
+  GOOGLE_DCHECK_NE(&from, this);
+  _internal_metadata_.MergeFrom(from._internal_metadata_);
+  ::google::protobuf::uint32 cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  if (from.message().size() > 0) {
+
+    message_.AssignWithDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), from.message_);
+  }
+  if (from.error_code().size() > 0) {
+
+    error_code_.AssignWithDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), from.error_code_);
+  }
+  if (from.session_id().size() > 0) {
+
+    session_id_.AssignWithDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), from.session_id_);
+  }
+  if (from.candidate_fence_token().size() > 0) {
+
+    candidate_fence_token_.AssignWithDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), from.candidate_fence_token_);
+  }
+  if (from.gamelogic_instance_id().size() > 0) {
+
+    gamelogic_instance_id_.AssignWithDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), from.gamelogic_instance_id_);
+  }
+  if (from.operation_id().size() > 0) {
+
+    operation_id_.AssignWithDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), from.operation_id_);
+  }
+  if (from.candidate_generation() != 0) {
+    set_candidate_generation(from.candidate_generation());
+  }
+  if (from.map_instance_id() != 0) {
+    set_map_instance_id(from.map_instance_id());
+  }
+  if (from.map_owner_epoch() != 0) {
+    set_map_owner_epoch(from.map_owner_epoch());
+  }
+  if (from.route_version() != 0) {
+    set_route_version(from.route_version());
+  }
+  if (from.ok() != 0) {
+    set_ok(from.ok());
+  }
+}
+
+void PrepareReconnectResponse::CopyFrom(const ::google::protobuf::Message& from) {
+// @@protoc_insertion_point(generalized_copy_from_start:sess.PrepareReconnectResponse)
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+void PrepareReconnectResponse::CopyFrom(const PrepareReconnectResponse& from) {
+// @@protoc_insertion_point(class_specific_copy_from_start:sess.PrepareReconnectResponse)
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+bool PrepareReconnectResponse::IsInitialized() const {
+  return true;
+}
+
+void PrepareReconnectResponse::Swap(PrepareReconnectResponse* other) {
+  if (other == this) return;
+  InternalSwap(other);
+}
+void PrepareReconnectResponse::InternalSwap(PrepareReconnectResponse* other) {
+  using std::swap;
+  message_.Swap(&other->message_);
+  error_code_.Swap(&other->error_code_);
+  session_id_.Swap(&other->session_id_);
+  candidate_fence_token_.Swap(&other->candidate_fence_token_);
+  gamelogic_instance_id_.Swap(&other->gamelogic_instance_id_);
+  operation_id_.Swap(&other->operation_id_);
+  swap(candidate_generation_, other->candidate_generation_);
+  swap(map_instance_id_, other->map_instance_id_);
+  swap(map_owner_epoch_, other->map_owner_epoch_);
+  swap(route_version_, other->route_version_);
+  swap(ok_, other->ok_);
+  _internal_metadata_.Swap(&other->_internal_metadata_);
+  swap(_cached_size_, other->_cached_size_);
+}
+
+::google::protobuf::Metadata PrepareReconnectResponse::GetMetadata() const {
+  protobuf_session_2eproto::protobuf_AssignDescriptorsOnce();
+  return ::protobuf_session_2eproto::file_level_metadata[kIndexInFileMessages];
+}
+
+
+// ===================================================================
+
+void CommitReconnectRequest::InitAsDefaultInstance() {
+}
+#if !defined(_MSC_VER) || _MSC_VER >= 1900
+const int CommitReconnectRequest::kPlayerIdFieldNumber;
+const int CommitReconnectRequest::kSessionIdFieldNumber;
+const int CommitReconnectRequest::kOperationIdFieldNumber;
+const int CommitReconnectRequest::kCandidateFenceTokenFieldNumber;
+const int CommitReconnectRequest::kCandidateGenerationFieldNumber;
+const int CommitReconnectRequest::kGatewayInstanceIdFieldNumber;
+const int CommitReconnectRequest::kConnectionIdFieldNumber;
+#endif  // !defined(_MSC_VER) || _MSC_VER >= 1900
+
+CommitReconnectRequest::CommitReconnectRequest()
+  : ::google::protobuf::Message(), _internal_metadata_(NULL) {
+  if (GOOGLE_PREDICT_TRUE(this != internal_default_instance())) {
+    ::protobuf_session_2eproto::InitDefaultsCommitReconnectRequest();
+  }
+  SharedCtor();
+  // @@protoc_insertion_point(constructor:sess.CommitReconnectRequest)
+}
+CommitReconnectRequest::CommitReconnectRequest(const CommitReconnectRequest& from)
+  : ::google::protobuf::Message(),
+      _internal_metadata_(NULL),
+      _cached_size_(0) {
+  _internal_metadata_.MergeFrom(from._internal_metadata_);
+  session_id_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  if (from.session_id().size() > 0) {
+    session_id_.AssignWithDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), from.session_id_);
+  }
+  operation_id_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  if (from.operation_id().size() > 0) {
+    operation_id_.AssignWithDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), from.operation_id_);
+  }
+  candidate_fence_token_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  if (from.candidate_fence_token().size() > 0) {
+    candidate_fence_token_.AssignWithDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), from.candidate_fence_token_);
+  }
+  gateway_instance_id_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  if (from.gateway_instance_id().size() > 0) {
+    gateway_instance_id_.AssignWithDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), from.gateway_instance_id_);
+  }
+  ::memcpy(&player_id_, &from.player_id_,
+    static_cast<size_t>(reinterpret_cast<char*>(&connection_id_) -
+    reinterpret_cast<char*>(&player_id_)) + sizeof(connection_id_));
+  // @@protoc_insertion_point(copy_constructor:sess.CommitReconnectRequest)
+}
+
+void CommitReconnectRequest::SharedCtor() {
+  session_id_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  operation_id_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  candidate_fence_token_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  gateway_instance_id_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  ::memset(&player_id_, 0, static_cast<size_t>(
+      reinterpret_cast<char*>(&connection_id_) -
+      reinterpret_cast<char*>(&player_id_)) + sizeof(connection_id_));
+  _cached_size_ = 0;
+}
+
+CommitReconnectRequest::~CommitReconnectRequest() {
+  // @@protoc_insertion_point(destructor:sess.CommitReconnectRequest)
+  SharedDtor();
+}
+
+void CommitReconnectRequest::SharedDtor() {
+  session_id_.DestroyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  operation_id_.DestroyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  candidate_fence_token_.DestroyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  gateway_instance_id_.DestroyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+
+void CommitReconnectRequest::SetCachedSize(int size) const {
+  GOOGLE_SAFE_CONCURRENT_WRITES_BEGIN();
+  _cached_size_ = size;
+  GOOGLE_SAFE_CONCURRENT_WRITES_END();
+}
+const ::google::protobuf::Descriptor* CommitReconnectRequest::descriptor() {
+  ::protobuf_session_2eproto::protobuf_AssignDescriptorsOnce();
+  return ::protobuf_session_2eproto::file_level_metadata[kIndexInFileMessages].descriptor;
+}
+
+const CommitReconnectRequest& CommitReconnectRequest::default_instance() {
+  ::protobuf_session_2eproto::InitDefaultsCommitReconnectRequest();
+  return *internal_default_instance();
+}
+
+CommitReconnectRequest* CommitReconnectRequest::New(::google::protobuf::Arena* arena) const {
+  CommitReconnectRequest* n = new CommitReconnectRequest;
+  if (arena != NULL) {
+    arena->Own(n);
+  }
+  return n;
+}
+
+void CommitReconnectRequest::Clear() {
+// @@protoc_insertion_point(message_clear_start:sess.CommitReconnectRequest)
+  ::google::protobuf::uint32 cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void) cached_has_bits;
+
+  session_id_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  operation_id_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  candidate_fence_token_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  gateway_instance_id_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  ::memset(&player_id_, 0, static_cast<size_t>(
+      reinterpret_cast<char*>(&connection_id_) -
+      reinterpret_cast<char*>(&player_id_)) + sizeof(connection_id_));
+  _internal_metadata_.Clear();
+}
+
+bool CommitReconnectRequest::MergePartialFromCodedStream(
+    ::google::protobuf::io::CodedInputStream* input) {
+#define DO_(EXPRESSION) if (!GOOGLE_PREDICT_TRUE(EXPRESSION)) goto failure
+  ::google::protobuf::uint32 tag;
+  // @@protoc_insertion_point(parse_start:sess.CommitReconnectRequest)
+  for (;;) {
+    ::std::pair< ::google::protobuf::uint32, bool> p = input->ReadTagWithCutoffNoLastTag(127u);
+    tag = p.first;
+    if (!p.second) goto handle_unusual;
+    switch (::google::protobuf::internal::WireFormatLite::GetTagFieldNumber(tag)) {
+      // uint64 player_id = 1;
+      case 1: {
+        if (static_cast< ::google::protobuf::uint8>(tag) ==
+            static_cast< ::google::protobuf::uint8>(8u /* 8 & 0xFF */)) {
+
+          DO_((::google::protobuf::internal::WireFormatLite::ReadPrimitive<
+                   ::google::protobuf::uint64, ::google::protobuf::internal::WireFormatLite::TYPE_UINT64>(
+                 input, &player_id_)));
+        } else {
+          goto handle_unusual;
+        }
+        break;
+      }
+
+      // string session_id = 2;
+      case 2: {
+        if (static_cast< ::google::protobuf::uint8>(tag) ==
+            static_cast< ::google::protobuf::uint8>(18u /* 18 & 0xFF */)) {
+          DO_(::google::protobuf::internal::WireFormatLite::ReadString(
+                input, this->mutable_session_id()));
+          DO_(::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+            this->session_id().data(), static_cast<int>(this->session_id().length()),
+            ::google::protobuf::internal::WireFormatLite::PARSE,
+            "sess.CommitReconnectRequest.session_id"));
+        } else {
+          goto handle_unusual;
+        }
+        break;
+      }
+
+      // string operation_id = 3;
+      case 3: {
+        if (static_cast< ::google::protobuf::uint8>(tag) ==
+            static_cast< ::google::protobuf::uint8>(26u /* 26 & 0xFF */)) {
+          DO_(::google::protobuf::internal::WireFormatLite::ReadString(
+                input, this->mutable_operation_id()));
+          DO_(::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+            this->operation_id().data(), static_cast<int>(this->operation_id().length()),
+            ::google::protobuf::internal::WireFormatLite::PARSE,
+            "sess.CommitReconnectRequest.operation_id"));
+        } else {
+          goto handle_unusual;
+        }
+        break;
+      }
+
+      // string candidate_fence_token = 4;
+      case 4: {
+        if (static_cast< ::google::protobuf::uint8>(tag) ==
+            static_cast< ::google::protobuf::uint8>(34u /* 34 & 0xFF */)) {
+          DO_(::google::protobuf::internal::WireFormatLite::ReadString(
+                input, this->mutable_candidate_fence_token()));
+          DO_(::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+            this->candidate_fence_token().data(), static_cast<int>(this->candidate_fence_token().length()),
+            ::google::protobuf::internal::WireFormatLite::PARSE,
+            "sess.CommitReconnectRequest.candidate_fence_token"));
+        } else {
+          goto handle_unusual;
+        }
+        break;
+      }
+
+      // uint64 candidate_generation = 5;
+      case 5: {
+        if (static_cast< ::google::protobuf::uint8>(tag) ==
+            static_cast< ::google::protobuf::uint8>(40u /* 40 & 0xFF */)) {
+
+          DO_((::google::protobuf::internal::WireFormatLite::ReadPrimitive<
+                   ::google::protobuf::uint64, ::google::protobuf::internal::WireFormatLite::TYPE_UINT64>(
+                 input, &candidate_generation_)));
+        } else {
+          goto handle_unusual;
+        }
+        break;
+      }
+
+      // string gateway_instance_id = 6;
+      case 6: {
+        if (static_cast< ::google::protobuf::uint8>(tag) ==
+            static_cast< ::google::protobuf::uint8>(50u /* 50 & 0xFF */)) {
+          DO_(::google::protobuf::internal::WireFormatLite::ReadString(
+                input, this->mutable_gateway_instance_id()));
+          DO_(::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+            this->gateway_instance_id().data(), static_cast<int>(this->gateway_instance_id().length()),
+            ::google::protobuf::internal::WireFormatLite::PARSE,
+            "sess.CommitReconnectRequest.gateway_instance_id"));
+        } else {
+          goto handle_unusual;
+        }
+        break;
+      }
+
+      // uint64 connection_id = 7;
+      case 7: {
+        if (static_cast< ::google::protobuf::uint8>(tag) ==
+            static_cast< ::google::protobuf::uint8>(56u /* 56 & 0xFF */)) {
+
+          DO_((::google::protobuf::internal::WireFormatLite::ReadPrimitive<
+                   ::google::protobuf::uint64, ::google::protobuf::internal::WireFormatLite::TYPE_UINT64>(
+                 input, &connection_id_)));
+        } else {
+          goto handle_unusual;
+        }
+        break;
+      }
+
+      default: {
+      handle_unusual:
+        if (tag == 0) {
+          goto success;
+        }
+        DO_(::google::protobuf::internal::WireFormat::SkipField(
+              input, tag, _internal_metadata_.mutable_unknown_fields()));
+        break;
+      }
+    }
+  }
+success:
+  // @@protoc_insertion_point(parse_success:sess.CommitReconnectRequest)
+  return true;
+failure:
+  // @@protoc_insertion_point(parse_failure:sess.CommitReconnectRequest)
+  return false;
+#undef DO_
+}
+
+void CommitReconnectRequest::SerializeWithCachedSizes(
+    ::google::protobuf::io::CodedOutputStream* output) const {
+  // @@protoc_insertion_point(serialize_start:sess.CommitReconnectRequest)
+  ::google::protobuf::uint32 cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  // uint64 player_id = 1;
+  if (this->player_id() != 0) {
+    ::google::protobuf::internal::WireFormatLite::WriteUInt64(1, this->player_id(), output);
+  }
+
+  // string session_id = 2;
+  if (this->session_id().size() > 0) {
+    ::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+      this->session_id().data(), static_cast<int>(this->session_id().length()),
+      ::google::protobuf::internal::WireFormatLite::SERIALIZE,
+      "sess.CommitReconnectRequest.session_id");
+    ::google::protobuf::internal::WireFormatLite::WriteStringMaybeAliased(
+      2, this->session_id(), output);
+  }
+
+  // string operation_id = 3;
+  if (this->operation_id().size() > 0) {
+    ::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+      this->operation_id().data(), static_cast<int>(this->operation_id().length()),
+      ::google::protobuf::internal::WireFormatLite::SERIALIZE,
+      "sess.CommitReconnectRequest.operation_id");
+    ::google::protobuf::internal::WireFormatLite::WriteStringMaybeAliased(
+      3, this->operation_id(), output);
+  }
+
+  // string candidate_fence_token = 4;
+  if (this->candidate_fence_token().size() > 0) {
+    ::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+      this->candidate_fence_token().data(), static_cast<int>(this->candidate_fence_token().length()),
+      ::google::protobuf::internal::WireFormatLite::SERIALIZE,
+      "sess.CommitReconnectRequest.candidate_fence_token");
+    ::google::protobuf::internal::WireFormatLite::WriteStringMaybeAliased(
+      4, this->candidate_fence_token(), output);
+  }
+
+  // uint64 candidate_generation = 5;
+  if (this->candidate_generation() != 0) {
+    ::google::protobuf::internal::WireFormatLite::WriteUInt64(5, this->candidate_generation(), output);
+  }
+
+  // string gateway_instance_id = 6;
+  if (this->gateway_instance_id().size() > 0) {
+    ::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+      this->gateway_instance_id().data(), static_cast<int>(this->gateway_instance_id().length()),
+      ::google::protobuf::internal::WireFormatLite::SERIALIZE,
+      "sess.CommitReconnectRequest.gateway_instance_id");
+    ::google::protobuf::internal::WireFormatLite::WriteStringMaybeAliased(
+      6, this->gateway_instance_id(), output);
+  }
+
+  // uint64 connection_id = 7;
+  if (this->connection_id() != 0) {
+    ::google::protobuf::internal::WireFormatLite::WriteUInt64(7, this->connection_id(), output);
+  }
+
+  if ((_internal_metadata_.have_unknown_fields() &&  ::google::protobuf::internal::GetProto3PreserveUnknownsDefault())) {
+    ::google::protobuf::internal::WireFormat::SerializeUnknownFields(
+        (::google::protobuf::internal::GetProto3PreserveUnknownsDefault()   ? _internal_metadata_.unknown_fields()   : _internal_metadata_.default_instance()), output);
+  }
+  // @@protoc_insertion_point(serialize_end:sess.CommitReconnectRequest)
+}
+
+::google::protobuf::uint8* CommitReconnectRequest::InternalSerializeWithCachedSizesToArray(
+    bool deterministic, ::google::protobuf::uint8* target) const {
+  (void)deterministic; // Unused
+  // @@protoc_insertion_point(serialize_to_array_start:sess.CommitReconnectRequest)
+  ::google::protobuf::uint32 cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  // uint64 player_id = 1;
+  if (this->player_id() != 0) {
+    target = ::google::protobuf::internal::WireFormatLite::WriteUInt64ToArray(1, this->player_id(), target);
+  }
+
+  // string session_id = 2;
+  if (this->session_id().size() > 0) {
+    ::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+      this->session_id().data(), static_cast<int>(this->session_id().length()),
+      ::google::protobuf::internal::WireFormatLite::SERIALIZE,
+      "sess.CommitReconnectRequest.session_id");
+    target =
+      ::google::protobuf::internal::WireFormatLite::WriteStringToArray(
+        2, this->session_id(), target);
+  }
+
+  // string operation_id = 3;
+  if (this->operation_id().size() > 0) {
+    ::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+      this->operation_id().data(), static_cast<int>(this->operation_id().length()),
+      ::google::protobuf::internal::WireFormatLite::SERIALIZE,
+      "sess.CommitReconnectRequest.operation_id");
+    target =
+      ::google::protobuf::internal::WireFormatLite::WriteStringToArray(
+        3, this->operation_id(), target);
+  }
+
+  // string candidate_fence_token = 4;
+  if (this->candidate_fence_token().size() > 0) {
+    ::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+      this->candidate_fence_token().data(), static_cast<int>(this->candidate_fence_token().length()),
+      ::google::protobuf::internal::WireFormatLite::SERIALIZE,
+      "sess.CommitReconnectRequest.candidate_fence_token");
+    target =
+      ::google::protobuf::internal::WireFormatLite::WriteStringToArray(
+        4, this->candidate_fence_token(), target);
+  }
+
+  // uint64 candidate_generation = 5;
+  if (this->candidate_generation() != 0) {
+    target = ::google::protobuf::internal::WireFormatLite::WriteUInt64ToArray(5, this->candidate_generation(), target);
+  }
+
+  // string gateway_instance_id = 6;
+  if (this->gateway_instance_id().size() > 0) {
+    ::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+      this->gateway_instance_id().data(), static_cast<int>(this->gateway_instance_id().length()),
+      ::google::protobuf::internal::WireFormatLite::SERIALIZE,
+      "sess.CommitReconnectRequest.gateway_instance_id");
+    target =
+      ::google::protobuf::internal::WireFormatLite::WriteStringToArray(
+        6, this->gateway_instance_id(), target);
+  }
+
+  // uint64 connection_id = 7;
+  if (this->connection_id() != 0) {
+    target = ::google::protobuf::internal::WireFormatLite::WriteUInt64ToArray(7, this->connection_id(), target);
+  }
+
+  if ((_internal_metadata_.have_unknown_fields() &&  ::google::protobuf::internal::GetProto3PreserveUnknownsDefault())) {
+    target = ::google::protobuf::internal::WireFormat::SerializeUnknownFieldsToArray(
+        (::google::protobuf::internal::GetProto3PreserveUnknownsDefault()   ? _internal_metadata_.unknown_fields()   : _internal_metadata_.default_instance()), target);
+  }
+  // @@protoc_insertion_point(serialize_to_array_end:sess.CommitReconnectRequest)
+  return target;
+}
+
+size_t CommitReconnectRequest::ByteSizeLong() const {
+// @@protoc_insertion_point(message_byte_size_start:sess.CommitReconnectRequest)
+  size_t total_size = 0;
+
+  if ((_internal_metadata_.have_unknown_fields() &&  ::google::protobuf::internal::GetProto3PreserveUnknownsDefault())) {
+    total_size +=
+      ::google::protobuf::internal::WireFormat::ComputeUnknownFieldsSize(
+        (::google::protobuf::internal::GetProto3PreserveUnknownsDefault()   ? _internal_metadata_.unknown_fields()   : _internal_metadata_.default_instance()));
+  }
+  // string session_id = 2;
+  if (this->session_id().size() > 0) {
+    total_size += 1 +
+      ::google::protobuf::internal::WireFormatLite::StringSize(
+        this->session_id());
+  }
+
+  // string operation_id = 3;
+  if (this->operation_id().size() > 0) {
+    total_size += 1 +
+      ::google::protobuf::internal::WireFormatLite::StringSize(
+        this->operation_id());
+  }
+
+  // string candidate_fence_token = 4;
+  if (this->candidate_fence_token().size() > 0) {
+    total_size += 1 +
+      ::google::protobuf::internal::WireFormatLite::StringSize(
+        this->candidate_fence_token());
+  }
+
+  // string gateway_instance_id = 6;
+  if (this->gateway_instance_id().size() > 0) {
+    total_size += 1 +
+      ::google::protobuf::internal::WireFormatLite::StringSize(
+        this->gateway_instance_id());
+  }
+
+  // uint64 player_id = 1;
+  if (this->player_id() != 0) {
+    total_size += 1 +
+      ::google::protobuf::internal::WireFormatLite::UInt64Size(
+        this->player_id());
+  }
+
+  // uint64 candidate_generation = 5;
+  if (this->candidate_generation() != 0) {
+    total_size += 1 +
+      ::google::protobuf::internal::WireFormatLite::UInt64Size(
+        this->candidate_generation());
+  }
+
+  // uint64 connection_id = 7;
+  if (this->connection_id() != 0) {
+    total_size += 1 +
+      ::google::protobuf::internal::WireFormatLite::UInt64Size(
+        this->connection_id());
+  }
+
+  int cached_size = ::google::protobuf::internal::ToCachedSize(total_size);
+  GOOGLE_SAFE_CONCURRENT_WRITES_BEGIN();
+  _cached_size_ = cached_size;
+  GOOGLE_SAFE_CONCURRENT_WRITES_END();
+  return total_size;
+}
+
+void CommitReconnectRequest::MergeFrom(const ::google::protobuf::Message& from) {
+// @@protoc_insertion_point(generalized_merge_from_start:sess.CommitReconnectRequest)
+  GOOGLE_DCHECK_NE(&from, this);
+  const CommitReconnectRequest* source =
+      ::google::protobuf::internal::DynamicCastToGenerated<const CommitReconnectRequest>(
+          &from);
+  if (source == NULL) {
+  // @@protoc_insertion_point(generalized_merge_from_cast_fail:sess.CommitReconnectRequest)
+    ::google::protobuf::internal::ReflectionOps::Merge(from, this);
+  } else {
+  // @@protoc_insertion_point(generalized_merge_from_cast_success:sess.CommitReconnectRequest)
+    MergeFrom(*source);
+  }
+}
+
+void CommitReconnectRequest::MergeFrom(const CommitReconnectRequest& from) {
+// @@protoc_insertion_point(class_specific_merge_from_start:sess.CommitReconnectRequest)
+  GOOGLE_DCHECK_NE(&from, this);
+  _internal_metadata_.MergeFrom(from._internal_metadata_);
+  ::google::protobuf::uint32 cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  if (from.session_id().size() > 0) {
+
+    session_id_.AssignWithDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), from.session_id_);
+  }
+  if (from.operation_id().size() > 0) {
+
+    operation_id_.AssignWithDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), from.operation_id_);
+  }
+  if (from.candidate_fence_token().size() > 0) {
+
+    candidate_fence_token_.AssignWithDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), from.candidate_fence_token_);
+  }
+  if (from.gateway_instance_id().size() > 0) {
+
+    gateway_instance_id_.AssignWithDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), from.gateway_instance_id_);
+  }
+  if (from.player_id() != 0) {
+    set_player_id(from.player_id());
+  }
+  if (from.candidate_generation() != 0) {
+    set_candidate_generation(from.candidate_generation());
+  }
+  if (from.connection_id() != 0) {
+    set_connection_id(from.connection_id());
+  }
+}
+
+void CommitReconnectRequest::CopyFrom(const ::google::protobuf::Message& from) {
+// @@protoc_insertion_point(generalized_copy_from_start:sess.CommitReconnectRequest)
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+void CommitReconnectRequest::CopyFrom(const CommitReconnectRequest& from) {
+// @@protoc_insertion_point(class_specific_copy_from_start:sess.CommitReconnectRequest)
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+bool CommitReconnectRequest::IsInitialized() const {
+  return true;
+}
+
+void CommitReconnectRequest::Swap(CommitReconnectRequest* other) {
+  if (other == this) return;
+  InternalSwap(other);
+}
+void CommitReconnectRequest::InternalSwap(CommitReconnectRequest* other) {
+  using std::swap;
+  session_id_.Swap(&other->session_id_);
+  operation_id_.Swap(&other->operation_id_);
+  candidate_fence_token_.Swap(&other->candidate_fence_token_);
+  gateway_instance_id_.Swap(&other->gateway_instance_id_);
+  swap(player_id_, other->player_id_);
+  swap(candidate_generation_, other->candidate_generation_);
+  swap(connection_id_, other->connection_id_);
+  _internal_metadata_.Swap(&other->_internal_metadata_);
+  swap(_cached_size_, other->_cached_size_);
+}
+
+::google::protobuf::Metadata CommitReconnectRequest::GetMetadata() const {
+  protobuf_session_2eproto::protobuf_AssignDescriptorsOnce();
+  return ::protobuf_session_2eproto::file_level_metadata[kIndexInFileMessages];
+}
+
+
+// ===================================================================
+
+void CommitReconnectResponse::InitAsDefaultInstance() {
+}
+#if !defined(_MSC_VER) || _MSC_VER >= 1900
+const int CommitReconnectResponse::kOkFieldNumber;
+const int CommitReconnectResponse::kMessageFieldNumber;
+const int CommitReconnectResponse::kErrorCodeFieldNumber;
+const int CommitReconnectResponse::kSessionIdFieldNumber;
+const int CommitReconnectResponse::kFenceTokenFieldNumber;
+const int CommitReconnectResponse::kGenerationFieldNumber;
+const int CommitReconnectResponse::kGamelogicInstanceIdFieldNumber;
+const int CommitReconnectResponse::kMapInstanceIdFieldNumber;
+const int CommitReconnectResponse::kMapOwnerEpochFieldNumber;
+const int CommitReconnectResponse::kRouteVersionFieldNumber;
+#endif  // !defined(_MSC_VER) || _MSC_VER >= 1900
+
+CommitReconnectResponse::CommitReconnectResponse()
+  : ::google::protobuf::Message(), _internal_metadata_(NULL) {
+  if (GOOGLE_PREDICT_TRUE(this != internal_default_instance())) {
+    ::protobuf_session_2eproto::InitDefaultsCommitReconnectResponse();
+  }
+  SharedCtor();
+  // @@protoc_insertion_point(constructor:sess.CommitReconnectResponse)
+}
+CommitReconnectResponse::CommitReconnectResponse(const CommitReconnectResponse& from)
+  : ::google::protobuf::Message(),
+      _internal_metadata_(NULL),
+      _cached_size_(0) {
+  _internal_metadata_.MergeFrom(from._internal_metadata_);
+  message_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  if (from.message().size() > 0) {
+    message_.AssignWithDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), from.message_);
+  }
+  error_code_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  if (from.error_code().size() > 0) {
+    error_code_.AssignWithDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), from.error_code_);
+  }
+  session_id_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  if (from.session_id().size() > 0) {
+    session_id_.AssignWithDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), from.session_id_);
+  }
+  fence_token_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  if (from.fence_token().size() > 0) {
+    fence_token_.AssignWithDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), from.fence_token_);
+  }
+  gamelogic_instance_id_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  if (from.gamelogic_instance_id().size() > 0) {
+    gamelogic_instance_id_.AssignWithDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), from.gamelogic_instance_id_);
+  }
+  ::memcpy(&generation_, &from.generation_,
+    static_cast<size_t>(reinterpret_cast<char*>(&ok_) -
+    reinterpret_cast<char*>(&generation_)) + sizeof(ok_));
+  // @@protoc_insertion_point(copy_constructor:sess.CommitReconnectResponse)
+}
+
+void CommitReconnectResponse::SharedCtor() {
+  message_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  error_code_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  session_id_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  fence_token_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  gamelogic_instance_id_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  ::memset(&generation_, 0, static_cast<size_t>(
+      reinterpret_cast<char*>(&ok_) -
+      reinterpret_cast<char*>(&generation_)) + sizeof(ok_));
+  _cached_size_ = 0;
+}
+
+CommitReconnectResponse::~CommitReconnectResponse() {
+  // @@protoc_insertion_point(destructor:sess.CommitReconnectResponse)
+  SharedDtor();
+}
+
+void CommitReconnectResponse::SharedDtor() {
+  message_.DestroyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  error_code_.DestroyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  session_id_.DestroyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  fence_token_.DestroyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  gamelogic_instance_id_.DestroyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+
+void CommitReconnectResponse::SetCachedSize(int size) const {
+  GOOGLE_SAFE_CONCURRENT_WRITES_BEGIN();
+  _cached_size_ = size;
+  GOOGLE_SAFE_CONCURRENT_WRITES_END();
+}
+const ::google::protobuf::Descriptor* CommitReconnectResponse::descriptor() {
+  ::protobuf_session_2eproto::protobuf_AssignDescriptorsOnce();
+  return ::protobuf_session_2eproto::file_level_metadata[kIndexInFileMessages].descriptor;
+}
+
+const CommitReconnectResponse& CommitReconnectResponse::default_instance() {
+  ::protobuf_session_2eproto::InitDefaultsCommitReconnectResponse();
+  return *internal_default_instance();
+}
+
+CommitReconnectResponse* CommitReconnectResponse::New(::google::protobuf::Arena* arena) const {
+  CommitReconnectResponse* n = new CommitReconnectResponse;
+  if (arena != NULL) {
+    arena->Own(n);
+  }
+  return n;
+}
+
+void CommitReconnectResponse::Clear() {
+// @@protoc_insertion_point(message_clear_start:sess.CommitReconnectResponse)
+  ::google::protobuf::uint32 cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void) cached_has_bits;
+
+  message_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  error_code_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  session_id_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  fence_token_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  gamelogic_instance_id_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  ::memset(&generation_, 0, static_cast<size_t>(
+      reinterpret_cast<char*>(&ok_) -
+      reinterpret_cast<char*>(&generation_)) + sizeof(ok_));
+  _internal_metadata_.Clear();
+}
+
+bool CommitReconnectResponse::MergePartialFromCodedStream(
+    ::google::protobuf::io::CodedInputStream* input) {
+#define DO_(EXPRESSION) if (!GOOGLE_PREDICT_TRUE(EXPRESSION)) goto failure
+  ::google::protobuf::uint32 tag;
+  // @@protoc_insertion_point(parse_start:sess.CommitReconnectResponse)
+  for (;;) {
+    ::std::pair< ::google::protobuf::uint32, bool> p = input->ReadTagWithCutoffNoLastTag(127u);
+    tag = p.first;
+    if (!p.second) goto handle_unusual;
+    switch (::google::protobuf::internal::WireFormatLite::GetTagFieldNumber(tag)) {
+      // bool ok = 1;
+      case 1: {
+        if (static_cast< ::google::protobuf::uint8>(tag) ==
+            static_cast< ::google::protobuf::uint8>(8u /* 8 & 0xFF */)) {
+
+          DO_((::google::protobuf::internal::WireFormatLite::ReadPrimitive<
+                   bool, ::google::protobuf::internal::WireFormatLite::TYPE_BOOL>(
+                 input, &ok_)));
+        } else {
+          goto handle_unusual;
+        }
+        break;
+      }
+
+      // string message = 2;
+      case 2: {
+        if (static_cast< ::google::protobuf::uint8>(tag) ==
+            static_cast< ::google::protobuf::uint8>(18u /* 18 & 0xFF */)) {
+          DO_(::google::protobuf::internal::WireFormatLite::ReadString(
+                input, this->mutable_message()));
+          DO_(::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+            this->message().data(), static_cast<int>(this->message().length()),
+            ::google::protobuf::internal::WireFormatLite::PARSE,
+            "sess.CommitReconnectResponse.message"));
+        } else {
+          goto handle_unusual;
+        }
+        break;
+      }
+
+      // string error_code = 3;
+      case 3: {
+        if (static_cast< ::google::protobuf::uint8>(tag) ==
+            static_cast< ::google::protobuf::uint8>(26u /* 26 & 0xFF */)) {
+          DO_(::google::protobuf::internal::WireFormatLite::ReadString(
+                input, this->mutable_error_code()));
+          DO_(::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+            this->error_code().data(), static_cast<int>(this->error_code().length()),
+            ::google::protobuf::internal::WireFormatLite::PARSE,
+            "sess.CommitReconnectResponse.error_code"));
+        } else {
+          goto handle_unusual;
+        }
+        break;
+      }
+
+      // string session_id = 4;
+      case 4: {
+        if (static_cast< ::google::protobuf::uint8>(tag) ==
+            static_cast< ::google::protobuf::uint8>(34u /* 34 & 0xFF */)) {
+          DO_(::google::protobuf::internal::WireFormatLite::ReadString(
+                input, this->mutable_session_id()));
+          DO_(::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+            this->session_id().data(), static_cast<int>(this->session_id().length()),
+            ::google::protobuf::internal::WireFormatLite::PARSE,
+            "sess.CommitReconnectResponse.session_id"));
+        } else {
+          goto handle_unusual;
+        }
+        break;
+      }
+
+      // string fence_token = 5;
+      case 5: {
+        if (static_cast< ::google::protobuf::uint8>(tag) ==
+            static_cast< ::google::protobuf::uint8>(42u /* 42 & 0xFF */)) {
+          DO_(::google::protobuf::internal::WireFormatLite::ReadString(
+                input, this->mutable_fence_token()));
+          DO_(::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+            this->fence_token().data(), static_cast<int>(this->fence_token().length()),
+            ::google::protobuf::internal::WireFormatLite::PARSE,
+            "sess.CommitReconnectResponse.fence_token"));
+        } else {
+          goto handle_unusual;
+        }
+        break;
+      }
+
+      // uint64 generation = 6;
+      case 6: {
+        if (static_cast< ::google::protobuf::uint8>(tag) ==
+            static_cast< ::google::protobuf::uint8>(48u /* 48 & 0xFF */)) {
+
+          DO_((::google::protobuf::internal::WireFormatLite::ReadPrimitive<
+                   ::google::protobuf::uint64, ::google::protobuf::internal::WireFormatLite::TYPE_UINT64>(
+                 input, &generation_)));
+        } else {
+          goto handle_unusual;
+        }
+        break;
+      }
+
+      // string gamelogic_instance_id = 7;
+      case 7: {
+        if (static_cast< ::google::protobuf::uint8>(tag) ==
+            static_cast< ::google::protobuf::uint8>(58u /* 58 & 0xFF */)) {
+          DO_(::google::protobuf::internal::WireFormatLite::ReadString(
+                input, this->mutable_gamelogic_instance_id()));
+          DO_(::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+            this->gamelogic_instance_id().data(), static_cast<int>(this->gamelogic_instance_id().length()),
+            ::google::protobuf::internal::WireFormatLite::PARSE,
+            "sess.CommitReconnectResponse.gamelogic_instance_id"));
+        } else {
+          goto handle_unusual;
+        }
+        break;
+      }
+
+      // uint64 map_instance_id = 8;
+      case 8: {
+        if (static_cast< ::google::protobuf::uint8>(tag) ==
+            static_cast< ::google::protobuf::uint8>(64u /* 64 & 0xFF */)) {
+
+          DO_((::google::protobuf::internal::WireFormatLite::ReadPrimitive<
+                   ::google::protobuf::uint64, ::google::protobuf::internal::WireFormatLite::TYPE_UINT64>(
+                 input, &map_instance_id_)));
+        } else {
+          goto handle_unusual;
+        }
+        break;
+      }
+
+      // uint64 map_owner_epoch = 9;
+      case 9: {
+        if (static_cast< ::google::protobuf::uint8>(tag) ==
+            static_cast< ::google::protobuf::uint8>(72u /* 72 & 0xFF */)) {
+
+          DO_((::google::protobuf::internal::WireFormatLite::ReadPrimitive<
+                   ::google::protobuf::uint64, ::google::protobuf::internal::WireFormatLite::TYPE_UINT64>(
+                 input, &map_owner_epoch_)));
+        } else {
+          goto handle_unusual;
+        }
+        break;
+      }
+
+      // uint64 route_version = 10;
+      case 10: {
+        if (static_cast< ::google::protobuf::uint8>(tag) ==
+            static_cast< ::google::protobuf::uint8>(80u /* 80 & 0xFF */)) {
+
+          DO_((::google::protobuf::internal::WireFormatLite::ReadPrimitive<
+                   ::google::protobuf::uint64, ::google::protobuf::internal::WireFormatLite::TYPE_UINT64>(
+                 input, &route_version_)));
+        } else {
+          goto handle_unusual;
+        }
+        break;
+      }
+
+      default: {
+      handle_unusual:
+        if (tag == 0) {
+          goto success;
+        }
+        DO_(::google::protobuf::internal::WireFormat::SkipField(
+              input, tag, _internal_metadata_.mutable_unknown_fields()));
+        break;
+      }
+    }
+  }
+success:
+  // @@protoc_insertion_point(parse_success:sess.CommitReconnectResponse)
+  return true;
+failure:
+  // @@protoc_insertion_point(parse_failure:sess.CommitReconnectResponse)
+  return false;
+#undef DO_
+}
+
+void CommitReconnectResponse::SerializeWithCachedSizes(
+    ::google::protobuf::io::CodedOutputStream* output) const {
+  // @@protoc_insertion_point(serialize_start:sess.CommitReconnectResponse)
+  ::google::protobuf::uint32 cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  // bool ok = 1;
+  if (this->ok() != 0) {
+    ::google::protobuf::internal::WireFormatLite::WriteBool(1, this->ok(), output);
+  }
+
+  // string message = 2;
+  if (this->message().size() > 0) {
+    ::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+      this->message().data(), static_cast<int>(this->message().length()),
+      ::google::protobuf::internal::WireFormatLite::SERIALIZE,
+      "sess.CommitReconnectResponse.message");
+    ::google::protobuf::internal::WireFormatLite::WriteStringMaybeAliased(
+      2, this->message(), output);
+  }
+
+  // string error_code = 3;
+  if (this->error_code().size() > 0) {
+    ::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+      this->error_code().data(), static_cast<int>(this->error_code().length()),
+      ::google::protobuf::internal::WireFormatLite::SERIALIZE,
+      "sess.CommitReconnectResponse.error_code");
+    ::google::protobuf::internal::WireFormatLite::WriteStringMaybeAliased(
+      3, this->error_code(), output);
+  }
+
+  // string session_id = 4;
+  if (this->session_id().size() > 0) {
+    ::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+      this->session_id().data(), static_cast<int>(this->session_id().length()),
+      ::google::protobuf::internal::WireFormatLite::SERIALIZE,
+      "sess.CommitReconnectResponse.session_id");
+    ::google::protobuf::internal::WireFormatLite::WriteStringMaybeAliased(
+      4, this->session_id(), output);
+  }
+
+  // string fence_token = 5;
+  if (this->fence_token().size() > 0) {
+    ::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+      this->fence_token().data(), static_cast<int>(this->fence_token().length()),
+      ::google::protobuf::internal::WireFormatLite::SERIALIZE,
+      "sess.CommitReconnectResponse.fence_token");
+    ::google::protobuf::internal::WireFormatLite::WriteStringMaybeAliased(
+      5, this->fence_token(), output);
+  }
+
+  // uint64 generation = 6;
+  if (this->generation() != 0) {
+    ::google::protobuf::internal::WireFormatLite::WriteUInt64(6, this->generation(), output);
+  }
+
+  // string gamelogic_instance_id = 7;
+  if (this->gamelogic_instance_id().size() > 0) {
+    ::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+      this->gamelogic_instance_id().data(), static_cast<int>(this->gamelogic_instance_id().length()),
+      ::google::protobuf::internal::WireFormatLite::SERIALIZE,
+      "sess.CommitReconnectResponse.gamelogic_instance_id");
+    ::google::protobuf::internal::WireFormatLite::WriteStringMaybeAliased(
+      7, this->gamelogic_instance_id(), output);
+  }
+
+  // uint64 map_instance_id = 8;
+  if (this->map_instance_id() != 0) {
+    ::google::protobuf::internal::WireFormatLite::WriteUInt64(8, this->map_instance_id(), output);
+  }
+
+  // uint64 map_owner_epoch = 9;
+  if (this->map_owner_epoch() != 0) {
+    ::google::protobuf::internal::WireFormatLite::WriteUInt64(9, this->map_owner_epoch(), output);
+  }
+
+  // uint64 route_version = 10;
+  if (this->route_version() != 0) {
+    ::google::protobuf::internal::WireFormatLite::WriteUInt64(10, this->route_version(), output);
+  }
+
+  if ((_internal_metadata_.have_unknown_fields() &&  ::google::protobuf::internal::GetProto3PreserveUnknownsDefault())) {
+    ::google::protobuf::internal::WireFormat::SerializeUnknownFields(
+        (::google::protobuf::internal::GetProto3PreserveUnknownsDefault()   ? _internal_metadata_.unknown_fields()   : _internal_metadata_.default_instance()), output);
+  }
+  // @@protoc_insertion_point(serialize_end:sess.CommitReconnectResponse)
+}
+
+::google::protobuf::uint8* CommitReconnectResponse::InternalSerializeWithCachedSizesToArray(
+    bool deterministic, ::google::protobuf::uint8* target) const {
+  (void)deterministic; // Unused
+  // @@protoc_insertion_point(serialize_to_array_start:sess.CommitReconnectResponse)
+  ::google::protobuf::uint32 cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  // bool ok = 1;
+  if (this->ok() != 0) {
+    target = ::google::protobuf::internal::WireFormatLite::WriteBoolToArray(1, this->ok(), target);
+  }
+
+  // string message = 2;
+  if (this->message().size() > 0) {
+    ::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+      this->message().data(), static_cast<int>(this->message().length()),
+      ::google::protobuf::internal::WireFormatLite::SERIALIZE,
+      "sess.CommitReconnectResponse.message");
+    target =
+      ::google::protobuf::internal::WireFormatLite::WriteStringToArray(
+        2, this->message(), target);
+  }
+
+  // string error_code = 3;
+  if (this->error_code().size() > 0) {
+    ::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+      this->error_code().data(), static_cast<int>(this->error_code().length()),
+      ::google::protobuf::internal::WireFormatLite::SERIALIZE,
+      "sess.CommitReconnectResponse.error_code");
+    target =
+      ::google::protobuf::internal::WireFormatLite::WriteStringToArray(
+        3, this->error_code(), target);
+  }
+
+  // string session_id = 4;
+  if (this->session_id().size() > 0) {
+    ::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+      this->session_id().data(), static_cast<int>(this->session_id().length()),
+      ::google::protobuf::internal::WireFormatLite::SERIALIZE,
+      "sess.CommitReconnectResponse.session_id");
+    target =
+      ::google::protobuf::internal::WireFormatLite::WriteStringToArray(
+        4, this->session_id(), target);
+  }
+
+  // string fence_token = 5;
+  if (this->fence_token().size() > 0) {
+    ::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+      this->fence_token().data(), static_cast<int>(this->fence_token().length()),
+      ::google::protobuf::internal::WireFormatLite::SERIALIZE,
+      "sess.CommitReconnectResponse.fence_token");
+    target =
+      ::google::protobuf::internal::WireFormatLite::WriteStringToArray(
+        5, this->fence_token(), target);
+  }
+
+  // uint64 generation = 6;
+  if (this->generation() != 0) {
+    target = ::google::protobuf::internal::WireFormatLite::WriteUInt64ToArray(6, this->generation(), target);
+  }
+
+  // string gamelogic_instance_id = 7;
+  if (this->gamelogic_instance_id().size() > 0) {
+    ::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+      this->gamelogic_instance_id().data(), static_cast<int>(this->gamelogic_instance_id().length()),
+      ::google::protobuf::internal::WireFormatLite::SERIALIZE,
+      "sess.CommitReconnectResponse.gamelogic_instance_id");
+    target =
+      ::google::protobuf::internal::WireFormatLite::WriteStringToArray(
+        7, this->gamelogic_instance_id(), target);
+  }
+
+  // uint64 map_instance_id = 8;
+  if (this->map_instance_id() != 0) {
+    target = ::google::protobuf::internal::WireFormatLite::WriteUInt64ToArray(8, this->map_instance_id(), target);
+  }
+
+  // uint64 map_owner_epoch = 9;
+  if (this->map_owner_epoch() != 0) {
+    target = ::google::protobuf::internal::WireFormatLite::WriteUInt64ToArray(9, this->map_owner_epoch(), target);
+  }
+
+  // uint64 route_version = 10;
+  if (this->route_version() != 0) {
+    target = ::google::protobuf::internal::WireFormatLite::WriteUInt64ToArray(10, this->route_version(), target);
+  }
+
+  if ((_internal_metadata_.have_unknown_fields() &&  ::google::protobuf::internal::GetProto3PreserveUnknownsDefault())) {
+    target = ::google::protobuf::internal::WireFormat::SerializeUnknownFieldsToArray(
+        (::google::protobuf::internal::GetProto3PreserveUnknownsDefault()   ? _internal_metadata_.unknown_fields()   : _internal_metadata_.default_instance()), target);
+  }
+  // @@protoc_insertion_point(serialize_to_array_end:sess.CommitReconnectResponse)
+  return target;
+}
+
+size_t CommitReconnectResponse::ByteSizeLong() const {
+// @@protoc_insertion_point(message_byte_size_start:sess.CommitReconnectResponse)
+  size_t total_size = 0;
+
+  if ((_internal_metadata_.have_unknown_fields() &&  ::google::protobuf::internal::GetProto3PreserveUnknownsDefault())) {
+    total_size +=
+      ::google::protobuf::internal::WireFormat::ComputeUnknownFieldsSize(
+        (::google::protobuf::internal::GetProto3PreserveUnknownsDefault()   ? _internal_metadata_.unknown_fields()   : _internal_metadata_.default_instance()));
+  }
+  // string message = 2;
+  if (this->message().size() > 0) {
+    total_size += 1 +
+      ::google::protobuf::internal::WireFormatLite::StringSize(
+        this->message());
+  }
+
+  // string error_code = 3;
+  if (this->error_code().size() > 0) {
+    total_size += 1 +
+      ::google::protobuf::internal::WireFormatLite::StringSize(
+        this->error_code());
+  }
+
+  // string session_id = 4;
+  if (this->session_id().size() > 0) {
+    total_size += 1 +
+      ::google::protobuf::internal::WireFormatLite::StringSize(
+        this->session_id());
+  }
+
+  // string fence_token = 5;
+  if (this->fence_token().size() > 0) {
+    total_size += 1 +
+      ::google::protobuf::internal::WireFormatLite::StringSize(
+        this->fence_token());
+  }
+
+  // string gamelogic_instance_id = 7;
+  if (this->gamelogic_instance_id().size() > 0) {
+    total_size += 1 +
+      ::google::protobuf::internal::WireFormatLite::StringSize(
+        this->gamelogic_instance_id());
+  }
+
+  // uint64 generation = 6;
+  if (this->generation() != 0) {
+    total_size += 1 +
+      ::google::protobuf::internal::WireFormatLite::UInt64Size(
+        this->generation());
+  }
+
+  // uint64 map_instance_id = 8;
+  if (this->map_instance_id() != 0) {
+    total_size += 1 +
+      ::google::protobuf::internal::WireFormatLite::UInt64Size(
+        this->map_instance_id());
+  }
+
+  // uint64 map_owner_epoch = 9;
+  if (this->map_owner_epoch() != 0) {
+    total_size += 1 +
+      ::google::protobuf::internal::WireFormatLite::UInt64Size(
+        this->map_owner_epoch());
+  }
+
+  // uint64 route_version = 10;
+  if (this->route_version() != 0) {
+    total_size += 1 +
+      ::google::protobuf::internal::WireFormatLite::UInt64Size(
+        this->route_version());
+  }
+
+  // bool ok = 1;
+  if (this->ok() != 0) {
+    total_size += 1 + 1;
+  }
+
+  int cached_size = ::google::protobuf::internal::ToCachedSize(total_size);
+  GOOGLE_SAFE_CONCURRENT_WRITES_BEGIN();
+  _cached_size_ = cached_size;
+  GOOGLE_SAFE_CONCURRENT_WRITES_END();
+  return total_size;
+}
+
+void CommitReconnectResponse::MergeFrom(const ::google::protobuf::Message& from) {
+// @@protoc_insertion_point(generalized_merge_from_start:sess.CommitReconnectResponse)
+  GOOGLE_DCHECK_NE(&from, this);
+  const CommitReconnectResponse* source =
+      ::google::protobuf::internal::DynamicCastToGenerated<const CommitReconnectResponse>(
+          &from);
+  if (source == NULL) {
+  // @@protoc_insertion_point(generalized_merge_from_cast_fail:sess.CommitReconnectResponse)
+    ::google::protobuf::internal::ReflectionOps::Merge(from, this);
+  } else {
+  // @@protoc_insertion_point(generalized_merge_from_cast_success:sess.CommitReconnectResponse)
+    MergeFrom(*source);
+  }
+}
+
+void CommitReconnectResponse::MergeFrom(const CommitReconnectResponse& from) {
+// @@protoc_insertion_point(class_specific_merge_from_start:sess.CommitReconnectResponse)
+  GOOGLE_DCHECK_NE(&from, this);
+  _internal_metadata_.MergeFrom(from._internal_metadata_);
+  ::google::protobuf::uint32 cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  if (from.message().size() > 0) {
+
+    message_.AssignWithDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), from.message_);
+  }
+  if (from.error_code().size() > 0) {
+
+    error_code_.AssignWithDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), from.error_code_);
+  }
+  if (from.session_id().size() > 0) {
+
+    session_id_.AssignWithDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), from.session_id_);
+  }
+  if (from.fence_token().size() > 0) {
+
+    fence_token_.AssignWithDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), from.fence_token_);
+  }
+  if (from.gamelogic_instance_id().size() > 0) {
+
+    gamelogic_instance_id_.AssignWithDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), from.gamelogic_instance_id_);
+  }
+  if (from.generation() != 0) {
+    set_generation(from.generation());
+  }
+  if (from.map_instance_id() != 0) {
+    set_map_instance_id(from.map_instance_id());
+  }
+  if (from.map_owner_epoch() != 0) {
+    set_map_owner_epoch(from.map_owner_epoch());
+  }
+  if (from.route_version() != 0) {
+    set_route_version(from.route_version());
+  }
+  if (from.ok() != 0) {
+    set_ok(from.ok());
+  }
+}
+
+void CommitReconnectResponse::CopyFrom(const ::google::protobuf::Message& from) {
+// @@protoc_insertion_point(generalized_copy_from_start:sess.CommitReconnectResponse)
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+void CommitReconnectResponse::CopyFrom(const CommitReconnectResponse& from) {
+// @@protoc_insertion_point(class_specific_copy_from_start:sess.CommitReconnectResponse)
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+bool CommitReconnectResponse::IsInitialized() const {
+  return true;
+}
+
+void CommitReconnectResponse::Swap(CommitReconnectResponse* other) {
+  if (other == this) return;
+  InternalSwap(other);
+}
+void CommitReconnectResponse::InternalSwap(CommitReconnectResponse* other) {
+  using std::swap;
+  message_.Swap(&other->message_);
+  error_code_.Swap(&other->error_code_);
+  session_id_.Swap(&other->session_id_);
+  fence_token_.Swap(&other->fence_token_);
+  gamelogic_instance_id_.Swap(&other->gamelogic_instance_id_);
+  swap(generation_, other->generation_);
+  swap(map_instance_id_, other->map_instance_id_);
+  swap(map_owner_epoch_, other->map_owner_epoch_);
+  swap(route_version_, other->route_version_);
+  swap(ok_, other->ok_);
+  _internal_metadata_.Swap(&other->_internal_metadata_);
+  swap(_cached_size_, other->_cached_size_);
+}
+
+::google::protobuf::Metadata CommitReconnectResponse::GetMetadata() const {
+  protobuf_session_2eproto::protobuf_AssignDescriptorsOnce();
+  return ::protobuf_session_2eproto::file_level_metadata[kIndexInFileMessages];
+}
+
+
+// ===================================================================
+
+void AbortReconnectRequest::InitAsDefaultInstance() {
+}
+#if !defined(_MSC_VER) || _MSC_VER >= 1900
+const int AbortReconnectRequest::kPlayerIdFieldNumber;
+const int AbortReconnectRequest::kSessionIdFieldNumber;
+const int AbortReconnectRequest::kOperationIdFieldNumber;
+const int AbortReconnectRequest::kCandidateFenceTokenFieldNumber;
+#endif  // !defined(_MSC_VER) || _MSC_VER >= 1900
+
+AbortReconnectRequest::AbortReconnectRequest()
+  : ::google::protobuf::Message(), _internal_metadata_(NULL) {
+  if (GOOGLE_PREDICT_TRUE(this != internal_default_instance())) {
+    ::protobuf_session_2eproto::InitDefaultsAbortReconnectRequest();
+  }
+  SharedCtor();
+  // @@protoc_insertion_point(constructor:sess.AbortReconnectRequest)
+}
+AbortReconnectRequest::AbortReconnectRequest(const AbortReconnectRequest& from)
+  : ::google::protobuf::Message(),
+      _internal_metadata_(NULL),
+      _cached_size_(0) {
+  _internal_metadata_.MergeFrom(from._internal_metadata_);
+  session_id_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  if (from.session_id().size() > 0) {
+    session_id_.AssignWithDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), from.session_id_);
+  }
+  operation_id_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  if (from.operation_id().size() > 0) {
+    operation_id_.AssignWithDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), from.operation_id_);
+  }
+  candidate_fence_token_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  if (from.candidate_fence_token().size() > 0) {
+    candidate_fence_token_.AssignWithDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), from.candidate_fence_token_);
+  }
+  player_id_ = from.player_id_;
+  // @@protoc_insertion_point(copy_constructor:sess.AbortReconnectRequest)
+}
+
+void AbortReconnectRequest::SharedCtor() {
+  session_id_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  operation_id_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  candidate_fence_token_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  player_id_ = GOOGLE_ULONGLONG(0);
+  _cached_size_ = 0;
+}
+
+AbortReconnectRequest::~AbortReconnectRequest() {
+  // @@protoc_insertion_point(destructor:sess.AbortReconnectRequest)
+  SharedDtor();
+}
+
+void AbortReconnectRequest::SharedDtor() {
+  session_id_.DestroyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  operation_id_.DestroyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  candidate_fence_token_.DestroyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+
+void AbortReconnectRequest::SetCachedSize(int size) const {
+  GOOGLE_SAFE_CONCURRENT_WRITES_BEGIN();
+  _cached_size_ = size;
+  GOOGLE_SAFE_CONCURRENT_WRITES_END();
+}
+const ::google::protobuf::Descriptor* AbortReconnectRequest::descriptor() {
+  ::protobuf_session_2eproto::protobuf_AssignDescriptorsOnce();
+  return ::protobuf_session_2eproto::file_level_metadata[kIndexInFileMessages].descriptor;
+}
+
+const AbortReconnectRequest& AbortReconnectRequest::default_instance() {
+  ::protobuf_session_2eproto::InitDefaultsAbortReconnectRequest();
+  return *internal_default_instance();
+}
+
+AbortReconnectRequest* AbortReconnectRequest::New(::google::protobuf::Arena* arena) const {
+  AbortReconnectRequest* n = new AbortReconnectRequest;
+  if (arena != NULL) {
+    arena->Own(n);
+  }
+  return n;
+}
+
+void AbortReconnectRequest::Clear() {
+// @@protoc_insertion_point(message_clear_start:sess.AbortReconnectRequest)
+  ::google::protobuf::uint32 cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void) cached_has_bits;
+
+  session_id_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  operation_id_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  candidate_fence_token_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  player_id_ = GOOGLE_ULONGLONG(0);
+  _internal_metadata_.Clear();
+}
+
+bool AbortReconnectRequest::MergePartialFromCodedStream(
+    ::google::protobuf::io::CodedInputStream* input) {
+#define DO_(EXPRESSION) if (!GOOGLE_PREDICT_TRUE(EXPRESSION)) goto failure
+  ::google::protobuf::uint32 tag;
+  // @@protoc_insertion_point(parse_start:sess.AbortReconnectRequest)
+  for (;;) {
+    ::std::pair< ::google::protobuf::uint32, bool> p = input->ReadTagWithCutoffNoLastTag(127u);
+    tag = p.first;
+    if (!p.second) goto handle_unusual;
+    switch (::google::protobuf::internal::WireFormatLite::GetTagFieldNumber(tag)) {
+      // uint64 player_id = 1;
+      case 1: {
+        if (static_cast< ::google::protobuf::uint8>(tag) ==
+            static_cast< ::google::protobuf::uint8>(8u /* 8 & 0xFF */)) {
+
+          DO_((::google::protobuf::internal::WireFormatLite::ReadPrimitive<
+                   ::google::protobuf::uint64, ::google::protobuf::internal::WireFormatLite::TYPE_UINT64>(
+                 input, &player_id_)));
+        } else {
+          goto handle_unusual;
+        }
+        break;
+      }
+
+      // string session_id = 2;
+      case 2: {
+        if (static_cast< ::google::protobuf::uint8>(tag) ==
+            static_cast< ::google::protobuf::uint8>(18u /* 18 & 0xFF */)) {
+          DO_(::google::protobuf::internal::WireFormatLite::ReadString(
+                input, this->mutable_session_id()));
+          DO_(::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+            this->session_id().data(), static_cast<int>(this->session_id().length()),
+            ::google::protobuf::internal::WireFormatLite::PARSE,
+            "sess.AbortReconnectRequest.session_id"));
+        } else {
+          goto handle_unusual;
+        }
+        break;
+      }
+
+      // string operation_id = 3;
+      case 3: {
+        if (static_cast< ::google::protobuf::uint8>(tag) ==
+            static_cast< ::google::protobuf::uint8>(26u /* 26 & 0xFF */)) {
+          DO_(::google::protobuf::internal::WireFormatLite::ReadString(
+                input, this->mutable_operation_id()));
+          DO_(::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+            this->operation_id().data(), static_cast<int>(this->operation_id().length()),
+            ::google::protobuf::internal::WireFormatLite::PARSE,
+            "sess.AbortReconnectRequest.operation_id"));
+        } else {
+          goto handle_unusual;
+        }
+        break;
+      }
+
+      // string candidate_fence_token = 4;
+      case 4: {
+        if (static_cast< ::google::protobuf::uint8>(tag) ==
+            static_cast< ::google::protobuf::uint8>(34u /* 34 & 0xFF */)) {
+          DO_(::google::protobuf::internal::WireFormatLite::ReadString(
+                input, this->mutable_candidate_fence_token()));
+          DO_(::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+            this->candidate_fence_token().data(), static_cast<int>(this->candidate_fence_token().length()),
+            ::google::protobuf::internal::WireFormatLite::PARSE,
+            "sess.AbortReconnectRequest.candidate_fence_token"));
+        } else {
+          goto handle_unusual;
+        }
+        break;
+      }
+
+      default: {
+      handle_unusual:
+        if (tag == 0) {
+          goto success;
+        }
+        DO_(::google::protobuf::internal::WireFormat::SkipField(
+              input, tag, _internal_metadata_.mutable_unknown_fields()));
+        break;
+      }
+    }
+  }
+success:
+  // @@protoc_insertion_point(parse_success:sess.AbortReconnectRequest)
+  return true;
+failure:
+  // @@protoc_insertion_point(parse_failure:sess.AbortReconnectRequest)
+  return false;
+#undef DO_
+}
+
+void AbortReconnectRequest::SerializeWithCachedSizes(
+    ::google::protobuf::io::CodedOutputStream* output) const {
+  // @@protoc_insertion_point(serialize_start:sess.AbortReconnectRequest)
+  ::google::protobuf::uint32 cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  // uint64 player_id = 1;
+  if (this->player_id() != 0) {
+    ::google::protobuf::internal::WireFormatLite::WriteUInt64(1, this->player_id(), output);
+  }
+
+  // string session_id = 2;
+  if (this->session_id().size() > 0) {
+    ::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+      this->session_id().data(), static_cast<int>(this->session_id().length()),
+      ::google::protobuf::internal::WireFormatLite::SERIALIZE,
+      "sess.AbortReconnectRequest.session_id");
+    ::google::protobuf::internal::WireFormatLite::WriteStringMaybeAliased(
+      2, this->session_id(), output);
+  }
+
+  // string operation_id = 3;
+  if (this->operation_id().size() > 0) {
+    ::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+      this->operation_id().data(), static_cast<int>(this->operation_id().length()),
+      ::google::protobuf::internal::WireFormatLite::SERIALIZE,
+      "sess.AbortReconnectRequest.operation_id");
+    ::google::protobuf::internal::WireFormatLite::WriteStringMaybeAliased(
+      3, this->operation_id(), output);
+  }
+
+  // string candidate_fence_token = 4;
+  if (this->candidate_fence_token().size() > 0) {
+    ::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+      this->candidate_fence_token().data(), static_cast<int>(this->candidate_fence_token().length()),
+      ::google::protobuf::internal::WireFormatLite::SERIALIZE,
+      "sess.AbortReconnectRequest.candidate_fence_token");
+    ::google::protobuf::internal::WireFormatLite::WriteStringMaybeAliased(
+      4, this->candidate_fence_token(), output);
+  }
+
+  if ((_internal_metadata_.have_unknown_fields() &&  ::google::protobuf::internal::GetProto3PreserveUnknownsDefault())) {
+    ::google::protobuf::internal::WireFormat::SerializeUnknownFields(
+        (::google::protobuf::internal::GetProto3PreserveUnknownsDefault()   ? _internal_metadata_.unknown_fields()   : _internal_metadata_.default_instance()), output);
+  }
+  // @@protoc_insertion_point(serialize_end:sess.AbortReconnectRequest)
+}
+
+::google::protobuf::uint8* AbortReconnectRequest::InternalSerializeWithCachedSizesToArray(
+    bool deterministic, ::google::protobuf::uint8* target) const {
+  (void)deterministic; // Unused
+  // @@protoc_insertion_point(serialize_to_array_start:sess.AbortReconnectRequest)
+  ::google::protobuf::uint32 cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  // uint64 player_id = 1;
+  if (this->player_id() != 0) {
+    target = ::google::protobuf::internal::WireFormatLite::WriteUInt64ToArray(1, this->player_id(), target);
+  }
+
+  // string session_id = 2;
+  if (this->session_id().size() > 0) {
+    ::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+      this->session_id().data(), static_cast<int>(this->session_id().length()),
+      ::google::protobuf::internal::WireFormatLite::SERIALIZE,
+      "sess.AbortReconnectRequest.session_id");
+    target =
+      ::google::protobuf::internal::WireFormatLite::WriteStringToArray(
+        2, this->session_id(), target);
+  }
+
+  // string operation_id = 3;
+  if (this->operation_id().size() > 0) {
+    ::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+      this->operation_id().data(), static_cast<int>(this->operation_id().length()),
+      ::google::protobuf::internal::WireFormatLite::SERIALIZE,
+      "sess.AbortReconnectRequest.operation_id");
+    target =
+      ::google::protobuf::internal::WireFormatLite::WriteStringToArray(
+        3, this->operation_id(), target);
+  }
+
+  // string candidate_fence_token = 4;
+  if (this->candidate_fence_token().size() > 0) {
+    ::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+      this->candidate_fence_token().data(), static_cast<int>(this->candidate_fence_token().length()),
+      ::google::protobuf::internal::WireFormatLite::SERIALIZE,
+      "sess.AbortReconnectRequest.candidate_fence_token");
+    target =
+      ::google::protobuf::internal::WireFormatLite::WriteStringToArray(
+        4, this->candidate_fence_token(), target);
+  }
+
+  if ((_internal_metadata_.have_unknown_fields() &&  ::google::protobuf::internal::GetProto3PreserveUnknownsDefault())) {
+    target = ::google::protobuf::internal::WireFormat::SerializeUnknownFieldsToArray(
+        (::google::protobuf::internal::GetProto3PreserveUnknownsDefault()   ? _internal_metadata_.unknown_fields()   : _internal_metadata_.default_instance()), target);
+  }
+  // @@protoc_insertion_point(serialize_to_array_end:sess.AbortReconnectRequest)
+  return target;
+}
+
+size_t AbortReconnectRequest::ByteSizeLong() const {
+// @@protoc_insertion_point(message_byte_size_start:sess.AbortReconnectRequest)
+  size_t total_size = 0;
+
+  if ((_internal_metadata_.have_unknown_fields() &&  ::google::protobuf::internal::GetProto3PreserveUnknownsDefault())) {
+    total_size +=
+      ::google::protobuf::internal::WireFormat::ComputeUnknownFieldsSize(
+        (::google::protobuf::internal::GetProto3PreserveUnknownsDefault()   ? _internal_metadata_.unknown_fields()   : _internal_metadata_.default_instance()));
+  }
+  // string session_id = 2;
+  if (this->session_id().size() > 0) {
+    total_size += 1 +
+      ::google::protobuf::internal::WireFormatLite::StringSize(
+        this->session_id());
+  }
+
+  // string operation_id = 3;
+  if (this->operation_id().size() > 0) {
+    total_size += 1 +
+      ::google::protobuf::internal::WireFormatLite::StringSize(
+        this->operation_id());
+  }
+
+  // string candidate_fence_token = 4;
+  if (this->candidate_fence_token().size() > 0) {
+    total_size += 1 +
+      ::google::protobuf::internal::WireFormatLite::StringSize(
+        this->candidate_fence_token());
+  }
+
+  // uint64 player_id = 1;
+  if (this->player_id() != 0) {
+    total_size += 1 +
+      ::google::protobuf::internal::WireFormatLite::UInt64Size(
+        this->player_id());
+  }
+
+  int cached_size = ::google::protobuf::internal::ToCachedSize(total_size);
+  GOOGLE_SAFE_CONCURRENT_WRITES_BEGIN();
+  _cached_size_ = cached_size;
+  GOOGLE_SAFE_CONCURRENT_WRITES_END();
+  return total_size;
+}
+
+void AbortReconnectRequest::MergeFrom(const ::google::protobuf::Message& from) {
+// @@protoc_insertion_point(generalized_merge_from_start:sess.AbortReconnectRequest)
+  GOOGLE_DCHECK_NE(&from, this);
+  const AbortReconnectRequest* source =
+      ::google::protobuf::internal::DynamicCastToGenerated<const AbortReconnectRequest>(
+          &from);
+  if (source == NULL) {
+  // @@protoc_insertion_point(generalized_merge_from_cast_fail:sess.AbortReconnectRequest)
+    ::google::protobuf::internal::ReflectionOps::Merge(from, this);
+  } else {
+  // @@protoc_insertion_point(generalized_merge_from_cast_success:sess.AbortReconnectRequest)
+    MergeFrom(*source);
+  }
+}
+
+void AbortReconnectRequest::MergeFrom(const AbortReconnectRequest& from) {
+// @@protoc_insertion_point(class_specific_merge_from_start:sess.AbortReconnectRequest)
+  GOOGLE_DCHECK_NE(&from, this);
+  _internal_metadata_.MergeFrom(from._internal_metadata_);
+  ::google::protobuf::uint32 cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  if (from.session_id().size() > 0) {
+
+    session_id_.AssignWithDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), from.session_id_);
+  }
+  if (from.operation_id().size() > 0) {
+
+    operation_id_.AssignWithDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), from.operation_id_);
+  }
+  if (from.candidate_fence_token().size() > 0) {
+
+    candidate_fence_token_.AssignWithDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), from.candidate_fence_token_);
+  }
+  if (from.player_id() != 0) {
+    set_player_id(from.player_id());
+  }
+}
+
+void AbortReconnectRequest::CopyFrom(const ::google::protobuf::Message& from) {
+// @@protoc_insertion_point(generalized_copy_from_start:sess.AbortReconnectRequest)
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+void AbortReconnectRequest::CopyFrom(const AbortReconnectRequest& from) {
+// @@protoc_insertion_point(class_specific_copy_from_start:sess.AbortReconnectRequest)
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+bool AbortReconnectRequest::IsInitialized() const {
+  return true;
+}
+
+void AbortReconnectRequest::Swap(AbortReconnectRequest* other) {
+  if (other == this) return;
+  InternalSwap(other);
+}
+void AbortReconnectRequest::InternalSwap(AbortReconnectRequest* other) {
+  using std::swap;
+  session_id_.Swap(&other->session_id_);
+  operation_id_.Swap(&other->operation_id_);
+  candidate_fence_token_.Swap(&other->candidate_fence_token_);
+  swap(player_id_, other->player_id_);
+  _internal_metadata_.Swap(&other->_internal_metadata_);
+  swap(_cached_size_, other->_cached_size_);
+}
+
+::google::protobuf::Metadata AbortReconnectRequest::GetMetadata() const {
+  protobuf_session_2eproto::protobuf_AssignDescriptorsOnce();
+  return ::protobuf_session_2eproto::file_level_metadata[kIndexInFileMessages];
+}
+
+
+// ===================================================================
+
+void AbortReconnectResponse::InitAsDefaultInstance() {
+}
+#if !defined(_MSC_VER) || _MSC_VER >= 1900
+const int AbortReconnectResponse::kOkFieldNumber;
+const int AbortReconnectResponse::kMessageFieldNumber;
+const int AbortReconnectResponse::kErrorCodeFieldNumber;
+#endif  // !defined(_MSC_VER) || _MSC_VER >= 1900
+
+AbortReconnectResponse::AbortReconnectResponse()
+  : ::google::protobuf::Message(), _internal_metadata_(NULL) {
+  if (GOOGLE_PREDICT_TRUE(this != internal_default_instance())) {
+    ::protobuf_session_2eproto::InitDefaultsAbortReconnectResponse();
+  }
+  SharedCtor();
+  // @@protoc_insertion_point(constructor:sess.AbortReconnectResponse)
+}
+AbortReconnectResponse::AbortReconnectResponse(const AbortReconnectResponse& from)
+  : ::google::protobuf::Message(),
+      _internal_metadata_(NULL),
+      _cached_size_(0) {
+  _internal_metadata_.MergeFrom(from._internal_metadata_);
+  message_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  if (from.message().size() > 0) {
+    message_.AssignWithDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), from.message_);
+  }
+  error_code_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  if (from.error_code().size() > 0) {
+    error_code_.AssignWithDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), from.error_code_);
+  }
+  ok_ = from.ok_;
+  // @@protoc_insertion_point(copy_constructor:sess.AbortReconnectResponse)
+}
+
+void AbortReconnectResponse::SharedCtor() {
+  message_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  error_code_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  ok_ = false;
+  _cached_size_ = 0;
+}
+
+AbortReconnectResponse::~AbortReconnectResponse() {
+  // @@protoc_insertion_point(destructor:sess.AbortReconnectResponse)
+  SharedDtor();
+}
+
+void AbortReconnectResponse::SharedDtor() {
+  message_.DestroyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  error_code_.DestroyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+
+void AbortReconnectResponse::SetCachedSize(int size) const {
+  GOOGLE_SAFE_CONCURRENT_WRITES_BEGIN();
+  _cached_size_ = size;
+  GOOGLE_SAFE_CONCURRENT_WRITES_END();
+}
+const ::google::protobuf::Descriptor* AbortReconnectResponse::descriptor() {
+  ::protobuf_session_2eproto::protobuf_AssignDescriptorsOnce();
+  return ::protobuf_session_2eproto::file_level_metadata[kIndexInFileMessages].descriptor;
+}
+
+const AbortReconnectResponse& AbortReconnectResponse::default_instance() {
+  ::protobuf_session_2eproto::InitDefaultsAbortReconnectResponse();
+  return *internal_default_instance();
+}
+
+AbortReconnectResponse* AbortReconnectResponse::New(::google::protobuf::Arena* arena) const {
+  AbortReconnectResponse* n = new AbortReconnectResponse;
+  if (arena != NULL) {
+    arena->Own(n);
+  }
+  return n;
+}
+
+void AbortReconnectResponse::Clear() {
+// @@protoc_insertion_point(message_clear_start:sess.AbortReconnectResponse)
+  ::google::protobuf::uint32 cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void) cached_has_bits;
+
+  message_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  error_code_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  ok_ = false;
+  _internal_metadata_.Clear();
+}
+
+bool AbortReconnectResponse::MergePartialFromCodedStream(
+    ::google::protobuf::io::CodedInputStream* input) {
+#define DO_(EXPRESSION) if (!GOOGLE_PREDICT_TRUE(EXPRESSION)) goto failure
+  ::google::protobuf::uint32 tag;
+  // @@protoc_insertion_point(parse_start:sess.AbortReconnectResponse)
+  for (;;) {
+    ::std::pair< ::google::protobuf::uint32, bool> p = input->ReadTagWithCutoffNoLastTag(127u);
+    tag = p.first;
+    if (!p.second) goto handle_unusual;
+    switch (::google::protobuf::internal::WireFormatLite::GetTagFieldNumber(tag)) {
+      // bool ok = 1;
+      case 1: {
+        if (static_cast< ::google::protobuf::uint8>(tag) ==
+            static_cast< ::google::protobuf::uint8>(8u /* 8 & 0xFF */)) {
+
+          DO_((::google::protobuf::internal::WireFormatLite::ReadPrimitive<
+                   bool, ::google::protobuf::internal::WireFormatLite::TYPE_BOOL>(
+                 input, &ok_)));
+        } else {
+          goto handle_unusual;
+        }
+        break;
+      }
+
+      // string message = 2;
+      case 2: {
+        if (static_cast< ::google::protobuf::uint8>(tag) ==
+            static_cast< ::google::protobuf::uint8>(18u /* 18 & 0xFF */)) {
+          DO_(::google::protobuf::internal::WireFormatLite::ReadString(
+                input, this->mutable_message()));
+          DO_(::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+            this->message().data(), static_cast<int>(this->message().length()),
+            ::google::protobuf::internal::WireFormatLite::PARSE,
+            "sess.AbortReconnectResponse.message"));
+        } else {
+          goto handle_unusual;
+        }
+        break;
+      }
+
+      // string error_code = 3;
+      case 3: {
+        if (static_cast< ::google::protobuf::uint8>(tag) ==
+            static_cast< ::google::protobuf::uint8>(26u /* 26 & 0xFF */)) {
+          DO_(::google::protobuf::internal::WireFormatLite::ReadString(
+                input, this->mutable_error_code()));
+          DO_(::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+            this->error_code().data(), static_cast<int>(this->error_code().length()),
+            ::google::protobuf::internal::WireFormatLite::PARSE,
+            "sess.AbortReconnectResponse.error_code"));
+        } else {
+          goto handle_unusual;
+        }
+        break;
+      }
+
+      default: {
+      handle_unusual:
+        if (tag == 0) {
+          goto success;
+        }
+        DO_(::google::protobuf::internal::WireFormat::SkipField(
+              input, tag, _internal_metadata_.mutable_unknown_fields()));
+        break;
+      }
+    }
+  }
+success:
+  // @@protoc_insertion_point(parse_success:sess.AbortReconnectResponse)
+  return true;
+failure:
+  // @@protoc_insertion_point(parse_failure:sess.AbortReconnectResponse)
+  return false;
+#undef DO_
+}
+
+void AbortReconnectResponse::SerializeWithCachedSizes(
+    ::google::protobuf::io::CodedOutputStream* output) const {
+  // @@protoc_insertion_point(serialize_start:sess.AbortReconnectResponse)
+  ::google::protobuf::uint32 cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  // bool ok = 1;
+  if (this->ok() != 0) {
+    ::google::protobuf::internal::WireFormatLite::WriteBool(1, this->ok(), output);
+  }
+
+  // string message = 2;
+  if (this->message().size() > 0) {
+    ::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+      this->message().data(), static_cast<int>(this->message().length()),
+      ::google::protobuf::internal::WireFormatLite::SERIALIZE,
+      "sess.AbortReconnectResponse.message");
+    ::google::protobuf::internal::WireFormatLite::WriteStringMaybeAliased(
+      2, this->message(), output);
+  }
+
+  // string error_code = 3;
+  if (this->error_code().size() > 0) {
+    ::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+      this->error_code().data(), static_cast<int>(this->error_code().length()),
+      ::google::protobuf::internal::WireFormatLite::SERIALIZE,
+      "sess.AbortReconnectResponse.error_code");
+    ::google::protobuf::internal::WireFormatLite::WriteStringMaybeAliased(
+      3, this->error_code(), output);
+  }
+
+  if ((_internal_metadata_.have_unknown_fields() &&  ::google::protobuf::internal::GetProto3PreserveUnknownsDefault())) {
+    ::google::protobuf::internal::WireFormat::SerializeUnknownFields(
+        (::google::protobuf::internal::GetProto3PreserveUnknownsDefault()   ? _internal_metadata_.unknown_fields()   : _internal_metadata_.default_instance()), output);
+  }
+  // @@protoc_insertion_point(serialize_end:sess.AbortReconnectResponse)
+}
+
+::google::protobuf::uint8* AbortReconnectResponse::InternalSerializeWithCachedSizesToArray(
+    bool deterministic, ::google::protobuf::uint8* target) const {
+  (void)deterministic; // Unused
+  // @@protoc_insertion_point(serialize_to_array_start:sess.AbortReconnectResponse)
+  ::google::protobuf::uint32 cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  // bool ok = 1;
+  if (this->ok() != 0) {
+    target = ::google::protobuf::internal::WireFormatLite::WriteBoolToArray(1, this->ok(), target);
+  }
+
+  // string message = 2;
+  if (this->message().size() > 0) {
+    ::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+      this->message().data(), static_cast<int>(this->message().length()),
+      ::google::protobuf::internal::WireFormatLite::SERIALIZE,
+      "sess.AbortReconnectResponse.message");
+    target =
+      ::google::protobuf::internal::WireFormatLite::WriteStringToArray(
+        2, this->message(), target);
+  }
+
+  // string error_code = 3;
+  if (this->error_code().size() > 0) {
+    ::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+      this->error_code().data(), static_cast<int>(this->error_code().length()),
+      ::google::protobuf::internal::WireFormatLite::SERIALIZE,
+      "sess.AbortReconnectResponse.error_code");
+    target =
+      ::google::protobuf::internal::WireFormatLite::WriteStringToArray(
+        3, this->error_code(), target);
+  }
+
+  if ((_internal_metadata_.have_unknown_fields() &&  ::google::protobuf::internal::GetProto3PreserveUnknownsDefault())) {
+    target = ::google::protobuf::internal::WireFormat::SerializeUnknownFieldsToArray(
+        (::google::protobuf::internal::GetProto3PreserveUnknownsDefault()   ? _internal_metadata_.unknown_fields()   : _internal_metadata_.default_instance()), target);
+  }
+  // @@protoc_insertion_point(serialize_to_array_end:sess.AbortReconnectResponse)
+  return target;
+}
+
+size_t AbortReconnectResponse::ByteSizeLong() const {
+// @@protoc_insertion_point(message_byte_size_start:sess.AbortReconnectResponse)
+  size_t total_size = 0;
+
+  if ((_internal_metadata_.have_unknown_fields() &&  ::google::protobuf::internal::GetProto3PreserveUnknownsDefault())) {
+    total_size +=
+      ::google::protobuf::internal::WireFormat::ComputeUnknownFieldsSize(
+        (::google::protobuf::internal::GetProto3PreserveUnknownsDefault()   ? _internal_metadata_.unknown_fields()   : _internal_metadata_.default_instance()));
+  }
+  // string message = 2;
+  if (this->message().size() > 0) {
+    total_size += 1 +
+      ::google::protobuf::internal::WireFormatLite::StringSize(
+        this->message());
+  }
+
+  // string error_code = 3;
+  if (this->error_code().size() > 0) {
+    total_size += 1 +
+      ::google::protobuf::internal::WireFormatLite::StringSize(
+        this->error_code());
+  }
+
+  // bool ok = 1;
+  if (this->ok() != 0) {
+    total_size += 1 + 1;
+  }
+
+  int cached_size = ::google::protobuf::internal::ToCachedSize(total_size);
+  GOOGLE_SAFE_CONCURRENT_WRITES_BEGIN();
+  _cached_size_ = cached_size;
+  GOOGLE_SAFE_CONCURRENT_WRITES_END();
+  return total_size;
+}
+
+void AbortReconnectResponse::MergeFrom(const ::google::protobuf::Message& from) {
+// @@protoc_insertion_point(generalized_merge_from_start:sess.AbortReconnectResponse)
+  GOOGLE_DCHECK_NE(&from, this);
+  const AbortReconnectResponse* source =
+      ::google::protobuf::internal::DynamicCastToGenerated<const AbortReconnectResponse>(
+          &from);
+  if (source == NULL) {
+  // @@protoc_insertion_point(generalized_merge_from_cast_fail:sess.AbortReconnectResponse)
+    ::google::protobuf::internal::ReflectionOps::Merge(from, this);
+  } else {
+  // @@protoc_insertion_point(generalized_merge_from_cast_success:sess.AbortReconnectResponse)
+    MergeFrom(*source);
+  }
+}
+
+void AbortReconnectResponse::MergeFrom(const AbortReconnectResponse& from) {
+// @@protoc_insertion_point(class_specific_merge_from_start:sess.AbortReconnectResponse)
+  GOOGLE_DCHECK_NE(&from, this);
+  _internal_metadata_.MergeFrom(from._internal_metadata_);
+  ::google::protobuf::uint32 cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  if (from.message().size() > 0) {
+
+    message_.AssignWithDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), from.message_);
+  }
+  if (from.error_code().size() > 0) {
+
+    error_code_.AssignWithDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), from.error_code_);
+  }
+  if (from.ok() != 0) {
+    set_ok(from.ok());
+  }
+}
+
+void AbortReconnectResponse::CopyFrom(const ::google::protobuf::Message& from) {
+// @@protoc_insertion_point(generalized_copy_from_start:sess.AbortReconnectResponse)
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+void AbortReconnectResponse::CopyFrom(const AbortReconnectResponse& from) {
+// @@protoc_insertion_point(class_specific_copy_from_start:sess.AbortReconnectResponse)
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+bool AbortReconnectResponse::IsInitialized() const {
+  return true;
+}
+
+void AbortReconnectResponse::Swap(AbortReconnectResponse* other) {
+  if (other == this) return;
+  InternalSwap(other);
+}
+void AbortReconnectResponse::InternalSwap(AbortReconnectResponse* other) {
+  using std::swap;
+  message_.Swap(&other->message_);
+  error_code_.Swap(&other->error_code_);
+  swap(ok_, other->ok_);
+  _internal_metadata_.Swap(&other->_internal_metadata_);
+  swap(_cached_size_, other->_cached_size_);
+}
+
+::google::protobuf::Metadata AbortReconnectResponse::GetMetadata() const {
   protobuf_session_2eproto::protobuf_AssignDescriptorsOnce();
   return ::protobuf_session_2eproto::file_level_metadata[kIndexInFileMessages];
 }
@@ -18564,6 +22046,30 @@ void SessionService::ReconnectV2(::google::protobuf::RpcController* controller,
   done->Run();
 }
 
+void SessionService::PrepareReconnect(::google::protobuf::RpcController* controller,
+                         const ::sess::PrepareReconnectRequest*,
+                         ::sess::PrepareReconnectResponse*,
+                         ::google::protobuf::Closure* done) {
+  controller->SetFailed("Method PrepareReconnect() not implemented.");
+  done->Run();
+}
+
+void SessionService::CommitReconnect(::google::protobuf::RpcController* controller,
+                         const ::sess::CommitReconnectRequest*,
+                         ::sess::CommitReconnectResponse*,
+                         ::google::protobuf::Closure* done) {
+  controller->SetFailed("Method CommitReconnect() not implemented.");
+  done->Run();
+}
+
+void SessionService::AbortReconnect(::google::protobuf::RpcController* controller,
+                         const ::sess::AbortReconnectRequest*,
+                         ::sess::AbortReconnectResponse*,
+                         ::google::protobuf::Closure* done) {
+  controller->SetFailed("Method AbortReconnect() not implemented.");
+  done->Run();
+}
+
 void SessionService::GetSessionOperation(::google::protobuf::RpcController* controller,
                          const ::sess::GetSessionOperationRequest*,
                          ::sess::GetSessionOperationResponse*,
@@ -18742,114 +22248,132 @@ void SessionService::CallMethod(const ::google::protobuf::MethodDescriptor* meth
              done);
       break;
     case 3:
+      PrepareReconnect(controller,
+             ::google::protobuf::down_cast<const ::sess::PrepareReconnectRequest*>(request),
+             ::google::protobuf::down_cast< ::sess::PrepareReconnectResponse*>(response),
+             done);
+      break;
+    case 4:
+      CommitReconnect(controller,
+             ::google::protobuf::down_cast<const ::sess::CommitReconnectRequest*>(request),
+             ::google::protobuf::down_cast< ::sess::CommitReconnectResponse*>(response),
+             done);
+      break;
+    case 5:
+      AbortReconnect(controller,
+             ::google::protobuf::down_cast<const ::sess::AbortReconnectRequest*>(request),
+             ::google::protobuf::down_cast< ::sess::AbortReconnectResponse*>(response),
+             done);
+      break;
+    case 6:
       GetSessionOperation(controller,
              ::google::protobuf::down_cast<const ::sess::GetSessionOperationRequest*>(request),
              ::google::protobuf::down_cast< ::sess::GetSessionOperationResponse*>(response),
              done);
       break;
-    case 4:
+    case 7:
       LogoutV2(controller,
              ::google::protobuf::down_cast<const ::sess::LogoutRequest*>(request),
              ::google::protobuf::down_cast< ::sess::LogoutResponse*>(response),
              done);
       break;
-    case 5:
+    case 8:
       Kick(controller,
              ::google::protobuf::down_cast<const ::sess::KickRequest*>(request),
              ::google::protobuf::down_cast< ::sess::KickResponse*>(response),
              done);
       break;
-    case 6:
+    case 9:
       ResolveOrCreateMap(controller,
              ::google::protobuf::down_cast<const ::sess::ResolveOrCreateMapRequest*>(request),
              ::google::protobuf::down_cast< ::sess::ResolveOrCreateMapResponse*>(response),
              done);
       break;
-    case 7:
+    case 10:
       GetPlacement(controller,
              ::google::protobuf::down_cast<const ::sess::GetPlacementRequest*>(request),
              ::google::protobuf::down_cast< ::sess::GetPlacementResponse*>(response),
              done);
       break;
-    case 8:
+    case 11:
       MigrateMap(controller,
              ::google::protobuf::down_cast<const ::sess::MigrateMapRequest*>(request),
              ::google::protobuf::down_cast< ::sess::MigrateMapResponse*>(response),
              done);
       break;
-    case 9:
+    case 12:
       MarkRecovering(controller,
              ::google::protobuf::down_cast<const ::sess::MarkRecoveringRequest*>(request),
              ::google::protobuf::down_cast< ::sess::MarkRecoveringResponse*>(response),
              done);
       break;
-    case 10:
+    case 13:
       HeartbeatOwner(controller,
              ::google::protobuf::down_cast<const ::sess::HeartbeatOwnerRequest*>(request),
              ::google::protobuf::down_cast< ::sess::HeartbeatOwnerResponse*>(response),
              done);
       break;
-    case 11:
+    case 14:
       UpdatePlayerRoute(controller,
              ::google::protobuf::down_cast<const ::sess::UpdatePlayerRouteRequest*>(request),
              ::google::protobuf::down_cast< ::sess::UpdatePlayerRouteResponse*>(response),
              done);
       break;
-    case 12:
+    case 15:
       BeginPlayerTransfer(controller,
              ::google::protobuf::down_cast<const ::sess::BeginPlayerTransferRequest*>(request),
              ::google::protobuf::down_cast< ::sess::BeginPlayerTransferResponse*>(response),
              done);
       break;
-    case 13:
+    case 16:
       CommitPlayerTransfer(controller,
              ::google::protobuf::down_cast<const ::sess::CommitPlayerTransferRequest*>(request),
              ::google::protobuf::down_cast< ::sess::CommitPlayerTransferResponse*>(response),
              done);
       break;
-    case 14:
+    case 17:
       AbortPlayerTransfer(controller,
              ::google::protobuf::down_cast<const ::sess::AbortPlayerTransferRequest*>(request),
              ::google::protobuf::down_cast< ::sess::AbortPlayerTransferResponse*>(response),
              done);
       break;
-    case 15:
+    case 18:
       GetPlayerRoute(controller,
              ::google::protobuf::down_cast<const ::sess::GetPlayerRouteRequest*>(request),
              ::google::protobuf::down_cast< ::sess::GetPlayerRouteResponse*>(response),
              done);
       break;
-    case 16:
+    case 19:
       Login(controller,
              ::google::protobuf::down_cast<const ::game::LoginReq*>(request),
              ::google::protobuf::down_cast< ::game::LoginRsp*>(response),
              done);
       break;
-    case 17:
+    case 20:
       Reconnect(controller,
              ::google::protobuf::down_cast<const ::game::ReconnectReq*>(request),
              ::google::protobuf::down_cast< ::game::ReconnectRsp*>(response),
              done);
       break;
-    case 18:
+    case 21:
       Logout(controller,
              ::google::protobuf::down_cast<const ::game::LogoutReq*>(request),
              ::google::protobuf::down_cast< ::game::LogoutRsp*>(response),
              done);
       break;
-    case 19:
+    case 22:
       ValidateToken(controller,
              ::google::protobuf::down_cast<const ::sess::ValidateTokenReq*>(request),
              ::google::protobuf::down_cast< ::sess::ValidateTokenRsp*>(response),
              done);
       break;
-    case 20:
+    case 23:
       BindConnection(controller,
              ::google::protobuf::down_cast<const ::sess::BindConnectionReq*>(request),
              ::google::protobuf::down_cast< ::sess::BindConnectionRsp*>(response),
              done);
       break;
-    case 21:
+    case 24:
       MarkDisconnected(controller,
              ::google::protobuf::down_cast<const ::sess::MarkDisconnectedReq*>(request),
              ::google::protobuf::down_cast< ::sess::MarkDisconnectedRsp*>(response),
@@ -18872,42 +22396,48 @@ const ::google::protobuf::Message& SessionService::GetRequestPrototype(
     case 2:
       return ::sess::ReconnectRequest::default_instance();
     case 3:
-      return ::sess::GetSessionOperationRequest::default_instance();
+      return ::sess::PrepareReconnectRequest::default_instance();
     case 4:
-      return ::sess::LogoutRequest::default_instance();
+      return ::sess::CommitReconnectRequest::default_instance();
     case 5:
-      return ::sess::KickRequest::default_instance();
+      return ::sess::AbortReconnectRequest::default_instance();
     case 6:
-      return ::sess::ResolveOrCreateMapRequest::default_instance();
+      return ::sess::GetSessionOperationRequest::default_instance();
     case 7:
-      return ::sess::GetPlacementRequest::default_instance();
+      return ::sess::LogoutRequest::default_instance();
     case 8:
-      return ::sess::MigrateMapRequest::default_instance();
+      return ::sess::KickRequest::default_instance();
     case 9:
-      return ::sess::MarkRecoveringRequest::default_instance();
+      return ::sess::ResolveOrCreateMapRequest::default_instance();
     case 10:
-      return ::sess::HeartbeatOwnerRequest::default_instance();
+      return ::sess::GetPlacementRequest::default_instance();
     case 11:
-      return ::sess::UpdatePlayerRouteRequest::default_instance();
+      return ::sess::MigrateMapRequest::default_instance();
     case 12:
-      return ::sess::BeginPlayerTransferRequest::default_instance();
+      return ::sess::MarkRecoveringRequest::default_instance();
     case 13:
-      return ::sess::CommitPlayerTransferRequest::default_instance();
+      return ::sess::HeartbeatOwnerRequest::default_instance();
     case 14:
-      return ::sess::AbortPlayerTransferRequest::default_instance();
+      return ::sess::UpdatePlayerRouteRequest::default_instance();
     case 15:
-      return ::sess::GetPlayerRouteRequest::default_instance();
+      return ::sess::BeginPlayerTransferRequest::default_instance();
     case 16:
-      return ::game::LoginReq::default_instance();
+      return ::sess::CommitPlayerTransferRequest::default_instance();
     case 17:
-      return ::game::ReconnectReq::default_instance();
+      return ::sess::AbortPlayerTransferRequest::default_instance();
     case 18:
-      return ::game::LogoutReq::default_instance();
+      return ::sess::GetPlayerRouteRequest::default_instance();
     case 19:
-      return ::sess::ValidateTokenReq::default_instance();
+      return ::game::LoginReq::default_instance();
     case 20:
-      return ::sess::BindConnectionReq::default_instance();
+      return ::game::ReconnectReq::default_instance();
     case 21:
+      return ::game::LogoutReq::default_instance();
+    case 22:
+      return ::sess::ValidateTokenReq::default_instance();
+    case 23:
+      return ::sess::BindConnectionReq::default_instance();
+    case 24:
       return ::sess::MarkDisconnectedReq::default_instance();
     default:
       GOOGLE_LOG(FATAL) << "Bad method index; this should never happen.";
@@ -18927,42 +22457,48 @@ const ::google::protobuf::Message& SessionService::GetResponsePrototype(
     case 2:
       return ::sess::ReconnectResponse::default_instance();
     case 3:
-      return ::sess::GetSessionOperationResponse::default_instance();
+      return ::sess::PrepareReconnectResponse::default_instance();
     case 4:
-      return ::sess::LogoutResponse::default_instance();
+      return ::sess::CommitReconnectResponse::default_instance();
     case 5:
-      return ::sess::KickResponse::default_instance();
+      return ::sess::AbortReconnectResponse::default_instance();
     case 6:
-      return ::sess::ResolveOrCreateMapResponse::default_instance();
+      return ::sess::GetSessionOperationResponse::default_instance();
     case 7:
-      return ::sess::GetPlacementResponse::default_instance();
+      return ::sess::LogoutResponse::default_instance();
     case 8:
-      return ::sess::MigrateMapResponse::default_instance();
+      return ::sess::KickResponse::default_instance();
     case 9:
-      return ::sess::MarkRecoveringResponse::default_instance();
+      return ::sess::ResolveOrCreateMapResponse::default_instance();
     case 10:
-      return ::sess::HeartbeatOwnerResponse::default_instance();
+      return ::sess::GetPlacementResponse::default_instance();
     case 11:
-      return ::sess::UpdatePlayerRouteResponse::default_instance();
+      return ::sess::MigrateMapResponse::default_instance();
     case 12:
-      return ::sess::BeginPlayerTransferResponse::default_instance();
+      return ::sess::MarkRecoveringResponse::default_instance();
     case 13:
-      return ::sess::CommitPlayerTransferResponse::default_instance();
+      return ::sess::HeartbeatOwnerResponse::default_instance();
     case 14:
-      return ::sess::AbortPlayerTransferResponse::default_instance();
+      return ::sess::UpdatePlayerRouteResponse::default_instance();
     case 15:
-      return ::sess::GetPlayerRouteResponse::default_instance();
+      return ::sess::BeginPlayerTransferResponse::default_instance();
     case 16:
-      return ::game::LoginRsp::default_instance();
+      return ::sess::CommitPlayerTransferResponse::default_instance();
     case 17:
-      return ::game::ReconnectRsp::default_instance();
+      return ::sess::AbortPlayerTransferResponse::default_instance();
     case 18:
-      return ::game::LogoutRsp::default_instance();
+      return ::sess::GetPlayerRouteResponse::default_instance();
     case 19:
-      return ::sess::ValidateTokenRsp::default_instance();
+      return ::game::LoginRsp::default_instance();
     case 20:
-      return ::sess::BindConnectionRsp::default_instance();
+      return ::game::ReconnectRsp::default_instance();
     case 21:
+      return ::game::LogoutRsp::default_instance();
+    case 22:
+      return ::sess::ValidateTokenRsp::default_instance();
+    case 23:
+      return ::sess::BindConnectionRsp::default_instance();
+    case 24:
       return ::sess::MarkDisconnectedRsp::default_instance();
     default:
       GOOGLE_LOG(FATAL) << "Bad method index; this should never happen.";
@@ -19003,137 +22539,158 @@ void SessionService_Stub::ReconnectV2(::google::protobuf::RpcController* control
   channel_->CallMethod(descriptor()->method(2),
                        controller, request, response, done);
 }
+void SessionService_Stub::PrepareReconnect(::google::protobuf::RpcController* controller,
+                              const ::sess::PrepareReconnectRequest* request,
+                              ::sess::PrepareReconnectResponse* response,
+                              ::google::protobuf::Closure* done) {
+  channel_->CallMethod(descriptor()->method(3),
+                       controller, request, response, done);
+}
+void SessionService_Stub::CommitReconnect(::google::protobuf::RpcController* controller,
+                              const ::sess::CommitReconnectRequest* request,
+                              ::sess::CommitReconnectResponse* response,
+                              ::google::protobuf::Closure* done) {
+  channel_->CallMethod(descriptor()->method(4),
+                       controller, request, response, done);
+}
+void SessionService_Stub::AbortReconnect(::google::protobuf::RpcController* controller,
+                              const ::sess::AbortReconnectRequest* request,
+                              ::sess::AbortReconnectResponse* response,
+                              ::google::protobuf::Closure* done) {
+  channel_->CallMethod(descriptor()->method(5),
+                       controller, request, response, done);
+}
 void SessionService_Stub::GetSessionOperation(::google::protobuf::RpcController* controller,
                               const ::sess::GetSessionOperationRequest* request,
                               ::sess::GetSessionOperationResponse* response,
                               ::google::protobuf::Closure* done) {
-  channel_->CallMethod(descriptor()->method(3),
+  channel_->CallMethod(descriptor()->method(6),
                        controller, request, response, done);
 }
 void SessionService_Stub::LogoutV2(::google::protobuf::RpcController* controller,
                               const ::sess::LogoutRequest* request,
                               ::sess::LogoutResponse* response,
                               ::google::protobuf::Closure* done) {
-  channel_->CallMethod(descriptor()->method(4),
+  channel_->CallMethod(descriptor()->method(7),
                        controller, request, response, done);
 }
 void SessionService_Stub::Kick(::google::protobuf::RpcController* controller,
                               const ::sess::KickRequest* request,
                               ::sess::KickResponse* response,
                               ::google::protobuf::Closure* done) {
-  channel_->CallMethod(descriptor()->method(5),
+  channel_->CallMethod(descriptor()->method(8),
                        controller, request, response, done);
 }
 void SessionService_Stub::ResolveOrCreateMap(::google::protobuf::RpcController* controller,
                               const ::sess::ResolveOrCreateMapRequest* request,
                               ::sess::ResolveOrCreateMapResponse* response,
                               ::google::protobuf::Closure* done) {
-  channel_->CallMethod(descriptor()->method(6),
+  channel_->CallMethod(descriptor()->method(9),
                        controller, request, response, done);
 }
 void SessionService_Stub::GetPlacement(::google::protobuf::RpcController* controller,
                               const ::sess::GetPlacementRequest* request,
                               ::sess::GetPlacementResponse* response,
                               ::google::protobuf::Closure* done) {
-  channel_->CallMethod(descriptor()->method(7),
+  channel_->CallMethod(descriptor()->method(10),
                        controller, request, response, done);
 }
 void SessionService_Stub::MigrateMap(::google::protobuf::RpcController* controller,
                               const ::sess::MigrateMapRequest* request,
                               ::sess::MigrateMapResponse* response,
                               ::google::protobuf::Closure* done) {
-  channel_->CallMethod(descriptor()->method(8),
+  channel_->CallMethod(descriptor()->method(11),
                        controller, request, response, done);
 }
 void SessionService_Stub::MarkRecovering(::google::protobuf::RpcController* controller,
                               const ::sess::MarkRecoveringRequest* request,
                               ::sess::MarkRecoveringResponse* response,
                               ::google::protobuf::Closure* done) {
-  channel_->CallMethod(descriptor()->method(9),
+  channel_->CallMethod(descriptor()->method(12),
                        controller, request, response, done);
 }
 void SessionService_Stub::HeartbeatOwner(::google::protobuf::RpcController* controller,
                               const ::sess::HeartbeatOwnerRequest* request,
                               ::sess::HeartbeatOwnerResponse* response,
                               ::google::protobuf::Closure* done) {
-  channel_->CallMethod(descriptor()->method(10),
+  channel_->CallMethod(descriptor()->method(13),
                        controller, request, response, done);
 }
 void SessionService_Stub::UpdatePlayerRoute(::google::protobuf::RpcController* controller,
                               const ::sess::UpdatePlayerRouteRequest* request,
                               ::sess::UpdatePlayerRouteResponse* response,
                               ::google::protobuf::Closure* done) {
-  channel_->CallMethod(descriptor()->method(11),
+  channel_->CallMethod(descriptor()->method(14),
                        controller, request, response, done);
 }
 void SessionService_Stub::BeginPlayerTransfer(::google::protobuf::RpcController* controller,
                               const ::sess::BeginPlayerTransferRequest* request,
                               ::sess::BeginPlayerTransferResponse* response,
                               ::google::protobuf::Closure* done) {
-  channel_->CallMethod(descriptor()->method(12),
+  channel_->CallMethod(descriptor()->method(15),
                        controller, request, response, done);
 }
 void SessionService_Stub::CommitPlayerTransfer(::google::protobuf::RpcController* controller,
                               const ::sess::CommitPlayerTransferRequest* request,
                               ::sess::CommitPlayerTransferResponse* response,
                               ::google::protobuf::Closure* done) {
-  channel_->CallMethod(descriptor()->method(13),
+  channel_->CallMethod(descriptor()->method(16),
                        controller, request, response, done);
 }
 void SessionService_Stub::AbortPlayerTransfer(::google::protobuf::RpcController* controller,
                               const ::sess::AbortPlayerTransferRequest* request,
                               ::sess::AbortPlayerTransferResponse* response,
                               ::google::protobuf::Closure* done) {
-  channel_->CallMethod(descriptor()->method(14),
+  channel_->CallMethod(descriptor()->method(17),
                        controller, request, response, done);
 }
 void SessionService_Stub::GetPlayerRoute(::google::protobuf::RpcController* controller,
                               const ::sess::GetPlayerRouteRequest* request,
                               ::sess::GetPlayerRouteResponse* response,
                               ::google::protobuf::Closure* done) {
-  channel_->CallMethod(descriptor()->method(15),
+  channel_->CallMethod(descriptor()->method(18),
                        controller, request, response, done);
 }
 void SessionService_Stub::Login(::google::protobuf::RpcController* controller,
                               const ::game::LoginReq* request,
                               ::game::LoginRsp* response,
                               ::google::protobuf::Closure* done) {
-  channel_->CallMethod(descriptor()->method(16),
+  channel_->CallMethod(descriptor()->method(19),
                        controller, request, response, done);
 }
 void SessionService_Stub::Reconnect(::google::protobuf::RpcController* controller,
                               const ::game::ReconnectReq* request,
                               ::game::ReconnectRsp* response,
                               ::google::protobuf::Closure* done) {
-  channel_->CallMethod(descriptor()->method(17),
+  channel_->CallMethod(descriptor()->method(20),
                        controller, request, response, done);
 }
 void SessionService_Stub::Logout(::google::protobuf::RpcController* controller,
                               const ::game::LogoutReq* request,
                               ::game::LogoutRsp* response,
                               ::google::protobuf::Closure* done) {
-  channel_->CallMethod(descriptor()->method(18),
+  channel_->CallMethod(descriptor()->method(21),
                        controller, request, response, done);
 }
 void SessionService_Stub::ValidateToken(::google::protobuf::RpcController* controller,
                               const ::sess::ValidateTokenReq* request,
                               ::sess::ValidateTokenRsp* response,
                               ::google::protobuf::Closure* done) {
-  channel_->CallMethod(descriptor()->method(19),
+  channel_->CallMethod(descriptor()->method(22),
                        controller, request, response, done);
 }
 void SessionService_Stub::BindConnection(::google::protobuf::RpcController* controller,
                               const ::sess::BindConnectionReq* request,
                               ::sess::BindConnectionRsp* response,
                               ::google::protobuf::Closure* done) {
-  channel_->CallMethod(descriptor()->method(20),
+  channel_->CallMethod(descriptor()->method(23),
                        controller, request, response, done);
 }
 void SessionService_Stub::MarkDisconnected(::google::protobuf::RpcController* controller,
                               const ::sess::MarkDisconnectedReq* request,
                               ::sess::MarkDisconnectedRsp* response,
                               ::google::protobuf::Closure* done) {
-  channel_->CallMethod(descriptor()->method(21),
+  channel_->CallMethod(descriptor()->method(24),
                        controller, request, response, done);
 }
 

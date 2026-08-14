@@ -7,6 +7,7 @@
  *   game_tcp_e2e_client map-ping <host> <port> <player> <token> <map_inst>
  *   game_tcp_e2e_client reconnect <host> <port> <player> <session_id> <ticket> [last_seq]
  *   game_tcp_e2e_client dual-gw <gw0_host> <gw0_port> <gw1_host> <gw1_port> [map_tpl] [map_inst]
+ *   game_tcp_e2e_client hold-kill-reconnect <gw0_host> <gw0_port> <gw1_host> <gw1_port> [map_tpl] [map_inst]
  *   game_tcp_e2e_client drain-login <host> <port>   # 期望失败（摘流后）
  *
  * 成功输出 key=value 行，便于脚本解析；失败非零。
@@ -474,11 +475,94 @@ int CmdDrainLogin(int argc, char **argv) {
     return 15;
 }
 
+int CmdHoldKillReconnect(int argc, char **argv) {
+    if (argc < 6)
+        return 2;
+    const char *h0 = argv[2];
+    const int p0 = std::atoi(argv[3]);
+    const char *h1 = argv[4];
+    const int p1 = std::atoi(argv[5]);
+    const uint64_t map_tpl =
+        argc >= 7 ? std::strtoull(argv[6], nullptr, 10)
+                  : (910000ULL + static_cast<uint64_t>(::getpid() % 100000));
+    const uint64_t map_inst = argc >= 8 ? std::strtoull(argv[7], nullptr, 10) : 0;
+    const std::string device = "e2e-hold-" + std::to_string(::getpid());
+    const std::string password = "e2epass1";
+
+    const int fd0 = Connect(h0, p0);
+    if (fd0 < 0) {
+        std::perror("connect gw0");
+        return 6;
+    }
+    SessionState st;
+    if (!DoRegisterLogin(fd0, device, password, &st)) {
+        ::close(fd0);
+        return 12;
+    }
+    if (!DoEnterMap(fd0, &st, map_tpl, map_inst)) {
+        ::close(fd0);
+        return 13;
+    }
+    const std::string old_token = st.token;
+    const uint64_t old_gen = st.generation;
+    PrintKv("READY_TO_KILL", 1);
+    PrintKv("reconnect_ticket", st.token);
+    PrintKv("last_server_seq", st.last_server_seq);
+    PrintKv("old_generation", old_gen);
+    std::fflush(stdout);
+
+    // 保持 TCP 打开，等待对端 EOF（脚本 SIGKILL gw0），禁止主动 close
+    int wait_ms = 30000;
+    if (const char *e = std::getenv("E2E_HOLD_KILL_WAIT_MS")) {
+        const int v = std::atoi(e);
+        if (v > 0)
+            wait_ms = v;
+    }
+    game::GameResponse ignored;
+    const bool eof = !RecvFrame(fd0, &ignored, wait_ms);
+    (void)eof;
+    ::close(fd0);
+    PrintKv("gw0_eof", 1);
+
+    const int fd1 = Connect(h1, p1);
+    if (fd1 < 0) {
+        std::perror("connect gw1");
+        return 7;
+    }
+    int replay_n = 0;
+    bool need_snap = false;
+    if (!DoReconnect(fd1, &st, st.last_server_seq, &replay_n, &need_snap)) {
+        ::close(fd1);
+        return 14;
+    }
+    PrintKv("old_token", old_token);
+    PrintKv("old_fence_still_equal", old_token == st.token);
+    if (st.generation <= old_gen) {
+        std::printf("error=generation_not_increased old=%llu new=%llu\n",
+                    static_cast<unsigned long long>(old_gen),
+                    static_cast<unsigned long long>(st.generation));
+        std::fflush(stdout);
+        ::close(fd1);
+        return 17;
+    }
+    if (replay_n == 0 && !need_snap) {
+        std::printf("error=no_replay_and_no_snapshot\n");
+        std::fflush(stdout);
+        ::close(fd1);
+        return 16;
+    }
+    PrintKv("hold_kill_reconnect_ok", 1);
+    ::close(fd1);
+    return 0;
+}
+
 }  // namespace
 
 int main(int argc, char **argv) {
     if (argc < 2) {
-        std::fprintf(stderr, "usage: %s <register-login|enter-map|reconnect|dual-gw|drain-login> ...\n",
+        std::fprintf(stderr,
+                     "usage: %s <register-login|enter-map|reconnect|dual-gw|drain-login|"
+                     "hold-kill-reconnect> ...\n",
                      argv[0]);
         return 2;
     }
@@ -493,6 +577,8 @@ int main(int argc, char **argv) {
         return CmdDualGw(argc, argv);
     if (cmd == "drain-login")
         return CmdDrainLogin(argc, argv);
+    if (cmd == "hold-kill-reconnect")
+        return CmdHoldKillReconnect(argc, argv);
     std::fprintf(stderr, "unknown cmd %s\n", cmd.c_str());
     return 2;
 }

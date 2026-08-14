@@ -1,5 +1,7 @@
 #include "GatewayConnRegistry.h"
 
+#include <vector>
+
 GatewayConnRegistry &GatewayConnRegistry::Instance() {
     static GatewayConnRegistry g;
     return g;
@@ -107,4 +109,30 @@ bool GatewayConnRegistry::SendBySession(const std::string &session_id, const std
         return false;
     b.send_frame(frame);
     return true;
+}
+
+bool GatewayConnRegistry::CloseIfMatch(uint64_t player_id, const std::string &session_id,
+                                       uint64_t generation) {
+    if (player_id == 0)
+        return false;
+    std::vector<std::function<void()>> closers;
+    {
+        std::lock_guard<std::mutex> lk(mu_);
+        for (auto &kv : by_conn_) {
+            const Bind &b = kv.second;
+            if (b.player_id != player_id)
+                continue;
+            if (!session_id.empty() && b.session_id != session_id)
+                continue;
+            if (generation != 0 && b.generation != generation)
+                continue;
+            if (b.close_conn)
+                closers.push_back(b.close_conn);
+        }
+    }
+    for (auto &fn : closers) {
+        if (fn)
+            fn();
+    }
+    return !closers.empty();
 }

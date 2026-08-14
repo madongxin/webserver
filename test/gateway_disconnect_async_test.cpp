@@ -98,13 +98,16 @@ int main() {
                     static_cast<long long>(ms), ran.load());
     }
 
-    // 有界 Stop：1.5s 阻塞 executor 下 Stop(50ms) 必须很快返回，且可再次 Start
+    // 有界 Stop：executor 必须轮询 stopping()；Stop 必须 join 且迅速返回
     {
         GatewayDisconnectAsync::Instance().Start(64);
+        auto entered = std::make_shared<std::atomic<bool>>(false);
         auto still_running = std::make_shared<std::atomic<bool>>(true);
         GatewayDisconnectAsync::Instance().SetExecutorForTest(
-            [still_running](const GatewayDisconnectAsync::Task &) {
-                std::this_thread::sleep_for(std::chrono::milliseconds(1500));
+            [entered, still_running](const GatewayDisconnectAsync::Task &) {
+                entered->store(true, std::memory_order_release);
+                while (!GatewayDisconnectAsync::Instance().stopping())
+                    std::this_thread::sleep_for(std::chrono::milliseconds(5));
                 still_running->store(false, std::memory_order_release);
             });
         if (!GatewayDisconnectAsync::Instance().EnqueueMarkDisconnected(3001, "tok", 1)) {
@@ -112,8 +115,13 @@ int main() {
             GatewayDisconnectAsync::Instance().Stop();
             return 1;
         }
-        for (int i = 0; i < 200 && GatewayDisconnectAsync::Instance().pending() == 0; ++i)
+        for (int i = 0; i < 200 && !entered->load(std::memory_order_acquire); ++i)
             std::this_thread::sleep_for(std::chrono::milliseconds(1));
+        if (!entered->load(std::memory_order_acquire)) {
+            std::printf("FAIL bounded-stop executor not entered\n");
+            GatewayDisconnectAsync::Instance().Stop();
+            return 1;
+        }
         const auto t0 = std::chrono::steady_clock::now();
         GatewayDisconnectAsync::Instance().Stop(std::chrono::milliseconds(50));
         const auto stop_ms = std::chrono::duration_cast<std::chrono::milliseconds>(
@@ -124,8 +132,8 @@ int main() {
                         static_cast<long long>(stop_ms));
             return 1;
         }
-        if (!still_running->load(std::memory_order_acquire)) {
-            std::printf("FAIL bounded-stop finished executor before return\n");
+        if (still_running->load(std::memory_order_acquire)) {
+            std::printf("FAIL bounded-stop executor ignored stopping()\n");
             return 1;
         }
         GatewayDisconnectAsync::Instance().Start(8);

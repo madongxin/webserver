@@ -90,8 +90,8 @@ int main() {
     Logger::setLogLevel(Logger::WARN);
 
     if (!ConnectionPool::getconnectionPool()->isInitialized()) {
-        std::fprintf(stderr, "SKIP: MySQL pool not initialized (config/mysql.cnf)\n");
-        return 0;
+        std::fprintf(stderr, "FAIL: MySQL pool not initialized (config/mysql.cnf)\n");
+        return 1;
     }
     if (!MailService::Instance().Init()) {
         std::fprintf(stderr, "FAIL: MailService::Init\n");

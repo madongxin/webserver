@@ -19,6 +19,10 @@ public:
     bool EnsureChannel(const std::string &gateway_instance_id);
     bool PushBatch(const std::string &gateway_instance_id, const gwpush::PushBatchRequest &req,
                    gwpush::PushBatchResponse *rsp);
+    /** 最佳努力：失败只记日志，不阻塞 Kick CAS 结果 */
+    void KickConnectionAsync(const std::string &gateway_instance_id, uint64_t player_id,
+                             const std::string &session_id, uint64_t generation,
+                             const std::string &reason);
     uint64_t snapshot_version() const;
 
 private:

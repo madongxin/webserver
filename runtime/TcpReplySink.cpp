@@ -19,3 +19,17 @@ void TcpReplySink::SendFrame(const std::string &response_frame) {
         c->Send(response_frame);
     });
 }
+
+void TcpReplySink::CloseConnection() {
+    if (!loop_)
+        return;
+    auto weak = conn_;
+    loop_->QueueOneFunc([weak]() {
+        auto c = weak.lock();
+        if (!c)
+            return;
+        if (c->state() != TcpConnection::Connected)
+            return;
+        c->HandleClose();
+    });
+}

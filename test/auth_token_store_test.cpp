@@ -60,8 +60,8 @@ int Fail(const char *m) {
 
 int main() {
     if (!RedisReachable()) {
-        std::printf("SKIP auth_token_store_test (no Redis)\n");
-        return 0;
+        std::printf("FAIL auth_token_store_test (no Redis)\n");
+        return 1;
     }
     if (!AuthTokenStore::Instance().InitFromConfig() || !AuthTokenStore::Instance().Available())
         return Fail("init");

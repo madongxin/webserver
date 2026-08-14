@@ -30,6 +30,12 @@ public:
         kDraining = 2,
     };
 
+    enum class StopResult : uint8_t {
+        kDrained = 0,
+        kCancelled = 1,
+        kTimedOut = 2,
+    };
+
     static PlayerSerialQueue &Instance();
 
     /** shard_count<=0 时按硬件并发估算 */
@@ -41,8 +47,13 @@ public:
      */
     void BeginDrain(std::chrono::milliseconds deadline = std::chrono::milliseconds(3000));
 
-    /** DRAINING（若仍 RUNNING 则先 BeginDrain）后强制停 worker；有界，不永久 join */
-    void Stop();
+    /**
+     * 拒绝新任务、取消尚未开始的任务、协作取消在飞任务后 join worker。
+     * 禁止 detach。任务必须轮询 stop_requested()。
+     */
+    StopResult Stop(std::chrono::milliseconds deadline = std::chrono::milliseconds(3000));
+
+    bool stop_requested() const { return stop_requested_.load(std::memory_order_acquire); }
 
     bool started() const {
         const auto s = life_.load(std::memory_order_acquire);
@@ -121,6 +132,7 @@ private:
 
     std::mutex life_mu_;
     std::atomic<LifeState> life_{LifeState::kStopped};
+    std::atomic<bool> stop_requested_{false};
     std::vector<std::unique_ptr<Shard>> shards_;
     size_t max_per_shard_ = 256;
     size_t max_global_ = 4096;

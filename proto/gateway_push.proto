@@ -30,6 +30,20 @@ message PushBatchResponse {
   uint32 rejected = 4;
 }
 
+message KickConnectionRequest {
+  uint64 player_id = 1;
+  string session_id = 2;
+  uint64 generation = 3;  // 只关闭该 generation 的旧连接
+  string reason = 4;
+}
+
+message KickConnectionResponse {
+  bool ok = 1;
+  string message = 2;
+  bool closed = 3;
+}
+
 service GatewayPushService {
   rpc PushBatch(PushBatchRequest) returns (PushBatchResponse);
+  rpc KickConnection(KickConnectionRequest) returns (KickConnectionResponse);
 }

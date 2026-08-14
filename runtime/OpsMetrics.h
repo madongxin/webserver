@@ -57,6 +57,15 @@ public:
     }
     void IncLogicDiscoverOk() { logic_discover_ok_.fetch_add(1, std::memory_order_relaxed); }
 
+    void IncDisconnectAccepted() { disconnect_accepted_.fetch_add(1, std::memory_order_relaxed); }
+    void IncDisconnectDropped() { disconnect_dropped_.fetch_add(1, std::memory_order_relaxed); }
+    void IncDisconnectRetried() { disconnect_retried_.fetch_add(1, std::memory_order_relaxed); }
+    void IncDisconnectCompensated() {
+        disconnect_compensated_.fetch_add(1, std::memory_order_relaxed);
+    }
+    void IncDisconnectFailed() { disconnect_failed_.fetch_add(1, std::memory_order_relaxed); }
+    void IncKickGatewayAttempt() { kick_gateway_attempt_.fetch_add(1, std::memory_order_relaxed); }
+
     uint64_t logic_discover_fail() const {
         return logic_discover_fail_.load(std::memory_order_relaxed);
     }
@@ -98,4 +107,10 @@ private:
     std::atomic<uint64_t> logic_discover_fail_{0};
     std::atomic<uint64_t> logic_discover_empty_{0};
     std::atomic<uint64_t> logic_discover_ok_{0};
+    std::atomic<uint64_t> disconnect_accepted_{0};
+    std::atomic<uint64_t> disconnect_dropped_{0};
+    std::atomic<uint64_t> disconnect_retried_{0};
+    std::atomic<uint64_t> disconnect_compensated_{0};
+    std::atomic<uint64_t> disconnect_failed_{0};
+    std::atomic<uint64_t> kick_gateway_attempt_{0};
 };

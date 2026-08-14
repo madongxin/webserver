@@ -36,8 +36,8 @@ int64_t NowMs() {
 int main() {
     Logger::setLogLevel(Logger::WARN);
     if (!ConnectionPool::getconnectionPool()->isInitialized()) {
-        std::printf("SKIP: MySQL pool not initialized\n");
-        return 0;
+        std::printf("FAIL: MySQL pool not initialized\n");
+        return 1;
     }
     Expect(GameDbAssetStore::Instance().EnsureTables(), "asset tables");
     Expect(GameDbOutbox::Instance().EnsureTable(), "outbox table");

@@ -37,7 +37,7 @@ namespace protobuf_gateway_5fpush_2eproto {
 struct TableStruct {
   static const ::google::protobuf::internal::ParseTableField entries[];
   static const ::google::protobuf::internal::AuxillaryParseTableField aux[];
-  static const ::google::protobuf::internal::ParseTable schema[3];
+  static const ::google::protobuf::internal::ParseTable schema[5];
   static const ::google::protobuf::internal::FieldMetadata field_metadata[];
   static const ::google::protobuf::internal::SerializationTable serialization_table[];
   static const ::google::protobuf::uint32 offsets[];
@@ -49,13 +49,25 @@ void InitDefaultsPushBatchRequestImpl();
 void InitDefaultsPushBatchRequest();
 void InitDefaultsPushBatchResponseImpl();
 void InitDefaultsPushBatchResponse();
+void InitDefaultsKickConnectionRequestImpl();
+void InitDefaultsKickConnectionRequest();
+void InitDefaultsKickConnectionResponseImpl();
+void InitDefaultsKickConnectionResponse();
 inline void InitDefaults() {
   InitDefaultsPushMessage();
   InitDefaultsPushBatchRequest();
   InitDefaultsPushBatchResponse();
+  InitDefaultsKickConnectionRequest();
+  InitDefaultsKickConnectionResponse();
 }
 }  // namespace protobuf_gateway_5fpush_2eproto
 namespace gwpush {
+class KickConnectionRequest;
+class KickConnectionRequestDefaultTypeInternal;
+extern KickConnectionRequestDefaultTypeInternal _KickConnectionRequest_default_instance_;
+class KickConnectionResponse;
+class KickConnectionResponseDefaultTypeInternal;
+extern KickConnectionResponseDefaultTypeInternal _KickConnectionResponse_default_instance_;
 class PushBatchRequest;
 class PushBatchRequestDefaultTypeInternal;
 extern PushBatchRequestDefaultTypeInternal _PushBatchRequest_default_instance_;
@@ -503,6 +515,263 @@ class PushBatchResponse : public ::google::protobuf::Message /* @@protoc_inserti
   friend struct ::protobuf_gateway_5fpush_2eproto::TableStruct;
   friend void ::protobuf_gateway_5fpush_2eproto::InitDefaultsPushBatchResponseImpl();
 };
+// -------------------------------------------------------------------
+
+class KickConnectionRequest : public ::google::protobuf::Message /* @@protoc_insertion_point(class_definition:gwpush.KickConnectionRequest) */ {
+ public:
+  KickConnectionRequest();
+  virtual ~KickConnectionRequest();
+
+  KickConnectionRequest(const KickConnectionRequest& from);
+
+  inline KickConnectionRequest& operator=(const KickConnectionRequest& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  #if LANG_CXX11
+  KickConnectionRequest(KickConnectionRequest&& from) noexcept
+    : KickConnectionRequest() {
+    *this = ::std::move(from);
+  }
+
+  inline KickConnectionRequest& operator=(KickConnectionRequest&& from) noexcept {
+    if (GetArenaNoVirtual() == from.GetArenaNoVirtual()) {
+      if (this != &from) InternalSwap(&from);
+    } else {
+      CopyFrom(from);
+    }
+    return *this;
+  }
+  #endif
+  static const ::google::protobuf::Descriptor* descriptor();
+  static const KickConnectionRequest& default_instance();
+
+  static void InitAsDefaultInstance();  // FOR INTERNAL USE ONLY
+  static inline const KickConnectionRequest* internal_default_instance() {
+    return reinterpret_cast<const KickConnectionRequest*>(
+               &_KickConnectionRequest_default_instance_);
+  }
+  static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
+    3;
+
+  void Swap(KickConnectionRequest* other);
+  friend void swap(KickConnectionRequest& a, KickConnectionRequest& b) {
+    a.Swap(&b);
+  }
+
+  // implements Message ----------------------------------------------
+
+  inline KickConnectionRequest* New() const PROTOBUF_FINAL { return New(NULL); }
+
+  KickConnectionRequest* New(::google::protobuf::Arena* arena) const PROTOBUF_FINAL;
+  void CopyFrom(const ::google::protobuf::Message& from) PROTOBUF_FINAL;
+  void MergeFrom(const ::google::protobuf::Message& from) PROTOBUF_FINAL;
+  void CopyFrom(const KickConnectionRequest& from);
+  void MergeFrom(const KickConnectionRequest& from);
+  void Clear() PROTOBUF_FINAL;
+  bool IsInitialized() const PROTOBUF_FINAL;
+
+  size_t ByteSizeLong() const PROTOBUF_FINAL;
+  bool MergePartialFromCodedStream(
+      ::google::protobuf::io::CodedInputStream* input) PROTOBUF_FINAL;
+  void SerializeWithCachedSizes(
+      ::google::protobuf::io::CodedOutputStream* output) const PROTOBUF_FINAL;
+  ::google::protobuf::uint8* InternalSerializeWithCachedSizesToArray(
+      bool deterministic, ::google::protobuf::uint8* target) const PROTOBUF_FINAL;
+  int GetCachedSize() const PROTOBUF_FINAL { return _cached_size_; }
+  private:
+  void SharedCtor();
+  void SharedDtor();
+  void SetCachedSize(int size) const PROTOBUF_FINAL;
+  void InternalSwap(KickConnectionRequest* other);
+  private:
+  inline ::google::protobuf::Arena* GetArenaNoVirtual() const {
+    return NULL;
+  }
+  inline void* MaybeArenaPtr() const {
+    return NULL;
+  }
+  public:
+
+  ::google::protobuf::Metadata GetMetadata() const PROTOBUF_FINAL;
+
+  // nested types ----------------------------------------------------
+
+  // accessors -------------------------------------------------------
+
+  // string session_id = 2;
+  void clear_session_id();
+  static const int kSessionIdFieldNumber = 2;
+  const ::std::string& session_id() const;
+  void set_session_id(const ::std::string& value);
+  #if LANG_CXX11
+  void set_session_id(::std::string&& value);
+  #endif
+  void set_session_id(const char* value);
+  void set_session_id(const char* value, size_t size);
+  ::std::string* mutable_session_id();
+  ::std::string* release_session_id();
+  void set_allocated_session_id(::std::string* session_id);
+
+  // string reason = 4;
+  void clear_reason();
+  static const int kReasonFieldNumber = 4;
+  const ::std::string& reason() const;
+  void set_reason(const ::std::string& value);
+  #if LANG_CXX11
+  void set_reason(::std::string&& value);
+  #endif
+  void set_reason(const char* value);
+  void set_reason(const char* value, size_t size);
+  ::std::string* mutable_reason();
+  ::std::string* release_reason();
+  void set_allocated_reason(::std::string* reason);
+
+  // uint64 player_id = 1;
+  void clear_player_id();
+  static const int kPlayerIdFieldNumber = 1;
+  ::google::protobuf::uint64 player_id() const;
+  void set_player_id(::google::protobuf::uint64 value);
+
+  // uint64 generation = 3;
+  void clear_generation();
+  static const int kGenerationFieldNumber = 3;
+  ::google::protobuf::uint64 generation() const;
+  void set_generation(::google::protobuf::uint64 value);
+
+  // @@protoc_insertion_point(class_scope:gwpush.KickConnectionRequest)
+ private:
+
+  ::google::protobuf::internal::InternalMetadataWithArena _internal_metadata_;
+  ::google::protobuf::internal::ArenaStringPtr session_id_;
+  ::google::protobuf::internal::ArenaStringPtr reason_;
+  ::google::protobuf::uint64 player_id_;
+  ::google::protobuf::uint64 generation_;
+  mutable int _cached_size_;
+  friend struct ::protobuf_gateway_5fpush_2eproto::TableStruct;
+  friend void ::protobuf_gateway_5fpush_2eproto::InitDefaultsKickConnectionRequestImpl();
+};
+// -------------------------------------------------------------------
+
+class KickConnectionResponse : public ::google::protobuf::Message /* @@protoc_insertion_point(class_definition:gwpush.KickConnectionResponse) */ {
+ public:
+  KickConnectionResponse();
+  virtual ~KickConnectionResponse();
+
+  KickConnectionResponse(const KickConnectionResponse& from);
+
+  inline KickConnectionResponse& operator=(const KickConnectionResponse& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  #if LANG_CXX11
+  KickConnectionResponse(KickConnectionResponse&& from) noexcept
+    : KickConnectionResponse() {
+    *this = ::std::move(from);
+  }
+
+  inline KickConnectionResponse& operator=(KickConnectionResponse&& from) noexcept {
+    if (GetArenaNoVirtual() == from.GetArenaNoVirtual()) {
+      if (this != &from) InternalSwap(&from);
+    } else {
+      CopyFrom(from);
+    }
+    return *this;
+  }
+  #endif
+  static const ::google::protobuf::Descriptor* descriptor();
+  static const KickConnectionResponse& default_instance();
+
+  static void InitAsDefaultInstance();  // FOR INTERNAL USE ONLY
+  static inline const KickConnectionResponse* internal_default_instance() {
+    return reinterpret_cast<const KickConnectionResponse*>(
+               &_KickConnectionResponse_default_instance_);
+  }
+  static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
+    4;
+
+  void Swap(KickConnectionResponse* other);
+  friend void swap(KickConnectionResponse& a, KickConnectionResponse& b) {
+    a.Swap(&b);
+  }
+
+  // implements Message ----------------------------------------------
+
+  inline KickConnectionResponse* New() const PROTOBUF_FINAL { return New(NULL); }
+
+  KickConnectionResponse* New(::google::protobuf::Arena* arena) const PROTOBUF_FINAL;
+  void CopyFrom(const ::google::protobuf::Message& from) PROTOBUF_FINAL;
+  void MergeFrom(const ::google::protobuf::Message& from) PROTOBUF_FINAL;
+  void CopyFrom(const KickConnectionResponse& from);
+  void MergeFrom(const KickConnectionResponse& from);
+  void Clear() PROTOBUF_FINAL;
+  bool IsInitialized() const PROTOBUF_FINAL;
+
+  size_t ByteSizeLong() const PROTOBUF_FINAL;
+  bool MergePartialFromCodedStream(
+      ::google::protobuf::io::CodedInputStream* input) PROTOBUF_FINAL;
+  void SerializeWithCachedSizes(
+      ::google::protobuf::io::CodedOutputStream* output) const PROTOBUF_FINAL;
+  ::google::protobuf::uint8* InternalSerializeWithCachedSizesToArray(
+      bool deterministic, ::google::protobuf::uint8* target) const PROTOBUF_FINAL;
+  int GetCachedSize() const PROTOBUF_FINAL { return _cached_size_; }
+  private:
+  void SharedCtor();
+  void SharedDtor();
+  void SetCachedSize(int size) const PROTOBUF_FINAL;
+  void InternalSwap(KickConnectionResponse* other);
+  private:
+  inline ::google::protobuf::Arena* GetArenaNoVirtual() const {
+    return NULL;
+  }
+  inline void* MaybeArenaPtr() const {
+    return NULL;
+  }
+  public:
+
+  ::google::protobuf::Metadata GetMetadata() const PROTOBUF_FINAL;
+
+  // nested types ----------------------------------------------------
+
+  // accessors -------------------------------------------------------
+
+  // string message = 2;
+  void clear_message();
+  static const int kMessageFieldNumber = 2;
+  const ::std::string& message() const;
+  void set_message(const ::std::string& value);
+  #if LANG_CXX11
+  void set_message(::std::string&& value);
+  #endif
+  void set_message(const char* value);
+  void set_message(const char* value, size_t size);
+  ::std::string* mutable_message();
+  ::std::string* release_message();
+  void set_allocated_message(::std::string* message);
+
+  // bool ok = 1;
+  void clear_ok();
+  static const int kOkFieldNumber = 1;
+  bool ok() const;
+  void set_ok(bool value);
+
+  // bool closed = 3;
+  void clear_closed();
+  static const int kClosedFieldNumber = 3;
+  bool closed() const;
+  void set_closed(bool value);
+
+  // @@protoc_insertion_point(class_scope:gwpush.KickConnectionResponse)
+ private:
+
+  ::google::protobuf::internal::InternalMetadataWithArena _internal_metadata_;
+  ::google::protobuf::internal::ArenaStringPtr message_;
+  bool ok_;
+  bool closed_;
+  mutable int _cached_size_;
+  friend struct ::protobuf_gateway_5fpush_2eproto::TableStruct;
+  friend void ::protobuf_gateway_5fpush_2eproto::InitDefaultsKickConnectionResponseImpl();
+};
 // ===================================================================
 
 class GatewayPushService_Stub;
@@ -521,6 +790,10 @@ class GatewayPushService : public ::google::protobuf::Service {
   virtual void PushBatch(::google::protobuf::RpcController* controller,
                        const ::gwpush::PushBatchRequest* request,
                        ::gwpush::PushBatchResponse* response,
+                       ::google::protobuf::Closure* done);
+  virtual void KickConnection(::google::protobuf::RpcController* controller,
+                       const ::gwpush::KickConnectionRequest* request,
+                       ::gwpush::KickConnectionResponse* response,
                        ::google::protobuf::Closure* done);
 
   // implements Service ----------------------------------------------
@@ -554,6 +827,10 @@ class GatewayPushService_Stub : public GatewayPushService {
   void PushBatch(::google::protobuf::RpcController* controller,
                        const ::gwpush::PushBatchRequest* request,
                        ::gwpush::PushBatchResponse* response,
+                       ::google::protobuf::Closure* done);
+  void KickConnection(::google::protobuf::RpcController* controller,
+                       const ::gwpush::KickConnectionRequest* request,
+                       ::gwpush::KickConnectionResponse* response,
                        ::google::protobuf::Closure* done);
  private:
   ::google::protobuf::RpcChannel* channel_;
@@ -1041,9 +1318,236 @@ inline void PushBatchResponse::set_rejected(::google::protobuf::uint32 value) {
   // @@protoc_insertion_point(field_set:gwpush.PushBatchResponse.rejected)
 }
 
+// -------------------------------------------------------------------
+
+// KickConnectionRequest
+
+// uint64 player_id = 1;
+inline void KickConnectionRequest::clear_player_id() {
+  player_id_ = GOOGLE_ULONGLONG(0);
+}
+inline ::google::protobuf::uint64 KickConnectionRequest::player_id() const {
+  // @@protoc_insertion_point(field_get:gwpush.KickConnectionRequest.player_id)
+  return player_id_;
+}
+inline void KickConnectionRequest::set_player_id(::google::protobuf::uint64 value) {
+  
+  player_id_ = value;
+  // @@protoc_insertion_point(field_set:gwpush.KickConnectionRequest.player_id)
+}
+
+// string session_id = 2;
+inline void KickConnectionRequest::clear_session_id() {
+  session_id_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline const ::std::string& KickConnectionRequest::session_id() const {
+  // @@protoc_insertion_point(field_get:gwpush.KickConnectionRequest.session_id)
+  return session_id_.GetNoArena();
+}
+inline void KickConnectionRequest::set_session_id(const ::std::string& value) {
+  
+  session_id_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), value);
+  // @@protoc_insertion_point(field_set:gwpush.KickConnectionRequest.session_id)
+}
+#if LANG_CXX11
+inline void KickConnectionRequest::set_session_id(::std::string&& value) {
+  
+  session_id_.SetNoArena(
+    &::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::move(value));
+  // @@protoc_insertion_point(field_set_rvalue:gwpush.KickConnectionRequest.session_id)
+}
+#endif
+inline void KickConnectionRequest::set_session_id(const char* value) {
+  GOOGLE_DCHECK(value != NULL);
+  
+  session_id_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::string(value));
+  // @@protoc_insertion_point(field_set_char:gwpush.KickConnectionRequest.session_id)
+}
+inline void KickConnectionRequest::set_session_id(const char* value, size_t size) {
+  
+  session_id_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(),
+      ::std::string(reinterpret_cast<const char*>(value), size));
+  // @@protoc_insertion_point(field_set_pointer:gwpush.KickConnectionRequest.session_id)
+}
+inline ::std::string* KickConnectionRequest::mutable_session_id() {
+  
+  // @@protoc_insertion_point(field_mutable:gwpush.KickConnectionRequest.session_id)
+  return session_id_.MutableNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline ::std::string* KickConnectionRequest::release_session_id() {
+  // @@protoc_insertion_point(field_release:gwpush.KickConnectionRequest.session_id)
+  
+  return session_id_.ReleaseNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline void KickConnectionRequest::set_allocated_session_id(::std::string* session_id) {
+  if (session_id != NULL) {
+    
+  } else {
+    
+  }
+  session_id_.SetAllocatedNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), session_id);
+  // @@protoc_insertion_point(field_set_allocated:gwpush.KickConnectionRequest.session_id)
+}
+
+// uint64 generation = 3;
+inline void KickConnectionRequest::clear_generation() {
+  generation_ = GOOGLE_ULONGLONG(0);
+}
+inline ::google::protobuf::uint64 KickConnectionRequest::generation() const {
+  // @@protoc_insertion_point(field_get:gwpush.KickConnectionRequest.generation)
+  return generation_;
+}
+inline void KickConnectionRequest::set_generation(::google::protobuf::uint64 value) {
+  
+  generation_ = value;
+  // @@protoc_insertion_point(field_set:gwpush.KickConnectionRequest.generation)
+}
+
+// string reason = 4;
+inline void KickConnectionRequest::clear_reason() {
+  reason_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline const ::std::string& KickConnectionRequest::reason() const {
+  // @@protoc_insertion_point(field_get:gwpush.KickConnectionRequest.reason)
+  return reason_.GetNoArena();
+}
+inline void KickConnectionRequest::set_reason(const ::std::string& value) {
+  
+  reason_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), value);
+  // @@protoc_insertion_point(field_set:gwpush.KickConnectionRequest.reason)
+}
+#if LANG_CXX11
+inline void KickConnectionRequest::set_reason(::std::string&& value) {
+  
+  reason_.SetNoArena(
+    &::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::move(value));
+  // @@protoc_insertion_point(field_set_rvalue:gwpush.KickConnectionRequest.reason)
+}
+#endif
+inline void KickConnectionRequest::set_reason(const char* value) {
+  GOOGLE_DCHECK(value != NULL);
+  
+  reason_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::string(value));
+  // @@protoc_insertion_point(field_set_char:gwpush.KickConnectionRequest.reason)
+}
+inline void KickConnectionRequest::set_reason(const char* value, size_t size) {
+  
+  reason_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(),
+      ::std::string(reinterpret_cast<const char*>(value), size));
+  // @@protoc_insertion_point(field_set_pointer:gwpush.KickConnectionRequest.reason)
+}
+inline ::std::string* KickConnectionRequest::mutable_reason() {
+  
+  // @@protoc_insertion_point(field_mutable:gwpush.KickConnectionRequest.reason)
+  return reason_.MutableNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline ::std::string* KickConnectionRequest::release_reason() {
+  // @@protoc_insertion_point(field_release:gwpush.KickConnectionRequest.reason)
+  
+  return reason_.ReleaseNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline void KickConnectionRequest::set_allocated_reason(::std::string* reason) {
+  if (reason != NULL) {
+    
+  } else {
+    
+  }
+  reason_.SetAllocatedNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), reason);
+  // @@protoc_insertion_point(field_set_allocated:gwpush.KickConnectionRequest.reason)
+}
+
+// -------------------------------------------------------------------
+
+// KickConnectionResponse
+
+// bool ok = 1;
+inline void KickConnectionResponse::clear_ok() {
+  ok_ = false;
+}
+inline bool KickConnectionResponse::ok() const {
+  // @@protoc_insertion_point(field_get:gwpush.KickConnectionResponse.ok)
+  return ok_;
+}
+inline void KickConnectionResponse::set_ok(bool value) {
+  
+  ok_ = value;
+  // @@protoc_insertion_point(field_set:gwpush.KickConnectionResponse.ok)
+}
+
+// string message = 2;
+inline void KickConnectionResponse::clear_message() {
+  message_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline const ::std::string& KickConnectionResponse::message() const {
+  // @@protoc_insertion_point(field_get:gwpush.KickConnectionResponse.message)
+  return message_.GetNoArena();
+}
+inline void KickConnectionResponse::set_message(const ::std::string& value) {
+  
+  message_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), value);
+  // @@protoc_insertion_point(field_set:gwpush.KickConnectionResponse.message)
+}
+#if LANG_CXX11
+inline void KickConnectionResponse::set_message(::std::string&& value) {
+  
+  message_.SetNoArena(
+    &::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::move(value));
+  // @@protoc_insertion_point(field_set_rvalue:gwpush.KickConnectionResponse.message)
+}
+#endif
+inline void KickConnectionResponse::set_message(const char* value) {
+  GOOGLE_DCHECK(value != NULL);
+  
+  message_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::string(value));
+  // @@protoc_insertion_point(field_set_char:gwpush.KickConnectionResponse.message)
+}
+inline void KickConnectionResponse::set_message(const char* value, size_t size) {
+  
+  message_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(),
+      ::std::string(reinterpret_cast<const char*>(value), size));
+  // @@protoc_insertion_point(field_set_pointer:gwpush.KickConnectionResponse.message)
+}
+inline ::std::string* KickConnectionResponse::mutable_message() {
+  
+  // @@protoc_insertion_point(field_mutable:gwpush.KickConnectionResponse.message)
+  return message_.MutableNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline ::std::string* KickConnectionResponse::release_message() {
+  // @@protoc_insertion_point(field_release:gwpush.KickConnectionResponse.message)
+  
+  return message_.ReleaseNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline void KickConnectionResponse::set_allocated_message(::std::string* message) {
+  if (message != NULL) {
+    
+  } else {
+    
+  }
+  message_.SetAllocatedNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), message);
+  // @@protoc_insertion_point(field_set_allocated:gwpush.KickConnectionResponse.message)
+}
+
+// bool closed = 3;
+inline void KickConnectionResponse::clear_closed() {
+  closed_ = false;
+}
+inline bool KickConnectionResponse::closed() const {
+  // @@protoc_insertion_point(field_get:gwpush.KickConnectionResponse.closed)
+  return closed_;
+}
+inline void KickConnectionResponse::set_closed(bool value) {
+  
+  closed_ = value;
+  // @@protoc_insertion_point(field_set:gwpush.KickConnectionResponse.closed)
+}
+
 #ifdef __GNUC__
   #pragma GCC diagnostic pop
 #endif  // __GNUC__
+// -------------------------------------------------------------------
+
+// -------------------------------------------------------------------
+
 // -------------------------------------------------------------------
 
 // -------------------------------------------------------------------

@@ -61,8 +61,8 @@ int Fail(const char *m) {
 
 int main() {
     if (!InitRedis()) {
-        std::printf("SKIP placement_recovery_test (Redis unavailable)\n");
-        return 0;
+        std::printf("FAIL placement_recovery_test (Redis unavailable)\n");
+        return 1;
     }
     // 唯一前缀与 leader id，避免与上次残留互相扫描/抢 leader 干扰
     const std::string prefix =

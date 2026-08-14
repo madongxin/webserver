@@ -2,6 +2,7 @@
  * GameLogic 健康快照三态：Discover 失败保留、成功替换、成功空列表 fail-closed。
  */
 #include "HealthyLogicOwners.h"
+#include "HealthyLogicSnapshot.h"
 #include "IServiceRegistry.h"
 #include "Logging.h"
 #include "OpsMetrics.h"
@@ -92,6 +93,7 @@ int main() {
         std::printf("FAIL: RedisServiceRegistry init\n");
         return 1;
     }
+    HealthyLogicSnapshotStore::Instance().ResetForTest();
 
     SessionStore::Instance().SetLogicInstanceIds({"gl-static"});
     PlacementStore::Instance().SetLogicOwners({"gl-static"});
@@ -211,6 +213,20 @@ int main() {
     Expect(!SessionStore::Instance().AcquireSession(ain2, &aout3) || !aout3.ok,
            "ttl expired fail-closed");
     Expect(aout3.error_code == "NO_HEALTHY_GAMELOGIC" || !aout3.ok, "ttl error");
+
+    {
+        auto stale = std::make_shared<HealthyLogicSnapshot>();
+        stale->version = 1;
+        stale->state = HealthyLogicSnapshot::State::kActive;
+        stale->instance_ids = {"gl-stale"};
+        Expect(!HealthyLogicSnapshotStore::Instance().Publish(stale), "old version rejected");
+        auto cur = HealthyLogicSnapshotStore::Instance().Current();
+        Expect(cur && cur->version > 1, "current version ahead of stale");
+        bool has_stale = false;
+        for (const auto &id : cur->instance_ids)
+            has_stale = has_stale || (id == "gl-stale");
+        Expect(!has_stale, "stale ids not applied");
+    }
 
     if (fails) {
         std::printf("healthy_logic_refresh_test FAIL count=%d\n", fails);

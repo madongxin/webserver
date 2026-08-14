@@ -55,8 +55,8 @@ int main() {
         }
     }
     if (!RedisPool::Instance().ready() && !RedisPool::Instance().Init(host, port, password, 2)) {
-        std::printf("SKIP: Redis unavailable\n");
-        return 0;
+        std::printf("FAIL: Redis unavailable\n");
+        return 1;
     }
     RedisServiceRegistry::Get().Configure("gamemesh:p3test:");
     Expect(RedisServiceRegistry::Get().InitFromRedisConfig(), "redis registry init");

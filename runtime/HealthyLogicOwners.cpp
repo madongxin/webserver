@@ -1,5 +1,6 @@
 #include "HealthyLogicOwners.h"
 
+#include "HealthyLogicSnapshot.h"
 #include "IServiceRegistry.h"
 #include "Logging.h"
 #include "OpsMetrics.h"
@@ -7,13 +8,17 @@
 #include "RedisServiceRegistry.h"
 #include "SessionStore.h"
 
-#include <atomic>
 #include <string>
 #include <vector>
 
 namespace {
-std::atomic<bool> g_seen_nonempty_logic{false};
+
+void ApplyIds(const std::vector<std::string> &ids) {
+    SessionStore::Instance().SetLogicInstanceIds(ids, false);
+    PlacementStore::Instance().SetLogicOwners(ids, false);
 }
+
+}  // namespace
 
 HealthyLogicRefreshResult RefreshHealthyLogicOwners(bool update_static_addrs) {
     HealthyLogicRefreshResult r;
@@ -47,28 +52,42 @@ HealthyLogicRefreshResult RefreshHealthyLogicOwners(bool update_static_addrs) {
     }
     r.status = HealthyLogicRefreshStatus::kApplied;
     r.instance_count = ids.size();
+
+    auto snap = std::make_shared<HealthyLogicSnapshot>();
+    snap->source = HealthyLogicSnapshot::Source::kRegistry;
+    auto cur = HealthyLogicSnapshotStore::Instance().Current();
+    const bool seen_active = cur && cur->state == HealthyLogicSnapshot::State::kActive;
+
     if (ids.empty()) {
-        // 冷启动：Session 早于 GameLogic 注册，空 Discover 不得清掉 session.cnf 静态 owners。
-        if (!g_seen_nonempty_logic.load(std::memory_order_acquire) &&
-            !SessionStore::Instance().LogicInstanceIds().empty()) {
+        const bool have_bootstrap =
+            cur && !cur->instance_ids.empty() && cur->state != HealthyLogicSnapshot::State::kActive &&
+            cur->state != HealthyLogicSnapshot::State::kEmpty;
+        if (!seen_active && have_bootstrap) {
             OpsMetrics::Instance().IncLogicDiscoverNotReady();
             r.status = HealthyLogicRefreshStatus::kNotReady;
             LOG_WARN << "HealthyLogicOwners: Discover empty before first healthy set; "
                         "keep bootstrap snapshot";
             return r;
         }
-        SessionStore::Instance().SetLogicInstanceIds(ids);
-        PlacementStore::Instance().SetLogicOwners(ids);
+        snap->state = HealthyLogicSnapshot::State::kEmpty;
+        snap->instance_ids.clear();
+        HealthyLogicSnapshotStore::Instance().Publish(snap);
+        ApplyIds({});
         OpsMetrics::Instance().IncLogicDiscoverEmpty();
         LOG_WARN << "HealthyLogicOwners: Discover empty -> fail-closed "
                     "(NO_HEALTHY_GAMELOGIC)";
         return r;
     }
-    g_seen_nonempty_logic.store(true, std::memory_order_release);
-    SessionStore::Instance().SetLogicInstanceIds(ids);
-    PlacementStore::Instance().SetLogicOwners(ids);
+    snap->state = HealthyLogicSnapshot::State::kActive;
+    snap->instance_ids = ids;
+    if (!HealthyLogicSnapshotStore::Instance().Publish(snap)) {
+        LOG_WARN << "HealthyLogicOwners: stale version ignored";
+        return r;
+    }
+    ApplyIds(ids);
     OpsMetrics::Instance().IncLogicDiscoverOk();
-    LOG_INFO << "HealthyLogicOwners: replaced count=" << ids.size();
+    LOG_INFO << "HealthyLogicOwners: replaced count=" << ids.size()
+             << " version=" << HealthyLogicSnapshotStore::Instance().version();
     if (update_static_addrs)
         StaticServiceRegistry::Get().SetStaticAddrs("gamelogic", static_addrs, static_ids);
     return r;

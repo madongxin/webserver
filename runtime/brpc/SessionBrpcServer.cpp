@@ -92,8 +92,8 @@ bool SessionBrpcServer::StartFromConfig() {
     if (!ParseSessionConfig(SessionCnf(), &addr, &idle, &logic_ids))
         LOG_WARN << "SessionBrpcServer: default listen, cannot parse " << SessionCnf();
     if (!logic_ids.empty()) {
-        PlacementStore::Instance().SetLogicOwners(logic_ids);
-        SessionStore::Instance().SetLogicInstanceIds(std::move(logic_ids));
+        PlacementStore::Instance().SetLogicOwners(logic_ids, false);
+        SessionStore::Instance().SetLogicInstanceIds(std::move(logic_ids), true);
     }
     AuthTokenStore::Instance().InitFromConfig();
     if (SessionStore::Instance().Available())
@@ -111,8 +111,8 @@ bool SessionBrpcServer::Start(const std::string &listen_addr, int idle_timeout_s
         int idle_unused = 30;
         if (ParseSessionConfig(SessionCnf(), &addr_unused, &idle_unused, &logic_ids) &&
             !logic_ids.empty()) {
-            PlacementStore::Instance().SetLogicOwners(logic_ids);
-            SessionStore::Instance().SetLogicInstanceIds(logic_ids);
+            PlacementStore::Instance().SetLogicOwners(logic_ids, false);
+            SessionStore::Instance().SetLogicInstanceIds(logic_ids, true);
         }
         if (SessionStore::Instance().Available())
             PlacementStore::Instance().InitFromSessionPrefix(SessionStore::Instance().key_prefix());

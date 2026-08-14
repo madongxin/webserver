@@ -54,7 +54,7 @@ public:
     bool InitFromSessionPrefix(const std::string &key_prefix, int default_lease_sec = 30);
     bool Available() const { return available_; }
 
-    void SetLogicOwners(std::vector<std::string> owners);
+    void SetLogicOwners(std::vector<std::string> owners, bool publish_snapshot = true);
 
     bool ResolveOrCreate(const ResolveOrCreateInput &in, ResolveOrCreateResult *out);
     bool Get(uint64_t map_instance_id, PlacementRecord *out);
@@ -87,6 +87,7 @@ private:
     std::string TplKey(uint32_t realm, uint64_t tpl) const;
     std::string IdGenKey() const;
     std::string PickOwner(const std::string &preferred) const;
+    std::vector<std::string> OwnersForPick() const;
     /** 当前健康 Owner 列表 CSV，供 ResolveOrCreate Lua 判断软续租 */
     std::string HealthyOwnersCsv() const;
 

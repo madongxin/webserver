@@ -10,7 +10,7 @@ PlayerSerialQueue &PlayerSerialQueue::Instance() {
 }
 
 PlayerSerialQueue::~PlayerSerialQueue() {
-    Stop();
+    Stop(std::chrono::milliseconds(3000));
 }
 
 size_t PlayerSerialQueue::ShardIndex(uint64_t player_id, size_t n) {
@@ -84,6 +84,7 @@ void PlayerSerialQueue::Start(int shard_count) {
         shards_.push_back(std::move(shard));
     }
     pending_global_.store(0, std::memory_order_relaxed);
+    stop_requested_.store(false, std::memory_order_release);
     life_.store(LifeState::kRunning, std::memory_order_release);
     LOG_INFO << "PlayerSerialQueue started shards=" << shard_count
              << " max_per_shard=" << max_per_shard_ << " max_global=" << max_global_;
@@ -135,26 +136,29 @@ void PlayerSerialQueue::BeginDrain(std::chrono::milliseconds deadline) {
     WaitUntilDrainedOrDeadline(std::chrono::steady_clock::now() + deadline);
 }
 
-void PlayerSerialQueue::Stop() {
+PlayerSerialQueue::StopResult PlayerSerialQueue::Stop(std::chrono::milliseconds deadline) {
     std::unique_lock<std::mutex> lk(life_mu_);
     if (life_.load(std::memory_order_relaxed) == LifeState::kStopped)
-        return;
+        return StopResult::kDrained;
+    stop_requested_.store(true, std::memory_order_release);
     if (life_.load(std::memory_order_relaxed) == LifeState::kRunning)
         life_.store(LifeState::kDraining, std::memory_order_release);
     lk.unlock();
 
-    WaitUntilDrainedOrDeadline(std::chrono::steady_clock::now() + std::chrono::milliseconds(3000));
+    const auto drain_deadline = std::chrono::steady_clock::now() + deadline;
+    WaitUntilDrainedOrDeadline(drain_deadline);
+    const bool timed_out = std::chrono::steady_clock::now() >= drain_deadline;
 
     lk.lock();
     if (life_.load(std::memory_order_relaxed) == LifeState::kStopped)
-        return;
+        return timed_out ? StopResult::kTimedOut : StopResult::kDrained;
 
     life_.store(LifeState::kStopped, std::memory_order_release);
 
+    size_t dropped = 0;
     for (auto &s : shards_) {
         {
             std::lock_guard<std::mutex> qlk(s->mu);
-            size_t dropped = 0;
             for (auto &kv : s->deferred) {
                 dropped += kv.second.size();
                 while (!kv.second.empty()) {
@@ -165,19 +169,29 @@ void PlayerSerialQueue::Stop() {
             s->deferred.clear();
             dropped += s->async_depth.size();
             s->async_depth.clear();
-            if (dropped > 0)
-                LOG_WARN << "PlayerSerialQueue force-stop dropped~=" << dropped;
+            while (!s->q.empty()) {
+                s->q.pop_front();
+                pending_global_.fetch_sub(1, std::memory_order_relaxed);
+                ++dropped;
+            }
             s->stop = true;
         }
         s->cv.notify_all();
     }
+    lk.unlock();
     for (auto &s : shards_) {
         if (s->worker.joinable())
             s->worker.join();
     }
+    lk.lock();
     shards_.clear();
     pending_global_.store(0, std::memory_order_relaxed);
+    if (dropped > 0)
+        LOG_WARN << "PlayerSerialQueue stop dropped=" << dropped;
     LOG_INFO << "PlayerSerialQueue stopped";
+    if (timed_out)
+        return StopResult::kTimedOut;
+    return dropped > 0 ? StopResult::kCancelled : StopResult::kDrained;
 }
 
 void PlayerSerialQueue::WorkerLoop(Shard *shard) {
@@ -186,17 +200,22 @@ void PlayerSerialQueue::WorkerLoop(Shard *shard) {
         {
             std::unique_lock<std::mutex> lk(shard->mu);
             for (;;) {
-                shard->cv.wait(lk, [&]() {
-                    if (!shard->q.empty())
-                        return true;
-                    if (!shard->stop)
-                        return false;
-                    return shard->async_depth.empty() && shard->deferred.empty() &&
-                           shard->inflight == 0;
-                });
-                if (shard->stop && shard->q.empty() && shard->async_depth.empty() &&
-                    shard->deferred.empty() && shard->inflight == 0)
+                shard->cv.wait(lk, [&]() { return shard->stop || !shard->q.empty(); });
+                if (shard->stop) {
+                    while (!shard->q.empty()) {
+                        shard->q.pop_front();
+                        pending_global_.fetch_sub(1, std::memory_order_relaxed);
+                    }
+                    for (auto &kv : shard->deferred) {
+                        while (!kv.second.empty()) {
+                            kv.second.pop_front();
+                            pending_global_.fetch_sub(1, std::memory_order_relaxed);
+                        }
+                    }
+                    shard->deferred.clear();
+                    shard->async_depth.clear();
                     return;
+                }
                 if (shard->q.empty())
                     continue;
                 entry = std::move(shard->q.front());

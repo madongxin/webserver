@@ -36,8 +36,13 @@ public:
     bool EnsureAssetsSynced(uint64_t player_id);
     void SetAssetReloadBlockedForTest(bool v);
     void SetAssetApplyBlockedForTest(bool v);
+    void SetAssetReloadOverrideForTest(const std::map<uint32_t, uint32_t> &bag, uint64_t ver);
+    void ClearAssetReloadOverrideForTest();
     bool HandleConsumeItemForTest(const game::ConsumeItemReq &req, game::GameResponse *rsp) {
         return HandleConsumeItem(req, rsp);
+    }
+    bool HandleGrantItemForTest(const game::GrantItemReq &req, game::GameResponse *rsp) {
+        return HandleGrantItem(req, rsp);
     }
     /** 事务失败时回退内存（尽力而为） */
     bool RollbackItemReward(uint64_t player_id, uint32_t item_id, uint32_t count);
@@ -90,4 +95,7 @@ private:
     std::map<uint64_t, bool> asset_dirty_;
     bool reload_blocked_for_test_ = false;
     bool apply_blocked_for_test_ = false;
+    bool reload_override_for_test_ = false;
+    std::map<uint32_t, uint32_t> reload_override_bag_;
+    uint64_t reload_override_ver_ = 0;
 };

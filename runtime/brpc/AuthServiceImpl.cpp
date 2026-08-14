@@ -186,6 +186,20 @@ void ClearLoginFail(uint64_t player_id) {
 
 }  // namespace
 
+bool AuthGameDbReachable(int timeout_ms) {
+    brpc::Channel *ch = CachedGameDbChannel();
+    if (!ch)
+        return false;
+    gdb::LoadPlayerReq req;
+    gdb::LoadPlayerRsp rsp;
+    brpc::Controller cntl;
+    cntl.set_timeout_ms(timeout_ms > 0 ? timeout_ms : 800);
+    req.set_player_id(0);
+    gdb::GameDbService_Stub stub(ch);
+    stub.LoadPlayer(&cntl, &req, &rsp, nullptr);
+    return !cntl.Failed();
+}
+
 void AuthServiceImpl::Login(::google::protobuf::RpcController *controller,
                             const ::auth::LoginRequest *request, ::auth::LoginResponse *response,
                             ::google::protobuf::Closure *done) {

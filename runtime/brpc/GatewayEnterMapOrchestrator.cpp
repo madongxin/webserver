@@ -4,10 +4,15 @@
 #include "GatewayIdentity.h"
 #include "Logging.h"
 #include "PlacementStore.h"
+#include "PlayerSerialQueue.h"
 #include "ProtoFraming.h"
+#include "RpcOffloadPool.h"
 #include "SessionStore.h"
 #include "game.pb.h"
 #include "session.pb.h"
+
+#include <memory>
+#include <utility>
 
 namespace gameproto {
 
@@ -435,6 +440,41 @@ bool OrchestrateGatewayEnterMap(const SessionHandle &sticky, const std::string &
             LOG_WARN << "FinalizeUnbind timeout/fail player=" << sticky.player_id
                      << " old=" << from_logic << " (Session already on new owner; no dual-write)";
         }
+    }
+    return true;
+}
+
+bool BeginOrchestrateGatewayEnterMap(const SessionHandle &sticky, const std::string &request_payload,
+                                     GatewayEnterMapDone done) {
+    if (!done)
+        return false;
+    const uint64_t shard_key = sticky.player_id;
+    PlayerSerialQueue::Instance().MarkAsyncInFlight(shard_key);
+    struct Holder {
+        SessionHandle sticky;
+        std::string payload;
+        uint64_t shard_key = 0;
+        GatewayEnterMapDone done;
+    };
+    auto h = std::make_shared<Holder>();
+    h->sticky = sticky;
+    h->payload = request_payload;
+    h->shard_key = shard_key;
+    h->done = std::move(done);
+    if (!RpcOffloadPool::Instance().TryPost([h]() {
+            std::string out;
+            SessionHandle route = h->sticky;
+            const bool ok = OrchestrateGatewayEnterMap(h->sticky, h->payload, &out, &route);
+            if (!PlayerSerialQueue::Instance().CompleteAsyncInFlight(
+                    h->shard_key, [h, ok, out = std::move(out),
+                                   route = std::move(route)]() mutable {
+                        h->done(ok, std::move(out), std::move(route));
+                    })) {
+                (void)ok;
+            }
+        })) {
+        PlayerSerialQueue::Instance().ClearAsyncInFlight(shard_key);
+        return false;
     }
     return true;
 }

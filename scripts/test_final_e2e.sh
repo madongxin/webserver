@@ -152,63 +152,74 @@ sc3() {
   echo "$out" | grep -qE 'push_recv=1|replay_n=[1-9]|need_full_snapshot=1' || return 1
 }
 
-# --- 4: kill gw0，gw1 reconnect（dual-gw 已覆盖；再加真实 SIGKILL）---
+# --- 4: kill gw0 时保持同一活动 Session，经 gw1 Reconnect ---
 sc4() {
   ready "$GW1_HTTP" || return 1
-  "$CLIENT" dual-gw "$HOST" "$GW0_GAME" "$HOST" "$GW1_GAME" >/tmp/e2e_sc4_$$.out || {
-    cat /tmp/e2e_sc4_$$.out
-    return 1
-  }
-  grep -q 'dual_gw_ok=1' /tmp/e2e_sc4_$$.out || return 1
   if [[ -z "$PID_GW0" ]] || ! kill -0 "$PID_GW0" 2>/dev/null; then
     echo "ERROR: gw0 pid unknown/dead; cannot SIGKILL drill" >&2
     return 1
   fi
-  echo "SIGKILL gw0 pid=$PID_GW0"
-  kill -9 "$PID_GW0"
-  sleep 1
-  if kill -0 "$PID_GW0" 2>/dev/null; then
-    echo "ERROR gw0 still alive" >&2
+  local outf cpid ready_kill rc
+  outf="$(mktemp)"
+  "$CLIENT" hold-kill-reconnect "$HOST" "$GW0_GAME" "$HOST" "$GW1_GAME" >"$outf" 2>&1 &
+  cpid=$!
+  ready_kill=0
+  for _ in $(seq 1 120); do
+    if grep -q 'READY_TO_KILL=1' "$outf" 2>/dev/null; then
+      ready_kill=1
+      break
+    fi
+    if ! kill -0 "$cpid" 2>/dev/null; then
+      break
+    fi
+    sleep 0.25
+  done
+  if [[ "$ready_kill" -ne 1 ]]; then
+    echo "ERROR: client never READY_TO_KILL" >&2
+    cat "$outf"
+    wait "$cpid" || true
+    rm -f "$outf"
     return 1
   fi
-  ready "$GW1_HTTP" || return 1
-  out="$("$CLIENT" register-login "$HOST" "$GW1_GAME" "e2e-sc4-$$" "e2epass1")" || return 1
-  echo "$out" | grep -q 'login_ok=1' || return 1
+  echo "SIGKILL gw0 pid=$PID_GW0 (session still held)"
+  kill -9 "$PID_GW0"
+  set +e
+  wait "$cpid"
+  rc=$?
+  set -e
+  cat "$outf"
+  rm -f "$outf"
+  [[ "$rc" -eq 0 ]] || return 1
+  return 0
 }
 
-# --- 5: kill session0，session1 仍 ready ---
+# --- 5: kill session0，新 Login 必须走 session1 ---
 sc5() {
   if ! curl -fsS -m 2 "http://${HOST}:${S1_HTTP}/api/version" 2>/dev/null | grep -q session; then
-    echo "INFO: no session1; run test_session_ha.sh"
-    "$ROOT/scripts/test_session_ha.sh"
-    return 0
+    echo "ERROR: session1 not answering /api/version" >&2
+    return 1
   fi
   ready "$S1_HTTP" || true
   if [[ -n "$PID_S0" ]] && kill -0 "$PID_S0" 2>/dev/null; then
+    echo "SIGKILL sess-0 pid=$PID_S0"
     kill -9 "$PID_S0"
     sleep 1
   fi
-  curl -fsS -m 3 "http://${HOST}:${S1_HTTP}/api/version" | grep -q session
+  if [[ -n "$PID_S0" ]] && kill -0 "$PID_S0" 2>/dev/null; then
+    echo "ERROR: sess-0 still alive" >&2
+    return 1
+  fi
+  out="$("$CLIENT" register-login "$HOST" "$GW1_GAME" "e2e-sc5-$$" "e2epass1")" || {
+    echo "$out"
+    return 1
+  }
+  echo "$out"
+  echo "$out" | grep -q 'login_ok=1' || return 1
 }
 
-# --- 6: kill logic1 + lease recover（委托 kill_logic_drill 若有 gl-0 地图；否则 seed+mark）---
+# --- 6: kill logic1 + 真实玩家资产恢复 ---
 sc6() {
-  [[ -x "$SEED" ]] || { echo "ERROR: missing placement_seed_tool" >&2; return 1; }
-  local tpl=$((930000 + RANDOM % 9000))
-  local seed_out map_id old_epoch
-  seed_out="$("$SEED" "$tpl" "gl-1" 1)" || return 1
-  map_id="$(echo "$seed_out" | sed -n 's/^map_instance_id=//p' | head -1)"
-  old_epoch="$(echo "$seed_out" | sed -n 's/^owner_epoch=//p' | head -1)"
-  [[ -n "$map_id" ]] || return 1
-  if [[ -n "$PID_L1" ]] && kill -0 "$PID_L1" 2>/dev/null; then
-    echo "SIGKILL logic1 pid=$PID_L1 map=$map_id"
-    kill -9 "$PID_L1"
-    sleep 1
-  fi
-  # 使用 map_lease_drill：MarkRecovering + Migrate → gl-0
-  local drill="${ROOT}/build/test/map_lease_drill"
-  [[ -x "$drill" ]] || { echo "ERROR: missing map_lease_drill" >&2; return 1; }
-  "$drill" "$map_id" "gl-0" "${old_epoch:-1}"
+  "$ROOT/scripts/test_logic_player_recovery.sh"
 }
 
 # --- 8: GameDB kill → HTTP 死；gamedb1 仍活（若有）---
@@ -260,14 +271,13 @@ sc9() {
   return 1
 }
 
-# 9 在 6 前：避免 sc6 杀 logic0 后无法验证 drain
 run_sc 1 "Login gw0 unique session" sc1
 run_sc 2 "EnterMap transfer to gl-1" sc2
 run_sc 3 "Reliable Push path" sc3
-run_sc 4 "kill gw0 + gw1 path" sc4
-run_sc 5 "kill session survivor" sc5
+run_sc 6 "kill logic + player asset recovery" sc6
+run_sc 4 "kill gw0 same-session reconnect" sc4
+run_sc 5 "kill session survivor login" sc5
 run_sc 9 "SIGTERM drain ready" sc9
-run_sc 6 "kill logic + lease migrate" sc6
 run_sc 8 "kill gamedb0" sc8
 
 # 场景 7：动态发现 / DRAINING（experimental；默认跳过）

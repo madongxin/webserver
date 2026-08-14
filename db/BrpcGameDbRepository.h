@@ -32,6 +32,8 @@ public:
     void Stop() override;
     bool started() const override;
     size_t channel_count() const;
+    /** 轻量 RPC：LoadPlayer(0) 只要通道可达即成功（无资产写） */
+    bool Ping(int timeout_ms = 800);
 
     void ClaimMailAttachmentsAsync(GameDbMailClaimRequest req, MailClaimDone done) override;
     GameDbMailClaimResult ClaimMailAttachments(GameDbMailClaimRequest req) override;

@@ -59,8 +59,8 @@ int Fail(const char *msg) {
 
 int main() {
     if (!InitRedis()) {
-        std::printf("SKIP push_replay_store_test (Redis unavailable)\n");
-        return 0;
+        std::printf("FAIL push_replay_store_test (Redis unavailable)\n");
+        return 1;
     }
     const std::string prefix = "gamemesh:dev:pushreplaytest:";
     if (!PushReplayStore::Instance().InitFromSessionPrefix(prefix, 8, 600))

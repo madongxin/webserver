@@ -63,8 +63,8 @@ bool InitRedisPoolFromCnf() {
 
 int main() {
     if (!InitRedisPoolFromCnf()) {
-        std::printf("SKIP placement_store_test (Redis unavailable)\n");
-        return 0;
+        std::printf("FAIL placement_store_test (Redis unavailable)\n");
+        return 1;
     }
     // 隔离前缀，避免与 E2E/正式拓扑共享 map:tpl 键导致并发唯一性假失败
     const std::string prefix =

@@ -76,5 +76,17 @@ std::string OpsMetrics::PrometheusText() const {
         logic_discover_empty_.load(std::memory_order_relaxed));
     ctr("gamemesh_logic_discover_ok_total", "GameLogic discover succeeded nonempty.",
         logic_discover_ok_.load(std::memory_order_relaxed));
+    ctr("gamemesh_disconnect_accepted_total", "Disconnect mark accepted (queue or rpc).",
+        disconnect_accepted_.load(std::memory_order_relaxed));
+    ctr("gamemesh_disconnect_dropped_total", "Disconnect mark dropped after fallback fail.",
+        disconnect_dropped_.load(std::memory_order_relaxed));
+    ctr("gamemesh_disconnect_retried_total", "Disconnect mark rpc fallback after queue full.",
+        disconnect_retried_.load(std::memory_order_relaxed));
+    ctr("gamemesh_disconnect_compensated_total", "Disconnect mark executed by async worker.",
+        disconnect_compensated_.load(std::memory_order_relaxed));
+    ctr("gamemesh_disconnect_failed_total", "Disconnect mark failed.",
+        disconnect_failed_.load(std::memory_order_relaxed));
+    ctr("gamemesh_kick_gateway_attempt_total", "Session Kick best-effort GatewayKick.",
+        kick_gateway_attempt_.load(std::memory_order_relaxed));
     return os.str();
 }

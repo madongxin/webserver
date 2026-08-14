@@ -15,6 +15,10 @@ public:
                    const ::gwpush::PushBatchRequest *request,
                    ::gwpush::PushBatchResponse *response,
                    ::google::protobuf::Closure *done) override;
+    void KickConnection(::google::protobuf::RpcController *controller,
+                        const ::gwpush::KickConnectionRequest *request,
+                        ::gwpush::KickConnectionResponse *response,
+                        ::google::protobuf::Closure *done) override;
 };
 
 class GatewayPushServer {

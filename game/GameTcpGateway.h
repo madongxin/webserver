@@ -48,6 +48,7 @@ public:
     void RequestQuit();
 
     const std::string &gateway_instance_id() const { return instance_id_; }
+    static bool TcpListening();
 
 private:
     void Run();

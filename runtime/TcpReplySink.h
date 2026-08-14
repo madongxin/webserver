@@ -14,6 +14,7 @@ public:
     explicit TcpReplySink(const std::shared_ptr<TcpConnection> &conn);
 
     void SendFrame(const std::string &response_frame) override;
+    void CloseConnection() override;
 
 private:
     std::weak_ptr<TcpConnection> conn_;

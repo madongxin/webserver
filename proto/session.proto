@@ -130,6 +130,65 @@ message ReconnectResponse {
   uint64 route_version = 9;
 }
 
+message PrepareReconnectRequest {
+  uint64 player_id = 1;
+  string session_id = 2;
+  string reconnect_ticket = 3;
+  string gateway_instance_id = 4;
+  uint64 last_server_seq = 5;
+  string operation_id = 6;
+}
+
+message PrepareReconnectResponse {
+  bool ok = 1;
+  string message = 2;
+  string error_code = 3;
+  string session_id = 4;
+  string candidate_fence_token = 5;
+  uint64 candidate_generation = 6;
+  string gamelogic_instance_id = 7;
+  uint64 map_instance_id = 8;
+  uint64 map_owner_epoch = 9;
+  uint64 route_version = 10;
+  string operation_id = 11;
+}
+
+message CommitReconnectRequest {
+  uint64 player_id = 1;
+  string session_id = 2;
+  string operation_id = 3;
+  string candidate_fence_token = 4;
+  uint64 candidate_generation = 5;
+  string gateway_instance_id = 6;
+  uint64 connection_id = 7;
+}
+
+message CommitReconnectResponse {
+  bool ok = 1;
+  string message = 2;
+  string error_code = 3;
+  string session_id = 4;
+  string fence_token = 5;
+  uint64 generation = 6;
+  string gamelogic_instance_id = 7;
+  uint64 map_instance_id = 8;
+  uint64 map_owner_epoch = 9;
+  uint64 route_version = 10;
+}
+
+message AbortReconnectRequest {
+  uint64 player_id = 1;
+  string session_id = 2;
+  string operation_id = 3;
+  string candidate_fence_token = 4;
+}
+
+message AbortReconnectResponse {
+  bool ok = 1;
+  string message = 2;
+  string error_code = 3;
+}
+
 message LogoutRequest {
   uint64 player_id = 1;
   string session_id = 2;
@@ -327,6 +386,9 @@ service SessionService {
   rpc AcquireSession(AcquireSessionRequest) returns (AcquireSessionResponse);
   rpc MarkDisconnectedV2(MarkDisconnectedRequest) returns (MarkDisconnectedResponse);
   rpc ReconnectV2(ReconnectRequest) returns (ReconnectResponse);
+  rpc PrepareReconnect(PrepareReconnectRequest) returns (PrepareReconnectResponse);
+  rpc CommitReconnect(CommitReconnectRequest) returns (CommitReconnectResponse);
+  rpc AbortReconnect(AbortReconnectRequest) returns (AbortReconnectResponse);
   rpc GetSessionOperation(GetSessionOperationRequest) returns (GetSessionOperationResponse);
   rpc LogoutV2(LogoutRequest) returns (LogoutResponse);
   rpc Kick(KickRequest) returns (KickResponse);

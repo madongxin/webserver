@@ -13,8 +13,8 @@
 
 /**
  * Gateway 断线本地 Redis 补偿：禁止在 Reactor 线程同步 MarkDisconnected。
- * 有界队列 + 后台 worker；满则丢弃并记指标，依赖 Session TTL 收敛。
- * worker 只捕获独立 State：Stop 超时后可放弃旧 State 而不 UAF。
+ * 有界队列 + 后台 worker；满则丢弃并记指标。
+ * Stop 必须 join，禁止 detach；默认执行器在 stop 后不得再调 SessionStore。
  */
 class GatewayDisconnectAsync {
 public:
@@ -27,7 +27,7 @@ public:
     static GatewayDisconnectAsync &Instance();
 
     void Start(size_t max_queue = 4096);
-    /** 有界等待排空后停 worker；超时放弃旧 State 并立即返回 */
+    /** 禁止入队、取消剩余队列、join worker。任务必须轮询 stopping()。 */
     void Stop(std::chrono::milliseconds drain_deadline = std::chrono::milliseconds(2000));
 
     /** Reactor 线程：仅入队；成功 true，满/未启动 false */
@@ -35,7 +35,9 @@ public:
 
     size_t pending() const;
     uint64_t dropped() const { return dropped_.load(std::memory_order_relaxed); }
+    uint64_t cancelled() const { return cancelled_.load(std::memory_order_relaxed); }
     uint64_t executed() const;
+    bool stopping() const;
 
     /** 单测：替换实际执行体（可注入 sleep）；nullptr 恢复默认 SessionStore 路径 */
     void SetExecutorForTest(std::function<void(const Task &)> exec);
@@ -49,6 +51,7 @@ private:
         std::atomic<bool> stop{true};
         std::atomic<size_t> pending{0};
         std::atomic<uint64_t> executed{0};
+        std::atomic<uint64_t> cancelled{0};
         std::function<void(const Task &)> test_exec;
     };
 
@@ -56,11 +59,12 @@ private:
     ~GatewayDisconnectAsync();
 
     static void WorkerLoop(std::shared_ptr<State> st);
-    static void RunDefault(const Task &t);
+    static void RunDefault(const std::shared_ptr<State> &st, const Task &t);
 
     mutable std::mutex life_mu_;
     std::shared_ptr<State> state_;
     std::thread worker_;
     std::atomic<uint64_t> dropped_{0};
     std::atomic<uint64_t> executed_{0};
+    std::atomic<uint64_t> cancelled_{0};
 };

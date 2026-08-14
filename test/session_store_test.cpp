@@ -21,8 +21,8 @@ int Fail(const char *msg) {
 
 int main() {
     if (!SessionStore::Instance().InitFromConfig()) {
-        std::printf("SKIP session_store_test (Redis unavailable)\n");
-        return 0;
+        std::printf("FAIL session_store_test (Redis unavailable)\n");
+        return 1;
     }
 
     const uint64_t pid = 900001;
@@ -234,6 +234,39 @@ int main() {
             return Fail("preferred dead owner used");
         if (ok_out.gamelogic_instance_id != "gl-0" && ok_out.gamelogic_instance_id != "gl-1")
             return Fail("restore owners logic id");
+    }
+
+    {
+        const uint64_t kpid = 900088;
+        game::LogoutReq klo;
+        klo.set_player_id(kpid);
+        game::LogoutRsp klr;
+        SessionStore::Instance().Logout(klo, &klr);
+        AcquireSessionInput kin;
+        kin.player_id = kpid;
+        kin.device_id = "kick-dev";
+        kin.server_id = 1;
+        kin.kick_other_device = true;
+        kin.gateway_instance_id = "gw-0";
+        AcquireSessionResult kout;
+        if (!SessionStore::Instance().AcquireSession(kin, &kout) || !kout.ok)
+            return Fail("kick setup acquire");
+        const std::string old_fence = kout.fence_token;
+        const uint64_t old_gen = kout.generation;
+        SessionStore::KickResult kr;
+        if (!SessionStore::Instance().Kick(kpid, "e2e", &kr) || !kr.ok)
+            return Fail("kick cas");
+        if (kr.new_generation <= old_gen)
+            return Fail("kick generation");
+        if (kr.old_token != old_fence)
+            return Fail("kick old token");
+        game::ValidateSessionReq v;
+        v.set_player_id(kpid);
+        v.set_token(old_fence);
+        game::ValidateSessionRsp vr;
+        SessionStore::Instance().Validate(v, &vr);
+        if (vr.valid())
+            return Fail("old fence still valid after kick");
     }
 
     std::printf("OK session_store_test login/replace/disconnect/reconnect/route/concurrent/idem\n");

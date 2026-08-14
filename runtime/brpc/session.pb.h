@@ -38,7 +38,7 @@ namespace protobuf_session_2eproto {
 struct TableStruct {
   static const ::google::protobuf::internal::ParseTableField entries[];
   static const ::google::protobuf::internal::AuxillaryParseTableField aux[];
-  static const ::google::protobuf::internal::ParseTable schema[39];
+  static const ::google::protobuf::internal::ParseTable schema[45];
   static const ::google::protobuf::internal::FieldMetadata field_metadata[];
   static const ::google::protobuf::internal::SerializationTable serialization_table[];
   static const ::google::protobuf::uint32 offsets[];
@@ -72,6 +72,18 @@ void InitDefaultsGetSessionOperationResponseImpl();
 void InitDefaultsGetSessionOperationResponse();
 void InitDefaultsReconnectResponseImpl();
 void InitDefaultsReconnectResponse();
+void InitDefaultsPrepareReconnectRequestImpl();
+void InitDefaultsPrepareReconnectRequest();
+void InitDefaultsPrepareReconnectResponseImpl();
+void InitDefaultsPrepareReconnectResponse();
+void InitDefaultsCommitReconnectRequestImpl();
+void InitDefaultsCommitReconnectRequest();
+void InitDefaultsCommitReconnectResponseImpl();
+void InitDefaultsCommitReconnectResponse();
+void InitDefaultsAbortReconnectRequestImpl();
+void InitDefaultsAbortReconnectRequest();
+void InitDefaultsAbortReconnectResponseImpl();
+void InitDefaultsAbortReconnectResponse();
 void InitDefaultsLogoutRequestImpl();
 void InitDefaultsLogoutRequest();
 void InitDefaultsLogoutResponseImpl();
@@ -137,6 +149,12 @@ inline void InitDefaults() {
   InitDefaultsGetSessionOperationRequest();
   InitDefaultsGetSessionOperationResponse();
   InitDefaultsReconnectResponse();
+  InitDefaultsPrepareReconnectRequest();
+  InitDefaultsPrepareReconnectResponse();
+  InitDefaultsCommitReconnectRequest();
+  InitDefaultsCommitReconnectResponse();
+  InitDefaultsAbortReconnectRequest();
+  InitDefaultsAbortReconnectResponse();
   InitDefaultsLogoutRequest();
   InitDefaultsLogoutResponse();
   InitDefaultsKickRequest();
@@ -171,6 +189,12 @@ extern AbortPlayerTransferRequestDefaultTypeInternal _AbortPlayerTransferRequest
 class AbortPlayerTransferResponse;
 class AbortPlayerTransferResponseDefaultTypeInternal;
 extern AbortPlayerTransferResponseDefaultTypeInternal _AbortPlayerTransferResponse_default_instance_;
+class AbortReconnectRequest;
+class AbortReconnectRequestDefaultTypeInternal;
+extern AbortReconnectRequestDefaultTypeInternal _AbortReconnectRequest_default_instance_;
+class AbortReconnectResponse;
+class AbortReconnectResponseDefaultTypeInternal;
+extern AbortReconnectResponseDefaultTypeInternal _AbortReconnectResponse_default_instance_;
 class AcquireSessionRequest;
 class AcquireSessionRequestDefaultTypeInternal;
 extern AcquireSessionRequestDefaultTypeInternal _AcquireSessionRequest_default_instance_;
@@ -195,6 +219,12 @@ extern CommitPlayerTransferRequestDefaultTypeInternal _CommitPlayerTransferReque
 class CommitPlayerTransferResponse;
 class CommitPlayerTransferResponseDefaultTypeInternal;
 extern CommitPlayerTransferResponseDefaultTypeInternal _CommitPlayerTransferResponse_default_instance_;
+class CommitReconnectRequest;
+class CommitReconnectRequestDefaultTypeInternal;
+extern CommitReconnectRequestDefaultTypeInternal _CommitReconnectRequest_default_instance_;
+class CommitReconnectResponse;
+class CommitReconnectResponseDefaultTypeInternal;
+extern CommitReconnectResponseDefaultTypeInternal _CommitReconnectResponse_default_instance_;
 class GetPlacementRequest;
 class GetPlacementRequestDefaultTypeInternal;
 extern GetPlacementRequestDefaultTypeInternal _GetPlacementRequest_default_instance_;
@@ -258,6 +288,12 @@ extern MigrateMapResponseDefaultTypeInternal _MigrateMapResponse_default_instanc
 class PlacementRecord;
 class PlacementRecordDefaultTypeInternal;
 extern PlacementRecordDefaultTypeInternal _PlacementRecord_default_instance_;
+class PrepareReconnectRequest;
+class PrepareReconnectRequestDefaultTypeInternal;
+extern PrepareReconnectRequestDefaultTypeInternal _PrepareReconnectRequest_default_instance_;
+class PrepareReconnectResponse;
+class PrepareReconnectResponseDefaultTypeInternal;
+extern PrepareReconnectResponseDefaultTypeInternal _PrepareReconnectResponse_default_instance_;
 class ReconnectRequest;
 class ReconnectRequestDefaultTypeInternal;
 extern ReconnectRequestDefaultTypeInternal _ReconnectRequest_default_instance_;
@@ -2395,6 +2431,1037 @@ class ReconnectResponse : public ::google::protobuf::Message /* @@protoc_inserti
 };
 // -------------------------------------------------------------------
 
+class PrepareReconnectRequest : public ::google::protobuf::Message /* @@protoc_insertion_point(class_definition:sess.PrepareReconnectRequest) */ {
+ public:
+  PrepareReconnectRequest();
+  virtual ~PrepareReconnectRequest();
+
+  PrepareReconnectRequest(const PrepareReconnectRequest& from);
+
+  inline PrepareReconnectRequest& operator=(const PrepareReconnectRequest& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  #if LANG_CXX11
+  PrepareReconnectRequest(PrepareReconnectRequest&& from) noexcept
+    : PrepareReconnectRequest() {
+    *this = ::std::move(from);
+  }
+
+  inline PrepareReconnectRequest& operator=(PrepareReconnectRequest&& from) noexcept {
+    if (GetArenaNoVirtual() == from.GetArenaNoVirtual()) {
+      if (this != &from) InternalSwap(&from);
+    } else {
+      CopyFrom(from);
+    }
+    return *this;
+  }
+  #endif
+  static const ::google::protobuf::Descriptor* descriptor();
+  static const PrepareReconnectRequest& default_instance();
+
+  static void InitAsDefaultInstance();  // FOR INTERNAL USE ONLY
+  static inline const PrepareReconnectRequest* internal_default_instance() {
+    return reinterpret_cast<const PrepareReconnectRequest*>(
+               &_PrepareReconnectRequest_default_instance_);
+  }
+  static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
+    14;
+
+  void Swap(PrepareReconnectRequest* other);
+  friend void swap(PrepareReconnectRequest& a, PrepareReconnectRequest& b) {
+    a.Swap(&b);
+  }
+
+  // implements Message ----------------------------------------------
+
+  inline PrepareReconnectRequest* New() const PROTOBUF_FINAL { return New(NULL); }
+
+  PrepareReconnectRequest* New(::google::protobuf::Arena* arena) const PROTOBUF_FINAL;
+  void CopyFrom(const ::google::protobuf::Message& from) PROTOBUF_FINAL;
+  void MergeFrom(const ::google::protobuf::Message& from) PROTOBUF_FINAL;
+  void CopyFrom(const PrepareReconnectRequest& from);
+  void MergeFrom(const PrepareReconnectRequest& from);
+  void Clear() PROTOBUF_FINAL;
+  bool IsInitialized() const PROTOBUF_FINAL;
+
+  size_t ByteSizeLong() const PROTOBUF_FINAL;
+  bool MergePartialFromCodedStream(
+      ::google::protobuf::io::CodedInputStream* input) PROTOBUF_FINAL;
+  void SerializeWithCachedSizes(
+      ::google::protobuf::io::CodedOutputStream* output) const PROTOBUF_FINAL;
+  ::google::protobuf::uint8* InternalSerializeWithCachedSizesToArray(
+      bool deterministic, ::google::protobuf::uint8* target) const PROTOBUF_FINAL;
+  int GetCachedSize() const PROTOBUF_FINAL { return _cached_size_; }
+  private:
+  void SharedCtor();
+  void SharedDtor();
+  void SetCachedSize(int size) const PROTOBUF_FINAL;
+  void InternalSwap(PrepareReconnectRequest* other);
+  private:
+  inline ::google::protobuf::Arena* GetArenaNoVirtual() const {
+    return NULL;
+  }
+  inline void* MaybeArenaPtr() const {
+    return NULL;
+  }
+  public:
+
+  ::google::protobuf::Metadata GetMetadata() const PROTOBUF_FINAL;
+
+  // nested types ----------------------------------------------------
+
+  // accessors -------------------------------------------------------
+
+  // string session_id = 2;
+  void clear_session_id();
+  static const int kSessionIdFieldNumber = 2;
+  const ::std::string& session_id() const;
+  void set_session_id(const ::std::string& value);
+  #if LANG_CXX11
+  void set_session_id(::std::string&& value);
+  #endif
+  void set_session_id(const char* value);
+  void set_session_id(const char* value, size_t size);
+  ::std::string* mutable_session_id();
+  ::std::string* release_session_id();
+  void set_allocated_session_id(::std::string* session_id);
+
+  // string reconnect_ticket = 3;
+  void clear_reconnect_ticket();
+  static const int kReconnectTicketFieldNumber = 3;
+  const ::std::string& reconnect_ticket() const;
+  void set_reconnect_ticket(const ::std::string& value);
+  #if LANG_CXX11
+  void set_reconnect_ticket(::std::string&& value);
+  #endif
+  void set_reconnect_ticket(const char* value);
+  void set_reconnect_ticket(const char* value, size_t size);
+  ::std::string* mutable_reconnect_ticket();
+  ::std::string* release_reconnect_ticket();
+  void set_allocated_reconnect_ticket(::std::string* reconnect_ticket);
+
+  // string gateway_instance_id = 4;
+  void clear_gateway_instance_id();
+  static const int kGatewayInstanceIdFieldNumber = 4;
+  const ::std::string& gateway_instance_id() const;
+  void set_gateway_instance_id(const ::std::string& value);
+  #if LANG_CXX11
+  void set_gateway_instance_id(::std::string&& value);
+  #endif
+  void set_gateway_instance_id(const char* value);
+  void set_gateway_instance_id(const char* value, size_t size);
+  ::std::string* mutable_gateway_instance_id();
+  ::std::string* release_gateway_instance_id();
+  void set_allocated_gateway_instance_id(::std::string* gateway_instance_id);
+
+  // string operation_id = 6;
+  void clear_operation_id();
+  static const int kOperationIdFieldNumber = 6;
+  const ::std::string& operation_id() const;
+  void set_operation_id(const ::std::string& value);
+  #if LANG_CXX11
+  void set_operation_id(::std::string&& value);
+  #endif
+  void set_operation_id(const char* value);
+  void set_operation_id(const char* value, size_t size);
+  ::std::string* mutable_operation_id();
+  ::std::string* release_operation_id();
+  void set_allocated_operation_id(::std::string* operation_id);
+
+  // uint64 player_id = 1;
+  void clear_player_id();
+  static const int kPlayerIdFieldNumber = 1;
+  ::google::protobuf::uint64 player_id() const;
+  void set_player_id(::google::protobuf::uint64 value);
+
+  // uint64 last_server_seq = 5;
+  void clear_last_server_seq();
+  static const int kLastServerSeqFieldNumber = 5;
+  ::google::protobuf::uint64 last_server_seq() const;
+  void set_last_server_seq(::google::protobuf::uint64 value);
+
+  // @@protoc_insertion_point(class_scope:sess.PrepareReconnectRequest)
+ private:
+
+  ::google::protobuf::internal::InternalMetadataWithArena _internal_metadata_;
+  ::google::protobuf::internal::ArenaStringPtr session_id_;
+  ::google::protobuf::internal::ArenaStringPtr reconnect_ticket_;
+  ::google::protobuf::internal::ArenaStringPtr gateway_instance_id_;
+  ::google::protobuf::internal::ArenaStringPtr operation_id_;
+  ::google::protobuf::uint64 player_id_;
+  ::google::protobuf::uint64 last_server_seq_;
+  mutable int _cached_size_;
+  friend struct ::protobuf_session_2eproto::TableStruct;
+  friend void ::protobuf_session_2eproto::InitDefaultsPrepareReconnectRequestImpl();
+};
+// -------------------------------------------------------------------
+
+class PrepareReconnectResponse : public ::google::protobuf::Message /* @@protoc_insertion_point(class_definition:sess.PrepareReconnectResponse) */ {
+ public:
+  PrepareReconnectResponse();
+  virtual ~PrepareReconnectResponse();
+
+  PrepareReconnectResponse(const PrepareReconnectResponse& from);
+
+  inline PrepareReconnectResponse& operator=(const PrepareReconnectResponse& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  #if LANG_CXX11
+  PrepareReconnectResponse(PrepareReconnectResponse&& from) noexcept
+    : PrepareReconnectResponse() {
+    *this = ::std::move(from);
+  }
+
+  inline PrepareReconnectResponse& operator=(PrepareReconnectResponse&& from) noexcept {
+    if (GetArenaNoVirtual() == from.GetArenaNoVirtual()) {
+      if (this != &from) InternalSwap(&from);
+    } else {
+      CopyFrom(from);
+    }
+    return *this;
+  }
+  #endif
+  static const ::google::protobuf::Descriptor* descriptor();
+  static const PrepareReconnectResponse& default_instance();
+
+  static void InitAsDefaultInstance();  // FOR INTERNAL USE ONLY
+  static inline const PrepareReconnectResponse* internal_default_instance() {
+    return reinterpret_cast<const PrepareReconnectResponse*>(
+               &_PrepareReconnectResponse_default_instance_);
+  }
+  static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
+    15;
+
+  void Swap(PrepareReconnectResponse* other);
+  friend void swap(PrepareReconnectResponse& a, PrepareReconnectResponse& b) {
+    a.Swap(&b);
+  }
+
+  // implements Message ----------------------------------------------
+
+  inline PrepareReconnectResponse* New() const PROTOBUF_FINAL { return New(NULL); }
+
+  PrepareReconnectResponse* New(::google::protobuf::Arena* arena) const PROTOBUF_FINAL;
+  void CopyFrom(const ::google::protobuf::Message& from) PROTOBUF_FINAL;
+  void MergeFrom(const ::google::protobuf::Message& from) PROTOBUF_FINAL;
+  void CopyFrom(const PrepareReconnectResponse& from);
+  void MergeFrom(const PrepareReconnectResponse& from);
+  void Clear() PROTOBUF_FINAL;
+  bool IsInitialized() const PROTOBUF_FINAL;
+
+  size_t ByteSizeLong() const PROTOBUF_FINAL;
+  bool MergePartialFromCodedStream(
+      ::google::protobuf::io::CodedInputStream* input) PROTOBUF_FINAL;
+  void SerializeWithCachedSizes(
+      ::google::protobuf::io::CodedOutputStream* output) const PROTOBUF_FINAL;
+  ::google::protobuf::uint8* InternalSerializeWithCachedSizesToArray(
+      bool deterministic, ::google::protobuf::uint8* target) const PROTOBUF_FINAL;
+  int GetCachedSize() const PROTOBUF_FINAL { return _cached_size_; }
+  private:
+  void SharedCtor();
+  void SharedDtor();
+  void SetCachedSize(int size) const PROTOBUF_FINAL;
+  void InternalSwap(PrepareReconnectResponse* other);
+  private:
+  inline ::google::protobuf::Arena* GetArenaNoVirtual() const {
+    return NULL;
+  }
+  inline void* MaybeArenaPtr() const {
+    return NULL;
+  }
+  public:
+
+  ::google::protobuf::Metadata GetMetadata() const PROTOBUF_FINAL;
+
+  // nested types ----------------------------------------------------
+
+  // accessors -------------------------------------------------------
+
+  // string message = 2;
+  void clear_message();
+  static const int kMessageFieldNumber = 2;
+  const ::std::string& message() const;
+  void set_message(const ::std::string& value);
+  #if LANG_CXX11
+  void set_message(::std::string&& value);
+  #endif
+  void set_message(const char* value);
+  void set_message(const char* value, size_t size);
+  ::std::string* mutable_message();
+  ::std::string* release_message();
+  void set_allocated_message(::std::string* message);
+
+  // string error_code = 3;
+  void clear_error_code();
+  static const int kErrorCodeFieldNumber = 3;
+  const ::std::string& error_code() const;
+  void set_error_code(const ::std::string& value);
+  #if LANG_CXX11
+  void set_error_code(::std::string&& value);
+  #endif
+  void set_error_code(const char* value);
+  void set_error_code(const char* value, size_t size);
+  ::std::string* mutable_error_code();
+  ::std::string* release_error_code();
+  void set_allocated_error_code(::std::string* error_code);
+
+  // string session_id = 4;
+  void clear_session_id();
+  static const int kSessionIdFieldNumber = 4;
+  const ::std::string& session_id() const;
+  void set_session_id(const ::std::string& value);
+  #if LANG_CXX11
+  void set_session_id(::std::string&& value);
+  #endif
+  void set_session_id(const char* value);
+  void set_session_id(const char* value, size_t size);
+  ::std::string* mutable_session_id();
+  ::std::string* release_session_id();
+  void set_allocated_session_id(::std::string* session_id);
+
+  // string candidate_fence_token = 5;
+  void clear_candidate_fence_token();
+  static const int kCandidateFenceTokenFieldNumber = 5;
+  const ::std::string& candidate_fence_token() const;
+  void set_candidate_fence_token(const ::std::string& value);
+  #if LANG_CXX11
+  void set_candidate_fence_token(::std::string&& value);
+  #endif
+  void set_candidate_fence_token(const char* value);
+  void set_candidate_fence_token(const char* value, size_t size);
+  ::std::string* mutable_candidate_fence_token();
+  ::std::string* release_candidate_fence_token();
+  void set_allocated_candidate_fence_token(::std::string* candidate_fence_token);
+
+  // string gamelogic_instance_id = 7;
+  void clear_gamelogic_instance_id();
+  static const int kGamelogicInstanceIdFieldNumber = 7;
+  const ::std::string& gamelogic_instance_id() const;
+  void set_gamelogic_instance_id(const ::std::string& value);
+  #if LANG_CXX11
+  void set_gamelogic_instance_id(::std::string&& value);
+  #endif
+  void set_gamelogic_instance_id(const char* value);
+  void set_gamelogic_instance_id(const char* value, size_t size);
+  ::std::string* mutable_gamelogic_instance_id();
+  ::std::string* release_gamelogic_instance_id();
+  void set_allocated_gamelogic_instance_id(::std::string* gamelogic_instance_id);
+
+  // string operation_id = 11;
+  void clear_operation_id();
+  static const int kOperationIdFieldNumber = 11;
+  const ::std::string& operation_id() const;
+  void set_operation_id(const ::std::string& value);
+  #if LANG_CXX11
+  void set_operation_id(::std::string&& value);
+  #endif
+  void set_operation_id(const char* value);
+  void set_operation_id(const char* value, size_t size);
+  ::std::string* mutable_operation_id();
+  ::std::string* release_operation_id();
+  void set_allocated_operation_id(::std::string* operation_id);
+
+  // uint64 candidate_generation = 6;
+  void clear_candidate_generation();
+  static const int kCandidateGenerationFieldNumber = 6;
+  ::google::protobuf::uint64 candidate_generation() const;
+  void set_candidate_generation(::google::protobuf::uint64 value);
+
+  // uint64 map_instance_id = 8;
+  void clear_map_instance_id();
+  static const int kMapInstanceIdFieldNumber = 8;
+  ::google::protobuf::uint64 map_instance_id() const;
+  void set_map_instance_id(::google::protobuf::uint64 value);
+
+  // uint64 map_owner_epoch = 9;
+  void clear_map_owner_epoch();
+  static const int kMapOwnerEpochFieldNumber = 9;
+  ::google::protobuf::uint64 map_owner_epoch() const;
+  void set_map_owner_epoch(::google::protobuf::uint64 value);
+
+  // uint64 route_version = 10;
+  void clear_route_version();
+  static const int kRouteVersionFieldNumber = 10;
+  ::google::protobuf::uint64 route_version() const;
+  void set_route_version(::google::protobuf::uint64 value);
+
+  // bool ok = 1;
+  void clear_ok();
+  static const int kOkFieldNumber = 1;
+  bool ok() const;
+  void set_ok(bool value);
+
+  // @@protoc_insertion_point(class_scope:sess.PrepareReconnectResponse)
+ private:
+
+  ::google::protobuf::internal::InternalMetadataWithArena _internal_metadata_;
+  ::google::protobuf::internal::ArenaStringPtr message_;
+  ::google::protobuf::internal::ArenaStringPtr error_code_;
+  ::google::protobuf::internal::ArenaStringPtr session_id_;
+  ::google::protobuf::internal::ArenaStringPtr candidate_fence_token_;
+  ::google::protobuf::internal::ArenaStringPtr gamelogic_instance_id_;
+  ::google::protobuf::internal::ArenaStringPtr operation_id_;
+  ::google::protobuf::uint64 candidate_generation_;
+  ::google::protobuf::uint64 map_instance_id_;
+  ::google::protobuf::uint64 map_owner_epoch_;
+  ::google::protobuf::uint64 route_version_;
+  bool ok_;
+  mutable int _cached_size_;
+  friend struct ::protobuf_session_2eproto::TableStruct;
+  friend void ::protobuf_session_2eproto::InitDefaultsPrepareReconnectResponseImpl();
+};
+// -------------------------------------------------------------------
+
+class CommitReconnectRequest : public ::google::protobuf::Message /* @@protoc_insertion_point(class_definition:sess.CommitReconnectRequest) */ {
+ public:
+  CommitReconnectRequest();
+  virtual ~CommitReconnectRequest();
+
+  CommitReconnectRequest(const CommitReconnectRequest& from);
+
+  inline CommitReconnectRequest& operator=(const CommitReconnectRequest& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  #if LANG_CXX11
+  CommitReconnectRequest(CommitReconnectRequest&& from) noexcept
+    : CommitReconnectRequest() {
+    *this = ::std::move(from);
+  }
+
+  inline CommitReconnectRequest& operator=(CommitReconnectRequest&& from) noexcept {
+    if (GetArenaNoVirtual() == from.GetArenaNoVirtual()) {
+      if (this != &from) InternalSwap(&from);
+    } else {
+      CopyFrom(from);
+    }
+    return *this;
+  }
+  #endif
+  static const ::google::protobuf::Descriptor* descriptor();
+  static const CommitReconnectRequest& default_instance();
+
+  static void InitAsDefaultInstance();  // FOR INTERNAL USE ONLY
+  static inline const CommitReconnectRequest* internal_default_instance() {
+    return reinterpret_cast<const CommitReconnectRequest*>(
+               &_CommitReconnectRequest_default_instance_);
+  }
+  static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
+    16;
+
+  void Swap(CommitReconnectRequest* other);
+  friend void swap(CommitReconnectRequest& a, CommitReconnectRequest& b) {
+    a.Swap(&b);
+  }
+
+  // implements Message ----------------------------------------------
+
+  inline CommitReconnectRequest* New() const PROTOBUF_FINAL { return New(NULL); }
+
+  CommitReconnectRequest* New(::google::protobuf::Arena* arena) const PROTOBUF_FINAL;
+  void CopyFrom(const ::google::protobuf::Message& from) PROTOBUF_FINAL;
+  void MergeFrom(const ::google::protobuf::Message& from) PROTOBUF_FINAL;
+  void CopyFrom(const CommitReconnectRequest& from);
+  void MergeFrom(const CommitReconnectRequest& from);
+  void Clear() PROTOBUF_FINAL;
+  bool IsInitialized() const PROTOBUF_FINAL;
+
+  size_t ByteSizeLong() const PROTOBUF_FINAL;
+  bool MergePartialFromCodedStream(
+      ::google::protobuf::io::CodedInputStream* input) PROTOBUF_FINAL;
+  void SerializeWithCachedSizes(
+      ::google::protobuf::io::CodedOutputStream* output) const PROTOBUF_FINAL;
+  ::google::protobuf::uint8* InternalSerializeWithCachedSizesToArray(
+      bool deterministic, ::google::protobuf::uint8* target) const PROTOBUF_FINAL;
+  int GetCachedSize() const PROTOBUF_FINAL { return _cached_size_; }
+  private:
+  void SharedCtor();
+  void SharedDtor();
+  void SetCachedSize(int size) const PROTOBUF_FINAL;
+  void InternalSwap(CommitReconnectRequest* other);
+  private:
+  inline ::google::protobuf::Arena* GetArenaNoVirtual() const {
+    return NULL;
+  }
+  inline void* MaybeArenaPtr() const {
+    return NULL;
+  }
+  public:
+
+  ::google::protobuf::Metadata GetMetadata() const PROTOBUF_FINAL;
+
+  // nested types ----------------------------------------------------
+
+  // accessors -------------------------------------------------------
+
+  // string session_id = 2;
+  void clear_session_id();
+  static const int kSessionIdFieldNumber = 2;
+  const ::std::string& session_id() const;
+  void set_session_id(const ::std::string& value);
+  #if LANG_CXX11
+  void set_session_id(::std::string&& value);
+  #endif
+  void set_session_id(const char* value);
+  void set_session_id(const char* value, size_t size);
+  ::std::string* mutable_session_id();
+  ::std::string* release_session_id();
+  void set_allocated_session_id(::std::string* session_id);
+
+  // string operation_id = 3;
+  void clear_operation_id();
+  static const int kOperationIdFieldNumber = 3;
+  const ::std::string& operation_id() const;
+  void set_operation_id(const ::std::string& value);
+  #if LANG_CXX11
+  void set_operation_id(::std::string&& value);
+  #endif
+  void set_operation_id(const char* value);
+  void set_operation_id(const char* value, size_t size);
+  ::std::string* mutable_operation_id();
+  ::std::string* release_operation_id();
+  void set_allocated_operation_id(::std::string* operation_id);
+
+  // string candidate_fence_token = 4;
+  void clear_candidate_fence_token();
+  static const int kCandidateFenceTokenFieldNumber = 4;
+  const ::std::string& candidate_fence_token() const;
+  void set_candidate_fence_token(const ::std::string& value);
+  #if LANG_CXX11
+  void set_candidate_fence_token(::std::string&& value);
+  #endif
+  void set_candidate_fence_token(const char* value);
+  void set_candidate_fence_token(const char* value, size_t size);
+  ::std::string* mutable_candidate_fence_token();
+  ::std::string* release_candidate_fence_token();
+  void set_allocated_candidate_fence_token(::std::string* candidate_fence_token);
+
+  // string gateway_instance_id = 6;
+  void clear_gateway_instance_id();
+  static const int kGatewayInstanceIdFieldNumber = 6;
+  const ::std::string& gateway_instance_id() const;
+  void set_gateway_instance_id(const ::std::string& value);
+  #if LANG_CXX11
+  void set_gateway_instance_id(::std::string&& value);
+  #endif
+  void set_gateway_instance_id(const char* value);
+  void set_gateway_instance_id(const char* value, size_t size);
+  ::std::string* mutable_gateway_instance_id();
+  ::std::string* release_gateway_instance_id();
+  void set_allocated_gateway_instance_id(::std::string* gateway_instance_id);
+
+  // uint64 player_id = 1;
+  void clear_player_id();
+  static const int kPlayerIdFieldNumber = 1;
+  ::google::protobuf::uint64 player_id() const;
+  void set_player_id(::google::protobuf::uint64 value);
+
+  // uint64 candidate_generation = 5;
+  void clear_candidate_generation();
+  static const int kCandidateGenerationFieldNumber = 5;
+  ::google::protobuf::uint64 candidate_generation() const;
+  void set_candidate_generation(::google::protobuf::uint64 value);
+
+  // uint64 connection_id = 7;
+  void clear_connection_id();
+  static const int kConnectionIdFieldNumber = 7;
+  ::google::protobuf::uint64 connection_id() const;
+  void set_connection_id(::google::protobuf::uint64 value);
+
+  // @@protoc_insertion_point(class_scope:sess.CommitReconnectRequest)
+ private:
+
+  ::google::protobuf::internal::InternalMetadataWithArena _internal_metadata_;
+  ::google::protobuf::internal::ArenaStringPtr session_id_;
+  ::google::protobuf::internal::ArenaStringPtr operation_id_;
+  ::google::protobuf::internal::ArenaStringPtr candidate_fence_token_;
+  ::google::protobuf::internal::ArenaStringPtr gateway_instance_id_;
+  ::google::protobuf::uint64 player_id_;
+  ::google::protobuf::uint64 candidate_generation_;
+  ::google::protobuf::uint64 connection_id_;
+  mutable int _cached_size_;
+  friend struct ::protobuf_session_2eproto::TableStruct;
+  friend void ::protobuf_session_2eproto::InitDefaultsCommitReconnectRequestImpl();
+};
+// -------------------------------------------------------------------
+
+class CommitReconnectResponse : public ::google::protobuf::Message /* @@protoc_insertion_point(class_definition:sess.CommitReconnectResponse) */ {
+ public:
+  CommitReconnectResponse();
+  virtual ~CommitReconnectResponse();
+
+  CommitReconnectResponse(const CommitReconnectResponse& from);
+
+  inline CommitReconnectResponse& operator=(const CommitReconnectResponse& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  #if LANG_CXX11
+  CommitReconnectResponse(CommitReconnectResponse&& from) noexcept
+    : CommitReconnectResponse() {
+    *this = ::std::move(from);
+  }
+
+  inline CommitReconnectResponse& operator=(CommitReconnectResponse&& from) noexcept {
+    if (GetArenaNoVirtual() == from.GetArenaNoVirtual()) {
+      if (this != &from) InternalSwap(&from);
+    } else {
+      CopyFrom(from);
+    }
+    return *this;
+  }
+  #endif
+  static const ::google::protobuf::Descriptor* descriptor();
+  static const CommitReconnectResponse& default_instance();
+
+  static void InitAsDefaultInstance();  // FOR INTERNAL USE ONLY
+  static inline const CommitReconnectResponse* internal_default_instance() {
+    return reinterpret_cast<const CommitReconnectResponse*>(
+               &_CommitReconnectResponse_default_instance_);
+  }
+  static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
+    17;
+
+  void Swap(CommitReconnectResponse* other);
+  friend void swap(CommitReconnectResponse& a, CommitReconnectResponse& b) {
+    a.Swap(&b);
+  }
+
+  // implements Message ----------------------------------------------
+
+  inline CommitReconnectResponse* New() const PROTOBUF_FINAL { return New(NULL); }
+
+  CommitReconnectResponse* New(::google::protobuf::Arena* arena) const PROTOBUF_FINAL;
+  void CopyFrom(const ::google::protobuf::Message& from) PROTOBUF_FINAL;
+  void MergeFrom(const ::google::protobuf::Message& from) PROTOBUF_FINAL;
+  void CopyFrom(const CommitReconnectResponse& from);
+  void MergeFrom(const CommitReconnectResponse& from);
+  void Clear() PROTOBUF_FINAL;
+  bool IsInitialized() const PROTOBUF_FINAL;
+
+  size_t ByteSizeLong() const PROTOBUF_FINAL;
+  bool MergePartialFromCodedStream(
+      ::google::protobuf::io::CodedInputStream* input) PROTOBUF_FINAL;
+  void SerializeWithCachedSizes(
+      ::google::protobuf::io::CodedOutputStream* output) const PROTOBUF_FINAL;
+  ::google::protobuf::uint8* InternalSerializeWithCachedSizesToArray(
+      bool deterministic, ::google::protobuf::uint8* target) const PROTOBUF_FINAL;
+  int GetCachedSize() const PROTOBUF_FINAL { return _cached_size_; }
+  private:
+  void SharedCtor();
+  void SharedDtor();
+  void SetCachedSize(int size) const PROTOBUF_FINAL;
+  void InternalSwap(CommitReconnectResponse* other);
+  private:
+  inline ::google::protobuf::Arena* GetArenaNoVirtual() const {
+    return NULL;
+  }
+  inline void* MaybeArenaPtr() const {
+    return NULL;
+  }
+  public:
+
+  ::google::protobuf::Metadata GetMetadata() const PROTOBUF_FINAL;
+
+  // nested types ----------------------------------------------------
+
+  // accessors -------------------------------------------------------
+
+  // string message = 2;
+  void clear_message();
+  static const int kMessageFieldNumber = 2;
+  const ::std::string& message() const;
+  void set_message(const ::std::string& value);
+  #if LANG_CXX11
+  void set_message(::std::string&& value);
+  #endif
+  void set_message(const char* value);
+  void set_message(const char* value, size_t size);
+  ::std::string* mutable_message();
+  ::std::string* release_message();
+  void set_allocated_message(::std::string* message);
+
+  // string error_code = 3;
+  void clear_error_code();
+  static const int kErrorCodeFieldNumber = 3;
+  const ::std::string& error_code() const;
+  void set_error_code(const ::std::string& value);
+  #if LANG_CXX11
+  void set_error_code(::std::string&& value);
+  #endif
+  void set_error_code(const char* value);
+  void set_error_code(const char* value, size_t size);
+  ::std::string* mutable_error_code();
+  ::std::string* release_error_code();
+  void set_allocated_error_code(::std::string* error_code);
+
+  // string session_id = 4;
+  void clear_session_id();
+  static const int kSessionIdFieldNumber = 4;
+  const ::std::string& session_id() const;
+  void set_session_id(const ::std::string& value);
+  #if LANG_CXX11
+  void set_session_id(::std::string&& value);
+  #endif
+  void set_session_id(const char* value);
+  void set_session_id(const char* value, size_t size);
+  ::std::string* mutable_session_id();
+  ::std::string* release_session_id();
+  void set_allocated_session_id(::std::string* session_id);
+
+  // string fence_token = 5;
+  void clear_fence_token();
+  static const int kFenceTokenFieldNumber = 5;
+  const ::std::string& fence_token() const;
+  void set_fence_token(const ::std::string& value);
+  #if LANG_CXX11
+  void set_fence_token(::std::string&& value);
+  #endif
+  void set_fence_token(const char* value);
+  void set_fence_token(const char* value, size_t size);
+  ::std::string* mutable_fence_token();
+  ::std::string* release_fence_token();
+  void set_allocated_fence_token(::std::string* fence_token);
+
+  // string gamelogic_instance_id = 7;
+  void clear_gamelogic_instance_id();
+  static const int kGamelogicInstanceIdFieldNumber = 7;
+  const ::std::string& gamelogic_instance_id() const;
+  void set_gamelogic_instance_id(const ::std::string& value);
+  #if LANG_CXX11
+  void set_gamelogic_instance_id(::std::string&& value);
+  #endif
+  void set_gamelogic_instance_id(const char* value);
+  void set_gamelogic_instance_id(const char* value, size_t size);
+  ::std::string* mutable_gamelogic_instance_id();
+  ::std::string* release_gamelogic_instance_id();
+  void set_allocated_gamelogic_instance_id(::std::string* gamelogic_instance_id);
+
+  // uint64 generation = 6;
+  void clear_generation();
+  static const int kGenerationFieldNumber = 6;
+  ::google::protobuf::uint64 generation() const;
+  void set_generation(::google::protobuf::uint64 value);
+
+  // uint64 map_instance_id = 8;
+  void clear_map_instance_id();
+  static const int kMapInstanceIdFieldNumber = 8;
+  ::google::protobuf::uint64 map_instance_id() const;
+  void set_map_instance_id(::google::protobuf::uint64 value);
+
+  // uint64 map_owner_epoch = 9;
+  void clear_map_owner_epoch();
+  static const int kMapOwnerEpochFieldNumber = 9;
+  ::google::protobuf::uint64 map_owner_epoch() const;
+  void set_map_owner_epoch(::google::protobuf::uint64 value);
+
+  // uint64 route_version = 10;
+  void clear_route_version();
+  static const int kRouteVersionFieldNumber = 10;
+  ::google::protobuf::uint64 route_version() const;
+  void set_route_version(::google::protobuf::uint64 value);
+
+  // bool ok = 1;
+  void clear_ok();
+  static const int kOkFieldNumber = 1;
+  bool ok() const;
+  void set_ok(bool value);
+
+  // @@protoc_insertion_point(class_scope:sess.CommitReconnectResponse)
+ private:
+
+  ::google::protobuf::internal::InternalMetadataWithArena _internal_metadata_;
+  ::google::protobuf::internal::ArenaStringPtr message_;
+  ::google::protobuf::internal::ArenaStringPtr error_code_;
+  ::google::protobuf::internal::ArenaStringPtr session_id_;
+  ::google::protobuf::internal::ArenaStringPtr fence_token_;
+  ::google::protobuf::internal::ArenaStringPtr gamelogic_instance_id_;
+  ::google::protobuf::uint64 generation_;
+  ::google::protobuf::uint64 map_instance_id_;
+  ::google::protobuf::uint64 map_owner_epoch_;
+  ::google::protobuf::uint64 route_version_;
+  bool ok_;
+  mutable int _cached_size_;
+  friend struct ::protobuf_session_2eproto::TableStruct;
+  friend void ::protobuf_session_2eproto::InitDefaultsCommitReconnectResponseImpl();
+};
+// -------------------------------------------------------------------
+
+class AbortReconnectRequest : public ::google::protobuf::Message /* @@protoc_insertion_point(class_definition:sess.AbortReconnectRequest) */ {
+ public:
+  AbortReconnectRequest();
+  virtual ~AbortReconnectRequest();
+
+  AbortReconnectRequest(const AbortReconnectRequest& from);
+
+  inline AbortReconnectRequest& operator=(const AbortReconnectRequest& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  #if LANG_CXX11
+  AbortReconnectRequest(AbortReconnectRequest&& from) noexcept
+    : AbortReconnectRequest() {
+    *this = ::std::move(from);
+  }
+
+  inline AbortReconnectRequest& operator=(AbortReconnectRequest&& from) noexcept {
+    if (GetArenaNoVirtual() == from.GetArenaNoVirtual()) {
+      if (this != &from) InternalSwap(&from);
+    } else {
+      CopyFrom(from);
+    }
+    return *this;
+  }
+  #endif
+  static const ::google::protobuf::Descriptor* descriptor();
+  static const AbortReconnectRequest& default_instance();
+
+  static void InitAsDefaultInstance();  // FOR INTERNAL USE ONLY
+  static inline const AbortReconnectRequest* internal_default_instance() {
+    return reinterpret_cast<const AbortReconnectRequest*>(
+               &_AbortReconnectRequest_default_instance_);
+  }
+  static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
+    18;
+
+  void Swap(AbortReconnectRequest* other);
+  friend void swap(AbortReconnectRequest& a, AbortReconnectRequest& b) {
+    a.Swap(&b);
+  }
+
+  // implements Message ----------------------------------------------
+
+  inline AbortReconnectRequest* New() const PROTOBUF_FINAL { return New(NULL); }
+
+  AbortReconnectRequest* New(::google::protobuf::Arena* arena) const PROTOBUF_FINAL;
+  void CopyFrom(const ::google::protobuf::Message& from) PROTOBUF_FINAL;
+  void MergeFrom(const ::google::protobuf::Message& from) PROTOBUF_FINAL;
+  void CopyFrom(const AbortReconnectRequest& from);
+  void MergeFrom(const AbortReconnectRequest& from);
+  void Clear() PROTOBUF_FINAL;
+  bool IsInitialized() const PROTOBUF_FINAL;
+
+  size_t ByteSizeLong() const PROTOBUF_FINAL;
+  bool MergePartialFromCodedStream(
+      ::google::protobuf::io::CodedInputStream* input) PROTOBUF_FINAL;
+  void SerializeWithCachedSizes(
+      ::google::protobuf::io::CodedOutputStream* output) const PROTOBUF_FINAL;
+  ::google::protobuf::uint8* InternalSerializeWithCachedSizesToArray(
+      bool deterministic, ::google::protobuf::uint8* target) const PROTOBUF_FINAL;
+  int GetCachedSize() const PROTOBUF_FINAL { return _cached_size_; }
+  private:
+  void SharedCtor();
+  void SharedDtor();
+  void SetCachedSize(int size) const PROTOBUF_FINAL;
+  void InternalSwap(AbortReconnectRequest* other);
+  private:
+  inline ::google::protobuf::Arena* GetArenaNoVirtual() const {
+    return NULL;
+  }
+  inline void* MaybeArenaPtr() const {
+    return NULL;
+  }
+  public:
+
+  ::google::protobuf::Metadata GetMetadata() const PROTOBUF_FINAL;
+
+  // nested types ----------------------------------------------------
+
+  // accessors -------------------------------------------------------
+
+  // string session_id = 2;
+  void clear_session_id();
+  static const int kSessionIdFieldNumber = 2;
+  const ::std::string& session_id() const;
+  void set_session_id(const ::std::string& value);
+  #if LANG_CXX11
+  void set_session_id(::std::string&& value);
+  #endif
+  void set_session_id(const char* value);
+  void set_session_id(const char* value, size_t size);
+  ::std::string* mutable_session_id();
+  ::std::string* release_session_id();
+  void set_allocated_session_id(::std::string* session_id);
+
+  // string operation_id = 3;
+  void clear_operation_id();
+  static const int kOperationIdFieldNumber = 3;
+  const ::std::string& operation_id() const;
+  void set_operation_id(const ::std::string& value);
+  #if LANG_CXX11
+  void set_operation_id(::std::string&& value);
+  #endif
+  void set_operation_id(const char* value);
+  void set_operation_id(const char* value, size_t size);
+  ::std::string* mutable_operation_id();
+  ::std::string* release_operation_id();
+  void set_allocated_operation_id(::std::string* operation_id);
+
+  // string candidate_fence_token = 4;
+  void clear_candidate_fence_token();
+  static const int kCandidateFenceTokenFieldNumber = 4;
+  const ::std::string& candidate_fence_token() const;
+  void set_candidate_fence_token(const ::std::string& value);
+  #if LANG_CXX11
+  void set_candidate_fence_token(::std::string&& value);
+  #endif
+  void set_candidate_fence_token(const char* value);
+  void set_candidate_fence_token(const char* value, size_t size);
+  ::std::string* mutable_candidate_fence_token();
+  ::std::string* release_candidate_fence_token();
+  void set_allocated_candidate_fence_token(::std::string* candidate_fence_token);
+
+  // uint64 player_id = 1;
+  void clear_player_id();
+  static const int kPlayerIdFieldNumber = 1;
+  ::google::protobuf::uint64 player_id() const;
+  void set_player_id(::google::protobuf::uint64 value);
+
+  // @@protoc_insertion_point(class_scope:sess.AbortReconnectRequest)
+ private:
+
+  ::google::protobuf::internal::InternalMetadataWithArena _internal_metadata_;
+  ::google::protobuf::internal::ArenaStringPtr session_id_;
+  ::google::protobuf::internal::ArenaStringPtr operation_id_;
+  ::google::protobuf::internal::ArenaStringPtr candidate_fence_token_;
+  ::google::protobuf::uint64 player_id_;
+  mutable int _cached_size_;
+  friend struct ::protobuf_session_2eproto::TableStruct;
+  friend void ::protobuf_session_2eproto::InitDefaultsAbortReconnectRequestImpl();
+};
+// -------------------------------------------------------------------
+
+class AbortReconnectResponse : public ::google::protobuf::Message /* @@protoc_insertion_point(class_definition:sess.AbortReconnectResponse) */ {
+ public:
+  AbortReconnectResponse();
+  virtual ~AbortReconnectResponse();
+
+  AbortReconnectResponse(const AbortReconnectResponse& from);
+
+  inline AbortReconnectResponse& operator=(const AbortReconnectResponse& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  #if LANG_CXX11
+  AbortReconnectResponse(AbortReconnectResponse&& from) noexcept
+    : AbortReconnectResponse() {
+    *this = ::std::move(from);
+  }
+
+  inline AbortReconnectResponse& operator=(AbortReconnectResponse&& from) noexcept {
+    if (GetArenaNoVirtual() == from.GetArenaNoVirtual()) {
+      if (this != &from) InternalSwap(&from);
+    } else {
+      CopyFrom(from);
+    }
+    return *this;
+  }
+  #endif
+  static const ::google::protobuf::Descriptor* descriptor();
+  static const AbortReconnectResponse& default_instance();
+
+  static void InitAsDefaultInstance();  // FOR INTERNAL USE ONLY
+  static inline const AbortReconnectResponse* internal_default_instance() {
+    return reinterpret_cast<const AbortReconnectResponse*>(
+               &_AbortReconnectResponse_default_instance_);
+  }
+  static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
+    19;
+
+  void Swap(AbortReconnectResponse* other);
+  friend void swap(AbortReconnectResponse& a, AbortReconnectResponse& b) {
+    a.Swap(&b);
+  }
+
+  // implements Message ----------------------------------------------
+
+  inline AbortReconnectResponse* New() const PROTOBUF_FINAL { return New(NULL); }
+
+  AbortReconnectResponse* New(::google::protobuf::Arena* arena) const PROTOBUF_FINAL;
+  void CopyFrom(const ::google::protobuf::Message& from) PROTOBUF_FINAL;
+  void MergeFrom(const ::google::protobuf::Message& from) PROTOBUF_FINAL;
+  void CopyFrom(const AbortReconnectResponse& from);
+  void MergeFrom(const AbortReconnectResponse& from);
+  void Clear() PROTOBUF_FINAL;
+  bool IsInitialized() const PROTOBUF_FINAL;
+
+  size_t ByteSizeLong() const PROTOBUF_FINAL;
+  bool MergePartialFromCodedStream(
+      ::google::protobuf::io::CodedInputStream* input) PROTOBUF_FINAL;
+  void SerializeWithCachedSizes(
+      ::google::protobuf::io::CodedOutputStream* output) const PROTOBUF_FINAL;
+  ::google::protobuf::uint8* InternalSerializeWithCachedSizesToArray(
+      bool deterministic, ::google::protobuf::uint8* target) const PROTOBUF_FINAL;
+  int GetCachedSize() const PROTOBUF_FINAL { return _cached_size_; }
+  private:
+  void SharedCtor();
+  void SharedDtor();
+  void SetCachedSize(int size) const PROTOBUF_FINAL;
+  void InternalSwap(AbortReconnectResponse* other);
+  private:
+  inline ::google::protobuf::Arena* GetArenaNoVirtual() const {
+    return NULL;
+  }
+  inline void* MaybeArenaPtr() const {
+    return NULL;
+  }
+  public:
+
+  ::google::protobuf::Metadata GetMetadata() const PROTOBUF_FINAL;
+
+  // nested types ----------------------------------------------------
+
+  // accessors -------------------------------------------------------
+
+  // string message = 2;
+  void clear_message();
+  static const int kMessageFieldNumber = 2;
+  const ::std::string& message() const;
+  void set_message(const ::std::string& value);
+  #if LANG_CXX11
+  void set_message(::std::string&& value);
+  #endif
+  void set_message(const char* value);
+  void set_message(const char* value, size_t size);
+  ::std::string* mutable_message();
+  ::std::string* release_message();
+  void set_allocated_message(::std::string* message);
+
+  // string error_code = 3;
+  void clear_error_code();
+  static const int kErrorCodeFieldNumber = 3;
+  const ::std::string& error_code() const;
+  void set_error_code(const ::std::string& value);
+  #if LANG_CXX11
+  void set_error_code(::std::string&& value);
+  #endif
+  void set_error_code(const char* value);
+  void set_error_code(const char* value, size_t size);
+  ::std::string* mutable_error_code();
+  ::std::string* release_error_code();
+  void set_allocated_error_code(::std::string* error_code);
+
+  // bool ok = 1;
+  void clear_ok();
+  static const int kOkFieldNumber = 1;
+  bool ok() const;
+  void set_ok(bool value);
+
+  // @@protoc_insertion_point(class_scope:sess.AbortReconnectResponse)
+ private:
+
+  ::google::protobuf::internal::InternalMetadataWithArena _internal_metadata_;
+  ::google::protobuf::internal::ArenaStringPtr message_;
+  ::google::protobuf::internal::ArenaStringPtr error_code_;
+  bool ok_;
+  mutable int _cached_size_;
+  friend struct ::protobuf_session_2eproto::TableStruct;
+  friend void ::protobuf_session_2eproto::InitDefaultsAbortReconnectResponseImpl();
+};
+// -------------------------------------------------------------------
+
 class LogoutRequest : public ::google::protobuf::Message /* @@protoc_insertion_point(class_definition:sess.LogoutRequest) */ {
  public:
   LogoutRequest();
@@ -2430,7 +3497,7 @@ class LogoutRequest : public ::google::protobuf::Message /* @@protoc_insertion_p
                &_LogoutRequest_default_instance_);
   }
   static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
-    14;
+    20;
 
   void Swap(LogoutRequest* other);
   friend void swap(LogoutRequest& a, LogoutRequest& b) {
@@ -2559,7 +3626,7 @@ class LogoutResponse : public ::google::protobuf::Message /* @@protoc_insertion_
                &_LogoutResponse_default_instance_);
   }
   static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
-    15;
+    21;
 
   void Swap(LogoutResponse* other);
   friend void swap(LogoutResponse& a, LogoutResponse& b) {
@@ -2673,7 +3740,7 @@ class KickRequest : public ::google::protobuf::Message /* @@protoc_insertion_poi
                &_KickRequest_default_instance_);
   }
   static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
-    16;
+    22;
 
   void Swap(KickRequest* other);
   friend void swap(KickRequest& a, KickRequest& b) {
@@ -2787,7 +3854,7 @@ class KickResponse : public ::google::protobuf::Message /* @@protoc_insertion_po
                &_KickResponse_default_instance_);
   }
   static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
-    17;
+    23;
 
   void Swap(KickResponse* other);
   friend void swap(KickResponse& a, KickResponse& b) {
@@ -2901,7 +3968,7 @@ class PlacementRecord : public ::google::protobuf::Message /* @@protoc_insertion
                &_PlacementRecord_default_instance_);
   }
   static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
-    18;
+    24;
 
   void Swap(PlacementRecord* other);
   friend void swap(PlacementRecord& a, PlacementRecord& b) {
@@ -3072,7 +4139,7 @@ class ResolveOrCreateMapRequest : public ::google::protobuf::Message /* @@protoc
                &_ResolveOrCreateMapRequest_default_instance_);
   }
   static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
-    19;
+    25;
 
   void Swap(ResolveOrCreateMapRequest* other);
   friend void swap(ResolveOrCreateMapRequest& a, ResolveOrCreateMapRequest& b) {
@@ -3207,7 +4274,7 @@ class ResolveOrCreateMapResponse : public ::google::protobuf::Message /* @@proto
                &_ResolveOrCreateMapResponse_default_instance_);
   }
   static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
-    20;
+    26;
 
   void Swap(ResolveOrCreateMapResponse* other);
   friend void swap(ResolveOrCreateMapResponse& a, ResolveOrCreateMapResponse& b) {
@@ -3346,7 +4413,7 @@ class GetPlacementRequest : public ::google::protobuf::Message /* @@protoc_inser
                &_GetPlacementRequest_default_instance_);
   }
   static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
-    21;
+    27;
 
   void Swap(GetPlacementRequest* other);
   friend void swap(GetPlacementRequest& a, GetPlacementRequest& b) {
@@ -3445,7 +4512,7 @@ class GetPlacementResponse : public ::google::protobuf::Message /* @@protoc_inse
                &_GetPlacementResponse_default_instance_);
   }
   static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
-    22;
+    28;
 
   void Swap(GetPlacementResponse* other);
   friend void swap(GetPlacementResponse& a, GetPlacementResponse& b) {
@@ -3569,7 +4636,7 @@ class MigrateMapRequest : public ::google::protobuf::Message /* @@protoc_inserti
                &_MigrateMapRequest_default_instance_);
   }
   static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
-    23;
+    29;
 
   void Swap(MigrateMapRequest* other);
   friend void swap(MigrateMapRequest& a, MigrateMapRequest& b) {
@@ -3705,7 +4772,7 @@ class MigrateMapResponse : public ::google::protobuf::Message /* @@protoc_insert
                &_MigrateMapResponse_default_instance_);
   }
   static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
-    24;
+    30;
 
   void Swap(MigrateMapResponse* other);
   friend void swap(MigrateMapResponse& a, MigrateMapResponse& b) {
@@ -3844,7 +4911,7 @@ class MarkRecoveringRequest : public ::google::protobuf::Message /* @@protoc_ins
                &_MarkRecoveringRequest_default_instance_);
   }
   static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
-    25;
+    31;
 
   void Swap(MarkRecoveringRequest* other);
   friend void swap(MarkRecoveringRequest& a, MarkRecoveringRequest& b) {
@@ -3958,7 +5025,7 @@ class MarkRecoveringResponse : public ::google::protobuf::Message /* @@protoc_in
                &_MarkRecoveringResponse_default_instance_);
   }
   static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
-    26;
+    32;
 
   void Swap(MarkRecoveringResponse* other);
   friend void swap(MarkRecoveringResponse& a, MarkRecoveringResponse& b) {
@@ -4082,7 +5149,7 @@ class HeartbeatOwnerRequest : public ::google::protobuf::Message /* @@protoc_ins
                &_HeartbeatOwnerRequest_default_instance_);
   }
   static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
-    27;
+    33;
 
   void Swap(HeartbeatOwnerRequest* other);
   friend void swap(HeartbeatOwnerRequest& a, HeartbeatOwnerRequest& b) {
@@ -4210,7 +5277,7 @@ class HeartbeatOwnerResponse : public ::google::protobuf::Message /* @@protoc_in
                &_HeartbeatOwnerResponse_default_instance_);
   }
   static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
-    28;
+    34;
 
   void Swap(HeartbeatOwnerResponse* other);
   friend void swap(HeartbeatOwnerResponse& a, HeartbeatOwnerResponse& b) {
@@ -4331,7 +5398,7 @@ class UpdatePlayerRouteRequest : public ::google::protobuf::Message /* @@protoc_
                &_UpdatePlayerRouteRequest_default_instance_);
   }
   static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
-    29;
+    35;
 
   void Swap(UpdatePlayerRouteRequest* other);
   friend void swap(UpdatePlayerRouteRequest& a, UpdatePlayerRouteRequest& b) {
@@ -4511,7 +5578,7 @@ class UpdatePlayerRouteResponse : public ::google::protobuf::Message /* @@protoc
                &_UpdatePlayerRouteResponse_default_instance_);
   }
   static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
-    30;
+    36;
 
   void Swap(UpdatePlayerRouteResponse* other);
   friend void swap(UpdatePlayerRouteResponse& a, UpdatePlayerRouteResponse& b) {
@@ -4632,7 +5699,7 @@ class BeginPlayerTransferRequest : public ::google::protobuf::Message /* @@proto
                &_BeginPlayerTransferRequest_default_instance_);
   }
   static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
-    31;
+    37;
 
   void Swap(BeginPlayerTransferRequest* other);
   friend void swap(BeginPlayerTransferRequest& a, BeginPlayerTransferRequest& b) {
@@ -4827,7 +5894,7 @@ class BeginPlayerTransferResponse : public ::google::protobuf::Message /* @@prot
                &_BeginPlayerTransferResponse_default_instance_);
   }
   static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
-    32;
+    38;
 
   void Swap(BeginPlayerTransferResponse* other);
   friend void swap(BeginPlayerTransferResponse& a, BeginPlayerTransferResponse& b) {
@@ -4993,7 +6060,7 @@ class CommitPlayerTransferRequest : public ::google::protobuf::Message /* @@prot
                &_CommitPlayerTransferRequest_default_instance_);
   }
   static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
-    33;
+    39;
 
   void Swap(CommitPlayerTransferRequest* other);
   friend void swap(CommitPlayerTransferRequest& a, CommitPlayerTransferRequest& b) {
@@ -5166,7 +6233,7 @@ class CommitPlayerTransferResponse : public ::google::protobuf::Message /* @@pro
                &_CommitPlayerTransferResponse_default_instance_);
   }
   static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
-    34;
+    40;
 
   void Swap(CommitPlayerTransferResponse* other);
   friend void swap(CommitPlayerTransferResponse& a, CommitPlayerTransferResponse& b) {
@@ -5346,7 +6413,7 @@ class AbortPlayerTransferRequest : public ::google::protobuf::Message /* @@proto
                &_AbortPlayerTransferRequest_default_instance_);
   }
   static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
-    35;
+    41;
 
   void Swap(AbortPlayerTransferRequest* other);
   friend void swap(AbortPlayerTransferRequest& a, AbortPlayerTransferRequest& b) {
@@ -5490,7 +6557,7 @@ class AbortPlayerTransferResponse : public ::google::protobuf::Message /* @@prot
                &_AbortPlayerTransferResponse_default_instance_);
   }
   static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
-    36;
+    42;
 
   void Swap(AbortPlayerTransferResponse* other);
   friend void swap(AbortPlayerTransferResponse& a, AbortPlayerTransferResponse& b) {
@@ -5641,7 +6708,7 @@ class GetPlayerRouteRequest : public ::google::protobuf::Message /* @@protoc_ins
                &_GetPlayerRouteRequest_default_instance_);
   }
   static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
-    37;
+    43;
 
   void Swap(GetPlayerRouteRequest* other);
   friend void swap(GetPlayerRouteRequest& a, GetPlayerRouteRequest& b) {
@@ -5755,7 +6822,7 @@ class GetPlayerRouteResponse : public ::google::protobuf::Message /* @@protoc_in
                &_GetPlayerRouteResponse_default_instance_);
   }
   static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
-    38;
+    44;
 
   void Swap(GetPlayerRouteResponse* other);
   friend void swap(GetPlayerRouteResponse& a, GetPlayerRouteResponse& b) {
@@ -5977,6 +7044,18 @@ class SessionService : public ::google::protobuf::Service {
                        const ::sess::ReconnectRequest* request,
                        ::sess::ReconnectResponse* response,
                        ::google::protobuf::Closure* done);
+  virtual void PrepareReconnect(::google::protobuf::RpcController* controller,
+                       const ::sess::PrepareReconnectRequest* request,
+                       ::sess::PrepareReconnectResponse* response,
+                       ::google::protobuf::Closure* done);
+  virtual void CommitReconnect(::google::protobuf::RpcController* controller,
+                       const ::sess::CommitReconnectRequest* request,
+                       ::sess::CommitReconnectResponse* response,
+                       ::google::protobuf::Closure* done);
+  virtual void AbortReconnect(::google::protobuf::RpcController* controller,
+                       const ::sess::AbortReconnectRequest* request,
+                       ::sess::AbortReconnectResponse* response,
+                       ::google::protobuf::Closure* done);
   virtual void GetSessionOperation(::google::protobuf::RpcController* controller,
                        const ::sess::GetSessionOperationRequest* request,
                        ::sess::GetSessionOperationResponse* response,
@@ -6093,6 +7172,18 @@ class SessionService_Stub : public SessionService {
   void ReconnectV2(::google::protobuf::RpcController* controller,
                        const ::sess::ReconnectRequest* request,
                        ::sess::ReconnectResponse* response,
+                       ::google::protobuf::Closure* done);
+  void PrepareReconnect(::google::protobuf::RpcController* controller,
+                       const ::sess::PrepareReconnectRequest* request,
+                       ::sess::PrepareReconnectResponse* response,
+                       ::google::protobuf::Closure* done);
+  void CommitReconnect(::google::protobuf::RpcController* controller,
+                       const ::sess::CommitReconnectRequest* request,
+                       ::sess::CommitReconnectResponse* response,
+                       ::google::protobuf::Closure* done);
+  void AbortReconnect(::google::protobuf::RpcController* controller,
+                       const ::sess::AbortReconnectRequest* request,
+                       ::sess::AbortReconnectResponse* response,
                        ::google::protobuf::Closure* done);
   void GetSessionOperation(::google::protobuf::RpcController* controller,
                        const ::sess::GetSessionOperationRequest* request,
@@ -8706,6 +9797,1540 @@ inline void ReconnectResponse::set_route_version(::google::protobuf::uint64 valu
   
   route_version_ = value;
   // @@protoc_insertion_point(field_set:sess.ReconnectResponse.route_version)
+}
+
+// -------------------------------------------------------------------
+
+// PrepareReconnectRequest
+
+// uint64 player_id = 1;
+inline void PrepareReconnectRequest::clear_player_id() {
+  player_id_ = GOOGLE_ULONGLONG(0);
+}
+inline ::google::protobuf::uint64 PrepareReconnectRequest::player_id() const {
+  // @@protoc_insertion_point(field_get:sess.PrepareReconnectRequest.player_id)
+  return player_id_;
+}
+inline void PrepareReconnectRequest::set_player_id(::google::protobuf::uint64 value) {
+  
+  player_id_ = value;
+  // @@protoc_insertion_point(field_set:sess.PrepareReconnectRequest.player_id)
+}
+
+// string session_id = 2;
+inline void PrepareReconnectRequest::clear_session_id() {
+  session_id_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline const ::std::string& PrepareReconnectRequest::session_id() const {
+  // @@protoc_insertion_point(field_get:sess.PrepareReconnectRequest.session_id)
+  return session_id_.GetNoArena();
+}
+inline void PrepareReconnectRequest::set_session_id(const ::std::string& value) {
+  
+  session_id_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), value);
+  // @@protoc_insertion_point(field_set:sess.PrepareReconnectRequest.session_id)
+}
+#if LANG_CXX11
+inline void PrepareReconnectRequest::set_session_id(::std::string&& value) {
+  
+  session_id_.SetNoArena(
+    &::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::move(value));
+  // @@protoc_insertion_point(field_set_rvalue:sess.PrepareReconnectRequest.session_id)
+}
+#endif
+inline void PrepareReconnectRequest::set_session_id(const char* value) {
+  GOOGLE_DCHECK(value != NULL);
+  
+  session_id_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::string(value));
+  // @@protoc_insertion_point(field_set_char:sess.PrepareReconnectRequest.session_id)
+}
+inline void PrepareReconnectRequest::set_session_id(const char* value, size_t size) {
+  
+  session_id_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(),
+      ::std::string(reinterpret_cast<const char*>(value), size));
+  // @@protoc_insertion_point(field_set_pointer:sess.PrepareReconnectRequest.session_id)
+}
+inline ::std::string* PrepareReconnectRequest::mutable_session_id() {
+  
+  // @@protoc_insertion_point(field_mutable:sess.PrepareReconnectRequest.session_id)
+  return session_id_.MutableNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline ::std::string* PrepareReconnectRequest::release_session_id() {
+  // @@protoc_insertion_point(field_release:sess.PrepareReconnectRequest.session_id)
+  
+  return session_id_.ReleaseNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline void PrepareReconnectRequest::set_allocated_session_id(::std::string* session_id) {
+  if (session_id != NULL) {
+    
+  } else {
+    
+  }
+  session_id_.SetAllocatedNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), session_id);
+  // @@protoc_insertion_point(field_set_allocated:sess.PrepareReconnectRequest.session_id)
+}
+
+// string reconnect_ticket = 3;
+inline void PrepareReconnectRequest::clear_reconnect_ticket() {
+  reconnect_ticket_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline const ::std::string& PrepareReconnectRequest::reconnect_ticket() const {
+  // @@protoc_insertion_point(field_get:sess.PrepareReconnectRequest.reconnect_ticket)
+  return reconnect_ticket_.GetNoArena();
+}
+inline void PrepareReconnectRequest::set_reconnect_ticket(const ::std::string& value) {
+  
+  reconnect_ticket_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), value);
+  // @@protoc_insertion_point(field_set:sess.PrepareReconnectRequest.reconnect_ticket)
+}
+#if LANG_CXX11
+inline void PrepareReconnectRequest::set_reconnect_ticket(::std::string&& value) {
+  
+  reconnect_ticket_.SetNoArena(
+    &::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::move(value));
+  // @@protoc_insertion_point(field_set_rvalue:sess.PrepareReconnectRequest.reconnect_ticket)
+}
+#endif
+inline void PrepareReconnectRequest::set_reconnect_ticket(const char* value) {
+  GOOGLE_DCHECK(value != NULL);
+  
+  reconnect_ticket_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::string(value));
+  // @@protoc_insertion_point(field_set_char:sess.PrepareReconnectRequest.reconnect_ticket)
+}
+inline void PrepareReconnectRequest::set_reconnect_ticket(const char* value, size_t size) {
+  
+  reconnect_ticket_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(),
+      ::std::string(reinterpret_cast<const char*>(value), size));
+  // @@protoc_insertion_point(field_set_pointer:sess.PrepareReconnectRequest.reconnect_ticket)
+}
+inline ::std::string* PrepareReconnectRequest::mutable_reconnect_ticket() {
+  
+  // @@protoc_insertion_point(field_mutable:sess.PrepareReconnectRequest.reconnect_ticket)
+  return reconnect_ticket_.MutableNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline ::std::string* PrepareReconnectRequest::release_reconnect_ticket() {
+  // @@protoc_insertion_point(field_release:sess.PrepareReconnectRequest.reconnect_ticket)
+  
+  return reconnect_ticket_.ReleaseNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline void PrepareReconnectRequest::set_allocated_reconnect_ticket(::std::string* reconnect_ticket) {
+  if (reconnect_ticket != NULL) {
+    
+  } else {
+    
+  }
+  reconnect_ticket_.SetAllocatedNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), reconnect_ticket);
+  // @@protoc_insertion_point(field_set_allocated:sess.PrepareReconnectRequest.reconnect_ticket)
+}
+
+// string gateway_instance_id = 4;
+inline void PrepareReconnectRequest::clear_gateway_instance_id() {
+  gateway_instance_id_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline const ::std::string& PrepareReconnectRequest::gateway_instance_id() const {
+  // @@protoc_insertion_point(field_get:sess.PrepareReconnectRequest.gateway_instance_id)
+  return gateway_instance_id_.GetNoArena();
+}
+inline void PrepareReconnectRequest::set_gateway_instance_id(const ::std::string& value) {
+  
+  gateway_instance_id_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), value);
+  // @@protoc_insertion_point(field_set:sess.PrepareReconnectRequest.gateway_instance_id)
+}
+#if LANG_CXX11
+inline void PrepareReconnectRequest::set_gateway_instance_id(::std::string&& value) {
+  
+  gateway_instance_id_.SetNoArena(
+    &::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::move(value));
+  // @@protoc_insertion_point(field_set_rvalue:sess.PrepareReconnectRequest.gateway_instance_id)
+}
+#endif
+inline void PrepareReconnectRequest::set_gateway_instance_id(const char* value) {
+  GOOGLE_DCHECK(value != NULL);
+  
+  gateway_instance_id_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::string(value));
+  // @@protoc_insertion_point(field_set_char:sess.PrepareReconnectRequest.gateway_instance_id)
+}
+inline void PrepareReconnectRequest::set_gateway_instance_id(const char* value, size_t size) {
+  
+  gateway_instance_id_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(),
+      ::std::string(reinterpret_cast<const char*>(value), size));
+  // @@protoc_insertion_point(field_set_pointer:sess.PrepareReconnectRequest.gateway_instance_id)
+}
+inline ::std::string* PrepareReconnectRequest::mutable_gateway_instance_id() {
+  
+  // @@protoc_insertion_point(field_mutable:sess.PrepareReconnectRequest.gateway_instance_id)
+  return gateway_instance_id_.MutableNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline ::std::string* PrepareReconnectRequest::release_gateway_instance_id() {
+  // @@protoc_insertion_point(field_release:sess.PrepareReconnectRequest.gateway_instance_id)
+  
+  return gateway_instance_id_.ReleaseNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline void PrepareReconnectRequest::set_allocated_gateway_instance_id(::std::string* gateway_instance_id) {
+  if (gateway_instance_id != NULL) {
+    
+  } else {
+    
+  }
+  gateway_instance_id_.SetAllocatedNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), gateway_instance_id);
+  // @@protoc_insertion_point(field_set_allocated:sess.PrepareReconnectRequest.gateway_instance_id)
+}
+
+// uint64 last_server_seq = 5;
+inline void PrepareReconnectRequest::clear_last_server_seq() {
+  last_server_seq_ = GOOGLE_ULONGLONG(0);
+}
+inline ::google::protobuf::uint64 PrepareReconnectRequest::last_server_seq() const {
+  // @@protoc_insertion_point(field_get:sess.PrepareReconnectRequest.last_server_seq)
+  return last_server_seq_;
+}
+inline void PrepareReconnectRequest::set_last_server_seq(::google::protobuf::uint64 value) {
+  
+  last_server_seq_ = value;
+  // @@protoc_insertion_point(field_set:sess.PrepareReconnectRequest.last_server_seq)
+}
+
+// string operation_id = 6;
+inline void PrepareReconnectRequest::clear_operation_id() {
+  operation_id_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline const ::std::string& PrepareReconnectRequest::operation_id() const {
+  // @@protoc_insertion_point(field_get:sess.PrepareReconnectRequest.operation_id)
+  return operation_id_.GetNoArena();
+}
+inline void PrepareReconnectRequest::set_operation_id(const ::std::string& value) {
+  
+  operation_id_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), value);
+  // @@protoc_insertion_point(field_set:sess.PrepareReconnectRequest.operation_id)
+}
+#if LANG_CXX11
+inline void PrepareReconnectRequest::set_operation_id(::std::string&& value) {
+  
+  operation_id_.SetNoArena(
+    &::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::move(value));
+  // @@protoc_insertion_point(field_set_rvalue:sess.PrepareReconnectRequest.operation_id)
+}
+#endif
+inline void PrepareReconnectRequest::set_operation_id(const char* value) {
+  GOOGLE_DCHECK(value != NULL);
+  
+  operation_id_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::string(value));
+  // @@protoc_insertion_point(field_set_char:sess.PrepareReconnectRequest.operation_id)
+}
+inline void PrepareReconnectRequest::set_operation_id(const char* value, size_t size) {
+  
+  operation_id_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(),
+      ::std::string(reinterpret_cast<const char*>(value), size));
+  // @@protoc_insertion_point(field_set_pointer:sess.PrepareReconnectRequest.operation_id)
+}
+inline ::std::string* PrepareReconnectRequest::mutable_operation_id() {
+  
+  // @@protoc_insertion_point(field_mutable:sess.PrepareReconnectRequest.operation_id)
+  return operation_id_.MutableNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline ::std::string* PrepareReconnectRequest::release_operation_id() {
+  // @@protoc_insertion_point(field_release:sess.PrepareReconnectRequest.operation_id)
+  
+  return operation_id_.ReleaseNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline void PrepareReconnectRequest::set_allocated_operation_id(::std::string* operation_id) {
+  if (operation_id != NULL) {
+    
+  } else {
+    
+  }
+  operation_id_.SetAllocatedNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), operation_id);
+  // @@protoc_insertion_point(field_set_allocated:sess.PrepareReconnectRequest.operation_id)
+}
+
+// -------------------------------------------------------------------
+
+// PrepareReconnectResponse
+
+// bool ok = 1;
+inline void PrepareReconnectResponse::clear_ok() {
+  ok_ = false;
+}
+inline bool PrepareReconnectResponse::ok() const {
+  // @@protoc_insertion_point(field_get:sess.PrepareReconnectResponse.ok)
+  return ok_;
+}
+inline void PrepareReconnectResponse::set_ok(bool value) {
+  
+  ok_ = value;
+  // @@protoc_insertion_point(field_set:sess.PrepareReconnectResponse.ok)
+}
+
+// string message = 2;
+inline void PrepareReconnectResponse::clear_message() {
+  message_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline const ::std::string& PrepareReconnectResponse::message() const {
+  // @@protoc_insertion_point(field_get:sess.PrepareReconnectResponse.message)
+  return message_.GetNoArena();
+}
+inline void PrepareReconnectResponse::set_message(const ::std::string& value) {
+  
+  message_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), value);
+  // @@protoc_insertion_point(field_set:sess.PrepareReconnectResponse.message)
+}
+#if LANG_CXX11
+inline void PrepareReconnectResponse::set_message(::std::string&& value) {
+  
+  message_.SetNoArena(
+    &::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::move(value));
+  // @@protoc_insertion_point(field_set_rvalue:sess.PrepareReconnectResponse.message)
+}
+#endif
+inline void PrepareReconnectResponse::set_message(const char* value) {
+  GOOGLE_DCHECK(value != NULL);
+  
+  message_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::string(value));
+  // @@protoc_insertion_point(field_set_char:sess.PrepareReconnectResponse.message)
+}
+inline void PrepareReconnectResponse::set_message(const char* value, size_t size) {
+  
+  message_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(),
+      ::std::string(reinterpret_cast<const char*>(value), size));
+  // @@protoc_insertion_point(field_set_pointer:sess.PrepareReconnectResponse.message)
+}
+inline ::std::string* PrepareReconnectResponse::mutable_message() {
+  
+  // @@protoc_insertion_point(field_mutable:sess.PrepareReconnectResponse.message)
+  return message_.MutableNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline ::std::string* PrepareReconnectResponse::release_message() {
+  // @@protoc_insertion_point(field_release:sess.PrepareReconnectResponse.message)
+  
+  return message_.ReleaseNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline void PrepareReconnectResponse::set_allocated_message(::std::string* message) {
+  if (message != NULL) {
+    
+  } else {
+    
+  }
+  message_.SetAllocatedNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), message);
+  // @@protoc_insertion_point(field_set_allocated:sess.PrepareReconnectResponse.message)
+}
+
+// string error_code = 3;
+inline void PrepareReconnectResponse::clear_error_code() {
+  error_code_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline const ::std::string& PrepareReconnectResponse::error_code() const {
+  // @@protoc_insertion_point(field_get:sess.PrepareReconnectResponse.error_code)
+  return error_code_.GetNoArena();
+}
+inline void PrepareReconnectResponse::set_error_code(const ::std::string& value) {
+  
+  error_code_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), value);
+  // @@protoc_insertion_point(field_set:sess.PrepareReconnectResponse.error_code)
+}
+#if LANG_CXX11
+inline void PrepareReconnectResponse::set_error_code(::std::string&& value) {
+  
+  error_code_.SetNoArena(
+    &::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::move(value));
+  // @@protoc_insertion_point(field_set_rvalue:sess.PrepareReconnectResponse.error_code)
+}
+#endif
+inline void PrepareReconnectResponse::set_error_code(const char* value) {
+  GOOGLE_DCHECK(value != NULL);
+  
+  error_code_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::string(value));
+  // @@protoc_insertion_point(field_set_char:sess.PrepareReconnectResponse.error_code)
+}
+inline void PrepareReconnectResponse::set_error_code(const char* value, size_t size) {
+  
+  error_code_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(),
+      ::std::string(reinterpret_cast<const char*>(value), size));
+  // @@protoc_insertion_point(field_set_pointer:sess.PrepareReconnectResponse.error_code)
+}
+inline ::std::string* PrepareReconnectResponse::mutable_error_code() {
+  
+  // @@protoc_insertion_point(field_mutable:sess.PrepareReconnectResponse.error_code)
+  return error_code_.MutableNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline ::std::string* PrepareReconnectResponse::release_error_code() {
+  // @@protoc_insertion_point(field_release:sess.PrepareReconnectResponse.error_code)
+  
+  return error_code_.ReleaseNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline void PrepareReconnectResponse::set_allocated_error_code(::std::string* error_code) {
+  if (error_code != NULL) {
+    
+  } else {
+    
+  }
+  error_code_.SetAllocatedNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), error_code);
+  // @@protoc_insertion_point(field_set_allocated:sess.PrepareReconnectResponse.error_code)
+}
+
+// string session_id = 4;
+inline void PrepareReconnectResponse::clear_session_id() {
+  session_id_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline const ::std::string& PrepareReconnectResponse::session_id() const {
+  // @@protoc_insertion_point(field_get:sess.PrepareReconnectResponse.session_id)
+  return session_id_.GetNoArena();
+}
+inline void PrepareReconnectResponse::set_session_id(const ::std::string& value) {
+  
+  session_id_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), value);
+  // @@protoc_insertion_point(field_set:sess.PrepareReconnectResponse.session_id)
+}
+#if LANG_CXX11
+inline void PrepareReconnectResponse::set_session_id(::std::string&& value) {
+  
+  session_id_.SetNoArena(
+    &::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::move(value));
+  // @@protoc_insertion_point(field_set_rvalue:sess.PrepareReconnectResponse.session_id)
+}
+#endif
+inline void PrepareReconnectResponse::set_session_id(const char* value) {
+  GOOGLE_DCHECK(value != NULL);
+  
+  session_id_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::string(value));
+  // @@protoc_insertion_point(field_set_char:sess.PrepareReconnectResponse.session_id)
+}
+inline void PrepareReconnectResponse::set_session_id(const char* value, size_t size) {
+  
+  session_id_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(),
+      ::std::string(reinterpret_cast<const char*>(value), size));
+  // @@protoc_insertion_point(field_set_pointer:sess.PrepareReconnectResponse.session_id)
+}
+inline ::std::string* PrepareReconnectResponse::mutable_session_id() {
+  
+  // @@protoc_insertion_point(field_mutable:sess.PrepareReconnectResponse.session_id)
+  return session_id_.MutableNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline ::std::string* PrepareReconnectResponse::release_session_id() {
+  // @@protoc_insertion_point(field_release:sess.PrepareReconnectResponse.session_id)
+  
+  return session_id_.ReleaseNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline void PrepareReconnectResponse::set_allocated_session_id(::std::string* session_id) {
+  if (session_id != NULL) {
+    
+  } else {
+    
+  }
+  session_id_.SetAllocatedNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), session_id);
+  // @@protoc_insertion_point(field_set_allocated:sess.PrepareReconnectResponse.session_id)
+}
+
+// string candidate_fence_token = 5;
+inline void PrepareReconnectResponse::clear_candidate_fence_token() {
+  candidate_fence_token_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline const ::std::string& PrepareReconnectResponse::candidate_fence_token() const {
+  // @@protoc_insertion_point(field_get:sess.PrepareReconnectResponse.candidate_fence_token)
+  return candidate_fence_token_.GetNoArena();
+}
+inline void PrepareReconnectResponse::set_candidate_fence_token(const ::std::string& value) {
+  
+  candidate_fence_token_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), value);
+  // @@protoc_insertion_point(field_set:sess.PrepareReconnectResponse.candidate_fence_token)
+}
+#if LANG_CXX11
+inline void PrepareReconnectResponse::set_candidate_fence_token(::std::string&& value) {
+  
+  candidate_fence_token_.SetNoArena(
+    &::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::move(value));
+  // @@protoc_insertion_point(field_set_rvalue:sess.PrepareReconnectResponse.candidate_fence_token)
+}
+#endif
+inline void PrepareReconnectResponse::set_candidate_fence_token(const char* value) {
+  GOOGLE_DCHECK(value != NULL);
+  
+  candidate_fence_token_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::string(value));
+  // @@protoc_insertion_point(field_set_char:sess.PrepareReconnectResponse.candidate_fence_token)
+}
+inline void PrepareReconnectResponse::set_candidate_fence_token(const char* value, size_t size) {
+  
+  candidate_fence_token_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(),
+      ::std::string(reinterpret_cast<const char*>(value), size));
+  // @@protoc_insertion_point(field_set_pointer:sess.PrepareReconnectResponse.candidate_fence_token)
+}
+inline ::std::string* PrepareReconnectResponse::mutable_candidate_fence_token() {
+  
+  // @@protoc_insertion_point(field_mutable:sess.PrepareReconnectResponse.candidate_fence_token)
+  return candidate_fence_token_.MutableNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline ::std::string* PrepareReconnectResponse::release_candidate_fence_token() {
+  // @@protoc_insertion_point(field_release:sess.PrepareReconnectResponse.candidate_fence_token)
+  
+  return candidate_fence_token_.ReleaseNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline void PrepareReconnectResponse::set_allocated_candidate_fence_token(::std::string* candidate_fence_token) {
+  if (candidate_fence_token != NULL) {
+    
+  } else {
+    
+  }
+  candidate_fence_token_.SetAllocatedNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), candidate_fence_token);
+  // @@protoc_insertion_point(field_set_allocated:sess.PrepareReconnectResponse.candidate_fence_token)
+}
+
+// uint64 candidate_generation = 6;
+inline void PrepareReconnectResponse::clear_candidate_generation() {
+  candidate_generation_ = GOOGLE_ULONGLONG(0);
+}
+inline ::google::protobuf::uint64 PrepareReconnectResponse::candidate_generation() const {
+  // @@protoc_insertion_point(field_get:sess.PrepareReconnectResponse.candidate_generation)
+  return candidate_generation_;
+}
+inline void PrepareReconnectResponse::set_candidate_generation(::google::protobuf::uint64 value) {
+  
+  candidate_generation_ = value;
+  // @@protoc_insertion_point(field_set:sess.PrepareReconnectResponse.candidate_generation)
+}
+
+// string gamelogic_instance_id = 7;
+inline void PrepareReconnectResponse::clear_gamelogic_instance_id() {
+  gamelogic_instance_id_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline const ::std::string& PrepareReconnectResponse::gamelogic_instance_id() const {
+  // @@protoc_insertion_point(field_get:sess.PrepareReconnectResponse.gamelogic_instance_id)
+  return gamelogic_instance_id_.GetNoArena();
+}
+inline void PrepareReconnectResponse::set_gamelogic_instance_id(const ::std::string& value) {
+  
+  gamelogic_instance_id_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), value);
+  // @@protoc_insertion_point(field_set:sess.PrepareReconnectResponse.gamelogic_instance_id)
+}
+#if LANG_CXX11
+inline void PrepareReconnectResponse::set_gamelogic_instance_id(::std::string&& value) {
+  
+  gamelogic_instance_id_.SetNoArena(
+    &::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::move(value));
+  // @@protoc_insertion_point(field_set_rvalue:sess.PrepareReconnectResponse.gamelogic_instance_id)
+}
+#endif
+inline void PrepareReconnectResponse::set_gamelogic_instance_id(const char* value) {
+  GOOGLE_DCHECK(value != NULL);
+  
+  gamelogic_instance_id_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::string(value));
+  // @@protoc_insertion_point(field_set_char:sess.PrepareReconnectResponse.gamelogic_instance_id)
+}
+inline void PrepareReconnectResponse::set_gamelogic_instance_id(const char* value, size_t size) {
+  
+  gamelogic_instance_id_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(),
+      ::std::string(reinterpret_cast<const char*>(value), size));
+  // @@protoc_insertion_point(field_set_pointer:sess.PrepareReconnectResponse.gamelogic_instance_id)
+}
+inline ::std::string* PrepareReconnectResponse::mutable_gamelogic_instance_id() {
+  
+  // @@protoc_insertion_point(field_mutable:sess.PrepareReconnectResponse.gamelogic_instance_id)
+  return gamelogic_instance_id_.MutableNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline ::std::string* PrepareReconnectResponse::release_gamelogic_instance_id() {
+  // @@protoc_insertion_point(field_release:sess.PrepareReconnectResponse.gamelogic_instance_id)
+  
+  return gamelogic_instance_id_.ReleaseNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline void PrepareReconnectResponse::set_allocated_gamelogic_instance_id(::std::string* gamelogic_instance_id) {
+  if (gamelogic_instance_id != NULL) {
+    
+  } else {
+    
+  }
+  gamelogic_instance_id_.SetAllocatedNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), gamelogic_instance_id);
+  // @@protoc_insertion_point(field_set_allocated:sess.PrepareReconnectResponse.gamelogic_instance_id)
+}
+
+// uint64 map_instance_id = 8;
+inline void PrepareReconnectResponse::clear_map_instance_id() {
+  map_instance_id_ = GOOGLE_ULONGLONG(0);
+}
+inline ::google::protobuf::uint64 PrepareReconnectResponse::map_instance_id() const {
+  // @@protoc_insertion_point(field_get:sess.PrepareReconnectResponse.map_instance_id)
+  return map_instance_id_;
+}
+inline void PrepareReconnectResponse::set_map_instance_id(::google::protobuf::uint64 value) {
+  
+  map_instance_id_ = value;
+  // @@protoc_insertion_point(field_set:sess.PrepareReconnectResponse.map_instance_id)
+}
+
+// uint64 map_owner_epoch = 9;
+inline void PrepareReconnectResponse::clear_map_owner_epoch() {
+  map_owner_epoch_ = GOOGLE_ULONGLONG(0);
+}
+inline ::google::protobuf::uint64 PrepareReconnectResponse::map_owner_epoch() const {
+  // @@protoc_insertion_point(field_get:sess.PrepareReconnectResponse.map_owner_epoch)
+  return map_owner_epoch_;
+}
+inline void PrepareReconnectResponse::set_map_owner_epoch(::google::protobuf::uint64 value) {
+  
+  map_owner_epoch_ = value;
+  // @@protoc_insertion_point(field_set:sess.PrepareReconnectResponse.map_owner_epoch)
+}
+
+// uint64 route_version = 10;
+inline void PrepareReconnectResponse::clear_route_version() {
+  route_version_ = GOOGLE_ULONGLONG(0);
+}
+inline ::google::protobuf::uint64 PrepareReconnectResponse::route_version() const {
+  // @@protoc_insertion_point(field_get:sess.PrepareReconnectResponse.route_version)
+  return route_version_;
+}
+inline void PrepareReconnectResponse::set_route_version(::google::protobuf::uint64 value) {
+  
+  route_version_ = value;
+  // @@protoc_insertion_point(field_set:sess.PrepareReconnectResponse.route_version)
+}
+
+// string operation_id = 11;
+inline void PrepareReconnectResponse::clear_operation_id() {
+  operation_id_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline const ::std::string& PrepareReconnectResponse::operation_id() const {
+  // @@protoc_insertion_point(field_get:sess.PrepareReconnectResponse.operation_id)
+  return operation_id_.GetNoArena();
+}
+inline void PrepareReconnectResponse::set_operation_id(const ::std::string& value) {
+  
+  operation_id_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), value);
+  // @@protoc_insertion_point(field_set:sess.PrepareReconnectResponse.operation_id)
+}
+#if LANG_CXX11
+inline void PrepareReconnectResponse::set_operation_id(::std::string&& value) {
+  
+  operation_id_.SetNoArena(
+    &::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::move(value));
+  // @@protoc_insertion_point(field_set_rvalue:sess.PrepareReconnectResponse.operation_id)
+}
+#endif
+inline void PrepareReconnectResponse::set_operation_id(const char* value) {
+  GOOGLE_DCHECK(value != NULL);
+  
+  operation_id_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::string(value));
+  // @@protoc_insertion_point(field_set_char:sess.PrepareReconnectResponse.operation_id)
+}
+inline void PrepareReconnectResponse::set_operation_id(const char* value, size_t size) {
+  
+  operation_id_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(),
+      ::std::string(reinterpret_cast<const char*>(value), size));
+  // @@protoc_insertion_point(field_set_pointer:sess.PrepareReconnectResponse.operation_id)
+}
+inline ::std::string* PrepareReconnectResponse::mutable_operation_id() {
+  
+  // @@protoc_insertion_point(field_mutable:sess.PrepareReconnectResponse.operation_id)
+  return operation_id_.MutableNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline ::std::string* PrepareReconnectResponse::release_operation_id() {
+  // @@protoc_insertion_point(field_release:sess.PrepareReconnectResponse.operation_id)
+  
+  return operation_id_.ReleaseNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline void PrepareReconnectResponse::set_allocated_operation_id(::std::string* operation_id) {
+  if (operation_id != NULL) {
+    
+  } else {
+    
+  }
+  operation_id_.SetAllocatedNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), operation_id);
+  // @@protoc_insertion_point(field_set_allocated:sess.PrepareReconnectResponse.operation_id)
+}
+
+// -------------------------------------------------------------------
+
+// CommitReconnectRequest
+
+// uint64 player_id = 1;
+inline void CommitReconnectRequest::clear_player_id() {
+  player_id_ = GOOGLE_ULONGLONG(0);
+}
+inline ::google::protobuf::uint64 CommitReconnectRequest::player_id() const {
+  // @@protoc_insertion_point(field_get:sess.CommitReconnectRequest.player_id)
+  return player_id_;
+}
+inline void CommitReconnectRequest::set_player_id(::google::protobuf::uint64 value) {
+  
+  player_id_ = value;
+  // @@protoc_insertion_point(field_set:sess.CommitReconnectRequest.player_id)
+}
+
+// string session_id = 2;
+inline void CommitReconnectRequest::clear_session_id() {
+  session_id_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline const ::std::string& CommitReconnectRequest::session_id() const {
+  // @@protoc_insertion_point(field_get:sess.CommitReconnectRequest.session_id)
+  return session_id_.GetNoArena();
+}
+inline void CommitReconnectRequest::set_session_id(const ::std::string& value) {
+  
+  session_id_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), value);
+  // @@protoc_insertion_point(field_set:sess.CommitReconnectRequest.session_id)
+}
+#if LANG_CXX11
+inline void CommitReconnectRequest::set_session_id(::std::string&& value) {
+  
+  session_id_.SetNoArena(
+    &::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::move(value));
+  // @@protoc_insertion_point(field_set_rvalue:sess.CommitReconnectRequest.session_id)
+}
+#endif
+inline void CommitReconnectRequest::set_session_id(const char* value) {
+  GOOGLE_DCHECK(value != NULL);
+  
+  session_id_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::string(value));
+  // @@protoc_insertion_point(field_set_char:sess.CommitReconnectRequest.session_id)
+}
+inline void CommitReconnectRequest::set_session_id(const char* value, size_t size) {
+  
+  session_id_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(),
+      ::std::string(reinterpret_cast<const char*>(value), size));
+  // @@protoc_insertion_point(field_set_pointer:sess.CommitReconnectRequest.session_id)
+}
+inline ::std::string* CommitReconnectRequest::mutable_session_id() {
+  
+  // @@protoc_insertion_point(field_mutable:sess.CommitReconnectRequest.session_id)
+  return session_id_.MutableNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline ::std::string* CommitReconnectRequest::release_session_id() {
+  // @@protoc_insertion_point(field_release:sess.CommitReconnectRequest.session_id)
+  
+  return session_id_.ReleaseNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline void CommitReconnectRequest::set_allocated_session_id(::std::string* session_id) {
+  if (session_id != NULL) {
+    
+  } else {
+    
+  }
+  session_id_.SetAllocatedNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), session_id);
+  // @@protoc_insertion_point(field_set_allocated:sess.CommitReconnectRequest.session_id)
+}
+
+// string operation_id = 3;
+inline void CommitReconnectRequest::clear_operation_id() {
+  operation_id_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline const ::std::string& CommitReconnectRequest::operation_id() const {
+  // @@protoc_insertion_point(field_get:sess.CommitReconnectRequest.operation_id)
+  return operation_id_.GetNoArena();
+}
+inline void CommitReconnectRequest::set_operation_id(const ::std::string& value) {
+  
+  operation_id_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), value);
+  // @@protoc_insertion_point(field_set:sess.CommitReconnectRequest.operation_id)
+}
+#if LANG_CXX11
+inline void CommitReconnectRequest::set_operation_id(::std::string&& value) {
+  
+  operation_id_.SetNoArena(
+    &::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::move(value));
+  // @@protoc_insertion_point(field_set_rvalue:sess.CommitReconnectRequest.operation_id)
+}
+#endif
+inline void CommitReconnectRequest::set_operation_id(const char* value) {
+  GOOGLE_DCHECK(value != NULL);
+  
+  operation_id_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::string(value));
+  // @@protoc_insertion_point(field_set_char:sess.CommitReconnectRequest.operation_id)
+}
+inline void CommitReconnectRequest::set_operation_id(const char* value, size_t size) {
+  
+  operation_id_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(),
+      ::std::string(reinterpret_cast<const char*>(value), size));
+  // @@protoc_insertion_point(field_set_pointer:sess.CommitReconnectRequest.operation_id)
+}
+inline ::std::string* CommitReconnectRequest::mutable_operation_id() {
+  
+  // @@protoc_insertion_point(field_mutable:sess.CommitReconnectRequest.operation_id)
+  return operation_id_.MutableNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline ::std::string* CommitReconnectRequest::release_operation_id() {
+  // @@protoc_insertion_point(field_release:sess.CommitReconnectRequest.operation_id)
+  
+  return operation_id_.ReleaseNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline void CommitReconnectRequest::set_allocated_operation_id(::std::string* operation_id) {
+  if (operation_id != NULL) {
+    
+  } else {
+    
+  }
+  operation_id_.SetAllocatedNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), operation_id);
+  // @@protoc_insertion_point(field_set_allocated:sess.CommitReconnectRequest.operation_id)
+}
+
+// string candidate_fence_token = 4;
+inline void CommitReconnectRequest::clear_candidate_fence_token() {
+  candidate_fence_token_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline const ::std::string& CommitReconnectRequest::candidate_fence_token() const {
+  // @@protoc_insertion_point(field_get:sess.CommitReconnectRequest.candidate_fence_token)
+  return candidate_fence_token_.GetNoArena();
+}
+inline void CommitReconnectRequest::set_candidate_fence_token(const ::std::string& value) {
+  
+  candidate_fence_token_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), value);
+  // @@protoc_insertion_point(field_set:sess.CommitReconnectRequest.candidate_fence_token)
+}
+#if LANG_CXX11
+inline void CommitReconnectRequest::set_candidate_fence_token(::std::string&& value) {
+  
+  candidate_fence_token_.SetNoArena(
+    &::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::move(value));
+  // @@protoc_insertion_point(field_set_rvalue:sess.CommitReconnectRequest.candidate_fence_token)
+}
+#endif
+inline void CommitReconnectRequest::set_candidate_fence_token(const char* value) {
+  GOOGLE_DCHECK(value != NULL);
+  
+  candidate_fence_token_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::string(value));
+  // @@protoc_insertion_point(field_set_char:sess.CommitReconnectRequest.candidate_fence_token)
+}
+inline void CommitReconnectRequest::set_candidate_fence_token(const char* value, size_t size) {
+  
+  candidate_fence_token_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(),
+      ::std::string(reinterpret_cast<const char*>(value), size));
+  // @@protoc_insertion_point(field_set_pointer:sess.CommitReconnectRequest.candidate_fence_token)
+}
+inline ::std::string* CommitReconnectRequest::mutable_candidate_fence_token() {
+  
+  // @@protoc_insertion_point(field_mutable:sess.CommitReconnectRequest.candidate_fence_token)
+  return candidate_fence_token_.MutableNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline ::std::string* CommitReconnectRequest::release_candidate_fence_token() {
+  // @@protoc_insertion_point(field_release:sess.CommitReconnectRequest.candidate_fence_token)
+  
+  return candidate_fence_token_.ReleaseNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline void CommitReconnectRequest::set_allocated_candidate_fence_token(::std::string* candidate_fence_token) {
+  if (candidate_fence_token != NULL) {
+    
+  } else {
+    
+  }
+  candidate_fence_token_.SetAllocatedNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), candidate_fence_token);
+  // @@protoc_insertion_point(field_set_allocated:sess.CommitReconnectRequest.candidate_fence_token)
+}
+
+// uint64 candidate_generation = 5;
+inline void CommitReconnectRequest::clear_candidate_generation() {
+  candidate_generation_ = GOOGLE_ULONGLONG(0);
+}
+inline ::google::protobuf::uint64 CommitReconnectRequest::candidate_generation() const {
+  // @@protoc_insertion_point(field_get:sess.CommitReconnectRequest.candidate_generation)
+  return candidate_generation_;
+}
+inline void CommitReconnectRequest::set_candidate_generation(::google::protobuf::uint64 value) {
+  
+  candidate_generation_ = value;
+  // @@protoc_insertion_point(field_set:sess.CommitReconnectRequest.candidate_generation)
+}
+
+// string gateway_instance_id = 6;
+inline void CommitReconnectRequest::clear_gateway_instance_id() {
+  gateway_instance_id_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline const ::std::string& CommitReconnectRequest::gateway_instance_id() const {
+  // @@protoc_insertion_point(field_get:sess.CommitReconnectRequest.gateway_instance_id)
+  return gateway_instance_id_.GetNoArena();
+}
+inline void CommitReconnectRequest::set_gateway_instance_id(const ::std::string& value) {
+  
+  gateway_instance_id_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), value);
+  // @@protoc_insertion_point(field_set:sess.CommitReconnectRequest.gateway_instance_id)
+}
+#if LANG_CXX11
+inline void CommitReconnectRequest::set_gateway_instance_id(::std::string&& value) {
+  
+  gateway_instance_id_.SetNoArena(
+    &::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::move(value));
+  // @@protoc_insertion_point(field_set_rvalue:sess.CommitReconnectRequest.gateway_instance_id)
+}
+#endif
+inline void CommitReconnectRequest::set_gateway_instance_id(const char* value) {
+  GOOGLE_DCHECK(value != NULL);
+  
+  gateway_instance_id_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::string(value));
+  // @@protoc_insertion_point(field_set_char:sess.CommitReconnectRequest.gateway_instance_id)
+}
+inline void CommitReconnectRequest::set_gateway_instance_id(const char* value, size_t size) {
+  
+  gateway_instance_id_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(),
+      ::std::string(reinterpret_cast<const char*>(value), size));
+  // @@protoc_insertion_point(field_set_pointer:sess.CommitReconnectRequest.gateway_instance_id)
+}
+inline ::std::string* CommitReconnectRequest::mutable_gateway_instance_id() {
+  
+  // @@protoc_insertion_point(field_mutable:sess.CommitReconnectRequest.gateway_instance_id)
+  return gateway_instance_id_.MutableNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline ::std::string* CommitReconnectRequest::release_gateway_instance_id() {
+  // @@protoc_insertion_point(field_release:sess.CommitReconnectRequest.gateway_instance_id)
+  
+  return gateway_instance_id_.ReleaseNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline void CommitReconnectRequest::set_allocated_gateway_instance_id(::std::string* gateway_instance_id) {
+  if (gateway_instance_id != NULL) {
+    
+  } else {
+    
+  }
+  gateway_instance_id_.SetAllocatedNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), gateway_instance_id);
+  // @@protoc_insertion_point(field_set_allocated:sess.CommitReconnectRequest.gateway_instance_id)
+}
+
+// uint64 connection_id = 7;
+inline void CommitReconnectRequest::clear_connection_id() {
+  connection_id_ = GOOGLE_ULONGLONG(0);
+}
+inline ::google::protobuf::uint64 CommitReconnectRequest::connection_id() const {
+  // @@protoc_insertion_point(field_get:sess.CommitReconnectRequest.connection_id)
+  return connection_id_;
+}
+inline void CommitReconnectRequest::set_connection_id(::google::protobuf::uint64 value) {
+  
+  connection_id_ = value;
+  // @@protoc_insertion_point(field_set:sess.CommitReconnectRequest.connection_id)
+}
+
+// -------------------------------------------------------------------
+
+// CommitReconnectResponse
+
+// bool ok = 1;
+inline void CommitReconnectResponse::clear_ok() {
+  ok_ = false;
+}
+inline bool CommitReconnectResponse::ok() const {
+  // @@protoc_insertion_point(field_get:sess.CommitReconnectResponse.ok)
+  return ok_;
+}
+inline void CommitReconnectResponse::set_ok(bool value) {
+  
+  ok_ = value;
+  // @@protoc_insertion_point(field_set:sess.CommitReconnectResponse.ok)
+}
+
+// string message = 2;
+inline void CommitReconnectResponse::clear_message() {
+  message_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline const ::std::string& CommitReconnectResponse::message() const {
+  // @@protoc_insertion_point(field_get:sess.CommitReconnectResponse.message)
+  return message_.GetNoArena();
+}
+inline void CommitReconnectResponse::set_message(const ::std::string& value) {
+  
+  message_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), value);
+  // @@protoc_insertion_point(field_set:sess.CommitReconnectResponse.message)
+}
+#if LANG_CXX11
+inline void CommitReconnectResponse::set_message(::std::string&& value) {
+  
+  message_.SetNoArena(
+    &::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::move(value));
+  // @@protoc_insertion_point(field_set_rvalue:sess.CommitReconnectResponse.message)
+}
+#endif
+inline void CommitReconnectResponse::set_message(const char* value) {
+  GOOGLE_DCHECK(value != NULL);
+  
+  message_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::string(value));
+  // @@protoc_insertion_point(field_set_char:sess.CommitReconnectResponse.message)
+}
+inline void CommitReconnectResponse::set_message(const char* value, size_t size) {
+  
+  message_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(),
+      ::std::string(reinterpret_cast<const char*>(value), size));
+  // @@protoc_insertion_point(field_set_pointer:sess.CommitReconnectResponse.message)
+}
+inline ::std::string* CommitReconnectResponse::mutable_message() {
+  
+  // @@protoc_insertion_point(field_mutable:sess.CommitReconnectResponse.message)
+  return message_.MutableNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline ::std::string* CommitReconnectResponse::release_message() {
+  // @@protoc_insertion_point(field_release:sess.CommitReconnectResponse.message)
+  
+  return message_.ReleaseNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline void CommitReconnectResponse::set_allocated_message(::std::string* message) {
+  if (message != NULL) {
+    
+  } else {
+    
+  }
+  message_.SetAllocatedNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), message);
+  // @@protoc_insertion_point(field_set_allocated:sess.CommitReconnectResponse.message)
+}
+
+// string error_code = 3;
+inline void CommitReconnectResponse::clear_error_code() {
+  error_code_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline const ::std::string& CommitReconnectResponse::error_code() const {
+  // @@protoc_insertion_point(field_get:sess.CommitReconnectResponse.error_code)
+  return error_code_.GetNoArena();
+}
+inline void CommitReconnectResponse::set_error_code(const ::std::string& value) {
+  
+  error_code_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), value);
+  // @@protoc_insertion_point(field_set:sess.CommitReconnectResponse.error_code)
+}
+#if LANG_CXX11
+inline void CommitReconnectResponse::set_error_code(::std::string&& value) {
+  
+  error_code_.SetNoArena(
+    &::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::move(value));
+  // @@protoc_insertion_point(field_set_rvalue:sess.CommitReconnectResponse.error_code)
+}
+#endif
+inline void CommitReconnectResponse::set_error_code(const char* value) {
+  GOOGLE_DCHECK(value != NULL);
+  
+  error_code_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::string(value));
+  // @@protoc_insertion_point(field_set_char:sess.CommitReconnectResponse.error_code)
+}
+inline void CommitReconnectResponse::set_error_code(const char* value, size_t size) {
+  
+  error_code_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(),
+      ::std::string(reinterpret_cast<const char*>(value), size));
+  // @@protoc_insertion_point(field_set_pointer:sess.CommitReconnectResponse.error_code)
+}
+inline ::std::string* CommitReconnectResponse::mutable_error_code() {
+  
+  // @@protoc_insertion_point(field_mutable:sess.CommitReconnectResponse.error_code)
+  return error_code_.MutableNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline ::std::string* CommitReconnectResponse::release_error_code() {
+  // @@protoc_insertion_point(field_release:sess.CommitReconnectResponse.error_code)
+  
+  return error_code_.ReleaseNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline void CommitReconnectResponse::set_allocated_error_code(::std::string* error_code) {
+  if (error_code != NULL) {
+    
+  } else {
+    
+  }
+  error_code_.SetAllocatedNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), error_code);
+  // @@protoc_insertion_point(field_set_allocated:sess.CommitReconnectResponse.error_code)
+}
+
+// string session_id = 4;
+inline void CommitReconnectResponse::clear_session_id() {
+  session_id_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline const ::std::string& CommitReconnectResponse::session_id() const {
+  // @@protoc_insertion_point(field_get:sess.CommitReconnectResponse.session_id)
+  return session_id_.GetNoArena();
+}
+inline void CommitReconnectResponse::set_session_id(const ::std::string& value) {
+  
+  session_id_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), value);
+  // @@protoc_insertion_point(field_set:sess.CommitReconnectResponse.session_id)
+}
+#if LANG_CXX11
+inline void CommitReconnectResponse::set_session_id(::std::string&& value) {
+  
+  session_id_.SetNoArena(
+    &::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::move(value));
+  // @@protoc_insertion_point(field_set_rvalue:sess.CommitReconnectResponse.session_id)
+}
+#endif
+inline void CommitReconnectResponse::set_session_id(const char* value) {
+  GOOGLE_DCHECK(value != NULL);
+  
+  session_id_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::string(value));
+  // @@protoc_insertion_point(field_set_char:sess.CommitReconnectResponse.session_id)
+}
+inline void CommitReconnectResponse::set_session_id(const char* value, size_t size) {
+  
+  session_id_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(),
+      ::std::string(reinterpret_cast<const char*>(value), size));
+  // @@protoc_insertion_point(field_set_pointer:sess.CommitReconnectResponse.session_id)
+}
+inline ::std::string* CommitReconnectResponse::mutable_session_id() {
+  
+  // @@protoc_insertion_point(field_mutable:sess.CommitReconnectResponse.session_id)
+  return session_id_.MutableNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline ::std::string* CommitReconnectResponse::release_session_id() {
+  // @@protoc_insertion_point(field_release:sess.CommitReconnectResponse.session_id)
+  
+  return session_id_.ReleaseNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline void CommitReconnectResponse::set_allocated_session_id(::std::string* session_id) {
+  if (session_id != NULL) {
+    
+  } else {
+    
+  }
+  session_id_.SetAllocatedNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), session_id);
+  // @@protoc_insertion_point(field_set_allocated:sess.CommitReconnectResponse.session_id)
+}
+
+// string fence_token = 5;
+inline void CommitReconnectResponse::clear_fence_token() {
+  fence_token_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline const ::std::string& CommitReconnectResponse::fence_token() const {
+  // @@protoc_insertion_point(field_get:sess.CommitReconnectResponse.fence_token)
+  return fence_token_.GetNoArena();
+}
+inline void CommitReconnectResponse::set_fence_token(const ::std::string& value) {
+  
+  fence_token_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), value);
+  // @@protoc_insertion_point(field_set:sess.CommitReconnectResponse.fence_token)
+}
+#if LANG_CXX11
+inline void CommitReconnectResponse::set_fence_token(::std::string&& value) {
+  
+  fence_token_.SetNoArena(
+    &::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::move(value));
+  // @@protoc_insertion_point(field_set_rvalue:sess.CommitReconnectResponse.fence_token)
+}
+#endif
+inline void CommitReconnectResponse::set_fence_token(const char* value) {
+  GOOGLE_DCHECK(value != NULL);
+  
+  fence_token_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::string(value));
+  // @@protoc_insertion_point(field_set_char:sess.CommitReconnectResponse.fence_token)
+}
+inline void CommitReconnectResponse::set_fence_token(const char* value, size_t size) {
+  
+  fence_token_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(),
+      ::std::string(reinterpret_cast<const char*>(value), size));
+  // @@protoc_insertion_point(field_set_pointer:sess.CommitReconnectResponse.fence_token)
+}
+inline ::std::string* CommitReconnectResponse::mutable_fence_token() {
+  
+  // @@protoc_insertion_point(field_mutable:sess.CommitReconnectResponse.fence_token)
+  return fence_token_.MutableNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline ::std::string* CommitReconnectResponse::release_fence_token() {
+  // @@protoc_insertion_point(field_release:sess.CommitReconnectResponse.fence_token)
+  
+  return fence_token_.ReleaseNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline void CommitReconnectResponse::set_allocated_fence_token(::std::string* fence_token) {
+  if (fence_token != NULL) {
+    
+  } else {
+    
+  }
+  fence_token_.SetAllocatedNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), fence_token);
+  // @@protoc_insertion_point(field_set_allocated:sess.CommitReconnectResponse.fence_token)
+}
+
+// uint64 generation = 6;
+inline void CommitReconnectResponse::clear_generation() {
+  generation_ = GOOGLE_ULONGLONG(0);
+}
+inline ::google::protobuf::uint64 CommitReconnectResponse::generation() const {
+  // @@protoc_insertion_point(field_get:sess.CommitReconnectResponse.generation)
+  return generation_;
+}
+inline void CommitReconnectResponse::set_generation(::google::protobuf::uint64 value) {
+  
+  generation_ = value;
+  // @@protoc_insertion_point(field_set:sess.CommitReconnectResponse.generation)
+}
+
+// string gamelogic_instance_id = 7;
+inline void CommitReconnectResponse::clear_gamelogic_instance_id() {
+  gamelogic_instance_id_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline const ::std::string& CommitReconnectResponse::gamelogic_instance_id() const {
+  // @@protoc_insertion_point(field_get:sess.CommitReconnectResponse.gamelogic_instance_id)
+  return gamelogic_instance_id_.GetNoArena();
+}
+inline void CommitReconnectResponse::set_gamelogic_instance_id(const ::std::string& value) {
+  
+  gamelogic_instance_id_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), value);
+  // @@protoc_insertion_point(field_set:sess.CommitReconnectResponse.gamelogic_instance_id)
+}
+#if LANG_CXX11
+inline void CommitReconnectResponse::set_gamelogic_instance_id(::std::string&& value) {
+  
+  gamelogic_instance_id_.SetNoArena(
+    &::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::move(value));
+  // @@protoc_insertion_point(field_set_rvalue:sess.CommitReconnectResponse.gamelogic_instance_id)
+}
+#endif
+inline void CommitReconnectResponse::set_gamelogic_instance_id(const char* value) {
+  GOOGLE_DCHECK(value != NULL);
+  
+  gamelogic_instance_id_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::string(value));
+  // @@protoc_insertion_point(field_set_char:sess.CommitReconnectResponse.gamelogic_instance_id)
+}
+inline void CommitReconnectResponse::set_gamelogic_instance_id(const char* value, size_t size) {
+  
+  gamelogic_instance_id_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(),
+      ::std::string(reinterpret_cast<const char*>(value), size));
+  // @@protoc_insertion_point(field_set_pointer:sess.CommitReconnectResponse.gamelogic_instance_id)
+}
+inline ::std::string* CommitReconnectResponse::mutable_gamelogic_instance_id() {
+  
+  // @@protoc_insertion_point(field_mutable:sess.CommitReconnectResponse.gamelogic_instance_id)
+  return gamelogic_instance_id_.MutableNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline ::std::string* CommitReconnectResponse::release_gamelogic_instance_id() {
+  // @@protoc_insertion_point(field_release:sess.CommitReconnectResponse.gamelogic_instance_id)
+  
+  return gamelogic_instance_id_.ReleaseNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline void CommitReconnectResponse::set_allocated_gamelogic_instance_id(::std::string* gamelogic_instance_id) {
+  if (gamelogic_instance_id != NULL) {
+    
+  } else {
+    
+  }
+  gamelogic_instance_id_.SetAllocatedNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), gamelogic_instance_id);
+  // @@protoc_insertion_point(field_set_allocated:sess.CommitReconnectResponse.gamelogic_instance_id)
+}
+
+// uint64 map_instance_id = 8;
+inline void CommitReconnectResponse::clear_map_instance_id() {
+  map_instance_id_ = GOOGLE_ULONGLONG(0);
+}
+inline ::google::protobuf::uint64 CommitReconnectResponse::map_instance_id() const {
+  // @@protoc_insertion_point(field_get:sess.CommitReconnectResponse.map_instance_id)
+  return map_instance_id_;
+}
+inline void CommitReconnectResponse::set_map_instance_id(::google::protobuf::uint64 value) {
+  
+  map_instance_id_ = value;
+  // @@protoc_insertion_point(field_set:sess.CommitReconnectResponse.map_instance_id)
+}
+
+// uint64 map_owner_epoch = 9;
+inline void CommitReconnectResponse::clear_map_owner_epoch() {
+  map_owner_epoch_ = GOOGLE_ULONGLONG(0);
+}
+inline ::google::protobuf::uint64 CommitReconnectResponse::map_owner_epoch() const {
+  // @@protoc_insertion_point(field_get:sess.CommitReconnectResponse.map_owner_epoch)
+  return map_owner_epoch_;
+}
+inline void CommitReconnectResponse::set_map_owner_epoch(::google::protobuf::uint64 value) {
+  
+  map_owner_epoch_ = value;
+  // @@protoc_insertion_point(field_set:sess.CommitReconnectResponse.map_owner_epoch)
+}
+
+// uint64 route_version = 10;
+inline void CommitReconnectResponse::clear_route_version() {
+  route_version_ = GOOGLE_ULONGLONG(0);
+}
+inline ::google::protobuf::uint64 CommitReconnectResponse::route_version() const {
+  // @@protoc_insertion_point(field_get:sess.CommitReconnectResponse.route_version)
+  return route_version_;
+}
+inline void CommitReconnectResponse::set_route_version(::google::protobuf::uint64 value) {
+  
+  route_version_ = value;
+  // @@protoc_insertion_point(field_set:sess.CommitReconnectResponse.route_version)
+}
+
+// -------------------------------------------------------------------
+
+// AbortReconnectRequest
+
+// uint64 player_id = 1;
+inline void AbortReconnectRequest::clear_player_id() {
+  player_id_ = GOOGLE_ULONGLONG(0);
+}
+inline ::google::protobuf::uint64 AbortReconnectRequest::player_id() const {
+  // @@protoc_insertion_point(field_get:sess.AbortReconnectRequest.player_id)
+  return player_id_;
+}
+inline void AbortReconnectRequest::set_player_id(::google::protobuf::uint64 value) {
+  
+  player_id_ = value;
+  // @@protoc_insertion_point(field_set:sess.AbortReconnectRequest.player_id)
+}
+
+// string session_id = 2;
+inline void AbortReconnectRequest::clear_session_id() {
+  session_id_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline const ::std::string& AbortReconnectRequest::session_id() const {
+  // @@protoc_insertion_point(field_get:sess.AbortReconnectRequest.session_id)
+  return session_id_.GetNoArena();
+}
+inline void AbortReconnectRequest::set_session_id(const ::std::string& value) {
+  
+  session_id_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), value);
+  // @@protoc_insertion_point(field_set:sess.AbortReconnectRequest.session_id)
+}
+#if LANG_CXX11
+inline void AbortReconnectRequest::set_session_id(::std::string&& value) {
+  
+  session_id_.SetNoArena(
+    &::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::move(value));
+  // @@protoc_insertion_point(field_set_rvalue:sess.AbortReconnectRequest.session_id)
+}
+#endif
+inline void AbortReconnectRequest::set_session_id(const char* value) {
+  GOOGLE_DCHECK(value != NULL);
+  
+  session_id_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::string(value));
+  // @@protoc_insertion_point(field_set_char:sess.AbortReconnectRequest.session_id)
+}
+inline void AbortReconnectRequest::set_session_id(const char* value, size_t size) {
+  
+  session_id_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(),
+      ::std::string(reinterpret_cast<const char*>(value), size));
+  // @@protoc_insertion_point(field_set_pointer:sess.AbortReconnectRequest.session_id)
+}
+inline ::std::string* AbortReconnectRequest::mutable_session_id() {
+  
+  // @@protoc_insertion_point(field_mutable:sess.AbortReconnectRequest.session_id)
+  return session_id_.MutableNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline ::std::string* AbortReconnectRequest::release_session_id() {
+  // @@protoc_insertion_point(field_release:sess.AbortReconnectRequest.session_id)
+  
+  return session_id_.ReleaseNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline void AbortReconnectRequest::set_allocated_session_id(::std::string* session_id) {
+  if (session_id != NULL) {
+    
+  } else {
+    
+  }
+  session_id_.SetAllocatedNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), session_id);
+  // @@protoc_insertion_point(field_set_allocated:sess.AbortReconnectRequest.session_id)
+}
+
+// string operation_id = 3;
+inline void AbortReconnectRequest::clear_operation_id() {
+  operation_id_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline const ::std::string& AbortReconnectRequest::operation_id() const {
+  // @@protoc_insertion_point(field_get:sess.AbortReconnectRequest.operation_id)
+  return operation_id_.GetNoArena();
+}
+inline void AbortReconnectRequest::set_operation_id(const ::std::string& value) {
+  
+  operation_id_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), value);
+  // @@protoc_insertion_point(field_set:sess.AbortReconnectRequest.operation_id)
+}
+#if LANG_CXX11
+inline void AbortReconnectRequest::set_operation_id(::std::string&& value) {
+  
+  operation_id_.SetNoArena(
+    &::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::move(value));
+  // @@protoc_insertion_point(field_set_rvalue:sess.AbortReconnectRequest.operation_id)
+}
+#endif
+inline void AbortReconnectRequest::set_operation_id(const char* value) {
+  GOOGLE_DCHECK(value != NULL);
+  
+  operation_id_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::string(value));
+  // @@protoc_insertion_point(field_set_char:sess.AbortReconnectRequest.operation_id)
+}
+inline void AbortReconnectRequest::set_operation_id(const char* value, size_t size) {
+  
+  operation_id_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(),
+      ::std::string(reinterpret_cast<const char*>(value), size));
+  // @@protoc_insertion_point(field_set_pointer:sess.AbortReconnectRequest.operation_id)
+}
+inline ::std::string* AbortReconnectRequest::mutable_operation_id() {
+  
+  // @@protoc_insertion_point(field_mutable:sess.AbortReconnectRequest.operation_id)
+  return operation_id_.MutableNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline ::std::string* AbortReconnectRequest::release_operation_id() {
+  // @@protoc_insertion_point(field_release:sess.AbortReconnectRequest.operation_id)
+  
+  return operation_id_.ReleaseNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline void AbortReconnectRequest::set_allocated_operation_id(::std::string* operation_id) {
+  if (operation_id != NULL) {
+    
+  } else {
+    
+  }
+  operation_id_.SetAllocatedNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), operation_id);
+  // @@protoc_insertion_point(field_set_allocated:sess.AbortReconnectRequest.operation_id)
+}
+
+// string candidate_fence_token = 4;
+inline void AbortReconnectRequest::clear_candidate_fence_token() {
+  candidate_fence_token_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline const ::std::string& AbortReconnectRequest::candidate_fence_token() const {
+  // @@protoc_insertion_point(field_get:sess.AbortReconnectRequest.candidate_fence_token)
+  return candidate_fence_token_.GetNoArena();
+}
+inline void AbortReconnectRequest::set_candidate_fence_token(const ::std::string& value) {
+  
+  candidate_fence_token_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), value);
+  // @@protoc_insertion_point(field_set:sess.AbortReconnectRequest.candidate_fence_token)
+}
+#if LANG_CXX11
+inline void AbortReconnectRequest::set_candidate_fence_token(::std::string&& value) {
+  
+  candidate_fence_token_.SetNoArena(
+    &::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::move(value));
+  // @@protoc_insertion_point(field_set_rvalue:sess.AbortReconnectRequest.candidate_fence_token)
+}
+#endif
+inline void AbortReconnectRequest::set_candidate_fence_token(const char* value) {
+  GOOGLE_DCHECK(value != NULL);
+  
+  candidate_fence_token_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::string(value));
+  // @@protoc_insertion_point(field_set_char:sess.AbortReconnectRequest.candidate_fence_token)
+}
+inline void AbortReconnectRequest::set_candidate_fence_token(const char* value, size_t size) {
+  
+  candidate_fence_token_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(),
+      ::std::string(reinterpret_cast<const char*>(value), size));
+  // @@protoc_insertion_point(field_set_pointer:sess.AbortReconnectRequest.candidate_fence_token)
+}
+inline ::std::string* AbortReconnectRequest::mutable_candidate_fence_token() {
+  
+  // @@protoc_insertion_point(field_mutable:sess.AbortReconnectRequest.candidate_fence_token)
+  return candidate_fence_token_.MutableNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline ::std::string* AbortReconnectRequest::release_candidate_fence_token() {
+  // @@protoc_insertion_point(field_release:sess.AbortReconnectRequest.candidate_fence_token)
+  
+  return candidate_fence_token_.ReleaseNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline void AbortReconnectRequest::set_allocated_candidate_fence_token(::std::string* candidate_fence_token) {
+  if (candidate_fence_token != NULL) {
+    
+  } else {
+    
+  }
+  candidate_fence_token_.SetAllocatedNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), candidate_fence_token);
+  // @@protoc_insertion_point(field_set_allocated:sess.AbortReconnectRequest.candidate_fence_token)
+}
+
+// -------------------------------------------------------------------
+
+// AbortReconnectResponse
+
+// bool ok = 1;
+inline void AbortReconnectResponse::clear_ok() {
+  ok_ = false;
+}
+inline bool AbortReconnectResponse::ok() const {
+  // @@protoc_insertion_point(field_get:sess.AbortReconnectResponse.ok)
+  return ok_;
+}
+inline void AbortReconnectResponse::set_ok(bool value) {
+  
+  ok_ = value;
+  // @@protoc_insertion_point(field_set:sess.AbortReconnectResponse.ok)
+}
+
+// string message = 2;
+inline void AbortReconnectResponse::clear_message() {
+  message_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline const ::std::string& AbortReconnectResponse::message() const {
+  // @@protoc_insertion_point(field_get:sess.AbortReconnectResponse.message)
+  return message_.GetNoArena();
+}
+inline void AbortReconnectResponse::set_message(const ::std::string& value) {
+  
+  message_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), value);
+  // @@protoc_insertion_point(field_set:sess.AbortReconnectResponse.message)
+}
+#if LANG_CXX11
+inline void AbortReconnectResponse::set_message(::std::string&& value) {
+  
+  message_.SetNoArena(
+    &::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::move(value));
+  // @@protoc_insertion_point(field_set_rvalue:sess.AbortReconnectResponse.message)
+}
+#endif
+inline void AbortReconnectResponse::set_message(const char* value) {
+  GOOGLE_DCHECK(value != NULL);
+  
+  message_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::string(value));
+  // @@protoc_insertion_point(field_set_char:sess.AbortReconnectResponse.message)
+}
+inline void AbortReconnectResponse::set_message(const char* value, size_t size) {
+  
+  message_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(),
+      ::std::string(reinterpret_cast<const char*>(value), size));
+  // @@protoc_insertion_point(field_set_pointer:sess.AbortReconnectResponse.message)
+}
+inline ::std::string* AbortReconnectResponse::mutable_message() {
+  
+  // @@protoc_insertion_point(field_mutable:sess.AbortReconnectResponse.message)
+  return message_.MutableNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline ::std::string* AbortReconnectResponse::release_message() {
+  // @@protoc_insertion_point(field_release:sess.AbortReconnectResponse.message)
+  
+  return message_.ReleaseNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline void AbortReconnectResponse::set_allocated_message(::std::string* message) {
+  if (message != NULL) {
+    
+  } else {
+    
+  }
+  message_.SetAllocatedNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), message);
+  // @@protoc_insertion_point(field_set_allocated:sess.AbortReconnectResponse.message)
+}
+
+// string error_code = 3;
+inline void AbortReconnectResponse::clear_error_code() {
+  error_code_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline const ::std::string& AbortReconnectResponse::error_code() const {
+  // @@protoc_insertion_point(field_get:sess.AbortReconnectResponse.error_code)
+  return error_code_.GetNoArena();
+}
+inline void AbortReconnectResponse::set_error_code(const ::std::string& value) {
+  
+  error_code_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), value);
+  // @@protoc_insertion_point(field_set:sess.AbortReconnectResponse.error_code)
+}
+#if LANG_CXX11
+inline void AbortReconnectResponse::set_error_code(::std::string&& value) {
+  
+  error_code_.SetNoArena(
+    &::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::move(value));
+  // @@protoc_insertion_point(field_set_rvalue:sess.AbortReconnectResponse.error_code)
+}
+#endif
+inline void AbortReconnectResponse::set_error_code(const char* value) {
+  GOOGLE_DCHECK(value != NULL);
+  
+  error_code_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::string(value));
+  // @@protoc_insertion_point(field_set_char:sess.AbortReconnectResponse.error_code)
+}
+inline void AbortReconnectResponse::set_error_code(const char* value, size_t size) {
+  
+  error_code_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(),
+      ::std::string(reinterpret_cast<const char*>(value), size));
+  // @@protoc_insertion_point(field_set_pointer:sess.AbortReconnectResponse.error_code)
+}
+inline ::std::string* AbortReconnectResponse::mutable_error_code() {
+  
+  // @@protoc_insertion_point(field_mutable:sess.AbortReconnectResponse.error_code)
+  return error_code_.MutableNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline ::std::string* AbortReconnectResponse::release_error_code() {
+  // @@protoc_insertion_point(field_release:sess.AbortReconnectResponse.error_code)
+  
+  return error_code_.ReleaseNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline void AbortReconnectResponse::set_allocated_error_code(::std::string* error_code) {
+  if (error_code != NULL) {
+    
+  } else {
+    
+  }
+  error_code_.SetAllocatedNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), error_code);
+  // @@protoc_insertion_point(field_set_allocated:sess.AbortReconnectResponse.error_code)
 }
 
 // -------------------------------------------------------------------
@@ -12710,6 +15335,18 @@ inline void GetPlayerRouteResponse::set_allocated_transfer_id(::std::string* tra
 #ifdef __GNUC__
   #pragma GCC diagnostic pop
 #endif  // __GNUC__
+// -------------------------------------------------------------------
+
+// -------------------------------------------------------------------
+
+// -------------------------------------------------------------------
+
+// -------------------------------------------------------------------
+
+// -------------------------------------------------------------------
+
+// -------------------------------------------------------------------
+
 // -------------------------------------------------------------------
 
 // -------------------------------------------------------------------

@@ -123,7 +123,8 @@ if(ENABLE_GAME_PROTOBUF AND ENABLE_REDIS)
     message(FATAL_ERROR "ENABLE_REDIS=ON but hiredis not found. Install hiredis-devel.")
   endif()
   list(APPEND SRC_REDIS redis/RedisClient.cpp redis/RedisPool.cpp game/SessionStore.cpp
-                game/PlacementStore.cpp game/PushReplayStore.cpp)
+                game/PlacementStore.cpp game/PushReplayStore.cpp
+                runtime/SecureRandom.cpp runtime/HealthyLogicSnapshot.cpp)
   message(STATUS "Redis: include=${HIREDIS_INCLUDE_DIR} lib=${HIREDIS_LIB}")
 endif()
 
@@ -220,6 +221,7 @@ if(ENABLE_BRPC)
     runtime/brpc/GatewayAuthClients.cpp
     runtime/brpc/GatewayLoginOrchestrator.cpp
     runtime/brpc/GatewayEnterMapOrchestrator.cpp
+    runtime/RpcOffloadPool.cpp
     runtime/brpc/gamelogic_rpc.pb.cc
     runtime/brpc/gateway_push.pb.cc
     runtime/brpc/GatewayPushServer.cpp
@@ -240,7 +242,7 @@ endif()
 
 set(SRC_BOOTSTRAP apps/ServerBootstrap.cpp runtime/ServiceHealth.cpp runtime/PasswordHash.cpp
     runtime/GatewayIdentity.cpp runtime/GatewayAuthFlow.cpp runtime/OpsMetrics.cpp
-    runtime/HealthDeps.cpp)
+    runtime/HealthDeps.cpp runtime/HealthProbe.cpp)
 set(GAMEMESH_COMMON_SRCS
   ${SRC_LIST1} ${SRC_LIST2} ${SRC_LIST3} ${SRC_LIST4} ${SRC_LIST5}
   ${SRC_DB} ${SRC_GAME} ${SRC_REDIS} ${SRC_ROCKSDB} ${SRC_BRPC} ${SRC_BOOTSTRAP})
@@ -359,6 +361,8 @@ if(ENABLE_REDIS AND ENABLE_GAME_PROTOBUF)
     game/game.pb.cc
     redis/RedisClient.cpp
     redis/RedisPool.cpp
+    runtime/SecureRandom.cpp
+    runtime/HealthyLogicSnapshot.cpp
     base/CurrentThread.cpp
     log/Logging.cpp
     log/LogStream.cpp
@@ -367,9 +371,10 @@ if(ENABLE_REDIS AND ENABLE_GAME_PROTOBUF)
   target_compile_definitions(placement_seed_tool PRIVATE
     WEBSERVER_ENABLE_REDIS WEBSERVER_ENABLE_GAME_PROTOBUF)
   target_include_directories(placement_seed_tool PRIVATE
-    game redis base log timer runtime ${HIREDIS_INCLUDE_DIR} ${Protobuf_INCLUDE_DIRS})
+    game redis base log timer runtime ${HIREDIS_INCLUDE_DIR} ${Protobuf_INCLUDE_DIRS}
+    ${OPENSSL_INCLUDE_DIR})
   target_link_libraries(placement_seed_tool
-    ${CMAKE_THREAD_LIBS_INIT} ${HIREDIS_LIB} ${Protobuf_LIBRARIES})
+    ${CMAKE_THREAD_LIBS_INIT} ${HIREDIS_LIB} ${Protobuf_LIBRARIES} ${OPENSSL_CRYPTO_LIB})
 endif()
 
 # 流式文件哈希测试
@@ -388,6 +393,23 @@ add_executable(player_serial_queue_test
   log/AsyncLogging.cpp)
 target_include_directories(player_serial_queue_test PRIVATE runtime base log timer)
 target_link_libraries(player_serial_queue_test ${CMAKE_THREAD_LIBS_INIT})
+
+add_executable(player_serial_shutdown_test
+  test/player_serial_shutdown_test.cpp
+  runtime/PlayerSerialQueue.cpp
+  base/CurrentThread.cpp
+  log/Logging.cpp
+  log/LogStream.cpp
+  log/LogFile.cpp
+  log/AsyncLogging.cpp)
+target_include_directories(player_serial_shutdown_test PRIVATE runtime base log timer)
+target_link_libraries(player_serial_shutdown_test ${CMAKE_THREAD_LIBS_INIT})
+
+add_executable(secure_random_test
+  test/secure_random_test.cpp
+  runtime/SecureRandom.cpp)
+target_include_directories(secure_random_test PRIVATE runtime ${OPENSSL_INCLUDE_DIR})
+target_link_libraries(secure_random_test ${OPENSSL_CRYPTO_LIB})
 
 # 阶段 5：MapPlacement + epoch 栅栏（无 AOI/Tick）
   add_executable(map_placement_test
@@ -434,6 +456,28 @@ if(ENABLE_GAME_PROTOBUF)
   target_include_directories(auth_session_boundary_test PRIVATE
     ${Protobuf_INCLUDE_DIRS} runtime game runtime/discovery base log timer)
   target_link_libraries(auth_session_boundary_test ${Protobuf_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
+
+  add_executable(asset_dirty_consistency_test
+    test/asset_dirty_consistency_test.cpp
+    game/GameLogic.cpp
+    game/GatewayConnRegistry.cpp
+    game/game.pb.cc
+    runtime/MessageRoute.cpp
+    runtime/ForwardMetaContext.cpp
+    runtime/MapInstanceRegistry.cpp
+    runtime/MapPlacement.cpp
+    runtime/discovery/IServiceRegistry.cpp
+    runtime/discovery/EtcdDiscovery.cpp
+    base/LogicMetrics.cpp
+    base/CurrentThread.cpp
+    log/Logging.cpp
+    log/LogStream.cpp
+    log/LogFile.cpp
+    log/AsyncLogging.cpp)
+  target_compile_definitions(asset_dirty_consistency_test PRIVATE WEBSERVER_ENABLE_GAME_PROTOBUF)
+  target_include_directories(asset_dirty_consistency_test PRIVATE
+    ${Protobuf_INCLUDE_DIRS} runtime game runtime/discovery base log timer)
+  target_link_libraries(asset_dirty_consistency_test ${Protobuf_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
 
   add_executable(phase1_gateway_boundary_test
     test/phase1_gateway_boundary_test.cpp
@@ -645,6 +689,8 @@ if(ENABLE_GAME_PROTOBUF AND ENABLE_REDIS)
     game/game.pb.cc
     redis/RedisClient.cpp
     redis/RedisPool.cpp
+    runtime/SecureRandom.cpp
+    runtime/HealthyLogicSnapshot.cpp
     base/CurrentThread.cpp
     log/Logging.cpp
     log/LogStream.cpp
@@ -652,7 +698,8 @@ if(ENABLE_GAME_PROTOBUF AND ENABLE_REDIS)
     log/AsyncLogging.cpp)
   target_compile_definitions(session_store_test PRIVATE WEBSERVER_ENABLE_REDIS)
   target_include_directories(session_store_test PRIVATE
-    game redis base log timer ${HIREDIS_INCLUDE_DIR} ${Protobuf_INCLUDE_DIRS})
+    game redis base log timer runtime ${HIREDIS_INCLUDE_DIR} ${Protobuf_INCLUDE_DIRS}
+    ${OPENSSL_INCLUDE_DIR})
 
   add_executable(player_transfer_test
     test/player_transfer_test.cpp
@@ -661,6 +708,8 @@ if(ENABLE_GAME_PROTOBUF AND ENABLE_REDIS)
     game/game.pb.cc
     redis/RedisClient.cpp
     redis/RedisPool.cpp
+    runtime/SecureRandom.cpp
+    runtime/HealthyLogicSnapshot.cpp
     base/CurrentThread.cpp
     log/Logging.cpp
     log/LogStream.cpp
@@ -668,17 +717,19 @@ if(ENABLE_GAME_PROTOBUF AND ENABLE_REDIS)
     log/AsyncLogging.cpp)
   target_compile_definitions(player_transfer_test PRIVATE WEBSERVER_ENABLE_REDIS)
   target_include_directories(player_transfer_test PRIVATE
-    game redis runtime base log timer ${HIREDIS_INCLUDE_DIR} ${Protobuf_INCLUDE_DIRS})
+    game redis runtime base log timer ${HIREDIS_INCLUDE_DIR} ${Protobuf_INCLUDE_DIRS}
+    ${OPENSSL_INCLUDE_DIR})
   target_link_libraries(player_transfer_test
-    ${HIREDIS_LIB} ${Protobuf_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
+    ${HIREDIS_LIB} ${Protobuf_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT} ${OPENSSL_CRYPTO_LIB})
   target_link_libraries(session_store_test
-    ${CMAKE_THREAD_LIBS_INIT} ${HIREDIS_LIB} ${Protobuf_LIBRARIES})
+    ${CMAKE_THREAD_LIBS_INIT} ${HIREDIS_LIB} ${Protobuf_LIBRARIES} ${OPENSSL_CRYPTO_LIB})
 
   add_executable(placement_store_test
     test/placement_store_test.cpp
     game/PlacementStore.cpp
     redis/RedisClient.cpp
     redis/RedisPool.cpp
+    runtime/HealthyLogicSnapshot.cpp
     base/CurrentThread.cpp
     log/Logging.cpp
     log/LogStream.cpp
@@ -697,6 +748,7 @@ if(ENABLE_GAME_PROTOBUF AND ENABLE_REDIS)
     runtime/OpsMetrics.cpp
     redis/RedisClient.cpp
     redis/RedisPool.cpp
+    runtime/HealthyLogicSnapshot.cpp
     base/CurrentThread.cpp
     log/Logging.cpp
     log/LogStream.cpp
@@ -726,6 +778,8 @@ if(ENABLE_GAME_PROTOBUF AND ENABLE_REDIS)
   add_executable(healthy_logic_refresh_test
     test/healthy_logic_refresh_test.cpp
     runtime/HealthyLogicOwners.cpp
+    runtime/HealthyLogicSnapshot.cpp
+    runtime/SecureRandom.cpp
     runtime/OpsMetrics.cpp
     runtime/discovery/RedisServiceRegistry.cpp
     runtime/discovery/IServiceRegistry.cpp
@@ -743,15 +797,70 @@ if(ENABLE_GAME_PROTOBUF AND ENABLE_REDIS)
                             WEBSERVER_ENABLE_GAME_PROTOBUF)
   target_include_directories(healthy_logic_refresh_test PRIVATE
     game redis base log timer runtime runtime/discovery ${HIREDIS_INCLUDE_DIR}
-    ${Protobuf_INCLUDE_DIRS})
+    ${Protobuf_INCLUDE_DIRS} ${OPENSSL_INCLUDE_DIR})
   target_link_libraries(healthy_logic_refresh_test
-    ${CMAKE_THREAD_LIBS_INIT} ${HIREDIS_LIB} ${Protobuf_LIBRARIES})
+    ${CMAKE_THREAD_LIBS_INIT} ${HIREDIS_LIB} ${Protobuf_LIBRARIES} ${OPENSSL_CRYPTO_LIB})
+
+  add_executable(session_grace_cas_test
+    test/session_grace_cas_test.cpp
+    game/SessionStore.cpp
+    game/game.pb.cc
+    redis/RedisClient.cpp
+    redis/RedisPool.cpp
+    runtime/SecureRandom.cpp
+    runtime/HealthyLogicSnapshot.cpp
+    base/CurrentThread.cpp
+    log/Logging.cpp
+    log/LogStream.cpp
+    log/LogFile.cpp
+    log/AsyncLogging.cpp)
+  target_compile_definitions(session_grace_cas_test PRIVATE WEBSERVER_ENABLE_REDIS)
+  target_include_directories(session_grace_cas_test PRIVATE
+    game redis base log timer runtime ${HIREDIS_INCLUDE_DIR} ${Protobuf_INCLUDE_DIRS}
+    ${OPENSSL_INCLUDE_DIR})
+  target_link_libraries(session_grace_cas_test
+    ${CMAKE_THREAD_LIBS_INIT} ${HIREDIS_LIB} ${Protobuf_LIBRARIES} ${OPENSSL_CRYPTO_LIB})
+
+  add_executable(reconnect_transaction_test
+    test/reconnect_transaction_test.cpp
+    game/SessionStore.cpp
+    game/game.pb.cc
+    redis/RedisClient.cpp
+    redis/RedisPool.cpp
+    runtime/SecureRandom.cpp
+    runtime/HealthyLogicSnapshot.cpp
+    base/CurrentThread.cpp
+    log/Logging.cpp
+    log/LogStream.cpp
+    log/LogFile.cpp
+    log/AsyncLogging.cpp)
+  target_compile_definitions(reconnect_transaction_test PRIVATE WEBSERVER_ENABLE_REDIS)
+  target_include_directories(reconnect_transaction_test PRIVATE
+    game redis base log timer runtime ${HIREDIS_INCLUDE_DIR} ${Protobuf_INCLUDE_DIRS}
+    ${OPENSSL_INCLUDE_DIR})
+  target_link_libraries(reconnect_transaction_test
+    ${CMAKE_THREAD_LIBS_INIT} ${HIREDIS_LIB} ${Protobuf_LIBRARIES} ${OPENSSL_CRYPTO_LIB})
+
+  add_executable(redis_pool_shutdown_test
+    test/redis_pool_shutdown_test.cpp
+    redis/RedisClient.cpp
+    redis/RedisPool.cpp
+    base/CurrentThread.cpp
+    log/Logging.cpp
+    log/LogStream.cpp
+    log/LogFile.cpp
+    log/AsyncLogging.cpp)
+  target_compile_definitions(redis_pool_shutdown_test PRIVATE WEBSERVER_ENABLE_REDIS)
+  target_include_directories(redis_pool_shutdown_test PRIVATE
+    redis base log timer runtime ${HIREDIS_INCLUDE_DIR})
+  target_link_libraries(redis_pool_shutdown_test ${CMAKE_THREAD_LIBS_INIT} ${HIREDIS_LIB})
 
   add_executable(map_lease_drill
     test/map_lease_drill.cpp
     game/PlacementStore.cpp
     redis/RedisClient.cpp
     redis/RedisPool.cpp
+    runtime/HealthyLogicSnapshot.cpp
     base/CurrentThread.cpp
     log/Logging.cpp
     log/LogStream.cpp
@@ -827,7 +936,9 @@ target_link_libraries(password_hash_test ${OPENSSL_CRYPTO_LIB})
 
 add_executable(service_health_test
   test/service_health_test.cpp
-  runtime/ServiceHealth.cpp)
+  runtime/ServiceHealth.cpp
+  runtime/HealthDeps.cpp
+  runtime/HealthProbe.cpp)
 target_include_directories(service_health_test PRIVATE runtime)
 target_link_libraries(service_health_test ${CMAKE_THREAD_LIBS_INIT})
 
@@ -853,6 +964,7 @@ if(ENABLE_REDIS)
   add_executable(auth_token_store_test
     test/auth_token_store_test.cpp
     runtime/brpc/AuthTokenStore.cpp
+    runtime/SecureRandom.cpp
     runtime/PasswordHash.cpp
     redis/RedisClient.cpp
     base/CurrentThread.cpp
@@ -864,6 +976,23 @@ if(ENABLE_REDIS)
   target_include_directories(auth_token_store_test PRIVATE
     runtime runtime/brpc redis base log timer ${HIREDIS_INCLUDE_DIR} ${OPENSSL_INCLUDE_DIR})
   target_link_libraries(auth_token_store_test
+    ${CMAKE_THREAD_LIBS_INIT} ${HIREDIS_LIB} ${OPENSSL_CRYPTO_LIB})
+
+  add_executable(refresh_token_race_test
+    test/refresh_token_race_test.cpp
+    runtime/brpc/AuthTokenStore.cpp
+    runtime/SecureRandom.cpp
+    runtime/PasswordHash.cpp
+    redis/RedisClient.cpp
+    base/CurrentThread.cpp
+    log/Logging.cpp
+    log/LogStream.cpp
+    log/LogFile.cpp
+    log/AsyncLogging.cpp)
+  target_compile_definitions(refresh_token_race_test PRIVATE WEBSERVER_ENABLE_REDIS)
+  target_include_directories(refresh_token_race_test PRIVATE
+    runtime runtime/brpc redis base log timer ${HIREDIS_INCLUDE_DIR} ${OPENSSL_INCLUDE_DIR})
+  target_link_libraries(refresh_token_race_test
     ${CMAKE_THREAD_LIBS_INIT} ${HIREDIS_LIB} ${OPENSSL_CRYPTO_LIB})
 endif()
 
@@ -1035,7 +1164,8 @@ if(ENABLE_MYSQL AND ENABLE_GAME_PROTOBUF)
     ${SRC_GAMEDB_MAIL_TEST})
   if(ENABLE_REDIS)
     target_sources(mail_claim_integration_test PRIVATE redis/RedisClient.cpp redis/RedisPool.cpp
-                    game/SessionStore.cpp game/PlacementStore.cpp)
+                    game/SessionStore.cpp game/PlacementStore.cpp
+                    runtime/SecureRandom.cpp runtime/HealthyLogicSnapshot.cpp)
     target_compile_definitions(mail_claim_integration_test PRIVATE WEBSERVER_ENABLE_REDIS)
     target_include_directories(mail_claim_integration_test PRIVATE ${HIREDIS_INCLUDE_DIR})
     target_link_libraries(mail_claim_integration_test ${HIREDIS_LIB})
@@ -1055,7 +1185,8 @@ if(ENABLE_MYSQL AND ENABLE_GAME_PROTOBUF)
     ${SRC_GAMEDB_MAIL_TEST})
   if(ENABLE_REDIS)
     target_sources(gamedb_mail_claim_test PRIVATE redis/RedisClient.cpp redis/RedisPool.cpp
-                    game/SessionStore.cpp game/PlacementStore.cpp)
+                    game/SessionStore.cpp game/PlacementStore.cpp
+                    runtime/SecureRandom.cpp runtime/HealthyLogicSnapshot.cpp)
     target_compile_definitions(gamedb_mail_claim_test PRIVATE WEBSERVER_ENABLE_REDIS)
     target_include_directories(gamedb_mail_claim_test PRIVATE ${HIREDIS_INCLUDE_DIR})
     target_link_libraries(gamedb_mail_claim_test ${HIREDIS_LIB})

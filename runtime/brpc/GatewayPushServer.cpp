@@ -103,6 +103,28 @@ void GatewayPushServiceImpl::PushBatch(::google::protobuf::RpcController *contro
     response->set_message("ok");
 }
 
+void GatewayPushServiceImpl::KickConnection(::google::protobuf::RpcController *controller,
+                                            const ::gwpush::KickConnectionRequest *request,
+                                            ::gwpush::KickConnectionResponse *response,
+                                            ::google::protobuf::Closure *done) {
+    (void)controller;
+    brpc::ClosureGuard done_guard(done);
+    response->Clear();
+    if (!request || request->player_id() == 0) {
+        response->set_ok(false);
+        response->set_message("invalid kick");
+        return;
+    }
+    const bool closed = GatewayConnRegistry::Instance().CloseIfMatch(
+        request->player_id(), request->session_id(), request->generation());
+    response->set_ok(true);
+    response->set_closed(closed);
+    response->set_message(closed ? "closed" : "not_found");
+    LOG_INFO << "KickConnection player=" << request->player_id()
+             << " session=" << request->session_id() << " gen=" << request->generation()
+             << " closed=" << closed;
+}
+
 GatewayPushServer &GatewayPushServer::Instance() {
     static GatewayPushServer g;
     return g;

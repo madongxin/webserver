@@ -131,6 +131,20 @@ std::shared_ptr<brpc::Channel> BrpcGameDbRepository::ChannelAt(size_t idx) {
     return s->channels[idx];
 }
 
+bool BrpcGameDbRepository::Ping(int timeout_ms) {
+    auto ch = ChannelAt(0);
+    if (!ch)
+        return false;
+    gdb::LoadPlayerReq req;
+    gdb::LoadPlayerRsp rsp;
+    brpc::Controller cntl;
+    cntl.set_timeout_ms(timeout_ms > 0 ? timeout_ms : 800);
+    req.set_player_id(0);
+    gdb::GameDbService_Stub stub(ch.get());
+    stub.LoadPlayer(&cntl, &req, &rsp, nullptr);
+    return !cntl.Failed();
+}
+
 void BrpcGameDbRepository::Start(int) {}
 
 void BrpcGameDbRepository::Stop() {

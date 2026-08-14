@@ -104,6 +104,30 @@ void TestAuthFlowGeneration() {
     flow.OnDisconnected(c);
 }
 
+void TestCloseIfMatchGeneration() {
+    auto &reg = GatewayConnRegistry::Instance();
+    reg.Forget(21);
+    reg.Forget(22);
+    bool closed_old = false;
+    bool closed_new = false;
+    GatewayConnRegistry::Bind oldb;
+    oldb.player_id = 501;
+    oldb.session_id = "sess-kick";
+    oldb.generation = 3;
+    oldb.close_conn = [&]() { closed_old = true; };
+    reg.Remember(21, oldb);
+    GatewayConnRegistry::Bind newb = oldb;
+    newb.generation = 4;
+    newb.close_conn = [&]() { closed_new = true; };
+    reg.Remember(22, newb);
+    Expect(reg.CloseIfMatch(501, "sess-kick", 3), "close old generation");
+    Expect(closed_old, "old close_conn fired");
+    Expect(!closed_new, "new generation not closed");
+    Expect(reg.FindByConnection(22, &newb), "new conn remains");
+    reg.Forget(21);
+    reg.Forget(22);
+}
+
 void TestGatewayIdentityEnv() {
     setenv("GAMEMESH_INSTANCE_ID", "gw-race-test", 1);
     unsetenv("GAMEMESH_FORMAL");
@@ -123,6 +147,7 @@ int main() {
     TestConditionalForgetAfterTakeover();
     TestRememberDoesNotClobberForeignIndex();
     TestAuthFlowGeneration();
+    TestCloseIfMatchGeneration();
     TestGatewayIdentityEnv();
     if (g_fail) {
         std::cerr << "gateway_conn_race_test FAIL count=" << g_fail << "\n";

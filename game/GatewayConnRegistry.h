@@ -21,6 +21,7 @@ public:
         uint64_t route_version = 0;
         std::string gateway_instance_id;
         std::function<void(const std::string &frame)> send_frame;
+        std::function<void()> close_conn;
     };
 
     static GatewayConnRegistry &Instance();
@@ -37,6 +38,8 @@ public:
     bool FindByConnection(uint64_t connection_id, Bind *out);
     bool FindByPlayer(uint64_t player_id, Bind *out);
     bool SendBySession(const std::string &session_id, const std::string &frame);
+    /** 仅关闭匹配 player_id+session_id+generation 的旧连接；generation=0 时忽略 generation */
+    bool CloseIfMatch(uint64_t player_id, const std::string &session_id, uint64_t generation);
 
 private:
     GatewayConnRegistry() = default;

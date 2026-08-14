@@ -1,9 +1,11 @@
 #include "SessionStore.h"
 
+#include "HealthyLogicSnapshot.h"
 #include "Logging.h"
 #include "RedisClient.h"
 #include "RedisConfigPath.h"
 #include "RedisPool.h"
+#include "SecureRandom.h"
 
 #include <chrono>
 #include <cstdio>
@@ -11,7 +13,6 @@
 #include <cstring>
 #include <fstream>
 #include <map>
-#include <random>
 #include <sstream>
 #include <thread>
 #include <vector>
@@ -24,11 +25,9 @@ int64_t NowUnixSec() {
 }
 
 std::string GenHex(size_t n) {
-    static thread_local std::mt19937_64 gen{std::random_device{}()};
-    static const char hex[] = "0123456789abcdef";
-    std::string s(n, '0');
-    for (char &c : s)
-        c = hex[gen() & 0xf];
+    std::string s;
+    if (!SecureRandom::Hex(n, &s))
+        return {};
     return s;
 }
 
@@ -206,6 +205,122 @@ return {'1', 'OK', new_token, f['sessionId'] or '', tostring(gen),
         f['mapOwnerEpoch'] or '0', tostring(rv)}
 )LUA";
 
+const char kLuaPrepareReconnect[] = R"LUA(
+local sess = KEYS[1]
+local pend = KEYS[2]
+local sid = ARGV[1]
+local ticket = ARGV[2]
+local cand = ARGV[3]
+local pend_ttl = tonumber(ARGV[4]) or 15
+local now = tonumber(ARGV[5]) or 0
+local opid = ARGV[6]
+local rawp = redis.call('HGETALL', pend)
+if #rawp > 0 then
+  local p = {}
+  for i = 1, #rawp, 2 do p[rawp[i]] = rawp[i + 1] end
+  if (p['sessionId'] or '') == sid and (p['oldToken'] or '') == ticket then
+    return {'1', 'IDEMPOTENT', p['candidateToken'] or cand, p['candidateGeneration'] or '0',
+            p['sessionId'] or sid, p['logic'] or '', p['mapInstanceId'] or '0',
+            p['mapOwnerEpoch'] or '0', p['routeVersion'] or '0', p['oldGeneration'] or '0'}
+  end
+  return {'0', 'OP_CONFLICT', 'pending operation exists'}
+end
+local raw = redis.call('HGETALL', sess)
+if #raw == 0 then return {'0', 'NOT_FOUND', 'session not found'} end
+local f = {}
+for i = 1, #raw, 2 do f[raw[i]] = raw[i + 1] end
+local state = f['state'] or 'ONLINE'
+local deadline = tonumber(f['disconnectDeadline'] or '0') or 0
+if state == 'DISCONNECTED' and deadline > 0 and now > deadline then
+  redis.call('DEL', sess)
+  return {'0', 'GRACE_EXPIRED', 'reconnect grace expired'}
+end
+if state ~= 'DISCONNECTED' and state ~= 'ONLINE' then
+  return {'0', 'BAD_STATE', 'session not reconnectable'}
+end
+if (f['sessionId'] or '') ~= sid then
+  return {'0', 'SID_MISMATCH', 'session_id mismatch'}
+end
+if (f['token'] or '') ~= ticket then
+  return {'0', 'TICKET_MISMATCH', 'reconnect_ticket mismatch'}
+end
+local gen = (tonumber(f['generation'] or '0') or 0) + 1
+redis.call('HMSET', pend,
+  'sessionId', sid,
+  'oldToken', ticket,
+  'oldGeneration', f['generation'] or '0',
+  'candidateToken', cand,
+  'candidateGeneration', tostring(gen),
+  'logic', f['gamelogicInstanceId'] or '',
+  'mapInstanceId', f['mapInstanceId'] or '0',
+  'mapOwnerEpoch', f['mapOwnerEpoch'] or '0',
+  'routeVersion', f['routeVersion'] or '0',
+  'operationId', opid,
+  'state', 'PREPARED')
+redis.call('EXPIRE', pend, pend_ttl)
+return {'1', 'OK', cand, tostring(gen), sid, f['gamelogicInstanceId'] or '',
+        f['mapInstanceId'] or '0', f['mapOwnerEpoch'] or '0', f['routeVersion'] or '0',
+        f['generation'] or '0'}
+)LUA";
+
+const char kLuaCommitReconnect[] = R"LUA(
+local sess = KEYS[1]
+local pend = KEYS[2]
+local sid = ARGV[1]
+local opid = ARGV[2]
+local cand = ARGV[3]
+local cand_gen = ARGV[4]
+local ttl = tonumber(ARGV[5]) or 7200
+local gw = ARGV[6]
+local conn = ARGV[7]
+local rawp = redis.call('HGETALL', pend)
+if #rawp == 0 then return {'0', 'NO_PENDING', 'pending reconnect not found'} end
+local p = {}
+for i = 1, #rawp, 2 do p[rawp[i]] = rawp[i + 1] end
+if (p['operationId'] or '') ~= opid then return {'0', 'OP_MISMATCH', 'operation_id mismatch'} end
+if (p['sessionId'] or '') ~= sid then return {'0', 'SID_MISMATCH', 'session_id mismatch'} end
+if (p['candidateToken'] or '') ~= cand then return {'0', 'FENCE_MISMATCH', 'candidate fence mismatch'} end
+if (p['candidateGeneration'] or '') ~= cand_gen then return {'0', 'GEN_MISMATCH', 'candidate generation mismatch'} end
+local raw = redis.call('HGETALL', sess)
+if #raw == 0 then return {'0', 'NOT_FOUND', 'session not found'} end
+local f = {}
+for i = 1, #raw, 2 do f[raw[i]] = raw[i + 1] end
+if (f['sessionId'] or '') ~= sid then return {'0', 'SID_MISMATCH', 'session changed'} end
+if (f['token'] or '') ~= (p['oldToken'] or '') then return {'0', 'STALE', 'old fence changed'} end
+if (f['generation'] or '') ~= (p['oldGeneration'] or '') then return {'0', 'STALE', 'old generation changed'} end
+local state = f['state'] or ''
+if state ~= 'DISCONNECTED' and state ~= 'ONLINE' then
+  return {'0', 'BAD_STATE', 'session not reconnectable'}
+end
+local rv = (tonumber(f['routeVersion'] or '0') or 0) + 1
+redis.call('HMSET', sess,
+  'token', cand,
+  'generation', cand_gen,
+  'state', 'ONLINE',
+  'disconnectDeadline', '0',
+  'connectionId', conn,
+  'gatewayId', gw,
+  'routeVersion', tostring(rv))
+redis.call('EXPIRE', sess, ttl)
+redis.call('DEL', pend)
+return {'1', 'OK', cand, sid, cand_gen, p['logic'] or '', p['mapInstanceId'] or '0',
+        p['mapOwnerEpoch'] or '0', tostring(rv)}
+)LUA";
+
+const char kLuaAbortReconnect[] = R"LUA(
+local pend = KEYS[1]
+local opid = ARGV[1]
+local cand = ARGV[2]
+local rawp = redis.call('HGETALL', pend)
+if #rawp == 0 then return {'1', 'NOOP'} end
+local p = {}
+for i = 1, #rawp, 2 do p[rawp[i]] = rawp[i + 1] end
+if (p['operationId'] or '') ~= opid then return {'0', 'OP_MISMATCH'} end
+if cand ~= '' and (p['candidateToken'] or '') ~= cand then return {'0', 'FENCE_MISMATCH'} end
+redis.call('DEL', pend)
+return {'1', 'OK'}
+)LUA";
+
 const char kLuaMarkDisconnected[] = R"LUA(
 local key = KEYS[1]
 local token = ARGV[1]
@@ -230,6 +345,24 @@ redis.call('HMSET', key,
   'connectionId', '0')
 redis.call('EXPIRE', key, ttl)
 return {'1', 'OK', tostring(now + grace)}
+)LUA";
+
+const char kLuaKick[] = R"LUA(
+local key = KEYS[1]
+local new_token = ARGV[1]
+local ttl = tonumber(ARGV[2]) or 7200
+local raw = redis.call('HGETALL', key)
+if #raw == 0 then return {'0', 'NOT_FOUND', 'session not found'} end
+local f = {}
+for i = 1, #raw, 2 do f[raw[i]] = raw[i + 1] end
+local gen = (tonumber(f['generation'] or '0') or 0) + 1
+redis.call('HMSET', key,
+  'token', new_token,
+  'generation', tostring(gen),
+  'connectionId', '0')
+redis.call('EXPIRE', key, ttl)
+return {'1', 'OK', tostring(gen), f['gatewayId'] or '', f['token'] or '', f['sessionId'] or '',
+        tostring((tonumber(f['generation'] or '0') or 0))}
 )LUA";
 
 const char kLuaLogout[] = R"LUA(
@@ -495,6 +628,10 @@ std::string SessionStore::OpKey(const std::string &operation_id) const {
     return key_prefix_ + "sessop:" + operation_id;
 }
 
+std::string SessionStore::ReconnectPendingKey(const std::string &operation_id) const {
+    return key_prefix_ + "reconnect:pending:" + operation_id;
+}
+
 namespace {
 
 std::string SanitizeOpField(std::string s) {
@@ -702,19 +839,83 @@ bool SessionStore::ExpireIfGraceElapsed(uint64_t player_id, SessionRecord *rec) 
         return false;
     if (rec->disconnect_deadline_sec > 0 && NowUnixSec() <= rec->disconnect_deadline_sec)
         return false;
+    if (grace_after_load_hook_)
+        grace_after_load_hook_();
     auto lease = RedisPool::Instance().Acquire();
-    if (!lease)
+    if (!lease) {
+        LOG_WARN << "SessionStore: grace CAS redis unavailable player_id=" << player_id;
         return false;
-    lease->Del(SessionKey(player_id));
-    rec->state = SessionState::Offline;
-    LOG_INFO << "SessionStore: grace elapsed player_id=" << player_id << " -> OFFLINE";
-    return true;
+    }
+    const char *lua = R"LUA(
+local key = KEYS[1]
+local sid = ARGV[1]
+local fence = ARGV[2]
+local gen = ARGV[3]
+local deadline = tonumber(ARGV[4]) or 0
+local now = tonumber(ARGV[5]) or 0
+local raw = redis.call('HGETALL', key)
+if #raw == 0 then return {'NOT_FOUND'} end
+local f = {}
+for i = 1, #raw, 2 do f[raw[i]] = raw[i + 1] end
+if (f['state'] or '') ~= 'DISCONNECTED' then return {'STALE_SNAPSHOT'} end
+if (f['sessionId'] or '') ~= sid then return {'STALE_SNAPSHOT'} end
+if (f['token'] or '') ~= fence then return {'STALE_SNAPSHOT'} end
+if (f['generation'] or '0') ~= gen then return {'STALE_SNAPSHOT'} end
+local dl = tonumber(f['disconnectDeadline'] or '0') or 0
+if dl > 0 and now <= dl then return {'NOT_DUE'} end
+if deadline > 0 and now <= deadline then return {'NOT_DUE'} end
+redis.call('DEL', key)
+return {'EXPIRED_AND_DELETED'}
+)LUA";
+    std::vector<std::string> keys{SessionKey(player_id)};
+    std::vector<std::string> args{rec->session_id, rec->token, std::to_string(rec->generation),
+                                  std::to_string(rec->disconnect_deadline_sec),
+                                  std::to_string(NowUnixSec())};
+    std::vector<std::string> reply;
+    if (!lease->Eval(lua, keys, args, &reply) || reply.empty()) {
+        LOG_WARN << "SessionStore: grace CAS lua failed player_id=" << player_id;
+        return false;
+    }
+    const std::string &code = reply[0];
+    if (code == "EXPIRED_AND_DELETED") {
+        rec->state = SessionState::Offline;
+        LOG_INFO << "SessionStore: grace elapsed player_id=" << player_id << " -> OFFLINE";
+        return true;
+    }
+    if (code == "STALE_SNAPSHOT") {
+        SessionRecord fresh;
+        if (LoadSession(player_id, &fresh))
+            *rec = fresh;
+        return false;
+    }
+    if (code == "NOT_FOUND") {
+        rec->state = SessionState::Offline;
+        return true;
+    }
+    return false;
 }
 
-void SessionStore::SetLogicInstanceIds(std::vector<std::string> ids) {
-    std::lock_guard<std::mutex> lk(cfg_mu_);
-    // 允许清空：Discover 成功零实例时 fail-closed，禁止回退 gl-0
-    logic_instance_ids_ = std::move(ids);
+bool SessionStore::ForceExpireGraceFromStaleLocalForTest(uint64_t player_id) {
+    SessionRecord rec;
+    if (!LoadSession(player_id, &rec))
+        return false;
+    rec.disconnect_deadline_sec = 1;
+    return ExpireIfGraceElapsed(player_id, &rec);
+}
+
+void SessionStore::SetLogicInstanceIds(std::vector<std::string> ids, bool publish_snapshot) {
+    {
+        std::lock_guard<std::mutex> lk(cfg_mu_);
+        logic_instance_ids_ = std::move(ids);
+    }
+    if (publish_snapshot) {
+        auto snap = std::make_shared<HealthyLogicSnapshot>();
+        snap->source = HealthyLogicSnapshot::Source::kStatic;
+        snap->instance_ids = LogicInstanceIds();
+        snap->state = snap->instance_ids.empty() ? HealthyLogicSnapshot::State::kEmpty
+                                                 : HealthyLogicSnapshot::State::kBootstrap;
+        HealthyLogicSnapshotStore::Instance().Publish(snap);
+    }
 }
 
 std::vector<std::string> SessionStore::LogicInstanceIds() const {
@@ -739,11 +940,20 @@ bool SessionStore::AcquireSessionUnlocked(const AcquireSessionInput &in, Acquire
 
     std::string logic_id;
     {
-        std::lock_guard<std::mutex> lk(cfg_mu_);
+        auto snap = HealthyLogicSnapshotStore::Instance().Current();
+        std::vector<std::string> ids;
+        if (snap && snap->version > 0 &&
+            (snap->state == HealthyLogicSnapshot::State::kActive ||
+             snap->state == HealthyLogicSnapshot::State::kEmpty ||
+             snap->state == HealthyLogicSnapshot::State::kBootstrap)) {
+            ids = snap->instance_ids;
+        } else {
+            std::lock_guard<std::mutex> lk(cfg_mu_);
+            ids = logic_instance_ids_;
+        }
         if (!in.preferred_gamelogic_instance_id.empty()) {
-            // 偏好 Owner 必须仍在健康列表（空列表则拒绝）
             bool preferred_ok = false;
-            for (const auto &id : logic_instance_ids_) {
+            for (const auto &id : ids) {
                 if (id == in.preferred_gamelogic_instance_id) {
                     preferred_ok = true;
                     break;
@@ -751,13 +961,11 @@ bool SessionStore::AcquireSessionUnlocked(const AcquireSessionInput &in, Acquire
             }
             if (preferred_ok) {
                 logic_id = in.preferred_gamelogic_instance_id;
-            } else if (!logic_instance_ids_.empty()) {
-                logic_id = logic_instance_ids_[static_cast<size_t>(
-                    in.player_id % logic_instance_ids_.size())];
+            } else if (!ids.empty()) {
+                logic_id = ids[static_cast<size_t>(in.player_id % ids.size())];
             }
-        } else if (!logic_instance_ids_.empty()) {
-            logic_id =
-                logic_instance_ids_[static_cast<size_t>(in.player_id % logic_instance_ids_.size())];
+        } else if (!ids.empty()) {
+            logic_id = ids[static_cast<size_t>(in.player_id % ids.size())];
         }
     }
     if (logic_id.empty()) {
@@ -768,6 +976,11 @@ bool SessionStore::AcquireSessionUnlocked(const AcquireSessionInput &in, Acquire
 
     const std::string token = GenHex(32);
     const std::string session_id = GenHex(16);
+    if (token.empty() || session_id.empty()) {
+        out->message = "secure random failed";
+        out->error_code = "RNG_FAILED";
+        return false;
+    }
     const int64_t login_time = NowUnixSec();
     int ttl = static_cast<int>(in.ttl_sec);
     if (ttl <= 0)
@@ -940,6 +1153,11 @@ bool SessionStore::ReconnectSession(const ReconnectSessionInput &in, AcquireSess
 
     auto run_once = [&]() -> bool {
         const std::string new_token = GenHex(32);
+        if (new_token.empty()) {
+            out->message = "secure random failed";
+            out->error_code = "RNG_FAILED";
+            return false;
+        }
         auto lease = RedisPool::Instance().Acquire();
         if (!lease) {
             out->message = "redis pool exhausted";
@@ -1028,6 +1246,128 @@ bool SessionStore::ReconnectSession(const ReconnectSessionInput &in, AcquireSess
     return false;
 }
 
+bool SessionStore::PrepareReconnect(const ReconnectSessionInput &in, AcquireSessionResult *out) {
+    if (!out)
+        return false;
+    *out = AcquireSessionResult{};
+    if (!available_) {
+        out->message = "redis unavailable";
+        out->error_code = "REDIS_UNAVAILABLE";
+        return false;
+    }
+    if (in.player_id == 0 || in.session_id.empty() || in.reconnect_ticket.empty() ||
+        in.operation_id.empty()) {
+        out->message = "player_id/session_id/ticket/operation_id required";
+        out->error_code = "INVALID_ARG";
+        return false;
+    }
+    const std::string cand = GenHex(32);
+    if (cand.empty()) {
+        out->message = "secure random failed";
+        out->error_code = "RNG_FAILED";
+        return false;
+    }
+    auto lease = RedisPool::Instance().Acquire();
+    if (!lease) {
+        out->message = "redis pool exhausted";
+        out->error_code = "POOL_EXHAUSTED";
+        return false;
+    }
+    std::vector<std::string> keys{SessionKey(in.player_id), ReconnectPendingKey(in.operation_id)};
+    std::vector<std::string> args{in.session_id, in.reconnect_ticket, cand, "15",
+                                  std::to_string(NowUnixSec()), in.operation_id};
+    std::vector<std::string> reply;
+    if (!lease->Eval(kLuaPrepareReconnect, keys, args, &reply) || reply.size() < 3) {
+        out->message = "redis prepare lua failed";
+        out->error_code = "LUA_FAILED";
+        return false;
+    }
+    if (reply[0] != "1") {
+        out->message = reply.size() > 2 ? reply[2] : "prepare rejected";
+        out->error_code = reply.size() > 1 ? reply[1] : "REJECTED";
+        return false;
+    }
+    out->ok = true;
+    out->message = "prepare ok";
+    out->fence_token = reply.size() > 2 ? reply[2] : cand;
+    out->generation = reply.size() > 3 ? ParseU64(reply[3]) : 0;
+    out->session_id = reply.size() > 4 ? reply[4] : in.session_id;
+    out->gamelogic_instance_id = reply.size() > 5 ? reply[5] : "";
+    out->map_instance_id = reply.size() > 6 ? ParseU64(reply[6]) : 0;
+    out->map_owner_epoch = reply.size() > 7 ? ParseU64(reply[7]) : 0;
+    out->route_version = reply.size() > 8 ? ParseU64(reply[8]) : 0;
+    return true;
+}
+
+bool SessionStore::CommitReconnect(uint64_t player_id, const std::string &operation_id,
+                                   const std::string &candidate_fence, uint64_t candidate_generation,
+                                   const std::string &gateway_instance_id, uint64_t connection_id,
+                                   AcquireSessionResult *out) {
+    if (!out)
+        return false;
+    *out = AcquireSessionResult{};
+    if (!available_) {
+        out->message = "redis unavailable";
+        out->error_code = "REDIS_UNAVAILABLE";
+        return false;
+    }
+    if (player_id == 0 || operation_id.empty() || candidate_fence.empty()) {
+        out->message = "commit args required";
+        out->error_code = "INVALID_ARG";
+        return false;
+    }
+    auto lease = RedisPool::Instance().Acquire();
+    if (!lease) {
+        out->message = "redis pool exhausted";
+        out->error_code = "POOL_EXHAUSTED";
+        return false;
+    }
+    SessionRecord rec;
+    const std::string sid = LoadSession(player_id, &rec) ? rec.session_id : std::string();
+    std::vector<std::string> keys{SessionKey(player_id), ReconnectPendingKey(operation_id)};
+    std::vector<std::string> args{sid, operation_id, candidate_fence,
+                                  std::to_string(candidate_generation),
+                                  std::to_string(default_ttl_sec_), gateway_instance_id,
+                                  std::to_string(connection_id)};
+    std::vector<std::string> reply;
+    if (!lease->Eval(kLuaCommitReconnect, keys, args, &reply) || reply.size() < 3) {
+        out->message = "redis commit lua failed";
+        out->error_code = "LUA_FAILED";
+        return false;
+    }
+    if (reply[0] != "1") {
+        out->message = reply.size() > 2 ? reply[2] : "commit rejected";
+        out->error_code = reply.size() > 1 ? reply[1] : "REJECTED";
+        return false;
+    }
+    out->ok = true;
+    out->message = "commit ok";
+    out->fence_token = reply.size() > 2 ? reply[2] : candidate_fence;
+    out->session_id = reply.size() > 3 ? reply[3] : sid;
+    out->generation = reply.size() > 4 ? ParseU64(reply[4]) : candidate_generation;
+    out->gamelogic_instance_id = reply.size() > 5 ? reply[5] : "";
+    out->map_instance_id = reply.size() > 6 ? ParseU64(reply[6]) : 0;
+    out->map_owner_epoch = reply.size() > 7 ? ParseU64(reply[7]) : 0;
+    out->route_version = reply.size() > 8 ? ParseU64(reply[8]) : 0;
+    return true;
+}
+
+bool SessionStore::AbortReconnect(uint64_t player_id, const std::string &operation_id,
+                                  const std::string &candidate_fence) {
+    (void)player_id;
+    if (!available_ || operation_id.empty())
+        return false;
+    auto lease = RedisPool::Instance().Acquire();
+    if (!lease)
+        return false;
+    std::vector<std::string> keys{ReconnectPendingKey(operation_id)};
+    std::vector<std::string> args{operation_id, candidate_fence};
+    std::vector<std::string> reply;
+    if (!lease->Eval(kLuaAbortReconnect, keys, args, &reply) || reply.empty())
+        return false;
+    return reply[0] == "1";
+}
+
 bool SessionStore::BindConnection(uint64_t player_id, const std::string &token,
                                   const std::string &gateway_id, uint64_t connection_id) {
     if (!available_ || player_id == 0 || token.empty())
@@ -1063,6 +1403,67 @@ bool SessionStore::MarkDisconnected(uint64_t player_id, const std::string &token
         return false;
     }
     LOG_INFO << "SessionStore: DISCONNECTED player_id=" << player_id << " grace_sec=" << grace_sec_;
+    return true;
+}
+
+bool SessionStore::Kick(uint64_t player_id, const std::string &reason, std::string *err) {
+    KickResult r;
+    const bool ok = Kick(player_id, reason, &r);
+    if (err && !ok)
+        *err = r.message.empty() ? r.error_code : r.message;
+    return ok;
+}
+
+bool SessionStore::Kick(uint64_t player_id, const std::string &reason, KickResult *out) {
+    KickResult local;
+    KickResult *r = out ? out : &local;
+    *r = KickResult{};
+    if (!available_ || player_id == 0) {
+        r->error_code = "unavailable";
+        r->message = "unavailable";
+        return false;
+    }
+    const std::string neu = GenHex(32);
+    if (neu.empty()) {
+        r->error_code = "RNG_FAILED";
+        r->message = "RNG_FAILED";
+        return false;
+    }
+    auto lease = RedisPool::Instance().Acquire();
+    if (!lease) {
+        r->error_code = "POOL_EXHAUSTED";
+        r->message = "POOL_EXHAUSTED";
+        return false;
+    }
+    std::vector<std::string> keys{SessionKey(player_id)};
+    std::vector<std::string> args{neu, std::to_string(default_ttl_sec_)};
+    std::vector<std::string> reply;
+    if (!lease->Eval(kLuaKick, keys, args, &reply) || reply.size() < 2) {
+        r->error_code = "LUA_FAILED";
+        r->message = "LUA_FAILED";
+        return false;
+    }
+    if (reply[0] != "1") {
+        r->error_code = reply.size() > 1 ? reply[1] : "KICK_FAILED";
+        r->message = reply.size() > 2 ? reply[2] : r->error_code;
+        return false;
+    }
+    r->ok = true;
+    r->message = "kicked";
+    if (reply.size() > 2)
+        r->new_generation = static_cast<uint64_t>(std::strtoull(reply[2].c_str(), nullptr, 10));
+    if (reply.size() > 3)
+        r->old_gateway_id = reply[3];
+    if (reply.size() > 4)
+        r->old_token = reply[4];
+    if (reply.size() > 5)
+        r->old_session_id = reply[5];
+    if (reply.size() > 6)
+        r->old_generation = static_cast<uint64_t>(std::strtoull(reply[6].c_str(), nullptr, 10));
+    else if (r->new_generation > 0)
+        r->old_generation = r->new_generation - 1;
+    LOG_INFO << "SessionStore: Kick player_id=" << player_id << " reason=" << reason
+             << " generation=" << r->new_generation << " old_gw=" << r->old_gateway_id;
     return true;
 }
 

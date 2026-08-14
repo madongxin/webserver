@@ -239,6 +239,64 @@ bool GatewayAuthClients::ReconnectV2(const sess::ReconnectRequest &req,
     return false;
 }
 
+bool GatewayAuthClients::PrepareReconnect(const sess::PrepareReconnectRequest &req,
+                                          sess::PrepareReconnectResponse *rsp) {
+    auto s = CurrentSnapshot();
+    if (!s || !s->session || !rsp)
+        return false;
+    const size_t tries = std::max<size_t>(1, s->session_peer_count);
+    for (size_t i = 0; i < tries; ++i) {
+        sess::SessionService_Stub stub(s->session.get());
+        brpc::Controller cntl;
+        stub.PrepareReconnect(&cntl, &req, rsp, nullptr);
+        if (!cntl.Failed())
+            return true;
+        if (i + 1 < tries)
+            LOG_WARN << "GatewayAuthClients PrepareReconnect retry peer_fail=" << cntl.ErrorText();
+    }
+    return false;
+}
+
+bool GatewayAuthClients::CommitReconnect(const sess::CommitReconnectRequest &req,
+                                         sess::CommitReconnectResponse *rsp) {
+    auto s = CurrentSnapshot();
+    if (!s || !s->session || !rsp)
+        return false;
+    const size_t tries = std::max<size_t>(1, s->session_peer_count);
+    for (size_t i = 0; i < tries; ++i) {
+        sess::SessionService_Stub stub(s->session.get());
+        brpc::Controller cntl;
+        stub.CommitReconnect(&cntl, &req, rsp, nullptr);
+        if (!cntl.Failed())
+            return true;
+        if (i + 1 < tries)
+            LOG_WARN << "GatewayAuthClients CommitReconnect retry peer_fail=" << cntl.ErrorText();
+    }
+    return false;
+}
+
+bool GatewayAuthClients::AbortReconnect(const sess::AbortReconnectRequest &req,
+                                        sess::AbortReconnectResponse *rsp) {
+    auto s = CurrentSnapshot();
+    if (!s || !s->session || !rsp)
+        return false;
+    sess::SessionService_Stub stub(s->session.get());
+    brpc::Controller cntl;
+    stub.AbortReconnect(&cntl, &req, rsp, nullptr);
+    return !cntl.Failed();
+}
+
+bool GatewayAuthClients::MarkDisconnectedV2(const sess::MarkDisconnectedRequest &req,
+                                            sess::MarkDisconnectedResponse *rsp) {
+    auto s = CurrentSnapshot();
+    if (!s || !s->session || !rsp)
+        return false;
+    sess::SessionService_Stub stub(s->session.get());
+    brpc::Controller cntl;
+    stub.MarkDisconnectedV2(&cntl, &req, rsp, nullptr);
+    return !cntl.Failed();
+}
+
 bool GatewayAuthClients::GetSessionOperation(const sess::GetSessionOperationRequest &req,
                                              sess::GetSessionOperationResponse *rsp) {
     auto s = CurrentSnapshot();

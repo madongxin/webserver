@@ -16,6 +16,16 @@ GatewayDisconnectAsync::~GatewayDisconnectAsync() {
 }
 
 void GatewayDisconnectAsync::Start(size_t max_queue) {
+    std::thread leftover;
+    {
+        std::lock_guard<std::mutex> lk(life_mu_);
+        if (state_ && !state_->stop.load(std::memory_order_acquire))
+            return;
+        if (worker_.joinable())
+            leftover.swap(worker_);
+    }
+    if (leftover.joinable())
+        leftover.join();
     std::lock_guard<std::mutex> lk(life_mu_);
     if (state_ && !state_->stop.load(std::memory_order_acquire))
         return;
@@ -27,37 +37,32 @@ void GatewayDisconnectAsync::Start(size_t max_queue) {
 }
 
 void GatewayDisconnectAsync::Stop(std::chrono::milliseconds drain_deadline) {
+    (void)drain_deadline;
     std::shared_ptr<State> st;
+    std::thread to_join;
     {
         std::lock_guard<std::mutex> lk(life_mu_);
         st = state_;
         if (!st)
             return;
-        if (st->stop.load(std::memory_order_acquire) && !worker_.joinable()) {
-            state_.reset();
-            return;
-        }
         st->stop.store(true, std::memory_order_release);
         st->cv.notify_all();
+        if (worker_.joinable())
+            to_join.swap(worker_);
     }
-    const auto deadline = std::chrono::steady_clock::now() + drain_deadline;
-    while (st->pending.load(std::memory_order_relaxed) > 0 &&
-           std::chrono::steady_clock::now() < deadline) {
-        std::this_thread::sleep_for(std::chrono::milliseconds(5));
-    }
+    if (to_join.joinable())
+        to_join.join();
     std::lock_guard<std::mutex> lk(life_mu_);
-    if (worker_.joinable()) {
-        if (st->pending.load(std::memory_order_relaxed) == 0) {
-            worker_.join();
-        } else {
-            worker_.detach();
-            worker_ = std::thread();
-        }
-    }
     executed_.fetch_add(st->executed.load(std::memory_order_relaxed), std::memory_order_relaxed);
+    cancelled_.fetch_add(st->cancelled.load(std::memory_order_relaxed), std::memory_order_relaxed);
     st->executed.store(0, std::memory_order_relaxed);
     if (state_ == st)
         state_.reset();
+}
+
+bool GatewayDisconnectAsync::stopping() const {
+    std::lock_guard<std::mutex> lk(life_mu_);
+    return !state_ || state_->stop.load(std::memory_order_acquire);
 }
 
 size_t GatewayDisconnectAsync::pending() const {
@@ -113,7 +118,9 @@ void GatewayDisconnectAsync::SetExecutorForTest(std::function<void(const Task &)
     state_->test_exec = std::move(exec);
 }
 
-void GatewayDisconnectAsync::RunDefault(const Task &t) {
+void GatewayDisconnectAsync::RunDefault(const std::shared_ptr<State> &st, const Task &t) {
+    if (!st || st->stop.load(std::memory_order_acquire))
+        return;
 #ifdef WEBSERVER_ENABLE_REDIS
     if (SessionStore::Instance().Available())
         SessionStore::Instance().MarkDisconnected(t.player_id, t.token, t.generation);
@@ -128,11 +135,16 @@ void GatewayDisconnectAsync::WorkerLoop(std::shared_ptr<State> st) {
         {
             std::unique_lock<std::mutex> lk(st->mu);
             st->cv.wait(lk, [&] { return st->stop.load(std::memory_order_acquire) || !st->q.empty(); });
-            if (st->q.empty()) {
-                if (st->stop.load(std::memory_order_acquire))
-                    return;
-                continue;
+            if (st->stop.load(std::memory_order_acquire)) {
+                while (!st->q.empty()) {
+                    st->q.pop_front();
+                    st->cancelled.fetch_add(1, std::memory_order_relaxed);
+                    st->pending.fetch_sub(1, std::memory_order_relaxed);
+                }
+                return;
             }
+            if (st->q.empty())
+                continue;
             t = std::move(st->q.front());
             st->q.pop_front();
         }
@@ -142,11 +154,15 @@ void GatewayDisconnectAsync::WorkerLoop(std::shared_ptr<State> st) {
             exec = st->test_exec;
         }
         try {
-            if (exec)
+            if (st->stop.load(std::memory_order_acquire)) {
+                st->cancelled.fetch_add(1, std::memory_order_relaxed);
+            } else if (exec) {
                 exec(t);
-            else
-                RunDefault(t);
-            st->executed.fetch_add(1, std::memory_order_relaxed);
+                st->executed.fetch_add(1, std::memory_order_relaxed);
+            } else {
+                RunDefault(st, t);
+                st->executed.fetch_add(1, std::memory_order_relaxed);
+            }
         } catch (...) {
             LOG_WARN << "GatewayDisconnectAsync exec exception player=" << t.player_id;
         }

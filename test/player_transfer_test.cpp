@@ -46,8 +46,7 @@ void TestTransferSm() {
     uint64_t rv = 0;
     std::string from_logic;
     if (!EnsureSession(pid, &fence, &rv, &from_logic)) {
-        std::cerr << "SKIP player_transfer_test (Redis unavailable)\n";
-        // 不视为通过：必需 Redis
+        std::cerr << "FAIL player_transfer_test (Redis unavailable)\n";
         Expect(false, "redis session required");
         return;
     }

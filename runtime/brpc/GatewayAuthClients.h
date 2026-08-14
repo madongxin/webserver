@@ -32,6 +32,12 @@ public:
     bool AuthRegister(const auth::RegisterRequest &req, auth::RegisterResponse *rsp);
     bool AcquireSession(const sess::AcquireSessionRequest &req, sess::AcquireSessionResponse *rsp);
     bool ReconnectV2(const sess::ReconnectRequest &req, sess::ReconnectResponse *rsp);
+    bool PrepareReconnect(const sess::PrepareReconnectRequest &req,
+                          sess::PrepareReconnectResponse *rsp);
+    bool CommitReconnect(const sess::CommitReconnectRequest &req, sess::CommitReconnectResponse *rsp);
+    bool AbortReconnect(const sess::AbortReconnectRequest &req, sess::AbortReconnectResponse *rsp);
+    bool MarkDisconnectedV2(const sess::MarkDisconnectedRequest &req,
+                            sess::MarkDisconnectedResponse *rsp);
     bool GetSessionOperation(const sess::GetSessionOperationRequest &req,
                              sess::GetSessionOperationResponse *rsp);
     bool LogoutV2(const sess::LogoutRequest &req, sess::LogoutResponse *rsp);

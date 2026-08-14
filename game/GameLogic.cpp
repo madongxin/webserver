@@ -197,6 +197,11 @@ bool GameLogic::LoadAssetsFromGameDbUnlocked(uint64_t player_id, std::map<uint32
         std::lock_guard<std::mutex> lk(mu_);
         if (reload_blocked_for_test_)
             return false;
+        if (reload_override_for_test_) {
+            *bag = reload_override_bag_;
+            *ver = reload_override_ver_;
+            return true;
+        }
     }
     bag->clear();
     *ver = 0;
@@ -269,6 +274,20 @@ void GameLogic::SetAssetApplyBlockedForTest(bool v) {
     apply_blocked_for_test_ = v;
 }
 
+void GameLogic::SetAssetReloadOverrideForTest(const std::map<uint32_t, uint32_t> &bag, uint64_t ver) {
+    std::lock_guard<std::mutex> lk(mu_);
+    reload_override_for_test_ = true;
+    reload_override_bag_ = bag;
+    reload_override_ver_ = ver;
+}
+
+void GameLogic::ClearAssetReloadOverrideForTest() {
+    std::lock_guard<std::mutex> lk(mu_);
+    reload_override_for_test_ = false;
+    reload_override_bag_.clear();
+    reload_override_ver_ = 0;
+}
+
 bool GameLogic::ApplyItemRewardsWithVersion(uint64_t player_id,
                                             const std::vector<GameDbGrantedItem> &grants,
                                             uint64_t committed_asset_version) {
@@ -280,16 +299,13 @@ bool GameLogic::ApplyItemRewardsWithVersion(uint64_t player_id,
         EnsurePlayer(player_id);
         const uint64_t cur = asset_version_[player_id];
         const bool dirty = asset_dirty_.count(player_id) != 0 && asset_dirty_[player_id];
-        if (cur == committed_asset_version) {
-            asset_dirty_.erase(player_id);
+        if (dirty) {
+            need_reload = true;
+        } else if (cur == committed_asset_version) {
             return true;
-        }
-        if (cur > committed_asset_version) {
-            // 内存已领先该幂等操作，禁止重复应用旧 grants
-            asset_dirty_.erase(player_id);
+        } else if (cur > committed_asset_version) {
             return true;
-        }
-        if (!dirty && !apply_blocked_for_test_ && committed_asset_version == cur + 1) {
+        } else if (!apply_blocked_for_test_ && committed_asset_version == cur + 1) {
             for (const auto &g : grants) {
                 if (g.count == 0)
                     continue;
@@ -298,11 +314,12 @@ bool GameLogic::ApplyItemRewardsWithVersion(uint64_t player_id,
             asset_version_[player_id] = committed_asset_version;
             asset_dirty_.erase(player_id);
             return true;
+        } else {
+            need_reload = true;
+            LOG_WARN << "ApplyItemRewardsWithVersion stale/gap player=" << player_id << " mem=" << cur
+                     << " committed=" << committed_asset_version << " apply_blocked="
+                     << (apply_blocked_for_test_ ? 1 : 0) << " -> reload";
         }
-        need_reload = true;
-        LOG_WARN << "ApplyItemRewardsWithVersion stale/gap player=" << player_id << " mem=" << cur
-                 << " committed=" << committed_asset_version << " apply_blocked="
-                 << (apply_blocked_for_test_ ? 1 : 0) << " -> reload";
     }
     (void)need_reload;
     if (!TryReloadAssets(player_id)) {
