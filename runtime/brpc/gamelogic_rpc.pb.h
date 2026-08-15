@@ -497,6 +497,20 @@ class BindPlayerResponse : public ::google::protobuf::Message /* @@protoc_insert
   ::std::string* release_error_code();
   void set_allocated_error_code(::std::string* error_code);
 
+  // bytes profile_pb = 5;
+  void clear_profile_pb();
+  static const int kProfilePbFieldNumber = 5;
+  const ::std::string& profile_pb() const;
+  void set_profile_pb(const ::std::string& value);
+  #if LANG_CXX11
+  void set_profile_pb(::std::string&& value);
+  #endif
+  void set_profile_pb(const char* value);
+  void set_profile_pb(const void* value, size_t size);
+  ::std::string* mutable_profile_pb();
+  ::std::string* release_profile_pb();
+  void set_allocated_profile_pb(::std::string* profile_pb);
+
   // bool ok = 1;
   void clear_ok();
   static const int kOkFieldNumber = 1;
@@ -515,6 +529,7 @@ class BindPlayerResponse : public ::google::protobuf::Message /* @@protoc_insert
   ::google::protobuf::internal::InternalMetadataWithArena _internal_metadata_;
   ::google::protobuf::internal::ArenaStringPtr message_;
   ::google::protobuf::internal::ArenaStringPtr error_code_;
+  ::google::protobuf::internal::ArenaStringPtr profile_pb_;
   bool ok_;
   ::google::protobuf::uint32 bag_item_kinds_;
   mutable int _cached_size_;
@@ -3382,6 +3397,59 @@ inline void BindPlayerResponse::set_bag_item_kinds(::google::protobuf::uint32 va
   
   bag_item_kinds_ = value;
   // @@protoc_insertion_point(field_set:glrpc.BindPlayerResponse.bag_item_kinds)
+}
+
+// bytes profile_pb = 5;
+inline void BindPlayerResponse::clear_profile_pb() {
+  profile_pb_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline const ::std::string& BindPlayerResponse::profile_pb() const {
+  // @@protoc_insertion_point(field_get:glrpc.BindPlayerResponse.profile_pb)
+  return profile_pb_.GetNoArena();
+}
+inline void BindPlayerResponse::set_profile_pb(const ::std::string& value) {
+  
+  profile_pb_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), value);
+  // @@protoc_insertion_point(field_set:glrpc.BindPlayerResponse.profile_pb)
+}
+#if LANG_CXX11
+inline void BindPlayerResponse::set_profile_pb(::std::string&& value) {
+  
+  profile_pb_.SetNoArena(
+    &::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::move(value));
+  // @@protoc_insertion_point(field_set_rvalue:glrpc.BindPlayerResponse.profile_pb)
+}
+#endif
+inline void BindPlayerResponse::set_profile_pb(const char* value) {
+  GOOGLE_DCHECK(value != NULL);
+  
+  profile_pb_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::string(value));
+  // @@protoc_insertion_point(field_set_char:glrpc.BindPlayerResponse.profile_pb)
+}
+inline void BindPlayerResponse::set_profile_pb(const void* value, size_t size) {
+  
+  profile_pb_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(),
+      ::std::string(reinterpret_cast<const char*>(value), size));
+  // @@protoc_insertion_point(field_set_pointer:glrpc.BindPlayerResponse.profile_pb)
+}
+inline ::std::string* BindPlayerResponse::mutable_profile_pb() {
+  
+  // @@protoc_insertion_point(field_mutable:glrpc.BindPlayerResponse.profile_pb)
+  return profile_pb_.MutableNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline ::std::string* BindPlayerResponse::release_profile_pb() {
+  // @@protoc_insertion_point(field_release:glrpc.BindPlayerResponse.profile_pb)
+  
+  return profile_pb_.ReleaseNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline void BindPlayerResponse::set_allocated_profile_pb(::std::string* profile_pb) {
+  if (profile_pb != NULL) {
+    
+  } else {
+    
+  }
+  profile_pb_.SetAllocatedNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), profile_pb);
+  // @@protoc_insertion_point(field_set_allocated:glrpc.BindPlayerResponse.profile_pb)
 }
 
 // -------------------------------------------------------------------

@@ -16,6 +16,8 @@ public:
 
     bool StartFromConfig();
     bool Start(const std::string &listen_addr, int idle_timeout_sec = 30);
+    /** 加载地图目录 / 容量 / AOI；listen 覆盖路径也必须调用（E2E 高端口走 Start 而非 StartFromConfig）。 */
+    void LoadMapRuntimeFromConfig();
     void Stop();
 
     bool running() const { return running_; }

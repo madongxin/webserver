@@ -8,12 +8,27 @@
 #include "Logging.h"
 #include "MailConfig.h"
 #include "MailStore.h"
+#include "PlayerAccountStore.h"
+#include "PlayerProfileStore.h"
 #include "PlayerSerialQueue.h"
+#include "Utf8Text.h"
+
+#ifdef WEBSERVER_ENABLE_REDIS
+#include "RedisPool.h"
+#endif
+#ifdef WEBSERVER_ENABLE_BRPC
+#include "GameLogicPush.h"
+#include "SessionRpcClient.h"
+#include "session.pb.h"
+#endif
 
 #include <algorithm>
 #include <chrono>
+#include <cstdio>
+#include <ctime>
 #include <sstream>
 #include <utility>
+#include <vector>
 
 namespace {
 
@@ -205,8 +220,8 @@ bool MailService::Deliver(const mail::DeliverRequest &req, uint64_t *mail_id,
     mail::MailInstanceRow row;
     row.owner_scope = "ROLE";
     row.receiver_id = req.receiver_id;
-    row.sender_type = "SYSTEM";
-    row.sender_id = 0;
+    row.sender_type = req.sender_type.empty() ? "SYSTEM" : req.sender_type;
+    row.sender_id = req.sender_id;
     row.source_system = req.source_system;
     row.business_key = req.business_key;
     row.template_id = req.template_id;
@@ -1149,6 +1164,135 @@ bool MailService::HandleMailDeliver(const game::MailDeliverReq &req, game::GameR
     body->set_idempotent_hit(ok && msg.find("idempotent") != std::string::npos);
     rsp->set_ok(ok);
     rsp->set_message(msg);
+    return ok;
+}
+
+namespace {
+
+bool ConsumePlayerMailQuota(uint64_t sender_id, int limit, int window_sec) {
+    if (sender_id == 0 || limit <= 0)
+        return true;
+#ifdef WEBSERVER_ENABLE_REDIS
+    if (RedisPool::Instance().ready()) {
+        auto lease = RedisPool::Instance().Acquire();
+        if (lease) {
+            char key[192];
+            std::snprintf(key, sizeof(key), "gamemesh:dev:mailrate:%llu",
+                          static_cast<unsigned long long>(sender_id));
+            static const char *kLua =
+                "local c=redis.call('INCR', KEYS[1]); if c==1 then redis.call('EXPIRE', KEYS[1], "
+                "tonumber(ARGV[1])) end; return c";
+            std::vector<std::string> out;
+            if (lease->Eval(kLua, {key}, {std::to_string(window_sec)}, &out) && !out.empty()) {
+                const int n = std::atoi(out[0].c_str());
+                return n <= limit;
+            }
+        }
+    }
+#endif
+    return true;
+}
+
+void BestEffortMailboxChanged(uint64_t receiver_id) {
+#ifdef WEBSERVER_ENABLE_BRPC
+    if (receiver_id == 0 || !SessionRpcClient::Instance().ready())
+        return;
+    sess::GetPlayerRouteRequest rreq;
+    rreq.set_player_id(receiver_id);
+    sess::GetPlayerRouteResponse rrsp;
+    if (!SessionRpcClient::Instance().GetPlayerRoute(rreq, &rrsp) || !rrsp.ok())
+        return;
+    if (rrsp.gateway_instance_id().empty() || rrsp.session_id().empty())
+        return;
+    if (rrsp.route_state() == "DISCONNECTED" || rrsp.route_state() == "OFFLINE")
+        return;
+    int us = 0, ua = 0, uso = 0, ut = 0, unc = 0, exp = 0, cur = 0;
+    const int64_t now = static_cast<int64_t>(std::time(nullptr));
+    (void)MailStore::Instance().Summarize(receiver_id, now, MailService::Instance().MailboxVersion(receiver_id),
+                                          &us, &ua, &uso, &ut, &unc, &exp, &cur);
+    const uint32_t unread = static_cast<uint32_t>(us + ua + uso + ut);
+    game::GameResponse inner;
+    inner.set_seq(0);
+    inner.set_ok(true);
+    auto *n = inner.mutable_mailbox_changed();
+    n->set_player_id(receiver_id);
+    n->set_mailbox_version(MailService::Instance().MailboxVersion(receiver_id));
+    n->set_unread_count(unread);
+    std::string payload;
+    if (!inner.SerializeToString(&payload))
+        return;
+    GameLogicPush::PushToBoundGateway(rrsp.gateway_instance_id(), receiver_id, rrsp.session_id(),
+                                      "mailbox.changed.v1", payload, true, false, 0);
+#else
+    (void)receiver_id;
+#endif
+}
+
+}  // namespace
+
+bool MailService::HandlePlayerMailSend(const game::PlayerMailSendReq &req, game::GameResponse *rsp) {
+    auto *body = rsp->mutable_player_mail_send();
+    auto fail = [&](const char *code, const char *msg) {
+        body->set_ok(false);
+        body->set_error_code(code);
+        body->set_message(msg);
+        rsp->set_ok(false);
+        rsp->set_message(msg);
+        return false;
+    };
+    if (!ready_ && !Init())
+        return fail(mail::err::kInternal, "mail service not ready");
+    const uint64_t sender = req.sender_player_id();
+    const uint64_t receiver = req.receiver_player_id();
+    if (sender == 0 || receiver == 0)
+        return fail("ERR_INVALID_ARGUMENT", "sender and receiver required");
+    if (sender == receiver)
+        return fail("ERR_MAIL_SELF", "cannot mail self");
+    if (req.operation_id().empty())
+        return fail("ERR_INVALID_ARGUMENT", "operation_id required");
+    std::string tec;
+    if (!utf8text::ValidBoundedText(req.title(), 1, 64, false, &tec))
+        return fail(tec.c_str(), "invalid title");
+    if (!utf8text::ValidBoundedText(req.body(), 1, 1000, true, &tec))
+        return fail(tec.c_str(), "invalid body");
+    if (!PlayerAccountStore::Instance().Exists(receiver))
+        return fail("ERR_RECEIVER_NOT_FOUND", "receiver does not exist");
+    const int limit = MailConfig::Instance().Values().player_mail_per_minute;
+    if (!ConsumePlayerMailQuota(sender, limit, 60))
+        return fail(mail::err::kRateLimited, "player mail rate limited");
+
+    std::string sender_name = "player";
+    PlayerProfileRow prow;
+    std::string perr;
+    if (PlayerProfileStore::Instance().Load(sender, &prow, &perr) && prow.exists &&
+        !prow.player_name.empty())
+        sender_name = prow.player_name;
+
+    mail::DeliverRequest d;
+    d.source_system = "player_mail";
+    d.business_key = req.operation_id();
+    d.receiver_type = "ROLE";
+    d.receiver_id = receiver;
+    d.category = "SOCIAL";
+    d.sender_name = sender_name;
+    d.sender_type = "PLAYER";
+    d.sender_id = sender;
+    d.title = req.title();
+    d.body = req.body();
+    uint64_t mail_id = 0;
+    std::string ec, msg;
+    const bool ok = Deliver(d, &mail_id, &ec, &msg);
+    body->set_ok(ok);
+    body->set_error_code(ec);
+    body->set_message(msg);
+    body->set_mail_id(mail_id);
+    body->set_idempotent_hit(ok && msg.find("idempotent") != std::string::npos);
+    rsp->set_ok(ok);
+    rsp->set_message(msg);
+    if (ok) {
+        BumpVersion(receiver);
+        BestEffortMailboxChanged(receiver);
+    }
     return ok;
 }
 

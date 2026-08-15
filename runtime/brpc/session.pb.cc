@@ -1470,6 +1470,9 @@ const ::google::protobuf::uint32 TableStruct::offsets[] GOOGLE_PROTOBUF_ATTRIBUT
   GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::sess::ResolveOrCreateMapRequest, map_instance_id_),
   GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::sess::ResolveOrCreateMapRequest, preferred_owner_),
   GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::sess::ResolveOrCreateMapRequest, force_new_),
+  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::sess::ResolveOrCreateMapRequest, player_id_),
+  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::sess::ResolveOrCreateMapRequest, operation_id_),
+  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::sess::ResolveOrCreateMapRequest, public_map_capacity_),
   ~0u,  // no _has_bits_
   GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::sess::ResolveOrCreateMapResponse, _internal_metadata_),
   ~0u,  // no _extensions_
@@ -1685,25 +1688,25 @@ static const ::google::protobuf::internal::MigrationSchema schemas[] GOOGLE_PROT
   { 239, -1, sizeof(::sess::KickResponse)},
   { 246, -1, sizeof(::sess::PlacementRecord)},
   { 260, -1, sizeof(::sess::ResolveOrCreateMapRequest)},
-  { 270, -1, sizeof(::sess::ResolveOrCreateMapResponse)},
-  { 279, -1, sizeof(::sess::GetPlacementRequest)},
-  { 285, -1, sizeof(::sess::GetPlacementResponse)},
-  { 293, -1, sizeof(::sess::MigrateMapRequest)},
-  { 302, -1, sizeof(::sess::MigrateMapResponse)},
-  { 311, -1, sizeof(::sess::MarkRecoveringRequest)},
-  { 318, -1, sizeof(::sess::MarkRecoveringResponse)},
-  { 326, -1, sizeof(::sess::HeartbeatOwnerRequest)},
-  { 335, -1, sizeof(::sess::HeartbeatOwnerResponse)},
-  { 343, -1, sizeof(::sess::UpdatePlayerRouteRequest)},
-  { 356, -1, sizeof(::sess::UpdatePlayerRouteResponse)},
-  { 364, -1, sizeof(::sess::BeginPlayerTransferRequest)},
-  { 378, -1, sizeof(::sess::BeginPlayerTransferResponse)},
-  { 389, -1, sizeof(::sess::CommitPlayerTransferRequest)},
-  { 401, -1, sizeof(::sess::CommitPlayerTransferResponse)},
-  { 414, -1, sizeof(::sess::AbortPlayerTransferRequest)},
-  { 423, -1, sizeof(::sess::AbortPlayerTransferResponse)},
-  { 433, -1, sizeof(::sess::GetPlayerRouteRequest)},
-  { 440, -1, sizeof(::sess::GetPlayerRouteResponse)},
+  { 273, -1, sizeof(::sess::ResolveOrCreateMapResponse)},
+  { 282, -1, sizeof(::sess::GetPlacementRequest)},
+  { 288, -1, sizeof(::sess::GetPlacementResponse)},
+  { 296, -1, sizeof(::sess::MigrateMapRequest)},
+  { 305, -1, sizeof(::sess::MigrateMapResponse)},
+  { 314, -1, sizeof(::sess::MarkRecoveringRequest)},
+  { 321, -1, sizeof(::sess::MarkRecoveringResponse)},
+  { 329, -1, sizeof(::sess::HeartbeatOwnerRequest)},
+  { 338, -1, sizeof(::sess::HeartbeatOwnerResponse)},
+  { 346, -1, sizeof(::sess::UpdatePlayerRouteRequest)},
+  { 359, -1, sizeof(::sess::UpdatePlayerRouteResponse)},
+  { 367, -1, sizeof(::sess::BeginPlayerTransferRequest)},
+  { 381, -1, sizeof(::sess::BeginPlayerTransferResponse)},
+  { 392, -1, sizeof(::sess::CommitPlayerTransferRequest)},
+  { 404, -1, sizeof(::sess::CommitPlayerTransferResponse)},
+  { 417, -1, sizeof(::sess::AbortPlayerTransferRequest)},
+  { 426, -1, sizeof(::sess::AbortPlayerTransferResponse)},
+  { 436, -1, sizeof(::sess::GetPlayerRouteRequest)},
+  { 443, -1, sizeof(::sess::GetPlayerRouteResponse)},
 };
 
 static ::google::protobuf::Message const * const file_default_instances[] = {
@@ -1862,125 +1865,127 @@ void AddDescriptorsImpl() {
       "map_instance_id\030\003 \001(\004\022\035\n\025owner_logic_ser"
       "ver_id\030\004 \001(\t\022\023\n\013owner_epoch\030\005 \001(\004\022\025\n\rrou"
       "te_version\030\006 \001(\004\022\r\n\005state\030\007 \001(\t\022\022\n\nupdat"
-      "ed_at\030\010 \001(\003\022\023\n\013lease_until\030\t \001(\003\"\213\001\n\031Res"
+      "ed_at\030\010 \001(\003\022\023\n\013lease_until\030\t \001(\003\"\321\001\n\031Res"
       "olveOrCreateMapRequest\022\020\n\010realm_id\030\001 \001(\r"
       "\022\027\n\017map_template_id\030\002 \001(\004\022\027\n\017map_instanc"
       "e_id\030\003 \001(\004\022\027\n\017preferred_owner\030\004 \001(\t\022\021\n\tf"
-      "orce_new\030\005 \001(\010\"w\n\032ResolveOrCreateMapResp"
-      "onse\022\n\n\002ok\030\001 \001(\010\022\017\n\007message\030\002 \001(\t\022\022\n\nerr"
-      "or_code\030\003 \001(\t\022(\n\tplacement\030\004 \001(\0132\025.sess."
-      "PlacementRecord\".\n\023GetPlacementRequest\022\027"
-      "\n\017map_instance_id\030\001 \001(\004\"]\n\024GetPlacementR"
-      "esponse\022\n\n\002ok\030\001 \001(\010\022\017\n\007message\030\002 \001(\t\022(\n\t"
-      "placement\030\003 \001(\0132\025.sess.PlacementRecord\"~"
-      "\n\021MigrateMapRequest\022\027\n\017map_instance_id\030\001"
-      " \001(\004\022!\n\031new_owner_logic_server_id\030\002 \001(\t\022"
-      "\027\n\017idempotency_key\030\003 \001(\t\022\024\n\014expect_epoch"
-      "\030\004 \001(\004\"o\n\022MigrateMapResponse\022\n\n\002ok\030\001 \001(\010"
-      "\022\017\n\007message\030\002 \001(\t\022\022\n\nerror_code\030\003 \001(\t\022(\n"
-      "\tplacement\030\004 \001(\0132\025.sess.PlacementRecord\""
-      "@\n\025MarkRecoveringRequest\022\027\n\017map_instance"
-      "_id\030\001 \001(\004\022\016\n\006reason\030\002 \001(\t\"_\n\026MarkRecover"
-      "ingResponse\022\n\n\002ok\030\001 \001(\010\022\017\n\007message\030\002 \001(\t"
-      "\022(\n\tplacement\030\003 \001(\0132\025.sess.PlacementReco"
-      "rd\"w\n\025HeartbeatOwnerRequest\022\027\n\017map_insta"
-      "nce_id\030\001 \001(\004\022\035\n\025owner_logic_server_id\030\002 "
-      "\001(\t\022\023\n\013owner_epoch\030\003 \001(\004\022\021\n\tlease_sec\030\004 "
-      "\001(\r\"J\n\026HeartbeatOwnerResponse\022\n\n\002ok\030\001 \001("
-      "\010\022\017\n\007message\030\002 \001(\t\022\023\n\013lease_until\030\003 \001(\003\""
-      "\336\001\n\030UpdatePlayerRouteRequest\022\021\n\tplayer_i"
-      "d\030\001 \001(\004\022\023\n\013fence_token\030\002 \001(\t\022\035\n\025gamelogi"
-      "c_instance_id\030\003 \001(\t\022\027\n\017map_instance_id\030\004"
-      " \001(\004\022\027\n\017map_owner_epoch\030\005 \001(\004\022\025\n\rroute_v"
-      "ersion\030\006 \001(\004\022\033\n\023gateway_instance_id\030\007 \001("
-      "\t\022\025\n\rpush_endpoint\030\010 \001(\t\"O\n\031UpdatePlayer"
-      "RouteResponse\022\n\n\002ok\030\001 \001(\010\022\017\n\007message\030\002 \001"
-      "(\t\022\025\n\rroute_version\030\003 \001(\004\"\216\002\n\032BeginPlaye"
-      "rTransferRequest\022\021\n\tplayer_id\030\001 \001(\004\022\023\n\013f"
-      "ence_token\030\002 \001(\t\022\036\n\026expected_route_versi"
-      "on\030\003 \001(\004\022\"\n\032from_gamelogic_instance_id\030\004"
-      " \001(\t\022 \n\030to_gamelogic_instance_id\030\005 \001(\t\022\027"
-      "\n\017map_instance_id\030\006 \001(\004\022\027\n\017map_owner_epo"
-      "ch\030\007 \001(\004\022\023\n\013transfer_id\030\010 \001(\t\022\033\n\023gateway"
-      "_instance_id\030\t \001(\t\"\217\001\n\033BeginPlayerTransf"
-      "erResponse\022\n\n\002ok\030\001 \001(\010\022\017\n\007message\030\002 \001(\t\022"
-      "\022\n\nerror_code\030\003 \001(\t\022\023\n\013transfer_id\030\004 \001(\t"
-      "\022\025\n\rroute_version\030\005 \001(\004\022\023\n\013route_state\030\006"
-      " \001(\t\"\313\001\n\033CommitPlayerTransferRequest\022\021\n\t"
-      "player_id\030\001 \001(\004\022\023\n\013fence_token\030\002 \001(\t\022\023\n\013"
-      "transfer_id\030\003 \001(\t\022 \n\030to_gamelogic_instan"
-      "ce_id\030\004 \001(\t\022\027\n\017map_instance_id\030\005 \001(\004\022\027\n\017"
-      "map_owner_epoch\030\006 \001(\004\022\033\n\023gateway_instanc"
-      "e_id\030\007 \001(\t\"\314\001\n\034CommitPlayerTransferRespo"
-      "nse\022\n\n\002ok\030\001 \001(\010\022\017\n\007message\030\002 \001(\t\022\022\n\nerro"
-      "r_code\030\003 \001(\t\022\025\n\rroute_version\030\004 \001(\004\022\035\n\025g"
-      "amelogic_instance_id\030\005 \001(\t\022\027\n\017map_instan"
-      "ce_id\030\006 \001(\004\022\027\n\017map_owner_epoch\030\007 \001(\004\022\023\n\013"
-      "route_state\030\010 \001(\t\"i\n\032AbortPlayerTransfer"
-      "Request\022\021\n\tplayer_id\030\001 \001(\004\022\023\n\013fence_toke"
-      "n\030\002 \001(\t\022\023\n\013transfer_id\030\003 \001(\t\022\016\n\006reason\030\004"
-      " \001(\t\"z\n\033AbortPlayerTransferResponse\022\n\n\002o"
-      "k\030\001 \001(\010\022\017\n\007message\030\002 \001(\t\022\022\n\nerror_code\030\003"
-      " \001(\t\022\025\n\rroute_version\030\004 \001(\004\022\023\n\013route_sta"
-      "te\030\005 \001(\t\"\?\n\025GetPlayerRouteRequest\022\021\n\tpla"
-      "yer_id\030\001 \001(\004\022\023\n\013fence_token\030\002 \001(\t\"\241\002\n\026Ge"
-      "tPlayerRouteResponse\022\n\n\002ok\030\001 \001(\010\022\017\n\007mess"
-      "age\030\002 \001(\t\022\022\n\nsession_id\030\003 \001(\t\022\023\n\013fence_t"
-      "oken\030\004 \001(\t\022\022\n\ngeneration\030\005 \001(\004\022\033\n\023gatewa"
-      "y_instance_id\030\006 \001(\t\022\035\n\025gamelogic_instanc"
-      "e_id\030\007 \001(\t\022\027\n\017map_instance_id\030\010 \001(\004\022\027\n\017m"
-      "ap_owner_epoch\030\t \001(\004\022\025\n\rroute_version\030\n "
-      "\001(\004\022\023\n\013route_state\030\013 \001(\t\022\023\n\013transfer_id\030"
-      "\014 \001(\t2\262\016\n\016SessionService\022K\n\016AcquireSessi"
-      "on\022\033.sess.AcquireSessionRequest\032\034.sess.A"
-      "cquireSessionResponse\022S\n\022MarkDisconnecte"
-      "dV2\022\035.sess.MarkDisconnectedRequest\032\036.ses"
-      "s.MarkDisconnectedResponse\022>\n\013ReconnectV"
-      "2\022\026.sess.ReconnectRequest\032\027.sess.Reconne"
-      "ctResponse\022Q\n\020PrepareReconnect\022\035.sess.Pr"
-      "epareReconnectRequest\032\036.sess.PrepareReco"
-      "nnectResponse\022N\n\017CommitReconnect\022\034.sess."
-      "CommitReconnectRequest\032\035.sess.CommitReco"
-      "nnectResponse\022K\n\016AbortReconnect\022\033.sess.A"
-      "bortReconnectRequest\032\034.sess.AbortReconne"
-      "ctResponse\022Z\n\023GetSessionOperation\022 .sess"
-      ".GetSessionOperationRequest\032!.sess.GetSe"
-      "ssionOperationResponse\0225\n\010LogoutV2\022\023.ses"
-      "s.LogoutRequest\032\024.sess.LogoutResponse\022-\n"
-      "\004Kick\022\021.sess.KickRequest\032\022.sess.KickResp"
-      "onse\022W\n\022ResolveOrCreateMap\022\037.sess.Resolv"
-      "eOrCreateMapRequest\032 .sess.ResolveOrCrea"
-      "teMapResponse\022E\n\014GetPlacement\022\031.sess.Get"
-      "PlacementRequest\032\032.sess.GetPlacementResp"
-      "onse\022\?\n\nMigrateMap\022\027.sess.MigrateMapRequ"
-      "est\032\030.sess.MigrateMapResponse\022K\n\016MarkRec"
-      "overing\022\033.sess.MarkRecoveringRequest\032\034.s"
-      "ess.MarkRecoveringResponse\022K\n\016HeartbeatO"
-      "wner\022\033.sess.HeartbeatOwnerRequest\032\034.sess"
-      ".HeartbeatOwnerResponse\022T\n\021UpdatePlayerR"
-      "oute\022\036.sess.UpdatePlayerRouteRequest\032\037.s"
-      "ess.UpdatePlayerRouteResponse\022Z\n\023BeginPl"
-      "ayerTransfer\022 .sess.BeginPlayerTransferR"
-      "equest\032!.sess.BeginPlayerTransferRespons"
-      "e\022]\n\024CommitPlayerTransfer\022!.sess.CommitP"
-      "layerTransferRequest\032\".sess.CommitPlayer"
-      "TransferResponse\022Z\n\023AbortPlayerTransfer\022"
-      " .sess.AbortPlayerTransferRequest\032!.sess"
-      ".AbortPlayerTransferResponse\022K\n\016GetPlaye"
-      "rRoute\022\033.sess.GetPlayerRouteRequest\032\034.se"
-      "ss.GetPlayerRouteResponse\022\'\n\005Login\022\016.gam"
-      "e.LoginReq\032\016.game.LoginRsp\0223\n\tReconnect\022"
-      "\022.game.ReconnectReq\032\022.game.ReconnectRsp\022"
-      "*\n\006Logout\022\017.game.LogoutReq\032\017.game.Logout"
-      "Rsp\022\?\n\rValidateToken\022\026.sess.ValidateToke"
-      "nReq\032\026.sess.ValidateTokenRsp\022B\n\016BindConn"
-      "ection\022\027.sess.BindConnectionReq\032\027.sess.B"
-      "indConnectionRsp\022H\n\020MarkDisconnected\022\031.s"
-      "ess.MarkDisconnectedReq\032\031.sess.MarkDisco"
-      "nnectedRspB\003\200\001\001b\006proto3"
+      "orce_new\030\005 \001(\010\022\021\n\tplayer_id\030\006 \001(\004\022\024\n\014ope"
+      "ration_id\030\007 \001(\t\022\033\n\023public_map_capacity\030\010"
+      " \001(\r\"w\n\032ResolveOrCreateMapResponse\022\n\n\002ok"
+      "\030\001 \001(\010\022\017\n\007message\030\002 \001(\t\022\022\n\nerror_code\030\003 "
+      "\001(\t\022(\n\tplacement\030\004 \001(\0132\025.sess.PlacementR"
+      "ecord\".\n\023GetPlacementRequest\022\027\n\017map_inst"
+      "ance_id\030\001 \001(\004\"]\n\024GetPlacementResponse\022\n\n"
+      "\002ok\030\001 \001(\010\022\017\n\007message\030\002 \001(\t\022(\n\tplacement\030"
+      "\003 \001(\0132\025.sess.PlacementRecord\"~\n\021MigrateM"
+      "apRequest\022\027\n\017map_instance_id\030\001 \001(\004\022!\n\031ne"
+      "w_owner_logic_server_id\030\002 \001(\t\022\027\n\017idempot"
+      "ency_key\030\003 \001(\t\022\024\n\014expect_epoch\030\004 \001(\004\"o\n\022"
+      "MigrateMapResponse\022\n\n\002ok\030\001 \001(\010\022\017\n\007messag"
+      "e\030\002 \001(\t\022\022\n\nerror_code\030\003 \001(\t\022(\n\tplacement"
+      "\030\004 \001(\0132\025.sess.PlacementRecord\"@\n\025MarkRec"
+      "overingRequest\022\027\n\017map_instance_id\030\001 \001(\004\022"
+      "\016\n\006reason\030\002 \001(\t\"_\n\026MarkRecoveringRespons"
+      "e\022\n\n\002ok\030\001 \001(\010\022\017\n\007message\030\002 \001(\t\022(\n\tplacem"
+      "ent\030\003 \001(\0132\025.sess.PlacementRecord\"w\n\025Hear"
+      "tbeatOwnerRequest\022\027\n\017map_instance_id\030\001 \001"
+      "(\004\022\035\n\025owner_logic_server_id\030\002 \001(\t\022\023\n\013own"
+      "er_epoch\030\003 \001(\004\022\021\n\tlease_sec\030\004 \001(\r\"J\n\026Hea"
+      "rtbeatOwnerResponse\022\n\n\002ok\030\001 \001(\010\022\017\n\007messa"
+      "ge\030\002 \001(\t\022\023\n\013lease_until\030\003 \001(\003\"\336\001\n\030Update"
+      "PlayerRouteRequest\022\021\n\tplayer_id\030\001 \001(\004\022\023\n"
+      "\013fence_token\030\002 \001(\t\022\035\n\025gamelogic_instance"
+      "_id\030\003 \001(\t\022\027\n\017map_instance_id\030\004 \001(\004\022\027\n\017ma"
+      "p_owner_epoch\030\005 \001(\004\022\025\n\rroute_version\030\006 \001"
+      "(\004\022\033\n\023gateway_instance_id\030\007 \001(\t\022\025\n\rpush_"
+      "endpoint\030\010 \001(\t\"O\n\031UpdatePlayerRouteRespo"
+      "nse\022\n\n\002ok\030\001 \001(\010\022\017\n\007message\030\002 \001(\t\022\025\n\rrout"
+      "e_version\030\003 \001(\004\"\216\002\n\032BeginPlayerTransferR"
+      "equest\022\021\n\tplayer_id\030\001 \001(\004\022\023\n\013fence_token"
+      "\030\002 \001(\t\022\036\n\026expected_route_version\030\003 \001(\004\022\""
+      "\n\032from_gamelogic_instance_id\030\004 \001(\t\022 \n\030to"
+      "_gamelogic_instance_id\030\005 \001(\t\022\027\n\017map_inst"
+      "ance_id\030\006 \001(\004\022\027\n\017map_owner_epoch\030\007 \001(\004\022\023"
+      "\n\013transfer_id\030\010 \001(\t\022\033\n\023gateway_instance_"
+      "id\030\t \001(\t\"\217\001\n\033BeginPlayerTransferResponse"
+      "\022\n\n\002ok\030\001 \001(\010\022\017\n\007message\030\002 \001(\t\022\022\n\nerror_c"
+      "ode\030\003 \001(\t\022\023\n\013transfer_id\030\004 \001(\t\022\025\n\rroute_"
+      "version\030\005 \001(\004\022\023\n\013route_state\030\006 \001(\t\"\313\001\n\033C"
+      "ommitPlayerTransferRequest\022\021\n\tplayer_id\030"
+      "\001 \001(\004\022\023\n\013fence_token\030\002 \001(\t\022\023\n\013transfer_i"
+      "d\030\003 \001(\t\022 \n\030to_gamelogic_instance_id\030\004 \001("
+      "\t\022\027\n\017map_instance_id\030\005 \001(\004\022\027\n\017map_owner_"
+      "epoch\030\006 \001(\004\022\033\n\023gateway_instance_id\030\007 \001(\t"
+      "\"\314\001\n\034CommitPlayerTransferResponse\022\n\n\002ok\030"
+      "\001 \001(\010\022\017\n\007message\030\002 \001(\t\022\022\n\nerror_code\030\003 \001"
+      "(\t\022\025\n\rroute_version\030\004 \001(\004\022\035\n\025gamelogic_i"
+      "nstance_id\030\005 \001(\t\022\027\n\017map_instance_id\030\006 \001("
+      "\004\022\027\n\017map_owner_epoch\030\007 \001(\004\022\023\n\013route_stat"
+      "e\030\010 \001(\t\"i\n\032AbortPlayerTransferRequest\022\021\n"
+      "\tplayer_id\030\001 \001(\004\022\023\n\013fence_token\030\002 \001(\t\022\023\n"
+      "\013transfer_id\030\003 \001(\t\022\016\n\006reason\030\004 \001(\t\"z\n\033Ab"
+      "ortPlayerTransferResponse\022\n\n\002ok\030\001 \001(\010\022\017\n"
+      "\007message\030\002 \001(\t\022\022\n\nerror_code\030\003 \001(\t\022\025\n\rro"
+      "ute_version\030\004 \001(\004\022\023\n\013route_state\030\005 \001(\t\"\?"
+      "\n\025GetPlayerRouteRequest\022\021\n\tplayer_id\030\001 \001"
+      "(\004\022\023\n\013fence_token\030\002 \001(\t\"\241\002\n\026GetPlayerRou"
+      "teResponse\022\n\n\002ok\030\001 \001(\010\022\017\n\007message\030\002 \001(\t\022"
+      "\022\n\nsession_id\030\003 \001(\t\022\023\n\013fence_token\030\004 \001(\t"
+      "\022\022\n\ngeneration\030\005 \001(\004\022\033\n\023gateway_instance"
+      "_id\030\006 \001(\t\022\035\n\025gamelogic_instance_id\030\007 \001(\t"
+      "\022\027\n\017map_instance_id\030\010 \001(\004\022\027\n\017map_owner_e"
+      "poch\030\t \001(\004\022\025\n\rroute_version\030\n \001(\004\022\023\n\013rou"
+      "te_state\030\013 \001(\t\022\023\n\013transfer_id\030\014 \001(\t2\262\016\n\016"
+      "SessionService\022K\n\016AcquireSession\022\033.sess."
+      "AcquireSessionRequest\032\034.sess.AcquireSess"
+      "ionResponse\022S\n\022MarkDisconnectedV2\022\035.sess"
+      ".MarkDisconnectedRequest\032\036.sess.MarkDisc"
+      "onnectedResponse\022>\n\013ReconnectV2\022\026.sess.R"
+      "econnectRequest\032\027.sess.ReconnectResponse"
+      "\022Q\n\020PrepareReconnect\022\035.sess.PrepareRecon"
+      "nectRequest\032\036.sess.PrepareReconnectRespo"
+      "nse\022N\n\017CommitReconnect\022\034.sess.CommitReco"
+      "nnectRequest\032\035.sess.CommitReconnectRespo"
+      "nse\022K\n\016AbortReconnect\022\033.sess.AbortReconn"
+      "ectRequest\032\034.sess.AbortReconnectResponse"
+      "\022Z\n\023GetSessionOperation\022 .sess.GetSessio"
+      "nOperationRequest\032!.sess.GetSessionOpera"
+      "tionResponse\0225\n\010LogoutV2\022\023.sess.LogoutRe"
+      "quest\032\024.sess.LogoutResponse\022-\n\004Kick\022\021.se"
+      "ss.KickRequest\032\022.sess.KickResponse\022W\n\022Re"
+      "solveOrCreateMap\022\037.sess.ResolveOrCreateM"
+      "apRequest\032 .sess.ResolveOrCreateMapRespo"
+      "nse\022E\n\014GetPlacement\022\031.sess.GetPlacementR"
+      "equest\032\032.sess.GetPlacementResponse\022\?\n\nMi"
+      "grateMap\022\027.sess.MigrateMapRequest\032\030.sess"
+      ".MigrateMapResponse\022K\n\016MarkRecovering\022\033."
+      "sess.MarkRecoveringRequest\032\034.sess.MarkRe"
+      "coveringResponse\022K\n\016HeartbeatOwner\022\033.ses"
+      "s.HeartbeatOwnerRequest\032\034.sess.Heartbeat"
+      "OwnerResponse\022T\n\021UpdatePlayerRoute\022\036.ses"
+      "s.UpdatePlayerRouteRequest\032\037.sess.Update"
+      "PlayerRouteResponse\022Z\n\023BeginPlayerTransf"
+      "er\022 .sess.BeginPlayerTransferRequest\032!.s"
+      "ess.BeginPlayerTransferResponse\022]\n\024Commi"
+      "tPlayerTransfer\022!.sess.CommitPlayerTrans"
+      "ferRequest\032\".sess.CommitPlayerTransferRe"
+      "sponse\022Z\n\023AbortPlayerTransfer\022 .sess.Abo"
+      "rtPlayerTransferRequest\032!.sess.AbortPlay"
+      "erTransferResponse\022K\n\016GetPlayerRoute\022\033.s"
+      "ess.GetPlayerRouteRequest\032\034.sess.GetPlay"
+      "erRouteResponse\022\'\n\005Login\022\016.game.LoginReq"
+      "\032\016.game.LoginRsp\0223\n\tReconnect\022\022.game.Rec"
+      "onnectReq\032\022.game.ReconnectRsp\022*\n\006Logout\022"
+      "\017.game.LogoutReq\032\017.game.LogoutRsp\022\?\n\rVal"
+      "idateToken\022\026.sess.ValidateTokenReq\032\026.ses"
+      "s.ValidateTokenRsp\022B\n\016BindConnection\022\027.s"
+      "ess.BindConnectionReq\032\027.sess.BindConnect"
+      "ionRsp\022H\n\020MarkDisconnected\022\031.sess.MarkDi"
+      "sconnectedReq\032\031.sess.MarkDisconnectedRsp"
+      "B\003\200\001\001b\006proto3"
   };
   ::google::protobuf::DescriptorPool::InternalAddGeneratedFile(
-      descriptor, 8063);
+      descriptor, 8133);
   ::google::protobuf::MessageFactory::InternalRegisterGeneratedFile(
     "session.proto", &protobuf_RegisterTypes);
   ::protobuf_game_2eproto::AddDescriptors();
@@ -13369,6 +13374,9 @@ const int ResolveOrCreateMapRequest::kMapTemplateIdFieldNumber;
 const int ResolveOrCreateMapRequest::kMapInstanceIdFieldNumber;
 const int ResolveOrCreateMapRequest::kPreferredOwnerFieldNumber;
 const int ResolveOrCreateMapRequest::kForceNewFieldNumber;
+const int ResolveOrCreateMapRequest::kPlayerIdFieldNumber;
+const int ResolveOrCreateMapRequest::kOperationIdFieldNumber;
+const int ResolveOrCreateMapRequest::kPublicMapCapacityFieldNumber;
 #endif  // !defined(_MSC_VER) || _MSC_VER >= 1900
 
 ResolveOrCreateMapRequest::ResolveOrCreateMapRequest()
@@ -13388,17 +13396,22 @@ ResolveOrCreateMapRequest::ResolveOrCreateMapRequest(const ResolveOrCreateMapReq
   if (from.preferred_owner().size() > 0) {
     preferred_owner_.AssignWithDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), from.preferred_owner_);
   }
+  operation_id_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  if (from.operation_id().size() > 0) {
+    operation_id_.AssignWithDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), from.operation_id_);
+  }
   ::memcpy(&map_template_id_, &from.map_template_id_,
-    static_cast<size_t>(reinterpret_cast<char*>(&force_new_) -
-    reinterpret_cast<char*>(&map_template_id_)) + sizeof(force_new_));
+    static_cast<size_t>(reinterpret_cast<char*>(&public_map_capacity_) -
+    reinterpret_cast<char*>(&map_template_id_)) + sizeof(public_map_capacity_));
   // @@protoc_insertion_point(copy_constructor:sess.ResolveOrCreateMapRequest)
 }
 
 void ResolveOrCreateMapRequest::SharedCtor() {
   preferred_owner_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  operation_id_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
   ::memset(&map_template_id_, 0, static_cast<size_t>(
-      reinterpret_cast<char*>(&force_new_) -
-      reinterpret_cast<char*>(&map_template_id_)) + sizeof(force_new_));
+      reinterpret_cast<char*>(&public_map_capacity_) -
+      reinterpret_cast<char*>(&map_template_id_)) + sizeof(public_map_capacity_));
   _cached_size_ = 0;
 }
 
@@ -13409,6 +13422,7 @@ ResolveOrCreateMapRequest::~ResolveOrCreateMapRequest() {
 
 void ResolveOrCreateMapRequest::SharedDtor() {
   preferred_owner_.DestroyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  operation_id_.DestroyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
 }
 
 void ResolveOrCreateMapRequest::SetCachedSize(int size) const {
@@ -13441,9 +13455,10 @@ void ResolveOrCreateMapRequest::Clear() {
   (void) cached_has_bits;
 
   preferred_owner_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  operation_id_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
   ::memset(&map_template_id_, 0, static_cast<size_t>(
-      reinterpret_cast<char*>(&force_new_) -
-      reinterpret_cast<char*>(&map_template_id_)) + sizeof(force_new_));
+      reinterpret_cast<char*>(&public_map_capacity_) -
+      reinterpret_cast<char*>(&map_template_id_)) + sizeof(public_map_capacity_));
   _internal_metadata_.Clear();
 }
 
@@ -13529,6 +13544,50 @@ bool ResolveOrCreateMapRequest::MergePartialFromCodedStream(
         break;
       }
 
+      // uint64 player_id = 6;
+      case 6: {
+        if (static_cast< ::google::protobuf::uint8>(tag) ==
+            static_cast< ::google::protobuf::uint8>(48u /* 48 & 0xFF */)) {
+
+          DO_((::google::protobuf::internal::WireFormatLite::ReadPrimitive<
+                   ::google::protobuf::uint64, ::google::protobuf::internal::WireFormatLite::TYPE_UINT64>(
+                 input, &player_id_)));
+        } else {
+          goto handle_unusual;
+        }
+        break;
+      }
+
+      // string operation_id = 7;
+      case 7: {
+        if (static_cast< ::google::protobuf::uint8>(tag) ==
+            static_cast< ::google::protobuf::uint8>(58u /* 58 & 0xFF */)) {
+          DO_(::google::protobuf::internal::WireFormatLite::ReadString(
+                input, this->mutable_operation_id()));
+          DO_(::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+            this->operation_id().data(), static_cast<int>(this->operation_id().length()),
+            ::google::protobuf::internal::WireFormatLite::PARSE,
+            "sess.ResolveOrCreateMapRequest.operation_id"));
+        } else {
+          goto handle_unusual;
+        }
+        break;
+      }
+
+      // uint32 public_map_capacity = 8;
+      case 8: {
+        if (static_cast< ::google::protobuf::uint8>(tag) ==
+            static_cast< ::google::protobuf::uint8>(64u /* 64 & 0xFF */)) {
+
+          DO_((::google::protobuf::internal::WireFormatLite::ReadPrimitive<
+                   ::google::protobuf::uint32, ::google::protobuf::internal::WireFormatLite::TYPE_UINT32>(
+                 input, &public_map_capacity_)));
+        } else {
+          goto handle_unusual;
+        }
+        break;
+      }
+
       default: {
       handle_unusual:
         if (tag == 0) {
@@ -13585,6 +13644,26 @@ void ResolveOrCreateMapRequest::SerializeWithCachedSizes(
     ::google::protobuf::internal::WireFormatLite::WriteBool(5, this->force_new(), output);
   }
 
+  // uint64 player_id = 6;
+  if (this->player_id() != 0) {
+    ::google::protobuf::internal::WireFormatLite::WriteUInt64(6, this->player_id(), output);
+  }
+
+  // string operation_id = 7;
+  if (this->operation_id().size() > 0) {
+    ::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+      this->operation_id().data(), static_cast<int>(this->operation_id().length()),
+      ::google::protobuf::internal::WireFormatLite::SERIALIZE,
+      "sess.ResolveOrCreateMapRequest.operation_id");
+    ::google::protobuf::internal::WireFormatLite::WriteStringMaybeAliased(
+      7, this->operation_id(), output);
+  }
+
+  // uint32 public_map_capacity = 8;
+  if (this->public_map_capacity() != 0) {
+    ::google::protobuf::internal::WireFormatLite::WriteUInt32(8, this->public_map_capacity(), output);
+  }
+
   if ((_internal_metadata_.have_unknown_fields() &&  ::google::protobuf::internal::GetProto3PreserveUnknownsDefault())) {
     ::google::protobuf::internal::WireFormat::SerializeUnknownFields(
         (::google::protobuf::internal::GetProto3PreserveUnknownsDefault()   ? _internal_metadata_.unknown_fields()   : _internal_metadata_.default_instance()), output);
@@ -13630,6 +13709,27 @@ void ResolveOrCreateMapRequest::SerializeWithCachedSizes(
     target = ::google::protobuf::internal::WireFormatLite::WriteBoolToArray(5, this->force_new(), target);
   }
 
+  // uint64 player_id = 6;
+  if (this->player_id() != 0) {
+    target = ::google::protobuf::internal::WireFormatLite::WriteUInt64ToArray(6, this->player_id(), target);
+  }
+
+  // string operation_id = 7;
+  if (this->operation_id().size() > 0) {
+    ::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+      this->operation_id().data(), static_cast<int>(this->operation_id().length()),
+      ::google::protobuf::internal::WireFormatLite::SERIALIZE,
+      "sess.ResolveOrCreateMapRequest.operation_id");
+    target =
+      ::google::protobuf::internal::WireFormatLite::WriteStringToArray(
+        7, this->operation_id(), target);
+  }
+
+  // uint32 public_map_capacity = 8;
+  if (this->public_map_capacity() != 0) {
+    target = ::google::protobuf::internal::WireFormatLite::WriteUInt32ToArray(8, this->public_map_capacity(), target);
+  }
+
   if ((_internal_metadata_.have_unknown_fields() &&  ::google::protobuf::internal::GetProto3PreserveUnknownsDefault())) {
     target = ::google::protobuf::internal::WireFormat::SerializeUnknownFieldsToArray(
         (::google::protobuf::internal::GetProto3PreserveUnknownsDefault()   ? _internal_metadata_.unknown_fields()   : _internal_metadata_.default_instance()), target);
@@ -13652,6 +13752,13 @@ size_t ResolveOrCreateMapRequest::ByteSizeLong() const {
     total_size += 1 +
       ::google::protobuf::internal::WireFormatLite::StringSize(
         this->preferred_owner());
+  }
+
+  // string operation_id = 7;
+  if (this->operation_id().size() > 0) {
+    total_size += 1 +
+      ::google::protobuf::internal::WireFormatLite::StringSize(
+        this->operation_id());
   }
 
   // uint64 map_template_id = 2;
@@ -13678,6 +13785,20 @@ size_t ResolveOrCreateMapRequest::ByteSizeLong() const {
   // bool force_new = 5;
   if (this->force_new() != 0) {
     total_size += 1 + 1;
+  }
+
+  // uint64 player_id = 6;
+  if (this->player_id() != 0) {
+    total_size += 1 +
+      ::google::protobuf::internal::WireFormatLite::UInt64Size(
+        this->player_id());
+  }
+
+  // uint32 public_map_capacity = 8;
+  if (this->public_map_capacity() != 0) {
+    total_size += 1 +
+      ::google::protobuf::internal::WireFormatLite::UInt32Size(
+        this->public_map_capacity());
   }
 
   int cached_size = ::google::protobuf::internal::ToCachedSize(total_size);
@@ -13713,6 +13834,10 @@ void ResolveOrCreateMapRequest::MergeFrom(const ResolveOrCreateMapRequest& from)
 
     preferred_owner_.AssignWithDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), from.preferred_owner_);
   }
+  if (from.operation_id().size() > 0) {
+
+    operation_id_.AssignWithDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), from.operation_id_);
+  }
   if (from.map_template_id() != 0) {
     set_map_template_id(from.map_template_id());
   }
@@ -13724,6 +13849,12 @@ void ResolveOrCreateMapRequest::MergeFrom(const ResolveOrCreateMapRequest& from)
   }
   if (from.force_new() != 0) {
     set_force_new(from.force_new());
+  }
+  if (from.player_id() != 0) {
+    set_player_id(from.player_id());
+  }
+  if (from.public_map_capacity() != 0) {
+    set_public_map_capacity(from.public_map_capacity());
   }
 }
 
@@ -13752,10 +13883,13 @@ void ResolveOrCreateMapRequest::Swap(ResolveOrCreateMapRequest* other) {
 void ResolveOrCreateMapRequest::InternalSwap(ResolveOrCreateMapRequest* other) {
   using std::swap;
   preferred_owner_.Swap(&other->preferred_owner_);
+  operation_id_.Swap(&other->operation_id_);
   swap(map_template_id_, other->map_template_id_);
   swap(map_instance_id_, other->map_instance_id_);
   swap(realm_id_, other->realm_id_);
   swap(force_new_, other->force_new_);
+  swap(player_id_, other->player_id_);
+  swap(public_map_capacity_, other->public_map_capacity_);
   _internal_metadata_.Swap(&other->_internal_metadata_);
   swap(_cached_size_, other->_cached_size_);
 }

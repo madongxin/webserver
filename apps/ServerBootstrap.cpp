@@ -71,6 +71,7 @@
 #include "AsyncMysqlGameDbRepository.h"
 #include "GameDbOutbox.h"
 #include "PlayerAccountStore.h"
+#include "PlayerProfileStore.h"
 #include "GameDbAssetStore.h"
 #endif
 #ifdef WEBSERVER_ENABLE_GAME_PROTOBUF
@@ -973,15 +974,16 @@ int RunServer(const LaunchOpts &launch) {
             PlayerItemStore::Instance().EnsureTable();
         } else if (role == "gamedb") {
             PlayerAccountStore::Instance().EnsureTable();
+            PlayerProfileStore::Instance().EnsureTable();
             PlayerItemStore::Instance().EnsureTable();
             GameDbAssetStore::Instance().EnsureTables();
             GameDbOutbox::Instance().EnsureTable();
         }
 #ifdef WEBSERVER_ENABLE_GAME_PROTOBUF
         // world：若配置 gamedb_addrs，先挂 BrpcGameDb 再 Init MailService（见下方 brpc 分支）
-        if (role == "all" || role == "gamelogic") {
+        if (role == "all" || role == "gamelogic" || role == "gamedb") {
             if (MailService::Instance().Init()) {
-                if (role == "all")
+                if (role == "all" || role == "gamedb")
                     MailExpireScanner::Instance().StartPeriodic(&loop, 0.0);
             } else {
                 LOG_WARN << "MailService init failed";
@@ -1175,6 +1177,7 @@ int RunServer(const LaunchOpts &launch) {
             LOG_INFO << "gamelogic local instance_id=" << iid
                      << " listen_override=" << logic_port_override
                      << " require_lease=" << MapInstanceRegistry::Instance().require_lease();
+            GameLogicBrpcServer::Instance().LoadMapRuntimeFromConfig();
             if (!GameLogicBrpcServer::Instance().Start(listen, 30)) {
                 LOG_ERROR << "GameLogicBrpcServer start failed";
                 return 1;

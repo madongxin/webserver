@@ -5,11 +5,18 @@
 #include "GameLogicServiceImpl.h"
 #include "GameMeshPaths.h"
 #include "Logging.h"
+#include "MapCatalog.h"
 #include "MapInstanceRegistry.h"
+#include "MapRuntime.h"
 #include "PlayerSerialQueue.h"
+
+#ifdef WEBSERVER_ENABLE_REDIS
+#include "PlacementStore.h"
+#endif
 
 #include <brpc/server.h>
 
+#include <cstdint>
 #include <cstdlib>
 #include <cstring>
 #include <fstream>
@@ -27,7 +34,8 @@ std::string Trim(std::string s) {
 }
 
 bool ParseLogicConfig(const std::string &path, std::string *listen_addr, int *idle_timeout_sec,
-                      std::string *instance_id) {
+                      std::string *instance_id, std::string *map_data_dir, uint32_t *capacity,
+                      int *aoi_radius, int *tick_hz) {
     std::ifstream in(path);
     if (!in)
         return false;
@@ -47,6 +55,14 @@ bool ParseLogicConfig(const std::string &path, std::string *listen_addr, int *id
             *idle_timeout_sec = std::atoi(val.c_str());
         else if (key == "instance_id" && instance_id)
             *instance_id = val;
+        else if (key == "map_data_dir" && map_data_dir)
+            *map_data_dir = val;
+        else if (key == "public_map_capacity" && capacity)
+            *capacity = static_cast<uint32_t>(std::atoi(val.c_str()));
+        else if (key == "aoi_view_radius_cells" && aoi_radius)
+            *aoi_radius = std::atoi(val.c_str());
+        else if (key == "map_tick_hz" && tick_hz)
+            *tick_hz = std::atoi(val.c_str());
     }
     return !listen_addr->empty();
 }
@@ -74,13 +90,47 @@ GameLogicBrpcServer::~GameLogicBrpcServer() {
     Stop();
 }
 
+void GameLogicBrpcServer::LoadMapRuntimeFromConfig() {
+    std::string addr = "0.0.0.0:8201";
+    int idle = 30;
+    std::string instance_id = "gl-0";
+    std::string map_data_dir;
+    uint32_t capacity = 50;
+    int aoi_radius = 2;
+    int tick_hz = 10;
+    if (!ParseLogicConfig(LogicCnfPath(), &addr, &idle, &instance_id, &map_data_dir, &capacity,
+                          &aoi_radius, &tick_hz))
+        LOG_WARN << "GameLogicBrpcServer: map config defaults, cannot parse " << LogicCnfPath();
+    (void)addr;
+    (void)idle;
+    (void)instance_id;
+    if (!map_data_dir.empty())
+        MapCatalog::Instance().SetMapDataDir(map_data_dir);
+    MapCatalog::Instance().SetPublicMapCapacity(capacity);
+    MapCatalog::Instance().SetAoiViewRadiusCells(aoi_radius);
+    MapCatalog::Instance().SetMapTickHz(tick_hz);
+    MapRuntime::Instance().SetViewRadiusCells(aoi_radius);
+#ifdef WEBSERVER_ENABLE_REDIS
+    PlacementStore::Instance().SetPublicMapCapacity(capacity);
+#endif
+    std::string merr;
+    if (!MapCatalog::Instance().EnsureDefault(&merr))
+        LOG_WARN << "MapCatalog load failed: " << merr;
+}
+
 bool GameLogicBrpcServer::StartFromConfig() {
     std::string addr = "0.0.0.0:8201";
     int idle = 30;
     std::string instance_id = "gl-0";
-    if (!ParseLogicConfig(LogicCnfPath(), &addr, &idle, &instance_id))
+    std::string map_data_dir;
+    uint32_t capacity = 50;
+    int aoi_radius = 2;
+    int tick_hz = 10;
+    if (!ParseLogicConfig(LogicCnfPath(), &addr, &idle, &instance_id, &map_data_dir, &capacity,
+                          &aoi_radius, &tick_hz))
         LOG_WARN << "GameLogicBrpcServer: use default listen, cannot parse " << LogicCnfPath();
     MapInstanceRegistry::Instance().SetLocalInstanceId(instance_id);
+    LoadMapRuntimeFromConfig();
 #ifdef WEBSERVER_ENABLE_BRPC
     // FormalMode.h 轻量；避免循环依赖时仅 env
 #endif

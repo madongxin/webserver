@@ -1,9 +1,13 @@
 #include "WorldForwardServiceImpl.h"
 
+#include "BrpcGameDbRepository.h"
+#include "FormalMode.h"
 #include "ForwardMetaContext.h"
 #include "GameService.h"
 #include "Logging.h"
+#include "MessageRoute.h"
 #include "PlayerSerialQueue.h"
+#include "game.pb.h"
 
 #include <brpc/controller.h>
 
@@ -37,15 +41,32 @@ void WorldForwardServiceImpl::Forward(::google::protobuf::RpcController *control
     auto *closure = done;
     if (!PlayerSerialQueue::Instance().TryPost(player_id, [payload, meta, rsp, closure, player_id]() {
             brpc::ClosureGuard g(closure);
-            ForwardMetaContext::Set(meta);
             std::string out;
-            const bool ok = gameproto::HandleFrame(payload, &out);
-            ForwardMetaContext::Clear();
-            if (!ok) {
-                LOG_ERROR << "WorldForward: HandleFrame failed player_id=" << player_id;
-                rsp->set_ok(false);
-                rsp->set_message("handle_frame_failed");
-                return;
+            bool ok = false;
+            game::GameRequest parsed;
+            const bool mail_via_gamedb = FormalModeEnabled() && parsed.ParseFromString(payload) &&
+                                         gameproto::IsMailBoundRequest(parsed);
+            if (mail_via_gamedb) {
+                std::string err;
+                ok = BrpcGameDbRepository::Instance().HandleGameFrame(player_id, payload, &out,
+                                                                      &err);
+                if (!ok) {
+                    LOG_ERROR << "WorldForward: GameDB mail frame failed player_id=" << player_id
+                              << " msg=" << err;
+                    rsp->set_ok(false);
+                    rsp->set_message(err.empty() ? "gamedb_mail_failed" : err);
+                    return;
+                }
+            } else {
+                ForwardMetaContext::Set(meta);
+                ok = gameproto::HandleFrame(payload, &out);
+                ForwardMetaContext::Clear();
+                if (!ok) {
+                    LOG_ERROR << "WorldForward: HandleFrame failed player_id=" << player_id;
+                    rsp->set_ok(false);
+                    rsp->set_message("handle_frame_failed");
+                    return;
+                }
             }
             rsp->set_ok(true);
             rsp->set_response_frame(out);

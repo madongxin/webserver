@@ -140,7 +140,11 @@ printf '%s\n' \
   "session_addrs=127.0.0.1:${SESSION}${GAMEMESH_SESSION2:+,127.0.0.1:${GAMEMESH_SESSION2}}" \
   "gamedb_addrs=127.0.0.1:${GAMEDB0},127.0.0.1:${GAMEDB1}" \
   "gateway_push_addrs=gw-0=${GAMEMESH_ADVERTISE_HOST}:${PUSH_G0},gw-1=${GAMEMESH_ADVERTISE_HOST}:${PUSH_G1}" \
-  "ssl_enable=0" >"$LOGIC_CNF"
+  "ssl_enable=0" \
+  "map_data_dir=${ROOT}/config/maps" \
+  "public_map_capacity=50" \
+  "aoi_view_radius_cells=2" \
+  "map_tick_hz=10" >"$LOGIC_CNF"
 
 # bin role logfile instance_id rpc_addr http_addr [game_addr] -- argv...
 start_proc() {

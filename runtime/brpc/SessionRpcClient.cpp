@@ -280,3 +280,14 @@ bool SessionRpcClient::UpdatePlayerRoute(const sess::UpdatePlayerRouteRequest &r
     stub.UpdatePlayerRoute(&cntl, &req, rsp, nullptr);
     return !cntl.Failed() && rsp->ok();
 }
+
+bool SessionRpcClient::GetPlayerRoute(const sess::GetPlayerRouteRequest &req,
+                                      sess::GetPlayerRouteResponse *rsp) {
+    auto ch = CurrentChannel();
+    if (!ch || !rsp)
+        return false;
+    brpc::Controller cntl;
+    sess::SessionService_Stub stub(ch.get());
+    stub.GetPlayerRoute(&cntl, &req, rsp, nullptr);
+    return !cntl.Failed() && rsp->ok();
+}

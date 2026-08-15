@@ -33,3 +33,7 @@ void TcpReplySink::CloseConnection() {
         c->HandleClose();
     });
 }
+
+std::shared_ptr<TcpConnection> TcpReplySink::tcp_connection() const {
+    return conn_.lock();
+}

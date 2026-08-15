@@ -180,6 +180,8 @@ bool OrchestrateGatewayLogin(const std::string &gateway_instance_id, uint64_t co
     login_body->set_kicked_previous(srsp.kicked_previous());
     login_body->set_session_id(srsp.session_id());
     login_body->set_generation(srsp.generation());
+    if (!brsp.profile_pb().empty())
+        login_body->mutable_profile()->ParseFromString(brsp.profile_pb());
     rsp.set_ok(true);
     rsp.set_message("login ok");
     LOG_INFO << "Gateway login orchestrated player=" << arsp.player_id()

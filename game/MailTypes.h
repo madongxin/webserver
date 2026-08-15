@@ -225,6 +225,8 @@ struct DeliverRequest {
     std::string category = "SYSTEM";
     int priority = 0;
     std::string sender_name = "System";
+    std::string sender_type = "SYSTEM";
+    uint64_t sender_id = 0;
     std::string title;
     std::string body;
     std::vector<DeliverAttachment> attachments;

@@ -90,14 +90,20 @@ void RememberBind(uint64_t conn_id, uint64_t player_id, const std::string &token
         gb.route_version = route->route_version;
     }
     if (sink) {
-        auto weak = std::weak_ptr<ReplySink>(sink);
-        gb.send_frame = [weak](const std::string &frame) {
-            if (auto s = weak.lock())
-                s->SendFrame(frame);
+        std::weak_ptr<TcpConnection> weak_conn = sink->tcp_connection();
+        gb.send_frame = [weak_conn](const std::string &frame) {
+            auto c = weak_conn.lock();
+            if (!c)
+                return;
+            TcpReplySink live(c);
+            live.SendFrame(frame);
         };
-        gb.close_conn = [weak]() {
-            if (auto s = weak.lock())
-                s->CloseConnection();
+        gb.close_conn = [weak_conn]() {
+            auto c = weak_conn.lock();
+            if (!c)
+                return;
+            TcpReplySink live(c);
+            live.CloseConnection();
         };
     }
     GatewayConnRegistry::Instance().Remember(conn_id, std::move(gb));
@@ -159,6 +165,10 @@ public:
         }
         if (inner_)
             inner_->SendFrame(response_frame);
+    }
+
+    std::shared_ptr<TcpConnection> tcp_connection() const override {
+        return inner_ ? inner_->tcp_connection() : nullptr;
     }
 
 private:

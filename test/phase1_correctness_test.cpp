@@ -5,8 +5,11 @@
 #include "FormalMode.h"
 #include "GameLogic.h"
 #include "GatewayConnRegistry.h"
+#include "MapCatalog.h"
 #include "MapInstanceRegistry.h"
 #include "MapPlacement.h"
+#include "MapRuntime.h"
+#include "MapStaticData.h"
 #include "PlayerSerialQueue.h"
 #include "TrustedPlayerId.h"
 #include "game.pb.h"
@@ -16,6 +19,7 @@
 #include <condition_variable>
 #include <cstdio>
 #include <cstdlib>
+#include <limits>
 #include <memory>
 #include <mutex>
 #include <string>
@@ -174,6 +178,87 @@ void TestStickyForget() {
     reg.Forget(2);
 }
 
+void TestEnterMapHashAndMove() {
+    auto &reg = MapInstanceRegistry::Instance();
+    reg.ClearForTest();
+    reg.SetRequireLease(false);
+    reg.SetLocalInstanceId("gl-test");
+    MapPlacement::Instance().ConfigureOwners({"gl-test"});
+    MapRuntime::Instance().ClearForTest();
+    MapCatalog::Instance().ClearForTest();
+
+    const std::string json = R"JSON({
+      "schema_version": 1,
+      "map_template_id": 9001,
+      "scene_name": "Tiny",
+      "data_version": 1,
+      "bounds_min": [0, 0, 0],
+      "bounds_max": [20, 5, 20],
+      "aoi_cell_size": 10.0,
+      "nav_sample_step": 1.0,
+      "grid_width": 20,
+      "grid_height": 20,
+      "walkable_rle": [1, 400],
+      "spawn_points": [{"id":"default","position":[1, 0, 1],"yaw":0}]
+    })JSON";
+    std::shared_ptr<const MapStaticData> data;
+    std::string err;
+    Expect(MapStaticData::LoadFromJson(json, &data, &err), "s2 tiny map json");
+    if (!data)
+        return;
+    MapCatalog::Instance().PutForTest(data);
+
+    game::GameRequest enter;
+    enter.set_seq(1);
+    auto *e = enter.mutable_enter_map();
+    e->set_player_id(42);
+    e->set_realm_id(1);
+    e->set_map_template_id(9001);
+    game::GameResponse rsp;
+    Expect(GameLogic::Instance().Handle(enter, &rsp) && rsp.ok() && rsp.enter_map().ok(),
+           "enter map 9001");
+    Expect(rsp.enter_map().map_data_version() == 1, "enter returns data_version");
+    Expect(rsp.enter_map().map_data_sha256() == data->sha256(), "enter returns sha256");
+    Expect(rsp.enter_map().has_spawn_position(), "enter spawn");
+    Expect(rsp.enter_map().has_self() && rsp.enter_map().self().player_id() == 42, "enter self");
+
+    game::GameRequest bad;
+    bad.set_seq(2);
+    auto *b = bad.mutable_enter_map();
+    b->set_player_id(43);
+    b->set_realm_id(1);
+    b->set_map_template_id(9001);
+    b->set_map_data_version(1);
+    b->set_map_data_sha256(std::string(64, '0'));
+    game::GameResponse brsp;
+    Expect(!GameLogic::Instance().Handle(bad, &brsp), "mismatch enter rejected");
+    Expect(brsp.enter_map().message().find("ERR_MAP_DATA_MISMATCH") != std::string::npos,
+           "mismatch code");
+    Expect(brsp.enter_map().map_data_sha256() == data->sha256(), "mismatch returns server hash");
+
+    game::GameRequest mv;
+    mv.set_seq(3);
+    auto *m = mv.mutable_move();
+    m->set_player_id(42);
+    m->set_map_instance_id(rsp.enter_map().map_instance_id());
+    m->mutable_position()->set_x(2);
+    m->mutable_position()->set_y(0);
+    m->mutable_position()->set_z(1);
+    game::GameResponse mrsp;
+    Expect(GameLogic::Instance().Handle(mv, &mrsp) && mrsp.ok() && mrsp.move().ok(), "move ok");
+    Expect(mrsp.move().state_seq() > 0, "move state_seq");
+
+    mv.set_seq(4);
+    m->mutable_position()->set_x(std::numeric_limits<float>::quiet_NaN());
+    game::GameResponse nrsp;
+    Expect(!GameLogic::Instance().Handle(mv, &nrsp), "nan move rejected");
+    Expect(nrsp.move().error_code() == "ERR_INVALID_POSITION", "nan error_code");
+
+    MapRuntime::Instance().ClearForTest();
+    MapCatalog::Instance().ClearForTest();
+    reg.ClearForTest();
+}
+
 }  // namespace
 
 int main() {
@@ -181,6 +266,7 @@ int main() {
     TestClientSeq();
     TestTrustedPlayerId();
     TestLeaseAndFormalNoLocalClaim();
+    TestEnterMapHashAndMove();
     TestStickyForget();
     if (g_fail) {
         std::printf("FAIL phase1_correctness_test fails=%d\n", g_fail);

@@ -2,6 +2,7 @@
 
 #include "HealthyLogicSnapshot.h"
 #include "Logging.h"
+#include "PlacementStore.h"
 #include "RedisClient.h"
 #include "RedisConfigPath.h"
 #include "RedisPool.h"
@@ -879,6 +880,7 @@ return {'EXPIRED_AND_DELETED'}
     const std::string &code = reply[0];
     if (code == "EXPIRED_AND_DELETED") {
         rec->state = SessionState::Offline;
+        PlacementStore::Instance().ReleaseByPlayer(player_id);
         LOG_INFO << "SessionStore: grace elapsed player_id=" << player_id << " -> OFFLINE";
         return true;
     }
@@ -1556,6 +1558,7 @@ bool SessionStore::Logout(const game::LogoutReq &req, game::LogoutRsp *rsp) {
     rsp->set_ok(true);
     rsp->set_message(reply.size() > 1 && reply[1] == "ALREADY_OFFLINE" ? "already offline"
                                                                         : "logout ok");
+    PlacementStore::Instance().ReleaseByPlayer(req.player_id());
     return true;
 }
 

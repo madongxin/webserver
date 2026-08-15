@@ -44,6 +44,7 @@ public:
                         uint64_t owner_epoch, uint32_t lease_sec, int64_t *lease_until_out);
     bool UpdatePlayerRoute(const sess::UpdatePlayerRouteRequest &req,
                            sess::UpdatePlayerRouteResponse *rsp);
+    bool GetPlayerRoute(const sess::GetPlayerRouteRequest &req, sess::GetPlayerRouteResponse *rsp);
 
 private:
     SessionRpcClient() = default;

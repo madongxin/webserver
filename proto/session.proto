@@ -229,6 +229,9 @@ message ResolveOrCreateMapRequest {
   uint64 map_instance_id = 3;  // 0=按 realm+template 解析/创建权威实例
   string preferred_owner = 4;
   bool force_new = 5;          // true=总是新建独立实例（不走 template 索引）
+  uint64 player_id = 6;        // 非 0：原子占位（公共池 50 人）
+  string operation_id = 7;
+  uint32 public_map_capacity = 8;  // 0=默认 50
 }
 
 message ResolveOrCreateMapResponse {

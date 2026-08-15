@@ -311,6 +311,187 @@ redis.call('HMSET', key, 'state', 'RECOVERING', 'updatedAt', tostring(now),
 return {'1', 'OK', 'RECOVERING', tostring(now)}
 )LUA";
 
+// 公共池原子占位：选择 READY+lease+count<cap 或新建；指定实例满员不换图。
+const char kLuaReserveSlot[] = R"LUA(
+local pool_key = KEYS[1]
+local idgen_key = KEYS[2]
+local pres_key = KEYS[3]
+local op_key = KEYS[4]
+local prefix = ARGV[1]
+local realm = ARGV[2]
+local tpl = ARGV[3]
+local player = ARGV[4]
+local op = ARGV[5]
+local capacity = tonumber(ARGV[6]) or 50
+local want_id = ARGV[7]
+local owner = ARGV[8]
+local now = tonumber(ARGV[9])
+local lease = tonumber(ARGV[10])
+local healthy_csv = ARGV[11] or ''
+
+local function load_inst(id)
+  local key = prefix .. 'map:inst:' .. tostring(id)
+  local raw = redis.call('HGETALL', key)
+  if #raw == 0 then return nil end
+  local f = {}
+  for i = 1, #raw, 2 do f[raw[i]] = raw[i + 1] end
+  return {
+    tostring(id), f['realmId'] or realm, f['mapTemplateId'] or tpl,
+    f['ownerLogicServerId'] or '', f['ownerEpoch'] or '0',
+    f['routeVersion'] or '0', f['state'] or 'CLOSED',
+    f['updatedAt'] or '0', f['leaseUntil'] or '0'
+  }
+end
+
+local function usable(L)
+  return (L[7] or '') == 'READY' and (tonumber(L[9]) or 0) > now
+end
+
+local function occ_key(id)
+  return prefix .. 'map:occ:' .. tostring(id)
+end
+
+local function pack(L, occ, idem)
+  return {'1', 'OK', L[1], L[2], L[3], L[4], L[5], L[6], L[7], L[8], L[9],
+          tostring(occ or 0), idem or '0'}
+end
+
+local function save_pres(id)
+  redis.call('HMSET', pres_key,
+    'mapInstanceId', tostring(id),
+    'realmId', realm,
+    'mapTemplateId', tpl,
+    'state', 'reserved',
+    'operationId', op)
+  redis.call('EXPIRE', pres_key, 86400)
+end
+
+local function cache_op(reply)
+  if op == nil or op == '' then return end
+  local enc = table.concat(reply, '\t')
+  redis.call('SET', op_key, enc, 'EX', 600)
+end
+
+if op ~= '' then
+  local cached = redis.call('GET', op_key)
+  if cached then
+    local R = {}
+    for token in string.gmatch(cached, '[^\t]+') do
+      R[#R + 1] = token
+    end
+    if #R >= 3 then
+      R[13] = '1'
+      return R
+    end
+  end
+end
+
+local function try_join(id)
+  local L = load_inst(id)
+  if not L or not usable(L) then return nil, 'NOT_READY' end
+  local ok = occ_key(id)
+  if redis.call('SISMEMBER', ok, player) == 1 then
+    return L, tonumber(redis.call('SCARD', ok))
+  end
+  local n = tonumber(redis.call('SCARD', ok)) or 0
+  if n >= capacity then return nil, 'FULL' end
+  redis.call('SADD', ok, player)
+  redis.call('EXPIRE', ok, 86400)
+  return L, n + 1
+end
+
+local existing = redis.call('HGET', pres_key, 'mapInstanceId')
+if existing and existing ~= '' then
+  local L, n = try_join(existing)
+  if L then
+    save_pres(existing)
+    local R = pack(L, n, '1')
+    cache_op(R)
+    return R
+  end
+  redis.call('DEL', pres_key)
+end
+
+if want_id ~= '0' and want_id ~= '' then
+  local L, n = try_join(want_id)
+  if not L then
+    if n == 'FULL' then return {'0', 'ERR_MAP_FULL', 'map instance full'} end
+    return {'0', 'NOT_READY', 'map instance not joinable'}
+  end
+  save_pres(want_id)
+  local R = pack(L, n, '0')
+  cache_op(R)
+  return R
+end
+
+local members = redis.call('SMEMBERS', pool_key)
+for _, id in ipairs(members) do
+  local L, n = try_join(id)
+  if L then
+    save_pres(id)
+    local R = pack(L, n, '0')
+    cache_op(R)
+    return R
+  end
+end
+
+local id = redis.call('INCR', idgen_key)
+local ikey = prefix .. 'map:inst:' .. tostring(id)
+local lease_until = now + lease
+redis.call('HMSET', ikey,
+  'mapInstanceId', tostring(id),
+  'realmId', realm,
+  'mapTemplateId', tpl,
+  'ownerLogicServerId', owner,
+  'ownerEpoch', '1',
+  'routeVersion', '1',
+  'state', 'READY',
+  'updatedAt', tostring(now),
+  'leaseUntil', tostring(lease_until))
+redis.call('EXPIRE', ikey, 86400)
+redis.call('SADD', pool_key, tostring(id))
+redis.call('EXPIRE', pool_key, 86400)
+redis.call('SADD', occ_key(id), player)
+redis.call('EXPIRE', occ_key(id), 86400)
+save_pres(id)
+local L = {tostring(id), realm, tpl, owner, '1', '1', 'READY', tostring(now), tostring(lease_until)}
+local R = pack(L, 1, '0')
+cache_op(R)
+return R
+)LUA";
+
+const char kLuaReleaseSlot[] = R"LUA(
+local pres_key = KEYS[1]
+local prefix = ARGV[1]
+local player = ARGV[2]
+local f = {}
+local raw = redis.call('HGETALL', pres_key)
+if #raw == 0 then return {'1', 'OK', '0'} end
+for i = 1, #raw, 2 do f[raw[i]] = raw[i + 1] end
+local inst = f['mapInstanceId'] or '0'
+local op = f['operationId'] or ''
+if inst ~= '0' and inst ~= '' then
+  redis.call('SREM', prefix .. 'map:occ:' .. inst, player)
+end
+redis.call('DEL', pres_key)
+if op ~= '' then
+  redis.call('DEL', prefix .. 'map:op:' .. player .. ':' .. op)
+end
+return {'1', 'OK', inst}
+)LUA";
+
+const char kLuaConfirmSlot[] = R"LUA(
+local pres_key = KEYS[1]
+local want = ARGV[1]
+if redis.call('EXISTS', pres_key) == 0 then return {'0', 'NOT_FOUND'} end
+local inst = redis.call('HGET', pres_key, 'mapInstanceId') or '0'
+if want ~= '0' and want ~= '' and inst ~= want then
+  return {'0', 'MISMATCH'}
+end
+redis.call('HSET', pres_key, 'state', 'confirmed')
+return {'1', 'OK', inst}
+)LUA";
+
 }  // namespace
 
 PlacementStore &PlacementStore::Instance() {
@@ -435,7 +616,152 @@ std::string PlacementStore::HealthyOwnersCsv() const {
     return os.str();
 }
 
+std::string PlacementStore::PoolKey(uint32_t realm, uint64_t tpl) const {
+    char buf[128];
+    std::snprintf(buf, sizeof(buf), "%smap:pool:%u:%llu", key_prefix_.c_str(), realm,
+                  static_cast<unsigned long long>(tpl));
+    return buf;
+}
+
+std::string PlacementStore::OccKey(uint64_t map_instance_id) const {
+    char buf[96];
+    std::snprintf(buf, sizeof(buf), "%smap:occ:%llu", key_prefix_.c_str(),
+                  static_cast<unsigned long long>(map_instance_id));
+    return buf;
+}
+
+std::string PlacementStore::PresKey(uint64_t player_id) const {
+    char buf[96];
+    std::snprintf(buf, sizeof(buf), "%smap:pres:%llu", key_prefix_.c_str(),
+                  static_cast<unsigned long long>(player_id));
+    return buf;
+}
+
+std::string PlacementStore::OpKey(uint64_t player_id, const std::string &operation_id) const {
+    return key_prefix_ + "map:op:" + std::to_string(player_id) + ":" + operation_id;
+}
+
+void PlacementStore::SetPublicMapCapacity(uint32_t n) {
+    if (n > 0)
+        public_capacity_ = n;
+}
+
+bool PlacementStore::ReservePublicSlot(const ResolveOrCreateInput &in, ResolveOrCreateResult *out) {
+    if (!out)
+        return false;
+    *out = ResolveOrCreateResult{};
+    if (!available_) {
+        out->message = "placement store unavailable";
+        out->error_code = "UNAVAILABLE";
+        return false;
+    }
+    if (in.player_id == 0 || in.map_template_id == 0) {
+        out->message = "player_id and map_template_id required";
+        out->error_code = "INVALID_ARG";
+        return false;
+    }
+    const std::string owner = PickOwner(in.preferred_owner);
+    if (owner.empty()) {
+        out->message = "no healthy gamelogic";
+        out->error_code = "NO_HEALTHY_GAMELOGIC";
+        return false;
+    }
+    auto lease = RedisPool::Instance().Acquire();
+    if (!lease) {
+        out->message = "redis pool exhausted";
+        out->error_code = "POOL_EXHAUSTED";
+        return false;
+    }
+    const uint32_t cap = in.capacity > 0 ? in.capacity : public_capacity_;
+    const std::string op = in.operation_id.empty()
+                               ? ("enter:" + std::to_string(in.player_id) + ":" +
+                                  std::to_string(in.map_template_id))
+                               : in.operation_id;
+    std::vector<std::string> keys{PoolKey(in.realm_id, in.map_template_id), IdGenKey(),
+                                  PresKey(in.player_id), OpKey(in.player_id, op)};
+    std::vector<std::string> args{
+        key_prefix_,
+        std::to_string(in.realm_id),
+        std::to_string(in.map_template_id),
+        std::to_string(in.player_id),
+        op,
+        std::to_string(cap),
+        std::to_string(in.map_instance_id),
+        owner,
+        std::to_string(NowUnixSec()),
+        std::to_string(default_lease_sec_),
+        HealthyOwnersCsv(),
+    };
+    std::vector<std::string> reply;
+    if (!lease->Eval(kLuaReserveSlot, keys, args, &reply) || reply.size() < 3) {
+        out->message = "reserve lua failed";
+        out->error_code = "LUA_FAILED";
+        return false;
+    }
+    if (reply[0] != "1") {
+        out->message = reply.size() > 2 ? reply[2] : "rejected";
+        out->error_code = reply.size() > 1 ? reply[1] : "REJECTED";
+        return false;
+    }
+    if (!FillFromReply(reply, &out->placement)) {
+        out->message = "bad placement reply";
+        out->error_code = "BAD_REPLY";
+        return false;
+    }
+    if (reply.size() > 11)
+        out->occupancy = static_cast<uint32_t>(ParseU64(reply[11]));
+    if (reply.size() > 12)
+        out->idempotent_hit = (reply[12] == "1");
+    out->ok = true;
+    out->message = "ok";
+    return true;
+}
+
+bool PlacementStore::ConfirmSlot(uint64_t player_id, uint64_t map_instance_id) {
+    if (!available_ || player_id == 0)
+        return false;
+    auto lease = RedisPool::Instance().Acquire();
+    if (!lease)
+        return false;
+    std::vector<std::string> keys{PresKey(player_id)};
+    std::vector<std::string> args{std::to_string(map_instance_id)};
+    std::vector<std::string> reply;
+    if (!lease->Eval(kLuaConfirmSlot, keys, args, &reply) || reply.empty())
+        return false;
+    return reply[0] == "1";
+}
+
+bool PlacementStore::ReleaseByPlayer(uint64_t player_id) {
+    if (!available_ || player_id == 0)
+        return false;
+    auto lease = RedisPool::Instance().Acquire();
+    if (!lease)
+        return false;
+    std::vector<std::string> keys{PresKey(player_id)};
+    std::vector<std::string> args{key_prefix_, std::to_string(player_id)};
+    std::vector<std::string> reply;
+    if (!lease->Eval(kLuaReleaseSlot, keys, args, &reply) || reply.empty())
+        return false;
+    return reply[0] == "1";
+}
+
+uint32_t PlacementStore::Occupancy(uint64_t map_instance_id) {
+    if (!available_ || map_instance_id == 0)
+        return 0;
+    auto lease = RedisPool::Instance().Acquire();
+    if (!lease)
+        return 0;
+    std::vector<std::string> keys{OccKey(map_instance_id)};
+    std::vector<std::string> args;
+    std::vector<std::string> reply;
+    if (!lease->Eval("return redis.call('SCARD', KEYS[1])", keys, args, &reply) || reply.empty())
+        return 0;
+    return static_cast<uint32_t>(ParseU64(reply[0]));
+}
+
 bool PlacementStore::ResolveOrCreate(const ResolveOrCreateInput &in, ResolveOrCreateResult *out) {
+    if (in.player_id != 0)
+        return ReservePublicSlot(in, out);
     if (!out)
         return false;
     *out = ResolveOrCreateResult{};

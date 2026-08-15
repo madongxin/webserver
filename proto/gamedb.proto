@@ -144,6 +144,49 @@ message FlushPlayerRsp {
   uint64 asset_version = 4;
 }
 
+message PlayerProfile {
+  uint64 player_id = 1;
+  string player_name = 2;
+  int32 hp = 3;
+  int32 max_hp = 4;
+  int32 mp = 5;
+  int32 max_mp = 6;
+  int32 attack = 7;
+  int32 spell_power = 8;
+  int32 defense = 9;
+  int32 magic_resistance = 10;
+  float crit_chance = 11;
+  float crit_damage = 12;
+  float move_speed = 13;
+  float attack_speed = 14;
+  uint64 stats_version = 15;
+}
+
+message LoadPlayerProfileReq {
+  uint64 player_id = 1;
+  bool ensure_default = 2;  // 老账号缺档时幂等补默认 Profile
+}
+
+message LoadPlayerProfileRsp {
+  bool ok = 1;
+  string message = 2;
+  string error_code = 3;
+  bool exists = 4;
+  PlayerProfile profile = 5;
+}
+
+message SavePlayerProfileReq {
+  PlayerProfile profile = 1;
+  uint64 expected_stats_version = 2;  // 0=不校验
+}
+
+message SavePlayerProfileRsp {
+  bool ok = 1;
+  string message = 2;
+  string error_code = 3;
+  uint64 stats_version = 4;
+}
+
 message QueryOperationResultReq {
   uint64 player_id = 1;
   string idempotency_key = 2;
@@ -176,4 +219,20 @@ service GameDbService {
   rpc SavePlayerSnapshot(SavePlayerSnapshotReq) returns (SavePlayerSnapshotRsp);
   rpc FlushPlayer(FlushPlayerReq) returns (FlushPlayerRsp);
   rpc QueryOperationResult(QueryOperationResultReq) returns (QueryOperationResultRsp);
+  rpc LoadPlayerProfile(LoadPlayerProfileReq) returns (LoadPlayerProfileRsp);
+  rpc SavePlayerProfile(SavePlayerProfileReq) returns (SavePlayerProfileRsp);
+
+  /** World 在 Formal 下无 MySQL：邮件帧转 GameDB 执行 MailService */
+  rpc HandleGameFrame(HandleGameFrameReq) returns (HandleGameFrameRsp);
+}
+
+message HandleGameFrameReq {
+  uint64 player_id = 1;
+  bytes request_payload = 2;
+}
+
+message HandleGameFrameRsp {
+  bool ok = 1;
+  string message = 2;
+  bytes response_frame = 3;
 }

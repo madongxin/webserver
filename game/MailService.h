@@ -53,6 +53,7 @@ public:
     bool HandleMailBatchRead(const game::MailBatchReadReq &req, game::GameResponse *rsp);
     bool HandleMailBatchDelete(const game::MailBatchDeleteReq &req, game::GameResponse *rsp);
     bool HandleMailDeliver(const game::MailDeliverReq &req, game::GameResponse *rsp);
+    bool HandlePlayerMailSend(const game::PlayerMailSendReq &req, game::GameResponse *rsp);
 
     /** 定时/访问时：标记过期邮件 */
     int ScanExpire(int limit = 200);

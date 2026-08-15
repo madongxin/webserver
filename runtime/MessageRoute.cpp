@@ -2,7 +2,7 @@
 
 namespace gameproto {
 
-bool IsWorldBoundRequest(const game::GameRequest &req) {
+bool IsMailBoundRequest(const game::GameRequest &req) {
     switch (req.body_case()) {
     case game::GameRequest::kMailboxSummary:
     case game::GameRequest::kMailList:
@@ -14,6 +14,17 @@ bool IsWorldBoundRequest(const game::GameRequest &req) {
     case game::GameRequest::kMailBatchRead:
     case game::GameRequest::kMailBatchDelete:
     case game::GameRequest::kMailDeliver:
+    case game::GameRequest::kPlayerMailSend:
+        return true;
+    default:
+        return false;
+    }
+}
+
+bool IsWorldBoundRequest(const game::GameRequest &req) {
+    if (IsMailBoundRequest(req))
+        return true;
+    switch (req.body_case()) {
     case game::GameRequest::kChatSend:
     case game::GameRequest::kFriendList:
         return true;

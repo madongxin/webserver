@@ -1,0 +1,12 @@
+{
+  "schema_version": 1,
+  "maps": [
+    {
+      "map_template_id": 1001,
+      "scene_name": "MainScene",
+      "file": "map_1001.json",
+      "sha256_file": "map_1001.json.sha256",
+      "data_version": 1
+    }
+  ]
+}

@@ -2,3 +2,9 @@
 listen_addr=0.0.0.0:8201
 idle_timeout_sec=30
 instance_id=gl-0
+# S2 地图静态数据 / 公共实例容量 / AOI
+map_data_dir=
+public_map_capacity=50
+aoi_cell_size=12
+aoi_view_radius_cells=2
+map_tick_hz=10

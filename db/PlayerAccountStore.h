@@ -17,6 +17,7 @@ struct AccountAuthRow {
     std::string password_salt;
     int password_iters = 0;
     bool has_password = false;
+    std::string display_name;
 };
 
 class PlayerAccountStore {

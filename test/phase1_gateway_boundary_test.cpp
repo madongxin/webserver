@@ -80,6 +80,12 @@ void TestDispatchIsWorldVsLogic() {
     game::GameRequest world_req;
     world_req.mutable_mail_list()->set_player_id(1);
     Expect(gameproto::IsWorldBoundRequest(world_req), "mail -> world forward path");
+    game::GameRequest pmail;
+    pmail.mutable_player_mail_send()->set_sender_player_id(1);
+    Expect(gameproto::IsWorldBoundRequest(pmail), "player_mail_send -> world");
+    game::GameRequest move;
+    move.mutable_move()->set_player_id(1);
+    Expect(!gameproto::IsWorldBoundRequest(move), "move -> logic");
 }
 
 void TestOwnedAuth() {

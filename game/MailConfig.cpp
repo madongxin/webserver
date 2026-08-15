@@ -59,6 +59,8 @@ bool MailConfig::LoadFromConfig() {
             v.protect_hours = std::atoi(val.c_str());
         else if (key == "expire_scan_interval_sec")
             v.expire_scan_interval_sec = std::atof(val.c_str());
+        else if (key == "player_mail_per_minute")
+            v.player_mail_per_minute = std::atoi(val.c_str());
     }
     if (v.mailbox_capacity <= 0)
         v.mailbox_capacity = 100;
@@ -72,6 +74,8 @@ bool MailConfig::LoadFromConfig() {
         v.favorite_max = 50;
     if (v.expire_scan_interval_sec <= 0.0)
         v.expire_scan_interval_sec = 60.0;
+    if (v.player_mail_per_minute <= 0)
+        v.player_mail_per_minute = 10;
     values_ = v;
     LOG_INFO << "MailConfig: capacity=" << values_.mailbox_capacity
              << " overflow=" << values_.mailbox_overflow

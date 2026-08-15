@@ -15,6 +15,7 @@ public:
 
     void SendFrame(const std::string &response_frame) override;
     void CloseConnection() override;
+    std::shared_ptr<TcpConnection> tcp_connection() const override;
 
 private:
     std::weak_ptr<TcpConnection> conn_;

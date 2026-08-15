@@ -16,6 +16,7 @@ struct MailConfigValues {
     int favorite_max = 50;
     int protect_hours = 24;
     double expire_scan_interval_sec = 60.0;
+    int player_mail_per_minute = 10;
 };
 
 class MailConfig {

@@ -2,6 +2,7 @@
 
 #include "game.pb.h"
 #include "IGameDbRepository.h"
+#include "MapRuntime.h"
 
 #include <cstdint>
 #include <map>
@@ -48,8 +49,12 @@ public:
     bool RollbackItemReward(uint64_t player_id, uint32_t item_id, uint32_t count);
 
     /** Gateway BindPlayer：已认证玩家加载内存态（不接收凭证）；失败 fail-closed */
-    bool BindAuthenticatedPlayer(uint64_t player_id, std::string *err = nullptr);
+    bool BindAuthenticatedPlayer(uint64_t player_id, std::string *err = nullptr,
+                                 game::PlayerAttributes *profile_out = nullptr);
+    bool GetPlayerAttributes(uint64_t player_id, game::PlayerAttributes *out);
     bool FlushBag(uint64_t player_id, const std::string &reason);
+    /** 锁外推送 AOI（brpc/Redis 不得在 MapRuntime 锁内） */
+    void EmitAoi(const AoiPushBatch &batch);
 
     /** 跨 Logic 迁移：导出/导入运行时背包与技能 CD（不含凭证） */
     bool ExportRuntimeState(uint64_t player_id, std::map<uint32_t, uint32_t> *bag,
@@ -77,6 +82,8 @@ private:
     bool HandleMapPing(const game::MapPingReq &req, game::GameResponse *rsp);
     bool HandleChatSend(const game::ChatSendReq &req, game::GameResponse *rsp);
     bool HandleFriendList(const game::FriendListReq &req, game::GameResponse *rsp);
+    bool HandleGetSelfProfile(const game::GetSelfProfileReq &req, game::GameResponse *rsp);
+    bool HandleMove(const game::MoveReq &req, game::GameResponse *rsp);
     bool RequireSessionToken(const game::GameRequest &req, uint64_t player_id, game::GameResponse *rsp);
     /** @return false：Formal 下 GameDB 加载失败，不得当作空背包成功 */
     bool EnsurePlayerLoaded(uint64_t player_id, std::string *err);
@@ -85,6 +92,7 @@ private:
     bool LoadAssetsFromGameDbUnlocked(uint64_t player_id, std::map<uint32_t, uint32_t> *bag,
                                       uint64_t *ver);
     bool TryReloadAssets(uint64_t player_id);
+    bool LoadProfileUnlocked(uint64_t player_id, game::PlayerAttributes *out, std::string *err);
 
     std::mutex mu_;
     /** 内存背包：player_id -> (item_config_id -> 聚合数量），与 consume_item 共用 */
@@ -93,6 +101,7 @@ private:
     std::map<uint64_t, uint64_t> asset_version_;
     std::map<uint64_t, bool> player_load_ok_;
     std::map<uint64_t, bool> asset_dirty_;
+    std::map<uint64_t, game::PlayerAttributes> profiles_;
     bool reload_blocked_for_test_ = false;
     bool apply_blocked_for_test_ = false;
     bool reload_override_for_test_ = false;

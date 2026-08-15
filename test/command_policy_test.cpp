@@ -37,6 +37,10 @@ int main() {
                                  CommandTrustLevel::AuthenticatedClient, true, &code) ==
                CommandDecision::Forbid,
            "formal mail deliver forbidden");
+    Expect(ValidateCommandPolicy(game::GameRequest::kPlayerMailSend,
+                                 CommandTrustLevel::AuthenticatedClient, true, &code) ==
+               CommandDecision::Allow,
+           "formal player mail send allowed");
     Expect(ValidateCommandPolicy(game::GameRequest::kGrantItem, CommandTrustLevel::InternalService,
                                  true, &code) == CommandDecision::Allow,
            "internal grant allowed");

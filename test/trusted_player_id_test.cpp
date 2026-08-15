@@ -67,6 +67,14 @@ int main() {
     CHECK_ONE(mutable_chat_send, chat_send);
     CHECK_ONE(mutable_friend_list, friend_list);
     CHECK_ONE(mutable_push_ack, push_ack);
+    CHECK_ONE(mutable_get_self_profile, get_self_profile);
+    CHECK_ONE(mutable_move, move);
+    {
+        game::GameRequest req;
+        req.mutable_player_mail_send()->set_sender_player_id(1);
+        CheckCase(req.body_case(), &req, "player_mail_send");
+        ++covered;
+    }
 
 #undef CHECK_ONE
 

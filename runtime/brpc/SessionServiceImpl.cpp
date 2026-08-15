@@ -268,6 +268,9 @@ void SessionServiceImpl::ResolveOrCreateMap(::google::protobuf::RpcController *c
     in.map_instance_id = request->map_instance_id();
     in.preferred_owner = request->preferred_owner();
     in.force_new = request->force_new();
+    in.player_id = request->player_id();
+    in.operation_id = request->operation_id();
+    in.capacity = request->public_map_capacity();
     ResolveOrCreateResult out;
     PlacementStore::Instance().ResolveOrCreate(in, &out);
     response->set_ok(out.ok);

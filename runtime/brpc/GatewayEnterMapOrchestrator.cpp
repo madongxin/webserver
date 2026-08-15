@@ -30,13 +30,16 @@ bool EncodeErr(const game::GameRequest &req, const std::string &msg, std::string
     return rsp.SerializeToString(&raw) && EncodeFrame(raw, frame);
 }
 
-bool ResolveTarget(const game::EnterMapReq &e, std::string *owner, uint64_t *map_id,
-                   uint64_t *epoch, uint64_t *placement_rv, std::string *err) {
+bool ResolveTarget(const game::EnterMapReq &e, uint64_t player_id, std::string *owner,
+                   uint64_t *map_id, uint64_t *epoch, uint64_t *placement_rv, std::string *err) {
     if (GatewayAuthClients::Instance().ready()) {
         sess::ResolveOrCreateMapRequest req;
         req.set_realm_id(e.realm_id());
         req.set_map_template_id(e.map_template_id());
         req.set_map_instance_id(e.map_instance_id());
+        req.set_player_id(player_id != 0 ? player_id : e.player_id());
+        req.set_operation_id(e.operation_id());
+        req.set_public_map_capacity(0);
         sess::ResolveOrCreateMapResponse rsp;
         if (!GatewayAuthClients::Instance().ResolveOrCreateMap(req, &rsp) || !rsp.ok()) {
             if (err)
@@ -60,6 +63,8 @@ bool ResolveTarget(const game::EnterMapReq &e, std::string *owner, uint64_t *map
         in.realm_id = e.realm_id();
         in.map_template_id = e.map_template_id();
         in.map_instance_id = e.map_instance_id();
+        in.player_id = player_id != 0 ? player_id : e.player_id();
+        in.operation_id = e.operation_id();
         ResolveOrCreateResult result;
         if (!PlacementStore::Instance().ResolveOrCreate(in, &result) || !result.ok) {
             if (err)
@@ -118,7 +123,8 @@ bool OrchestrateGatewayEnterMap(const SessionHandle &sticky, const std::string &
     std::string target_logic;
     uint64_t map_id = 0, epoch = 0, placement_rv = 0;
     std::string err;
-    if (!ResolveTarget(req.enter_map(), &target_logic, &map_id, &epoch, &placement_rv, &err))
+    if (!ResolveTarget(req.enter_map(), sticky.player_id, &target_logic, &map_id, &epoch,
+                       &placement_rv, &err))
         return EncodeErr(req, err, response_frame);
 
     const std::string &from_logic = sticky.gamelogic_instance_id;
@@ -390,6 +396,7 @@ bool OrchestrateGatewayEnterMap(const SessionHandle &sticky, const std::string &
     cmd.set_generation(sticky.generation);
     cmd.set_payload(request_payload);
     cmd.set_message_type("enter_map");
+    cmd.set_client_seq(req.seq());
     cmd.set_deadline_ms(3000);
     glrpc::CommandResult result;
     if (!GatewayAuthClients::Instance().Dispatch(dispatch_h.gamelogic_instance_id, cmd, &result) ||

@@ -3,8 +3,10 @@
 #include "FormalMode.h"
 #include "ForwardMetaContext.h"
 #include "LogicMetrics.h"
+#include "MapCatalog.h"
 #include "MapInstanceRegistry.h"
 #include "MapPlacement.h"
+#include "MapRuntime.h"
 
 #ifdef WEBSERVER_ENABLE_REDIS
 #include "PlacementAuthority.h"
@@ -14,6 +16,8 @@
 #ifdef WEBSERVER_ENABLE_BRPC
 #include "BrpcGameDbRepository.h"
 #include "GameLogicPush.h"
+#include "GameLogicServiceImpl.h"
+#include "RpcOffloadPool.h"
 #include "SessionRpcClient.h"
 #include "session.pb.h"
 #endif
@@ -24,12 +28,16 @@
 #include "PlayerAccountStore.h"
 #include "PlayerItemPersistQueue.h"
 #include "PlayerItemStore.h"
+#include "PlayerProfileStore.h"
 #endif
 
 #include "Logging.h"
 
 #include <chrono>
+#include <cmath>
 #include <sstream>
+#include <unordered_map>
+#include <utility>
 
 namespace {
 
@@ -81,11 +89,81 @@ bool ValidateLocalAuthorityWrite(const PlacementRecord &auth, uint64_t req_epoch
 }
 #endif
 
+void FillEntitySnapshot(const MapEntity &e, game::EntitySnapshot *out) {
+    if (!out)
+        return;
+    out->set_player_id(e.player_id);
+    out->set_player_name(e.player_name);
+    out->mutable_position()->set_x(e.x);
+    out->mutable_position()->set_y(e.y);
+    out->mutable_position()->set_z(e.z);
+    out->set_yaw(e.yaw);
+    out->set_hp(e.hp);
+    out->set_max_hp(e.max_hp);
+    out->set_state_seq(e.state_seq);
+}
+
+#ifdef WEBSERVER_ENABLE_BRPC
+void PublishAoiBatch(const AoiPushBatch &batch) {
+    if (batch.events.empty())
+        return;
+    std::unordered_map<uint64_t, game::AoiDelta> by_player;
+    std::unordered_map<uint64_t, std::pair<std::string, std::string>> route;
+    for (const auto &ev : batch.events) {
+        auto &delta = by_player[ev.recipient_id];
+        delta.set_map_instance_id(batch.map_instance_id);
+        auto *pe = delta.add_events();
+        pe->set_op(ev.op);
+        FillEntitySnapshot(ev.snapshot, pe->mutable_entity());
+        if (route[ev.recipient_id].first.empty())
+            route[ev.recipient_id] = {ev.gateway_instance_id, ev.session_id};
+    }
+    for (auto &kv : by_player) {
+        bool has_el = false;
+        bool has_move = false;
+        for (const auto &e : kv.second.events()) {
+            if (e.op() == 2)
+                has_move = true;
+            else
+                has_el = true;
+        }
+        game::GameResponse notify;
+        notify.set_ok(true);
+        notify.set_message("aoi");
+        *notify.mutable_aoi_delta() = kv.second;
+        std::string payload;
+        if (!notify.SerializeToString(&payload))
+            continue;
+        const auto &rt = route[kv.first];
+        const bool reliable = has_el;
+        const bool coalescable = has_move && !has_el;
+        const bool pok = GameLogicPush::PushToBoundGateway(
+            rt.first, kv.first, rt.second, "aoi.delta.v1", payload, reliable, coalescable, 0);
+        LOG_INFO << "PublishAoiBatch player=" << kv.first << " gw=" << rt.first
+                 << " sid=" << rt.second << " ok=" << pok
+                 << " events=" << kv.second.events_size() << " reliable=" << reliable;
+    }
+}
+#endif
+
 }  // namespace
 
 GameLogic &GameLogic::Instance() {
     static GameLogic g;
     return g;
+}
+
+void GameLogic::EmitAoi(const AoiPushBatch &batch) {
+#ifdef WEBSERVER_ENABLE_BRPC
+    if (batch.events.empty())
+        return;
+    if (RpcOffloadPool::Instance().started() &&
+        RpcOffloadPool::Instance().TryPost([batch]() { PublishAoiBatch(batch); }))
+        return;
+    PublishAoiBatch(batch);
+#else
+    (void)batch;
+#endif
 }
 
 bool GameLogic::EnsurePlayerLoaded(uint64_t player_id, std::string *err) {
@@ -746,15 +824,150 @@ bool GameLogic::HandleLogin(const game::LoginReq &req, game::GameResponse *rsp) 
     return false;
 }
 
-bool GameLogic::BindAuthenticatedPlayer(uint64_t player_id, std::string *err) {
-    std::lock_guard<std::mutex> lk(mu_);
-    player_load_ok_.erase(player_id);  // 允许重试重新加载
-    if (!EnsurePlayerLoaded(player_id, err))
-        return false;
+namespace {
+
 #ifdef WEBSERVER_ENABLE_MYSQL
-    if (!FormalModeEnabled())
-        PlayerItemPersistQueue::Instance().MarkOnline(player_id);
+void RowToAttributes(const PlayerProfileRow &row, game::PlayerAttributes *out) {
+    if (!out)
+        return;
+    out->set_player_id(row.player_id);
+    out->set_player_name(row.player_name);
+    out->set_hp(row.hp);
+    out->set_max_hp(row.max_hp);
+    out->set_mp(row.mp);
+    out->set_max_mp(row.max_mp);
+    out->set_attack(row.attack);
+    out->set_spell_power(row.spell_power);
+    out->set_defense(row.defense);
+    out->set_magic_resistance(row.magic_resistance);
+    out->set_crit_chance(row.crit_chance);
+    out->set_crit_damage(row.crit_damage);
+    out->set_move_speed(row.move_speed);
+    out->set_attack_speed(row.attack_speed);
+    out->set_stats_version(row.stats_version);
+}
 #endif
+
+void FillCompiledDefaultProfile(uint64_t player_id, game::PlayerAttributes *out) {
+    if (!out)
+        return;
+    out->Clear();
+    out->set_player_id(player_id);
+    out->set_player_name("player");
+    out->set_hp(100);
+    out->set_max_hp(100);
+    out->set_mp(100);
+    out->set_max_mp(100);
+    out->set_attack(10);
+    out->set_spell_power(10);
+    out->set_defense(5);
+    out->set_magic_resistance(5);
+    out->set_crit_chance(0.05f);
+    out->set_crit_damage(1.5f);
+    out->set_move_speed(10.0f);
+    out->set_attack_speed(1.0f);
+    out->set_stats_version(1);
+}
+
+}  // namespace
+
+bool GameLogic::LoadProfileUnlocked(uint64_t player_id, game::PlayerAttributes *out,
+                                    std::string *err) {
+    if (!out) {
+        if (err)
+            *err = "bad arg";
+        return false;
+    }
+#if defined(WEBSERVER_ENABLE_BRPC)
+    if (FormalModeEnabled() && BrpcGameDbRepository::Instance().started()) {
+        if (!BrpcGameDbRepository::Instance().LoadPlayerProfile(player_id, true, out, err)) {
+            if (err && err->empty())
+                *err = "ERR_PLAYER_LOAD_FAILED";
+            return false;
+        }
+        return true;
+    }
+#endif
+#ifdef WEBSERVER_ENABLE_MYSQL
+    if (PlayerProfileStore::Instance().Available() || PlayerProfileStore::Instance().EnsureTable()) {
+        PlayerProfileRow row;
+        std::string load_err;
+        if (!PlayerProfileStore::Instance().Load(player_id, &row, &load_err)) {
+            if (err)
+                *err = load_err.empty() ? "profile load failed" : load_err;
+            return false;
+        }
+        if (!row.exists) {
+            AccountAuthRow acc;
+            std::string name = "player";
+            if (PlayerAccountStore::Instance().LoadAuth(player_id, &acc) && acc.exists &&
+                !acc.display_name.empty())
+                name = acc.display_name;
+            if (!PlayerProfileStore::Instance().EnsureDefault(player_id, name, &load_err) ||
+                !PlayerProfileStore::Instance().Load(player_id, &row, &load_err) || !row.exists) {
+                if (err)
+                    *err = load_err.empty() ? "ERR_PROFILE_NOT_FOUND" : load_err;
+                return false;
+            }
+        }
+        RowToAttributes(row, out);
+        return true;
+    }
+#endif
+    if (FormalModeEnabled()) {
+        if (err)
+            *err = "ERR_PLAYER_LOAD_FAILED";
+        return false;
+    }
+    FillCompiledDefaultProfile(player_id, out);
+    return true;
+}
+
+bool GameLogic::GetPlayerAttributes(uint64_t player_id, game::PlayerAttributes *out) {
+    if (!out || player_id == 0)
+        return false;
+    std::lock_guard<std::mutex> lk(mu_);
+    auto it = profiles_.find(player_id);
+    if (it == profiles_.end())
+        return false;
+    *out = it->second;
+    return true;
+}
+
+bool GameLogic::BindAuthenticatedPlayer(uint64_t player_id, std::string *err,
+                                        game::PlayerAttributes *profile_out) {
+    {
+        std::lock_guard<std::mutex> lk(mu_);
+        player_load_ok_.erase(player_id);
+        if (!EnsurePlayerLoaded(player_id, err))
+            return false;
+        auto it = profiles_.find(player_id);
+        if (it != profiles_.end()) {
+            if (profile_out)
+                *profile_out = it->second;
+#ifdef WEBSERVER_ENABLE_MYSQL
+            if (!FormalModeEnabled())
+                PlayerItemPersistQueue::Instance().MarkOnline(player_id);
+#endif
+            return true;
+        }
+    }
+    game::PlayerAttributes prof;
+    if (!LoadProfileUnlocked(player_id, &prof, err)) {
+        std::lock_guard<std::mutex> lk(mu_);
+        player_load_ok_[player_id] = false;
+        return false;
+    }
+    {
+        std::lock_guard<std::mutex> lk(mu_);
+        profiles_[player_id] = prof;
+#ifdef WEBSERVER_ENABLE_MYSQL
+        if (!FormalModeEnabled())
+            PlayerItemPersistQueue::Instance().MarkOnline(player_id);
+#endif
+    }
+    if (profile_out)
+        *profile_out = prof;
     return true;
 }
 
@@ -842,9 +1055,17 @@ bool GameLogic::HandleLogout(const game::LogoutReq &req, game::GameResponse *rsp
 #ifdef WEBSERVER_ENABLE_MYSQL
         PlayerItemPersistQueue::Instance().MarkOffline(req.player_id());
 #endif
+        AoiPushBatch pushes;
+        MapRuntime::Instance().LeaveAll(req.player_id(), &pushes);
+        MapInstanceRegistry::Instance().RemovePlayerFromAll(req.player_id());
+#ifdef WEBSERVER_ENABLE_REDIS
+        PlacementStore::Instance().ReleaseByPlayer(req.player_id());
+#endif
+        EmitAoi(pushes);
         std::lock_guard<std::mutex> lk(mu_);
         inventory_.erase(req.player_id());
         skill_cd_until_ms_.erase(req.player_id());
+        profiles_.erase(req.player_id());
     }
     return body->ok();
 #else
@@ -1057,6 +1278,32 @@ bool GameLogic::HandleEnterMap(const game::EnterMapReq &req, game::GameResponse 
     }
     MapInstanceRegistry::Instance().AddPlayer(place.map_instance_id, req.player_id());
 
+    auto rollback_enter = [&]() {
+        MapInstanceRegistry::Instance().RemovePlayer(place.map_instance_id, req.player_id());
+#ifdef WEBSERVER_ENABLE_REDIS
+        PlacementStore::Instance().ReleaseByPlayer(req.player_id());
+#endif
+    };
+
+    std::shared_ptr<const MapStaticData> static_data =
+        MapCatalog::Instance().Get(place.map_template_id);
+    if (static_data) {
+        const std::string client_hash = MapStaticData::NormalizeSha256Hex(req.map_data_sha256());
+        const bool ver_bad = req.map_data_version() != 0 &&
+                             req.map_data_version() != static_data->data_version();
+        const bool hash_bad = !client_hash.empty() && client_hash != static_data->sha256();
+        if (ver_bad || hash_bad) {
+            rollback_enter();
+            body->set_message("ERR_MAP_DATA_MISMATCH");
+            body->set_map_template_id(static_data->map_template_id());
+            body->set_map_data_version(static_data->data_version());
+            body->set_map_data_sha256(static_data->sha256());
+            rsp->set_ok(false);
+            rsp->set_message(body->message());
+            return false;
+        }
+    }
+
     // Session 路由：Gateway 编排路径（meta 已带 map）由 Gateway Update/Transfer 写权威；
     // Logic 仅在无 meta 直连路径上自行 Update，避免 brpc yield 后二次 fence 校验踩踏。
     uint64_t route_ver = place.route_version;
@@ -1094,7 +1341,7 @@ bool GameLogic::HandleEnterMap(const game::EnterMapReq &req, game::GameResponse 
             route_ok = true;
         }
         if (!route_ok) {
-            MapInstanceRegistry::Instance().RemovePlayer(place.map_instance_id, req.player_id());
+            rollback_enter();
             body->set_message(err.empty() ? "update route failed" : err);
             rsp->set_ok(false);
             rsp->set_message(body->message());
@@ -1114,6 +1361,55 @@ bool GameLogic::HandleEnterMap(const game::EnterMapReq &req, game::GameResponse 
     body->set_gamelogic_instance_id(MapInstanceRegistry::Instance().local_instance_id());
     body->set_owner_epoch(place.owner_epoch);
     body->set_route_version(route_ver);
+
+    if (static_data) {
+        const MapSpawnPoint &sp = static_data->default_spawn();
+        body->mutable_spawn_position()->set_x(sp.position.x);
+        body->mutable_spawn_position()->set_y(sp.position.y);
+        body->mutable_spawn_position()->set_z(sp.position.z);
+        body->set_spawn_yaw(sp.yaw);
+        body->set_map_data_version(static_data->data_version());
+        body->set_map_data_sha256(static_data->sha256());
+
+        game::PlayerAttributes attrs;
+        GetPlayerAttributes(req.player_id(), &attrs);
+        MapEntity me;
+        me.player_id = req.player_id();
+        me.player_name = attrs.player_name();
+        me.x = sp.position.x;
+        me.y = sp.position.y;
+        me.z = sp.position.z;
+        me.yaw = sp.yaw;
+        me.hp = attrs.hp();
+        me.max_hp = attrs.max_hp();
+        me.move_speed = attrs.move_speed() > 0.f ? attrs.move_speed() : 10.f;
+#ifdef WEBSERVER_ENABLE_BRPC
+        GameLogicGetBoundMeta(req.player_id(), &me.gateway_instance_id, &me.session_id, nullptr,
+                              nullptr);
+#endif
+        if (have_meta && !meta_snap.session_id.empty())
+            me.session_id = meta_snap.session_id;
+        MapEntity self;
+        std::vector<MapEntity> snap;
+        AoiPushBatch pushes;
+        std::string rerr;
+        if (!MapRuntime::Instance().Enter(place.map_instance_id, static_data, me, &self, &snap,
+                                          &pushes, &rerr)) {
+            rollback_enter();
+            body->set_ok(false);
+            body->set_message(rerr.empty() ? "map runtime enter failed" : rerr);
+            rsp->set_ok(false);
+            rsp->set_message(body->message());
+            return false;
+        }
+        FillEntitySnapshot(self, body->mutable_self());
+        for (const auto &e : snap)
+            FillEntitySnapshot(e, body->add_aoi_snapshot());
+        EmitAoi(pushes);
+    }
+#ifdef WEBSERVER_ENABLE_REDIS
+    PlacementStore::Instance().ConfirmSlot(req.player_id(), place.map_instance_id);
+#endif
     rsp->set_ok(true);
     rsp->set_message("entered");
     LOG_INFO << "[enter_map] player=" << req.player_id() << " map=" << place.map_instance_id
@@ -1148,7 +1444,13 @@ bool GameLogic::HandleLeaveMap(const game::LeaveMapReq &req, game::GameResponse 
         rsp->set_message(body->message());
         return false;
     }
+    AoiPushBatch pushes;
+    MapRuntime::Instance().Leave(req.map_instance_id(), req.player_id(), &pushes);
     MapInstanceRegistry::Instance().RemovePlayer(req.map_instance_id(), req.player_id());
+#ifdef WEBSERVER_ENABLE_REDIS
+    PlacementStore::Instance().ReleaseByPlayer(req.player_id());
+#endif
+    EmitAoi(pushes);
     body->set_ok(true);
     body->set_message("left");
     rsp->set_ok(true);
@@ -1236,6 +1538,99 @@ bool GameLogic::HandleFriendList(const game::FriendListReq &req, game::GameRespo
     return false;
 }
 
+bool GameLogic::HandleGetSelfProfile(const game::GetSelfProfileReq &req, game::GameResponse *rsp) {
+    auto *body = rsp->mutable_get_self_profile();
+    game::PlayerAttributes attrs;
+    if (!GetPlayerAttributes(req.player_id(), &attrs)) {
+        std::string err;
+        if (!LoadProfileUnlocked(req.player_id(), &attrs, &err)) {
+            body->set_ok(false);
+            body->set_error_code("ERR_PROFILE_NOT_FOUND");
+            body->set_message(err.empty() ? "profile not loaded" : err);
+            rsp->set_ok(false);
+            rsp->set_message(body->message());
+            return false;
+        }
+        std::lock_guard<std::mutex> lk(mu_);
+        profiles_[req.player_id()] = attrs;
+    }
+    body->set_ok(true);
+    body->set_error_code("OK");
+    body->set_message("ok");
+    *body->mutable_profile() = attrs;
+    rsp->set_ok(true);
+    rsp->set_message("ok");
+    return true;
+}
+
+bool GameLogic::HandleMove(const game::MoveReq &req, game::GameResponse *rsp) {
+    auto *body = rsp->mutable_move();
+    body->set_ok(false);
+    if (req.player_id() == 0 || req.map_instance_id() == 0 || !req.has_position()) {
+        body->set_error_code("ERR_INVALID_ARG");
+        body->set_message("invalid move");
+        rsp->set_ok(false);
+        rsp->set_message(body->message());
+        return false;
+    }
+    ForwardRouteMeta meta_snap;
+    bool have_meta = false;
+    if (const ForwardRouteMeta *meta = ForwardMetaContext::Get()) {
+        meta_snap = *meta;
+        have_meta = true;
+    }
+    if (have_meta && meta_snap.map_instance_id != 0 &&
+        meta_snap.map_instance_id != req.map_instance_id()) {
+        body->set_error_code("ERR_MAP_MISMATCH");
+        body->set_message("map_instance_id mismatch");
+        rsp->set_ok(false);
+        rsp->set_message(body->message());
+        return false;
+    }
+    if (have_meta && meta_snap.owner_epoch != 0 &&
+        !MapInstanceRegistry::Instance().AcceptWrite(req.map_instance_id(), meta_snap.owner_epoch)) {
+        body->set_error_code("ERR_STALE_EPOCH");
+        body->set_message("ERR_STALE_EPOCH");
+        rsp->set_ok(false);
+        rsp->set_message(body->message());
+        return false;
+    }
+    if (!MapInstanceRegistry::Instance().PlayerOnMap(req.map_instance_id(), req.player_id()) &&
+        !MapRuntime::Instance().HasPlayer(req.map_instance_id(), req.player_id())) {
+        body->set_error_code("ERR_NOT_ON_MAP");
+        body->set_message("not on map");
+        rsp->set_ok(false);
+        rsp->set_message(body->message());
+        return false;
+    }
+    MapEntity confirmed;
+    AoiPushBatch pushes;
+    std::string code;
+    const MapMoveReject st = MapRuntime::Instance().Move(
+        req.map_instance_id(), req.player_id(), req.position().x(), req.position().y(),
+        req.position().z(), req.yaw(), rsp->seq(), NowMs(), &confirmed, &pushes, &code);
+    if (st != MapMoveReject::Ok) {
+        body->set_error_code(code.empty() ? "ERR_MOVE_REJECTED" : code);
+        body->set_message(body->error_code());
+        rsp->set_ok(false);
+        rsp->set_message(body->message());
+        return false;
+    }
+    EmitAoi(pushes);
+    body->set_ok(true);
+    body->set_error_code("OK");
+    body->set_message("ok");
+    body->mutable_position()->set_x(confirmed.x);
+    body->mutable_position()->set_y(confirmed.y);
+    body->mutable_position()->set_z(confirmed.z);
+    body->set_yaw(confirmed.yaw);
+    body->set_state_seq(confirmed.state_seq);
+    body->set_server_time_ms(NowMs());
+    rsp->set_ok(true);
+    rsp->set_message("ok");
+    return true;
+}
+
 /**
  * GameService::HandleFrame 解析出 GameRequest 后的统一入口。
  * 根据 req.body_case()（protobuf oneof）路由到具体 Handler；
@@ -1320,6 +1715,14 @@ bool GameLogic::Handle(const game::GameRequest &req, game::GameResponse *rsp) {
             if (!RequireSessionToken(req, req.friend_list().player_id(), rsp))
                 return false;
             return HandleFriendList(req.friend_list(), rsp);
+        case game::GameRequest::kGetSelfProfile:
+            if (!RequireSessionToken(req, req.get_self_profile().player_id(), rsp))
+                return false;
+            return HandleGetSelfProfile(req.get_self_profile(), rsp);
+        case game::GameRequest::kMove:
+            if (!RequireSessionToken(req, req.move().player_id(), rsp))
+                return false;
+            return HandleMove(req.move(), rsp);
 #ifdef WEBSERVER_ENABLE_MYSQL
         case game::GameRequest::kMailboxSummary:
             if (!RequireSessionToken(req, req.mailbox_summary().player_id(), rsp))
@@ -1357,6 +1760,10 @@ bool GameLogic::Handle(const game::GameRequest &req, game::GameResponse *rsp) {
             if (!RequireSessionToken(req, req.mail_batch_delete().player_id(), rsp))
                 return false;
             return MailService::Instance().HandleMailBatchDelete(req.mail_batch_delete(), rsp);
+        case game::GameRequest::kPlayerMailSend:
+            if (!RequireSessionToken(req, req.player_mail_send().sender_player_id(), rsp))
+                return false;
+            return MailService::Instance().HandlePlayerMailSend(req.player_mail_send(), rsp);
         case game::GameRequest::kMailDeliver:
             // TCP 投递仅作联调；Formal/默认拒绝（系统投递走 MailService::Deliver / 内部 brpc）
             if (!AllowUnsafeDebugCommandsEnv()) {

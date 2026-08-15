@@ -33,6 +33,10 @@ struct ResolveOrCreateInput {
     uint64_t map_instance_id = 0;
     std::string preferred_owner;
     bool force_new = false;
+    /** 非 0：走公共池原子占位（50 人）；0 保持旧 ResolveOrCreate */
+    uint64_t player_id = 0;
+    std::string operation_id;
+    uint32_t capacity = 0;  // 0=使用 public_map_capacity_
 };
 
 struct ResolveOrCreateResult {
@@ -40,6 +44,8 @@ struct ResolveOrCreateResult {
     std::string message;
     std::string error_code;
     PlacementRecord placement;
+    uint32_t occupancy = 0;
+    bool idempotent_hit = false;
 };
 
 /**
@@ -57,6 +63,14 @@ public:
     void SetLogicOwners(std::vector<std::string> owners, bool publish_snapshot = true);
 
     bool ResolveOrCreate(const ResolveOrCreateInput &in, ResolveOrCreateResult *out);
+    /** 公共池/指定实例原子占位；与 ResolveOrCreate(player_id!=0) 相同 */
+    bool ReservePublicSlot(const ResolveOrCreateInput &in, ResolveOrCreateResult *out);
+    bool ConfirmSlot(uint64_t player_id, uint64_t map_instance_id);
+    bool ReleaseByPlayer(uint64_t player_id);
+    uint32_t Occupancy(uint64_t map_instance_id);
+    void SetPublicMapCapacity(uint32_t n);
+    uint32_t public_map_capacity() const { return public_capacity_; }
+
     bool Get(uint64_t map_instance_id, PlacementRecord *out);
     bool Migrate(uint64_t map_instance_id, const std::string &new_owner, uint64_t expect_epoch,
                  const std::string &idempotency_key, PlacementRecord *out, std::string *err);
@@ -91,8 +105,14 @@ private:
     /** 当前健康 Owner 列表 CSV，供 ResolveOrCreate Lua 判断软续租 */
     std::string HealthyOwnersCsv() const;
 
+    std::string PoolKey(uint32_t realm, uint64_t tpl) const;
+    std::string OccKey(uint64_t map_instance_id) const;
+    std::string PresKey(uint64_t player_id) const;
+    std::string OpKey(uint64_t player_id, const std::string &operation_id) const;
+
     bool available_ = false;
     int default_lease_sec_ = 30;
+    uint32_t public_capacity_ = 50;
     std::string key_prefix_ = "gamemesh:dev:";
     mutable std::mutex cfg_mu_;
     std::vector<std::string> owners_{"gl-0"};

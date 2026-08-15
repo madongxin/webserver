@@ -172,3 +172,21 @@ e2e_ensure_cluster() {
   echo "ERROR: cluster still unhealthy after restart" >&2
   return 1
 }
+
+# Register/Login 真正可用（HTTP live 不够）
+e2e_wait_login() {
+  local client="$1" host="$2" port="$3"
+  local i last=""
+  [[ -x "$client" ]] || return 1
+  for i in $(seq 1 60); do
+    last="$("$client" register-login "$host" "$port" "e2e-warm-$$-$i" e2epass1 2>&1 || true)"
+    if echo "$last" | grep -q 'login_ok=1'; then
+      echo "e2e login ready after ${i}s"
+      return 0
+    fi
+    sleep 1
+  done
+  echo "ERROR: register-login not ready within 60s" >&2
+  echo "$last" >&2
+  return 1
+}

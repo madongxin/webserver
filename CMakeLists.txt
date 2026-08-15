@@ -103,7 +103,10 @@ if(ENABLE_GAME_PROTOBUF)
     runtime/MapLeaseKeeper.cpp
     runtime/PlacementRecoveryScheduler.cpp
     runtime/ForwardMetaContext.cpp
-    runtime/MessageRoute.cpp)
+    runtime/MessageRoute.cpp
+    runtime/MapStaticData.cpp
+    runtime/MapCatalog.cpp
+    runtime/MapRuntime.cpp)
   if(ENABLE_MYSQL)
     list(APPEND SRC_GAME
       game/MailTypes.cpp
@@ -140,7 +143,8 @@ if(ENABLE_MYSQL)
   list(APPEND SRC_DB db/Connection.cpp db/ConnectionPool.cpp db/MetricsDbWriter.cpp
               db/PlayerItemStore.cpp db/PlayerItemPersistQueue.cpp
               db/GameDbRepository.cpp db/GameDbOutbox.cpp db/AsyncMysqlGameDbRepository.cpp
-              db/PlayerAccountStore.cpp db/GameDbAssetStore.cpp
+              db/PlayerAccountStore.cpp db/PlayerProfileStore.cpp db/PlayerProfileDefaults.cpp
+              db/GameDbAssetStore.cpp
               runtime/discovery/NatsThinClient.cpp)
   message(STATUS "MySQL pool: include=${MYSQL_INCLUDE_DIR} lib=${MYSQL_CLIENT_LIB}")
 endif()
@@ -381,6 +385,9 @@ add_executable(file_hash_test test/file_hash_test.cpp base/FileHash.cpp)
 target_include_directories(file_hash_test PRIVATE base ${OPENSSL_INCLUDE_DIR})
 target_link_libraries(file_hash_test ${OPENSSL_CRYPTO_LIB})
 
+add_executable(utf8_text_test test/utf8_text_test.cpp)
+target_include_directories(utf8_text_test PRIVATE base)
+
 # 阶段 1：player 串行队列有序性
 add_executable(player_serial_queue_test
   test/player_serial_queue_test.cpp
@@ -423,6 +430,37 @@ target_link_libraries(secure_random_test ${OPENSSL_CRYPTO_LIB})
 target_include_directories(map_placement_test PRIVATE runtime base log timer)
 target_link_libraries(map_placement_test ${CMAKE_THREAD_LIBS_INIT})
 
+add_executable(map_static_data_test
+  test/map_static_data_test.cpp
+  runtime/MapStaticData.cpp
+  runtime/MapCatalog.cpp
+  base/FileHash.cpp
+  base/CurrentThread.cpp
+  log/Logging.cpp
+  log/LogStream.cpp
+  log/LogFile.cpp
+  log/AsyncLogging.cpp)
+target_include_directories(map_static_data_test PRIVATE
+  runtime base log timer ${OPENSSL_INCLUDE_DIR} ${JSONCPP_INCLUDE_DIRS})
+target_link_libraries(map_static_data_test
+  ${CMAKE_THREAD_LIBS_INIT} ${OPENSSL_CRYPTO_LIB} ${JSONCPP_LIBRARIES})
+
+add_executable(map_runtime_aoi_test
+  test/map_runtime_aoi_test.cpp
+  runtime/MapRuntime.cpp
+  runtime/MapStaticData.cpp
+  runtime/MapCatalog.cpp
+  base/FileHash.cpp
+  base/CurrentThread.cpp
+  log/Logging.cpp
+  log/LogStream.cpp
+  log/LogFile.cpp
+  log/AsyncLogging.cpp)
+target_include_directories(map_runtime_aoi_test PRIVATE
+  runtime base log timer ${OPENSSL_INCLUDE_DIR} ${JSONCPP_INCLUDE_DIRS})
+target_link_libraries(map_runtime_aoi_test
+  ${CMAKE_THREAD_LIBS_INIT} ${OPENSSL_CRYPTO_LIB} ${JSONCPP_LIBRARIES})
+
 # 阶段 6：消息类型 → World / Logic 路由分类
 if(ENABLE_GAME_PROTOBUF)
   add_executable(message_route_test
@@ -443,8 +481,12 @@ if(ENABLE_GAME_PROTOBUF)
     runtime/ForwardMetaContext.cpp
     runtime/MapInstanceRegistry.cpp
     runtime/MapPlacement.cpp
+    runtime/MapStaticData.cpp
+    runtime/MapCatalog.cpp
+    runtime/MapRuntime.cpp
     runtime/discovery/IServiceRegistry.cpp
     runtime/discovery/EtcdDiscovery.cpp
+    base/FileHash.cpp
     base/LogicMetrics.cpp
     base/CurrentThread.cpp
     log/Logging.cpp
@@ -453,8 +495,9 @@ if(ENABLE_GAME_PROTOBUF)
     log/AsyncLogging.cpp)
   target_compile_definitions(auth_session_boundary_test PRIVATE WEBSERVER_ENABLE_GAME_PROTOBUF)
   target_include_directories(auth_session_boundary_test PRIVATE
-    ${Protobuf_INCLUDE_DIRS} runtime game runtime/discovery base log timer)
-  target_link_libraries(auth_session_boundary_test ${Protobuf_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
+    ${Protobuf_INCLUDE_DIRS} runtime game runtime/discovery base log timer ${OPENSSL_INCLUDE_DIR})
+  target_link_libraries(auth_session_boundary_test ${Protobuf_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT}
+                        ${OPENSSL_CRYPTO_LIB} ${JSONCPP_LIBRARIES})
 
   add_executable(asset_dirty_consistency_test
     test/asset_dirty_consistency_test.cpp
@@ -465,8 +508,12 @@ if(ENABLE_GAME_PROTOBUF)
     runtime/ForwardMetaContext.cpp
     runtime/MapInstanceRegistry.cpp
     runtime/MapPlacement.cpp
+    runtime/MapStaticData.cpp
+    runtime/MapCatalog.cpp
+    runtime/MapRuntime.cpp
     runtime/discovery/IServiceRegistry.cpp
     runtime/discovery/EtcdDiscovery.cpp
+    base/FileHash.cpp
     base/LogicMetrics.cpp
     base/CurrentThread.cpp
     log/Logging.cpp
@@ -475,8 +522,9 @@ if(ENABLE_GAME_PROTOBUF)
     log/AsyncLogging.cpp)
   target_compile_definitions(asset_dirty_consistency_test PRIVATE WEBSERVER_ENABLE_GAME_PROTOBUF)
   target_include_directories(asset_dirty_consistency_test PRIVATE
-    ${Protobuf_INCLUDE_DIRS} runtime game runtime/discovery base log timer)
-  target_link_libraries(asset_dirty_consistency_test ${Protobuf_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
+    ${Protobuf_INCLUDE_DIRS} runtime game runtime/discovery base log timer ${OPENSSL_INCLUDE_DIR})
+  target_link_libraries(asset_dirty_consistency_test ${Protobuf_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT}
+                        ${OPENSSL_CRYPTO_LIB} ${JSONCPP_LIBRARIES})
 
   add_executable(phase1_gateway_boundary_test
     test/phase1_gateway_boundary_test.cpp
@@ -505,9 +553,13 @@ if(ENABLE_GAME_PROTOBUF)
     runtime/ForwardMetaContext.cpp
     runtime/MapInstanceRegistry.cpp
     runtime/MapPlacement.cpp
+    runtime/MapStaticData.cpp
+    runtime/MapCatalog.cpp
+    runtime/MapRuntime.cpp
     runtime/PlayerSerialQueue.cpp
     runtime/discovery/IServiceRegistry.cpp
     runtime/discovery/EtcdDiscovery.cpp
+    base/FileHash.cpp
     base/LogicMetrics.cpp
     base/CurrentThread.cpp
     log/Logging.cpp
@@ -516,8 +568,9 @@ if(ENABLE_GAME_PROTOBUF)
     log/AsyncLogging.cpp)
   target_compile_definitions(phase1_correctness_test PRIVATE WEBSERVER_ENABLE_GAME_PROTOBUF)
   target_include_directories(phase1_correctness_test PRIVATE
-    ${Protobuf_INCLUDE_DIRS} runtime game runtime/discovery base log timer)
-  target_link_libraries(phase1_correctness_test ${Protobuf_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
+    ${Protobuf_INCLUDE_DIRS} runtime game runtime/discovery base log timer ${OPENSSL_INCLUDE_DIR})
+  target_link_libraries(phase1_correctness_test ${Protobuf_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT}
+                        ${OPENSSL_CRYPTO_LIB} ${JSONCPP_LIBRARIES})
 
   add_executable(trusted_player_id_test
     test/trusted_player_id_test.cpp
@@ -545,6 +598,14 @@ if(ENABLE_GAME_PROTOBUF)
     ${Protobuf_INCLUDE_DIRS} game runtime)
   target_link_libraries(command_policy_test ${Protobuf_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
 
+  add_executable(client_protocol_test
+    test/client_protocol_test.cpp
+    game/game.pb.cc)
+  target_compile_definitions(client_protocol_test PRIVATE WEBSERVER_ENABLE_GAME_PROTOBUF)
+  target_include_directories(client_protocol_test PRIVATE
+    ${Protobuf_INCLUDE_DIRS} game)
+  target_link_libraries(client_protocol_test ${Protobuf_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
+
   add_executable(gateway_overload_test
     test/gateway_overload_test.cpp
     runtime/PlayerSerialQueue.cpp
@@ -564,8 +625,12 @@ if(ENABLE_GAME_PROTOBUF)
     runtime/ForwardMetaContext.cpp
     runtime/MapInstanceRegistry.cpp
     runtime/MapPlacement.cpp
+    runtime/MapStaticData.cpp
+    runtime/MapCatalog.cpp
+    runtime/MapRuntime.cpp
     runtime/discovery/IServiceRegistry.cpp
     runtime/discovery/EtcdDiscovery.cpp
+    base/FileHash.cpp
     base/LogicMetrics.cpp
     base/CurrentThread.cpp
     log/Logging.cpp
@@ -574,8 +639,9 @@ if(ENABLE_GAME_PROTOBUF)
     log/AsyncLogging.cpp)
   target_compile_definitions(phase2_transfer_snapshot_test PRIVATE WEBSERVER_ENABLE_GAME_PROTOBUF)
   target_include_directories(phase2_transfer_snapshot_test PRIVATE
-    ${Protobuf_INCLUDE_DIRS} runtime game runtime/discovery base log timer)
-  target_link_libraries(phase2_transfer_snapshot_test ${Protobuf_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
+    ${Protobuf_INCLUDE_DIRS} runtime game runtime/discovery base log timer ${OPENSSL_INCLUDE_DIR})
+  target_link_libraries(phase2_transfer_snapshot_test ${Protobuf_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT}
+                        ${OPENSSL_CRYPTO_LIB} ${JSONCPP_LIBRARIES})
 
   if(ENABLE_BRPC)
     add_executable(phase1_channel_hold_test
@@ -685,6 +751,7 @@ if(ENABLE_GAME_PROTOBUF AND ENABLE_REDIS)
   add_executable(session_store_test
     test/session_store_test.cpp
     game/SessionStore.cpp
+    game/PlacementStore.cpp
     game/game.pb.cc
     redis/RedisClient.cpp
     redis/RedisPool.cpp
@@ -703,6 +770,7 @@ if(ENABLE_GAME_PROTOBUF AND ENABLE_REDIS)
   add_executable(player_transfer_test
     test/player_transfer_test.cpp
     game/SessionStore.cpp
+    game/PlacementStore.cpp
     game/GatewayConnRegistry.cpp
     game/game.pb.cc
     redis/RedisClient.cpp
@@ -738,6 +806,23 @@ if(ENABLE_GAME_PROTOBUF AND ENABLE_REDIS)
   target_include_directories(placement_store_test PRIVATE
     game redis base log timer runtime ${HIREDIS_INCLUDE_DIR})
   target_link_libraries(placement_store_test
+    ${CMAKE_THREAD_LIBS_INIT} ${HIREDIS_LIB})
+
+  add_executable(map_occupancy_test
+    test/map_occupancy_test.cpp
+    game/PlacementStore.cpp
+    redis/RedisClient.cpp
+    redis/RedisPool.cpp
+    runtime/HealthyLogicSnapshot.cpp
+    base/CurrentThread.cpp
+    log/Logging.cpp
+    log/LogStream.cpp
+    log/LogFile.cpp
+    log/AsyncLogging.cpp)
+  target_compile_definitions(map_occupancy_test PRIVATE WEBSERVER_ENABLE_REDIS)
+  target_include_directories(map_occupancy_test PRIVATE
+    game redis base log timer runtime ${HIREDIS_INCLUDE_DIR})
+  target_link_libraries(map_occupancy_test
     ${CMAKE_THREAD_LIBS_INIT} ${HIREDIS_LIB})
 
   add_executable(placement_recovery_test
@@ -803,6 +888,7 @@ if(ENABLE_GAME_PROTOBUF AND ENABLE_REDIS)
   add_executable(session_grace_cas_test
     test/session_grace_cas_test.cpp
     game/SessionStore.cpp
+    game/PlacementStore.cpp
     game/game.pb.cc
     redis/RedisClient.cpp
     redis/RedisPool.cpp
@@ -823,6 +909,7 @@ if(ENABLE_GAME_PROTOBUF AND ENABLE_REDIS)
   add_executable(reconnect_transaction_test
     test/reconnect_transaction_test.cpp
     game/SessionStore.cpp
+    game/PlacementStore.cpp
     game/game.pb.cc
     redis/RedisClient.cpp
     redis/RedisPool.cpp
@@ -1054,12 +1141,17 @@ if(ENABLE_MYSQL AND ENABLE_GAME_PROTOBUF)
     db/GameDbOutbox.cpp
     db/AsyncMysqlGameDbRepository.cpp
     db/PlayerAccountStore.cpp
+    db/PlayerProfileStore.cpp
+    db/PlayerProfileDefaults.cpp
     db/GameDbAssetStore.cpp
     runtime/OpsMetrics.cpp
     runtime/PlayerSerialQueue.cpp
     runtime/discovery/NatsThinClient.cpp
     runtime/MapPlacement.cpp
     runtime/MapInstanceRegistry.cpp
+    runtime/MapStaticData.cpp
+    runtime/MapCatalog.cpp
+    runtime/MapRuntime.cpp
     runtime/ForwardMetaContext.cpp
     runtime/MessageRoute.cpp
     ${SRC_LIST1}
@@ -1197,6 +1289,45 @@ if(ENABLE_MYSQL AND ENABLE_GAME_PROTOBUF)
     runtime/discovery)
   target_include_directories(gamedb_mail_claim_test PRIVATE ${OPENSSL_INCLUDE_DIR})
   target_link_libraries(gamedb_mail_claim_test
+    ${CMAKE_THREAD_LIBS_INIT} ${MYSQL_CLIENT_LIB} ${Protobuf_LIBRARIES} ${JSONCPP_LIBRARIES}
+    ${OPENSSL_CRYPTO_LIB})
+
+  add_executable(player_profile_store_test
+    test/player_profile_store_test.cpp
+    db/Connection.cpp
+    db/ConnectionPool.cpp
+    db/PlayerAccountStore.cpp
+    db/PlayerProfileStore.cpp
+    db/PlayerProfileDefaults.cpp
+    base/CurrentThread.cpp
+    log/Logging.cpp
+    log/LogStream.cpp
+    log/LogFile.cpp
+    log/AsyncLogging.cpp)
+  target_compile_definitions(player_profile_store_test PRIVATE WEBSERVER_ENABLE_MYSQL)
+  target_include_directories(player_profile_store_test PRIVATE
+    ${MYSQL_INCLUDE_DIR} db base log timer game)
+  target_link_libraries(player_profile_store_test
+    ${CMAKE_THREAD_LIBS_INIT} ${MYSQL_CLIENT_LIB})
+
+  add_executable(player_mail_send_test
+    test/player_mail_send_test.cpp
+    ${SRC_GAMEDB_MAIL_TEST})
+  if(ENABLE_REDIS)
+    target_sources(player_mail_send_test PRIVATE redis/RedisClient.cpp redis/RedisPool.cpp
+                    game/SessionStore.cpp game/PlacementStore.cpp
+                    runtime/SecureRandom.cpp runtime/HealthyLogicSnapshot.cpp)
+    target_compile_definitions(player_mail_send_test PRIVATE WEBSERVER_ENABLE_REDIS)
+    target_include_directories(player_mail_send_test PRIVATE ${HIREDIS_INCLUDE_DIR})
+    target_link_libraries(player_mail_send_test ${HIREDIS_LIB})
+  endif()
+  target_compile_definitions(player_mail_send_test PRIVATE
+    WEBSERVER_ENABLE_MYSQL WEBSERVER_ENABLE_GAME_PROTOBUF)
+  target_include_directories(player_mail_send_test PRIVATE
+    ${MYSQL_INCLUDE_DIR} ${Protobuf_INCLUDE_DIRS} game db redis base tcp log timer http runtime
+    runtime/discovery)
+  target_include_directories(player_mail_send_test PRIVATE ${OPENSSL_INCLUDE_DIR})
+  target_link_libraries(player_mail_send_test
     ${CMAKE_THREAD_LIBS_INIT} ${MYSQL_CLIENT_LIB} ${Protobuf_LIBRARIES} ${JSONCPP_LIBRARIES}
     ${OPENSSL_CRYPTO_LIB})
 endif()

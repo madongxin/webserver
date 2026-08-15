@@ -3,6 +3,7 @@
 #include "Connection.h"
 #include "ConnectionPool.h"
 #include "Logging.h"
+#include "PlayerProfileStore.h"
 
 #include <mysql/mysql.h>
 
@@ -121,11 +122,26 @@ bool PlayerAccountStore::RegisterWithPasswordIdempotent(
     if (FindByIdempotencyKey(idempotency_key, player_id)) {
         if (replayed)
             *replayed = true;
+        AccountAuthRow row;
+        std::string pname = display_name;
+        if (LoadAuth(*player_id, &row) && !row.display_name.empty())
+            pname = row.display_name;
+        std::string perr;
+        if (!PlayerProfileStore::Instance().EnsureDefault(*player_id, pname, &perr)) {
+            if (err)
+                *err = perr.empty() ? "profile backfill failed" : perr;
+            return false;
+        }
         return true;
     }
     if (!EnsureTable()) {
         if (err)
             *err = "db unavailable";
+        return false;
+    }
+    if (!PlayerProfileStore::Instance().EnsureTable()) {
+        if (err)
+            *err = "profile table unavailable";
         return false;
     }
     auto conn = ConnectionPool::getconnectionPool()->getConnection();
@@ -137,6 +153,11 @@ bool PlayerAccountStore::RegisterWithPasswordIdempotent(
     std::string name = display_name.empty() ? "player" : display_name;
     if (name.size() > 64)
         name.resize(64);
+    if (!conn->begin()) {
+        if (err)
+            *err = "begin failed";
+        return false;
+    }
     std::ostringstream sql;
     sql << "INSERT INTO player_account (device_id,display_name,password_hash,password_salt,"
            "password_iters,idempotency_key) VALUES ('"
@@ -144,10 +165,17 @@ bool PlayerAccountStore::RegisterWithPasswordIdempotent(
         << "','" << SqlEscape(password_salt) << "'," << password_iters << ",'"
         << SqlEscape(idempotency_key) << "')";
     if (!conn->update(sql.str())) {
-        // 并发唯一冲突：回读首次结果
+        conn->rollback();
+        // 并发唯一冲突：回读首次结果并补 Profile
         if (FindByIdempotencyKey(idempotency_key, player_id)) {
             if (replayed)
                 *replayed = true;
+            std::string perr;
+            if (!PlayerProfileStore::Instance().EnsureDefault(*player_id, name, &perr)) {
+                if (err)
+                    *err = perr.empty() ? "profile backfill failed" : perr;
+                return false;
+            }
             return true;
         }
         if (err)
@@ -156,6 +184,7 @@ bool PlayerAccountStore::RegisterWithPasswordIdempotent(
     }
     MYSQL_RES *res = conn->query("SELECT LAST_INSERT_ID() AS id");
     if (!res) {
+        conn->rollback();
         if (err)
             *err = "no player_id";
         return false;
@@ -163,6 +192,7 @@ bool PlayerAccountStore::RegisterWithPasswordIdempotent(
     MYSQL_ROW row = mysql_fetch_row(res);
     if (!row || !row[0]) {
         mysql_free_result(res);
+        conn->rollback();
         if (err)
             *err = "no player_id";
         return false;
@@ -170,8 +200,23 @@ bool PlayerAccountStore::RegisterWithPasswordIdempotent(
     *player_id = static_cast<uint64_t>(std::strtoull(row[0], nullptr, 10));
     mysql_free_result(res);
     if (*player_id == 0) {
+        conn->rollback();
         if (err)
             *err = "invalid player_id";
+        return false;
+    }
+    std::string perr;
+    if (!PlayerProfileStore::Instance().InsertDefaultOnConnection(conn.get(), *player_id, name,
+                                                                  &perr)) {
+        conn->rollback();
+        if (err)
+            *err = perr.empty() ? "profile insert failed" : perr;
+        return false;
+    }
+    if (!conn->commit()) {
+        conn->rollback();
+        if (err)
+            *err = "commit failed";
         return false;
     }
     return true;
@@ -192,6 +237,11 @@ bool PlayerAccountStore::RegisterWithPassword(const std::string &device_id,
             *err = "db unavailable";
         return false;
     }
+    if (!PlayerProfileStore::Instance().EnsureTable()) {
+        if (err)
+            *err = "profile table unavailable";
+        return false;
+    }
     auto conn = ConnectionPool::getconnectionPool()->getConnection();
     if (!conn) {
         if (err)
@@ -208,6 +258,11 @@ bool PlayerAccountStore::RegisterWithPassword(const std::string &device_id,
                   static_cast<long long>(
                       std::chrono::system_clock::now().time_since_epoch().count()),
                   static_cast<unsigned>(std::rand()));
+    if (!conn->begin()) {
+        if (err)
+            *err = "begin failed";
+        return false;
+    }
     std::ostringstream sql;
     sql << "INSERT INTO player_account (device_id,display_name,password_hash,password_salt,"
            "password_iters,idempotency_key) VALUES ('"
@@ -215,12 +270,14 @@ bool PlayerAccountStore::RegisterWithPassword(const std::string &device_id,
         << "','" << SqlEscape(password_salt) << "'," << password_iters << ",'" << SqlEscape(na)
         << "')";
     if (!conn->update(sql.str())) {
+        conn->rollback();
         if (err)
             *err = "insert failed";
         return false;
     }
     MYSQL_RES *res = conn->query("SELECT LAST_INSERT_ID() AS id");
     if (!res) {
+        conn->rollback();
         if (err)
             *err = "no player_id";
         return false;
@@ -228,6 +285,7 @@ bool PlayerAccountStore::RegisterWithPassword(const std::string &device_id,
     MYSQL_ROW row = mysql_fetch_row(res);
     if (!row || !row[0]) {
         mysql_free_result(res);
+        conn->rollback();
         if (err)
             *err = "no player_id";
         return false;
@@ -235,8 +293,23 @@ bool PlayerAccountStore::RegisterWithPassword(const std::string &device_id,
     *player_id = static_cast<uint64_t>(std::strtoull(row[0], nullptr, 10));
     mysql_free_result(res);
     if (*player_id == 0) {
+        conn->rollback();
         if (err)
             *err = "invalid player_id";
+        return false;
+    }
+    std::string perr;
+    if (!PlayerProfileStore::Instance().InsertDefaultOnConnection(conn.get(), *player_id, name,
+                                                                  &perr)) {
+        conn->rollback();
+        if (err)
+            *err = perr.empty() ? "profile insert failed" : perr;
+        return false;
+    }
+    if (!conn->commit()) {
+        conn->rollback();
+        if (err)
+            *err = "commit failed";
         return false;
     }
     return true;
@@ -256,7 +329,7 @@ bool PlayerAccountStore::LoadAuth(uint64_t player_id, AccountAuthRow *out) {
         return false;
     std::ostringstream sql;
     sql << "SELECT player_id,IFNULL(password_hash,''),IFNULL(password_salt,''),"
-           "IFNULL(password_iters,0),IFNULL(banned,0) FROM player_account WHERE player_id="
+           "IFNULL(password_iters,0),IFNULL(banned,0),IFNULL(display_name,'') FROM player_account WHERE player_id="
         << player_id << " LIMIT 1";
     MYSQL_RES *res = conn->query(sql.str());
     if (!res)
@@ -274,6 +347,7 @@ bool PlayerAccountStore::LoadAuth(uint64_t player_id, AccountAuthRow *out) {
     out->password_salt = row[2] ? row[2] : "";
     out->password_iters = row[3] ? std::atoi(row[3]) : 0;
     out->banned = row[4] && std::atoi(row[4]) != 0;
+    out->display_name = row[5] ? row[5] : "";
     out->has_password = !out->password_hash.empty() && !out->password_salt.empty() &&
                         out->password_iters > 0;
     mysql_free_result(res);

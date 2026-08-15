@@ -36,4 +36,16 @@ public:
                               const ::gdb::QueryOperationResultReq *request,
                               ::gdb::QueryOperationResultRsp *response,
                               ::google::protobuf::Closure *done) override;
+    void LoadPlayerProfile(::google::protobuf::RpcController *controller,
+                           const ::gdb::LoadPlayerProfileReq *request,
+                           ::gdb::LoadPlayerProfileRsp *response,
+                           ::google::protobuf::Closure *done) override;
+    void SavePlayerProfile(::google::protobuf::RpcController *controller,
+                           const ::gdb::SavePlayerProfileReq *request,
+                           ::gdb::SavePlayerProfileRsp *response,
+                           ::google::protobuf::Closure *done) override;
+    void HandleGameFrame(::google::protobuf::RpcController *controller,
+                         const ::gdb::HandleGameFrameReq *request,
+                         ::gdb::HandleGameFrameRsp *response,
+                         ::google::protobuf::Closure *done) override;
 };

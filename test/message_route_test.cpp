@@ -49,8 +49,15 @@ int main() {
     }
     {
         game::GameRequest req;
-        req.mutable_grant_item()->set_player_id(1);
-        EXPECT_TRUE(gameproto::IsLogicBoundRequest(req));
+        req.mutable_player_mail_send()->set_sender_player_id(1);
+        EXPECT_TRUE(gameproto::IsMailBoundRequest(req));
+        EXPECT_TRUE(gameproto::IsWorldBoundRequest(req));
+    }
+    {
+        game::GameRequest req;
+        req.mutable_chat_send()->set_player_id(1);
+        EXPECT_TRUE(!gameproto::IsMailBoundRequest(req));
+        EXPECT_TRUE(gameproto::IsWorldBoundRequest(req));
     }
     {
         game::GameRequest req;

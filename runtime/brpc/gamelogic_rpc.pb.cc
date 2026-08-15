@@ -474,6 +474,7 @@ const ::google::protobuf::uint32 TableStruct::offsets[] GOOGLE_PROTOBUF_ATTRIBUT
   GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::glrpc::BindPlayerResponse, message_),
   GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::glrpc::BindPlayerResponse, error_code_),
   GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::glrpc::BindPlayerResponse, bag_item_kinds_),
+  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::glrpc::BindPlayerResponse, profile_pb_),
   ~0u,  // no _has_bits_
   GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::glrpc::UnbindPlayerRequest, _internal_metadata_),
   ~0u,  // no _extensions_
@@ -625,20 +626,20 @@ const ::google::protobuf::uint32 TableStruct::offsets[] GOOGLE_PROTOBUF_ATTRIBUT
 static const ::google::protobuf::internal::MigrationSchema schemas[] GOOGLE_PROTOBUF_ATTRIBUTE_SECTION_VARIABLE(protodesc_cold) = {
   { 0, -1, sizeof(::glrpc::BindPlayerRequest)},
   { 18, -1, sizeof(::glrpc::BindPlayerResponse)},
-  { 27, -1, sizeof(::glrpc::UnbindPlayerRequest)},
-  { 37, -1, sizeof(::glrpc::UnbindPlayerResponse)},
-  { 44, -1, sizeof(::glrpc::FreezePlayerRequest)},
-  { 55, -1, sizeof(::glrpc::FreezePlayerResponse)},
-  { 63, -1, sizeof(::glrpc::BagItemEntry)},
-  { 70, -1, sizeof(::glrpc::SkillCdEntry)},
-  { 77, -1, sizeof(::glrpc::PlayerRuntimeState)},
-  { 86, -1, sizeof(::glrpc::PlayerTransferSnapshot)},
-  { 105, -1, sizeof(::glrpc::ExportPlayerSnapshotRequest)},
-  { 118, -1, sizeof(::glrpc::ExportPlayerSnapshotResponse)},
-  { 127, -1, sizeof(::glrpc::ImportPlayerSnapshotRequest)},
-  { 134, -1, sizeof(::glrpc::ImportPlayerSnapshotResponse)},
-  { 143, -1, sizeof(::glrpc::ClientCommand)},
-  { 164, -1, sizeof(::glrpc::CommandResult)},
+  { 28, -1, sizeof(::glrpc::UnbindPlayerRequest)},
+  { 38, -1, sizeof(::glrpc::UnbindPlayerResponse)},
+  { 45, -1, sizeof(::glrpc::FreezePlayerRequest)},
+  { 56, -1, sizeof(::glrpc::FreezePlayerResponse)},
+  { 64, -1, sizeof(::glrpc::BagItemEntry)},
+  { 71, -1, sizeof(::glrpc::SkillCdEntry)},
+  { 78, -1, sizeof(::glrpc::PlayerRuntimeState)},
+  { 87, -1, sizeof(::glrpc::PlayerTransferSnapshot)},
+  { 106, -1, sizeof(::glrpc::ExportPlayerSnapshotRequest)},
+  { 119, -1, sizeof(::glrpc::ExportPlayerSnapshotResponse)},
+  { 128, -1, sizeof(::glrpc::ImportPlayerSnapshotRequest)},
+  { 135, -1, sizeof(::glrpc::ImportPlayerSnapshotResponse)},
+  { 144, -1, sizeof(::glrpc::ClientCommand)},
+  { 165, -1, sizeof(::glrpc::CommandResult)},
 };
 
 static ::google::protobuf::Message const * const file_default_instances[] = {
@@ -690,77 +691,78 @@ void AddDescriptorsImpl() {
       "epoch\030\007 \001(\004\022\025\n\rroute_version\030\010 \001(\004\022\033\n\023ga"
       "teway_instance_id\030\t \001(\t\022\027\n\017idempotency_k"
       "ey\030\n \001(\t\022\025\n\rtrace_context\030\013 \001(\t\022\022\n\ngener"
-      "ation\030\014 \001(\004\022\023\n\013transfer_id\030\r \001(\t\"]\n\022Bind"
+      "ation\030\014 \001(\004\022\023\n\013transfer_id\030\r \001(\t\"q\n\022Bind"
       "PlayerResponse\022\n\n\002ok\030\001 \001(\010\022\017\n\007message\030\002 "
       "\001(\t\022\022\n\nerror_code\030\003 \001(\t\022\026\n\016bag_item_kind"
-      "s\030\004 \001(\r\"z\n\023UnbindPlayerRequest\022\021\n\tplayer"
-      "_id\030\001 \001(\004\022\022\n\nsession_id\030\002 \001(\t\022\023\n\013fence_t"
-      "oken\030\003 \001(\t\022\016\n\006reason\030\004 \001(\t\022\027\n\017idempotenc"
-      "y_key\030\005 \001(\t\"3\n\024UnbindPlayerResponse\022\n\n\002o"
-      "k\030\001 \001(\010\022\017\n\007message\030\002 \001(\t\"\217\001\n\023FreezePlaye"
-      "rRequest\022\021\n\tplayer_id\030\001 \001(\004\022\022\n\nsession_i"
-      "d\030\002 \001(\t\022\023\n\013fence_token\030\003 \001(\t\022\023\n\013transfer"
-      "_id\030\004 \001(\t\022\016\n\006reason\030\005 \001(\t\022\027\n\017idempotency"
-      "_key\030\006 \001(\t\"G\n\024FreezePlayerResponse\022\n\n\002ok"
-      "\030\001 \001(\010\022\017\n\007message\030\002 \001(\t\022\022\n\nerror_code\030\003 "
-      "\001(\t\".\n\014BagItemEntry\022\017\n\007item_id\030\001 \001(\r\022\r\n\005"
-      "count\030\002 \001(\r\"5\n\014SkillCdEntry\022\020\n\010skill_id\030"
-      "\001 \001(\r\022\023\n\013cd_until_ms\030\002 \001(\003\"\216\001\n\022PlayerRun"
-      "timeState\022 \n\003bag\030\001 \003(\0132\023.glrpc.BagItemEn"
-      "try\022&\n\tskill_cds\030\002 \003(\0132\023.glrpc.SkillCdEn"
-      "try\022\027\n\017last_client_seq\030\003 \001(\004\022\025\n\rasset_ve"
-      "rsion\030\004 \001(\004\"\200\003\n\026PlayerTransferSnapshot\022\021"
-      "\n\tplayer_id\030\001 \001(\004\022\022\n\nsession_id\030\002 \001(\t\022\023\n"
-      "\013fence_token\030\003 \001(\t\022\022\n\ngeneration\030\004 \001(\004\022\033"
-      "\n\023source_gamelogic_id\030\005 \001(\t\022\033\n\023target_ga"
-      "melogic_id\030\006 \001(\t\022\036\n\026source_map_instance_"
-      "id\030\007 \001(\004\022\036\n\026target_map_instance_id\030\010 \001(\004"
-      "\022\032\n\022target_owner_epoch\030\t \001(\004\022\025\n\rroute_ve"
-      "rsion\030\n \001(\004\022\030\n\020snapshot_version\030\013 \001(\004\022(\n"
-      "\005state\030\014 \001(\0132\031.glrpc.PlayerRuntimeState\022"
-      "\020\n\010checksum\030\r \001(\t\022\023\n\013transfer_id\030\016 \001(\t\"\340"
-      "\001\n\033ExportPlayerSnapshotRequest\022\021\n\tplayer"
-      "_id\030\001 \001(\004\022\022\n\nsession_id\030\002 \001(\t\022\023\n\013fence_t"
-      "oken\030\003 \001(\t\022\023\n\013transfer_id\030\004 \001(\t\022\033\n\023targe"
-      "t_gamelogic_id\030\005 \001(\t\022\036\n\026target_map_insta"
-      "nce_id\030\006 \001(\004\022\032\n\022target_owner_epoch\030\007 \001(\004"
-      "\022\027\n\017idempotency_key\030\010 \001(\t\"\200\001\n\034ExportPlay"
-      "erSnapshotResponse\022\n\n\002ok\030\001 \001(\010\022\017\n\007messag"
-      "e\030\002 \001(\t\022\022\n\nerror_code\030\003 \001(\t\022/\n\010snapshot\030"
-      "\004 \001(\0132\035.glrpc.PlayerTransferSnapshot\"g\n\033"
-      "ImportPlayerSnapshotRequest\022/\n\010snapshot\030"
-      "\001 \001(\0132\035.glrpc.PlayerTransferSnapshot\022\027\n\017"
-      "idempotency_key\030\002 \001(\t\"h\n\034ImportPlayerSna"
-      "pshotResponse\022\n\n\002ok\030\001 \001(\010\022\017\n\007message\030\002 \001"
-      "(\t\022\022\n\nerror_code\030\003 \001(\t\022\027\n\017already_applie"
-      "d\030\004 \001(\010\"\355\002\n\rClientCommand\022\022\n\nrequest_id\030"
-      "\001 \001(\004\022\021\n\tplayer_id\030\002 \001(\004\022\022\n\nsession_id\030\003"
-      " \001(\t\022\023\n\013fence_token\030\004 \001(\t\022\035\n\025gamelogic_i"
-      "nstance_id\030\005 \001(\t\022\027\n\017map_instance_id\030\006 \001("
-      "\004\022\027\n\017map_owner_epoch\030\007 \001(\004\022\022\n\nclient_seq"
-      "\030\010 \001(\004\022\024\n\014message_type\030\t \001(\t\022\017\n\007payload\030"
-      "\n \001(\014\022\025\n\rtrace_context\030\013 \001(\t\022\027\n\017idempote"
-      "ncy_key\030\014 \001(\t\022\022\n\ngeneration\030\r \001(\004\022\025\n\rrou"
-      "te_version\030\016 \001(\004\022\023\n\013deadline_ms\030\017 \001(\005\022\020\n"
-      "\010trace_id\030\020 \001(\t\"l\n\rCommandResult\022\n\n\002ok\030\001"
-      " \001(\010\022\017\n\007message\030\002 \001(\t\022\022\n\nerror_code\030\003 \001("
-      "\t\022\026\n\016response_frame\030\004 \001(\014\022\022\n\nserver_seq\030"
-      "\005 \001(\0042\341\003\n\020GameLogicService\022A\n\nBindPlayer"
-      "\022\030.glrpc.BindPlayerRequest\032\031.glrpc.BindP"
-      "layerResponse\0226\n\010Dispatch\022\024.glrpc.Client"
-      "Command\032\024.glrpc.CommandResult\022G\n\014UnbindP"
-      "layer\022\032.glrpc.UnbindPlayerRequest\032\033.glrp"
-      "c.UnbindPlayerResponse\022G\n\014FreezePlayer\022\032"
-      ".glrpc.FreezePlayerRequest\032\033.glrpc.Freez"
-      "ePlayerResponse\022_\n\024ExportPlayerSnapshot\022"
-      "\".glrpc.ExportPlayerSnapshotRequest\032#.gl"
-      "rpc.ExportPlayerSnapshotResponse\022_\n\024Impo"
-      "rtPlayerSnapshot\022\".glrpc.ImportPlayerSna"
-      "pshotRequest\032#.glrpc.ImportPlayerSnapsho"
-      "tResponseB\003\200\001\001b\006proto3"
+      "s\030\004 \001(\r\022\022\n\nprofile_pb\030\005 \001(\014\"z\n\023UnbindPla"
+      "yerRequest\022\021\n\tplayer_id\030\001 \001(\004\022\022\n\nsession"
+      "_id\030\002 \001(\t\022\023\n\013fence_token\030\003 \001(\t\022\016\n\006reason"
+      "\030\004 \001(\t\022\027\n\017idempotency_key\030\005 \001(\t\"3\n\024Unbin"
+      "dPlayerResponse\022\n\n\002ok\030\001 \001(\010\022\017\n\007message\030\002"
+      " \001(\t\"\217\001\n\023FreezePlayerRequest\022\021\n\tplayer_i"
+      "d\030\001 \001(\004\022\022\n\nsession_id\030\002 \001(\t\022\023\n\013fence_tok"
+      "en\030\003 \001(\t\022\023\n\013transfer_id\030\004 \001(\t\022\016\n\006reason\030"
+      "\005 \001(\t\022\027\n\017idempotency_key\030\006 \001(\t\"G\n\024Freeze"
+      "PlayerResponse\022\n\n\002ok\030\001 \001(\010\022\017\n\007message\030\002 "
+      "\001(\t\022\022\n\nerror_code\030\003 \001(\t\".\n\014BagItemEntry\022"
+      "\017\n\007item_id\030\001 \001(\r\022\r\n\005count\030\002 \001(\r\"5\n\014Skill"
+      "CdEntry\022\020\n\010skill_id\030\001 \001(\r\022\023\n\013cd_until_ms"
+      "\030\002 \001(\003\"\216\001\n\022PlayerRuntimeState\022 \n\003bag\030\001 \003"
+      "(\0132\023.glrpc.BagItemEntry\022&\n\tskill_cds\030\002 \003"
+      "(\0132\023.glrpc.SkillCdEntry\022\027\n\017last_client_s"
+      "eq\030\003 \001(\004\022\025\n\rasset_version\030\004 \001(\004\"\200\003\n\026Play"
+      "erTransferSnapshot\022\021\n\tplayer_id\030\001 \001(\004\022\022\n"
+      "\nsession_id\030\002 \001(\t\022\023\n\013fence_token\030\003 \001(\t\022\022"
+      "\n\ngeneration\030\004 \001(\004\022\033\n\023source_gamelogic_i"
+      "d\030\005 \001(\t\022\033\n\023target_gamelogic_id\030\006 \001(\t\022\036\n\026"
+      "source_map_instance_id\030\007 \001(\004\022\036\n\026target_m"
+      "ap_instance_id\030\010 \001(\004\022\032\n\022target_owner_epo"
+      "ch\030\t \001(\004\022\025\n\rroute_version\030\n \001(\004\022\030\n\020snaps"
+      "hot_version\030\013 \001(\004\022(\n\005state\030\014 \001(\0132\031.glrpc"
+      ".PlayerRuntimeState\022\020\n\010checksum\030\r \001(\t\022\023\n"
+      "\013transfer_id\030\016 \001(\t\"\340\001\n\033ExportPlayerSnaps"
+      "hotRequest\022\021\n\tplayer_id\030\001 \001(\004\022\022\n\nsession"
+      "_id\030\002 \001(\t\022\023\n\013fence_token\030\003 \001(\t\022\023\n\013transf"
+      "er_id\030\004 \001(\t\022\033\n\023target_gamelogic_id\030\005 \001(\t"
+      "\022\036\n\026target_map_instance_id\030\006 \001(\004\022\032\n\022targ"
+      "et_owner_epoch\030\007 \001(\004\022\027\n\017idempotency_key\030"
+      "\010 \001(\t\"\200\001\n\034ExportPlayerSnapshotResponse\022\n"
+      "\n\002ok\030\001 \001(\010\022\017\n\007message\030\002 \001(\t\022\022\n\nerror_cod"
+      "e\030\003 \001(\t\022/\n\010snapshot\030\004 \001(\0132\035.glrpc.Player"
+      "TransferSnapshot\"g\n\033ImportPlayerSnapshot"
+      "Request\022/\n\010snapshot\030\001 \001(\0132\035.glrpc.Player"
+      "TransferSnapshot\022\027\n\017idempotency_key\030\002 \001("
+      "\t\"h\n\034ImportPlayerSnapshotResponse\022\n\n\002ok\030"
+      "\001 \001(\010\022\017\n\007message\030\002 \001(\t\022\022\n\nerror_code\030\003 \001"
+      "(\t\022\027\n\017already_applied\030\004 \001(\010\"\355\002\n\rClientCo"
+      "mmand\022\022\n\nrequest_id\030\001 \001(\004\022\021\n\tplayer_id\030\002"
+      " \001(\004\022\022\n\nsession_id\030\003 \001(\t\022\023\n\013fence_token\030"
+      "\004 \001(\t\022\035\n\025gamelogic_instance_id\030\005 \001(\t\022\027\n\017"
+      "map_instance_id\030\006 \001(\004\022\027\n\017map_owner_epoch"
+      "\030\007 \001(\004\022\022\n\nclient_seq\030\010 \001(\004\022\024\n\014message_ty"
+      "pe\030\t \001(\t\022\017\n\007payload\030\n \001(\014\022\025\n\rtrace_conte"
+      "xt\030\013 \001(\t\022\027\n\017idempotency_key\030\014 \001(\t\022\022\n\ngen"
+      "eration\030\r \001(\004\022\025\n\rroute_version\030\016 \001(\004\022\023\n\013"
+      "deadline_ms\030\017 \001(\005\022\020\n\010trace_id\030\020 \001(\t\"l\n\rC"
+      "ommandResult\022\n\n\002ok\030\001 \001(\010\022\017\n\007message\030\002 \001("
+      "\t\022\022\n\nerror_code\030\003 \001(\t\022\026\n\016response_frame\030"
+      "\004 \001(\014\022\022\n\nserver_seq\030\005 \001(\0042\341\003\n\020GameLogicS"
+      "ervice\022A\n\nBindPlayer\022\030.glrpc.BindPlayerR"
+      "equest\032\031.glrpc.BindPlayerResponse\0226\n\010Dis"
+      "patch\022\024.glrpc.ClientCommand\032\024.glrpc.Comm"
+      "andResult\022G\n\014UnbindPlayer\022\032.glrpc.Unbind"
+      "PlayerRequest\032\033.glrpc.UnbindPlayerRespon"
+      "se\022G\n\014FreezePlayer\022\032.glrpc.FreezePlayerR"
+      "equest\032\033.glrpc.FreezePlayerResponse\022_\n\024E"
+      "xportPlayerSnapshot\022\".glrpc.ExportPlayer"
+      "SnapshotRequest\032#.glrpc.ExportPlayerSnap"
+      "shotResponse\022_\n\024ImportPlayerSnapshot\022\".g"
+      "lrpc.ImportPlayerSnapshotRequest\032#.glrpc"
+      ".ImportPlayerSnapshotResponseB\003\200\001\001b\006prot"
+      "o3"
   };
   ::google::protobuf::DescriptorPool::InternalAddGeneratedFile(
-      descriptor, 3022);
+      descriptor, 3042);
   ::google::protobuf::MessageFactory::InternalRegisterGeneratedFile(
     "gamelogic_rpc.proto", &protobuf_RegisterTypes);
 }
@@ -1610,6 +1612,7 @@ const int BindPlayerResponse::kOkFieldNumber;
 const int BindPlayerResponse::kMessageFieldNumber;
 const int BindPlayerResponse::kErrorCodeFieldNumber;
 const int BindPlayerResponse::kBagItemKindsFieldNumber;
+const int BindPlayerResponse::kProfilePbFieldNumber;
 #endif  // !defined(_MSC_VER) || _MSC_VER >= 1900
 
 BindPlayerResponse::BindPlayerResponse()
@@ -1633,6 +1636,10 @@ BindPlayerResponse::BindPlayerResponse(const BindPlayerResponse& from)
   if (from.error_code().size() > 0) {
     error_code_.AssignWithDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), from.error_code_);
   }
+  profile_pb_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  if (from.profile_pb().size() > 0) {
+    profile_pb_.AssignWithDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), from.profile_pb_);
+  }
   ::memcpy(&ok_, &from.ok_,
     static_cast<size_t>(reinterpret_cast<char*>(&bag_item_kinds_) -
     reinterpret_cast<char*>(&ok_)) + sizeof(bag_item_kinds_));
@@ -1642,6 +1649,7 @@ BindPlayerResponse::BindPlayerResponse(const BindPlayerResponse& from)
 void BindPlayerResponse::SharedCtor() {
   message_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
   error_code_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  profile_pb_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
   ::memset(&ok_, 0, static_cast<size_t>(
       reinterpret_cast<char*>(&bag_item_kinds_) -
       reinterpret_cast<char*>(&ok_)) + sizeof(bag_item_kinds_));
@@ -1656,6 +1664,7 @@ BindPlayerResponse::~BindPlayerResponse() {
 void BindPlayerResponse::SharedDtor() {
   message_.DestroyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
   error_code_.DestroyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  profile_pb_.DestroyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
 }
 
 void BindPlayerResponse::SetCachedSize(int size) const {
@@ -1689,6 +1698,7 @@ void BindPlayerResponse::Clear() {
 
   message_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
   error_code_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  profile_pb_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
   ::memset(&ok_, 0, static_cast<size_t>(
       reinterpret_cast<char*>(&bag_item_kinds_) -
       reinterpret_cast<char*>(&ok_)) + sizeof(bag_item_kinds_));
@@ -1765,6 +1775,18 @@ bool BindPlayerResponse::MergePartialFromCodedStream(
         break;
       }
 
+      // bytes profile_pb = 5;
+      case 5: {
+        if (static_cast< ::google::protobuf::uint8>(tag) ==
+            static_cast< ::google::protobuf::uint8>(42u /* 42 & 0xFF */)) {
+          DO_(::google::protobuf::internal::WireFormatLite::ReadBytes(
+                input, this->mutable_profile_pb()));
+        } else {
+          goto handle_unusual;
+        }
+        break;
+      }
+
       default: {
       handle_unusual:
         if (tag == 0) {
@@ -1821,6 +1843,12 @@ void BindPlayerResponse::SerializeWithCachedSizes(
     ::google::protobuf::internal::WireFormatLite::WriteUInt32(4, this->bag_item_kinds(), output);
   }
 
+  // bytes profile_pb = 5;
+  if (this->profile_pb().size() > 0) {
+    ::google::protobuf::internal::WireFormatLite::WriteBytesMaybeAliased(
+      5, this->profile_pb(), output);
+  }
+
   if ((_internal_metadata_.have_unknown_fields() &&  ::google::protobuf::internal::GetProto3PreserveUnknownsDefault())) {
     ::google::protobuf::internal::WireFormat::SerializeUnknownFields(
         (::google::protobuf::internal::GetProto3PreserveUnknownsDefault()   ? _internal_metadata_.unknown_fields()   : _internal_metadata_.default_instance()), output);
@@ -1867,6 +1895,13 @@ void BindPlayerResponse::SerializeWithCachedSizes(
     target = ::google::protobuf::internal::WireFormatLite::WriteUInt32ToArray(4, this->bag_item_kinds(), target);
   }
 
+  // bytes profile_pb = 5;
+  if (this->profile_pb().size() > 0) {
+    target =
+      ::google::protobuf::internal::WireFormatLite::WriteBytesToArray(
+        5, this->profile_pb(), target);
+  }
+
   if ((_internal_metadata_.have_unknown_fields() &&  ::google::protobuf::internal::GetProto3PreserveUnknownsDefault())) {
     target = ::google::protobuf::internal::WireFormat::SerializeUnknownFieldsToArray(
         (::google::protobuf::internal::GetProto3PreserveUnknownsDefault()   ? _internal_metadata_.unknown_fields()   : _internal_metadata_.default_instance()), target);
@@ -1896,6 +1931,13 @@ size_t BindPlayerResponse::ByteSizeLong() const {
     total_size += 1 +
       ::google::protobuf::internal::WireFormatLite::StringSize(
         this->error_code());
+  }
+
+  // bytes profile_pb = 5;
+  if (this->profile_pb().size() > 0) {
+    total_size += 1 +
+      ::google::protobuf::internal::WireFormatLite::BytesSize(
+        this->profile_pb());
   }
 
   // bool ok = 1;
@@ -1947,6 +1989,10 @@ void BindPlayerResponse::MergeFrom(const BindPlayerResponse& from) {
 
     error_code_.AssignWithDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), from.error_code_);
   }
+  if (from.profile_pb().size() > 0) {
+
+    profile_pb_.AssignWithDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), from.profile_pb_);
+  }
   if (from.ok() != 0) {
     set_ok(from.ok());
   }
@@ -1981,6 +2027,7 @@ void BindPlayerResponse::InternalSwap(BindPlayerResponse* other) {
   using std::swap;
   message_.Swap(&other->message_);
   error_code_.Swap(&other->error_code_);
+  profile_pb_.Swap(&other->profile_pb_);
   swap(ok_, other->ok_);
   swap(bag_item_kinds_, other->bag_item_kinds_);
   _internal_metadata_.Swap(&other->_internal_metadata_);

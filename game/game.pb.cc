@@ -315,6 +315,66 @@ class FriendListRspDefaultTypeInternal {
   ::google::protobuf::internal::ExplicitlyConstructed<FriendListRsp>
       _instance;
 } _FriendListRsp_default_instance_;
+class Vec3DefaultTypeInternal {
+ public:
+  ::google::protobuf::internal::ExplicitlyConstructed<Vec3>
+      _instance;
+} _Vec3_default_instance_;
+class PlayerAttributesDefaultTypeInternal {
+ public:
+  ::google::protobuf::internal::ExplicitlyConstructed<PlayerAttributes>
+      _instance;
+} _PlayerAttributes_default_instance_;
+class EntitySnapshotDefaultTypeInternal {
+ public:
+  ::google::protobuf::internal::ExplicitlyConstructed<EntitySnapshot>
+      _instance;
+} _EntitySnapshot_default_instance_;
+class GetSelfProfileReqDefaultTypeInternal {
+ public:
+  ::google::protobuf::internal::ExplicitlyConstructed<GetSelfProfileReq>
+      _instance;
+} _GetSelfProfileReq_default_instance_;
+class GetSelfProfileRspDefaultTypeInternal {
+ public:
+  ::google::protobuf::internal::ExplicitlyConstructed<GetSelfProfileRsp>
+      _instance;
+} _GetSelfProfileRsp_default_instance_;
+class MoveReqDefaultTypeInternal {
+ public:
+  ::google::protobuf::internal::ExplicitlyConstructed<MoveReq>
+      _instance;
+} _MoveReq_default_instance_;
+class MoveRspDefaultTypeInternal {
+ public:
+  ::google::protobuf::internal::ExplicitlyConstructed<MoveRsp>
+      _instance;
+} _MoveRsp_default_instance_;
+class AoiEventDefaultTypeInternal {
+ public:
+  ::google::protobuf::internal::ExplicitlyConstructed<AoiEvent>
+      _instance;
+} _AoiEvent_default_instance_;
+class AoiDeltaDefaultTypeInternal {
+ public:
+  ::google::protobuf::internal::ExplicitlyConstructed<AoiDelta>
+      _instance;
+} _AoiDelta_default_instance_;
+class PlayerMailSendReqDefaultTypeInternal {
+ public:
+  ::google::protobuf::internal::ExplicitlyConstructed<PlayerMailSendReq>
+      _instance;
+} _PlayerMailSendReq_default_instance_;
+class PlayerMailSendRspDefaultTypeInternal {
+ public:
+  ::google::protobuf::internal::ExplicitlyConstructed<PlayerMailSendRsp>
+      _instance;
+} _PlayerMailSendRsp_default_instance_;
+class MailboxChangedNotifyDefaultTypeInternal {
+ public:
+  ::google::protobuf::internal::ExplicitlyConstructed<MailboxChangedNotify>
+      _instance;
+} _MailboxChangedNotify_default_instance_;
 class GameRequestDefaultTypeInternal {
  public:
   ::google::protobuf::internal::ExplicitlyConstructed<GameRequest>
@@ -345,6 +405,9 @@ class GameRequestDefaultTypeInternal {
   const ::game::ChatSendReq* chat_send_;
   const ::game::FriendListReq* friend_list_;
   const ::game::PushAckReq* push_ack_;
+  const ::game::GetSelfProfileReq* get_self_profile_;
+  const ::game::MoveReq* move_;
+  const ::game::PlayerMailSendReq* player_mail_send_;
 } _GameRequest_default_instance_;
 class GameResponseDefaultTypeInternal {
  public:
@@ -378,6 +441,11 @@ class GameResponseDefaultTypeInternal {
   const ::game::PushAckRsp* push_ack_;
   const ::game::ServerPushEnvelope* server_push_;
   const ::game::FullStateSnapshotRsp* full_snapshot_;
+  const ::game::GetSelfProfileRsp* get_self_profile_;
+  const ::game::MoveRsp* move_;
+  const ::game::AoiDelta* aoi_delta_;
+  const ::game::PlayerMailSendRsp* player_mail_send_;
+  const ::game::MailboxChangedNotify* mailbox_changed_;
 } _GameResponse_default_instance_;
 }  // namespace game
 namespace protobuf_game_2eproto {
@@ -410,6 +478,7 @@ void InitDefaultsLoginRspImpl() {
 #else
   ::google::protobuf::internal::InitProtobufDefaults();
 #endif  // GOOGLE_PROTOBUF_ENFORCE_UNIQUENESS
+  protobuf_game_2eproto::InitDefaultsPlayerAttributes();
   {
     void* ptr = &::game::_LoginRsp_default_instance_;
     new (ptr) ::game::LoginRsp();
@@ -1446,6 +1515,8 @@ void InitDefaultsEnterMapRspImpl() {
 #else
   ::google::protobuf::internal::InitProtobufDefaults();
 #endif  // GOOGLE_PROTOBUF_ENFORCE_UNIQUENESS
+  protobuf_game_2eproto::InitDefaultsVec3();
+  protobuf_game_2eproto::InitDefaultsEntitySnapshot();
   {
     void* ptr = &::game::_EnterMapRsp_default_instance_;
     new (ptr) ::game::EnterMapRsp();
@@ -1627,6 +1698,264 @@ void InitDefaultsFriendListRsp() {
   ::google::protobuf::GoogleOnceInit(&once, &InitDefaultsFriendListRspImpl);
 }
 
+void InitDefaultsVec3Impl() {
+  GOOGLE_PROTOBUF_VERIFY_VERSION;
+
+#ifdef GOOGLE_PROTOBUF_ENFORCE_UNIQUENESS
+  ::google::protobuf::internal::InitProtobufDefaultsForceUnique();
+#else
+  ::google::protobuf::internal::InitProtobufDefaults();
+#endif  // GOOGLE_PROTOBUF_ENFORCE_UNIQUENESS
+  {
+    void* ptr = &::game::_Vec3_default_instance_;
+    new (ptr) ::game::Vec3();
+    ::google::protobuf::internal::OnShutdownDestroyMessage(ptr);
+  }
+  ::game::Vec3::InitAsDefaultInstance();
+}
+
+void InitDefaultsVec3() {
+  static GOOGLE_PROTOBUF_DECLARE_ONCE(once);
+  ::google::protobuf::GoogleOnceInit(&once, &InitDefaultsVec3Impl);
+}
+
+void InitDefaultsPlayerAttributesImpl() {
+  GOOGLE_PROTOBUF_VERIFY_VERSION;
+
+#ifdef GOOGLE_PROTOBUF_ENFORCE_UNIQUENESS
+  ::google::protobuf::internal::InitProtobufDefaultsForceUnique();
+#else
+  ::google::protobuf::internal::InitProtobufDefaults();
+#endif  // GOOGLE_PROTOBUF_ENFORCE_UNIQUENESS
+  {
+    void* ptr = &::game::_PlayerAttributes_default_instance_;
+    new (ptr) ::game::PlayerAttributes();
+    ::google::protobuf::internal::OnShutdownDestroyMessage(ptr);
+  }
+  ::game::PlayerAttributes::InitAsDefaultInstance();
+}
+
+void InitDefaultsPlayerAttributes() {
+  static GOOGLE_PROTOBUF_DECLARE_ONCE(once);
+  ::google::protobuf::GoogleOnceInit(&once, &InitDefaultsPlayerAttributesImpl);
+}
+
+void InitDefaultsEntitySnapshotImpl() {
+  GOOGLE_PROTOBUF_VERIFY_VERSION;
+
+#ifdef GOOGLE_PROTOBUF_ENFORCE_UNIQUENESS
+  ::google::protobuf::internal::InitProtobufDefaultsForceUnique();
+#else
+  ::google::protobuf::internal::InitProtobufDefaults();
+#endif  // GOOGLE_PROTOBUF_ENFORCE_UNIQUENESS
+  protobuf_game_2eproto::InitDefaultsVec3();
+  {
+    void* ptr = &::game::_EntitySnapshot_default_instance_;
+    new (ptr) ::game::EntitySnapshot();
+    ::google::protobuf::internal::OnShutdownDestroyMessage(ptr);
+  }
+  ::game::EntitySnapshot::InitAsDefaultInstance();
+}
+
+void InitDefaultsEntitySnapshot() {
+  static GOOGLE_PROTOBUF_DECLARE_ONCE(once);
+  ::google::protobuf::GoogleOnceInit(&once, &InitDefaultsEntitySnapshotImpl);
+}
+
+void InitDefaultsGetSelfProfileReqImpl() {
+  GOOGLE_PROTOBUF_VERIFY_VERSION;
+
+#ifdef GOOGLE_PROTOBUF_ENFORCE_UNIQUENESS
+  ::google::protobuf::internal::InitProtobufDefaultsForceUnique();
+#else
+  ::google::protobuf::internal::InitProtobufDefaults();
+#endif  // GOOGLE_PROTOBUF_ENFORCE_UNIQUENESS
+  {
+    void* ptr = &::game::_GetSelfProfileReq_default_instance_;
+    new (ptr) ::game::GetSelfProfileReq();
+    ::google::protobuf::internal::OnShutdownDestroyMessage(ptr);
+  }
+  ::game::GetSelfProfileReq::InitAsDefaultInstance();
+}
+
+void InitDefaultsGetSelfProfileReq() {
+  static GOOGLE_PROTOBUF_DECLARE_ONCE(once);
+  ::google::protobuf::GoogleOnceInit(&once, &InitDefaultsGetSelfProfileReqImpl);
+}
+
+void InitDefaultsGetSelfProfileRspImpl() {
+  GOOGLE_PROTOBUF_VERIFY_VERSION;
+
+#ifdef GOOGLE_PROTOBUF_ENFORCE_UNIQUENESS
+  ::google::protobuf::internal::InitProtobufDefaultsForceUnique();
+#else
+  ::google::protobuf::internal::InitProtobufDefaults();
+#endif  // GOOGLE_PROTOBUF_ENFORCE_UNIQUENESS
+  protobuf_game_2eproto::InitDefaultsPlayerAttributes();
+  {
+    void* ptr = &::game::_GetSelfProfileRsp_default_instance_;
+    new (ptr) ::game::GetSelfProfileRsp();
+    ::google::protobuf::internal::OnShutdownDestroyMessage(ptr);
+  }
+  ::game::GetSelfProfileRsp::InitAsDefaultInstance();
+}
+
+void InitDefaultsGetSelfProfileRsp() {
+  static GOOGLE_PROTOBUF_DECLARE_ONCE(once);
+  ::google::protobuf::GoogleOnceInit(&once, &InitDefaultsGetSelfProfileRspImpl);
+}
+
+void InitDefaultsMoveReqImpl() {
+  GOOGLE_PROTOBUF_VERIFY_VERSION;
+
+#ifdef GOOGLE_PROTOBUF_ENFORCE_UNIQUENESS
+  ::google::protobuf::internal::InitProtobufDefaultsForceUnique();
+#else
+  ::google::protobuf::internal::InitProtobufDefaults();
+#endif  // GOOGLE_PROTOBUF_ENFORCE_UNIQUENESS
+  protobuf_game_2eproto::InitDefaultsVec3();
+  {
+    void* ptr = &::game::_MoveReq_default_instance_;
+    new (ptr) ::game::MoveReq();
+    ::google::protobuf::internal::OnShutdownDestroyMessage(ptr);
+  }
+  ::game::MoveReq::InitAsDefaultInstance();
+}
+
+void InitDefaultsMoveReq() {
+  static GOOGLE_PROTOBUF_DECLARE_ONCE(once);
+  ::google::protobuf::GoogleOnceInit(&once, &InitDefaultsMoveReqImpl);
+}
+
+void InitDefaultsMoveRspImpl() {
+  GOOGLE_PROTOBUF_VERIFY_VERSION;
+
+#ifdef GOOGLE_PROTOBUF_ENFORCE_UNIQUENESS
+  ::google::protobuf::internal::InitProtobufDefaultsForceUnique();
+#else
+  ::google::protobuf::internal::InitProtobufDefaults();
+#endif  // GOOGLE_PROTOBUF_ENFORCE_UNIQUENESS
+  protobuf_game_2eproto::InitDefaultsVec3();
+  {
+    void* ptr = &::game::_MoveRsp_default_instance_;
+    new (ptr) ::game::MoveRsp();
+    ::google::protobuf::internal::OnShutdownDestroyMessage(ptr);
+  }
+  ::game::MoveRsp::InitAsDefaultInstance();
+}
+
+void InitDefaultsMoveRsp() {
+  static GOOGLE_PROTOBUF_DECLARE_ONCE(once);
+  ::google::protobuf::GoogleOnceInit(&once, &InitDefaultsMoveRspImpl);
+}
+
+void InitDefaultsAoiEventImpl() {
+  GOOGLE_PROTOBUF_VERIFY_VERSION;
+
+#ifdef GOOGLE_PROTOBUF_ENFORCE_UNIQUENESS
+  ::google::protobuf::internal::InitProtobufDefaultsForceUnique();
+#else
+  ::google::protobuf::internal::InitProtobufDefaults();
+#endif  // GOOGLE_PROTOBUF_ENFORCE_UNIQUENESS
+  protobuf_game_2eproto::InitDefaultsEntitySnapshot();
+  {
+    void* ptr = &::game::_AoiEvent_default_instance_;
+    new (ptr) ::game::AoiEvent();
+    ::google::protobuf::internal::OnShutdownDestroyMessage(ptr);
+  }
+  ::game::AoiEvent::InitAsDefaultInstance();
+}
+
+void InitDefaultsAoiEvent() {
+  static GOOGLE_PROTOBUF_DECLARE_ONCE(once);
+  ::google::protobuf::GoogleOnceInit(&once, &InitDefaultsAoiEventImpl);
+}
+
+void InitDefaultsAoiDeltaImpl() {
+  GOOGLE_PROTOBUF_VERIFY_VERSION;
+
+#ifdef GOOGLE_PROTOBUF_ENFORCE_UNIQUENESS
+  ::google::protobuf::internal::InitProtobufDefaultsForceUnique();
+#else
+  ::google::protobuf::internal::InitProtobufDefaults();
+#endif  // GOOGLE_PROTOBUF_ENFORCE_UNIQUENESS
+  protobuf_game_2eproto::InitDefaultsAoiEvent();
+  {
+    void* ptr = &::game::_AoiDelta_default_instance_;
+    new (ptr) ::game::AoiDelta();
+    ::google::protobuf::internal::OnShutdownDestroyMessage(ptr);
+  }
+  ::game::AoiDelta::InitAsDefaultInstance();
+}
+
+void InitDefaultsAoiDelta() {
+  static GOOGLE_PROTOBUF_DECLARE_ONCE(once);
+  ::google::protobuf::GoogleOnceInit(&once, &InitDefaultsAoiDeltaImpl);
+}
+
+void InitDefaultsPlayerMailSendReqImpl() {
+  GOOGLE_PROTOBUF_VERIFY_VERSION;
+
+#ifdef GOOGLE_PROTOBUF_ENFORCE_UNIQUENESS
+  ::google::protobuf::internal::InitProtobufDefaultsForceUnique();
+#else
+  ::google::protobuf::internal::InitProtobufDefaults();
+#endif  // GOOGLE_PROTOBUF_ENFORCE_UNIQUENESS
+  {
+    void* ptr = &::game::_PlayerMailSendReq_default_instance_;
+    new (ptr) ::game::PlayerMailSendReq();
+    ::google::protobuf::internal::OnShutdownDestroyMessage(ptr);
+  }
+  ::game::PlayerMailSendReq::InitAsDefaultInstance();
+}
+
+void InitDefaultsPlayerMailSendReq() {
+  static GOOGLE_PROTOBUF_DECLARE_ONCE(once);
+  ::google::protobuf::GoogleOnceInit(&once, &InitDefaultsPlayerMailSendReqImpl);
+}
+
+void InitDefaultsPlayerMailSendRspImpl() {
+  GOOGLE_PROTOBUF_VERIFY_VERSION;
+
+#ifdef GOOGLE_PROTOBUF_ENFORCE_UNIQUENESS
+  ::google::protobuf::internal::InitProtobufDefaultsForceUnique();
+#else
+  ::google::protobuf::internal::InitProtobufDefaults();
+#endif  // GOOGLE_PROTOBUF_ENFORCE_UNIQUENESS
+  {
+    void* ptr = &::game::_PlayerMailSendRsp_default_instance_;
+    new (ptr) ::game::PlayerMailSendRsp();
+    ::google::protobuf::internal::OnShutdownDestroyMessage(ptr);
+  }
+  ::game::PlayerMailSendRsp::InitAsDefaultInstance();
+}
+
+void InitDefaultsPlayerMailSendRsp() {
+  static GOOGLE_PROTOBUF_DECLARE_ONCE(once);
+  ::google::protobuf::GoogleOnceInit(&once, &InitDefaultsPlayerMailSendRspImpl);
+}
+
+void InitDefaultsMailboxChangedNotifyImpl() {
+  GOOGLE_PROTOBUF_VERIFY_VERSION;
+
+#ifdef GOOGLE_PROTOBUF_ENFORCE_UNIQUENESS
+  ::google::protobuf::internal::InitProtobufDefaultsForceUnique();
+#else
+  ::google::protobuf::internal::InitProtobufDefaults();
+#endif  // GOOGLE_PROTOBUF_ENFORCE_UNIQUENESS
+  {
+    void* ptr = &::game::_MailboxChangedNotify_default_instance_;
+    new (ptr) ::game::MailboxChangedNotify();
+    ::google::protobuf::internal::OnShutdownDestroyMessage(ptr);
+  }
+  ::game::MailboxChangedNotify::InitAsDefaultInstance();
+}
+
+void InitDefaultsMailboxChangedNotify() {
+  static GOOGLE_PROTOBUF_DECLARE_ONCE(once);
+  ::google::protobuf::GoogleOnceInit(&once, &InitDefaultsMailboxChangedNotifyImpl);
+}
+
 void InitDefaultsGameRequestImpl() {
   GOOGLE_PROTOBUF_VERIFY_VERSION;
 
@@ -1661,6 +1990,9 @@ void InitDefaultsGameRequestImpl() {
   protobuf_game_2eproto::InitDefaultsChatSendReq();
   protobuf_game_2eproto::InitDefaultsFriendListReq();
   protobuf_game_2eproto::InitDefaultsPushAckReq();
+  protobuf_game_2eproto::InitDefaultsGetSelfProfileReq();
+  protobuf_game_2eproto::InitDefaultsMoveReq();
+  protobuf_game_2eproto::InitDefaultsPlayerMailSendReq();
   {
     void* ptr = &::game::_GameRequest_default_instance_;
     new (ptr) ::game::GameRequest();
@@ -1710,6 +2042,11 @@ void InitDefaultsGameResponseImpl() {
   protobuf_game_2eproto::InitDefaultsPushAckRsp();
   protobuf_game_2eproto::InitDefaultsServerPushEnvelope();
   protobuf_game_2eproto::InitDefaultsFullStateSnapshotRsp();
+  protobuf_game_2eproto::InitDefaultsGetSelfProfileRsp();
+  protobuf_game_2eproto::InitDefaultsMoveRsp();
+  protobuf_game_2eproto::InitDefaultsAoiDelta();
+  protobuf_game_2eproto::InitDefaultsPlayerMailSendRsp();
+  protobuf_game_2eproto::InitDefaultsMailboxChangedNotify();
   {
     void* ptr = &::game::_GameResponse_default_instance_;
     new (ptr) ::game::GameResponse();
@@ -1723,7 +2060,7 @@ void InitDefaultsGameResponse() {
   ::google::protobuf::GoogleOnceInit(&once, &InitDefaultsGameResponseImpl);
 }
 
-::google::protobuf::Metadata file_level_metadata[61];
+::google::protobuf::Metadata file_level_metadata[73];
 
 const ::google::protobuf::uint32 TableStruct::offsets[] GOOGLE_PROTOBUF_ATTRIBUTE_SECTION_VARIABLE(protodesc_cold) = {
   ~0u,  // no _has_bits_
@@ -1750,6 +2087,7 @@ const ::google::protobuf::uint32 TableStruct::offsets[] GOOGLE_PROTOBUF_ATTRIBUT
   GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::game::LoginRsp, kicked_previous_),
   GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::game::LoginRsp, session_id_),
   GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::game::LoginRsp, generation_),
+  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::game::LoginRsp, profile_),
   ~0u,  // no _has_bits_
   GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::game::ReconnectReq, _internal_metadata_),
   ~0u,  // no _extensions_
@@ -2227,6 +2565,9 @@ const ::google::protobuf::uint32 TableStruct::offsets[] GOOGLE_PROTOBUF_ATTRIBUT
   GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::game::EnterMapReq, realm_id_),
   GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::game::EnterMapReq, map_template_id_),
   GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::game::EnterMapReq, map_instance_id_),
+  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::game::EnterMapReq, map_data_version_),
+  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::game::EnterMapReq, map_data_sha256_),
+  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::game::EnterMapReq, operation_id_),
   ~0u,  // no _has_bits_
   GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::game::EnterMapRsp, _internal_metadata_),
   ~0u,  // no _extensions_
@@ -2239,6 +2580,12 @@ const ::google::protobuf::uint32 TableStruct::offsets[] GOOGLE_PROTOBUF_ATTRIBUT
   GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::game::EnterMapRsp, gamelogic_instance_id_),
   GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::game::EnterMapRsp, owner_epoch_),
   GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::game::EnterMapRsp, route_version_),
+  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::game::EnterMapRsp, spawn_position_),
+  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::game::EnterMapRsp, spawn_yaw_),
+  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::game::EnterMapRsp, map_data_version_),
+  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::game::EnterMapRsp, map_data_sha256_),
+  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::game::EnterMapRsp, self_),
+  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::game::EnterMapRsp, aoi_snapshot_),
   ~0u,  // no _has_bits_
   GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::game::LeaveMapReq, _internal_metadata_),
   ~0u,  // no _extensions_
@@ -2301,6 +2648,125 @@ const ::google::protobuf::uint32 TableStruct::offsets[] GOOGLE_PROTOBUF_ATTRIBUT
   GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::game::FriendListRsp, message_),
   GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::game::FriendListRsp, error_code_),
   ~0u,  // no _has_bits_
+  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::game::Vec3, _internal_metadata_),
+  ~0u,  // no _extensions_
+  ~0u,  // no _oneof_case_
+  ~0u,  // no _weak_field_map_
+  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::game::Vec3, x_),
+  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::game::Vec3, y_),
+  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::game::Vec3, z_),
+  ~0u,  // no _has_bits_
+  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::game::PlayerAttributes, _internal_metadata_),
+  ~0u,  // no _extensions_
+  ~0u,  // no _oneof_case_
+  ~0u,  // no _weak_field_map_
+  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::game::PlayerAttributes, player_id_),
+  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::game::PlayerAttributes, player_name_),
+  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::game::PlayerAttributes, hp_),
+  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::game::PlayerAttributes, max_hp_),
+  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::game::PlayerAttributes, mp_),
+  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::game::PlayerAttributes, max_mp_),
+  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::game::PlayerAttributes, attack_),
+  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::game::PlayerAttributes, spell_power_),
+  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::game::PlayerAttributes, defense_),
+  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::game::PlayerAttributes, magic_resistance_),
+  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::game::PlayerAttributes, crit_chance_),
+  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::game::PlayerAttributes, crit_damage_),
+  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::game::PlayerAttributes, move_speed_),
+  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::game::PlayerAttributes, attack_speed_),
+  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::game::PlayerAttributes, stats_version_),
+  ~0u,  // no _has_bits_
+  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::game::EntitySnapshot, _internal_metadata_),
+  ~0u,  // no _extensions_
+  ~0u,  // no _oneof_case_
+  ~0u,  // no _weak_field_map_
+  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::game::EntitySnapshot, player_id_),
+  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::game::EntitySnapshot, player_name_),
+  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::game::EntitySnapshot, position_),
+  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::game::EntitySnapshot, yaw_),
+  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::game::EntitySnapshot, hp_),
+  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::game::EntitySnapshot, max_hp_),
+  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::game::EntitySnapshot, state_seq_),
+  ~0u,  // no _has_bits_
+  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::game::GetSelfProfileReq, _internal_metadata_),
+  ~0u,  // no _extensions_
+  ~0u,  // no _oneof_case_
+  ~0u,  // no _weak_field_map_
+  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::game::GetSelfProfileReq, player_id_),
+  ~0u,  // no _has_bits_
+  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::game::GetSelfProfileRsp, _internal_metadata_),
+  ~0u,  // no _extensions_
+  ~0u,  // no _oneof_case_
+  ~0u,  // no _weak_field_map_
+  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::game::GetSelfProfileRsp, ok_),
+  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::game::GetSelfProfileRsp, message_),
+  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::game::GetSelfProfileRsp, error_code_),
+  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::game::GetSelfProfileRsp, profile_),
+  ~0u,  // no _has_bits_
+  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::game::MoveReq, _internal_metadata_),
+  ~0u,  // no _extensions_
+  ~0u,  // no _oneof_case_
+  ~0u,  // no _weak_field_map_
+  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::game::MoveReq, player_id_),
+  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::game::MoveReq, map_instance_id_),
+  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::game::MoveReq, position_),
+  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::game::MoveReq, yaw_),
+  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::game::MoveReq, client_time_ms_),
+  ~0u,  // no _has_bits_
+  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::game::MoveRsp, _internal_metadata_),
+  ~0u,  // no _extensions_
+  ~0u,  // no _oneof_case_
+  ~0u,  // no _weak_field_map_
+  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::game::MoveRsp, ok_),
+  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::game::MoveRsp, message_),
+  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::game::MoveRsp, error_code_),
+  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::game::MoveRsp, position_),
+  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::game::MoveRsp, yaw_),
+  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::game::MoveRsp, state_seq_),
+  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::game::MoveRsp, server_time_ms_),
+  ~0u,  // no _has_bits_
+  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::game::AoiEvent, _internal_metadata_),
+  ~0u,  // no _extensions_
+  ~0u,  // no _oneof_case_
+  ~0u,  // no _weak_field_map_
+  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::game::AoiEvent, op_),
+  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::game::AoiEvent, entity_),
+  ~0u,  // no _has_bits_
+  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::game::AoiDelta, _internal_metadata_),
+  ~0u,  // no _extensions_
+  ~0u,  // no _oneof_case_
+  ~0u,  // no _weak_field_map_
+  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::game::AoiDelta, map_instance_id_),
+  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::game::AoiDelta, events_),
+  ~0u,  // no _has_bits_
+  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::game::PlayerMailSendReq, _internal_metadata_),
+  ~0u,  // no _extensions_
+  ~0u,  // no _oneof_case_
+  ~0u,  // no _weak_field_map_
+  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::game::PlayerMailSendReq, sender_player_id_),
+  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::game::PlayerMailSendReq, receiver_player_id_),
+  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::game::PlayerMailSendReq, title_),
+  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::game::PlayerMailSendReq, body_),
+  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::game::PlayerMailSendReq, operation_id_),
+  ~0u,  // no _has_bits_
+  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::game::PlayerMailSendRsp, _internal_metadata_),
+  ~0u,  // no _extensions_
+  ~0u,  // no _oneof_case_
+  ~0u,  // no _weak_field_map_
+  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::game::PlayerMailSendRsp, ok_),
+  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::game::PlayerMailSendRsp, message_),
+  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::game::PlayerMailSendRsp, error_code_),
+  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::game::PlayerMailSendRsp, mail_id_),
+  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::game::PlayerMailSendRsp, idempotent_hit_),
+  ~0u,  // no _has_bits_
+  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::game::MailboxChangedNotify, _internal_metadata_),
+  ~0u,  // no _extensions_
+  ~0u,  // no _oneof_case_
+  ~0u,  // no _weak_field_map_
+  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::game::MailboxChangedNotify, player_id_),
+  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::game::MailboxChangedNotify, mailbox_version_),
+  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::game::MailboxChangedNotify, unread_count_),
+  ~0u,  // no _has_bits_
   GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::game::GameRequest, _internal_metadata_),
   ~0u,  // no _extensions_
   GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::game::GameRequest, _oneof_case_[0]),
@@ -2333,6 +2799,9 @@ const ::google::protobuf::uint32 TableStruct::offsets[] GOOGLE_PROTOBUF_ATTRIBUT
   offsetof(::game::GameRequestDefaultTypeInternal, chat_send_),
   offsetof(::game::GameRequestDefaultTypeInternal, friend_list_),
   offsetof(::game::GameRequestDefaultTypeInternal, push_ack_),
+  offsetof(::game::GameRequestDefaultTypeInternal, get_self_profile_),
+  offsetof(::game::GameRequestDefaultTypeInternal, move_),
+  offsetof(::game::GameRequestDefaultTypeInternal, player_mail_send_),
   GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::game::GameRequest, body_),
   ~0u,  // no _has_bits_
   GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::game::GameResponse, _internal_metadata_),
@@ -2370,70 +2839,87 @@ const ::google::protobuf::uint32 TableStruct::offsets[] GOOGLE_PROTOBUF_ATTRIBUT
   offsetof(::game::GameResponseDefaultTypeInternal, push_ack_),
   offsetof(::game::GameResponseDefaultTypeInternal, server_push_),
   offsetof(::game::GameResponseDefaultTypeInternal, full_snapshot_),
+  offsetof(::game::GameResponseDefaultTypeInternal, get_self_profile_),
+  offsetof(::game::GameResponseDefaultTypeInternal, move_),
+  offsetof(::game::GameResponseDefaultTypeInternal, aoi_delta_),
+  offsetof(::game::GameResponseDefaultTypeInternal, player_mail_send_),
+  offsetof(::game::GameResponseDefaultTypeInternal, mailbox_changed_),
   GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::game::GameResponse, body_),
 };
 static const ::google::protobuf::internal::MigrationSchema schemas[] GOOGLE_PROTOBUF_ATTRIBUTE_SECTION_VARIABLE(protodesc_cold) = {
   { 0, -1, sizeof(::game::LoginReq)},
   { 11, -1, sizeof(::game::LoginRsp)},
-  { 24, -1, sizeof(::game::ReconnectReq)},
-  { 33, -1, sizeof(::game::ReconnectRsp)},
-  { 45, -1, sizeof(::game::PushAckReq)},
-  { 55, -1, sizeof(::game::PushAckRsp)},
-  { 63, -1, sizeof(::game::ServerPushEnvelope)},
-  { 73, -1, sizeof(::game::FullStateSnapshotRsp)},
-  { 85, -1, sizeof(::game::ValidateSessionReq)},
-  { 92, -1, sizeof(::game::ValidateSessionRsp)},
-  { 104, -1, sizeof(::game::CheckOnlineReq)},
-  { 110, -1, sizeof(::game::CheckOnlineRsp)},
-  { 118, -1, sizeof(::game::LogoutReq)},
-  { 125, -1, sizeof(::game::LogoutRsp)},
-  { 132, -1, sizeof(::game::RegisterReq)},
-  { 140, -1, sizeof(::game::RegisterRsp)},
-  { 148, -1, sizeof(::game::FlushBagReq)},
-  { 155, -1, sizeof(::game::FlushBagRsp)},
-  { 162, -1, sizeof(::game::ConsumeItemReq)},
-  { 170, -1, sizeof(::game::ConsumeItemRsp)},
-  { 178, -1, sizeof(::game::ReleaseSkillReq)},
-  { 187, -1, sizeof(::game::ReleaseSkillRsp)},
-  { 195, -1, sizeof(::game::GrantItemReq)},
-  { 205, -1, sizeof(::game::GrantItemRsp)},
-  { 214, -1, sizeof(::game::MailAttachmentDto)},
-  { 226, -1, sizeof(::game::MailBrief)},
-  { 244, -1, sizeof(::game::MailDetail)},
-  { 253, -1, sizeof(::game::MailboxSummaryReq)},
-  { 259, -1, sizeof(::game::MailboxSummaryRsp)},
-  { 277, -1, sizeof(::game::MailListReq)},
-  { 292, -1, sizeof(::game::MailListRsp)},
-  { 304, -1, sizeof(::game::MailGetReq)},
-  { 311, -1, sizeof(::game::MailGetRsp)},
-  { 322, -1, sizeof(::game::MailReadReq)},
-  { 330, -1, sizeof(::game::MailReadRsp)},
-  { 341, -1, sizeof(::game::MailClaimReq)},
-  { 350, -1, sizeof(::game::MailClaimResult)},
-  { 360, -1, sizeof(::game::MailClaimRsp)},
-  { 371, -1, sizeof(::game::MailBatchClaimReq)},
-  { 380, -1, sizeof(::game::MailBatchClaimRsp)},
-  { 391, -1, sizeof(::game::MailFavoriteReq)},
-  { 400, -1, sizeof(::game::MailFavoriteRsp)},
-  { 411, -1, sizeof(::game::MailBatchReadReq)},
-  { 419, -1, sizeof(::game::MailBatchReadRsp)},
-  { 430, -1, sizeof(::game::MailBatchDeleteReq)},
-  { 438, -1, sizeof(::game::MailBatchDeleteRsp)},
-  { 450, -1, sizeof(::game::MailDeliverAttachment)},
-  { 460, -1, sizeof(::game::MailDeliverReq)},
-  { 481, -1, sizeof(::game::MailDeliverRsp)},
-  { 492, -1, sizeof(::game::EnterMapReq)},
-  { 501, -1, sizeof(::game::EnterMapRsp)},
-  { 513, -1, sizeof(::game::LeaveMapReq)},
-  { 520, -1, sizeof(::game::LeaveMapRsp)},
-  { 527, -1, sizeof(::game::MapPingReq)},
-  { 534, -1, sizeof(::game::MapPingRsp)},
-  { 544, -1, sizeof(::game::ChatSendReq)},
-  { 552, -1, sizeof(::game::ChatSendRsp)},
-  { 560, -1, sizeof(::game::FriendListReq)},
-  { 566, -1, sizeof(::game::FriendListRsp)},
-  { 574, -1, sizeof(::game::GameRequest)},
-  { 608, -1, sizeof(::game::GameResponse)},
+  { 25, -1, sizeof(::game::ReconnectReq)},
+  { 34, -1, sizeof(::game::ReconnectRsp)},
+  { 46, -1, sizeof(::game::PushAckReq)},
+  { 56, -1, sizeof(::game::PushAckRsp)},
+  { 64, -1, sizeof(::game::ServerPushEnvelope)},
+  { 74, -1, sizeof(::game::FullStateSnapshotRsp)},
+  { 86, -1, sizeof(::game::ValidateSessionReq)},
+  { 93, -1, sizeof(::game::ValidateSessionRsp)},
+  { 105, -1, sizeof(::game::CheckOnlineReq)},
+  { 111, -1, sizeof(::game::CheckOnlineRsp)},
+  { 119, -1, sizeof(::game::LogoutReq)},
+  { 126, -1, sizeof(::game::LogoutRsp)},
+  { 133, -1, sizeof(::game::RegisterReq)},
+  { 141, -1, sizeof(::game::RegisterRsp)},
+  { 149, -1, sizeof(::game::FlushBagReq)},
+  { 156, -1, sizeof(::game::FlushBagRsp)},
+  { 163, -1, sizeof(::game::ConsumeItemReq)},
+  { 171, -1, sizeof(::game::ConsumeItemRsp)},
+  { 179, -1, sizeof(::game::ReleaseSkillReq)},
+  { 188, -1, sizeof(::game::ReleaseSkillRsp)},
+  { 196, -1, sizeof(::game::GrantItemReq)},
+  { 206, -1, sizeof(::game::GrantItemRsp)},
+  { 215, -1, sizeof(::game::MailAttachmentDto)},
+  { 227, -1, sizeof(::game::MailBrief)},
+  { 245, -1, sizeof(::game::MailDetail)},
+  { 254, -1, sizeof(::game::MailboxSummaryReq)},
+  { 260, -1, sizeof(::game::MailboxSummaryRsp)},
+  { 278, -1, sizeof(::game::MailListReq)},
+  { 293, -1, sizeof(::game::MailListRsp)},
+  { 305, -1, sizeof(::game::MailGetReq)},
+  { 312, -1, sizeof(::game::MailGetRsp)},
+  { 323, -1, sizeof(::game::MailReadReq)},
+  { 331, -1, sizeof(::game::MailReadRsp)},
+  { 342, -1, sizeof(::game::MailClaimReq)},
+  { 351, -1, sizeof(::game::MailClaimResult)},
+  { 361, -1, sizeof(::game::MailClaimRsp)},
+  { 372, -1, sizeof(::game::MailBatchClaimReq)},
+  { 381, -1, sizeof(::game::MailBatchClaimRsp)},
+  { 392, -1, sizeof(::game::MailFavoriteReq)},
+  { 401, -1, sizeof(::game::MailFavoriteRsp)},
+  { 412, -1, sizeof(::game::MailBatchReadReq)},
+  { 420, -1, sizeof(::game::MailBatchReadRsp)},
+  { 431, -1, sizeof(::game::MailBatchDeleteReq)},
+  { 439, -1, sizeof(::game::MailBatchDeleteRsp)},
+  { 451, -1, sizeof(::game::MailDeliverAttachment)},
+  { 461, -1, sizeof(::game::MailDeliverReq)},
+  { 482, -1, sizeof(::game::MailDeliverRsp)},
+  { 493, -1, sizeof(::game::EnterMapReq)},
+  { 505, -1, sizeof(::game::EnterMapRsp)},
+  { 523, -1, sizeof(::game::LeaveMapReq)},
+  { 530, -1, sizeof(::game::LeaveMapRsp)},
+  { 537, -1, sizeof(::game::MapPingReq)},
+  { 544, -1, sizeof(::game::MapPingRsp)},
+  { 554, -1, sizeof(::game::ChatSendReq)},
+  { 562, -1, sizeof(::game::ChatSendRsp)},
+  { 570, -1, sizeof(::game::FriendListReq)},
+  { 576, -1, sizeof(::game::FriendListRsp)},
+  { 584, -1, sizeof(::game::Vec3)},
+  { 592, -1, sizeof(::game::PlayerAttributes)},
+  { 612, -1, sizeof(::game::EntitySnapshot)},
+  { 624, -1, sizeof(::game::GetSelfProfileReq)},
+  { 630, -1, sizeof(::game::GetSelfProfileRsp)},
+  { 639, -1, sizeof(::game::MoveReq)},
+  { 649, -1, sizeof(::game::MoveRsp)},
+  { 661, -1, sizeof(::game::AoiEvent)},
+  { 668, -1, sizeof(::game::AoiDelta)},
+  { 675, -1, sizeof(::game::PlayerMailSendReq)},
+  { 685, -1, sizeof(::game::PlayerMailSendRsp)},
+  { 695, -1, sizeof(::game::MailboxChangedNotify)},
+  { 703, -1, sizeof(::game::GameRequest)},
+  { 740, -1, sizeof(::game::GameResponse)},
 };
 
 static ::google::protobuf::Message const * const file_default_instances[] = {
@@ -2496,6 +2982,18 @@ static ::google::protobuf::Message const * const file_default_instances[] = {
   reinterpret_cast<const ::google::protobuf::Message*>(&::game::_ChatSendRsp_default_instance_),
   reinterpret_cast<const ::google::protobuf::Message*>(&::game::_FriendListReq_default_instance_),
   reinterpret_cast<const ::google::protobuf::Message*>(&::game::_FriendListRsp_default_instance_),
+  reinterpret_cast<const ::google::protobuf::Message*>(&::game::_Vec3_default_instance_),
+  reinterpret_cast<const ::google::protobuf::Message*>(&::game::_PlayerAttributes_default_instance_),
+  reinterpret_cast<const ::google::protobuf::Message*>(&::game::_EntitySnapshot_default_instance_),
+  reinterpret_cast<const ::google::protobuf::Message*>(&::game::_GetSelfProfileReq_default_instance_),
+  reinterpret_cast<const ::google::protobuf::Message*>(&::game::_GetSelfProfileRsp_default_instance_),
+  reinterpret_cast<const ::google::protobuf::Message*>(&::game::_MoveReq_default_instance_),
+  reinterpret_cast<const ::google::protobuf::Message*>(&::game::_MoveRsp_default_instance_),
+  reinterpret_cast<const ::google::protobuf::Message*>(&::game::_AoiEvent_default_instance_),
+  reinterpret_cast<const ::google::protobuf::Message*>(&::game::_AoiDelta_default_instance_),
+  reinterpret_cast<const ::google::protobuf::Message*>(&::game::_PlayerMailSendReq_default_instance_),
+  reinterpret_cast<const ::google::protobuf::Message*>(&::game::_PlayerMailSendRsp_default_instance_),
+  reinterpret_cast<const ::google::protobuf::Message*>(&::game::_MailboxChangedNotify_default_instance_),
   reinterpret_cast<const ::google::protobuf::Message*>(&::game::_GameRequest_default_instance_),
   reinterpret_cast<const ::google::protobuf::Message*>(&::game::_GameResponse_default_instance_),
 };
@@ -2516,7 +3014,7 @@ void protobuf_AssignDescriptorsOnce() {
 void protobuf_RegisterTypes(const ::std::string&) GOOGLE_PROTOBUF_ATTRIBUTE_COLD;
 void protobuf_RegisterTypes(const ::std::string&) {
   protobuf_AssignDescriptorsOnce();
-  ::google::protobuf::internal::RegisterAllTypes(file_level_metadata, 61);
+  ::google::protobuf::internal::RegisterAllTypes(file_level_metadata, 73);
 }
 
 void AddDescriptorsImpl() {
@@ -2525,234 +3023,285 @@ void AddDescriptorsImpl() {
       "\n\ngame.proto\022\004game\"\203\001\n\010LoginReq\022\021\n\tplaye"
       "r_id\030\001 \001(\004\022\021\n\tdevice_id\030\002 \001(\t\022\021\n\tserver_"
       "id\030\003 \001(\r\022\017\n\007ttl_sec\030\004 \001(\r\022\031\n\021kick_other_"
-      "device\030\005 \001(\010\022\022\n\ncredential\030\006 \001(\t\"\242\001\n\010Log"
+      "device\030\005 \001(\010\022\022\n\ncredential\030\006 \001(\t\"\313\001\n\010Log"
       "inRsp\022\n\n\002ok\030\001 \001(\010\022\017\n\007message\030\002 \001(\t\022\r\n\005to"
       "ken\030\003 \001(\t\022\021\n\tserver_id\030\004 \001(\r\022\026\n\016login_ti"
       "me_sec\030\005 \001(\003\022\027\n\017kicked_previous\030\006 \001(\010\022\022\n"
-      "\nsession_id\030\007 \001(\t\022\022\n\ngeneration\030\010 \001(\004\"h\n"
-      "\014ReconnectReq\022\021\n\tplayer_id\030\001 \001(\004\022\022\n\nsess"
-      "ion_id\030\002 \001(\t\022\030\n\020reconnect_ticket\030\003 \001(\t\022\027"
-      "\n\017last_server_seq\030\004 \001(\004\"\227\001\n\014ReconnectRsp"
-      "\022\n\n\002ok\030\001 \001(\010\022\017\n\007message\030\002 \001(\t\022\r\n\005token\030\003"
-      " \001(\t\022\022\n\nsession_id\030\004 \001(\t\022\022\n\ngeneration\030\005"
-      " \001(\004\022\032\n\022need_full_snapshot\030\006 \001(\010\022\027\n\017repl"
-      "ay_from_seq\030\007 \001(\004\"t\n\nPushAckReq\022\021\n\tplaye"
-      "r_id\030\001 \001(\004\022\026\n\016ack_server_seq\030\002 \001(\004\022\022\n\nse"
-      "ssion_id\030\003 \001(\t\022\023\n\013fence_token\030\004 \001(\t\022\022\n\ng"
-      "eneration\030\005 \001(\004\"A\n\nPushAckRsp\022\n\n\002ok\030\001 \001("
-      "\010\022\017\n\007message\030\002 \001(\t\022\026\n\016trimmed_to_seq\030\003 \001"
-      "(\004\"v\n\022ServerPushEnvelope\022\022\n\nserver_seq\030\001"
-      " \001(\004\022\024\n\014message_type\030\002 \001(\t\022\017\n\007payload\030\003 "
-      "\001(\014\022\020\n\010reliable\030\004 \001(\010\022\023\n\013coalescable\030\005 \001"
-      "(\010\"\241\001\n\024FullStateSnapshotRsp\022\n\n\002ok\030\001 \001(\010\022"
-      "\017\n\007message\030\002 \001(\t\022\021\n\tplayer_id\030\003 \001(\004\022\025\n\ra"
-      "sset_version\030\004 \001(\004\022\020\n\010item_ids\030\005 \003(\r\022\023\n\013"
-      "item_counts\030\006 \003(\r\022\033\n\023baseline_server_seq"
-      "\030\007 \001(\004\"6\n\022ValidateSessionReq\022\021\n\tplayer_i"
-      "d\030\001 \001(\004\022\r\n\005token\030\002 \001(\t\"\216\001\n\022ValidateSessi"
-      "onRsp\022\n\n\002ok\030\001 \001(\010\022\017\n\007message\030\002 \001(\t\022\r\n\005va"
-      "lid\030\003 \001(\010\022\016\n\006online\030\004 \001(\010\022\021\n\tserver_id\030\005"
-      " \001(\r\022\021\n\tdevice_id\030\006 \001(\t\022\026\n\016login_time_se"
-      "c\030\007 \001(\003\"#\n\016CheckOnlineReq\022\021\n\tplayer_id\030\001"
-      " \001(\004\"=\n\016CheckOnlineRsp\022\n\n\002ok\030\001 \001(\010\022\017\n\007me"
-      "ssage\030\002 \001(\t\022\016\n\006online\030\003 \001(\010\"-\n\tLogoutReq"
-      "\022\021\n\tplayer_id\030\001 \001(\004\022\r\n\005token\030\002 \001(\t\"(\n\tLo"
-      "goutRsp\022\n\n\002ok\030\001 \001(\010\022\017\n\007message\030\002 \001(\t\"H\n\013"
-      "RegisterReq\022\021\n\tdevice_id\030\001 \001(\t\022\024\n\014displa"
-      "y_name\030\002 \001(\t\022\020\n\010password\030\003 \001(\t\"=\n\013Regist"
-      "erRsp\022\n\n\002ok\030\001 \001(\010\022\017\n\007message\030\002 \001(\t\022\021\n\tpl"
-      "ayer_id\030\003 \001(\004\"0\n\013FlushBagReq\022\021\n\tplayer_i"
-      "d\030\001 \001(\004\022\016\n\006reason\030\002 \001(\t\"*\n\013FlushBagRsp\022\n"
-      "\n\002ok\030\001 \001(\010\022\017\n\007message\030\002 \001(\t\"C\n\016ConsumeIt"
-      "emReq\022\021\n\tplayer_id\030\001 \001(\004\022\017\n\007item_id\030\002 \001("
-      "\r\022\r\n\005count\030\003 \001(\r\"C\n\016ConsumeItemRsp\022\n\n\002ok"
-      "\030\001 \001(\010\022\017\n\007message\030\002 \001(\t\022\024\n\014remain_count\030"
-      "\003 \001(\r\"Z\n\017ReleaseSkillReq\022\021\n\tplayer_id\030\001 "
-      "\001(\004\022\020\n\010skill_id\030\002 \001(\r\022\020\n\010target_x\030\003 \001(\002\022"
-      "\020\n\010target_y\030\004 \001(\002\"C\n\017ReleaseSkillRsp\022\n\n\002"
-      "ok\030\001 \001(\010\022\017\n\007message\030\002 \001(\t\022\023\n\013cooldown_ms"
-      "\030\003 \001(\r\"n\n\014GrantItemReq\022\021\n\tplayer_id\030\001 \001("
-      "\004\022\017\n\007item_id\030\002 \001(\004\022\r\n\005count\030\003 \001(\r\022\022\n\next"
-      "ra_data\030\004 \001(\t\022\027\n\017expire_time_sec\030\005 \001(\003\"S"
-      "\n\014GrantItemRsp\022\n\n\002ok\030\001 \001(\010\022\017\n\007message\030\002 "
-      "\001(\t\022\023\n\013instance_id\030\003 \001(\004\022\021\n\tbag_total\030\004 "
-      "\001(\r\"\225\001\n\021MailAttachmentDto\022\022\n\nslot_index\030"
-      "\001 \001(\r\022\022\n\nasset_type\030\002 \001(\t\022\020\n\010asset_id\030\003 "
-      "\001(\004\022\r\n\005count\030\004 \001(\r\022\021\n\tbind_type\030\005 \001(\t\022\017\n"
-      "\007payload\030\006 \001(\t\022\023\n\013claim_state\030\007 \001(\t\"\217\002\n\t"
-      "MailBrief\022\017\n\007mail_id\030\001 \001(\004\022\020\n\010category\030\002"
-      " \001(\t\022\020\n\010priority\030\003 \001(\005\022\r\n\005title\030\004 \001(\t\022\023\n"
-      "\013sender_name\030\005 \001(\t\022\022\n\nread_state\030\006 \001(\t\022\025"
-      "\n\rvisible_state\030\007 \001(\t\022\030\n\020attachment_stat"
-      "e\030\010 \001(\t\022\026\n\016has_attachment\030\t \001(\010\022\023\n\013is_fa"
-      "vorite\030\n \001(\010\022\017\n\007sent_at\030\013 \001(\003\022\021\n\texpire_"
-      "at\030\014 \001(\003\022\023\n\013row_version\030\r \001(\003\"\201\001\n\nMailDe"
-      "tail\022\036\n\005brief\030\001 \001(\0132\017.game.MailBrief\022\014\n\004"
-      "body\030\002 \001(\t\022,\n\013attachments\030\003 \003(\0132\027.game.M"
-      "ailAttachmentDto\022\027\n\017allowed_actions\030\004 \003("
-      "\t\"&\n\021MailboxSummaryReq\022\021\n\tplayer_id\030\001 \001("
-      "\004\"\265\002\n\021MailboxSummaryRsp\022\n\n\002ok\030\001 \001(\010\022\017\n\007m"
-      "essage\030\002 \001(\t\022\022\n\nerror_code\030\003 \001(\t\022\025\n\runre"
-      "ad_system\030\004 \001(\r\022\027\n\017unread_activity\030\005 \001(\r"
-      "\022\025\n\runread_social\030\006 \001(\r\022\024\n\014unread_trade\030"
-      "\007 \001(\r\022\034\n\024unclaimed_attachment\030\010 \001(\r\022\025\n\re"
-      "xpiring_soon\030\t \001(\r\022\025\n\rcurrent_count\030\n \001("
-      "\r\022\024\n\014max_capacity\030\013 \001(\r\022\027\n\017mailbox_versi"
-      "on\030\014 \001(\003\022\027\n\017server_time_utc\030\r \001(\003\"\306\001\n\013Ma"
-      "ilListReq\022\021\n\tplayer_id\030\001 \001(\004\022\020\n\010category"
-      "\030\002 \001(\t\022\016\n\006unread\030\003 \001(\010\022\026\n\016has_attachment"
-      "\030\004 \001(\010\022\021\n\tunclaimed\030\005 \001(\010\022\025\n\rexpiring_so"
-      "on\030\006 \001(\010\022\020\n\010favorite\030\007 \001(\010\022\017\n\007keyword\030\010 "
-      "\001(\t\022\016\n\006cursor\030\t \001(\t\022\r\n\005limit\030\n \001(\005\"\245\001\n\013M"
-      "ailListRsp\022\n\n\002ok\030\001 \001(\010\022\017\n\007message\030\002 \001(\t\022"
-      "\022\n\nerror_code\030\003 \001(\t\022\036\n\005mails\030\004 \003(\0132\017.gam"
-      "e.MailBrief\022\023\n\013next_cursor\030\005 \001(\t\022\027\n\017mail"
-      "box_version\030\006 \001(\003\022\027\n\017server_time_utc\030\007 \001"
-      "(\003\"0\n\nMailGetReq\022\021\n\tplayer_id\030\001 \001(\004\022\017\n\007m"
-      "ail_id\030\002 \001(\004\"\217\001\n\nMailGetRsp\022\n\n\002ok\030\001 \001(\010\022"
-      "\017\n\007message\030\002 \001(\t\022\022\n\nerror_code\030\003 \001(\t\022\036\n\004"
-      "mail\030\004 \001(\0132\020.game.MailDetail\022\027\n\017mailbox_"
-      "version\030\005 \001(\003\022\027\n\017server_time_utc\030\006 \001(\003\"J"
-      "\n\013MailReadReq\022\021\n\tplayer_id\030\001 \001(\004\022\017\n\007mail"
-      "_id\030\002 \001(\004\022\027\n\017idempotency_key\030\003 \001(\t\"\201\001\n\013M"
-      "ailReadRsp\022\n\n\002ok\030\001 \001(\010\022\017\n\007message\030\002 \001(\t\022"
-      "\022\n\nerror_code\030\003 \001(\t\022\017\n\007read_at\030\004 \001(\003\022\027\n\017"
-      "mailbox_version\030\005 \001(\003\022\027\n\017server_time_utc"
-      "\030\006 \001(\003\"]\n\014MailClaimReq\022\021\n\tplayer_id\030\001 \001("
-      "\004\022\017\n\007mail_id\030\002 \001(\004\022\027\n\017idempotency_key\030\003 "
-      "\001(\t\022\020\n\010trace_id\030\004 \001(\t\"m\n\017MailClaimResult"
-      "\022\017\n\007mail_id\030\001 \001(\004\022\n\n\002ok\030\002 \001(\010\022\022\n\nerror_c"
-      "ode\030\003 \001(\t\022\017\n\007message\030\004 \001(\t\022\030\n\020attachment"
-      "_state\030\005 \001(\t\"\230\001\n\014MailClaimRsp\022\n\n\002ok\030\001 \001("
-      "\010\022\017\n\007message\030\002 \001(\t\022\022\n\nerror_code\030\003 \001(\t\022%"
-      "\n\006result\030\004 \001(\0132\025.game.MailClaimResult\022\027\n"
+      "\nsession_id\030\007 \001(\t\022\022\n\ngeneration\030\010 \001(\004\022\'\n"
+      "\007profile\030\t \001(\0132\026.game.PlayerAttributes\"h"
+      "\n\014ReconnectReq\022\021\n\tplayer_id\030\001 \001(\004\022\022\n\nses"
+      "sion_id\030\002 \001(\t\022\030\n\020reconnect_ticket\030\003 \001(\t\022"
+      "\027\n\017last_server_seq\030\004 \001(\004\"\227\001\n\014ReconnectRs"
+      "p\022\n\n\002ok\030\001 \001(\010\022\017\n\007message\030\002 \001(\t\022\r\n\005token\030"
+      "\003 \001(\t\022\022\n\nsession_id\030\004 \001(\t\022\022\n\ngeneration\030"
+      "\005 \001(\004\022\032\n\022need_full_snapshot\030\006 \001(\010\022\027\n\017rep"
+      "lay_from_seq\030\007 \001(\004\"t\n\nPushAckReq\022\021\n\tplay"
+      "er_id\030\001 \001(\004\022\026\n\016ack_server_seq\030\002 \001(\004\022\022\n\ns"
+      "ession_id\030\003 \001(\t\022\023\n\013fence_token\030\004 \001(\t\022\022\n\n"
+      "generation\030\005 \001(\004\"A\n\nPushAckRsp\022\n\n\002ok\030\001 \001"
+      "(\010\022\017\n\007message\030\002 \001(\t\022\026\n\016trimmed_to_seq\030\003 "
+      "\001(\004\"v\n\022ServerPushEnvelope\022\022\n\nserver_seq\030"
+      "\001 \001(\004\022\024\n\014message_type\030\002 \001(\t\022\017\n\007payload\030\003"
+      " \001(\014\022\020\n\010reliable\030\004 \001(\010\022\023\n\013coalescable\030\005 "
+      "\001(\010\"\241\001\n\024FullStateSnapshotRsp\022\n\n\002ok\030\001 \001(\010"
+      "\022\017\n\007message\030\002 \001(\t\022\021\n\tplayer_id\030\003 \001(\004\022\025\n\r"
+      "asset_version\030\004 \001(\004\022\020\n\010item_ids\030\005 \003(\r\022\023\n"
+      "\013item_counts\030\006 \003(\r\022\033\n\023baseline_server_se"
+      "q\030\007 \001(\004\"6\n\022ValidateSessionReq\022\021\n\tplayer_"
+      "id\030\001 \001(\004\022\r\n\005token\030\002 \001(\t\"\216\001\n\022ValidateSess"
+      "ionRsp\022\n\n\002ok\030\001 \001(\010\022\017\n\007message\030\002 \001(\t\022\r\n\005v"
+      "alid\030\003 \001(\010\022\016\n\006online\030\004 \001(\010\022\021\n\tserver_id\030"
+      "\005 \001(\r\022\021\n\tdevice_id\030\006 \001(\t\022\026\n\016login_time_s"
+      "ec\030\007 \001(\003\"#\n\016CheckOnlineReq\022\021\n\tplayer_id\030"
+      "\001 \001(\004\"=\n\016CheckOnlineRsp\022\n\n\002ok\030\001 \001(\010\022\017\n\007m"
+      "essage\030\002 \001(\t\022\016\n\006online\030\003 \001(\010\"-\n\tLogoutRe"
+      "q\022\021\n\tplayer_id\030\001 \001(\004\022\r\n\005token\030\002 \001(\t\"(\n\tL"
+      "ogoutRsp\022\n\n\002ok\030\001 \001(\010\022\017\n\007message\030\002 \001(\t\"H\n"
+      "\013RegisterReq\022\021\n\tdevice_id\030\001 \001(\t\022\024\n\014displ"
+      "ay_name\030\002 \001(\t\022\020\n\010password\030\003 \001(\t\"=\n\013Regis"
+      "terRsp\022\n\n\002ok\030\001 \001(\010\022\017\n\007message\030\002 \001(\t\022\021\n\tp"
+      "layer_id\030\003 \001(\004\"0\n\013FlushBagReq\022\021\n\tplayer_"
+      "id\030\001 \001(\004\022\016\n\006reason\030\002 \001(\t\"*\n\013FlushBagRsp\022"
+      "\n\n\002ok\030\001 \001(\010\022\017\n\007message\030\002 \001(\t\"C\n\016ConsumeI"
+      "temReq\022\021\n\tplayer_id\030\001 \001(\004\022\017\n\007item_id\030\002 \001"
+      "(\r\022\r\n\005count\030\003 \001(\r\"C\n\016ConsumeItemRsp\022\n\n\002o"
+      "k\030\001 \001(\010\022\017\n\007message\030\002 \001(\t\022\024\n\014remain_count"
+      "\030\003 \001(\r\"Z\n\017ReleaseSkillReq\022\021\n\tplayer_id\030\001"
+      " \001(\004\022\020\n\010skill_id\030\002 \001(\r\022\020\n\010target_x\030\003 \001(\002"
+      "\022\020\n\010target_y\030\004 \001(\002\"C\n\017ReleaseSkillRsp\022\n\n"
+      "\002ok\030\001 \001(\010\022\017\n\007message\030\002 \001(\t\022\023\n\013cooldown_m"
+      "s\030\003 \001(\r\"n\n\014GrantItemReq\022\021\n\tplayer_id\030\001 \001"
+      "(\004\022\017\n\007item_id\030\002 \001(\004\022\r\n\005count\030\003 \001(\r\022\022\n\nex"
+      "tra_data\030\004 \001(\t\022\027\n\017expire_time_sec\030\005 \001(\003\""
+      "S\n\014GrantItemRsp\022\n\n\002ok\030\001 \001(\010\022\017\n\007message\030\002"
+      " \001(\t\022\023\n\013instance_id\030\003 \001(\004\022\021\n\tbag_total\030\004"
+      " \001(\r\"\225\001\n\021MailAttachmentDto\022\022\n\nslot_index"
+      "\030\001 \001(\r\022\022\n\nasset_type\030\002 \001(\t\022\020\n\010asset_id\030\003"
+      " \001(\004\022\r\n\005count\030\004 \001(\r\022\021\n\tbind_type\030\005 \001(\t\022\017"
+      "\n\007payload\030\006 \001(\t\022\023\n\013claim_state\030\007 \001(\t\"\217\002\n"
+      "\tMailBrief\022\017\n\007mail_id\030\001 \001(\004\022\020\n\010category\030"
+      "\002 \001(\t\022\020\n\010priority\030\003 \001(\005\022\r\n\005title\030\004 \001(\t\022\023"
+      "\n\013sender_name\030\005 \001(\t\022\022\n\nread_state\030\006 \001(\t\022"
+      "\025\n\rvisible_state\030\007 \001(\t\022\030\n\020attachment_sta"
+      "te\030\010 \001(\t\022\026\n\016has_attachment\030\t \001(\010\022\023\n\013is_f"
+      "avorite\030\n \001(\010\022\017\n\007sent_at\030\013 \001(\003\022\021\n\texpire"
+      "_at\030\014 \001(\003\022\023\n\013row_version\030\r \001(\003\"\201\001\n\nMailD"
+      "etail\022\036\n\005brief\030\001 \001(\0132\017.game.MailBrief\022\014\n"
+      "\004body\030\002 \001(\t\022,\n\013attachments\030\003 \003(\0132\027.game."
+      "MailAttachmentDto\022\027\n\017allowed_actions\030\004 \003"
+      "(\t\"&\n\021MailboxSummaryReq\022\021\n\tplayer_id\030\001 \001"
+      "(\004\"\265\002\n\021MailboxSummaryRsp\022\n\n\002ok\030\001 \001(\010\022\017\n\007"
+      "message\030\002 \001(\t\022\022\n\nerror_code\030\003 \001(\t\022\025\n\runr"
+      "ead_system\030\004 \001(\r\022\027\n\017unread_activity\030\005 \001("
+      "\r\022\025\n\runread_social\030\006 \001(\r\022\024\n\014unread_trade"
+      "\030\007 \001(\r\022\034\n\024unclaimed_attachment\030\010 \001(\r\022\025\n\r"
+      "expiring_soon\030\t \001(\r\022\025\n\rcurrent_count\030\n \001"
+      "(\r\022\024\n\014max_capacity\030\013 \001(\r\022\027\n\017mailbox_vers"
+      "ion\030\014 \001(\003\022\027\n\017server_time_utc\030\r \001(\003\"\306\001\n\013M"
+      "ailListReq\022\021\n\tplayer_id\030\001 \001(\004\022\020\n\010categor"
+      "y\030\002 \001(\t\022\016\n\006unread\030\003 \001(\010\022\026\n\016has_attachmen"
+      "t\030\004 \001(\010\022\021\n\tunclaimed\030\005 \001(\010\022\025\n\rexpiring_s"
+      "oon\030\006 \001(\010\022\020\n\010favorite\030\007 \001(\010\022\017\n\007keyword\030\010"
+      " \001(\t\022\016\n\006cursor\030\t \001(\t\022\r\n\005limit\030\n \001(\005\"\245\001\n\013"
+      "MailListRsp\022\n\n\002ok\030\001 \001(\010\022\017\n\007message\030\002 \001(\t"
+      "\022\022\n\nerror_code\030\003 \001(\t\022\036\n\005mails\030\004 \003(\0132\017.ga"
+      "me.MailBrief\022\023\n\013next_cursor\030\005 \001(\t\022\027\n\017mai"
+      "lbox_version\030\006 \001(\003\022\027\n\017server_time_utc\030\007 "
+      "\001(\003\"0\n\nMailGetReq\022\021\n\tplayer_id\030\001 \001(\004\022\017\n\007"
+      "mail_id\030\002 \001(\004\"\217\001\n\nMailGetRsp\022\n\n\002ok\030\001 \001(\010"
+      "\022\017\n\007message\030\002 \001(\t\022\022\n\nerror_code\030\003 \001(\t\022\036\n"
+      "\004mail\030\004 \001(\0132\020.game.MailDetail\022\027\n\017mailbox"
+      "_version\030\005 \001(\003\022\027\n\017server_time_utc\030\006 \001(\003\""
+      "J\n\013MailReadReq\022\021\n\tplayer_id\030\001 \001(\004\022\017\n\007mai"
+      "l_id\030\002 \001(\004\022\027\n\017idempotency_key\030\003 \001(\t\"\201\001\n\013"
+      "MailReadRsp\022\n\n\002ok\030\001 \001(\010\022\017\n\007message\030\002 \001(\t"
+      "\022\022\n\nerror_code\030\003 \001(\t\022\017\n\007read_at\030\004 \001(\003\022\027\n"
       "\017mailbox_version\030\005 \001(\003\022\027\n\017server_time_ut"
-      "c\030\006 \001(\003\"j\n\021MailBatchClaimReq\022\021\n\tplayer_i"
-      "d\030\001 \001(\004\022\020\n\010mail_ids\030\002 \003(\004\022\036\n\026idempotency"
-      "_key_prefix\030\003 \001(\t\022\020\n\010trace_id\030\004 \001(\t\"\236\001\n\021"
-      "MailBatchClaimRsp\022\n\n\002ok\030\001 \001(\010\022\017\n\007message"
-      "\030\002 \001(\t\022\022\n\nerror_code\030\003 \001(\t\022&\n\007results\030\004 "
-      "\003(\0132\025.game.MailClaimResult\022\027\n\017mailbox_ve"
-      "rsion\030\005 \001(\003\022\027\n\017server_time_utc\030\006 \001(\003\"`\n\017"
-      "MailFavoriteReq\022\021\n\tplayer_id\030\001 \001(\004\022\017\n\007ma"
-      "il_id\030\002 \001(\004\022\020\n\010favorite\030\003 \001(\010\022\027\n\017idempot"
-      "ency_key\030\004 \001(\t\"\211\001\n\017MailFavoriteRsp\022\n\n\002ok"
-      "\030\001 \001(\010\022\017\n\007message\030\002 \001(\t\022\022\n\nerror_code\030\003 "
-      "\001(\t\022\023\n\013is_favorite\030\004 \001(\010\022\027\n\017mailbox_vers"
-      "ion\030\005 \001(\003\022\027\n\017server_time_utc\030\006 \001(\003\"P\n\020Ma"
-      "ilBatchReadReq\022\021\n\tplayer_id\030\001 \001(\004\022\020\n\010mai"
-      "l_ids\030\002 \003(\004\022\027\n\017idempotency_key\030\003 \001(\t\"\214\001\n"
-      "\020MailBatchReadRsp\022\n\n\002ok\030\001 \001(\010\022\017\n\007message"
-      "\030\002 \001(\t\022\022\n\nerror_code\030\003 \001(\t\022\025\n\rsuccess_co"
-      "unt\030\004 \001(\r\022\027\n\017mailbox_version\030\005 \001(\003\022\027\n\017se"
-      "rver_time_utc\030\006 \001(\003\"R\n\022MailBatchDeleteRe"
-      "q\022\021\n\tplayer_id\030\001 \001(\004\022\020\n\010mail_ids\030\002 \003(\004\022\027"
-      "\n\017idempotency_key\030\003 \001(\t\"\247\001\n\022MailBatchDel"
-      "eteRsp\022\n\n\002ok\030\001 \001(\010\022\017\n\007message\030\002 \001(\t\022\022\n\ne"
-      "rror_code\030\003 \001(\t\022\025\n\rsuccess_count\030\004 \001(\r\022\027"
-      "\n\017failed_mail_ids\030\005 \003(\004\022\027\n\017mailbox_versi"
-      "on\030\006 \001(\003\022\027\n\017server_time_utc\030\007 \001(\003\"p\n\025Mai"
-      "lDeliverAttachment\022\022\n\nasset_type\030\001 \001(\t\022\020"
-      "\n\010asset_id\030\002 \001(\004\022\r\n\005count\030\003 \001(\r\022\021\n\tbind_"
-      "type\030\004 \001(\t\022\017\n\007payload\030\005 \001(\t\"\366\002\n\016MailDeli"
-      "verReq\022\025\n\rsource_system\030\001 \001(\t\022\024\n\014busines"
-      "s_key\030\002 \001(\t\022\025\n\rreceiver_type\030\003 \001(\t\022\023\n\013re"
-      "ceiver_id\030\004 \001(\004\022\023\n\013template_id\030\005 \001(\t\022\030\n\020"
-      "template_version\030\006 \001(\005\022\020\n\010category\030\007 \001(\t"
-      "\022\020\n\010priority\030\010 \001(\005\022\023\n\013sender_name\030\t \001(\t\022"
-      "\r\n\005title\030\n \001(\t\022\014\n\004body\030\013 \001(\t\0220\n\013attachme"
-      "nts\030\014 \003(\0132\033.game.MailDeliverAttachment\022\017"
-      "\n\007send_at\030\r \001(\003\022\021\n\texpire_at\030\016 \001(\003\022\020\n\010tr"
-      "ace_id\030\017 \001(\t\022\036\n\026session_token_override\030\020"
-      " \001(\t\"\203\001\n\016MailDeliverRsp\022\n\n\002ok\030\001 \001(\010\022\017\n\007m"
-      "essage\030\002 \001(\t\022\022\n\nerror_code\030\003 \001(\t\022\017\n\007mail"
-      "_id\030\004 \001(\004\022\026\n\016idempotent_hit\030\005 \001(\010\022\027\n\017ser"
-      "ver_time_utc\030\006 \001(\003\"d\n\013EnterMapReq\022\021\n\tpla"
-      "yer_id\030\001 \001(\004\022\020\n\010realm_id\030\002 \001(\r\022\027\n\017map_te"
-      "mplate_id\030\003 \001(\004\022\027\n\017map_instance_id\030\004 \001(\004"
-      "\"\247\001\n\013EnterMapRsp\022\n\n\002ok\030\001 \001(\010\022\017\n\007message\030"
-      "\002 \001(\t\022\027\n\017map_template_id\030\003 \001(\004\022\027\n\017map_in"
-      "stance_id\030\004 \001(\004\022\035\n\025gamelogic_instance_id"
-      "\030\005 \001(\t\022\023\n\013owner_epoch\030\006 \001(\004\022\025\n\rroute_ver"
-      "sion\030\007 \001(\004\"9\n\013LeaveMapReq\022\021\n\tplayer_id\030\001"
-      " \001(\004\022\027\n\017map_instance_id\030\002 \001(\004\"*\n\013LeaveMa"
-      "pRsp\022\n\n\002ok\030\001 \001(\010\022\017\n\007message\030\002 \001(\t\"8\n\nMap"
-      "PingReq\022\021\n\tplayer_id\030\001 \001(\004\022\027\n\017map_instan"
-      "ce_id\030\002 \001(\004\"s\n\nMapPingRsp\022\n\n\002ok\030\001 \001(\010\022\017\n"
-      "\007message\030\002 \001(\t\022\023\n\013owner_epoch\030\003 \001(\004\022\024\n\014p"
-      "layer_count\030\004 \001(\r\022\035\n\025gamelogic_instance_"
-      "id\030\005 \001(\t\"\?\n\013ChatSendReq\022\021\n\tplayer_id\030\001 \001"
-      "(\004\022\017\n\007channel\030\002 \001(\t\022\014\n\004text\030\003 \001(\t\">\n\013Cha"
-      "tSendRsp\022\n\n\002ok\030\001 \001(\010\022\017\n\007message\030\002 \001(\t\022\022\n"
-      "\nerror_code\030\003 \001(\t\"\"\n\rFriendListReq\022\021\n\tpl"
-      "ayer_id\030\001 \001(\004\"@\n\rFriendListRsp\022\n\n\002ok\030\001 \001"
-      "(\010\022\017\n\007message\030\002 \001(\t\022\022\n\nerror_code\030\003 \001(\t\""
-      "\242\t\n\013GameRequest\022\013\n\003seq\030\001 \001(\004\022\025\n\rsession_"
-      "token\030\002 \001(\t\022,\n\014consume_item\030\n \001(\0132\024.game"
-      ".ConsumeItemReqH\000\022.\n\rrelease_skill\030\013 \001(\013"
-      "2\025.game.ReleaseSkillReqH\000\022(\n\ngrant_item\030"
-      "\014 \001(\0132\022.game.GrantItemReqH\000\022\037\n\005login\030\024 \001"
-      "(\0132\016.game.LoginReqH\000\0224\n\020validate_session"
-      "\030\025 \001(\0132\030.game.ValidateSessionReqH\000\022,\n\014ch"
-      "eck_online\030\026 \001(\0132\024.game.CheckOnlineReqH\000"
-      "\022!\n\006logout\030\027 \001(\0132\017.game.LogoutReqH\000\022\'\n\tr"
-      "econnect\030\030 \001(\0132\022.game.ReconnectReqH\000\022%\n\010"
-      "register\030\031 \001(\0132\021.game.RegisterReqH\000\022&\n\tf"
-      "lush_bag\030\032 \001(\0132\021.game.FlushBagReqH\000\0222\n\017m"
-      "ailbox_summary\030\036 \001(\0132\027.game.MailboxSumma"
-      "ryReqH\000\022&\n\tmail_list\030\037 \001(\0132\021.game.MailLi"
-      "stReqH\000\022$\n\010mail_get\030  \001(\0132\020.game.MailGet"
-      "ReqH\000\022&\n\tmail_read\030! \001(\0132\021.game.MailRead"
-      "ReqH\000\022(\n\nmail_claim\030\" \001(\0132\022.game.MailCla"
-      "imReqH\000\0223\n\020mail_batch_claim\030# \001(\0132\027.game"
-      ".MailBatchClaimReqH\000\022.\n\rmail_favorite\030$ "
-      "\001(\0132\025.game.MailFavoriteReqH\000\0221\n\017mail_bat"
-      "ch_read\030% \001(\0132\026.game.MailBatchReadReqH\000\022"
-      "5\n\021mail_batch_delete\030& \001(\0132\030.game.MailBa"
-      "tchDeleteReqH\000\022,\n\014mail_deliver\030\' \001(\0132\024.g"
-      "ame.MailDeliverReqH\000\022&\n\tenter_map\030( \001(\0132"
-      "\021.game.EnterMapReqH\000\022&\n\tleave_map\030) \001(\0132"
-      "\021.game.LeaveMapReqH\000\022$\n\010map_ping\030* \001(\0132\020"
-      ".game.MapPingReqH\000\022&\n\tchat_send\0302 \001(\0132\021."
-      "game.ChatSendReqH\000\022*\n\013friend_list\0303 \001(\0132"
-      "\023.game.FriendListReqH\000\022$\n\010push_ack\0304 \001(\013"
-      "2\020.game.PushAckReqH\000B\006\n\004body\"\217\n\n\014GameRes"
-      "ponse\022\013\n\003seq\030\001 \001(\004\022\n\n\002ok\030\002 \001(\010\022\017\n\007messag"
-      "e\030\003 \001(\t\022,\n\014consume_item\030\n \001(\0132\024.game.Con"
-      "sumeItemRspH\000\022.\n\rrelease_skill\030\013 \001(\0132\025.g"
-      "ame.ReleaseSkillRspH\000\022(\n\ngrant_item\030\014 \001("
-      "\0132\022.game.GrantItemRspH\000\022\037\n\005login\030\024 \001(\0132\016"
-      ".game.LoginRspH\000\0224\n\020validate_session\030\025 \001"
-      "(\0132\030.game.ValidateSessionRspH\000\022,\n\014check_"
-      "online\030\026 \001(\0132\024.game.CheckOnlineRspH\000\022!\n\006"
-      "logout\030\027 \001(\0132\017.game.LogoutRspH\000\022\'\n\trecon"
-      "nect\030\030 \001(\0132\022.game.ReconnectRspH\000\022%\n\010regi"
-      "ster\030\031 \001(\0132\021.game.RegisterRspH\000\022&\n\tflush"
-      "_bag\030\032 \001(\0132\021.game.FlushBagRspH\000\0222\n\017mailb"
-      "ox_summary\030\036 \001(\0132\027.game.MailboxSummaryRs"
-      "pH\000\022&\n\tmail_list\030\037 \001(\0132\021.game.MailListRs"
-      "pH\000\022$\n\010mail_get\030  \001(\0132\020.game.MailGetRspH"
-      "\000\022&\n\tmail_read\030! \001(\0132\021.game.MailReadRspH"
-      "\000\022(\n\nmail_claim\030\" \001(\0132\022.game.MailClaimRs"
-      "pH\000\0223\n\020mail_batch_claim\030# \001(\0132\027.game.Mai"
-      "lBatchClaimRspH\000\022.\n\rmail_favorite\030$ \001(\0132"
-      "\025.game.MailFavoriteRspH\000\0221\n\017mail_batch_r"
-      "ead\030% \001(\0132\026.game.MailBatchReadRspH\000\0225\n\021m"
-      "ail_batch_delete\030& \001(\0132\030.game.MailBatchD"
-      "eleteRspH\000\022,\n\014mail_deliver\030\' \001(\0132\024.game."
-      "MailDeliverRspH\000\022&\n\tenter_map\030( \001(\0132\021.ga"
-      "me.EnterMapRspH\000\022&\n\tleave_map\030) \001(\0132\021.ga"
-      "me.LeaveMapRspH\000\022$\n\010map_ping\030* \001(\0132\020.gam"
-      "e.MapPingRspH\000\022&\n\tchat_send\0302 \001(\0132\021.game"
-      ".ChatSendRspH\000\022*\n\013friend_list\0303 \001(\0132\023.ga"
-      "me.FriendListRspH\000\022$\n\010push_ack\0304 \001(\0132\020.g"
-      "ame.PushAckRspH\000\022/\n\013server_push\0305 \001(\0132\030."
-      "game.ServerPushEnvelopeH\000\0223\n\rfull_snapsh"
-      "ot\0306 \001(\0132\032.game.FullStateSnapshotRspH\000B\006"
-      "\n\004bodyb\006proto3"
+      "c\030\006 \001(\003\"]\n\014MailClaimReq\022\021\n\tplayer_id\030\001 \001"
+      "(\004\022\017\n\007mail_id\030\002 \001(\004\022\027\n\017idempotency_key\030\003"
+      " \001(\t\022\020\n\010trace_id\030\004 \001(\t\"m\n\017MailClaimResul"
+      "t\022\017\n\007mail_id\030\001 \001(\004\022\n\n\002ok\030\002 \001(\010\022\022\n\nerror_"
+      "code\030\003 \001(\t\022\017\n\007message\030\004 \001(\t\022\030\n\020attachmen"
+      "t_state\030\005 \001(\t\"\230\001\n\014MailClaimRsp\022\n\n\002ok\030\001 \001"
+      "(\010\022\017\n\007message\030\002 \001(\t\022\022\n\nerror_code\030\003 \001(\t\022"
+      "%\n\006result\030\004 \001(\0132\025.game.MailClaimResult\022\027"
+      "\n\017mailbox_version\030\005 \001(\003\022\027\n\017server_time_u"
+      "tc\030\006 \001(\003\"j\n\021MailBatchClaimReq\022\021\n\tplayer_"
+      "id\030\001 \001(\004\022\020\n\010mail_ids\030\002 \003(\004\022\036\n\026idempotenc"
+      "y_key_prefix\030\003 \001(\t\022\020\n\010trace_id\030\004 \001(\t\"\236\001\n"
+      "\021MailBatchClaimRsp\022\n\n\002ok\030\001 \001(\010\022\017\n\007messag"
+      "e\030\002 \001(\t\022\022\n\nerror_code\030\003 \001(\t\022&\n\007results\030\004"
+      " \003(\0132\025.game.MailClaimResult\022\027\n\017mailbox_v"
+      "ersion\030\005 \001(\003\022\027\n\017server_time_utc\030\006 \001(\003\"`\n"
+      "\017MailFavoriteReq\022\021\n\tplayer_id\030\001 \001(\004\022\017\n\007m"
+      "ail_id\030\002 \001(\004\022\020\n\010favorite\030\003 \001(\010\022\027\n\017idempo"
+      "tency_key\030\004 \001(\t\"\211\001\n\017MailFavoriteRsp\022\n\n\002o"
+      "k\030\001 \001(\010\022\017\n\007message\030\002 \001(\t\022\022\n\nerror_code\030\003"
+      " \001(\t\022\023\n\013is_favorite\030\004 \001(\010\022\027\n\017mailbox_ver"
+      "sion\030\005 \001(\003\022\027\n\017server_time_utc\030\006 \001(\003\"P\n\020M"
+      "ailBatchReadReq\022\021\n\tplayer_id\030\001 \001(\004\022\020\n\010ma"
+      "il_ids\030\002 \003(\004\022\027\n\017idempotency_key\030\003 \001(\t\"\214\001"
+      "\n\020MailBatchReadRsp\022\n\n\002ok\030\001 \001(\010\022\017\n\007messag"
+      "e\030\002 \001(\t\022\022\n\nerror_code\030\003 \001(\t\022\025\n\rsuccess_c"
+      "ount\030\004 \001(\r\022\027\n\017mailbox_version\030\005 \001(\003\022\027\n\017s"
+      "erver_time_utc\030\006 \001(\003\"R\n\022MailBatchDeleteR"
+      "eq\022\021\n\tplayer_id\030\001 \001(\004\022\020\n\010mail_ids\030\002 \003(\004\022"
+      "\027\n\017idempotency_key\030\003 \001(\t\"\247\001\n\022MailBatchDe"
+      "leteRsp\022\n\n\002ok\030\001 \001(\010\022\017\n\007message\030\002 \001(\t\022\022\n\n"
+      "error_code\030\003 \001(\t\022\025\n\rsuccess_count\030\004 \001(\r\022"
+      "\027\n\017failed_mail_ids\030\005 \003(\004\022\027\n\017mailbox_vers"
+      "ion\030\006 \001(\003\022\027\n\017server_time_utc\030\007 \001(\003\"p\n\025Ma"
+      "ilDeliverAttachment\022\022\n\nasset_type\030\001 \001(\t\022"
+      "\020\n\010asset_id\030\002 \001(\004\022\r\n\005count\030\003 \001(\r\022\021\n\tbind"
+      "_type\030\004 \001(\t\022\017\n\007payload\030\005 \001(\t\"\366\002\n\016MailDel"
+      "iverReq\022\025\n\rsource_system\030\001 \001(\t\022\024\n\014busine"
+      "ss_key\030\002 \001(\t\022\025\n\rreceiver_type\030\003 \001(\t\022\023\n\013r"
+      "eceiver_id\030\004 \001(\004\022\023\n\013template_id\030\005 \001(\t\022\030\n"
+      "\020template_version\030\006 \001(\005\022\020\n\010category\030\007 \001("
+      "\t\022\020\n\010priority\030\010 \001(\005\022\023\n\013sender_name\030\t \001(\t"
+      "\022\r\n\005title\030\n \001(\t\022\014\n\004body\030\013 \001(\t\0220\n\013attachm"
+      "ents\030\014 \003(\0132\033.game.MailDeliverAttachment\022"
+      "\017\n\007send_at\030\r \001(\003\022\021\n\texpire_at\030\016 \001(\003\022\020\n\010t"
+      "race_id\030\017 \001(\t\022\036\n\026session_token_override\030"
+      "\020 \001(\t\"\203\001\n\016MailDeliverRsp\022\n\n\002ok\030\001 \001(\010\022\017\n\007"
+      "message\030\002 \001(\t\022\022\n\nerror_code\030\003 \001(\t\022\017\n\007mai"
+      "l_id\030\004 \001(\004\022\026\n\016idempotent_hit\030\005 \001(\010\022\027\n\017se"
+      "rver_time_utc\030\006 \001(\003\"\255\001\n\013EnterMapReq\022\021\n\tp"
+      "layer_id\030\001 \001(\004\022\020\n\010realm_id\030\002 \001(\r\022\027\n\017map_"
+      "template_id\030\003 \001(\004\022\027\n\017map_instance_id\030\004 \001"
+      "(\004\022\030\n\020map_data_version\030\005 \001(\004\022\027\n\017map_data"
+      "_sha256\030\006 \001(\t\022\024\n\014operation_id\030\007 \001(\t\"\341\002\n\013"
+      "EnterMapRsp\022\n\n\002ok\030\001 \001(\010\022\017\n\007message\030\002 \001(\t"
+      "\022\027\n\017map_template_id\030\003 \001(\004\022\027\n\017map_instanc"
+      "e_id\030\004 \001(\004\022\035\n\025gamelogic_instance_id\030\005 \001("
+      "\t\022\023\n\013owner_epoch\030\006 \001(\004\022\025\n\rroute_version\030"
+      "\007 \001(\004\022\"\n\016spawn_position\030\010 \001(\0132\n.game.Vec"
+      "3\022\021\n\tspawn_yaw\030\t \001(\002\022\030\n\020map_data_version"
+      "\030\n \001(\004\022\027\n\017map_data_sha256\030\013 \001(\t\022\"\n\004self\030"
+      "\014 \001(\0132\024.game.EntitySnapshot\022*\n\014aoi_snaps"
+      "hot\030\r \003(\0132\024.game.EntitySnapshot\"9\n\013Leave"
+      "MapReq\022\021\n\tplayer_id\030\001 \001(\004\022\027\n\017map_instanc"
+      "e_id\030\002 \001(\004\"*\n\013LeaveMapRsp\022\n\n\002ok\030\001 \001(\010\022\017\n"
+      "\007message\030\002 \001(\t\"8\n\nMapPingReq\022\021\n\tplayer_i"
+      "d\030\001 \001(\004\022\027\n\017map_instance_id\030\002 \001(\004\"s\n\nMapP"
+      "ingRsp\022\n\n\002ok\030\001 \001(\010\022\017\n\007message\030\002 \001(\t\022\023\n\013o"
+      "wner_epoch\030\003 \001(\004\022\024\n\014player_count\030\004 \001(\r\022\035"
+      "\n\025gamelogic_instance_id\030\005 \001(\t\"\?\n\013ChatSen"
+      "dReq\022\021\n\tplayer_id\030\001 \001(\004\022\017\n\007channel\030\002 \001(\t"
+      "\022\014\n\004text\030\003 \001(\t\">\n\013ChatSendRsp\022\n\n\002ok\030\001 \001("
+      "\010\022\017\n\007message\030\002 \001(\t\022\022\n\nerror_code\030\003 \001(\t\"\""
+      "\n\rFriendListReq\022\021\n\tplayer_id\030\001 \001(\004\"@\n\rFr"
+      "iendListRsp\022\n\n\002ok\030\001 \001(\010\022\017\n\007message\030\002 \001(\t"
+      "\022\022\n\nerror_code\030\003 \001(\t\"\'\n\004Vec3\022\t\n\001x\030\001 \001(\002\022"
+      "\t\n\001y\030\002 \001(\002\022\t\n\001z\030\003 \001(\002\"\255\002\n\020PlayerAttribut"
+      "es\022\021\n\tplayer_id\030\001 \001(\004\022\023\n\013player_name\030\002 \001"
+      "(\t\022\n\n\002hp\030\003 \001(\005\022\016\n\006max_hp\030\004 \001(\005\022\n\n\002mp\030\005 \001"
+      "(\005\022\016\n\006max_mp\030\006 \001(\005\022\016\n\006attack\030\007 \001(\005\022\023\n\013sp"
+      "ell_power\030\010 \001(\005\022\017\n\007defense\030\t \001(\005\022\030\n\020magi"
+      "c_resistance\030\n \001(\005\022\023\n\013crit_chance\030\013 \001(\002\022"
+      "\023\n\013crit_damage\030\014 \001(\002\022\022\n\nmove_speed\030\r \001(\002"
+      "\022\024\n\014attack_speed\030\016 \001(\002\022\025\n\rstats_version\030"
+      "\017 \001(\004\"\222\001\n\016EntitySnapshot\022\021\n\tplayer_id\030\001 "
+      "\001(\004\022\023\n\013player_name\030\002 \001(\t\022\034\n\010position\030\003 \001"
+      "(\0132\n.game.Vec3\022\013\n\003yaw\030\004 \001(\002\022\n\n\002hp\030\005 \001(\005\022"
+      "\016\n\006max_hp\030\006 \001(\005\022\021\n\tstate_seq\030\007 \001(\004\"&\n\021Ge"
+      "tSelfProfileReq\022\021\n\tplayer_id\030\001 \001(\004\"m\n\021Ge"
+      "tSelfProfileRsp\022\n\n\002ok\030\001 \001(\010\022\017\n\007message\030\002"
+      " \001(\t\022\022\n\nerror_code\030\003 \001(\t\022\'\n\007profile\030\004 \001("
+      "\0132\026.game.PlayerAttributes\"x\n\007MoveReq\022\021\n\t"
+      "player_id\030\001 \001(\004\022\027\n\017map_instance_id\030\002 \001(\004"
+      "\022\034\n\010position\030\003 \001(\0132\n.game.Vec3\022\013\n\003yaw\030\004 "
+      "\001(\002\022\026\n\016client_time_ms\030\005 \001(\003\"\220\001\n\007MoveRsp\022"
+      "\n\n\002ok\030\001 \001(\010\022\017\n\007message\030\002 \001(\t\022\022\n\nerror_co"
+      "de\030\003 \001(\t\022\034\n\010position\030\004 \001(\0132\n.game.Vec3\022\013"
+      "\n\003yaw\030\005 \001(\002\022\021\n\tstate_seq\030\006 \001(\004\022\026\n\016server"
+      "_time_ms\030\007 \001(\003\"<\n\010AoiEvent\022\n\n\002op\030\001 \001(\005\022$"
+      "\n\006entity\030\002 \001(\0132\024.game.EntitySnapshot\"C\n\010"
+      "AoiDelta\022\027\n\017map_instance_id\030\001 \001(\004\022\036\n\006eve"
+      "nts\030\002 \003(\0132\016.game.AoiEvent\"|\n\021PlayerMailS"
+      "endReq\022\030\n\020sender_player_id\030\001 \001(\004\022\032\n\022rece"
+      "iver_player_id\030\002 \001(\004\022\r\n\005title\030\003 \001(\t\022\014\n\004b"
+      "ody\030\004 \001(\t\022\024\n\014operation_id\030\005 \001(\t\"m\n\021Playe"
+      "rMailSendRsp\022\n\n\002ok\030\001 \001(\010\022\017\n\007message\030\002 \001("
+      "\t\022\022\n\nerror_code\030\003 \001(\t\022\017\n\007mail_id\030\004 \001(\004\022\026"
+      "\n\016idempotent_hit\030\005 \001(\010\"X\n\024MailboxChanged"
+      "Notify\022\021\n\tplayer_id\030\001 \001(\004\022\027\n\017mailbox_ver"
+      "sion\030\002 \001(\003\022\024\n\014unread_count\030\003 \001(\r\"\253\n\n\013Gam"
+      "eRequest\022\013\n\003seq\030\001 \001(\004\022\025\n\rsession_token\030\002"
+      " \001(\t\022,\n\014consume_item\030\n \001(\0132\024.game.Consum"
+      "eItemReqH\000\022.\n\rrelease_skill\030\013 \001(\0132\025.game"
+      ".ReleaseSkillReqH\000\022(\n\ngrant_item\030\014 \001(\0132\022"
+      ".game.GrantItemReqH\000\022\037\n\005login\030\024 \001(\0132\016.ga"
+      "me.LoginReqH\000\0224\n\020validate_session\030\025 \001(\0132"
+      "\030.game.ValidateSessionReqH\000\022,\n\014check_onl"
+      "ine\030\026 \001(\0132\024.game.CheckOnlineReqH\000\022!\n\006log"
+      "out\030\027 \001(\0132\017.game.LogoutReqH\000\022\'\n\treconnec"
+      "t\030\030 \001(\0132\022.game.ReconnectReqH\000\022%\n\010registe"
+      "r\030\031 \001(\0132\021.game.RegisterReqH\000\022&\n\tflush_ba"
+      "g\030\032 \001(\0132\021.game.FlushBagReqH\000\0222\n\017mailbox_"
+      "summary\030\036 \001(\0132\027.game.MailboxSummaryReqH\000"
+      "\022&\n\tmail_list\030\037 \001(\0132\021.game.MailListReqH\000"
+      "\022$\n\010mail_get\030  \001(\0132\020.game.MailGetReqH\000\022&"
+      "\n\tmail_read\030! \001(\0132\021.game.MailReadReqH\000\022("
+      "\n\nmail_claim\030\" \001(\0132\022.game.MailClaimReqH\000"
+      "\0223\n\020mail_batch_claim\030# \001(\0132\027.game.MailBa"
+      "tchClaimReqH\000\022.\n\rmail_favorite\030$ \001(\0132\025.g"
+      "ame.MailFavoriteReqH\000\0221\n\017mail_batch_read"
+      "\030% \001(\0132\026.game.MailBatchReadReqH\000\0225\n\021mail"
+      "_batch_delete\030& \001(\0132\030.game.MailBatchDele"
+      "teReqH\000\022,\n\014mail_deliver\030\' \001(\0132\024.game.Mai"
+      "lDeliverReqH\000\022&\n\tenter_map\030( \001(\0132\021.game."
+      "EnterMapReqH\000\022&\n\tleave_map\030) \001(\0132\021.game."
+      "LeaveMapReqH\000\022$\n\010map_ping\030* \001(\0132\020.game.M"
+      "apPingReqH\000\022&\n\tchat_send\0302 \001(\0132\021.game.Ch"
+      "atSendReqH\000\022*\n\013friend_list\0303 \001(\0132\023.game."
+      "FriendListReqH\000\022$\n\010push_ack\0304 \001(\0132\020.game"
+      ".PushAckReqH\000\0223\n\020get_self_profile\030< \001(\0132"
+      "\027.game.GetSelfProfileReqH\000\022\035\n\004move\030= \001(\013"
+      "2\r.game.MoveReqH\000\0223\n\020player_mail_send\030\? "
+      "\001(\0132\027.game.PlayerMailSendReqH\000B\006\n\004body\"\364"
+      "\013\n\014GameResponse\022\013\n\003seq\030\001 \001(\004\022\n\n\002ok\030\002 \001(\010"
+      "\022\017\n\007message\030\003 \001(\t\022,\n\014consume_item\030\n \001(\0132"
+      "\024.game.ConsumeItemRspH\000\022.\n\rrelease_skill"
+      "\030\013 \001(\0132\025.game.ReleaseSkillRspH\000\022(\n\ngrant"
+      "_item\030\014 \001(\0132\022.game.GrantItemRspH\000\022\037\n\005log"
+      "in\030\024 \001(\0132\016.game.LoginRspH\000\0224\n\020validate_s"
+      "ession\030\025 \001(\0132\030.game.ValidateSessionRspH\000"
+      "\022,\n\014check_online\030\026 \001(\0132\024.game.CheckOnlin"
+      "eRspH\000\022!\n\006logout\030\027 \001(\0132\017.game.LogoutRspH"
+      "\000\022\'\n\treconnect\030\030 \001(\0132\022.game.ReconnectRsp"
+      "H\000\022%\n\010register\030\031 \001(\0132\021.game.RegisterRspH"
+      "\000\022&\n\tflush_bag\030\032 \001(\0132\021.game.FlushBagRspH"
+      "\000\0222\n\017mailbox_summary\030\036 \001(\0132\027.game.Mailbo"
+      "xSummaryRspH\000\022&\n\tmail_list\030\037 \001(\0132\021.game."
+      "MailListRspH\000\022$\n\010mail_get\030  \001(\0132\020.game.M"
+      "ailGetRspH\000\022&\n\tmail_read\030! \001(\0132\021.game.Ma"
+      "ilReadRspH\000\022(\n\nmail_claim\030\" \001(\0132\022.game.M"
+      "ailClaimRspH\000\0223\n\020mail_batch_claim\030# \001(\0132"
+      "\027.game.MailBatchClaimRspH\000\022.\n\rmail_favor"
+      "ite\030$ \001(\0132\025.game.MailFavoriteRspH\000\0221\n\017ma"
+      "il_batch_read\030% \001(\0132\026.game.MailBatchRead"
+      "RspH\000\0225\n\021mail_batch_delete\030& \001(\0132\030.game."
+      "MailBatchDeleteRspH\000\022,\n\014mail_deliver\030\' \001"
+      "(\0132\024.game.MailDeliverRspH\000\022&\n\tenter_map\030"
+      "( \001(\0132\021.game.EnterMapRspH\000\022&\n\tleave_map\030"
+      ") \001(\0132\021.game.LeaveMapRspH\000\022$\n\010map_ping\030*"
+      " \001(\0132\020.game.MapPingRspH\000\022&\n\tchat_send\0302 "
+      "\001(\0132\021.game.ChatSendRspH\000\022*\n\013friend_list\030"
+      "3 \001(\0132\023.game.FriendListRspH\000\022$\n\010push_ack"
+      "\0304 \001(\0132\020.game.PushAckRspH\000\022/\n\013server_pus"
+      "h\0305 \001(\0132\030.game.ServerPushEnvelopeH\000\0223\n\rf"
+      "ull_snapshot\0306 \001(\0132\032.game.FullStateSnaps"
+      "hotRspH\000\0223\n\020get_self_profile\030< \001(\0132\027.gam"
+      "e.GetSelfProfileRspH\000\022\035\n\004move\030= \001(\0132\r.ga"
+      "me.MoveRspH\000\022#\n\taoi_delta\030> \001(\0132\016.game.A"
+      "oiDeltaH\000\0223\n\020player_mail_send\030\? \001(\0132\027.ga"
+      "me.PlayerMailSendRspH\000\0225\n\017mailbox_change"
+      "d\030@ \001(\0132\032.game.MailboxChangedNotifyH\000B\006\n"
+      "\004bodyB\024\252\002\021GameMesh.Protocolb\006proto3"
   };
   ::google::protobuf::DescriptorPool::InternalAddGeneratedFile(
-      descriptor, 9094);
+      descriptor, 11155);
   ::google::protobuf::MessageFactory::InternalRegisterGeneratedFile(
     "game.proto", &protobuf_RegisterTypes);
 }
@@ -3237,6 +3786,8 @@ void LoginReq::InternalSwap(LoginReq* other) {
 // ===================================================================
 
 void LoginRsp::InitAsDefaultInstance() {
+  ::game::_LoginRsp_default_instance_._instance.get_mutable()->profile_ = const_cast< ::game::PlayerAttributes*>(
+      ::game::PlayerAttributes::internal_default_instance());
 }
 #if !defined(_MSC_VER) || _MSC_VER >= 1900
 const int LoginRsp::kOkFieldNumber;
@@ -3247,6 +3798,7 @@ const int LoginRsp::kLoginTimeSecFieldNumber;
 const int LoginRsp::kKickedPreviousFieldNumber;
 const int LoginRsp::kSessionIdFieldNumber;
 const int LoginRsp::kGenerationFieldNumber;
+const int LoginRsp::kProfileFieldNumber;
 #endif  // !defined(_MSC_VER) || _MSC_VER >= 1900
 
 LoginRsp::LoginRsp()
@@ -3274,6 +3826,11 @@ LoginRsp::LoginRsp(const LoginRsp& from)
   if (from.session_id().size() > 0) {
     session_id_.AssignWithDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), from.session_id_);
   }
+  if (from.has_profile()) {
+    profile_ = new ::game::PlayerAttributes(*from.profile_);
+  } else {
+    profile_ = NULL;
+  }
   ::memcpy(&ok_, &from.ok_,
     static_cast<size_t>(reinterpret_cast<char*>(&generation_) -
     reinterpret_cast<char*>(&ok_)) + sizeof(generation_));
@@ -3284,9 +3841,9 @@ void LoginRsp::SharedCtor() {
   message_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
   token_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
   session_id_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
-  ::memset(&ok_, 0, static_cast<size_t>(
+  ::memset(&profile_, 0, static_cast<size_t>(
       reinterpret_cast<char*>(&generation_) -
-      reinterpret_cast<char*>(&ok_)) + sizeof(generation_));
+      reinterpret_cast<char*>(&profile_)) + sizeof(generation_));
   _cached_size_ = 0;
 }
 
@@ -3299,6 +3856,7 @@ void LoginRsp::SharedDtor() {
   message_.DestroyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
   token_.DestroyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
   session_id_.DestroyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  if (this != internal_default_instance()) delete profile_;
 }
 
 void LoginRsp::SetCachedSize(int size) const {
@@ -3333,6 +3891,10 @@ void LoginRsp::Clear() {
   message_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
   token_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
   session_id_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  if (GetArenaNoVirtual() == NULL && profile_ != NULL) {
+    delete profile_;
+  }
+  profile_ = NULL;
   ::memset(&ok_, 0, static_cast<size_t>(
       reinterpret_cast<char*>(&generation_) -
       reinterpret_cast<char*>(&ok_)) + sizeof(generation_));
@@ -3467,6 +4029,18 @@ bool LoginRsp::MergePartialFromCodedStream(
         break;
       }
 
+      // .game.PlayerAttributes profile = 9;
+      case 9: {
+        if (static_cast< ::google::protobuf::uint8>(tag) ==
+            static_cast< ::google::protobuf::uint8>(74u /* 74 & 0xFF */)) {
+          DO_(::google::protobuf::internal::WireFormatLite::ReadMessage(
+               input, mutable_profile()));
+        } else {
+          goto handle_unusual;
+        }
+        break;
+      }
+
       default: {
       handle_unusual:
         if (tag == 0) {
@@ -3548,6 +4122,12 @@ void LoginRsp::SerializeWithCachedSizes(
     ::google::protobuf::internal::WireFormatLite::WriteUInt64(8, this->generation(), output);
   }
 
+  // .game.PlayerAttributes profile = 9;
+  if (this->has_profile()) {
+    ::google::protobuf::internal::WireFormatLite::WriteMessageMaybeToArray(
+      9, *this->profile_, output);
+  }
+
   if ((_internal_metadata_.have_unknown_fields() &&  ::google::protobuf::internal::GetProto3PreserveUnknownsDefault())) {
     ::google::protobuf::internal::WireFormat::SerializeUnknownFields(
         (::google::protobuf::internal::GetProto3PreserveUnknownsDefault()   ? _internal_metadata_.unknown_fields()   : _internal_metadata_.default_instance()), output);
@@ -3620,6 +4200,13 @@ void LoginRsp::SerializeWithCachedSizes(
     target = ::google::protobuf::internal::WireFormatLite::WriteUInt64ToArray(8, this->generation(), target);
   }
 
+  // .game.PlayerAttributes profile = 9;
+  if (this->has_profile()) {
+    target = ::google::protobuf::internal::WireFormatLite::
+      InternalWriteMessageToArray(
+        9, *this->profile_, deterministic, target);
+  }
+
   if ((_internal_metadata_.have_unknown_fields() &&  ::google::protobuf::internal::GetProto3PreserveUnknownsDefault())) {
     target = ::google::protobuf::internal::WireFormat::SerializeUnknownFieldsToArray(
         (::google::protobuf::internal::GetProto3PreserveUnknownsDefault()   ? _internal_metadata_.unknown_fields()   : _internal_metadata_.default_instance()), target);
@@ -3656,6 +4243,13 @@ size_t LoginRsp::ByteSizeLong() const {
     total_size += 1 +
       ::google::protobuf::internal::WireFormatLite::StringSize(
         this->session_id());
+  }
+
+  // .game.PlayerAttributes profile = 9;
+  if (this->has_profile()) {
+    total_size += 1 +
+      ::google::protobuf::internal::WireFormatLite::MessageSize(
+        *this->profile_);
   }
 
   // bool ok = 1;
@@ -3730,6 +4324,9 @@ void LoginRsp::MergeFrom(const LoginRsp& from) {
 
     session_id_.AssignWithDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), from.session_id_);
   }
+  if (from.has_profile()) {
+    mutable_profile()->::game::PlayerAttributes::MergeFrom(from.profile());
+  }
   if (from.ok() != 0) {
     set_ok(from.ok());
   }
@@ -3774,6 +4371,7 @@ void LoginRsp::InternalSwap(LoginRsp* other) {
   message_.Swap(&other->message_);
   token_.Swap(&other->token_);
   session_id_.Swap(&other->session_id_);
+  swap(profile_, other->profile_);
   swap(ok_, other->ok_);
   swap(kicked_previous_, other->kicked_previous_);
   swap(server_id_, other->server_id_);
@@ -23844,6 +24442,9 @@ const int EnterMapReq::kPlayerIdFieldNumber;
 const int EnterMapReq::kRealmIdFieldNumber;
 const int EnterMapReq::kMapTemplateIdFieldNumber;
 const int EnterMapReq::kMapInstanceIdFieldNumber;
+const int EnterMapReq::kMapDataVersionFieldNumber;
+const int EnterMapReq::kMapDataSha256FieldNumber;
+const int EnterMapReq::kOperationIdFieldNumber;
 #endif  // !defined(_MSC_VER) || _MSC_VER >= 1900
 
 EnterMapReq::EnterMapReq()
@@ -23859,6 +24460,14 @@ EnterMapReq::EnterMapReq(const EnterMapReq& from)
       _internal_metadata_(NULL),
       _cached_size_(0) {
   _internal_metadata_.MergeFrom(from._internal_metadata_);
+  map_data_sha256_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  if (from.map_data_sha256().size() > 0) {
+    map_data_sha256_.AssignWithDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), from.map_data_sha256_);
+  }
+  operation_id_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  if (from.operation_id().size() > 0) {
+    operation_id_.AssignWithDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), from.operation_id_);
+  }
   ::memcpy(&player_id_, &from.player_id_,
     static_cast<size_t>(reinterpret_cast<char*>(&realm_id_) -
     reinterpret_cast<char*>(&player_id_)) + sizeof(realm_id_));
@@ -23866,6 +24475,8 @@ EnterMapReq::EnterMapReq(const EnterMapReq& from)
 }
 
 void EnterMapReq::SharedCtor() {
+  map_data_sha256_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  operation_id_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
   ::memset(&player_id_, 0, static_cast<size_t>(
       reinterpret_cast<char*>(&realm_id_) -
       reinterpret_cast<char*>(&player_id_)) + sizeof(realm_id_));
@@ -23878,6 +24489,8 @@ EnterMapReq::~EnterMapReq() {
 }
 
 void EnterMapReq::SharedDtor() {
+  map_data_sha256_.DestroyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  operation_id_.DestroyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
 }
 
 void EnterMapReq::SetCachedSize(int size) const {
@@ -23909,6 +24522,8 @@ void EnterMapReq::Clear() {
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
 
+  map_data_sha256_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  operation_id_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
   ::memset(&player_id_, 0, static_cast<size_t>(
       reinterpret_cast<char*>(&realm_id_) -
       reinterpret_cast<char*>(&player_id_)) + sizeof(realm_id_));
@@ -23981,6 +24596,52 @@ bool EnterMapReq::MergePartialFromCodedStream(
         break;
       }
 
+      // uint64 map_data_version = 5;
+      case 5: {
+        if (static_cast< ::google::protobuf::uint8>(tag) ==
+            static_cast< ::google::protobuf::uint8>(40u /* 40 & 0xFF */)) {
+
+          DO_((::google::protobuf::internal::WireFormatLite::ReadPrimitive<
+                   ::google::protobuf::uint64, ::google::protobuf::internal::WireFormatLite::TYPE_UINT64>(
+                 input, &map_data_version_)));
+        } else {
+          goto handle_unusual;
+        }
+        break;
+      }
+
+      // string map_data_sha256 = 6;
+      case 6: {
+        if (static_cast< ::google::protobuf::uint8>(tag) ==
+            static_cast< ::google::protobuf::uint8>(50u /* 50 & 0xFF */)) {
+          DO_(::google::protobuf::internal::WireFormatLite::ReadString(
+                input, this->mutable_map_data_sha256()));
+          DO_(::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+            this->map_data_sha256().data(), static_cast<int>(this->map_data_sha256().length()),
+            ::google::protobuf::internal::WireFormatLite::PARSE,
+            "game.EnterMapReq.map_data_sha256"));
+        } else {
+          goto handle_unusual;
+        }
+        break;
+      }
+
+      // string operation_id = 7;
+      case 7: {
+        if (static_cast< ::google::protobuf::uint8>(tag) ==
+            static_cast< ::google::protobuf::uint8>(58u /* 58 & 0xFF */)) {
+          DO_(::google::protobuf::internal::WireFormatLite::ReadString(
+                input, this->mutable_operation_id()));
+          DO_(::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+            this->operation_id().data(), static_cast<int>(this->operation_id().length()),
+            ::google::protobuf::internal::WireFormatLite::PARSE,
+            "game.EnterMapReq.operation_id"));
+        } else {
+          goto handle_unusual;
+        }
+        break;
+      }
+
       default: {
       handle_unusual:
         if (tag == 0) {
@@ -24027,6 +24688,31 @@ void EnterMapReq::SerializeWithCachedSizes(
     ::google::protobuf::internal::WireFormatLite::WriteUInt64(4, this->map_instance_id(), output);
   }
 
+  // uint64 map_data_version = 5;
+  if (this->map_data_version() != 0) {
+    ::google::protobuf::internal::WireFormatLite::WriteUInt64(5, this->map_data_version(), output);
+  }
+
+  // string map_data_sha256 = 6;
+  if (this->map_data_sha256().size() > 0) {
+    ::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+      this->map_data_sha256().data(), static_cast<int>(this->map_data_sha256().length()),
+      ::google::protobuf::internal::WireFormatLite::SERIALIZE,
+      "game.EnterMapReq.map_data_sha256");
+    ::google::protobuf::internal::WireFormatLite::WriteStringMaybeAliased(
+      6, this->map_data_sha256(), output);
+  }
+
+  // string operation_id = 7;
+  if (this->operation_id().size() > 0) {
+    ::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+      this->operation_id().data(), static_cast<int>(this->operation_id().length()),
+      ::google::protobuf::internal::WireFormatLite::SERIALIZE,
+      "game.EnterMapReq.operation_id");
+    ::google::protobuf::internal::WireFormatLite::WriteStringMaybeAliased(
+      7, this->operation_id(), output);
+  }
+
   if ((_internal_metadata_.have_unknown_fields() &&  ::google::protobuf::internal::GetProto3PreserveUnknownsDefault())) {
     ::google::protobuf::internal::WireFormat::SerializeUnknownFields(
         (::google::protobuf::internal::GetProto3PreserveUnknownsDefault()   ? _internal_metadata_.unknown_fields()   : _internal_metadata_.default_instance()), output);
@@ -24061,6 +24747,33 @@ void EnterMapReq::SerializeWithCachedSizes(
     target = ::google::protobuf::internal::WireFormatLite::WriteUInt64ToArray(4, this->map_instance_id(), target);
   }
 
+  // uint64 map_data_version = 5;
+  if (this->map_data_version() != 0) {
+    target = ::google::protobuf::internal::WireFormatLite::WriteUInt64ToArray(5, this->map_data_version(), target);
+  }
+
+  // string map_data_sha256 = 6;
+  if (this->map_data_sha256().size() > 0) {
+    ::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+      this->map_data_sha256().data(), static_cast<int>(this->map_data_sha256().length()),
+      ::google::protobuf::internal::WireFormatLite::SERIALIZE,
+      "game.EnterMapReq.map_data_sha256");
+    target =
+      ::google::protobuf::internal::WireFormatLite::WriteStringToArray(
+        6, this->map_data_sha256(), target);
+  }
+
+  // string operation_id = 7;
+  if (this->operation_id().size() > 0) {
+    ::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+      this->operation_id().data(), static_cast<int>(this->operation_id().length()),
+      ::google::protobuf::internal::WireFormatLite::SERIALIZE,
+      "game.EnterMapReq.operation_id");
+    target =
+      ::google::protobuf::internal::WireFormatLite::WriteStringToArray(
+        7, this->operation_id(), target);
+  }
+
   if ((_internal_metadata_.have_unknown_fields() &&  ::google::protobuf::internal::GetProto3PreserveUnknownsDefault())) {
     target = ::google::protobuf::internal::WireFormat::SerializeUnknownFieldsToArray(
         (::google::protobuf::internal::GetProto3PreserveUnknownsDefault()   ? _internal_metadata_.unknown_fields()   : _internal_metadata_.default_instance()), target);
@@ -24078,6 +24791,20 @@ size_t EnterMapReq::ByteSizeLong() const {
       ::google::protobuf::internal::WireFormat::ComputeUnknownFieldsSize(
         (::google::protobuf::internal::GetProto3PreserveUnknownsDefault()   ? _internal_metadata_.unknown_fields()   : _internal_metadata_.default_instance()));
   }
+  // string map_data_sha256 = 6;
+  if (this->map_data_sha256().size() > 0) {
+    total_size += 1 +
+      ::google::protobuf::internal::WireFormatLite::StringSize(
+        this->map_data_sha256());
+  }
+
+  // string operation_id = 7;
+  if (this->operation_id().size() > 0) {
+    total_size += 1 +
+      ::google::protobuf::internal::WireFormatLite::StringSize(
+        this->operation_id());
+  }
+
   // uint64 player_id = 1;
   if (this->player_id() != 0) {
     total_size += 1 +
@@ -24097,6 +24824,13 @@ size_t EnterMapReq::ByteSizeLong() const {
     total_size += 1 +
       ::google::protobuf::internal::WireFormatLite::UInt64Size(
         this->map_instance_id());
+  }
+
+  // uint64 map_data_version = 5;
+  if (this->map_data_version() != 0) {
+    total_size += 1 +
+      ::google::protobuf::internal::WireFormatLite::UInt64Size(
+        this->map_data_version());
   }
 
   // uint32 realm_id = 2;
@@ -24135,6 +24869,14 @@ void EnterMapReq::MergeFrom(const EnterMapReq& from) {
   ::google::protobuf::uint32 cached_has_bits = 0;
   (void) cached_has_bits;
 
+  if (from.map_data_sha256().size() > 0) {
+
+    map_data_sha256_.AssignWithDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), from.map_data_sha256_);
+  }
+  if (from.operation_id().size() > 0) {
+
+    operation_id_.AssignWithDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), from.operation_id_);
+  }
   if (from.player_id() != 0) {
     set_player_id(from.player_id());
   }
@@ -24143,6 +24885,9 @@ void EnterMapReq::MergeFrom(const EnterMapReq& from) {
   }
   if (from.map_instance_id() != 0) {
     set_map_instance_id(from.map_instance_id());
+  }
+  if (from.map_data_version() != 0) {
+    set_map_data_version(from.map_data_version());
   }
   if (from.realm_id() != 0) {
     set_realm_id(from.realm_id());
@@ -24173,9 +24918,12 @@ void EnterMapReq::Swap(EnterMapReq* other) {
 }
 void EnterMapReq::InternalSwap(EnterMapReq* other) {
   using std::swap;
+  map_data_sha256_.Swap(&other->map_data_sha256_);
+  operation_id_.Swap(&other->operation_id_);
   swap(player_id_, other->player_id_);
   swap(map_template_id_, other->map_template_id_);
   swap(map_instance_id_, other->map_instance_id_);
+  swap(map_data_version_, other->map_data_version_);
   swap(realm_id_, other->realm_id_);
   _internal_metadata_.Swap(&other->_internal_metadata_);
   swap(_cached_size_, other->_cached_size_);
@@ -24190,6 +24938,10 @@ void EnterMapReq::InternalSwap(EnterMapReq* other) {
 // ===================================================================
 
 void EnterMapRsp::InitAsDefaultInstance() {
+  ::game::_EnterMapRsp_default_instance_._instance.get_mutable()->spawn_position_ = const_cast< ::game::Vec3*>(
+      ::game::Vec3::internal_default_instance());
+  ::game::_EnterMapRsp_default_instance_._instance.get_mutable()->self_ = const_cast< ::game::EntitySnapshot*>(
+      ::game::EntitySnapshot::internal_default_instance());
 }
 #if !defined(_MSC_VER) || _MSC_VER >= 1900
 const int EnterMapRsp::kOkFieldNumber;
@@ -24199,6 +24951,12 @@ const int EnterMapRsp::kMapInstanceIdFieldNumber;
 const int EnterMapRsp::kGamelogicInstanceIdFieldNumber;
 const int EnterMapRsp::kOwnerEpochFieldNumber;
 const int EnterMapRsp::kRouteVersionFieldNumber;
+const int EnterMapRsp::kSpawnPositionFieldNumber;
+const int EnterMapRsp::kSpawnYawFieldNumber;
+const int EnterMapRsp::kMapDataVersionFieldNumber;
+const int EnterMapRsp::kMapDataSha256FieldNumber;
+const int EnterMapRsp::kSelfFieldNumber;
+const int EnterMapRsp::kAoiSnapshotFieldNumber;
 #endif  // !defined(_MSC_VER) || _MSC_VER >= 1900
 
 EnterMapRsp::EnterMapRsp()
@@ -24212,6 +24970,7 @@ EnterMapRsp::EnterMapRsp()
 EnterMapRsp::EnterMapRsp(const EnterMapRsp& from)
   : ::google::protobuf::Message(),
       _internal_metadata_(NULL),
+      aoi_snapshot_(from.aoi_snapshot_),
       _cached_size_(0) {
   _internal_metadata_.MergeFrom(from._internal_metadata_);
   message_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
@@ -24222,18 +24981,33 @@ EnterMapRsp::EnterMapRsp(const EnterMapRsp& from)
   if (from.gamelogic_instance_id().size() > 0) {
     gamelogic_instance_id_.AssignWithDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), from.gamelogic_instance_id_);
   }
+  map_data_sha256_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  if (from.map_data_sha256().size() > 0) {
+    map_data_sha256_.AssignWithDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), from.map_data_sha256_);
+  }
+  if (from.has_spawn_position()) {
+    spawn_position_ = new ::game::Vec3(*from.spawn_position_);
+  } else {
+    spawn_position_ = NULL;
+  }
+  if (from.has_self()) {
+    self_ = new ::game::EntitySnapshot(*from.self_);
+  } else {
+    self_ = NULL;
+  }
   ::memcpy(&map_template_id_, &from.map_template_id_,
-    static_cast<size_t>(reinterpret_cast<char*>(&ok_) -
-    reinterpret_cast<char*>(&map_template_id_)) + sizeof(ok_));
+    static_cast<size_t>(reinterpret_cast<char*>(&map_data_version_) -
+    reinterpret_cast<char*>(&map_template_id_)) + sizeof(map_data_version_));
   // @@protoc_insertion_point(copy_constructor:game.EnterMapRsp)
 }
 
 void EnterMapRsp::SharedCtor() {
   message_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
   gamelogic_instance_id_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
-  ::memset(&map_template_id_, 0, static_cast<size_t>(
-      reinterpret_cast<char*>(&ok_) -
-      reinterpret_cast<char*>(&map_template_id_)) + sizeof(ok_));
+  map_data_sha256_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  ::memset(&spawn_position_, 0, static_cast<size_t>(
+      reinterpret_cast<char*>(&map_data_version_) -
+      reinterpret_cast<char*>(&spawn_position_)) + sizeof(map_data_version_));
   _cached_size_ = 0;
 }
 
@@ -24245,6 +25019,9 @@ EnterMapRsp::~EnterMapRsp() {
 void EnterMapRsp::SharedDtor() {
   message_.DestroyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
   gamelogic_instance_id_.DestroyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  map_data_sha256_.DestroyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  if (this != internal_default_instance()) delete spawn_position_;
+  if (this != internal_default_instance()) delete self_;
 }
 
 void EnterMapRsp::SetCachedSize(int size) const {
@@ -24276,11 +25053,21 @@ void EnterMapRsp::Clear() {
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
 
+  aoi_snapshot_.Clear();
   message_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
   gamelogic_instance_id_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  map_data_sha256_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  if (GetArenaNoVirtual() == NULL && spawn_position_ != NULL) {
+    delete spawn_position_;
+  }
+  spawn_position_ = NULL;
+  if (GetArenaNoVirtual() == NULL && self_ != NULL) {
+    delete self_;
+  }
+  self_ = NULL;
   ::memset(&map_template_id_, 0, static_cast<size_t>(
-      reinterpret_cast<char*>(&ok_) -
-      reinterpret_cast<char*>(&map_template_id_)) + sizeof(ok_));
+      reinterpret_cast<char*>(&map_data_version_) -
+      reinterpret_cast<char*>(&map_template_id_)) + sizeof(map_data_version_));
   _internal_metadata_.Clear();
 }
 
@@ -24396,6 +25183,85 @@ bool EnterMapRsp::MergePartialFromCodedStream(
         break;
       }
 
+      // .game.Vec3 spawn_position = 8;
+      case 8: {
+        if (static_cast< ::google::protobuf::uint8>(tag) ==
+            static_cast< ::google::protobuf::uint8>(66u /* 66 & 0xFF */)) {
+          DO_(::google::protobuf::internal::WireFormatLite::ReadMessage(
+               input, mutable_spawn_position()));
+        } else {
+          goto handle_unusual;
+        }
+        break;
+      }
+
+      // float spawn_yaw = 9;
+      case 9: {
+        if (static_cast< ::google::protobuf::uint8>(tag) ==
+            static_cast< ::google::protobuf::uint8>(77u /* 77 & 0xFF */)) {
+
+          DO_((::google::protobuf::internal::WireFormatLite::ReadPrimitive<
+                   float, ::google::protobuf::internal::WireFormatLite::TYPE_FLOAT>(
+                 input, &spawn_yaw_)));
+        } else {
+          goto handle_unusual;
+        }
+        break;
+      }
+
+      // uint64 map_data_version = 10;
+      case 10: {
+        if (static_cast< ::google::protobuf::uint8>(tag) ==
+            static_cast< ::google::protobuf::uint8>(80u /* 80 & 0xFF */)) {
+
+          DO_((::google::protobuf::internal::WireFormatLite::ReadPrimitive<
+                   ::google::protobuf::uint64, ::google::protobuf::internal::WireFormatLite::TYPE_UINT64>(
+                 input, &map_data_version_)));
+        } else {
+          goto handle_unusual;
+        }
+        break;
+      }
+
+      // string map_data_sha256 = 11;
+      case 11: {
+        if (static_cast< ::google::protobuf::uint8>(tag) ==
+            static_cast< ::google::protobuf::uint8>(90u /* 90 & 0xFF */)) {
+          DO_(::google::protobuf::internal::WireFormatLite::ReadString(
+                input, this->mutable_map_data_sha256()));
+          DO_(::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+            this->map_data_sha256().data(), static_cast<int>(this->map_data_sha256().length()),
+            ::google::protobuf::internal::WireFormatLite::PARSE,
+            "game.EnterMapRsp.map_data_sha256"));
+        } else {
+          goto handle_unusual;
+        }
+        break;
+      }
+
+      // .game.EntitySnapshot self = 12;
+      case 12: {
+        if (static_cast< ::google::protobuf::uint8>(tag) ==
+            static_cast< ::google::protobuf::uint8>(98u /* 98 & 0xFF */)) {
+          DO_(::google::protobuf::internal::WireFormatLite::ReadMessage(
+               input, mutable_self()));
+        } else {
+          goto handle_unusual;
+        }
+        break;
+      }
+
+      // repeated .game.EntitySnapshot aoi_snapshot = 13;
+      case 13: {
+        if (static_cast< ::google::protobuf::uint8>(tag) ==
+            static_cast< ::google::protobuf::uint8>(106u /* 106 & 0xFF */)) {
+          DO_(::google::protobuf::internal::WireFormatLite::ReadMessage(input, add_aoi_snapshot()));
+        } else {
+          goto handle_unusual;
+        }
+        break;
+      }
+
       default: {
       handle_unusual:
         if (tag == 0) {
@@ -24467,6 +25333,45 @@ void EnterMapRsp::SerializeWithCachedSizes(
     ::google::protobuf::internal::WireFormatLite::WriteUInt64(7, this->route_version(), output);
   }
 
+  // .game.Vec3 spawn_position = 8;
+  if (this->has_spawn_position()) {
+    ::google::protobuf::internal::WireFormatLite::WriteMessageMaybeToArray(
+      8, *this->spawn_position_, output);
+  }
+
+  // float spawn_yaw = 9;
+  if (this->spawn_yaw() != 0) {
+    ::google::protobuf::internal::WireFormatLite::WriteFloat(9, this->spawn_yaw(), output);
+  }
+
+  // uint64 map_data_version = 10;
+  if (this->map_data_version() != 0) {
+    ::google::protobuf::internal::WireFormatLite::WriteUInt64(10, this->map_data_version(), output);
+  }
+
+  // string map_data_sha256 = 11;
+  if (this->map_data_sha256().size() > 0) {
+    ::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+      this->map_data_sha256().data(), static_cast<int>(this->map_data_sha256().length()),
+      ::google::protobuf::internal::WireFormatLite::SERIALIZE,
+      "game.EnterMapRsp.map_data_sha256");
+    ::google::protobuf::internal::WireFormatLite::WriteStringMaybeAliased(
+      11, this->map_data_sha256(), output);
+  }
+
+  // .game.EntitySnapshot self = 12;
+  if (this->has_self()) {
+    ::google::protobuf::internal::WireFormatLite::WriteMessageMaybeToArray(
+      12, *this->self_, output);
+  }
+
+  // repeated .game.EntitySnapshot aoi_snapshot = 13;
+  for (unsigned int i = 0,
+      n = static_cast<unsigned int>(this->aoi_snapshot_size()); i < n; i++) {
+    ::google::protobuf::internal::WireFormatLite::WriteMessageMaybeToArray(
+      13, this->aoi_snapshot(static_cast<int>(i)), output);
+  }
+
   if ((_internal_metadata_.have_unknown_fields() &&  ::google::protobuf::internal::GetProto3PreserveUnknownsDefault())) {
     ::google::protobuf::internal::WireFormat::SerializeUnknownFields(
         (::google::protobuf::internal::GetProto3PreserveUnknownsDefault()   ? _internal_metadata_.unknown_fields()   : _internal_metadata_.default_instance()), output);
@@ -24528,6 +25433,49 @@ void EnterMapRsp::SerializeWithCachedSizes(
     target = ::google::protobuf::internal::WireFormatLite::WriteUInt64ToArray(7, this->route_version(), target);
   }
 
+  // .game.Vec3 spawn_position = 8;
+  if (this->has_spawn_position()) {
+    target = ::google::protobuf::internal::WireFormatLite::
+      InternalWriteMessageToArray(
+        8, *this->spawn_position_, deterministic, target);
+  }
+
+  // float spawn_yaw = 9;
+  if (this->spawn_yaw() != 0) {
+    target = ::google::protobuf::internal::WireFormatLite::WriteFloatToArray(9, this->spawn_yaw(), target);
+  }
+
+  // uint64 map_data_version = 10;
+  if (this->map_data_version() != 0) {
+    target = ::google::protobuf::internal::WireFormatLite::WriteUInt64ToArray(10, this->map_data_version(), target);
+  }
+
+  // string map_data_sha256 = 11;
+  if (this->map_data_sha256().size() > 0) {
+    ::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+      this->map_data_sha256().data(), static_cast<int>(this->map_data_sha256().length()),
+      ::google::protobuf::internal::WireFormatLite::SERIALIZE,
+      "game.EnterMapRsp.map_data_sha256");
+    target =
+      ::google::protobuf::internal::WireFormatLite::WriteStringToArray(
+        11, this->map_data_sha256(), target);
+  }
+
+  // .game.EntitySnapshot self = 12;
+  if (this->has_self()) {
+    target = ::google::protobuf::internal::WireFormatLite::
+      InternalWriteMessageToArray(
+        12, *this->self_, deterministic, target);
+  }
+
+  // repeated .game.EntitySnapshot aoi_snapshot = 13;
+  for (unsigned int i = 0,
+      n = static_cast<unsigned int>(this->aoi_snapshot_size()); i < n; i++) {
+    target = ::google::protobuf::internal::WireFormatLite::
+      InternalWriteMessageToArray(
+        13, this->aoi_snapshot(static_cast<int>(i)), deterministic, target);
+  }
+
   if ((_internal_metadata_.have_unknown_fields() &&  ::google::protobuf::internal::GetProto3PreserveUnknownsDefault())) {
     target = ::google::protobuf::internal::WireFormat::SerializeUnknownFieldsToArray(
         (::google::protobuf::internal::GetProto3PreserveUnknownsDefault()   ? _internal_metadata_.unknown_fields()   : _internal_metadata_.default_instance()), target);
@@ -24545,6 +25493,17 @@ size_t EnterMapRsp::ByteSizeLong() const {
       ::google::protobuf::internal::WireFormat::ComputeUnknownFieldsSize(
         (::google::protobuf::internal::GetProto3PreserveUnknownsDefault()   ? _internal_metadata_.unknown_fields()   : _internal_metadata_.default_instance()));
   }
+  // repeated .game.EntitySnapshot aoi_snapshot = 13;
+  {
+    unsigned int count = static_cast<unsigned int>(this->aoi_snapshot_size());
+    total_size += 1UL * count;
+    for (unsigned int i = 0; i < count; i++) {
+      total_size +=
+        ::google::protobuf::internal::WireFormatLite::MessageSize(
+          this->aoi_snapshot(static_cast<int>(i)));
+    }
+  }
+
   // string message = 2;
   if (this->message().size() > 0) {
     total_size += 1 +
@@ -24557,6 +25516,27 @@ size_t EnterMapRsp::ByteSizeLong() const {
     total_size += 1 +
       ::google::protobuf::internal::WireFormatLite::StringSize(
         this->gamelogic_instance_id());
+  }
+
+  // string map_data_sha256 = 11;
+  if (this->map_data_sha256().size() > 0) {
+    total_size += 1 +
+      ::google::protobuf::internal::WireFormatLite::StringSize(
+        this->map_data_sha256());
+  }
+
+  // .game.Vec3 spawn_position = 8;
+  if (this->has_spawn_position()) {
+    total_size += 1 +
+      ::google::protobuf::internal::WireFormatLite::MessageSize(
+        *this->spawn_position_);
+  }
+
+  // .game.EntitySnapshot self = 12;
+  if (this->has_self()) {
+    total_size += 1 +
+      ::google::protobuf::internal::WireFormatLite::MessageSize(
+        *this->self_);
   }
 
   // uint64 map_template_id = 3;
@@ -24573,6 +25553,16 @@ size_t EnterMapRsp::ByteSizeLong() const {
         this->map_instance_id());
   }
 
+  // bool ok = 1;
+  if (this->ok() != 0) {
+    total_size += 1 + 1;
+  }
+
+  // float spawn_yaw = 9;
+  if (this->spawn_yaw() != 0) {
+    total_size += 1 + 4;
+  }
+
   // uint64 owner_epoch = 6;
   if (this->owner_epoch() != 0) {
     total_size += 1 +
@@ -24587,9 +25577,11 @@ size_t EnterMapRsp::ByteSizeLong() const {
         this->route_version());
   }
 
-  // bool ok = 1;
-  if (this->ok() != 0) {
-    total_size += 1 + 1;
+  // uint64 map_data_version = 10;
+  if (this->map_data_version() != 0) {
+    total_size += 1 +
+      ::google::protobuf::internal::WireFormatLite::UInt64Size(
+        this->map_data_version());
   }
 
   int cached_size = ::google::protobuf::internal::ToCachedSize(total_size);
@@ -24621,6 +25613,7 @@ void EnterMapRsp::MergeFrom(const EnterMapRsp& from) {
   ::google::protobuf::uint32 cached_has_bits = 0;
   (void) cached_has_bits;
 
+  aoi_snapshot_.MergeFrom(from.aoi_snapshot_);
   if (from.message().size() > 0) {
 
     message_.AssignWithDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), from.message_);
@@ -24629,11 +25622,27 @@ void EnterMapRsp::MergeFrom(const EnterMapRsp& from) {
 
     gamelogic_instance_id_.AssignWithDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), from.gamelogic_instance_id_);
   }
+  if (from.map_data_sha256().size() > 0) {
+
+    map_data_sha256_.AssignWithDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), from.map_data_sha256_);
+  }
+  if (from.has_spawn_position()) {
+    mutable_spawn_position()->::game::Vec3::MergeFrom(from.spawn_position());
+  }
+  if (from.has_self()) {
+    mutable_self()->::game::EntitySnapshot::MergeFrom(from.self());
+  }
   if (from.map_template_id() != 0) {
     set_map_template_id(from.map_template_id());
   }
   if (from.map_instance_id() != 0) {
     set_map_instance_id(from.map_instance_id());
+  }
+  if (from.ok() != 0) {
+    set_ok(from.ok());
+  }
+  if (from.spawn_yaw() != 0) {
+    set_spawn_yaw(from.spawn_yaw());
   }
   if (from.owner_epoch() != 0) {
     set_owner_epoch(from.owner_epoch());
@@ -24641,8 +25650,8 @@ void EnterMapRsp::MergeFrom(const EnterMapRsp& from) {
   if (from.route_version() != 0) {
     set_route_version(from.route_version());
   }
-  if (from.ok() != 0) {
-    set_ok(from.ok());
+  if (from.map_data_version() != 0) {
+    set_map_data_version(from.map_data_version());
   }
 }
 
@@ -24670,13 +25679,19 @@ void EnterMapRsp::Swap(EnterMapRsp* other) {
 }
 void EnterMapRsp::InternalSwap(EnterMapRsp* other) {
   using std::swap;
+  aoi_snapshot_.InternalSwap(&other->aoi_snapshot_);
   message_.Swap(&other->message_);
   gamelogic_instance_id_.Swap(&other->gamelogic_instance_id_);
+  map_data_sha256_.Swap(&other->map_data_sha256_);
+  swap(spawn_position_, other->spawn_position_);
+  swap(self_, other->self_);
   swap(map_template_id_, other->map_template_id_);
   swap(map_instance_id_, other->map_instance_id_);
+  swap(ok_, other->ok_);
+  swap(spawn_yaw_, other->spawn_yaw_);
   swap(owner_epoch_, other->owner_epoch_);
   swap(route_version_, other->route_version_);
-  swap(ok_, other->ok_);
+  swap(map_data_version_, other->map_data_version_);
   _internal_metadata_.Swap(&other->_internal_metadata_);
   swap(_cached_size_, other->_cached_size_);
 }
@@ -27260,6 +28275,4880 @@ void FriendListRsp::InternalSwap(FriendListRsp* other) {
 
 // ===================================================================
 
+void Vec3::InitAsDefaultInstance() {
+}
+#if !defined(_MSC_VER) || _MSC_VER >= 1900
+const int Vec3::kXFieldNumber;
+const int Vec3::kYFieldNumber;
+const int Vec3::kZFieldNumber;
+#endif  // !defined(_MSC_VER) || _MSC_VER >= 1900
+
+Vec3::Vec3()
+  : ::google::protobuf::Message(), _internal_metadata_(NULL) {
+  if (GOOGLE_PREDICT_TRUE(this != internal_default_instance())) {
+    ::protobuf_game_2eproto::InitDefaultsVec3();
+  }
+  SharedCtor();
+  // @@protoc_insertion_point(constructor:game.Vec3)
+}
+Vec3::Vec3(const Vec3& from)
+  : ::google::protobuf::Message(),
+      _internal_metadata_(NULL),
+      _cached_size_(0) {
+  _internal_metadata_.MergeFrom(from._internal_metadata_);
+  ::memcpy(&x_, &from.x_,
+    static_cast<size_t>(reinterpret_cast<char*>(&z_) -
+    reinterpret_cast<char*>(&x_)) + sizeof(z_));
+  // @@protoc_insertion_point(copy_constructor:game.Vec3)
+}
+
+void Vec3::SharedCtor() {
+  ::memset(&x_, 0, static_cast<size_t>(
+      reinterpret_cast<char*>(&z_) -
+      reinterpret_cast<char*>(&x_)) + sizeof(z_));
+  _cached_size_ = 0;
+}
+
+Vec3::~Vec3() {
+  // @@protoc_insertion_point(destructor:game.Vec3)
+  SharedDtor();
+}
+
+void Vec3::SharedDtor() {
+}
+
+void Vec3::SetCachedSize(int size) const {
+  GOOGLE_SAFE_CONCURRENT_WRITES_BEGIN();
+  _cached_size_ = size;
+  GOOGLE_SAFE_CONCURRENT_WRITES_END();
+}
+const ::google::protobuf::Descriptor* Vec3::descriptor() {
+  ::protobuf_game_2eproto::protobuf_AssignDescriptorsOnce();
+  return ::protobuf_game_2eproto::file_level_metadata[kIndexInFileMessages].descriptor;
+}
+
+const Vec3& Vec3::default_instance() {
+  ::protobuf_game_2eproto::InitDefaultsVec3();
+  return *internal_default_instance();
+}
+
+Vec3* Vec3::New(::google::protobuf::Arena* arena) const {
+  Vec3* n = new Vec3;
+  if (arena != NULL) {
+    arena->Own(n);
+  }
+  return n;
+}
+
+void Vec3::Clear() {
+// @@protoc_insertion_point(message_clear_start:game.Vec3)
+  ::google::protobuf::uint32 cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void) cached_has_bits;
+
+  ::memset(&x_, 0, static_cast<size_t>(
+      reinterpret_cast<char*>(&z_) -
+      reinterpret_cast<char*>(&x_)) + sizeof(z_));
+  _internal_metadata_.Clear();
+}
+
+bool Vec3::MergePartialFromCodedStream(
+    ::google::protobuf::io::CodedInputStream* input) {
+#define DO_(EXPRESSION) if (!GOOGLE_PREDICT_TRUE(EXPRESSION)) goto failure
+  ::google::protobuf::uint32 tag;
+  // @@protoc_insertion_point(parse_start:game.Vec3)
+  for (;;) {
+    ::std::pair< ::google::protobuf::uint32, bool> p = input->ReadTagWithCutoffNoLastTag(127u);
+    tag = p.first;
+    if (!p.second) goto handle_unusual;
+    switch (::google::protobuf::internal::WireFormatLite::GetTagFieldNumber(tag)) {
+      // float x = 1;
+      case 1: {
+        if (static_cast< ::google::protobuf::uint8>(tag) ==
+            static_cast< ::google::protobuf::uint8>(13u /* 13 & 0xFF */)) {
+
+          DO_((::google::protobuf::internal::WireFormatLite::ReadPrimitive<
+                   float, ::google::protobuf::internal::WireFormatLite::TYPE_FLOAT>(
+                 input, &x_)));
+        } else {
+          goto handle_unusual;
+        }
+        break;
+      }
+
+      // float y = 2;
+      case 2: {
+        if (static_cast< ::google::protobuf::uint8>(tag) ==
+            static_cast< ::google::protobuf::uint8>(21u /* 21 & 0xFF */)) {
+
+          DO_((::google::protobuf::internal::WireFormatLite::ReadPrimitive<
+                   float, ::google::protobuf::internal::WireFormatLite::TYPE_FLOAT>(
+                 input, &y_)));
+        } else {
+          goto handle_unusual;
+        }
+        break;
+      }
+
+      // float z = 3;
+      case 3: {
+        if (static_cast< ::google::protobuf::uint8>(tag) ==
+            static_cast< ::google::protobuf::uint8>(29u /* 29 & 0xFF */)) {
+
+          DO_((::google::protobuf::internal::WireFormatLite::ReadPrimitive<
+                   float, ::google::protobuf::internal::WireFormatLite::TYPE_FLOAT>(
+                 input, &z_)));
+        } else {
+          goto handle_unusual;
+        }
+        break;
+      }
+
+      default: {
+      handle_unusual:
+        if (tag == 0) {
+          goto success;
+        }
+        DO_(::google::protobuf::internal::WireFormat::SkipField(
+              input, tag, _internal_metadata_.mutable_unknown_fields()));
+        break;
+      }
+    }
+  }
+success:
+  // @@protoc_insertion_point(parse_success:game.Vec3)
+  return true;
+failure:
+  // @@protoc_insertion_point(parse_failure:game.Vec3)
+  return false;
+#undef DO_
+}
+
+void Vec3::SerializeWithCachedSizes(
+    ::google::protobuf::io::CodedOutputStream* output) const {
+  // @@protoc_insertion_point(serialize_start:game.Vec3)
+  ::google::protobuf::uint32 cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  // float x = 1;
+  if (this->x() != 0) {
+    ::google::protobuf::internal::WireFormatLite::WriteFloat(1, this->x(), output);
+  }
+
+  // float y = 2;
+  if (this->y() != 0) {
+    ::google::protobuf::internal::WireFormatLite::WriteFloat(2, this->y(), output);
+  }
+
+  // float z = 3;
+  if (this->z() != 0) {
+    ::google::protobuf::internal::WireFormatLite::WriteFloat(3, this->z(), output);
+  }
+
+  if ((_internal_metadata_.have_unknown_fields() &&  ::google::protobuf::internal::GetProto3PreserveUnknownsDefault())) {
+    ::google::protobuf::internal::WireFormat::SerializeUnknownFields(
+        (::google::protobuf::internal::GetProto3PreserveUnknownsDefault()   ? _internal_metadata_.unknown_fields()   : _internal_metadata_.default_instance()), output);
+  }
+  // @@protoc_insertion_point(serialize_end:game.Vec3)
+}
+
+::google::protobuf::uint8* Vec3::InternalSerializeWithCachedSizesToArray(
+    bool deterministic, ::google::protobuf::uint8* target) const {
+  (void)deterministic; // Unused
+  // @@protoc_insertion_point(serialize_to_array_start:game.Vec3)
+  ::google::protobuf::uint32 cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  // float x = 1;
+  if (this->x() != 0) {
+    target = ::google::protobuf::internal::WireFormatLite::WriteFloatToArray(1, this->x(), target);
+  }
+
+  // float y = 2;
+  if (this->y() != 0) {
+    target = ::google::protobuf::internal::WireFormatLite::WriteFloatToArray(2, this->y(), target);
+  }
+
+  // float z = 3;
+  if (this->z() != 0) {
+    target = ::google::protobuf::internal::WireFormatLite::WriteFloatToArray(3, this->z(), target);
+  }
+
+  if ((_internal_metadata_.have_unknown_fields() &&  ::google::protobuf::internal::GetProto3PreserveUnknownsDefault())) {
+    target = ::google::protobuf::internal::WireFormat::SerializeUnknownFieldsToArray(
+        (::google::protobuf::internal::GetProto3PreserveUnknownsDefault()   ? _internal_metadata_.unknown_fields()   : _internal_metadata_.default_instance()), target);
+  }
+  // @@protoc_insertion_point(serialize_to_array_end:game.Vec3)
+  return target;
+}
+
+size_t Vec3::ByteSizeLong() const {
+// @@protoc_insertion_point(message_byte_size_start:game.Vec3)
+  size_t total_size = 0;
+
+  if ((_internal_metadata_.have_unknown_fields() &&  ::google::protobuf::internal::GetProto3PreserveUnknownsDefault())) {
+    total_size +=
+      ::google::protobuf::internal::WireFormat::ComputeUnknownFieldsSize(
+        (::google::protobuf::internal::GetProto3PreserveUnknownsDefault()   ? _internal_metadata_.unknown_fields()   : _internal_metadata_.default_instance()));
+  }
+  // float x = 1;
+  if (this->x() != 0) {
+    total_size += 1 + 4;
+  }
+
+  // float y = 2;
+  if (this->y() != 0) {
+    total_size += 1 + 4;
+  }
+
+  // float z = 3;
+  if (this->z() != 0) {
+    total_size += 1 + 4;
+  }
+
+  int cached_size = ::google::protobuf::internal::ToCachedSize(total_size);
+  GOOGLE_SAFE_CONCURRENT_WRITES_BEGIN();
+  _cached_size_ = cached_size;
+  GOOGLE_SAFE_CONCURRENT_WRITES_END();
+  return total_size;
+}
+
+void Vec3::MergeFrom(const ::google::protobuf::Message& from) {
+// @@protoc_insertion_point(generalized_merge_from_start:game.Vec3)
+  GOOGLE_DCHECK_NE(&from, this);
+  const Vec3* source =
+      ::google::protobuf::internal::DynamicCastToGenerated<const Vec3>(
+          &from);
+  if (source == NULL) {
+  // @@protoc_insertion_point(generalized_merge_from_cast_fail:game.Vec3)
+    ::google::protobuf::internal::ReflectionOps::Merge(from, this);
+  } else {
+  // @@protoc_insertion_point(generalized_merge_from_cast_success:game.Vec3)
+    MergeFrom(*source);
+  }
+}
+
+void Vec3::MergeFrom(const Vec3& from) {
+// @@protoc_insertion_point(class_specific_merge_from_start:game.Vec3)
+  GOOGLE_DCHECK_NE(&from, this);
+  _internal_metadata_.MergeFrom(from._internal_metadata_);
+  ::google::protobuf::uint32 cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  if (from.x() != 0) {
+    set_x(from.x());
+  }
+  if (from.y() != 0) {
+    set_y(from.y());
+  }
+  if (from.z() != 0) {
+    set_z(from.z());
+  }
+}
+
+void Vec3::CopyFrom(const ::google::protobuf::Message& from) {
+// @@protoc_insertion_point(generalized_copy_from_start:game.Vec3)
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+void Vec3::CopyFrom(const Vec3& from) {
+// @@protoc_insertion_point(class_specific_copy_from_start:game.Vec3)
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+bool Vec3::IsInitialized() const {
+  return true;
+}
+
+void Vec3::Swap(Vec3* other) {
+  if (other == this) return;
+  InternalSwap(other);
+}
+void Vec3::InternalSwap(Vec3* other) {
+  using std::swap;
+  swap(x_, other->x_);
+  swap(y_, other->y_);
+  swap(z_, other->z_);
+  _internal_metadata_.Swap(&other->_internal_metadata_);
+  swap(_cached_size_, other->_cached_size_);
+}
+
+::google::protobuf::Metadata Vec3::GetMetadata() const {
+  protobuf_game_2eproto::protobuf_AssignDescriptorsOnce();
+  return ::protobuf_game_2eproto::file_level_metadata[kIndexInFileMessages];
+}
+
+
+// ===================================================================
+
+void PlayerAttributes::InitAsDefaultInstance() {
+}
+#if !defined(_MSC_VER) || _MSC_VER >= 1900
+const int PlayerAttributes::kPlayerIdFieldNumber;
+const int PlayerAttributes::kPlayerNameFieldNumber;
+const int PlayerAttributes::kHpFieldNumber;
+const int PlayerAttributes::kMaxHpFieldNumber;
+const int PlayerAttributes::kMpFieldNumber;
+const int PlayerAttributes::kMaxMpFieldNumber;
+const int PlayerAttributes::kAttackFieldNumber;
+const int PlayerAttributes::kSpellPowerFieldNumber;
+const int PlayerAttributes::kDefenseFieldNumber;
+const int PlayerAttributes::kMagicResistanceFieldNumber;
+const int PlayerAttributes::kCritChanceFieldNumber;
+const int PlayerAttributes::kCritDamageFieldNumber;
+const int PlayerAttributes::kMoveSpeedFieldNumber;
+const int PlayerAttributes::kAttackSpeedFieldNumber;
+const int PlayerAttributes::kStatsVersionFieldNumber;
+#endif  // !defined(_MSC_VER) || _MSC_VER >= 1900
+
+PlayerAttributes::PlayerAttributes()
+  : ::google::protobuf::Message(), _internal_metadata_(NULL) {
+  if (GOOGLE_PREDICT_TRUE(this != internal_default_instance())) {
+    ::protobuf_game_2eproto::InitDefaultsPlayerAttributes();
+  }
+  SharedCtor();
+  // @@protoc_insertion_point(constructor:game.PlayerAttributes)
+}
+PlayerAttributes::PlayerAttributes(const PlayerAttributes& from)
+  : ::google::protobuf::Message(),
+      _internal_metadata_(NULL),
+      _cached_size_(0) {
+  _internal_metadata_.MergeFrom(from._internal_metadata_);
+  player_name_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  if (from.player_name().size() > 0) {
+    player_name_.AssignWithDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), from.player_name_);
+  }
+  ::memcpy(&player_id_, &from.player_id_,
+    static_cast<size_t>(reinterpret_cast<char*>(&stats_version_) -
+    reinterpret_cast<char*>(&player_id_)) + sizeof(stats_version_));
+  // @@protoc_insertion_point(copy_constructor:game.PlayerAttributes)
+}
+
+void PlayerAttributes::SharedCtor() {
+  player_name_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  ::memset(&player_id_, 0, static_cast<size_t>(
+      reinterpret_cast<char*>(&stats_version_) -
+      reinterpret_cast<char*>(&player_id_)) + sizeof(stats_version_));
+  _cached_size_ = 0;
+}
+
+PlayerAttributes::~PlayerAttributes() {
+  // @@protoc_insertion_point(destructor:game.PlayerAttributes)
+  SharedDtor();
+}
+
+void PlayerAttributes::SharedDtor() {
+  player_name_.DestroyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+
+void PlayerAttributes::SetCachedSize(int size) const {
+  GOOGLE_SAFE_CONCURRENT_WRITES_BEGIN();
+  _cached_size_ = size;
+  GOOGLE_SAFE_CONCURRENT_WRITES_END();
+}
+const ::google::protobuf::Descriptor* PlayerAttributes::descriptor() {
+  ::protobuf_game_2eproto::protobuf_AssignDescriptorsOnce();
+  return ::protobuf_game_2eproto::file_level_metadata[kIndexInFileMessages].descriptor;
+}
+
+const PlayerAttributes& PlayerAttributes::default_instance() {
+  ::protobuf_game_2eproto::InitDefaultsPlayerAttributes();
+  return *internal_default_instance();
+}
+
+PlayerAttributes* PlayerAttributes::New(::google::protobuf::Arena* arena) const {
+  PlayerAttributes* n = new PlayerAttributes;
+  if (arena != NULL) {
+    arena->Own(n);
+  }
+  return n;
+}
+
+void PlayerAttributes::Clear() {
+// @@protoc_insertion_point(message_clear_start:game.PlayerAttributes)
+  ::google::protobuf::uint32 cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void) cached_has_bits;
+
+  player_name_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  ::memset(&player_id_, 0, static_cast<size_t>(
+      reinterpret_cast<char*>(&stats_version_) -
+      reinterpret_cast<char*>(&player_id_)) + sizeof(stats_version_));
+  _internal_metadata_.Clear();
+}
+
+bool PlayerAttributes::MergePartialFromCodedStream(
+    ::google::protobuf::io::CodedInputStream* input) {
+#define DO_(EXPRESSION) if (!GOOGLE_PREDICT_TRUE(EXPRESSION)) goto failure
+  ::google::protobuf::uint32 tag;
+  // @@protoc_insertion_point(parse_start:game.PlayerAttributes)
+  for (;;) {
+    ::std::pair< ::google::protobuf::uint32, bool> p = input->ReadTagWithCutoffNoLastTag(127u);
+    tag = p.first;
+    if (!p.second) goto handle_unusual;
+    switch (::google::protobuf::internal::WireFormatLite::GetTagFieldNumber(tag)) {
+      // uint64 player_id = 1;
+      case 1: {
+        if (static_cast< ::google::protobuf::uint8>(tag) ==
+            static_cast< ::google::protobuf::uint8>(8u /* 8 & 0xFF */)) {
+
+          DO_((::google::protobuf::internal::WireFormatLite::ReadPrimitive<
+                   ::google::protobuf::uint64, ::google::protobuf::internal::WireFormatLite::TYPE_UINT64>(
+                 input, &player_id_)));
+        } else {
+          goto handle_unusual;
+        }
+        break;
+      }
+
+      // string player_name = 2;
+      case 2: {
+        if (static_cast< ::google::protobuf::uint8>(tag) ==
+            static_cast< ::google::protobuf::uint8>(18u /* 18 & 0xFF */)) {
+          DO_(::google::protobuf::internal::WireFormatLite::ReadString(
+                input, this->mutable_player_name()));
+          DO_(::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+            this->player_name().data(), static_cast<int>(this->player_name().length()),
+            ::google::protobuf::internal::WireFormatLite::PARSE,
+            "game.PlayerAttributes.player_name"));
+        } else {
+          goto handle_unusual;
+        }
+        break;
+      }
+
+      // int32 hp = 3;
+      case 3: {
+        if (static_cast< ::google::protobuf::uint8>(tag) ==
+            static_cast< ::google::protobuf::uint8>(24u /* 24 & 0xFF */)) {
+
+          DO_((::google::protobuf::internal::WireFormatLite::ReadPrimitive<
+                   ::google::protobuf::int32, ::google::protobuf::internal::WireFormatLite::TYPE_INT32>(
+                 input, &hp_)));
+        } else {
+          goto handle_unusual;
+        }
+        break;
+      }
+
+      // int32 max_hp = 4;
+      case 4: {
+        if (static_cast< ::google::protobuf::uint8>(tag) ==
+            static_cast< ::google::protobuf::uint8>(32u /* 32 & 0xFF */)) {
+
+          DO_((::google::protobuf::internal::WireFormatLite::ReadPrimitive<
+                   ::google::protobuf::int32, ::google::protobuf::internal::WireFormatLite::TYPE_INT32>(
+                 input, &max_hp_)));
+        } else {
+          goto handle_unusual;
+        }
+        break;
+      }
+
+      // int32 mp = 5;
+      case 5: {
+        if (static_cast< ::google::protobuf::uint8>(tag) ==
+            static_cast< ::google::protobuf::uint8>(40u /* 40 & 0xFF */)) {
+
+          DO_((::google::protobuf::internal::WireFormatLite::ReadPrimitive<
+                   ::google::protobuf::int32, ::google::protobuf::internal::WireFormatLite::TYPE_INT32>(
+                 input, &mp_)));
+        } else {
+          goto handle_unusual;
+        }
+        break;
+      }
+
+      // int32 max_mp = 6;
+      case 6: {
+        if (static_cast< ::google::protobuf::uint8>(tag) ==
+            static_cast< ::google::protobuf::uint8>(48u /* 48 & 0xFF */)) {
+
+          DO_((::google::protobuf::internal::WireFormatLite::ReadPrimitive<
+                   ::google::protobuf::int32, ::google::protobuf::internal::WireFormatLite::TYPE_INT32>(
+                 input, &max_mp_)));
+        } else {
+          goto handle_unusual;
+        }
+        break;
+      }
+
+      // int32 attack = 7;
+      case 7: {
+        if (static_cast< ::google::protobuf::uint8>(tag) ==
+            static_cast< ::google::protobuf::uint8>(56u /* 56 & 0xFF */)) {
+
+          DO_((::google::protobuf::internal::WireFormatLite::ReadPrimitive<
+                   ::google::protobuf::int32, ::google::protobuf::internal::WireFormatLite::TYPE_INT32>(
+                 input, &attack_)));
+        } else {
+          goto handle_unusual;
+        }
+        break;
+      }
+
+      // int32 spell_power = 8;
+      case 8: {
+        if (static_cast< ::google::protobuf::uint8>(tag) ==
+            static_cast< ::google::protobuf::uint8>(64u /* 64 & 0xFF */)) {
+
+          DO_((::google::protobuf::internal::WireFormatLite::ReadPrimitive<
+                   ::google::protobuf::int32, ::google::protobuf::internal::WireFormatLite::TYPE_INT32>(
+                 input, &spell_power_)));
+        } else {
+          goto handle_unusual;
+        }
+        break;
+      }
+
+      // int32 defense = 9;
+      case 9: {
+        if (static_cast< ::google::protobuf::uint8>(tag) ==
+            static_cast< ::google::protobuf::uint8>(72u /* 72 & 0xFF */)) {
+
+          DO_((::google::protobuf::internal::WireFormatLite::ReadPrimitive<
+                   ::google::protobuf::int32, ::google::protobuf::internal::WireFormatLite::TYPE_INT32>(
+                 input, &defense_)));
+        } else {
+          goto handle_unusual;
+        }
+        break;
+      }
+
+      // int32 magic_resistance = 10;
+      case 10: {
+        if (static_cast< ::google::protobuf::uint8>(tag) ==
+            static_cast< ::google::protobuf::uint8>(80u /* 80 & 0xFF */)) {
+
+          DO_((::google::protobuf::internal::WireFormatLite::ReadPrimitive<
+                   ::google::protobuf::int32, ::google::protobuf::internal::WireFormatLite::TYPE_INT32>(
+                 input, &magic_resistance_)));
+        } else {
+          goto handle_unusual;
+        }
+        break;
+      }
+
+      // float crit_chance = 11;
+      case 11: {
+        if (static_cast< ::google::protobuf::uint8>(tag) ==
+            static_cast< ::google::protobuf::uint8>(93u /* 93 & 0xFF */)) {
+
+          DO_((::google::protobuf::internal::WireFormatLite::ReadPrimitive<
+                   float, ::google::protobuf::internal::WireFormatLite::TYPE_FLOAT>(
+                 input, &crit_chance_)));
+        } else {
+          goto handle_unusual;
+        }
+        break;
+      }
+
+      // float crit_damage = 12;
+      case 12: {
+        if (static_cast< ::google::protobuf::uint8>(tag) ==
+            static_cast< ::google::protobuf::uint8>(101u /* 101 & 0xFF */)) {
+
+          DO_((::google::protobuf::internal::WireFormatLite::ReadPrimitive<
+                   float, ::google::protobuf::internal::WireFormatLite::TYPE_FLOAT>(
+                 input, &crit_damage_)));
+        } else {
+          goto handle_unusual;
+        }
+        break;
+      }
+
+      // float move_speed = 13;
+      case 13: {
+        if (static_cast< ::google::protobuf::uint8>(tag) ==
+            static_cast< ::google::protobuf::uint8>(109u /* 109 & 0xFF */)) {
+
+          DO_((::google::protobuf::internal::WireFormatLite::ReadPrimitive<
+                   float, ::google::protobuf::internal::WireFormatLite::TYPE_FLOAT>(
+                 input, &move_speed_)));
+        } else {
+          goto handle_unusual;
+        }
+        break;
+      }
+
+      // float attack_speed = 14;
+      case 14: {
+        if (static_cast< ::google::protobuf::uint8>(tag) ==
+            static_cast< ::google::protobuf::uint8>(117u /* 117 & 0xFF */)) {
+
+          DO_((::google::protobuf::internal::WireFormatLite::ReadPrimitive<
+                   float, ::google::protobuf::internal::WireFormatLite::TYPE_FLOAT>(
+                 input, &attack_speed_)));
+        } else {
+          goto handle_unusual;
+        }
+        break;
+      }
+
+      // uint64 stats_version = 15;
+      case 15: {
+        if (static_cast< ::google::protobuf::uint8>(tag) ==
+            static_cast< ::google::protobuf::uint8>(120u /* 120 & 0xFF */)) {
+
+          DO_((::google::protobuf::internal::WireFormatLite::ReadPrimitive<
+                   ::google::protobuf::uint64, ::google::protobuf::internal::WireFormatLite::TYPE_UINT64>(
+                 input, &stats_version_)));
+        } else {
+          goto handle_unusual;
+        }
+        break;
+      }
+
+      default: {
+      handle_unusual:
+        if (tag == 0) {
+          goto success;
+        }
+        DO_(::google::protobuf::internal::WireFormat::SkipField(
+              input, tag, _internal_metadata_.mutable_unknown_fields()));
+        break;
+      }
+    }
+  }
+success:
+  // @@protoc_insertion_point(parse_success:game.PlayerAttributes)
+  return true;
+failure:
+  // @@protoc_insertion_point(parse_failure:game.PlayerAttributes)
+  return false;
+#undef DO_
+}
+
+void PlayerAttributes::SerializeWithCachedSizes(
+    ::google::protobuf::io::CodedOutputStream* output) const {
+  // @@protoc_insertion_point(serialize_start:game.PlayerAttributes)
+  ::google::protobuf::uint32 cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  // uint64 player_id = 1;
+  if (this->player_id() != 0) {
+    ::google::protobuf::internal::WireFormatLite::WriteUInt64(1, this->player_id(), output);
+  }
+
+  // string player_name = 2;
+  if (this->player_name().size() > 0) {
+    ::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+      this->player_name().data(), static_cast<int>(this->player_name().length()),
+      ::google::protobuf::internal::WireFormatLite::SERIALIZE,
+      "game.PlayerAttributes.player_name");
+    ::google::protobuf::internal::WireFormatLite::WriteStringMaybeAliased(
+      2, this->player_name(), output);
+  }
+
+  // int32 hp = 3;
+  if (this->hp() != 0) {
+    ::google::protobuf::internal::WireFormatLite::WriteInt32(3, this->hp(), output);
+  }
+
+  // int32 max_hp = 4;
+  if (this->max_hp() != 0) {
+    ::google::protobuf::internal::WireFormatLite::WriteInt32(4, this->max_hp(), output);
+  }
+
+  // int32 mp = 5;
+  if (this->mp() != 0) {
+    ::google::protobuf::internal::WireFormatLite::WriteInt32(5, this->mp(), output);
+  }
+
+  // int32 max_mp = 6;
+  if (this->max_mp() != 0) {
+    ::google::protobuf::internal::WireFormatLite::WriteInt32(6, this->max_mp(), output);
+  }
+
+  // int32 attack = 7;
+  if (this->attack() != 0) {
+    ::google::protobuf::internal::WireFormatLite::WriteInt32(7, this->attack(), output);
+  }
+
+  // int32 spell_power = 8;
+  if (this->spell_power() != 0) {
+    ::google::protobuf::internal::WireFormatLite::WriteInt32(8, this->spell_power(), output);
+  }
+
+  // int32 defense = 9;
+  if (this->defense() != 0) {
+    ::google::protobuf::internal::WireFormatLite::WriteInt32(9, this->defense(), output);
+  }
+
+  // int32 magic_resistance = 10;
+  if (this->magic_resistance() != 0) {
+    ::google::protobuf::internal::WireFormatLite::WriteInt32(10, this->magic_resistance(), output);
+  }
+
+  // float crit_chance = 11;
+  if (this->crit_chance() != 0) {
+    ::google::protobuf::internal::WireFormatLite::WriteFloat(11, this->crit_chance(), output);
+  }
+
+  // float crit_damage = 12;
+  if (this->crit_damage() != 0) {
+    ::google::protobuf::internal::WireFormatLite::WriteFloat(12, this->crit_damage(), output);
+  }
+
+  // float move_speed = 13;
+  if (this->move_speed() != 0) {
+    ::google::protobuf::internal::WireFormatLite::WriteFloat(13, this->move_speed(), output);
+  }
+
+  // float attack_speed = 14;
+  if (this->attack_speed() != 0) {
+    ::google::protobuf::internal::WireFormatLite::WriteFloat(14, this->attack_speed(), output);
+  }
+
+  // uint64 stats_version = 15;
+  if (this->stats_version() != 0) {
+    ::google::protobuf::internal::WireFormatLite::WriteUInt64(15, this->stats_version(), output);
+  }
+
+  if ((_internal_metadata_.have_unknown_fields() &&  ::google::protobuf::internal::GetProto3PreserveUnknownsDefault())) {
+    ::google::protobuf::internal::WireFormat::SerializeUnknownFields(
+        (::google::protobuf::internal::GetProto3PreserveUnknownsDefault()   ? _internal_metadata_.unknown_fields()   : _internal_metadata_.default_instance()), output);
+  }
+  // @@protoc_insertion_point(serialize_end:game.PlayerAttributes)
+}
+
+::google::protobuf::uint8* PlayerAttributes::InternalSerializeWithCachedSizesToArray(
+    bool deterministic, ::google::protobuf::uint8* target) const {
+  (void)deterministic; // Unused
+  // @@protoc_insertion_point(serialize_to_array_start:game.PlayerAttributes)
+  ::google::protobuf::uint32 cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  // uint64 player_id = 1;
+  if (this->player_id() != 0) {
+    target = ::google::protobuf::internal::WireFormatLite::WriteUInt64ToArray(1, this->player_id(), target);
+  }
+
+  // string player_name = 2;
+  if (this->player_name().size() > 0) {
+    ::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+      this->player_name().data(), static_cast<int>(this->player_name().length()),
+      ::google::protobuf::internal::WireFormatLite::SERIALIZE,
+      "game.PlayerAttributes.player_name");
+    target =
+      ::google::protobuf::internal::WireFormatLite::WriteStringToArray(
+        2, this->player_name(), target);
+  }
+
+  // int32 hp = 3;
+  if (this->hp() != 0) {
+    target = ::google::protobuf::internal::WireFormatLite::WriteInt32ToArray(3, this->hp(), target);
+  }
+
+  // int32 max_hp = 4;
+  if (this->max_hp() != 0) {
+    target = ::google::protobuf::internal::WireFormatLite::WriteInt32ToArray(4, this->max_hp(), target);
+  }
+
+  // int32 mp = 5;
+  if (this->mp() != 0) {
+    target = ::google::protobuf::internal::WireFormatLite::WriteInt32ToArray(5, this->mp(), target);
+  }
+
+  // int32 max_mp = 6;
+  if (this->max_mp() != 0) {
+    target = ::google::protobuf::internal::WireFormatLite::WriteInt32ToArray(6, this->max_mp(), target);
+  }
+
+  // int32 attack = 7;
+  if (this->attack() != 0) {
+    target = ::google::protobuf::internal::WireFormatLite::WriteInt32ToArray(7, this->attack(), target);
+  }
+
+  // int32 spell_power = 8;
+  if (this->spell_power() != 0) {
+    target = ::google::protobuf::internal::WireFormatLite::WriteInt32ToArray(8, this->spell_power(), target);
+  }
+
+  // int32 defense = 9;
+  if (this->defense() != 0) {
+    target = ::google::protobuf::internal::WireFormatLite::WriteInt32ToArray(9, this->defense(), target);
+  }
+
+  // int32 magic_resistance = 10;
+  if (this->magic_resistance() != 0) {
+    target = ::google::protobuf::internal::WireFormatLite::WriteInt32ToArray(10, this->magic_resistance(), target);
+  }
+
+  // float crit_chance = 11;
+  if (this->crit_chance() != 0) {
+    target = ::google::protobuf::internal::WireFormatLite::WriteFloatToArray(11, this->crit_chance(), target);
+  }
+
+  // float crit_damage = 12;
+  if (this->crit_damage() != 0) {
+    target = ::google::protobuf::internal::WireFormatLite::WriteFloatToArray(12, this->crit_damage(), target);
+  }
+
+  // float move_speed = 13;
+  if (this->move_speed() != 0) {
+    target = ::google::protobuf::internal::WireFormatLite::WriteFloatToArray(13, this->move_speed(), target);
+  }
+
+  // float attack_speed = 14;
+  if (this->attack_speed() != 0) {
+    target = ::google::protobuf::internal::WireFormatLite::WriteFloatToArray(14, this->attack_speed(), target);
+  }
+
+  // uint64 stats_version = 15;
+  if (this->stats_version() != 0) {
+    target = ::google::protobuf::internal::WireFormatLite::WriteUInt64ToArray(15, this->stats_version(), target);
+  }
+
+  if ((_internal_metadata_.have_unknown_fields() &&  ::google::protobuf::internal::GetProto3PreserveUnknownsDefault())) {
+    target = ::google::protobuf::internal::WireFormat::SerializeUnknownFieldsToArray(
+        (::google::protobuf::internal::GetProto3PreserveUnknownsDefault()   ? _internal_metadata_.unknown_fields()   : _internal_metadata_.default_instance()), target);
+  }
+  // @@protoc_insertion_point(serialize_to_array_end:game.PlayerAttributes)
+  return target;
+}
+
+size_t PlayerAttributes::ByteSizeLong() const {
+// @@protoc_insertion_point(message_byte_size_start:game.PlayerAttributes)
+  size_t total_size = 0;
+
+  if ((_internal_metadata_.have_unknown_fields() &&  ::google::protobuf::internal::GetProto3PreserveUnknownsDefault())) {
+    total_size +=
+      ::google::protobuf::internal::WireFormat::ComputeUnknownFieldsSize(
+        (::google::protobuf::internal::GetProto3PreserveUnknownsDefault()   ? _internal_metadata_.unknown_fields()   : _internal_metadata_.default_instance()));
+  }
+  // string player_name = 2;
+  if (this->player_name().size() > 0) {
+    total_size += 1 +
+      ::google::protobuf::internal::WireFormatLite::StringSize(
+        this->player_name());
+  }
+
+  // uint64 player_id = 1;
+  if (this->player_id() != 0) {
+    total_size += 1 +
+      ::google::protobuf::internal::WireFormatLite::UInt64Size(
+        this->player_id());
+  }
+
+  // int32 hp = 3;
+  if (this->hp() != 0) {
+    total_size += 1 +
+      ::google::protobuf::internal::WireFormatLite::Int32Size(
+        this->hp());
+  }
+
+  // int32 max_hp = 4;
+  if (this->max_hp() != 0) {
+    total_size += 1 +
+      ::google::protobuf::internal::WireFormatLite::Int32Size(
+        this->max_hp());
+  }
+
+  // int32 mp = 5;
+  if (this->mp() != 0) {
+    total_size += 1 +
+      ::google::protobuf::internal::WireFormatLite::Int32Size(
+        this->mp());
+  }
+
+  // int32 max_mp = 6;
+  if (this->max_mp() != 0) {
+    total_size += 1 +
+      ::google::protobuf::internal::WireFormatLite::Int32Size(
+        this->max_mp());
+  }
+
+  // int32 attack = 7;
+  if (this->attack() != 0) {
+    total_size += 1 +
+      ::google::protobuf::internal::WireFormatLite::Int32Size(
+        this->attack());
+  }
+
+  // int32 spell_power = 8;
+  if (this->spell_power() != 0) {
+    total_size += 1 +
+      ::google::protobuf::internal::WireFormatLite::Int32Size(
+        this->spell_power());
+  }
+
+  // int32 defense = 9;
+  if (this->defense() != 0) {
+    total_size += 1 +
+      ::google::protobuf::internal::WireFormatLite::Int32Size(
+        this->defense());
+  }
+
+  // int32 magic_resistance = 10;
+  if (this->magic_resistance() != 0) {
+    total_size += 1 +
+      ::google::protobuf::internal::WireFormatLite::Int32Size(
+        this->magic_resistance());
+  }
+
+  // float crit_chance = 11;
+  if (this->crit_chance() != 0) {
+    total_size += 1 + 4;
+  }
+
+  // float crit_damage = 12;
+  if (this->crit_damage() != 0) {
+    total_size += 1 + 4;
+  }
+
+  // float move_speed = 13;
+  if (this->move_speed() != 0) {
+    total_size += 1 + 4;
+  }
+
+  // float attack_speed = 14;
+  if (this->attack_speed() != 0) {
+    total_size += 1 + 4;
+  }
+
+  // uint64 stats_version = 15;
+  if (this->stats_version() != 0) {
+    total_size += 1 +
+      ::google::protobuf::internal::WireFormatLite::UInt64Size(
+        this->stats_version());
+  }
+
+  int cached_size = ::google::protobuf::internal::ToCachedSize(total_size);
+  GOOGLE_SAFE_CONCURRENT_WRITES_BEGIN();
+  _cached_size_ = cached_size;
+  GOOGLE_SAFE_CONCURRENT_WRITES_END();
+  return total_size;
+}
+
+void PlayerAttributes::MergeFrom(const ::google::protobuf::Message& from) {
+// @@protoc_insertion_point(generalized_merge_from_start:game.PlayerAttributes)
+  GOOGLE_DCHECK_NE(&from, this);
+  const PlayerAttributes* source =
+      ::google::protobuf::internal::DynamicCastToGenerated<const PlayerAttributes>(
+          &from);
+  if (source == NULL) {
+  // @@protoc_insertion_point(generalized_merge_from_cast_fail:game.PlayerAttributes)
+    ::google::protobuf::internal::ReflectionOps::Merge(from, this);
+  } else {
+  // @@protoc_insertion_point(generalized_merge_from_cast_success:game.PlayerAttributes)
+    MergeFrom(*source);
+  }
+}
+
+void PlayerAttributes::MergeFrom(const PlayerAttributes& from) {
+// @@protoc_insertion_point(class_specific_merge_from_start:game.PlayerAttributes)
+  GOOGLE_DCHECK_NE(&from, this);
+  _internal_metadata_.MergeFrom(from._internal_metadata_);
+  ::google::protobuf::uint32 cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  if (from.player_name().size() > 0) {
+
+    player_name_.AssignWithDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), from.player_name_);
+  }
+  if (from.player_id() != 0) {
+    set_player_id(from.player_id());
+  }
+  if (from.hp() != 0) {
+    set_hp(from.hp());
+  }
+  if (from.max_hp() != 0) {
+    set_max_hp(from.max_hp());
+  }
+  if (from.mp() != 0) {
+    set_mp(from.mp());
+  }
+  if (from.max_mp() != 0) {
+    set_max_mp(from.max_mp());
+  }
+  if (from.attack() != 0) {
+    set_attack(from.attack());
+  }
+  if (from.spell_power() != 0) {
+    set_spell_power(from.spell_power());
+  }
+  if (from.defense() != 0) {
+    set_defense(from.defense());
+  }
+  if (from.magic_resistance() != 0) {
+    set_magic_resistance(from.magic_resistance());
+  }
+  if (from.crit_chance() != 0) {
+    set_crit_chance(from.crit_chance());
+  }
+  if (from.crit_damage() != 0) {
+    set_crit_damage(from.crit_damage());
+  }
+  if (from.move_speed() != 0) {
+    set_move_speed(from.move_speed());
+  }
+  if (from.attack_speed() != 0) {
+    set_attack_speed(from.attack_speed());
+  }
+  if (from.stats_version() != 0) {
+    set_stats_version(from.stats_version());
+  }
+}
+
+void PlayerAttributes::CopyFrom(const ::google::protobuf::Message& from) {
+// @@protoc_insertion_point(generalized_copy_from_start:game.PlayerAttributes)
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+void PlayerAttributes::CopyFrom(const PlayerAttributes& from) {
+// @@protoc_insertion_point(class_specific_copy_from_start:game.PlayerAttributes)
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+bool PlayerAttributes::IsInitialized() const {
+  return true;
+}
+
+void PlayerAttributes::Swap(PlayerAttributes* other) {
+  if (other == this) return;
+  InternalSwap(other);
+}
+void PlayerAttributes::InternalSwap(PlayerAttributes* other) {
+  using std::swap;
+  player_name_.Swap(&other->player_name_);
+  swap(player_id_, other->player_id_);
+  swap(hp_, other->hp_);
+  swap(max_hp_, other->max_hp_);
+  swap(mp_, other->mp_);
+  swap(max_mp_, other->max_mp_);
+  swap(attack_, other->attack_);
+  swap(spell_power_, other->spell_power_);
+  swap(defense_, other->defense_);
+  swap(magic_resistance_, other->magic_resistance_);
+  swap(crit_chance_, other->crit_chance_);
+  swap(crit_damage_, other->crit_damage_);
+  swap(move_speed_, other->move_speed_);
+  swap(attack_speed_, other->attack_speed_);
+  swap(stats_version_, other->stats_version_);
+  _internal_metadata_.Swap(&other->_internal_metadata_);
+  swap(_cached_size_, other->_cached_size_);
+}
+
+::google::protobuf::Metadata PlayerAttributes::GetMetadata() const {
+  protobuf_game_2eproto::protobuf_AssignDescriptorsOnce();
+  return ::protobuf_game_2eproto::file_level_metadata[kIndexInFileMessages];
+}
+
+
+// ===================================================================
+
+void EntitySnapshot::InitAsDefaultInstance() {
+  ::game::_EntitySnapshot_default_instance_._instance.get_mutable()->position_ = const_cast< ::game::Vec3*>(
+      ::game::Vec3::internal_default_instance());
+}
+#if !defined(_MSC_VER) || _MSC_VER >= 1900
+const int EntitySnapshot::kPlayerIdFieldNumber;
+const int EntitySnapshot::kPlayerNameFieldNumber;
+const int EntitySnapshot::kPositionFieldNumber;
+const int EntitySnapshot::kYawFieldNumber;
+const int EntitySnapshot::kHpFieldNumber;
+const int EntitySnapshot::kMaxHpFieldNumber;
+const int EntitySnapshot::kStateSeqFieldNumber;
+#endif  // !defined(_MSC_VER) || _MSC_VER >= 1900
+
+EntitySnapshot::EntitySnapshot()
+  : ::google::protobuf::Message(), _internal_metadata_(NULL) {
+  if (GOOGLE_PREDICT_TRUE(this != internal_default_instance())) {
+    ::protobuf_game_2eproto::InitDefaultsEntitySnapshot();
+  }
+  SharedCtor();
+  // @@protoc_insertion_point(constructor:game.EntitySnapshot)
+}
+EntitySnapshot::EntitySnapshot(const EntitySnapshot& from)
+  : ::google::protobuf::Message(),
+      _internal_metadata_(NULL),
+      _cached_size_(0) {
+  _internal_metadata_.MergeFrom(from._internal_metadata_);
+  player_name_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  if (from.player_name().size() > 0) {
+    player_name_.AssignWithDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), from.player_name_);
+  }
+  if (from.has_position()) {
+    position_ = new ::game::Vec3(*from.position_);
+  } else {
+    position_ = NULL;
+  }
+  ::memcpy(&player_id_, &from.player_id_,
+    static_cast<size_t>(reinterpret_cast<char*>(&max_hp_) -
+    reinterpret_cast<char*>(&player_id_)) + sizeof(max_hp_));
+  // @@protoc_insertion_point(copy_constructor:game.EntitySnapshot)
+}
+
+void EntitySnapshot::SharedCtor() {
+  player_name_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  ::memset(&position_, 0, static_cast<size_t>(
+      reinterpret_cast<char*>(&max_hp_) -
+      reinterpret_cast<char*>(&position_)) + sizeof(max_hp_));
+  _cached_size_ = 0;
+}
+
+EntitySnapshot::~EntitySnapshot() {
+  // @@protoc_insertion_point(destructor:game.EntitySnapshot)
+  SharedDtor();
+}
+
+void EntitySnapshot::SharedDtor() {
+  player_name_.DestroyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  if (this != internal_default_instance()) delete position_;
+}
+
+void EntitySnapshot::SetCachedSize(int size) const {
+  GOOGLE_SAFE_CONCURRENT_WRITES_BEGIN();
+  _cached_size_ = size;
+  GOOGLE_SAFE_CONCURRENT_WRITES_END();
+}
+const ::google::protobuf::Descriptor* EntitySnapshot::descriptor() {
+  ::protobuf_game_2eproto::protobuf_AssignDescriptorsOnce();
+  return ::protobuf_game_2eproto::file_level_metadata[kIndexInFileMessages].descriptor;
+}
+
+const EntitySnapshot& EntitySnapshot::default_instance() {
+  ::protobuf_game_2eproto::InitDefaultsEntitySnapshot();
+  return *internal_default_instance();
+}
+
+EntitySnapshot* EntitySnapshot::New(::google::protobuf::Arena* arena) const {
+  EntitySnapshot* n = new EntitySnapshot;
+  if (arena != NULL) {
+    arena->Own(n);
+  }
+  return n;
+}
+
+void EntitySnapshot::Clear() {
+// @@protoc_insertion_point(message_clear_start:game.EntitySnapshot)
+  ::google::protobuf::uint32 cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void) cached_has_bits;
+
+  player_name_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  if (GetArenaNoVirtual() == NULL && position_ != NULL) {
+    delete position_;
+  }
+  position_ = NULL;
+  ::memset(&player_id_, 0, static_cast<size_t>(
+      reinterpret_cast<char*>(&max_hp_) -
+      reinterpret_cast<char*>(&player_id_)) + sizeof(max_hp_));
+  _internal_metadata_.Clear();
+}
+
+bool EntitySnapshot::MergePartialFromCodedStream(
+    ::google::protobuf::io::CodedInputStream* input) {
+#define DO_(EXPRESSION) if (!GOOGLE_PREDICT_TRUE(EXPRESSION)) goto failure
+  ::google::protobuf::uint32 tag;
+  // @@protoc_insertion_point(parse_start:game.EntitySnapshot)
+  for (;;) {
+    ::std::pair< ::google::protobuf::uint32, bool> p = input->ReadTagWithCutoffNoLastTag(127u);
+    tag = p.first;
+    if (!p.second) goto handle_unusual;
+    switch (::google::protobuf::internal::WireFormatLite::GetTagFieldNumber(tag)) {
+      // uint64 player_id = 1;
+      case 1: {
+        if (static_cast< ::google::protobuf::uint8>(tag) ==
+            static_cast< ::google::protobuf::uint8>(8u /* 8 & 0xFF */)) {
+
+          DO_((::google::protobuf::internal::WireFormatLite::ReadPrimitive<
+                   ::google::protobuf::uint64, ::google::protobuf::internal::WireFormatLite::TYPE_UINT64>(
+                 input, &player_id_)));
+        } else {
+          goto handle_unusual;
+        }
+        break;
+      }
+
+      // string player_name = 2;
+      case 2: {
+        if (static_cast< ::google::protobuf::uint8>(tag) ==
+            static_cast< ::google::protobuf::uint8>(18u /* 18 & 0xFF */)) {
+          DO_(::google::protobuf::internal::WireFormatLite::ReadString(
+                input, this->mutable_player_name()));
+          DO_(::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+            this->player_name().data(), static_cast<int>(this->player_name().length()),
+            ::google::protobuf::internal::WireFormatLite::PARSE,
+            "game.EntitySnapshot.player_name"));
+        } else {
+          goto handle_unusual;
+        }
+        break;
+      }
+
+      // .game.Vec3 position = 3;
+      case 3: {
+        if (static_cast< ::google::protobuf::uint8>(tag) ==
+            static_cast< ::google::protobuf::uint8>(26u /* 26 & 0xFF */)) {
+          DO_(::google::protobuf::internal::WireFormatLite::ReadMessage(
+               input, mutable_position()));
+        } else {
+          goto handle_unusual;
+        }
+        break;
+      }
+
+      // float yaw = 4;
+      case 4: {
+        if (static_cast< ::google::protobuf::uint8>(tag) ==
+            static_cast< ::google::protobuf::uint8>(37u /* 37 & 0xFF */)) {
+
+          DO_((::google::protobuf::internal::WireFormatLite::ReadPrimitive<
+                   float, ::google::protobuf::internal::WireFormatLite::TYPE_FLOAT>(
+                 input, &yaw_)));
+        } else {
+          goto handle_unusual;
+        }
+        break;
+      }
+
+      // int32 hp = 5;
+      case 5: {
+        if (static_cast< ::google::protobuf::uint8>(tag) ==
+            static_cast< ::google::protobuf::uint8>(40u /* 40 & 0xFF */)) {
+
+          DO_((::google::protobuf::internal::WireFormatLite::ReadPrimitive<
+                   ::google::protobuf::int32, ::google::protobuf::internal::WireFormatLite::TYPE_INT32>(
+                 input, &hp_)));
+        } else {
+          goto handle_unusual;
+        }
+        break;
+      }
+
+      // int32 max_hp = 6;
+      case 6: {
+        if (static_cast< ::google::protobuf::uint8>(tag) ==
+            static_cast< ::google::protobuf::uint8>(48u /* 48 & 0xFF */)) {
+
+          DO_((::google::protobuf::internal::WireFormatLite::ReadPrimitive<
+                   ::google::protobuf::int32, ::google::protobuf::internal::WireFormatLite::TYPE_INT32>(
+                 input, &max_hp_)));
+        } else {
+          goto handle_unusual;
+        }
+        break;
+      }
+
+      // uint64 state_seq = 7;
+      case 7: {
+        if (static_cast< ::google::protobuf::uint8>(tag) ==
+            static_cast< ::google::protobuf::uint8>(56u /* 56 & 0xFF */)) {
+
+          DO_((::google::protobuf::internal::WireFormatLite::ReadPrimitive<
+                   ::google::protobuf::uint64, ::google::protobuf::internal::WireFormatLite::TYPE_UINT64>(
+                 input, &state_seq_)));
+        } else {
+          goto handle_unusual;
+        }
+        break;
+      }
+
+      default: {
+      handle_unusual:
+        if (tag == 0) {
+          goto success;
+        }
+        DO_(::google::protobuf::internal::WireFormat::SkipField(
+              input, tag, _internal_metadata_.mutable_unknown_fields()));
+        break;
+      }
+    }
+  }
+success:
+  // @@protoc_insertion_point(parse_success:game.EntitySnapshot)
+  return true;
+failure:
+  // @@protoc_insertion_point(parse_failure:game.EntitySnapshot)
+  return false;
+#undef DO_
+}
+
+void EntitySnapshot::SerializeWithCachedSizes(
+    ::google::protobuf::io::CodedOutputStream* output) const {
+  // @@protoc_insertion_point(serialize_start:game.EntitySnapshot)
+  ::google::protobuf::uint32 cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  // uint64 player_id = 1;
+  if (this->player_id() != 0) {
+    ::google::protobuf::internal::WireFormatLite::WriteUInt64(1, this->player_id(), output);
+  }
+
+  // string player_name = 2;
+  if (this->player_name().size() > 0) {
+    ::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+      this->player_name().data(), static_cast<int>(this->player_name().length()),
+      ::google::protobuf::internal::WireFormatLite::SERIALIZE,
+      "game.EntitySnapshot.player_name");
+    ::google::protobuf::internal::WireFormatLite::WriteStringMaybeAliased(
+      2, this->player_name(), output);
+  }
+
+  // .game.Vec3 position = 3;
+  if (this->has_position()) {
+    ::google::protobuf::internal::WireFormatLite::WriteMessageMaybeToArray(
+      3, *this->position_, output);
+  }
+
+  // float yaw = 4;
+  if (this->yaw() != 0) {
+    ::google::protobuf::internal::WireFormatLite::WriteFloat(4, this->yaw(), output);
+  }
+
+  // int32 hp = 5;
+  if (this->hp() != 0) {
+    ::google::protobuf::internal::WireFormatLite::WriteInt32(5, this->hp(), output);
+  }
+
+  // int32 max_hp = 6;
+  if (this->max_hp() != 0) {
+    ::google::protobuf::internal::WireFormatLite::WriteInt32(6, this->max_hp(), output);
+  }
+
+  // uint64 state_seq = 7;
+  if (this->state_seq() != 0) {
+    ::google::protobuf::internal::WireFormatLite::WriteUInt64(7, this->state_seq(), output);
+  }
+
+  if ((_internal_metadata_.have_unknown_fields() &&  ::google::protobuf::internal::GetProto3PreserveUnknownsDefault())) {
+    ::google::protobuf::internal::WireFormat::SerializeUnknownFields(
+        (::google::protobuf::internal::GetProto3PreserveUnknownsDefault()   ? _internal_metadata_.unknown_fields()   : _internal_metadata_.default_instance()), output);
+  }
+  // @@protoc_insertion_point(serialize_end:game.EntitySnapshot)
+}
+
+::google::protobuf::uint8* EntitySnapshot::InternalSerializeWithCachedSizesToArray(
+    bool deterministic, ::google::protobuf::uint8* target) const {
+  (void)deterministic; // Unused
+  // @@protoc_insertion_point(serialize_to_array_start:game.EntitySnapshot)
+  ::google::protobuf::uint32 cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  // uint64 player_id = 1;
+  if (this->player_id() != 0) {
+    target = ::google::protobuf::internal::WireFormatLite::WriteUInt64ToArray(1, this->player_id(), target);
+  }
+
+  // string player_name = 2;
+  if (this->player_name().size() > 0) {
+    ::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+      this->player_name().data(), static_cast<int>(this->player_name().length()),
+      ::google::protobuf::internal::WireFormatLite::SERIALIZE,
+      "game.EntitySnapshot.player_name");
+    target =
+      ::google::protobuf::internal::WireFormatLite::WriteStringToArray(
+        2, this->player_name(), target);
+  }
+
+  // .game.Vec3 position = 3;
+  if (this->has_position()) {
+    target = ::google::protobuf::internal::WireFormatLite::
+      InternalWriteMessageToArray(
+        3, *this->position_, deterministic, target);
+  }
+
+  // float yaw = 4;
+  if (this->yaw() != 0) {
+    target = ::google::protobuf::internal::WireFormatLite::WriteFloatToArray(4, this->yaw(), target);
+  }
+
+  // int32 hp = 5;
+  if (this->hp() != 0) {
+    target = ::google::protobuf::internal::WireFormatLite::WriteInt32ToArray(5, this->hp(), target);
+  }
+
+  // int32 max_hp = 6;
+  if (this->max_hp() != 0) {
+    target = ::google::protobuf::internal::WireFormatLite::WriteInt32ToArray(6, this->max_hp(), target);
+  }
+
+  // uint64 state_seq = 7;
+  if (this->state_seq() != 0) {
+    target = ::google::protobuf::internal::WireFormatLite::WriteUInt64ToArray(7, this->state_seq(), target);
+  }
+
+  if ((_internal_metadata_.have_unknown_fields() &&  ::google::protobuf::internal::GetProto3PreserveUnknownsDefault())) {
+    target = ::google::protobuf::internal::WireFormat::SerializeUnknownFieldsToArray(
+        (::google::protobuf::internal::GetProto3PreserveUnknownsDefault()   ? _internal_metadata_.unknown_fields()   : _internal_metadata_.default_instance()), target);
+  }
+  // @@protoc_insertion_point(serialize_to_array_end:game.EntitySnapshot)
+  return target;
+}
+
+size_t EntitySnapshot::ByteSizeLong() const {
+// @@protoc_insertion_point(message_byte_size_start:game.EntitySnapshot)
+  size_t total_size = 0;
+
+  if ((_internal_metadata_.have_unknown_fields() &&  ::google::protobuf::internal::GetProto3PreserveUnknownsDefault())) {
+    total_size +=
+      ::google::protobuf::internal::WireFormat::ComputeUnknownFieldsSize(
+        (::google::protobuf::internal::GetProto3PreserveUnknownsDefault()   ? _internal_metadata_.unknown_fields()   : _internal_metadata_.default_instance()));
+  }
+  // string player_name = 2;
+  if (this->player_name().size() > 0) {
+    total_size += 1 +
+      ::google::protobuf::internal::WireFormatLite::StringSize(
+        this->player_name());
+  }
+
+  // .game.Vec3 position = 3;
+  if (this->has_position()) {
+    total_size += 1 +
+      ::google::protobuf::internal::WireFormatLite::MessageSize(
+        *this->position_);
+  }
+
+  // uint64 player_id = 1;
+  if (this->player_id() != 0) {
+    total_size += 1 +
+      ::google::protobuf::internal::WireFormatLite::UInt64Size(
+        this->player_id());
+  }
+
+  // float yaw = 4;
+  if (this->yaw() != 0) {
+    total_size += 1 + 4;
+  }
+
+  // int32 hp = 5;
+  if (this->hp() != 0) {
+    total_size += 1 +
+      ::google::protobuf::internal::WireFormatLite::Int32Size(
+        this->hp());
+  }
+
+  // uint64 state_seq = 7;
+  if (this->state_seq() != 0) {
+    total_size += 1 +
+      ::google::protobuf::internal::WireFormatLite::UInt64Size(
+        this->state_seq());
+  }
+
+  // int32 max_hp = 6;
+  if (this->max_hp() != 0) {
+    total_size += 1 +
+      ::google::protobuf::internal::WireFormatLite::Int32Size(
+        this->max_hp());
+  }
+
+  int cached_size = ::google::protobuf::internal::ToCachedSize(total_size);
+  GOOGLE_SAFE_CONCURRENT_WRITES_BEGIN();
+  _cached_size_ = cached_size;
+  GOOGLE_SAFE_CONCURRENT_WRITES_END();
+  return total_size;
+}
+
+void EntitySnapshot::MergeFrom(const ::google::protobuf::Message& from) {
+// @@protoc_insertion_point(generalized_merge_from_start:game.EntitySnapshot)
+  GOOGLE_DCHECK_NE(&from, this);
+  const EntitySnapshot* source =
+      ::google::protobuf::internal::DynamicCastToGenerated<const EntitySnapshot>(
+          &from);
+  if (source == NULL) {
+  // @@protoc_insertion_point(generalized_merge_from_cast_fail:game.EntitySnapshot)
+    ::google::protobuf::internal::ReflectionOps::Merge(from, this);
+  } else {
+  // @@protoc_insertion_point(generalized_merge_from_cast_success:game.EntitySnapshot)
+    MergeFrom(*source);
+  }
+}
+
+void EntitySnapshot::MergeFrom(const EntitySnapshot& from) {
+// @@protoc_insertion_point(class_specific_merge_from_start:game.EntitySnapshot)
+  GOOGLE_DCHECK_NE(&from, this);
+  _internal_metadata_.MergeFrom(from._internal_metadata_);
+  ::google::protobuf::uint32 cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  if (from.player_name().size() > 0) {
+
+    player_name_.AssignWithDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), from.player_name_);
+  }
+  if (from.has_position()) {
+    mutable_position()->::game::Vec3::MergeFrom(from.position());
+  }
+  if (from.player_id() != 0) {
+    set_player_id(from.player_id());
+  }
+  if (from.yaw() != 0) {
+    set_yaw(from.yaw());
+  }
+  if (from.hp() != 0) {
+    set_hp(from.hp());
+  }
+  if (from.state_seq() != 0) {
+    set_state_seq(from.state_seq());
+  }
+  if (from.max_hp() != 0) {
+    set_max_hp(from.max_hp());
+  }
+}
+
+void EntitySnapshot::CopyFrom(const ::google::protobuf::Message& from) {
+// @@protoc_insertion_point(generalized_copy_from_start:game.EntitySnapshot)
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+void EntitySnapshot::CopyFrom(const EntitySnapshot& from) {
+// @@protoc_insertion_point(class_specific_copy_from_start:game.EntitySnapshot)
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+bool EntitySnapshot::IsInitialized() const {
+  return true;
+}
+
+void EntitySnapshot::Swap(EntitySnapshot* other) {
+  if (other == this) return;
+  InternalSwap(other);
+}
+void EntitySnapshot::InternalSwap(EntitySnapshot* other) {
+  using std::swap;
+  player_name_.Swap(&other->player_name_);
+  swap(position_, other->position_);
+  swap(player_id_, other->player_id_);
+  swap(yaw_, other->yaw_);
+  swap(hp_, other->hp_);
+  swap(state_seq_, other->state_seq_);
+  swap(max_hp_, other->max_hp_);
+  _internal_metadata_.Swap(&other->_internal_metadata_);
+  swap(_cached_size_, other->_cached_size_);
+}
+
+::google::protobuf::Metadata EntitySnapshot::GetMetadata() const {
+  protobuf_game_2eproto::protobuf_AssignDescriptorsOnce();
+  return ::protobuf_game_2eproto::file_level_metadata[kIndexInFileMessages];
+}
+
+
+// ===================================================================
+
+void GetSelfProfileReq::InitAsDefaultInstance() {
+}
+#if !defined(_MSC_VER) || _MSC_VER >= 1900
+const int GetSelfProfileReq::kPlayerIdFieldNumber;
+#endif  // !defined(_MSC_VER) || _MSC_VER >= 1900
+
+GetSelfProfileReq::GetSelfProfileReq()
+  : ::google::protobuf::Message(), _internal_metadata_(NULL) {
+  if (GOOGLE_PREDICT_TRUE(this != internal_default_instance())) {
+    ::protobuf_game_2eproto::InitDefaultsGetSelfProfileReq();
+  }
+  SharedCtor();
+  // @@protoc_insertion_point(constructor:game.GetSelfProfileReq)
+}
+GetSelfProfileReq::GetSelfProfileReq(const GetSelfProfileReq& from)
+  : ::google::protobuf::Message(),
+      _internal_metadata_(NULL),
+      _cached_size_(0) {
+  _internal_metadata_.MergeFrom(from._internal_metadata_);
+  player_id_ = from.player_id_;
+  // @@protoc_insertion_point(copy_constructor:game.GetSelfProfileReq)
+}
+
+void GetSelfProfileReq::SharedCtor() {
+  player_id_ = GOOGLE_ULONGLONG(0);
+  _cached_size_ = 0;
+}
+
+GetSelfProfileReq::~GetSelfProfileReq() {
+  // @@protoc_insertion_point(destructor:game.GetSelfProfileReq)
+  SharedDtor();
+}
+
+void GetSelfProfileReq::SharedDtor() {
+}
+
+void GetSelfProfileReq::SetCachedSize(int size) const {
+  GOOGLE_SAFE_CONCURRENT_WRITES_BEGIN();
+  _cached_size_ = size;
+  GOOGLE_SAFE_CONCURRENT_WRITES_END();
+}
+const ::google::protobuf::Descriptor* GetSelfProfileReq::descriptor() {
+  ::protobuf_game_2eproto::protobuf_AssignDescriptorsOnce();
+  return ::protobuf_game_2eproto::file_level_metadata[kIndexInFileMessages].descriptor;
+}
+
+const GetSelfProfileReq& GetSelfProfileReq::default_instance() {
+  ::protobuf_game_2eproto::InitDefaultsGetSelfProfileReq();
+  return *internal_default_instance();
+}
+
+GetSelfProfileReq* GetSelfProfileReq::New(::google::protobuf::Arena* arena) const {
+  GetSelfProfileReq* n = new GetSelfProfileReq;
+  if (arena != NULL) {
+    arena->Own(n);
+  }
+  return n;
+}
+
+void GetSelfProfileReq::Clear() {
+// @@protoc_insertion_point(message_clear_start:game.GetSelfProfileReq)
+  ::google::protobuf::uint32 cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void) cached_has_bits;
+
+  player_id_ = GOOGLE_ULONGLONG(0);
+  _internal_metadata_.Clear();
+}
+
+bool GetSelfProfileReq::MergePartialFromCodedStream(
+    ::google::protobuf::io::CodedInputStream* input) {
+#define DO_(EXPRESSION) if (!GOOGLE_PREDICT_TRUE(EXPRESSION)) goto failure
+  ::google::protobuf::uint32 tag;
+  // @@protoc_insertion_point(parse_start:game.GetSelfProfileReq)
+  for (;;) {
+    ::std::pair< ::google::protobuf::uint32, bool> p = input->ReadTagWithCutoffNoLastTag(127u);
+    tag = p.first;
+    if (!p.second) goto handle_unusual;
+    switch (::google::protobuf::internal::WireFormatLite::GetTagFieldNumber(tag)) {
+      // uint64 player_id = 1;
+      case 1: {
+        if (static_cast< ::google::protobuf::uint8>(tag) ==
+            static_cast< ::google::protobuf::uint8>(8u /* 8 & 0xFF */)) {
+
+          DO_((::google::protobuf::internal::WireFormatLite::ReadPrimitive<
+                   ::google::protobuf::uint64, ::google::protobuf::internal::WireFormatLite::TYPE_UINT64>(
+                 input, &player_id_)));
+        } else {
+          goto handle_unusual;
+        }
+        break;
+      }
+
+      default: {
+      handle_unusual:
+        if (tag == 0) {
+          goto success;
+        }
+        DO_(::google::protobuf::internal::WireFormat::SkipField(
+              input, tag, _internal_metadata_.mutable_unknown_fields()));
+        break;
+      }
+    }
+  }
+success:
+  // @@protoc_insertion_point(parse_success:game.GetSelfProfileReq)
+  return true;
+failure:
+  // @@protoc_insertion_point(parse_failure:game.GetSelfProfileReq)
+  return false;
+#undef DO_
+}
+
+void GetSelfProfileReq::SerializeWithCachedSizes(
+    ::google::protobuf::io::CodedOutputStream* output) const {
+  // @@protoc_insertion_point(serialize_start:game.GetSelfProfileReq)
+  ::google::protobuf::uint32 cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  // uint64 player_id = 1;
+  if (this->player_id() != 0) {
+    ::google::protobuf::internal::WireFormatLite::WriteUInt64(1, this->player_id(), output);
+  }
+
+  if ((_internal_metadata_.have_unknown_fields() &&  ::google::protobuf::internal::GetProto3PreserveUnknownsDefault())) {
+    ::google::protobuf::internal::WireFormat::SerializeUnknownFields(
+        (::google::protobuf::internal::GetProto3PreserveUnknownsDefault()   ? _internal_metadata_.unknown_fields()   : _internal_metadata_.default_instance()), output);
+  }
+  // @@protoc_insertion_point(serialize_end:game.GetSelfProfileReq)
+}
+
+::google::protobuf::uint8* GetSelfProfileReq::InternalSerializeWithCachedSizesToArray(
+    bool deterministic, ::google::protobuf::uint8* target) const {
+  (void)deterministic; // Unused
+  // @@protoc_insertion_point(serialize_to_array_start:game.GetSelfProfileReq)
+  ::google::protobuf::uint32 cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  // uint64 player_id = 1;
+  if (this->player_id() != 0) {
+    target = ::google::protobuf::internal::WireFormatLite::WriteUInt64ToArray(1, this->player_id(), target);
+  }
+
+  if ((_internal_metadata_.have_unknown_fields() &&  ::google::protobuf::internal::GetProto3PreserveUnknownsDefault())) {
+    target = ::google::protobuf::internal::WireFormat::SerializeUnknownFieldsToArray(
+        (::google::protobuf::internal::GetProto3PreserveUnknownsDefault()   ? _internal_metadata_.unknown_fields()   : _internal_metadata_.default_instance()), target);
+  }
+  // @@protoc_insertion_point(serialize_to_array_end:game.GetSelfProfileReq)
+  return target;
+}
+
+size_t GetSelfProfileReq::ByteSizeLong() const {
+// @@protoc_insertion_point(message_byte_size_start:game.GetSelfProfileReq)
+  size_t total_size = 0;
+
+  if ((_internal_metadata_.have_unknown_fields() &&  ::google::protobuf::internal::GetProto3PreserveUnknownsDefault())) {
+    total_size +=
+      ::google::protobuf::internal::WireFormat::ComputeUnknownFieldsSize(
+        (::google::protobuf::internal::GetProto3PreserveUnknownsDefault()   ? _internal_metadata_.unknown_fields()   : _internal_metadata_.default_instance()));
+  }
+  // uint64 player_id = 1;
+  if (this->player_id() != 0) {
+    total_size += 1 +
+      ::google::protobuf::internal::WireFormatLite::UInt64Size(
+        this->player_id());
+  }
+
+  int cached_size = ::google::protobuf::internal::ToCachedSize(total_size);
+  GOOGLE_SAFE_CONCURRENT_WRITES_BEGIN();
+  _cached_size_ = cached_size;
+  GOOGLE_SAFE_CONCURRENT_WRITES_END();
+  return total_size;
+}
+
+void GetSelfProfileReq::MergeFrom(const ::google::protobuf::Message& from) {
+// @@protoc_insertion_point(generalized_merge_from_start:game.GetSelfProfileReq)
+  GOOGLE_DCHECK_NE(&from, this);
+  const GetSelfProfileReq* source =
+      ::google::protobuf::internal::DynamicCastToGenerated<const GetSelfProfileReq>(
+          &from);
+  if (source == NULL) {
+  // @@protoc_insertion_point(generalized_merge_from_cast_fail:game.GetSelfProfileReq)
+    ::google::protobuf::internal::ReflectionOps::Merge(from, this);
+  } else {
+  // @@protoc_insertion_point(generalized_merge_from_cast_success:game.GetSelfProfileReq)
+    MergeFrom(*source);
+  }
+}
+
+void GetSelfProfileReq::MergeFrom(const GetSelfProfileReq& from) {
+// @@protoc_insertion_point(class_specific_merge_from_start:game.GetSelfProfileReq)
+  GOOGLE_DCHECK_NE(&from, this);
+  _internal_metadata_.MergeFrom(from._internal_metadata_);
+  ::google::protobuf::uint32 cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  if (from.player_id() != 0) {
+    set_player_id(from.player_id());
+  }
+}
+
+void GetSelfProfileReq::CopyFrom(const ::google::protobuf::Message& from) {
+// @@protoc_insertion_point(generalized_copy_from_start:game.GetSelfProfileReq)
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+void GetSelfProfileReq::CopyFrom(const GetSelfProfileReq& from) {
+// @@protoc_insertion_point(class_specific_copy_from_start:game.GetSelfProfileReq)
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+bool GetSelfProfileReq::IsInitialized() const {
+  return true;
+}
+
+void GetSelfProfileReq::Swap(GetSelfProfileReq* other) {
+  if (other == this) return;
+  InternalSwap(other);
+}
+void GetSelfProfileReq::InternalSwap(GetSelfProfileReq* other) {
+  using std::swap;
+  swap(player_id_, other->player_id_);
+  _internal_metadata_.Swap(&other->_internal_metadata_);
+  swap(_cached_size_, other->_cached_size_);
+}
+
+::google::protobuf::Metadata GetSelfProfileReq::GetMetadata() const {
+  protobuf_game_2eproto::protobuf_AssignDescriptorsOnce();
+  return ::protobuf_game_2eproto::file_level_metadata[kIndexInFileMessages];
+}
+
+
+// ===================================================================
+
+void GetSelfProfileRsp::InitAsDefaultInstance() {
+  ::game::_GetSelfProfileRsp_default_instance_._instance.get_mutable()->profile_ = const_cast< ::game::PlayerAttributes*>(
+      ::game::PlayerAttributes::internal_default_instance());
+}
+#if !defined(_MSC_VER) || _MSC_VER >= 1900
+const int GetSelfProfileRsp::kOkFieldNumber;
+const int GetSelfProfileRsp::kMessageFieldNumber;
+const int GetSelfProfileRsp::kErrorCodeFieldNumber;
+const int GetSelfProfileRsp::kProfileFieldNumber;
+#endif  // !defined(_MSC_VER) || _MSC_VER >= 1900
+
+GetSelfProfileRsp::GetSelfProfileRsp()
+  : ::google::protobuf::Message(), _internal_metadata_(NULL) {
+  if (GOOGLE_PREDICT_TRUE(this != internal_default_instance())) {
+    ::protobuf_game_2eproto::InitDefaultsGetSelfProfileRsp();
+  }
+  SharedCtor();
+  // @@protoc_insertion_point(constructor:game.GetSelfProfileRsp)
+}
+GetSelfProfileRsp::GetSelfProfileRsp(const GetSelfProfileRsp& from)
+  : ::google::protobuf::Message(),
+      _internal_metadata_(NULL),
+      _cached_size_(0) {
+  _internal_metadata_.MergeFrom(from._internal_metadata_);
+  message_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  if (from.message().size() > 0) {
+    message_.AssignWithDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), from.message_);
+  }
+  error_code_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  if (from.error_code().size() > 0) {
+    error_code_.AssignWithDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), from.error_code_);
+  }
+  if (from.has_profile()) {
+    profile_ = new ::game::PlayerAttributes(*from.profile_);
+  } else {
+    profile_ = NULL;
+  }
+  ok_ = from.ok_;
+  // @@protoc_insertion_point(copy_constructor:game.GetSelfProfileRsp)
+}
+
+void GetSelfProfileRsp::SharedCtor() {
+  message_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  error_code_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  ::memset(&profile_, 0, static_cast<size_t>(
+      reinterpret_cast<char*>(&ok_) -
+      reinterpret_cast<char*>(&profile_)) + sizeof(ok_));
+  _cached_size_ = 0;
+}
+
+GetSelfProfileRsp::~GetSelfProfileRsp() {
+  // @@protoc_insertion_point(destructor:game.GetSelfProfileRsp)
+  SharedDtor();
+}
+
+void GetSelfProfileRsp::SharedDtor() {
+  message_.DestroyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  error_code_.DestroyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  if (this != internal_default_instance()) delete profile_;
+}
+
+void GetSelfProfileRsp::SetCachedSize(int size) const {
+  GOOGLE_SAFE_CONCURRENT_WRITES_BEGIN();
+  _cached_size_ = size;
+  GOOGLE_SAFE_CONCURRENT_WRITES_END();
+}
+const ::google::protobuf::Descriptor* GetSelfProfileRsp::descriptor() {
+  ::protobuf_game_2eproto::protobuf_AssignDescriptorsOnce();
+  return ::protobuf_game_2eproto::file_level_metadata[kIndexInFileMessages].descriptor;
+}
+
+const GetSelfProfileRsp& GetSelfProfileRsp::default_instance() {
+  ::protobuf_game_2eproto::InitDefaultsGetSelfProfileRsp();
+  return *internal_default_instance();
+}
+
+GetSelfProfileRsp* GetSelfProfileRsp::New(::google::protobuf::Arena* arena) const {
+  GetSelfProfileRsp* n = new GetSelfProfileRsp;
+  if (arena != NULL) {
+    arena->Own(n);
+  }
+  return n;
+}
+
+void GetSelfProfileRsp::Clear() {
+// @@protoc_insertion_point(message_clear_start:game.GetSelfProfileRsp)
+  ::google::protobuf::uint32 cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void) cached_has_bits;
+
+  message_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  error_code_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  if (GetArenaNoVirtual() == NULL && profile_ != NULL) {
+    delete profile_;
+  }
+  profile_ = NULL;
+  ok_ = false;
+  _internal_metadata_.Clear();
+}
+
+bool GetSelfProfileRsp::MergePartialFromCodedStream(
+    ::google::protobuf::io::CodedInputStream* input) {
+#define DO_(EXPRESSION) if (!GOOGLE_PREDICT_TRUE(EXPRESSION)) goto failure
+  ::google::protobuf::uint32 tag;
+  // @@protoc_insertion_point(parse_start:game.GetSelfProfileRsp)
+  for (;;) {
+    ::std::pair< ::google::protobuf::uint32, bool> p = input->ReadTagWithCutoffNoLastTag(127u);
+    tag = p.first;
+    if (!p.second) goto handle_unusual;
+    switch (::google::protobuf::internal::WireFormatLite::GetTagFieldNumber(tag)) {
+      // bool ok = 1;
+      case 1: {
+        if (static_cast< ::google::protobuf::uint8>(tag) ==
+            static_cast< ::google::protobuf::uint8>(8u /* 8 & 0xFF */)) {
+
+          DO_((::google::protobuf::internal::WireFormatLite::ReadPrimitive<
+                   bool, ::google::protobuf::internal::WireFormatLite::TYPE_BOOL>(
+                 input, &ok_)));
+        } else {
+          goto handle_unusual;
+        }
+        break;
+      }
+
+      // string message = 2;
+      case 2: {
+        if (static_cast< ::google::protobuf::uint8>(tag) ==
+            static_cast< ::google::protobuf::uint8>(18u /* 18 & 0xFF */)) {
+          DO_(::google::protobuf::internal::WireFormatLite::ReadString(
+                input, this->mutable_message()));
+          DO_(::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+            this->message().data(), static_cast<int>(this->message().length()),
+            ::google::protobuf::internal::WireFormatLite::PARSE,
+            "game.GetSelfProfileRsp.message"));
+        } else {
+          goto handle_unusual;
+        }
+        break;
+      }
+
+      // string error_code = 3;
+      case 3: {
+        if (static_cast< ::google::protobuf::uint8>(tag) ==
+            static_cast< ::google::protobuf::uint8>(26u /* 26 & 0xFF */)) {
+          DO_(::google::protobuf::internal::WireFormatLite::ReadString(
+                input, this->mutable_error_code()));
+          DO_(::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+            this->error_code().data(), static_cast<int>(this->error_code().length()),
+            ::google::protobuf::internal::WireFormatLite::PARSE,
+            "game.GetSelfProfileRsp.error_code"));
+        } else {
+          goto handle_unusual;
+        }
+        break;
+      }
+
+      // .game.PlayerAttributes profile = 4;
+      case 4: {
+        if (static_cast< ::google::protobuf::uint8>(tag) ==
+            static_cast< ::google::protobuf::uint8>(34u /* 34 & 0xFF */)) {
+          DO_(::google::protobuf::internal::WireFormatLite::ReadMessage(
+               input, mutable_profile()));
+        } else {
+          goto handle_unusual;
+        }
+        break;
+      }
+
+      default: {
+      handle_unusual:
+        if (tag == 0) {
+          goto success;
+        }
+        DO_(::google::protobuf::internal::WireFormat::SkipField(
+              input, tag, _internal_metadata_.mutable_unknown_fields()));
+        break;
+      }
+    }
+  }
+success:
+  // @@protoc_insertion_point(parse_success:game.GetSelfProfileRsp)
+  return true;
+failure:
+  // @@protoc_insertion_point(parse_failure:game.GetSelfProfileRsp)
+  return false;
+#undef DO_
+}
+
+void GetSelfProfileRsp::SerializeWithCachedSizes(
+    ::google::protobuf::io::CodedOutputStream* output) const {
+  // @@protoc_insertion_point(serialize_start:game.GetSelfProfileRsp)
+  ::google::protobuf::uint32 cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  // bool ok = 1;
+  if (this->ok() != 0) {
+    ::google::protobuf::internal::WireFormatLite::WriteBool(1, this->ok(), output);
+  }
+
+  // string message = 2;
+  if (this->message().size() > 0) {
+    ::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+      this->message().data(), static_cast<int>(this->message().length()),
+      ::google::protobuf::internal::WireFormatLite::SERIALIZE,
+      "game.GetSelfProfileRsp.message");
+    ::google::protobuf::internal::WireFormatLite::WriteStringMaybeAliased(
+      2, this->message(), output);
+  }
+
+  // string error_code = 3;
+  if (this->error_code().size() > 0) {
+    ::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+      this->error_code().data(), static_cast<int>(this->error_code().length()),
+      ::google::protobuf::internal::WireFormatLite::SERIALIZE,
+      "game.GetSelfProfileRsp.error_code");
+    ::google::protobuf::internal::WireFormatLite::WriteStringMaybeAliased(
+      3, this->error_code(), output);
+  }
+
+  // .game.PlayerAttributes profile = 4;
+  if (this->has_profile()) {
+    ::google::protobuf::internal::WireFormatLite::WriteMessageMaybeToArray(
+      4, *this->profile_, output);
+  }
+
+  if ((_internal_metadata_.have_unknown_fields() &&  ::google::protobuf::internal::GetProto3PreserveUnknownsDefault())) {
+    ::google::protobuf::internal::WireFormat::SerializeUnknownFields(
+        (::google::protobuf::internal::GetProto3PreserveUnknownsDefault()   ? _internal_metadata_.unknown_fields()   : _internal_metadata_.default_instance()), output);
+  }
+  // @@protoc_insertion_point(serialize_end:game.GetSelfProfileRsp)
+}
+
+::google::protobuf::uint8* GetSelfProfileRsp::InternalSerializeWithCachedSizesToArray(
+    bool deterministic, ::google::protobuf::uint8* target) const {
+  (void)deterministic; // Unused
+  // @@protoc_insertion_point(serialize_to_array_start:game.GetSelfProfileRsp)
+  ::google::protobuf::uint32 cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  // bool ok = 1;
+  if (this->ok() != 0) {
+    target = ::google::protobuf::internal::WireFormatLite::WriteBoolToArray(1, this->ok(), target);
+  }
+
+  // string message = 2;
+  if (this->message().size() > 0) {
+    ::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+      this->message().data(), static_cast<int>(this->message().length()),
+      ::google::protobuf::internal::WireFormatLite::SERIALIZE,
+      "game.GetSelfProfileRsp.message");
+    target =
+      ::google::protobuf::internal::WireFormatLite::WriteStringToArray(
+        2, this->message(), target);
+  }
+
+  // string error_code = 3;
+  if (this->error_code().size() > 0) {
+    ::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+      this->error_code().data(), static_cast<int>(this->error_code().length()),
+      ::google::protobuf::internal::WireFormatLite::SERIALIZE,
+      "game.GetSelfProfileRsp.error_code");
+    target =
+      ::google::protobuf::internal::WireFormatLite::WriteStringToArray(
+        3, this->error_code(), target);
+  }
+
+  // .game.PlayerAttributes profile = 4;
+  if (this->has_profile()) {
+    target = ::google::protobuf::internal::WireFormatLite::
+      InternalWriteMessageToArray(
+        4, *this->profile_, deterministic, target);
+  }
+
+  if ((_internal_metadata_.have_unknown_fields() &&  ::google::protobuf::internal::GetProto3PreserveUnknownsDefault())) {
+    target = ::google::protobuf::internal::WireFormat::SerializeUnknownFieldsToArray(
+        (::google::protobuf::internal::GetProto3PreserveUnknownsDefault()   ? _internal_metadata_.unknown_fields()   : _internal_metadata_.default_instance()), target);
+  }
+  // @@protoc_insertion_point(serialize_to_array_end:game.GetSelfProfileRsp)
+  return target;
+}
+
+size_t GetSelfProfileRsp::ByteSizeLong() const {
+// @@protoc_insertion_point(message_byte_size_start:game.GetSelfProfileRsp)
+  size_t total_size = 0;
+
+  if ((_internal_metadata_.have_unknown_fields() &&  ::google::protobuf::internal::GetProto3PreserveUnknownsDefault())) {
+    total_size +=
+      ::google::protobuf::internal::WireFormat::ComputeUnknownFieldsSize(
+        (::google::protobuf::internal::GetProto3PreserveUnknownsDefault()   ? _internal_metadata_.unknown_fields()   : _internal_metadata_.default_instance()));
+  }
+  // string message = 2;
+  if (this->message().size() > 0) {
+    total_size += 1 +
+      ::google::protobuf::internal::WireFormatLite::StringSize(
+        this->message());
+  }
+
+  // string error_code = 3;
+  if (this->error_code().size() > 0) {
+    total_size += 1 +
+      ::google::protobuf::internal::WireFormatLite::StringSize(
+        this->error_code());
+  }
+
+  // .game.PlayerAttributes profile = 4;
+  if (this->has_profile()) {
+    total_size += 1 +
+      ::google::protobuf::internal::WireFormatLite::MessageSize(
+        *this->profile_);
+  }
+
+  // bool ok = 1;
+  if (this->ok() != 0) {
+    total_size += 1 + 1;
+  }
+
+  int cached_size = ::google::protobuf::internal::ToCachedSize(total_size);
+  GOOGLE_SAFE_CONCURRENT_WRITES_BEGIN();
+  _cached_size_ = cached_size;
+  GOOGLE_SAFE_CONCURRENT_WRITES_END();
+  return total_size;
+}
+
+void GetSelfProfileRsp::MergeFrom(const ::google::protobuf::Message& from) {
+// @@protoc_insertion_point(generalized_merge_from_start:game.GetSelfProfileRsp)
+  GOOGLE_DCHECK_NE(&from, this);
+  const GetSelfProfileRsp* source =
+      ::google::protobuf::internal::DynamicCastToGenerated<const GetSelfProfileRsp>(
+          &from);
+  if (source == NULL) {
+  // @@protoc_insertion_point(generalized_merge_from_cast_fail:game.GetSelfProfileRsp)
+    ::google::protobuf::internal::ReflectionOps::Merge(from, this);
+  } else {
+  // @@protoc_insertion_point(generalized_merge_from_cast_success:game.GetSelfProfileRsp)
+    MergeFrom(*source);
+  }
+}
+
+void GetSelfProfileRsp::MergeFrom(const GetSelfProfileRsp& from) {
+// @@protoc_insertion_point(class_specific_merge_from_start:game.GetSelfProfileRsp)
+  GOOGLE_DCHECK_NE(&from, this);
+  _internal_metadata_.MergeFrom(from._internal_metadata_);
+  ::google::protobuf::uint32 cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  if (from.message().size() > 0) {
+
+    message_.AssignWithDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), from.message_);
+  }
+  if (from.error_code().size() > 0) {
+
+    error_code_.AssignWithDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), from.error_code_);
+  }
+  if (from.has_profile()) {
+    mutable_profile()->::game::PlayerAttributes::MergeFrom(from.profile());
+  }
+  if (from.ok() != 0) {
+    set_ok(from.ok());
+  }
+}
+
+void GetSelfProfileRsp::CopyFrom(const ::google::protobuf::Message& from) {
+// @@protoc_insertion_point(generalized_copy_from_start:game.GetSelfProfileRsp)
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+void GetSelfProfileRsp::CopyFrom(const GetSelfProfileRsp& from) {
+// @@protoc_insertion_point(class_specific_copy_from_start:game.GetSelfProfileRsp)
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+bool GetSelfProfileRsp::IsInitialized() const {
+  return true;
+}
+
+void GetSelfProfileRsp::Swap(GetSelfProfileRsp* other) {
+  if (other == this) return;
+  InternalSwap(other);
+}
+void GetSelfProfileRsp::InternalSwap(GetSelfProfileRsp* other) {
+  using std::swap;
+  message_.Swap(&other->message_);
+  error_code_.Swap(&other->error_code_);
+  swap(profile_, other->profile_);
+  swap(ok_, other->ok_);
+  _internal_metadata_.Swap(&other->_internal_metadata_);
+  swap(_cached_size_, other->_cached_size_);
+}
+
+::google::protobuf::Metadata GetSelfProfileRsp::GetMetadata() const {
+  protobuf_game_2eproto::protobuf_AssignDescriptorsOnce();
+  return ::protobuf_game_2eproto::file_level_metadata[kIndexInFileMessages];
+}
+
+
+// ===================================================================
+
+void MoveReq::InitAsDefaultInstance() {
+  ::game::_MoveReq_default_instance_._instance.get_mutable()->position_ = const_cast< ::game::Vec3*>(
+      ::game::Vec3::internal_default_instance());
+}
+#if !defined(_MSC_VER) || _MSC_VER >= 1900
+const int MoveReq::kPlayerIdFieldNumber;
+const int MoveReq::kMapInstanceIdFieldNumber;
+const int MoveReq::kPositionFieldNumber;
+const int MoveReq::kYawFieldNumber;
+const int MoveReq::kClientTimeMsFieldNumber;
+#endif  // !defined(_MSC_VER) || _MSC_VER >= 1900
+
+MoveReq::MoveReq()
+  : ::google::protobuf::Message(), _internal_metadata_(NULL) {
+  if (GOOGLE_PREDICT_TRUE(this != internal_default_instance())) {
+    ::protobuf_game_2eproto::InitDefaultsMoveReq();
+  }
+  SharedCtor();
+  // @@protoc_insertion_point(constructor:game.MoveReq)
+}
+MoveReq::MoveReq(const MoveReq& from)
+  : ::google::protobuf::Message(),
+      _internal_metadata_(NULL),
+      _cached_size_(0) {
+  _internal_metadata_.MergeFrom(from._internal_metadata_);
+  if (from.has_position()) {
+    position_ = new ::game::Vec3(*from.position_);
+  } else {
+    position_ = NULL;
+  }
+  ::memcpy(&player_id_, &from.player_id_,
+    static_cast<size_t>(reinterpret_cast<char*>(&yaw_) -
+    reinterpret_cast<char*>(&player_id_)) + sizeof(yaw_));
+  // @@protoc_insertion_point(copy_constructor:game.MoveReq)
+}
+
+void MoveReq::SharedCtor() {
+  ::memset(&position_, 0, static_cast<size_t>(
+      reinterpret_cast<char*>(&yaw_) -
+      reinterpret_cast<char*>(&position_)) + sizeof(yaw_));
+  _cached_size_ = 0;
+}
+
+MoveReq::~MoveReq() {
+  // @@protoc_insertion_point(destructor:game.MoveReq)
+  SharedDtor();
+}
+
+void MoveReq::SharedDtor() {
+  if (this != internal_default_instance()) delete position_;
+}
+
+void MoveReq::SetCachedSize(int size) const {
+  GOOGLE_SAFE_CONCURRENT_WRITES_BEGIN();
+  _cached_size_ = size;
+  GOOGLE_SAFE_CONCURRENT_WRITES_END();
+}
+const ::google::protobuf::Descriptor* MoveReq::descriptor() {
+  ::protobuf_game_2eproto::protobuf_AssignDescriptorsOnce();
+  return ::protobuf_game_2eproto::file_level_metadata[kIndexInFileMessages].descriptor;
+}
+
+const MoveReq& MoveReq::default_instance() {
+  ::protobuf_game_2eproto::InitDefaultsMoveReq();
+  return *internal_default_instance();
+}
+
+MoveReq* MoveReq::New(::google::protobuf::Arena* arena) const {
+  MoveReq* n = new MoveReq;
+  if (arena != NULL) {
+    arena->Own(n);
+  }
+  return n;
+}
+
+void MoveReq::Clear() {
+// @@protoc_insertion_point(message_clear_start:game.MoveReq)
+  ::google::protobuf::uint32 cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void) cached_has_bits;
+
+  if (GetArenaNoVirtual() == NULL && position_ != NULL) {
+    delete position_;
+  }
+  position_ = NULL;
+  ::memset(&player_id_, 0, static_cast<size_t>(
+      reinterpret_cast<char*>(&yaw_) -
+      reinterpret_cast<char*>(&player_id_)) + sizeof(yaw_));
+  _internal_metadata_.Clear();
+}
+
+bool MoveReq::MergePartialFromCodedStream(
+    ::google::protobuf::io::CodedInputStream* input) {
+#define DO_(EXPRESSION) if (!GOOGLE_PREDICT_TRUE(EXPRESSION)) goto failure
+  ::google::protobuf::uint32 tag;
+  // @@protoc_insertion_point(parse_start:game.MoveReq)
+  for (;;) {
+    ::std::pair< ::google::protobuf::uint32, bool> p = input->ReadTagWithCutoffNoLastTag(127u);
+    tag = p.first;
+    if (!p.second) goto handle_unusual;
+    switch (::google::protobuf::internal::WireFormatLite::GetTagFieldNumber(tag)) {
+      // uint64 player_id = 1;
+      case 1: {
+        if (static_cast< ::google::protobuf::uint8>(tag) ==
+            static_cast< ::google::protobuf::uint8>(8u /* 8 & 0xFF */)) {
+
+          DO_((::google::protobuf::internal::WireFormatLite::ReadPrimitive<
+                   ::google::protobuf::uint64, ::google::protobuf::internal::WireFormatLite::TYPE_UINT64>(
+                 input, &player_id_)));
+        } else {
+          goto handle_unusual;
+        }
+        break;
+      }
+
+      // uint64 map_instance_id = 2;
+      case 2: {
+        if (static_cast< ::google::protobuf::uint8>(tag) ==
+            static_cast< ::google::protobuf::uint8>(16u /* 16 & 0xFF */)) {
+
+          DO_((::google::protobuf::internal::WireFormatLite::ReadPrimitive<
+                   ::google::protobuf::uint64, ::google::protobuf::internal::WireFormatLite::TYPE_UINT64>(
+                 input, &map_instance_id_)));
+        } else {
+          goto handle_unusual;
+        }
+        break;
+      }
+
+      // .game.Vec3 position = 3;
+      case 3: {
+        if (static_cast< ::google::protobuf::uint8>(tag) ==
+            static_cast< ::google::protobuf::uint8>(26u /* 26 & 0xFF */)) {
+          DO_(::google::protobuf::internal::WireFormatLite::ReadMessage(
+               input, mutable_position()));
+        } else {
+          goto handle_unusual;
+        }
+        break;
+      }
+
+      // float yaw = 4;
+      case 4: {
+        if (static_cast< ::google::protobuf::uint8>(tag) ==
+            static_cast< ::google::protobuf::uint8>(37u /* 37 & 0xFF */)) {
+
+          DO_((::google::protobuf::internal::WireFormatLite::ReadPrimitive<
+                   float, ::google::protobuf::internal::WireFormatLite::TYPE_FLOAT>(
+                 input, &yaw_)));
+        } else {
+          goto handle_unusual;
+        }
+        break;
+      }
+
+      // int64 client_time_ms = 5;
+      case 5: {
+        if (static_cast< ::google::protobuf::uint8>(tag) ==
+            static_cast< ::google::protobuf::uint8>(40u /* 40 & 0xFF */)) {
+
+          DO_((::google::protobuf::internal::WireFormatLite::ReadPrimitive<
+                   ::google::protobuf::int64, ::google::protobuf::internal::WireFormatLite::TYPE_INT64>(
+                 input, &client_time_ms_)));
+        } else {
+          goto handle_unusual;
+        }
+        break;
+      }
+
+      default: {
+      handle_unusual:
+        if (tag == 0) {
+          goto success;
+        }
+        DO_(::google::protobuf::internal::WireFormat::SkipField(
+              input, tag, _internal_metadata_.mutable_unknown_fields()));
+        break;
+      }
+    }
+  }
+success:
+  // @@protoc_insertion_point(parse_success:game.MoveReq)
+  return true;
+failure:
+  // @@protoc_insertion_point(parse_failure:game.MoveReq)
+  return false;
+#undef DO_
+}
+
+void MoveReq::SerializeWithCachedSizes(
+    ::google::protobuf::io::CodedOutputStream* output) const {
+  // @@protoc_insertion_point(serialize_start:game.MoveReq)
+  ::google::protobuf::uint32 cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  // uint64 player_id = 1;
+  if (this->player_id() != 0) {
+    ::google::protobuf::internal::WireFormatLite::WriteUInt64(1, this->player_id(), output);
+  }
+
+  // uint64 map_instance_id = 2;
+  if (this->map_instance_id() != 0) {
+    ::google::protobuf::internal::WireFormatLite::WriteUInt64(2, this->map_instance_id(), output);
+  }
+
+  // .game.Vec3 position = 3;
+  if (this->has_position()) {
+    ::google::protobuf::internal::WireFormatLite::WriteMessageMaybeToArray(
+      3, *this->position_, output);
+  }
+
+  // float yaw = 4;
+  if (this->yaw() != 0) {
+    ::google::protobuf::internal::WireFormatLite::WriteFloat(4, this->yaw(), output);
+  }
+
+  // int64 client_time_ms = 5;
+  if (this->client_time_ms() != 0) {
+    ::google::protobuf::internal::WireFormatLite::WriteInt64(5, this->client_time_ms(), output);
+  }
+
+  if ((_internal_metadata_.have_unknown_fields() &&  ::google::protobuf::internal::GetProto3PreserveUnknownsDefault())) {
+    ::google::protobuf::internal::WireFormat::SerializeUnknownFields(
+        (::google::protobuf::internal::GetProto3PreserveUnknownsDefault()   ? _internal_metadata_.unknown_fields()   : _internal_metadata_.default_instance()), output);
+  }
+  // @@protoc_insertion_point(serialize_end:game.MoveReq)
+}
+
+::google::protobuf::uint8* MoveReq::InternalSerializeWithCachedSizesToArray(
+    bool deterministic, ::google::protobuf::uint8* target) const {
+  (void)deterministic; // Unused
+  // @@protoc_insertion_point(serialize_to_array_start:game.MoveReq)
+  ::google::protobuf::uint32 cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  // uint64 player_id = 1;
+  if (this->player_id() != 0) {
+    target = ::google::protobuf::internal::WireFormatLite::WriteUInt64ToArray(1, this->player_id(), target);
+  }
+
+  // uint64 map_instance_id = 2;
+  if (this->map_instance_id() != 0) {
+    target = ::google::protobuf::internal::WireFormatLite::WriteUInt64ToArray(2, this->map_instance_id(), target);
+  }
+
+  // .game.Vec3 position = 3;
+  if (this->has_position()) {
+    target = ::google::protobuf::internal::WireFormatLite::
+      InternalWriteMessageToArray(
+        3, *this->position_, deterministic, target);
+  }
+
+  // float yaw = 4;
+  if (this->yaw() != 0) {
+    target = ::google::protobuf::internal::WireFormatLite::WriteFloatToArray(4, this->yaw(), target);
+  }
+
+  // int64 client_time_ms = 5;
+  if (this->client_time_ms() != 0) {
+    target = ::google::protobuf::internal::WireFormatLite::WriteInt64ToArray(5, this->client_time_ms(), target);
+  }
+
+  if ((_internal_metadata_.have_unknown_fields() &&  ::google::protobuf::internal::GetProto3PreserveUnknownsDefault())) {
+    target = ::google::protobuf::internal::WireFormat::SerializeUnknownFieldsToArray(
+        (::google::protobuf::internal::GetProto3PreserveUnknownsDefault()   ? _internal_metadata_.unknown_fields()   : _internal_metadata_.default_instance()), target);
+  }
+  // @@protoc_insertion_point(serialize_to_array_end:game.MoveReq)
+  return target;
+}
+
+size_t MoveReq::ByteSizeLong() const {
+// @@protoc_insertion_point(message_byte_size_start:game.MoveReq)
+  size_t total_size = 0;
+
+  if ((_internal_metadata_.have_unknown_fields() &&  ::google::protobuf::internal::GetProto3PreserveUnknownsDefault())) {
+    total_size +=
+      ::google::protobuf::internal::WireFormat::ComputeUnknownFieldsSize(
+        (::google::protobuf::internal::GetProto3PreserveUnknownsDefault()   ? _internal_metadata_.unknown_fields()   : _internal_metadata_.default_instance()));
+  }
+  // .game.Vec3 position = 3;
+  if (this->has_position()) {
+    total_size += 1 +
+      ::google::protobuf::internal::WireFormatLite::MessageSize(
+        *this->position_);
+  }
+
+  // uint64 player_id = 1;
+  if (this->player_id() != 0) {
+    total_size += 1 +
+      ::google::protobuf::internal::WireFormatLite::UInt64Size(
+        this->player_id());
+  }
+
+  // uint64 map_instance_id = 2;
+  if (this->map_instance_id() != 0) {
+    total_size += 1 +
+      ::google::protobuf::internal::WireFormatLite::UInt64Size(
+        this->map_instance_id());
+  }
+
+  // int64 client_time_ms = 5;
+  if (this->client_time_ms() != 0) {
+    total_size += 1 +
+      ::google::protobuf::internal::WireFormatLite::Int64Size(
+        this->client_time_ms());
+  }
+
+  // float yaw = 4;
+  if (this->yaw() != 0) {
+    total_size += 1 + 4;
+  }
+
+  int cached_size = ::google::protobuf::internal::ToCachedSize(total_size);
+  GOOGLE_SAFE_CONCURRENT_WRITES_BEGIN();
+  _cached_size_ = cached_size;
+  GOOGLE_SAFE_CONCURRENT_WRITES_END();
+  return total_size;
+}
+
+void MoveReq::MergeFrom(const ::google::protobuf::Message& from) {
+// @@protoc_insertion_point(generalized_merge_from_start:game.MoveReq)
+  GOOGLE_DCHECK_NE(&from, this);
+  const MoveReq* source =
+      ::google::protobuf::internal::DynamicCastToGenerated<const MoveReq>(
+          &from);
+  if (source == NULL) {
+  // @@protoc_insertion_point(generalized_merge_from_cast_fail:game.MoveReq)
+    ::google::protobuf::internal::ReflectionOps::Merge(from, this);
+  } else {
+  // @@protoc_insertion_point(generalized_merge_from_cast_success:game.MoveReq)
+    MergeFrom(*source);
+  }
+}
+
+void MoveReq::MergeFrom(const MoveReq& from) {
+// @@protoc_insertion_point(class_specific_merge_from_start:game.MoveReq)
+  GOOGLE_DCHECK_NE(&from, this);
+  _internal_metadata_.MergeFrom(from._internal_metadata_);
+  ::google::protobuf::uint32 cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  if (from.has_position()) {
+    mutable_position()->::game::Vec3::MergeFrom(from.position());
+  }
+  if (from.player_id() != 0) {
+    set_player_id(from.player_id());
+  }
+  if (from.map_instance_id() != 0) {
+    set_map_instance_id(from.map_instance_id());
+  }
+  if (from.client_time_ms() != 0) {
+    set_client_time_ms(from.client_time_ms());
+  }
+  if (from.yaw() != 0) {
+    set_yaw(from.yaw());
+  }
+}
+
+void MoveReq::CopyFrom(const ::google::protobuf::Message& from) {
+// @@protoc_insertion_point(generalized_copy_from_start:game.MoveReq)
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+void MoveReq::CopyFrom(const MoveReq& from) {
+// @@protoc_insertion_point(class_specific_copy_from_start:game.MoveReq)
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+bool MoveReq::IsInitialized() const {
+  return true;
+}
+
+void MoveReq::Swap(MoveReq* other) {
+  if (other == this) return;
+  InternalSwap(other);
+}
+void MoveReq::InternalSwap(MoveReq* other) {
+  using std::swap;
+  swap(position_, other->position_);
+  swap(player_id_, other->player_id_);
+  swap(map_instance_id_, other->map_instance_id_);
+  swap(client_time_ms_, other->client_time_ms_);
+  swap(yaw_, other->yaw_);
+  _internal_metadata_.Swap(&other->_internal_metadata_);
+  swap(_cached_size_, other->_cached_size_);
+}
+
+::google::protobuf::Metadata MoveReq::GetMetadata() const {
+  protobuf_game_2eproto::protobuf_AssignDescriptorsOnce();
+  return ::protobuf_game_2eproto::file_level_metadata[kIndexInFileMessages];
+}
+
+
+// ===================================================================
+
+void MoveRsp::InitAsDefaultInstance() {
+  ::game::_MoveRsp_default_instance_._instance.get_mutable()->position_ = const_cast< ::game::Vec3*>(
+      ::game::Vec3::internal_default_instance());
+}
+#if !defined(_MSC_VER) || _MSC_VER >= 1900
+const int MoveRsp::kOkFieldNumber;
+const int MoveRsp::kMessageFieldNumber;
+const int MoveRsp::kErrorCodeFieldNumber;
+const int MoveRsp::kPositionFieldNumber;
+const int MoveRsp::kYawFieldNumber;
+const int MoveRsp::kStateSeqFieldNumber;
+const int MoveRsp::kServerTimeMsFieldNumber;
+#endif  // !defined(_MSC_VER) || _MSC_VER >= 1900
+
+MoveRsp::MoveRsp()
+  : ::google::protobuf::Message(), _internal_metadata_(NULL) {
+  if (GOOGLE_PREDICT_TRUE(this != internal_default_instance())) {
+    ::protobuf_game_2eproto::InitDefaultsMoveRsp();
+  }
+  SharedCtor();
+  // @@protoc_insertion_point(constructor:game.MoveRsp)
+}
+MoveRsp::MoveRsp(const MoveRsp& from)
+  : ::google::protobuf::Message(),
+      _internal_metadata_(NULL),
+      _cached_size_(0) {
+  _internal_metadata_.MergeFrom(from._internal_metadata_);
+  message_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  if (from.message().size() > 0) {
+    message_.AssignWithDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), from.message_);
+  }
+  error_code_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  if (from.error_code().size() > 0) {
+    error_code_.AssignWithDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), from.error_code_);
+  }
+  if (from.has_position()) {
+    position_ = new ::game::Vec3(*from.position_);
+  } else {
+    position_ = NULL;
+  }
+  ::memcpy(&ok_, &from.ok_,
+    static_cast<size_t>(reinterpret_cast<char*>(&server_time_ms_) -
+    reinterpret_cast<char*>(&ok_)) + sizeof(server_time_ms_));
+  // @@protoc_insertion_point(copy_constructor:game.MoveRsp)
+}
+
+void MoveRsp::SharedCtor() {
+  message_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  error_code_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  ::memset(&position_, 0, static_cast<size_t>(
+      reinterpret_cast<char*>(&server_time_ms_) -
+      reinterpret_cast<char*>(&position_)) + sizeof(server_time_ms_));
+  _cached_size_ = 0;
+}
+
+MoveRsp::~MoveRsp() {
+  // @@protoc_insertion_point(destructor:game.MoveRsp)
+  SharedDtor();
+}
+
+void MoveRsp::SharedDtor() {
+  message_.DestroyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  error_code_.DestroyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  if (this != internal_default_instance()) delete position_;
+}
+
+void MoveRsp::SetCachedSize(int size) const {
+  GOOGLE_SAFE_CONCURRENT_WRITES_BEGIN();
+  _cached_size_ = size;
+  GOOGLE_SAFE_CONCURRENT_WRITES_END();
+}
+const ::google::protobuf::Descriptor* MoveRsp::descriptor() {
+  ::protobuf_game_2eproto::protobuf_AssignDescriptorsOnce();
+  return ::protobuf_game_2eproto::file_level_metadata[kIndexInFileMessages].descriptor;
+}
+
+const MoveRsp& MoveRsp::default_instance() {
+  ::protobuf_game_2eproto::InitDefaultsMoveRsp();
+  return *internal_default_instance();
+}
+
+MoveRsp* MoveRsp::New(::google::protobuf::Arena* arena) const {
+  MoveRsp* n = new MoveRsp;
+  if (arena != NULL) {
+    arena->Own(n);
+  }
+  return n;
+}
+
+void MoveRsp::Clear() {
+// @@protoc_insertion_point(message_clear_start:game.MoveRsp)
+  ::google::protobuf::uint32 cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void) cached_has_bits;
+
+  message_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  error_code_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  if (GetArenaNoVirtual() == NULL && position_ != NULL) {
+    delete position_;
+  }
+  position_ = NULL;
+  ::memset(&ok_, 0, static_cast<size_t>(
+      reinterpret_cast<char*>(&server_time_ms_) -
+      reinterpret_cast<char*>(&ok_)) + sizeof(server_time_ms_));
+  _internal_metadata_.Clear();
+}
+
+bool MoveRsp::MergePartialFromCodedStream(
+    ::google::protobuf::io::CodedInputStream* input) {
+#define DO_(EXPRESSION) if (!GOOGLE_PREDICT_TRUE(EXPRESSION)) goto failure
+  ::google::protobuf::uint32 tag;
+  // @@protoc_insertion_point(parse_start:game.MoveRsp)
+  for (;;) {
+    ::std::pair< ::google::protobuf::uint32, bool> p = input->ReadTagWithCutoffNoLastTag(127u);
+    tag = p.first;
+    if (!p.second) goto handle_unusual;
+    switch (::google::protobuf::internal::WireFormatLite::GetTagFieldNumber(tag)) {
+      // bool ok = 1;
+      case 1: {
+        if (static_cast< ::google::protobuf::uint8>(tag) ==
+            static_cast< ::google::protobuf::uint8>(8u /* 8 & 0xFF */)) {
+
+          DO_((::google::protobuf::internal::WireFormatLite::ReadPrimitive<
+                   bool, ::google::protobuf::internal::WireFormatLite::TYPE_BOOL>(
+                 input, &ok_)));
+        } else {
+          goto handle_unusual;
+        }
+        break;
+      }
+
+      // string message = 2;
+      case 2: {
+        if (static_cast< ::google::protobuf::uint8>(tag) ==
+            static_cast< ::google::protobuf::uint8>(18u /* 18 & 0xFF */)) {
+          DO_(::google::protobuf::internal::WireFormatLite::ReadString(
+                input, this->mutable_message()));
+          DO_(::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+            this->message().data(), static_cast<int>(this->message().length()),
+            ::google::protobuf::internal::WireFormatLite::PARSE,
+            "game.MoveRsp.message"));
+        } else {
+          goto handle_unusual;
+        }
+        break;
+      }
+
+      // string error_code = 3;
+      case 3: {
+        if (static_cast< ::google::protobuf::uint8>(tag) ==
+            static_cast< ::google::protobuf::uint8>(26u /* 26 & 0xFF */)) {
+          DO_(::google::protobuf::internal::WireFormatLite::ReadString(
+                input, this->mutable_error_code()));
+          DO_(::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+            this->error_code().data(), static_cast<int>(this->error_code().length()),
+            ::google::protobuf::internal::WireFormatLite::PARSE,
+            "game.MoveRsp.error_code"));
+        } else {
+          goto handle_unusual;
+        }
+        break;
+      }
+
+      // .game.Vec3 position = 4;
+      case 4: {
+        if (static_cast< ::google::protobuf::uint8>(tag) ==
+            static_cast< ::google::protobuf::uint8>(34u /* 34 & 0xFF */)) {
+          DO_(::google::protobuf::internal::WireFormatLite::ReadMessage(
+               input, mutable_position()));
+        } else {
+          goto handle_unusual;
+        }
+        break;
+      }
+
+      // float yaw = 5;
+      case 5: {
+        if (static_cast< ::google::protobuf::uint8>(tag) ==
+            static_cast< ::google::protobuf::uint8>(45u /* 45 & 0xFF */)) {
+
+          DO_((::google::protobuf::internal::WireFormatLite::ReadPrimitive<
+                   float, ::google::protobuf::internal::WireFormatLite::TYPE_FLOAT>(
+                 input, &yaw_)));
+        } else {
+          goto handle_unusual;
+        }
+        break;
+      }
+
+      // uint64 state_seq = 6;
+      case 6: {
+        if (static_cast< ::google::protobuf::uint8>(tag) ==
+            static_cast< ::google::protobuf::uint8>(48u /* 48 & 0xFF */)) {
+
+          DO_((::google::protobuf::internal::WireFormatLite::ReadPrimitive<
+                   ::google::protobuf::uint64, ::google::protobuf::internal::WireFormatLite::TYPE_UINT64>(
+                 input, &state_seq_)));
+        } else {
+          goto handle_unusual;
+        }
+        break;
+      }
+
+      // int64 server_time_ms = 7;
+      case 7: {
+        if (static_cast< ::google::protobuf::uint8>(tag) ==
+            static_cast< ::google::protobuf::uint8>(56u /* 56 & 0xFF */)) {
+
+          DO_((::google::protobuf::internal::WireFormatLite::ReadPrimitive<
+                   ::google::protobuf::int64, ::google::protobuf::internal::WireFormatLite::TYPE_INT64>(
+                 input, &server_time_ms_)));
+        } else {
+          goto handle_unusual;
+        }
+        break;
+      }
+
+      default: {
+      handle_unusual:
+        if (tag == 0) {
+          goto success;
+        }
+        DO_(::google::protobuf::internal::WireFormat::SkipField(
+              input, tag, _internal_metadata_.mutable_unknown_fields()));
+        break;
+      }
+    }
+  }
+success:
+  // @@protoc_insertion_point(parse_success:game.MoveRsp)
+  return true;
+failure:
+  // @@protoc_insertion_point(parse_failure:game.MoveRsp)
+  return false;
+#undef DO_
+}
+
+void MoveRsp::SerializeWithCachedSizes(
+    ::google::protobuf::io::CodedOutputStream* output) const {
+  // @@protoc_insertion_point(serialize_start:game.MoveRsp)
+  ::google::protobuf::uint32 cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  // bool ok = 1;
+  if (this->ok() != 0) {
+    ::google::protobuf::internal::WireFormatLite::WriteBool(1, this->ok(), output);
+  }
+
+  // string message = 2;
+  if (this->message().size() > 0) {
+    ::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+      this->message().data(), static_cast<int>(this->message().length()),
+      ::google::protobuf::internal::WireFormatLite::SERIALIZE,
+      "game.MoveRsp.message");
+    ::google::protobuf::internal::WireFormatLite::WriteStringMaybeAliased(
+      2, this->message(), output);
+  }
+
+  // string error_code = 3;
+  if (this->error_code().size() > 0) {
+    ::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+      this->error_code().data(), static_cast<int>(this->error_code().length()),
+      ::google::protobuf::internal::WireFormatLite::SERIALIZE,
+      "game.MoveRsp.error_code");
+    ::google::protobuf::internal::WireFormatLite::WriteStringMaybeAliased(
+      3, this->error_code(), output);
+  }
+
+  // .game.Vec3 position = 4;
+  if (this->has_position()) {
+    ::google::protobuf::internal::WireFormatLite::WriteMessageMaybeToArray(
+      4, *this->position_, output);
+  }
+
+  // float yaw = 5;
+  if (this->yaw() != 0) {
+    ::google::protobuf::internal::WireFormatLite::WriteFloat(5, this->yaw(), output);
+  }
+
+  // uint64 state_seq = 6;
+  if (this->state_seq() != 0) {
+    ::google::protobuf::internal::WireFormatLite::WriteUInt64(6, this->state_seq(), output);
+  }
+
+  // int64 server_time_ms = 7;
+  if (this->server_time_ms() != 0) {
+    ::google::protobuf::internal::WireFormatLite::WriteInt64(7, this->server_time_ms(), output);
+  }
+
+  if ((_internal_metadata_.have_unknown_fields() &&  ::google::protobuf::internal::GetProto3PreserveUnknownsDefault())) {
+    ::google::protobuf::internal::WireFormat::SerializeUnknownFields(
+        (::google::protobuf::internal::GetProto3PreserveUnknownsDefault()   ? _internal_metadata_.unknown_fields()   : _internal_metadata_.default_instance()), output);
+  }
+  // @@protoc_insertion_point(serialize_end:game.MoveRsp)
+}
+
+::google::protobuf::uint8* MoveRsp::InternalSerializeWithCachedSizesToArray(
+    bool deterministic, ::google::protobuf::uint8* target) const {
+  (void)deterministic; // Unused
+  // @@protoc_insertion_point(serialize_to_array_start:game.MoveRsp)
+  ::google::protobuf::uint32 cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  // bool ok = 1;
+  if (this->ok() != 0) {
+    target = ::google::protobuf::internal::WireFormatLite::WriteBoolToArray(1, this->ok(), target);
+  }
+
+  // string message = 2;
+  if (this->message().size() > 0) {
+    ::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+      this->message().data(), static_cast<int>(this->message().length()),
+      ::google::protobuf::internal::WireFormatLite::SERIALIZE,
+      "game.MoveRsp.message");
+    target =
+      ::google::protobuf::internal::WireFormatLite::WriteStringToArray(
+        2, this->message(), target);
+  }
+
+  // string error_code = 3;
+  if (this->error_code().size() > 0) {
+    ::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+      this->error_code().data(), static_cast<int>(this->error_code().length()),
+      ::google::protobuf::internal::WireFormatLite::SERIALIZE,
+      "game.MoveRsp.error_code");
+    target =
+      ::google::protobuf::internal::WireFormatLite::WriteStringToArray(
+        3, this->error_code(), target);
+  }
+
+  // .game.Vec3 position = 4;
+  if (this->has_position()) {
+    target = ::google::protobuf::internal::WireFormatLite::
+      InternalWriteMessageToArray(
+        4, *this->position_, deterministic, target);
+  }
+
+  // float yaw = 5;
+  if (this->yaw() != 0) {
+    target = ::google::protobuf::internal::WireFormatLite::WriteFloatToArray(5, this->yaw(), target);
+  }
+
+  // uint64 state_seq = 6;
+  if (this->state_seq() != 0) {
+    target = ::google::protobuf::internal::WireFormatLite::WriteUInt64ToArray(6, this->state_seq(), target);
+  }
+
+  // int64 server_time_ms = 7;
+  if (this->server_time_ms() != 0) {
+    target = ::google::protobuf::internal::WireFormatLite::WriteInt64ToArray(7, this->server_time_ms(), target);
+  }
+
+  if ((_internal_metadata_.have_unknown_fields() &&  ::google::protobuf::internal::GetProto3PreserveUnknownsDefault())) {
+    target = ::google::protobuf::internal::WireFormat::SerializeUnknownFieldsToArray(
+        (::google::protobuf::internal::GetProto3PreserveUnknownsDefault()   ? _internal_metadata_.unknown_fields()   : _internal_metadata_.default_instance()), target);
+  }
+  // @@protoc_insertion_point(serialize_to_array_end:game.MoveRsp)
+  return target;
+}
+
+size_t MoveRsp::ByteSizeLong() const {
+// @@protoc_insertion_point(message_byte_size_start:game.MoveRsp)
+  size_t total_size = 0;
+
+  if ((_internal_metadata_.have_unknown_fields() &&  ::google::protobuf::internal::GetProto3PreserveUnknownsDefault())) {
+    total_size +=
+      ::google::protobuf::internal::WireFormat::ComputeUnknownFieldsSize(
+        (::google::protobuf::internal::GetProto3PreserveUnknownsDefault()   ? _internal_metadata_.unknown_fields()   : _internal_metadata_.default_instance()));
+  }
+  // string message = 2;
+  if (this->message().size() > 0) {
+    total_size += 1 +
+      ::google::protobuf::internal::WireFormatLite::StringSize(
+        this->message());
+  }
+
+  // string error_code = 3;
+  if (this->error_code().size() > 0) {
+    total_size += 1 +
+      ::google::protobuf::internal::WireFormatLite::StringSize(
+        this->error_code());
+  }
+
+  // .game.Vec3 position = 4;
+  if (this->has_position()) {
+    total_size += 1 +
+      ::google::protobuf::internal::WireFormatLite::MessageSize(
+        *this->position_);
+  }
+
+  // bool ok = 1;
+  if (this->ok() != 0) {
+    total_size += 1 + 1;
+  }
+
+  // float yaw = 5;
+  if (this->yaw() != 0) {
+    total_size += 1 + 4;
+  }
+
+  // uint64 state_seq = 6;
+  if (this->state_seq() != 0) {
+    total_size += 1 +
+      ::google::protobuf::internal::WireFormatLite::UInt64Size(
+        this->state_seq());
+  }
+
+  // int64 server_time_ms = 7;
+  if (this->server_time_ms() != 0) {
+    total_size += 1 +
+      ::google::protobuf::internal::WireFormatLite::Int64Size(
+        this->server_time_ms());
+  }
+
+  int cached_size = ::google::protobuf::internal::ToCachedSize(total_size);
+  GOOGLE_SAFE_CONCURRENT_WRITES_BEGIN();
+  _cached_size_ = cached_size;
+  GOOGLE_SAFE_CONCURRENT_WRITES_END();
+  return total_size;
+}
+
+void MoveRsp::MergeFrom(const ::google::protobuf::Message& from) {
+// @@protoc_insertion_point(generalized_merge_from_start:game.MoveRsp)
+  GOOGLE_DCHECK_NE(&from, this);
+  const MoveRsp* source =
+      ::google::protobuf::internal::DynamicCastToGenerated<const MoveRsp>(
+          &from);
+  if (source == NULL) {
+  // @@protoc_insertion_point(generalized_merge_from_cast_fail:game.MoveRsp)
+    ::google::protobuf::internal::ReflectionOps::Merge(from, this);
+  } else {
+  // @@protoc_insertion_point(generalized_merge_from_cast_success:game.MoveRsp)
+    MergeFrom(*source);
+  }
+}
+
+void MoveRsp::MergeFrom(const MoveRsp& from) {
+// @@protoc_insertion_point(class_specific_merge_from_start:game.MoveRsp)
+  GOOGLE_DCHECK_NE(&from, this);
+  _internal_metadata_.MergeFrom(from._internal_metadata_);
+  ::google::protobuf::uint32 cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  if (from.message().size() > 0) {
+
+    message_.AssignWithDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), from.message_);
+  }
+  if (from.error_code().size() > 0) {
+
+    error_code_.AssignWithDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), from.error_code_);
+  }
+  if (from.has_position()) {
+    mutable_position()->::game::Vec3::MergeFrom(from.position());
+  }
+  if (from.ok() != 0) {
+    set_ok(from.ok());
+  }
+  if (from.yaw() != 0) {
+    set_yaw(from.yaw());
+  }
+  if (from.state_seq() != 0) {
+    set_state_seq(from.state_seq());
+  }
+  if (from.server_time_ms() != 0) {
+    set_server_time_ms(from.server_time_ms());
+  }
+}
+
+void MoveRsp::CopyFrom(const ::google::protobuf::Message& from) {
+// @@protoc_insertion_point(generalized_copy_from_start:game.MoveRsp)
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+void MoveRsp::CopyFrom(const MoveRsp& from) {
+// @@protoc_insertion_point(class_specific_copy_from_start:game.MoveRsp)
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+bool MoveRsp::IsInitialized() const {
+  return true;
+}
+
+void MoveRsp::Swap(MoveRsp* other) {
+  if (other == this) return;
+  InternalSwap(other);
+}
+void MoveRsp::InternalSwap(MoveRsp* other) {
+  using std::swap;
+  message_.Swap(&other->message_);
+  error_code_.Swap(&other->error_code_);
+  swap(position_, other->position_);
+  swap(ok_, other->ok_);
+  swap(yaw_, other->yaw_);
+  swap(state_seq_, other->state_seq_);
+  swap(server_time_ms_, other->server_time_ms_);
+  _internal_metadata_.Swap(&other->_internal_metadata_);
+  swap(_cached_size_, other->_cached_size_);
+}
+
+::google::protobuf::Metadata MoveRsp::GetMetadata() const {
+  protobuf_game_2eproto::protobuf_AssignDescriptorsOnce();
+  return ::protobuf_game_2eproto::file_level_metadata[kIndexInFileMessages];
+}
+
+
+// ===================================================================
+
+void AoiEvent::InitAsDefaultInstance() {
+  ::game::_AoiEvent_default_instance_._instance.get_mutable()->entity_ = const_cast< ::game::EntitySnapshot*>(
+      ::game::EntitySnapshot::internal_default_instance());
+}
+#if !defined(_MSC_VER) || _MSC_VER >= 1900
+const int AoiEvent::kOpFieldNumber;
+const int AoiEvent::kEntityFieldNumber;
+#endif  // !defined(_MSC_VER) || _MSC_VER >= 1900
+
+AoiEvent::AoiEvent()
+  : ::google::protobuf::Message(), _internal_metadata_(NULL) {
+  if (GOOGLE_PREDICT_TRUE(this != internal_default_instance())) {
+    ::protobuf_game_2eproto::InitDefaultsAoiEvent();
+  }
+  SharedCtor();
+  // @@protoc_insertion_point(constructor:game.AoiEvent)
+}
+AoiEvent::AoiEvent(const AoiEvent& from)
+  : ::google::protobuf::Message(),
+      _internal_metadata_(NULL),
+      _cached_size_(0) {
+  _internal_metadata_.MergeFrom(from._internal_metadata_);
+  if (from.has_entity()) {
+    entity_ = new ::game::EntitySnapshot(*from.entity_);
+  } else {
+    entity_ = NULL;
+  }
+  op_ = from.op_;
+  // @@protoc_insertion_point(copy_constructor:game.AoiEvent)
+}
+
+void AoiEvent::SharedCtor() {
+  ::memset(&entity_, 0, static_cast<size_t>(
+      reinterpret_cast<char*>(&op_) -
+      reinterpret_cast<char*>(&entity_)) + sizeof(op_));
+  _cached_size_ = 0;
+}
+
+AoiEvent::~AoiEvent() {
+  // @@protoc_insertion_point(destructor:game.AoiEvent)
+  SharedDtor();
+}
+
+void AoiEvent::SharedDtor() {
+  if (this != internal_default_instance()) delete entity_;
+}
+
+void AoiEvent::SetCachedSize(int size) const {
+  GOOGLE_SAFE_CONCURRENT_WRITES_BEGIN();
+  _cached_size_ = size;
+  GOOGLE_SAFE_CONCURRENT_WRITES_END();
+}
+const ::google::protobuf::Descriptor* AoiEvent::descriptor() {
+  ::protobuf_game_2eproto::protobuf_AssignDescriptorsOnce();
+  return ::protobuf_game_2eproto::file_level_metadata[kIndexInFileMessages].descriptor;
+}
+
+const AoiEvent& AoiEvent::default_instance() {
+  ::protobuf_game_2eproto::InitDefaultsAoiEvent();
+  return *internal_default_instance();
+}
+
+AoiEvent* AoiEvent::New(::google::protobuf::Arena* arena) const {
+  AoiEvent* n = new AoiEvent;
+  if (arena != NULL) {
+    arena->Own(n);
+  }
+  return n;
+}
+
+void AoiEvent::Clear() {
+// @@protoc_insertion_point(message_clear_start:game.AoiEvent)
+  ::google::protobuf::uint32 cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void) cached_has_bits;
+
+  if (GetArenaNoVirtual() == NULL && entity_ != NULL) {
+    delete entity_;
+  }
+  entity_ = NULL;
+  op_ = 0;
+  _internal_metadata_.Clear();
+}
+
+bool AoiEvent::MergePartialFromCodedStream(
+    ::google::protobuf::io::CodedInputStream* input) {
+#define DO_(EXPRESSION) if (!GOOGLE_PREDICT_TRUE(EXPRESSION)) goto failure
+  ::google::protobuf::uint32 tag;
+  // @@protoc_insertion_point(parse_start:game.AoiEvent)
+  for (;;) {
+    ::std::pair< ::google::protobuf::uint32, bool> p = input->ReadTagWithCutoffNoLastTag(127u);
+    tag = p.first;
+    if (!p.second) goto handle_unusual;
+    switch (::google::protobuf::internal::WireFormatLite::GetTagFieldNumber(tag)) {
+      // int32 op = 1;
+      case 1: {
+        if (static_cast< ::google::protobuf::uint8>(tag) ==
+            static_cast< ::google::protobuf::uint8>(8u /* 8 & 0xFF */)) {
+
+          DO_((::google::protobuf::internal::WireFormatLite::ReadPrimitive<
+                   ::google::protobuf::int32, ::google::protobuf::internal::WireFormatLite::TYPE_INT32>(
+                 input, &op_)));
+        } else {
+          goto handle_unusual;
+        }
+        break;
+      }
+
+      // .game.EntitySnapshot entity = 2;
+      case 2: {
+        if (static_cast< ::google::protobuf::uint8>(tag) ==
+            static_cast< ::google::protobuf::uint8>(18u /* 18 & 0xFF */)) {
+          DO_(::google::protobuf::internal::WireFormatLite::ReadMessage(
+               input, mutable_entity()));
+        } else {
+          goto handle_unusual;
+        }
+        break;
+      }
+
+      default: {
+      handle_unusual:
+        if (tag == 0) {
+          goto success;
+        }
+        DO_(::google::protobuf::internal::WireFormat::SkipField(
+              input, tag, _internal_metadata_.mutable_unknown_fields()));
+        break;
+      }
+    }
+  }
+success:
+  // @@protoc_insertion_point(parse_success:game.AoiEvent)
+  return true;
+failure:
+  // @@protoc_insertion_point(parse_failure:game.AoiEvent)
+  return false;
+#undef DO_
+}
+
+void AoiEvent::SerializeWithCachedSizes(
+    ::google::protobuf::io::CodedOutputStream* output) const {
+  // @@protoc_insertion_point(serialize_start:game.AoiEvent)
+  ::google::protobuf::uint32 cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  // int32 op = 1;
+  if (this->op() != 0) {
+    ::google::protobuf::internal::WireFormatLite::WriteInt32(1, this->op(), output);
+  }
+
+  // .game.EntitySnapshot entity = 2;
+  if (this->has_entity()) {
+    ::google::protobuf::internal::WireFormatLite::WriteMessageMaybeToArray(
+      2, *this->entity_, output);
+  }
+
+  if ((_internal_metadata_.have_unknown_fields() &&  ::google::protobuf::internal::GetProto3PreserveUnknownsDefault())) {
+    ::google::protobuf::internal::WireFormat::SerializeUnknownFields(
+        (::google::protobuf::internal::GetProto3PreserveUnknownsDefault()   ? _internal_metadata_.unknown_fields()   : _internal_metadata_.default_instance()), output);
+  }
+  // @@protoc_insertion_point(serialize_end:game.AoiEvent)
+}
+
+::google::protobuf::uint8* AoiEvent::InternalSerializeWithCachedSizesToArray(
+    bool deterministic, ::google::protobuf::uint8* target) const {
+  (void)deterministic; // Unused
+  // @@protoc_insertion_point(serialize_to_array_start:game.AoiEvent)
+  ::google::protobuf::uint32 cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  // int32 op = 1;
+  if (this->op() != 0) {
+    target = ::google::protobuf::internal::WireFormatLite::WriteInt32ToArray(1, this->op(), target);
+  }
+
+  // .game.EntitySnapshot entity = 2;
+  if (this->has_entity()) {
+    target = ::google::protobuf::internal::WireFormatLite::
+      InternalWriteMessageToArray(
+        2, *this->entity_, deterministic, target);
+  }
+
+  if ((_internal_metadata_.have_unknown_fields() &&  ::google::protobuf::internal::GetProto3PreserveUnknownsDefault())) {
+    target = ::google::protobuf::internal::WireFormat::SerializeUnknownFieldsToArray(
+        (::google::protobuf::internal::GetProto3PreserveUnknownsDefault()   ? _internal_metadata_.unknown_fields()   : _internal_metadata_.default_instance()), target);
+  }
+  // @@protoc_insertion_point(serialize_to_array_end:game.AoiEvent)
+  return target;
+}
+
+size_t AoiEvent::ByteSizeLong() const {
+// @@protoc_insertion_point(message_byte_size_start:game.AoiEvent)
+  size_t total_size = 0;
+
+  if ((_internal_metadata_.have_unknown_fields() &&  ::google::protobuf::internal::GetProto3PreserveUnknownsDefault())) {
+    total_size +=
+      ::google::protobuf::internal::WireFormat::ComputeUnknownFieldsSize(
+        (::google::protobuf::internal::GetProto3PreserveUnknownsDefault()   ? _internal_metadata_.unknown_fields()   : _internal_metadata_.default_instance()));
+  }
+  // .game.EntitySnapshot entity = 2;
+  if (this->has_entity()) {
+    total_size += 1 +
+      ::google::protobuf::internal::WireFormatLite::MessageSize(
+        *this->entity_);
+  }
+
+  // int32 op = 1;
+  if (this->op() != 0) {
+    total_size += 1 +
+      ::google::protobuf::internal::WireFormatLite::Int32Size(
+        this->op());
+  }
+
+  int cached_size = ::google::protobuf::internal::ToCachedSize(total_size);
+  GOOGLE_SAFE_CONCURRENT_WRITES_BEGIN();
+  _cached_size_ = cached_size;
+  GOOGLE_SAFE_CONCURRENT_WRITES_END();
+  return total_size;
+}
+
+void AoiEvent::MergeFrom(const ::google::protobuf::Message& from) {
+// @@protoc_insertion_point(generalized_merge_from_start:game.AoiEvent)
+  GOOGLE_DCHECK_NE(&from, this);
+  const AoiEvent* source =
+      ::google::protobuf::internal::DynamicCastToGenerated<const AoiEvent>(
+          &from);
+  if (source == NULL) {
+  // @@protoc_insertion_point(generalized_merge_from_cast_fail:game.AoiEvent)
+    ::google::protobuf::internal::ReflectionOps::Merge(from, this);
+  } else {
+  // @@protoc_insertion_point(generalized_merge_from_cast_success:game.AoiEvent)
+    MergeFrom(*source);
+  }
+}
+
+void AoiEvent::MergeFrom(const AoiEvent& from) {
+// @@protoc_insertion_point(class_specific_merge_from_start:game.AoiEvent)
+  GOOGLE_DCHECK_NE(&from, this);
+  _internal_metadata_.MergeFrom(from._internal_metadata_);
+  ::google::protobuf::uint32 cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  if (from.has_entity()) {
+    mutable_entity()->::game::EntitySnapshot::MergeFrom(from.entity());
+  }
+  if (from.op() != 0) {
+    set_op(from.op());
+  }
+}
+
+void AoiEvent::CopyFrom(const ::google::protobuf::Message& from) {
+// @@protoc_insertion_point(generalized_copy_from_start:game.AoiEvent)
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+void AoiEvent::CopyFrom(const AoiEvent& from) {
+// @@protoc_insertion_point(class_specific_copy_from_start:game.AoiEvent)
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+bool AoiEvent::IsInitialized() const {
+  return true;
+}
+
+void AoiEvent::Swap(AoiEvent* other) {
+  if (other == this) return;
+  InternalSwap(other);
+}
+void AoiEvent::InternalSwap(AoiEvent* other) {
+  using std::swap;
+  swap(entity_, other->entity_);
+  swap(op_, other->op_);
+  _internal_metadata_.Swap(&other->_internal_metadata_);
+  swap(_cached_size_, other->_cached_size_);
+}
+
+::google::protobuf::Metadata AoiEvent::GetMetadata() const {
+  protobuf_game_2eproto::protobuf_AssignDescriptorsOnce();
+  return ::protobuf_game_2eproto::file_level_metadata[kIndexInFileMessages];
+}
+
+
+// ===================================================================
+
+void AoiDelta::InitAsDefaultInstance() {
+}
+#if !defined(_MSC_VER) || _MSC_VER >= 1900
+const int AoiDelta::kMapInstanceIdFieldNumber;
+const int AoiDelta::kEventsFieldNumber;
+#endif  // !defined(_MSC_VER) || _MSC_VER >= 1900
+
+AoiDelta::AoiDelta()
+  : ::google::protobuf::Message(), _internal_metadata_(NULL) {
+  if (GOOGLE_PREDICT_TRUE(this != internal_default_instance())) {
+    ::protobuf_game_2eproto::InitDefaultsAoiDelta();
+  }
+  SharedCtor();
+  // @@protoc_insertion_point(constructor:game.AoiDelta)
+}
+AoiDelta::AoiDelta(const AoiDelta& from)
+  : ::google::protobuf::Message(),
+      _internal_metadata_(NULL),
+      events_(from.events_),
+      _cached_size_(0) {
+  _internal_metadata_.MergeFrom(from._internal_metadata_);
+  map_instance_id_ = from.map_instance_id_;
+  // @@protoc_insertion_point(copy_constructor:game.AoiDelta)
+}
+
+void AoiDelta::SharedCtor() {
+  map_instance_id_ = GOOGLE_ULONGLONG(0);
+  _cached_size_ = 0;
+}
+
+AoiDelta::~AoiDelta() {
+  // @@protoc_insertion_point(destructor:game.AoiDelta)
+  SharedDtor();
+}
+
+void AoiDelta::SharedDtor() {
+}
+
+void AoiDelta::SetCachedSize(int size) const {
+  GOOGLE_SAFE_CONCURRENT_WRITES_BEGIN();
+  _cached_size_ = size;
+  GOOGLE_SAFE_CONCURRENT_WRITES_END();
+}
+const ::google::protobuf::Descriptor* AoiDelta::descriptor() {
+  ::protobuf_game_2eproto::protobuf_AssignDescriptorsOnce();
+  return ::protobuf_game_2eproto::file_level_metadata[kIndexInFileMessages].descriptor;
+}
+
+const AoiDelta& AoiDelta::default_instance() {
+  ::protobuf_game_2eproto::InitDefaultsAoiDelta();
+  return *internal_default_instance();
+}
+
+AoiDelta* AoiDelta::New(::google::protobuf::Arena* arena) const {
+  AoiDelta* n = new AoiDelta;
+  if (arena != NULL) {
+    arena->Own(n);
+  }
+  return n;
+}
+
+void AoiDelta::Clear() {
+// @@protoc_insertion_point(message_clear_start:game.AoiDelta)
+  ::google::protobuf::uint32 cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void) cached_has_bits;
+
+  events_.Clear();
+  map_instance_id_ = GOOGLE_ULONGLONG(0);
+  _internal_metadata_.Clear();
+}
+
+bool AoiDelta::MergePartialFromCodedStream(
+    ::google::protobuf::io::CodedInputStream* input) {
+#define DO_(EXPRESSION) if (!GOOGLE_PREDICT_TRUE(EXPRESSION)) goto failure
+  ::google::protobuf::uint32 tag;
+  // @@protoc_insertion_point(parse_start:game.AoiDelta)
+  for (;;) {
+    ::std::pair< ::google::protobuf::uint32, bool> p = input->ReadTagWithCutoffNoLastTag(127u);
+    tag = p.first;
+    if (!p.second) goto handle_unusual;
+    switch (::google::protobuf::internal::WireFormatLite::GetTagFieldNumber(tag)) {
+      // uint64 map_instance_id = 1;
+      case 1: {
+        if (static_cast< ::google::protobuf::uint8>(tag) ==
+            static_cast< ::google::protobuf::uint8>(8u /* 8 & 0xFF */)) {
+
+          DO_((::google::protobuf::internal::WireFormatLite::ReadPrimitive<
+                   ::google::protobuf::uint64, ::google::protobuf::internal::WireFormatLite::TYPE_UINT64>(
+                 input, &map_instance_id_)));
+        } else {
+          goto handle_unusual;
+        }
+        break;
+      }
+
+      // repeated .game.AoiEvent events = 2;
+      case 2: {
+        if (static_cast< ::google::protobuf::uint8>(tag) ==
+            static_cast< ::google::protobuf::uint8>(18u /* 18 & 0xFF */)) {
+          DO_(::google::protobuf::internal::WireFormatLite::ReadMessage(input, add_events()));
+        } else {
+          goto handle_unusual;
+        }
+        break;
+      }
+
+      default: {
+      handle_unusual:
+        if (tag == 0) {
+          goto success;
+        }
+        DO_(::google::protobuf::internal::WireFormat::SkipField(
+              input, tag, _internal_metadata_.mutable_unknown_fields()));
+        break;
+      }
+    }
+  }
+success:
+  // @@protoc_insertion_point(parse_success:game.AoiDelta)
+  return true;
+failure:
+  // @@protoc_insertion_point(parse_failure:game.AoiDelta)
+  return false;
+#undef DO_
+}
+
+void AoiDelta::SerializeWithCachedSizes(
+    ::google::protobuf::io::CodedOutputStream* output) const {
+  // @@protoc_insertion_point(serialize_start:game.AoiDelta)
+  ::google::protobuf::uint32 cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  // uint64 map_instance_id = 1;
+  if (this->map_instance_id() != 0) {
+    ::google::protobuf::internal::WireFormatLite::WriteUInt64(1, this->map_instance_id(), output);
+  }
+
+  // repeated .game.AoiEvent events = 2;
+  for (unsigned int i = 0,
+      n = static_cast<unsigned int>(this->events_size()); i < n; i++) {
+    ::google::protobuf::internal::WireFormatLite::WriteMessageMaybeToArray(
+      2, this->events(static_cast<int>(i)), output);
+  }
+
+  if ((_internal_metadata_.have_unknown_fields() &&  ::google::protobuf::internal::GetProto3PreserveUnknownsDefault())) {
+    ::google::protobuf::internal::WireFormat::SerializeUnknownFields(
+        (::google::protobuf::internal::GetProto3PreserveUnknownsDefault()   ? _internal_metadata_.unknown_fields()   : _internal_metadata_.default_instance()), output);
+  }
+  // @@protoc_insertion_point(serialize_end:game.AoiDelta)
+}
+
+::google::protobuf::uint8* AoiDelta::InternalSerializeWithCachedSizesToArray(
+    bool deterministic, ::google::protobuf::uint8* target) const {
+  (void)deterministic; // Unused
+  // @@protoc_insertion_point(serialize_to_array_start:game.AoiDelta)
+  ::google::protobuf::uint32 cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  // uint64 map_instance_id = 1;
+  if (this->map_instance_id() != 0) {
+    target = ::google::protobuf::internal::WireFormatLite::WriteUInt64ToArray(1, this->map_instance_id(), target);
+  }
+
+  // repeated .game.AoiEvent events = 2;
+  for (unsigned int i = 0,
+      n = static_cast<unsigned int>(this->events_size()); i < n; i++) {
+    target = ::google::protobuf::internal::WireFormatLite::
+      InternalWriteMessageToArray(
+        2, this->events(static_cast<int>(i)), deterministic, target);
+  }
+
+  if ((_internal_metadata_.have_unknown_fields() &&  ::google::protobuf::internal::GetProto3PreserveUnknownsDefault())) {
+    target = ::google::protobuf::internal::WireFormat::SerializeUnknownFieldsToArray(
+        (::google::protobuf::internal::GetProto3PreserveUnknownsDefault()   ? _internal_metadata_.unknown_fields()   : _internal_metadata_.default_instance()), target);
+  }
+  // @@protoc_insertion_point(serialize_to_array_end:game.AoiDelta)
+  return target;
+}
+
+size_t AoiDelta::ByteSizeLong() const {
+// @@protoc_insertion_point(message_byte_size_start:game.AoiDelta)
+  size_t total_size = 0;
+
+  if ((_internal_metadata_.have_unknown_fields() &&  ::google::protobuf::internal::GetProto3PreserveUnknownsDefault())) {
+    total_size +=
+      ::google::protobuf::internal::WireFormat::ComputeUnknownFieldsSize(
+        (::google::protobuf::internal::GetProto3PreserveUnknownsDefault()   ? _internal_metadata_.unknown_fields()   : _internal_metadata_.default_instance()));
+  }
+  // repeated .game.AoiEvent events = 2;
+  {
+    unsigned int count = static_cast<unsigned int>(this->events_size());
+    total_size += 1UL * count;
+    for (unsigned int i = 0; i < count; i++) {
+      total_size +=
+        ::google::protobuf::internal::WireFormatLite::MessageSize(
+          this->events(static_cast<int>(i)));
+    }
+  }
+
+  // uint64 map_instance_id = 1;
+  if (this->map_instance_id() != 0) {
+    total_size += 1 +
+      ::google::protobuf::internal::WireFormatLite::UInt64Size(
+        this->map_instance_id());
+  }
+
+  int cached_size = ::google::protobuf::internal::ToCachedSize(total_size);
+  GOOGLE_SAFE_CONCURRENT_WRITES_BEGIN();
+  _cached_size_ = cached_size;
+  GOOGLE_SAFE_CONCURRENT_WRITES_END();
+  return total_size;
+}
+
+void AoiDelta::MergeFrom(const ::google::protobuf::Message& from) {
+// @@protoc_insertion_point(generalized_merge_from_start:game.AoiDelta)
+  GOOGLE_DCHECK_NE(&from, this);
+  const AoiDelta* source =
+      ::google::protobuf::internal::DynamicCastToGenerated<const AoiDelta>(
+          &from);
+  if (source == NULL) {
+  // @@protoc_insertion_point(generalized_merge_from_cast_fail:game.AoiDelta)
+    ::google::protobuf::internal::ReflectionOps::Merge(from, this);
+  } else {
+  // @@protoc_insertion_point(generalized_merge_from_cast_success:game.AoiDelta)
+    MergeFrom(*source);
+  }
+}
+
+void AoiDelta::MergeFrom(const AoiDelta& from) {
+// @@protoc_insertion_point(class_specific_merge_from_start:game.AoiDelta)
+  GOOGLE_DCHECK_NE(&from, this);
+  _internal_metadata_.MergeFrom(from._internal_metadata_);
+  ::google::protobuf::uint32 cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  events_.MergeFrom(from.events_);
+  if (from.map_instance_id() != 0) {
+    set_map_instance_id(from.map_instance_id());
+  }
+}
+
+void AoiDelta::CopyFrom(const ::google::protobuf::Message& from) {
+// @@protoc_insertion_point(generalized_copy_from_start:game.AoiDelta)
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+void AoiDelta::CopyFrom(const AoiDelta& from) {
+// @@protoc_insertion_point(class_specific_copy_from_start:game.AoiDelta)
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+bool AoiDelta::IsInitialized() const {
+  return true;
+}
+
+void AoiDelta::Swap(AoiDelta* other) {
+  if (other == this) return;
+  InternalSwap(other);
+}
+void AoiDelta::InternalSwap(AoiDelta* other) {
+  using std::swap;
+  events_.InternalSwap(&other->events_);
+  swap(map_instance_id_, other->map_instance_id_);
+  _internal_metadata_.Swap(&other->_internal_metadata_);
+  swap(_cached_size_, other->_cached_size_);
+}
+
+::google::protobuf::Metadata AoiDelta::GetMetadata() const {
+  protobuf_game_2eproto::protobuf_AssignDescriptorsOnce();
+  return ::protobuf_game_2eproto::file_level_metadata[kIndexInFileMessages];
+}
+
+
+// ===================================================================
+
+void PlayerMailSendReq::InitAsDefaultInstance() {
+}
+#if !defined(_MSC_VER) || _MSC_VER >= 1900
+const int PlayerMailSendReq::kSenderPlayerIdFieldNumber;
+const int PlayerMailSendReq::kReceiverPlayerIdFieldNumber;
+const int PlayerMailSendReq::kTitleFieldNumber;
+const int PlayerMailSendReq::kBodyFieldNumber;
+const int PlayerMailSendReq::kOperationIdFieldNumber;
+#endif  // !defined(_MSC_VER) || _MSC_VER >= 1900
+
+PlayerMailSendReq::PlayerMailSendReq()
+  : ::google::protobuf::Message(), _internal_metadata_(NULL) {
+  if (GOOGLE_PREDICT_TRUE(this != internal_default_instance())) {
+    ::protobuf_game_2eproto::InitDefaultsPlayerMailSendReq();
+  }
+  SharedCtor();
+  // @@protoc_insertion_point(constructor:game.PlayerMailSendReq)
+}
+PlayerMailSendReq::PlayerMailSendReq(const PlayerMailSendReq& from)
+  : ::google::protobuf::Message(),
+      _internal_metadata_(NULL),
+      _cached_size_(0) {
+  _internal_metadata_.MergeFrom(from._internal_metadata_);
+  title_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  if (from.title().size() > 0) {
+    title_.AssignWithDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), from.title_);
+  }
+  body_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  if (from.body().size() > 0) {
+    body_.AssignWithDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), from.body_);
+  }
+  operation_id_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  if (from.operation_id().size() > 0) {
+    operation_id_.AssignWithDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), from.operation_id_);
+  }
+  ::memcpy(&sender_player_id_, &from.sender_player_id_,
+    static_cast<size_t>(reinterpret_cast<char*>(&receiver_player_id_) -
+    reinterpret_cast<char*>(&sender_player_id_)) + sizeof(receiver_player_id_));
+  // @@protoc_insertion_point(copy_constructor:game.PlayerMailSendReq)
+}
+
+void PlayerMailSendReq::SharedCtor() {
+  title_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  body_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  operation_id_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  ::memset(&sender_player_id_, 0, static_cast<size_t>(
+      reinterpret_cast<char*>(&receiver_player_id_) -
+      reinterpret_cast<char*>(&sender_player_id_)) + sizeof(receiver_player_id_));
+  _cached_size_ = 0;
+}
+
+PlayerMailSendReq::~PlayerMailSendReq() {
+  // @@protoc_insertion_point(destructor:game.PlayerMailSendReq)
+  SharedDtor();
+}
+
+void PlayerMailSendReq::SharedDtor() {
+  title_.DestroyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  body_.DestroyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  operation_id_.DestroyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+
+void PlayerMailSendReq::SetCachedSize(int size) const {
+  GOOGLE_SAFE_CONCURRENT_WRITES_BEGIN();
+  _cached_size_ = size;
+  GOOGLE_SAFE_CONCURRENT_WRITES_END();
+}
+const ::google::protobuf::Descriptor* PlayerMailSendReq::descriptor() {
+  ::protobuf_game_2eproto::protobuf_AssignDescriptorsOnce();
+  return ::protobuf_game_2eproto::file_level_metadata[kIndexInFileMessages].descriptor;
+}
+
+const PlayerMailSendReq& PlayerMailSendReq::default_instance() {
+  ::protobuf_game_2eproto::InitDefaultsPlayerMailSendReq();
+  return *internal_default_instance();
+}
+
+PlayerMailSendReq* PlayerMailSendReq::New(::google::protobuf::Arena* arena) const {
+  PlayerMailSendReq* n = new PlayerMailSendReq;
+  if (arena != NULL) {
+    arena->Own(n);
+  }
+  return n;
+}
+
+void PlayerMailSendReq::Clear() {
+// @@protoc_insertion_point(message_clear_start:game.PlayerMailSendReq)
+  ::google::protobuf::uint32 cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void) cached_has_bits;
+
+  title_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  body_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  operation_id_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  ::memset(&sender_player_id_, 0, static_cast<size_t>(
+      reinterpret_cast<char*>(&receiver_player_id_) -
+      reinterpret_cast<char*>(&sender_player_id_)) + sizeof(receiver_player_id_));
+  _internal_metadata_.Clear();
+}
+
+bool PlayerMailSendReq::MergePartialFromCodedStream(
+    ::google::protobuf::io::CodedInputStream* input) {
+#define DO_(EXPRESSION) if (!GOOGLE_PREDICT_TRUE(EXPRESSION)) goto failure
+  ::google::protobuf::uint32 tag;
+  // @@protoc_insertion_point(parse_start:game.PlayerMailSendReq)
+  for (;;) {
+    ::std::pair< ::google::protobuf::uint32, bool> p = input->ReadTagWithCutoffNoLastTag(127u);
+    tag = p.first;
+    if (!p.second) goto handle_unusual;
+    switch (::google::protobuf::internal::WireFormatLite::GetTagFieldNumber(tag)) {
+      // uint64 sender_player_id = 1;
+      case 1: {
+        if (static_cast< ::google::protobuf::uint8>(tag) ==
+            static_cast< ::google::protobuf::uint8>(8u /* 8 & 0xFF */)) {
+
+          DO_((::google::protobuf::internal::WireFormatLite::ReadPrimitive<
+                   ::google::protobuf::uint64, ::google::protobuf::internal::WireFormatLite::TYPE_UINT64>(
+                 input, &sender_player_id_)));
+        } else {
+          goto handle_unusual;
+        }
+        break;
+      }
+
+      // uint64 receiver_player_id = 2;
+      case 2: {
+        if (static_cast< ::google::protobuf::uint8>(tag) ==
+            static_cast< ::google::protobuf::uint8>(16u /* 16 & 0xFF */)) {
+
+          DO_((::google::protobuf::internal::WireFormatLite::ReadPrimitive<
+                   ::google::protobuf::uint64, ::google::protobuf::internal::WireFormatLite::TYPE_UINT64>(
+                 input, &receiver_player_id_)));
+        } else {
+          goto handle_unusual;
+        }
+        break;
+      }
+
+      // string title = 3;
+      case 3: {
+        if (static_cast< ::google::protobuf::uint8>(tag) ==
+            static_cast< ::google::protobuf::uint8>(26u /* 26 & 0xFF */)) {
+          DO_(::google::protobuf::internal::WireFormatLite::ReadString(
+                input, this->mutable_title()));
+          DO_(::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+            this->title().data(), static_cast<int>(this->title().length()),
+            ::google::protobuf::internal::WireFormatLite::PARSE,
+            "game.PlayerMailSendReq.title"));
+        } else {
+          goto handle_unusual;
+        }
+        break;
+      }
+
+      // string body = 4;
+      case 4: {
+        if (static_cast< ::google::protobuf::uint8>(tag) ==
+            static_cast< ::google::protobuf::uint8>(34u /* 34 & 0xFF */)) {
+          DO_(::google::protobuf::internal::WireFormatLite::ReadString(
+                input, this->mutable_body()));
+          DO_(::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+            this->body().data(), static_cast<int>(this->body().length()),
+            ::google::protobuf::internal::WireFormatLite::PARSE,
+            "game.PlayerMailSendReq.body"));
+        } else {
+          goto handle_unusual;
+        }
+        break;
+      }
+
+      // string operation_id = 5;
+      case 5: {
+        if (static_cast< ::google::protobuf::uint8>(tag) ==
+            static_cast< ::google::protobuf::uint8>(42u /* 42 & 0xFF */)) {
+          DO_(::google::protobuf::internal::WireFormatLite::ReadString(
+                input, this->mutable_operation_id()));
+          DO_(::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+            this->operation_id().data(), static_cast<int>(this->operation_id().length()),
+            ::google::protobuf::internal::WireFormatLite::PARSE,
+            "game.PlayerMailSendReq.operation_id"));
+        } else {
+          goto handle_unusual;
+        }
+        break;
+      }
+
+      default: {
+      handle_unusual:
+        if (tag == 0) {
+          goto success;
+        }
+        DO_(::google::protobuf::internal::WireFormat::SkipField(
+              input, tag, _internal_metadata_.mutable_unknown_fields()));
+        break;
+      }
+    }
+  }
+success:
+  // @@protoc_insertion_point(parse_success:game.PlayerMailSendReq)
+  return true;
+failure:
+  // @@protoc_insertion_point(parse_failure:game.PlayerMailSendReq)
+  return false;
+#undef DO_
+}
+
+void PlayerMailSendReq::SerializeWithCachedSizes(
+    ::google::protobuf::io::CodedOutputStream* output) const {
+  // @@protoc_insertion_point(serialize_start:game.PlayerMailSendReq)
+  ::google::protobuf::uint32 cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  // uint64 sender_player_id = 1;
+  if (this->sender_player_id() != 0) {
+    ::google::protobuf::internal::WireFormatLite::WriteUInt64(1, this->sender_player_id(), output);
+  }
+
+  // uint64 receiver_player_id = 2;
+  if (this->receiver_player_id() != 0) {
+    ::google::protobuf::internal::WireFormatLite::WriteUInt64(2, this->receiver_player_id(), output);
+  }
+
+  // string title = 3;
+  if (this->title().size() > 0) {
+    ::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+      this->title().data(), static_cast<int>(this->title().length()),
+      ::google::protobuf::internal::WireFormatLite::SERIALIZE,
+      "game.PlayerMailSendReq.title");
+    ::google::protobuf::internal::WireFormatLite::WriteStringMaybeAliased(
+      3, this->title(), output);
+  }
+
+  // string body = 4;
+  if (this->body().size() > 0) {
+    ::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+      this->body().data(), static_cast<int>(this->body().length()),
+      ::google::protobuf::internal::WireFormatLite::SERIALIZE,
+      "game.PlayerMailSendReq.body");
+    ::google::protobuf::internal::WireFormatLite::WriteStringMaybeAliased(
+      4, this->body(), output);
+  }
+
+  // string operation_id = 5;
+  if (this->operation_id().size() > 0) {
+    ::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+      this->operation_id().data(), static_cast<int>(this->operation_id().length()),
+      ::google::protobuf::internal::WireFormatLite::SERIALIZE,
+      "game.PlayerMailSendReq.operation_id");
+    ::google::protobuf::internal::WireFormatLite::WriteStringMaybeAliased(
+      5, this->operation_id(), output);
+  }
+
+  if ((_internal_metadata_.have_unknown_fields() &&  ::google::protobuf::internal::GetProto3PreserveUnknownsDefault())) {
+    ::google::protobuf::internal::WireFormat::SerializeUnknownFields(
+        (::google::protobuf::internal::GetProto3PreserveUnknownsDefault()   ? _internal_metadata_.unknown_fields()   : _internal_metadata_.default_instance()), output);
+  }
+  // @@protoc_insertion_point(serialize_end:game.PlayerMailSendReq)
+}
+
+::google::protobuf::uint8* PlayerMailSendReq::InternalSerializeWithCachedSizesToArray(
+    bool deterministic, ::google::protobuf::uint8* target) const {
+  (void)deterministic; // Unused
+  // @@protoc_insertion_point(serialize_to_array_start:game.PlayerMailSendReq)
+  ::google::protobuf::uint32 cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  // uint64 sender_player_id = 1;
+  if (this->sender_player_id() != 0) {
+    target = ::google::protobuf::internal::WireFormatLite::WriteUInt64ToArray(1, this->sender_player_id(), target);
+  }
+
+  // uint64 receiver_player_id = 2;
+  if (this->receiver_player_id() != 0) {
+    target = ::google::protobuf::internal::WireFormatLite::WriteUInt64ToArray(2, this->receiver_player_id(), target);
+  }
+
+  // string title = 3;
+  if (this->title().size() > 0) {
+    ::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+      this->title().data(), static_cast<int>(this->title().length()),
+      ::google::protobuf::internal::WireFormatLite::SERIALIZE,
+      "game.PlayerMailSendReq.title");
+    target =
+      ::google::protobuf::internal::WireFormatLite::WriteStringToArray(
+        3, this->title(), target);
+  }
+
+  // string body = 4;
+  if (this->body().size() > 0) {
+    ::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+      this->body().data(), static_cast<int>(this->body().length()),
+      ::google::protobuf::internal::WireFormatLite::SERIALIZE,
+      "game.PlayerMailSendReq.body");
+    target =
+      ::google::protobuf::internal::WireFormatLite::WriteStringToArray(
+        4, this->body(), target);
+  }
+
+  // string operation_id = 5;
+  if (this->operation_id().size() > 0) {
+    ::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+      this->operation_id().data(), static_cast<int>(this->operation_id().length()),
+      ::google::protobuf::internal::WireFormatLite::SERIALIZE,
+      "game.PlayerMailSendReq.operation_id");
+    target =
+      ::google::protobuf::internal::WireFormatLite::WriteStringToArray(
+        5, this->operation_id(), target);
+  }
+
+  if ((_internal_metadata_.have_unknown_fields() &&  ::google::protobuf::internal::GetProto3PreserveUnknownsDefault())) {
+    target = ::google::protobuf::internal::WireFormat::SerializeUnknownFieldsToArray(
+        (::google::protobuf::internal::GetProto3PreserveUnknownsDefault()   ? _internal_metadata_.unknown_fields()   : _internal_metadata_.default_instance()), target);
+  }
+  // @@protoc_insertion_point(serialize_to_array_end:game.PlayerMailSendReq)
+  return target;
+}
+
+size_t PlayerMailSendReq::ByteSizeLong() const {
+// @@protoc_insertion_point(message_byte_size_start:game.PlayerMailSendReq)
+  size_t total_size = 0;
+
+  if ((_internal_metadata_.have_unknown_fields() &&  ::google::protobuf::internal::GetProto3PreserveUnknownsDefault())) {
+    total_size +=
+      ::google::protobuf::internal::WireFormat::ComputeUnknownFieldsSize(
+        (::google::protobuf::internal::GetProto3PreserveUnknownsDefault()   ? _internal_metadata_.unknown_fields()   : _internal_metadata_.default_instance()));
+  }
+  // string title = 3;
+  if (this->title().size() > 0) {
+    total_size += 1 +
+      ::google::protobuf::internal::WireFormatLite::StringSize(
+        this->title());
+  }
+
+  // string body = 4;
+  if (this->body().size() > 0) {
+    total_size += 1 +
+      ::google::protobuf::internal::WireFormatLite::StringSize(
+        this->body());
+  }
+
+  // string operation_id = 5;
+  if (this->operation_id().size() > 0) {
+    total_size += 1 +
+      ::google::protobuf::internal::WireFormatLite::StringSize(
+        this->operation_id());
+  }
+
+  // uint64 sender_player_id = 1;
+  if (this->sender_player_id() != 0) {
+    total_size += 1 +
+      ::google::protobuf::internal::WireFormatLite::UInt64Size(
+        this->sender_player_id());
+  }
+
+  // uint64 receiver_player_id = 2;
+  if (this->receiver_player_id() != 0) {
+    total_size += 1 +
+      ::google::protobuf::internal::WireFormatLite::UInt64Size(
+        this->receiver_player_id());
+  }
+
+  int cached_size = ::google::protobuf::internal::ToCachedSize(total_size);
+  GOOGLE_SAFE_CONCURRENT_WRITES_BEGIN();
+  _cached_size_ = cached_size;
+  GOOGLE_SAFE_CONCURRENT_WRITES_END();
+  return total_size;
+}
+
+void PlayerMailSendReq::MergeFrom(const ::google::protobuf::Message& from) {
+// @@protoc_insertion_point(generalized_merge_from_start:game.PlayerMailSendReq)
+  GOOGLE_DCHECK_NE(&from, this);
+  const PlayerMailSendReq* source =
+      ::google::protobuf::internal::DynamicCastToGenerated<const PlayerMailSendReq>(
+          &from);
+  if (source == NULL) {
+  // @@protoc_insertion_point(generalized_merge_from_cast_fail:game.PlayerMailSendReq)
+    ::google::protobuf::internal::ReflectionOps::Merge(from, this);
+  } else {
+  // @@protoc_insertion_point(generalized_merge_from_cast_success:game.PlayerMailSendReq)
+    MergeFrom(*source);
+  }
+}
+
+void PlayerMailSendReq::MergeFrom(const PlayerMailSendReq& from) {
+// @@protoc_insertion_point(class_specific_merge_from_start:game.PlayerMailSendReq)
+  GOOGLE_DCHECK_NE(&from, this);
+  _internal_metadata_.MergeFrom(from._internal_metadata_);
+  ::google::protobuf::uint32 cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  if (from.title().size() > 0) {
+
+    title_.AssignWithDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), from.title_);
+  }
+  if (from.body().size() > 0) {
+
+    body_.AssignWithDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), from.body_);
+  }
+  if (from.operation_id().size() > 0) {
+
+    operation_id_.AssignWithDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), from.operation_id_);
+  }
+  if (from.sender_player_id() != 0) {
+    set_sender_player_id(from.sender_player_id());
+  }
+  if (from.receiver_player_id() != 0) {
+    set_receiver_player_id(from.receiver_player_id());
+  }
+}
+
+void PlayerMailSendReq::CopyFrom(const ::google::protobuf::Message& from) {
+// @@protoc_insertion_point(generalized_copy_from_start:game.PlayerMailSendReq)
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+void PlayerMailSendReq::CopyFrom(const PlayerMailSendReq& from) {
+// @@protoc_insertion_point(class_specific_copy_from_start:game.PlayerMailSendReq)
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+bool PlayerMailSendReq::IsInitialized() const {
+  return true;
+}
+
+void PlayerMailSendReq::Swap(PlayerMailSendReq* other) {
+  if (other == this) return;
+  InternalSwap(other);
+}
+void PlayerMailSendReq::InternalSwap(PlayerMailSendReq* other) {
+  using std::swap;
+  title_.Swap(&other->title_);
+  body_.Swap(&other->body_);
+  operation_id_.Swap(&other->operation_id_);
+  swap(sender_player_id_, other->sender_player_id_);
+  swap(receiver_player_id_, other->receiver_player_id_);
+  _internal_metadata_.Swap(&other->_internal_metadata_);
+  swap(_cached_size_, other->_cached_size_);
+}
+
+::google::protobuf::Metadata PlayerMailSendReq::GetMetadata() const {
+  protobuf_game_2eproto::protobuf_AssignDescriptorsOnce();
+  return ::protobuf_game_2eproto::file_level_metadata[kIndexInFileMessages];
+}
+
+
+// ===================================================================
+
+void PlayerMailSendRsp::InitAsDefaultInstance() {
+}
+#if !defined(_MSC_VER) || _MSC_VER >= 1900
+const int PlayerMailSendRsp::kOkFieldNumber;
+const int PlayerMailSendRsp::kMessageFieldNumber;
+const int PlayerMailSendRsp::kErrorCodeFieldNumber;
+const int PlayerMailSendRsp::kMailIdFieldNumber;
+const int PlayerMailSendRsp::kIdempotentHitFieldNumber;
+#endif  // !defined(_MSC_VER) || _MSC_VER >= 1900
+
+PlayerMailSendRsp::PlayerMailSendRsp()
+  : ::google::protobuf::Message(), _internal_metadata_(NULL) {
+  if (GOOGLE_PREDICT_TRUE(this != internal_default_instance())) {
+    ::protobuf_game_2eproto::InitDefaultsPlayerMailSendRsp();
+  }
+  SharedCtor();
+  // @@protoc_insertion_point(constructor:game.PlayerMailSendRsp)
+}
+PlayerMailSendRsp::PlayerMailSendRsp(const PlayerMailSendRsp& from)
+  : ::google::protobuf::Message(),
+      _internal_metadata_(NULL),
+      _cached_size_(0) {
+  _internal_metadata_.MergeFrom(from._internal_metadata_);
+  message_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  if (from.message().size() > 0) {
+    message_.AssignWithDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), from.message_);
+  }
+  error_code_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  if (from.error_code().size() > 0) {
+    error_code_.AssignWithDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), from.error_code_);
+  }
+  ::memcpy(&mail_id_, &from.mail_id_,
+    static_cast<size_t>(reinterpret_cast<char*>(&idempotent_hit_) -
+    reinterpret_cast<char*>(&mail_id_)) + sizeof(idempotent_hit_));
+  // @@protoc_insertion_point(copy_constructor:game.PlayerMailSendRsp)
+}
+
+void PlayerMailSendRsp::SharedCtor() {
+  message_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  error_code_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  ::memset(&mail_id_, 0, static_cast<size_t>(
+      reinterpret_cast<char*>(&idempotent_hit_) -
+      reinterpret_cast<char*>(&mail_id_)) + sizeof(idempotent_hit_));
+  _cached_size_ = 0;
+}
+
+PlayerMailSendRsp::~PlayerMailSendRsp() {
+  // @@protoc_insertion_point(destructor:game.PlayerMailSendRsp)
+  SharedDtor();
+}
+
+void PlayerMailSendRsp::SharedDtor() {
+  message_.DestroyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  error_code_.DestroyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+
+void PlayerMailSendRsp::SetCachedSize(int size) const {
+  GOOGLE_SAFE_CONCURRENT_WRITES_BEGIN();
+  _cached_size_ = size;
+  GOOGLE_SAFE_CONCURRENT_WRITES_END();
+}
+const ::google::protobuf::Descriptor* PlayerMailSendRsp::descriptor() {
+  ::protobuf_game_2eproto::protobuf_AssignDescriptorsOnce();
+  return ::protobuf_game_2eproto::file_level_metadata[kIndexInFileMessages].descriptor;
+}
+
+const PlayerMailSendRsp& PlayerMailSendRsp::default_instance() {
+  ::protobuf_game_2eproto::InitDefaultsPlayerMailSendRsp();
+  return *internal_default_instance();
+}
+
+PlayerMailSendRsp* PlayerMailSendRsp::New(::google::protobuf::Arena* arena) const {
+  PlayerMailSendRsp* n = new PlayerMailSendRsp;
+  if (arena != NULL) {
+    arena->Own(n);
+  }
+  return n;
+}
+
+void PlayerMailSendRsp::Clear() {
+// @@protoc_insertion_point(message_clear_start:game.PlayerMailSendRsp)
+  ::google::protobuf::uint32 cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void) cached_has_bits;
+
+  message_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  error_code_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  ::memset(&mail_id_, 0, static_cast<size_t>(
+      reinterpret_cast<char*>(&idempotent_hit_) -
+      reinterpret_cast<char*>(&mail_id_)) + sizeof(idempotent_hit_));
+  _internal_metadata_.Clear();
+}
+
+bool PlayerMailSendRsp::MergePartialFromCodedStream(
+    ::google::protobuf::io::CodedInputStream* input) {
+#define DO_(EXPRESSION) if (!GOOGLE_PREDICT_TRUE(EXPRESSION)) goto failure
+  ::google::protobuf::uint32 tag;
+  // @@protoc_insertion_point(parse_start:game.PlayerMailSendRsp)
+  for (;;) {
+    ::std::pair< ::google::protobuf::uint32, bool> p = input->ReadTagWithCutoffNoLastTag(127u);
+    tag = p.first;
+    if (!p.second) goto handle_unusual;
+    switch (::google::protobuf::internal::WireFormatLite::GetTagFieldNumber(tag)) {
+      // bool ok = 1;
+      case 1: {
+        if (static_cast< ::google::protobuf::uint8>(tag) ==
+            static_cast< ::google::protobuf::uint8>(8u /* 8 & 0xFF */)) {
+
+          DO_((::google::protobuf::internal::WireFormatLite::ReadPrimitive<
+                   bool, ::google::protobuf::internal::WireFormatLite::TYPE_BOOL>(
+                 input, &ok_)));
+        } else {
+          goto handle_unusual;
+        }
+        break;
+      }
+
+      // string message = 2;
+      case 2: {
+        if (static_cast< ::google::protobuf::uint8>(tag) ==
+            static_cast< ::google::protobuf::uint8>(18u /* 18 & 0xFF */)) {
+          DO_(::google::protobuf::internal::WireFormatLite::ReadString(
+                input, this->mutable_message()));
+          DO_(::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+            this->message().data(), static_cast<int>(this->message().length()),
+            ::google::protobuf::internal::WireFormatLite::PARSE,
+            "game.PlayerMailSendRsp.message"));
+        } else {
+          goto handle_unusual;
+        }
+        break;
+      }
+
+      // string error_code = 3;
+      case 3: {
+        if (static_cast< ::google::protobuf::uint8>(tag) ==
+            static_cast< ::google::protobuf::uint8>(26u /* 26 & 0xFF */)) {
+          DO_(::google::protobuf::internal::WireFormatLite::ReadString(
+                input, this->mutable_error_code()));
+          DO_(::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+            this->error_code().data(), static_cast<int>(this->error_code().length()),
+            ::google::protobuf::internal::WireFormatLite::PARSE,
+            "game.PlayerMailSendRsp.error_code"));
+        } else {
+          goto handle_unusual;
+        }
+        break;
+      }
+
+      // uint64 mail_id = 4;
+      case 4: {
+        if (static_cast< ::google::protobuf::uint8>(tag) ==
+            static_cast< ::google::protobuf::uint8>(32u /* 32 & 0xFF */)) {
+
+          DO_((::google::protobuf::internal::WireFormatLite::ReadPrimitive<
+                   ::google::protobuf::uint64, ::google::protobuf::internal::WireFormatLite::TYPE_UINT64>(
+                 input, &mail_id_)));
+        } else {
+          goto handle_unusual;
+        }
+        break;
+      }
+
+      // bool idempotent_hit = 5;
+      case 5: {
+        if (static_cast< ::google::protobuf::uint8>(tag) ==
+            static_cast< ::google::protobuf::uint8>(40u /* 40 & 0xFF */)) {
+
+          DO_((::google::protobuf::internal::WireFormatLite::ReadPrimitive<
+                   bool, ::google::protobuf::internal::WireFormatLite::TYPE_BOOL>(
+                 input, &idempotent_hit_)));
+        } else {
+          goto handle_unusual;
+        }
+        break;
+      }
+
+      default: {
+      handle_unusual:
+        if (tag == 0) {
+          goto success;
+        }
+        DO_(::google::protobuf::internal::WireFormat::SkipField(
+              input, tag, _internal_metadata_.mutable_unknown_fields()));
+        break;
+      }
+    }
+  }
+success:
+  // @@protoc_insertion_point(parse_success:game.PlayerMailSendRsp)
+  return true;
+failure:
+  // @@protoc_insertion_point(parse_failure:game.PlayerMailSendRsp)
+  return false;
+#undef DO_
+}
+
+void PlayerMailSendRsp::SerializeWithCachedSizes(
+    ::google::protobuf::io::CodedOutputStream* output) const {
+  // @@protoc_insertion_point(serialize_start:game.PlayerMailSendRsp)
+  ::google::protobuf::uint32 cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  // bool ok = 1;
+  if (this->ok() != 0) {
+    ::google::protobuf::internal::WireFormatLite::WriteBool(1, this->ok(), output);
+  }
+
+  // string message = 2;
+  if (this->message().size() > 0) {
+    ::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+      this->message().data(), static_cast<int>(this->message().length()),
+      ::google::protobuf::internal::WireFormatLite::SERIALIZE,
+      "game.PlayerMailSendRsp.message");
+    ::google::protobuf::internal::WireFormatLite::WriteStringMaybeAliased(
+      2, this->message(), output);
+  }
+
+  // string error_code = 3;
+  if (this->error_code().size() > 0) {
+    ::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+      this->error_code().data(), static_cast<int>(this->error_code().length()),
+      ::google::protobuf::internal::WireFormatLite::SERIALIZE,
+      "game.PlayerMailSendRsp.error_code");
+    ::google::protobuf::internal::WireFormatLite::WriteStringMaybeAliased(
+      3, this->error_code(), output);
+  }
+
+  // uint64 mail_id = 4;
+  if (this->mail_id() != 0) {
+    ::google::protobuf::internal::WireFormatLite::WriteUInt64(4, this->mail_id(), output);
+  }
+
+  // bool idempotent_hit = 5;
+  if (this->idempotent_hit() != 0) {
+    ::google::protobuf::internal::WireFormatLite::WriteBool(5, this->idempotent_hit(), output);
+  }
+
+  if ((_internal_metadata_.have_unknown_fields() &&  ::google::protobuf::internal::GetProto3PreserveUnknownsDefault())) {
+    ::google::protobuf::internal::WireFormat::SerializeUnknownFields(
+        (::google::protobuf::internal::GetProto3PreserveUnknownsDefault()   ? _internal_metadata_.unknown_fields()   : _internal_metadata_.default_instance()), output);
+  }
+  // @@protoc_insertion_point(serialize_end:game.PlayerMailSendRsp)
+}
+
+::google::protobuf::uint8* PlayerMailSendRsp::InternalSerializeWithCachedSizesToArray(
+    bool deterministic, ::google::protobuf::uint8* target) const {
+  (void)deterministic; // Unused
+  // @@protoc_insertion_point(serialize_to_array_start:game.PlayerMailSendRsp)
+  ::google::protobuf::uint32 cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  // bool ok = 1;
+  if (this->ok() != 0) {
+    target = ::google::protobuf::internal::WireFormatLite::WriteBoolToArray(1, this->ok(), target);
+  }
+
+  // string message = 2;
+  if (this->message().size() > 0) {
+    ::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+      this->message().data(), static_cast<int>(this->message().length()),
+      ::google::protobuf::internal::WireFormatLite::SERIALIZE,
+      "game.PlayerMailSendRsp.message");
+    target =
+      ::google::protobuf::internal::WireFormatLite::WriteStringToArray(
+        2, this->message(), target);
+  }
+
+  // string error_code = 3;
+  if (this->error_code().size() > 0) {
+    ::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+      this->error_code().data(), static_cast<int>(this->error_code().length()),
+      ::google::protobuf::internal::WireFormatLite::SERIALIZE,
+      "game.PlayerMailSendRsp.error_code");
+    target =
+      ::google::protobuf::internal::WireFormatLite::WriteStringToArray(
+        3, this->error_code(), target);
+  }
+
+  // uint64 mail_id = 4;
+  if (this->mail_id() != 0) {
+    target = ::google::protobuf::internal::WireFormatLite::WriteUInt64ToArray(4, this->mail_id(), target);
+  }
+
+  // bool idempotent_hit = 5;
+  if (this->idempotent_hit() != 0) {
+    target = ::google::protobuf::internal::WireFormatLite::WriteBoolToArray(5, this->idempotent_hit(), target);
+  }
+
+  if ((_internal_metadata_.have_unknown_fields() &&  ::google::protobuf::internal::GetProto3PreserveUnknownsDefault())) {
+    target = ::google::protobuf::internal::WireFormat::SerializeUnknownFieldsToArray(
+        (::google::protobuf::internal::GetProto3PreserveUnknownsDefault()   ? _internal_metadata_.unknown_fields()   : _internal_metadata_.default_instance()), target);
+  }
+  // @@protoc_insertion_point(serialize_to_array_end:game.PlayerMailSendRsp)
+  return target;
+}
+
+size_t PlayerMailSendRsp::ByteSizeLong() const {
+// @@protoc_insertion_point(message_byte_size_start:game.PlayerMailSendRsp)
+  size_t total_size = 0;
+
+  if ((_internal_metadata_.have_unknown_fields() &&  ::google::protobuf::internal::GetProto3PreserveUnknownsDefault())) {
+    total_size +=
+      ::google::protobuf::internal::WireFormat::ComputeUnknownFieldsSize(
+        (::google::protobuf::internal::GetProto3PreserveUnknownsDefault()   ? _internal_metadata_.unknown_fields()   : _internal_metadata_.default_instance()));
+  }
+  // string message = 2;
+  if (this->message().size() > 0) {
+    total_size += 1 +
+      ::google::protobuf::internal::WireFormatLite::StringSize(
+        this->message());
+  }
+
+  // string error_code = 3;
+  if (this->error_code().size() > 0) {
+    total_size += 1 +
+      ::google::protobuf::internal::WireFormatLite::StringSize(
+        this->error_code());
+  }
+
+  // uint64 mail_id = 4;
+  if (this->mail_id() != 0) {
+    total_size += 1 +
+      ::google::protobuf::internal::WireFormatLite::UInt64Size(
+        this->mail_id());
+  }
+
+  // bool ok = 1;
+  if (this->ok() != 0) {
+    total_size += 1 + 1;
+  }
+
+  // bool idempotent_hit = 5;
+  if (this->idempotent_hit() != 0) {
+    total_size += 1 + 1;
+  }
+
+  int cached_size = ::google::protobuf::internal::ToCachedSize(total_size);
+  GOOGLE_SAFE_CONCURRENT_WRITES_BEGIN();
+  _cached_size_ = cached_size;
+  GOOGLE_SAFE_CONCURRENT_WRITES_END();
+  return total_size;
+}
+
+void PlayerMailSendRsp::MergeFrom(const ::google::protobuf::Message& from) {
+// @@protoc_insertion_point(generalized_merge_from_start:game.PlayerMailSendRsp)
+  GOOGLE_DCHECK_NE(&from, this);
+  const PlayerMailSendRsp* source =
+      ::google::protobuf::internal::DynamicCastToGenerated<const PlayerMailSendRsp>(
+          &from);
+  if (source == NULL) {
+  // @@protoc_insertion_point(generalized_merge_from_cast_fail:game.PlayerMailSendRsp)
+    ::google::protobuf::internal::ReflectionOps::Merge(from, this);
+  } else {
+  // @@protoc_insertion_point(generalized_merge_from_cast_success:game.PlayerMailSendRsp)
+    MergeFrom(*source);
+  }
+}
+
+void PlayerMailSendRsp::MergeFrom(const PlayerMailSendRsp& from) {
+// @@protoc_insertion_point(class_specific_merge_from_start:game.PlayerMailSendRsp)
+  GOOGLE_DCHECK_NE(&from, this);
+  _internal_metadata_.MergeFrom(from._internal_metadata_);
+  ::google::protobuf::uint32 cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  if (from.message().size() > 0) {
+
+    message_.AssignWithDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), from.message_);
+  }
+  if (from.error_code().size() > 0) {
+
+    error_code_.AssignWithDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), from.error_code_);
+  }
+  if (from.mail_id() != 0) {
+    set_mail_id(from.mail_id());
+  }
+  if (from.ok() != 0) {
+    set_ok(from.ok());
+  }
+  if (from.idempotent_hit() != 0) {
+    set_idempotent_hit(from.idempotent_hit());
+  }
+}
+
+void PlayerMailSendRsp::CopyFrom(const ::google::protobuf::Message& from) {
+// @@protoc_insertion_point(generalized_copy_from_start:game.PlayerMailSendRsp)
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+void PlayerMailSendRsp::CopyFrom(const PlayerMailSendRsp& from) {
+// @@protoc_insertion_point(class_specific_copy_from_start:game.PlayerMailSendRsp)
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+bool PlayerMailSendRsp::IsInitialized() const {
+  return true;
+}
+
+void PlayerMailSendRsp::Swap(PlayerMailSendRsp* other) {
+  if (other == this) return;
+  InternalSwap(other);
+}
+void PlayerMailSendRsp::InternalSwap(PlayerMailSendRsp* other) {
+  using std::swap;
+  message_.Swap(&other->message_);
+  error_code_.Swap(&other->error_code_);
+  swap(mail_id_, other->mail_id_);
+  swap(ok_, other->ok_);
+  swap(idempotent_hit_, other->idempotent_hit_);
+  _internal_metadata_.Swap(&other->_internal_metadata_);
+  swap(_cached_size_, other->_cached_size_);
+}
+
+::google::protobuf::Metadata PlayerMailSendRsp::GetMetadata() const {
+  protobuf_game_2eproto::protobuf_AssignDescriptorsOnce();
+  return ::protobuf_game_2eproto::file_level_metadata[kIndexInFileMessages];
+}
+
+
+// ===================================================================
+
+void MailboxChangedNotify::InitAsDefaultInstance() {
+}
+#if !defined(_MSC_VER) || _MSC_VER >= 1900
+const int MailboxChangedNotify::kPlayerIdFieldNumber;
+const int MailboxChangedNotify::kMailboxVersionFieldNumber;
+const int MailboxChangedNotify::kUnreadCountFieldNumber;
+#endif  // !defined(_MSC_VER) || _MSC_VER >= 1900
+
+MailboxChangedNotify::MailboxChangedNotify()
+  : ::google::protobuf::Message(), _internal_metadata_(NULL) {
+  if (GOOGLE_PREDICT_TRUE(this != internal_default_instance())) {
+    ::protobuf_game_2eproto::InitDefaultsMailboxChangedNotify();
+  }
+  SharedCtor();
+  // @@protoc_insertion_point(constructor:game.MailboxChangedNotify)
+}
+MailboxChangedNotify::MailboxChangedNotify(const MailboxChangedNotify& from)
+  : ::google::protobuf::Message(),
+      _internal_metadata_(NULL),
+      _cached_size_(0) {
+  _internal_metadata_.MergeFrom(from._internal_metadata_);
+  ::memcpy(&player_id_, &from.player_id_,
+    static_cast<size_t>(reinterpret_cast<char*>(&unread_count_) -
+    reinterpret_cast<char*>(&player_id_)) + sizeof(unread_count_));
+  // @@protoc_insertion_point(copy_constructor:game.MailboxChangedNotify)
+}
+
+void MailboxChangedNotify::SharedCtor() {
+  ::memset(&player_id_, 0, static_cast<size_t>(
+      reinterpret_cast<char*>(&unread_count_) -
+      reinterpret_cast<char*>(&player_id_)) + sizeof(unread_count_));
+  _cached_size_ = 0;
+}
+
+MailboxChangedNotify::~MailboxChangedNotify() {
+  // @@protoc_insertion_point(destructor:game.MailboxChangedNotify)
+  SharedDtor();
+}
+
+void MailboxChangedNotify::SharedDtor() {
+}
+
+void MailboxChangedNotify::SetCachedSize(int size) const {
+  GOOGLE_SAFE_CONCURRENT_WRITES_BEGIN();
+  _cached_size_ = size;
+  GOOGLE_SAFE_CONCURRENT_WRITES_END();
+}
+const ::google::protobuf::Descriptor* MailboxChangedNotify::descriptor() {
+  ::protobuf_game_2eproto::protobuf_AssignDescriptorsOnce();
+  return ::protobuf_game_2eproto::file_level_metadata[kIndexInFileMessages].descriptor;
+}
+
+const MailboxChangedNotify& MailboxChangedNotify::default_instance() {
+  ::protobuf_game_2eproto::InitDefaultsMailboxChangedNotify();
+  return *internal_default_instance();
+}
+
+MailboxChangedNotify* MailboxChangedNotify::New(::google::protobuf::Arena* arena) const {
+  MailboxChangedNotify* n = new MailboxChangedNotify;
+  if (arena != NULL) {
+    arena->Own(n);
+  }
+  return n;
+}
+
+void MailboxChangedNotify::Clear() {
+// @@protoc_insertion_point(message_clear_start:game.MailboxChangedNotify)
+  ::google::protobuf::uint32 cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void) cached_has_bits;
+
+  ::memset(&player_id_, 0, static_cast<size_t>(
+      reinterpret_cast<char*>(&unread_count_) -
+      reinterpret_cast<char*>(&player_id_)) + sizeof(unread_count_));
+  _internal_metadata_.Clear();
+}
+
+bool MailboxChangedNotify::MergePartialFromCodedStream(
+    ::google::protobuf::io::CodedInputStream* input) {
+#define DO_(EXPRESSION) if (!GOOGLE_PREDICT_TRUE(EXPRESSION)) goto failure
+  ::google::protobuf::uint32 tag;
+  // @@protoc_insertion_point(parse_start:game.MailboxChangedNotify)
+  for (;;) {
+    ::std::pair< ::google::protobuf::uint32, bool> p = input->ReadTagWithCutoffNoLastTag(127u);
+    tag = p.first;
+    if (!p.second) goto handle_unusual;
+    switch (::google::protobuf::internal::WireFormatLite::GetTagFieldNumber(tag)) {
+      // uint64 player_id = 1;
+      case 1: {
+        if (static_cast< ::google::protobuf::uint8>(tag) ==
+            static_cast< ::google::protobuf::uint8>(8u /* 8 & 0xFF */)) {
+
+          DO_((::google::protobuf::internal::WireFormatLite::ReadPrimitive<
+                   ::google::protobuf::uint64, ::google::protobuf::internal::WireFormatLite::TYPE_UINT64>(
+                 input, &player_id_)));
+        } else {
+          goto handle_unusual;
+        }
+        break;
+      }
+
+      // int64 mailbox_version = 2;
+      case 2: {
+        if (static_cast< ::google::protobuf::uint8>(tag) ==
+            static_cast< ::google::protobuf::uint8>(16u /* 16 & 0xFF */)) {
+
+          DO_((::google::protobuf::internal::WireFormatLite::ReadPrimitive<
+                   ::google::protobuf::int64, ::google::protobuf::internal::WireFormatLite::TYPE_INT64>(
+                 input, &mailbox_version_)));
+        } else {
+          goto handle_unusual;
+        }
+        break;
+      }
+
+      // uint32 unread_count = 3;
+      case 3: {
+        if (static_cast< ::google::protobuf::uint8>(tag) ==
+            static_cast< ::google::protobuf::uint8>(24u /* 24 & 0xFF */)) {
+
+          DO_((::google::protobuf::internal::WireFormatLite::ReadPrimitive<
+                   ::google::protobuf::uint32, ::google::protobuf::internal::WireFormatLite::TYPE_UINT32>(
+                 input, &unread_count_)));
+        } else {
+          goto handle_unusual;
+        }
+        break;
+      }
+
+      default: {
+      handle_unusual:
+        if (tag == 0) {
+          goto success;
+        }
+        DO_(::google::protobuf::internal::WireFormat::SkipField(
+              input, tag, _internal_metadata_.mutable_unknown_fields()));
+        break;
+      }
+    }
+  }
+success:
+  // @@protoc_insertion_point(parse_success:game.MailboxChangedNotify)
+  return true;
+failure:
+  // @@protoc_insertion_point(parse_failure:game.MailboxChangedNotify)
+  return false;
+#undef DO_
+}
+
+void MailboxChangedNotify::SerializeWithCachedSizes(
+    ::google::protobuf::io::CodedOutputStream* output) const {
+  // @@protoc_insertion_point(serialize_start:game.MailboxChangedNotify)
+  ::google::protobuf::uint32 cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  // uint64 player_id = 1;
+  if (this->player_id() != 0) {
+    ::google::protobuf::internal::WireFormatLite::WriteUInt64(1, this->player_id(), output);
+  }
+
+  // int64 mailbox_version = 2;
+  if (this->mailbox_version() != 0) {
+    ::google::protobuf::internal::WireFormatLite::WriteInt64(2, this->mailbox_version(), output);
+  }
+
+  // uint32 unread_count = 3;
+  if (this->unread_count() != 0) {
+    ::google::protobuf::internal::WireFormatLite::WriteUInt32(3, this->unread_count(), output);
+  }
+
+  if ((_internal_metadata_.have_unknown_fields() &&  ::google::protobuf::internal::GetProto3PreserveUnknownsDefault())) {
+    ::google::protobuf::internal::WireFormat::SerializeUnknownFields(
+        (::google::protobuf::internal::GetProto3PreserveUnknownsDefault()   ? _internal_metadata_.unknown_fields()   : _internal_metadata_.default_instance()), output);
+  }
+  // @@protoc_insertion_point(serialize_end:game.MailboxChangedNotify)
+}
+
+::google::protobuf::uint8* MailboxChangedNotify::InternalSerializeWithCachedSizesToArray(
+    bool deterministic, ::google::protobuf::uint8* target) const {
+  (void)deterministic; // Unused
+  // @@protoc_insertion_point(serialize_to_array_start:game.MailboxChangedNotify)
+  ::google::protobuf::uint32 cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  // uint64 player_id = 1;
+  if (this->player_id() != 0) {
+    target = ::google::protobuf::internal::WireFormatLite::WriteUInt64ToArray(1, this->player_id(), target);
+  }
+
+  // int64 mailbox_version = 2;
+  if (this->mailbox_version() != 0) {
+    target = ::google::protobuf::internal::WireFormatLite::WriteInt64ToArray(2, this->mailbox_version(), target);
+  }
+
+  // uint32 unread_count = 3;
+  if (this->unread_count() != 0) {
+    target = ::google::protobuf::internal::WireFormatLite::WriteUInt32ToArray(3, this->unread_count(), target);
+  }
+
+  if ((_internal_metadata_.have_unknown_fields() &&  ::google::protobuf::internal::GetProto3PreserveUnknownsDefault())) {
+    target = ::google::protobuf::internal::WireFormat::SerializeUnknownFieldsToArray(
+        (::google::protobuf::internal::GetProto3PreserveUnknownsDefault()   ? _internal_metadata_.unknown_fields()   : _internal_metadata_.default_instance()), target);
+  }
+  // @@protoc_insertion_point(serialize_to_array_end:game.MailboxChangedNotify)
+  return target;
+}
+
+size_t MailboxChangedNotify::ByteSizeLong() const {
+// @@protoc_insertion_point(message_byte_size_start:game.MailboxChangedNotify)
+  size_t total_size = 0;
+
+  if ((_internal_metadata_.have_unknown_fields() &&  ::google::protobuf::internal::GetProto3PreserveUnknownsDefault())) {
+    total_size +=
+      ::google::protobuf::internal::WireFormat::ComputeUnknownFieldsSize(
+        (::google::protobuf::internal::GetProto3PreserveUnknownsDefault()   ? _internal_metadata_.unknown_fields()   : _internal_metadata_.default_instance()));
+  }
+  // uint64 player_id = 1;
+  if (this->player_id() != 0) {
+    total_size += 1 +
+      ::google::protobuf::internal::WireFormatLite::UInt64Size(
+        this->player_id());
+  }
+
+  // int64 mailbox_version = 2;
+  if (this->mailbox_version() != 0) {
+    total_size += 1 +
+      ::google::protobuf::internal::WireFormatLite::Int64Size(
+        this->mailbox_version());
+  }
+
+  // uint32 unread_count = 3;
+  if (this->unread_count() != 0) {
+    total_size += 1 +
+      ::google::protobuf::internal::WireFormatLite::UInt32Size(
+        this->unread_count());
+  }
+
+  int cached_size = ::google::protobuf::internal::ToCachedSize(total_size);
+  GOOGLE_SAFE_CONCURRENT_WRITES_BEGIN();
+  _cached_size_ = cached_size;
+  GOOGLE_SAFE_CONCURRENT_WRITES_END();
+  return total_size;
+}
+
+void MailboxChangedNotify::MergeFrom(const ::google::protobuf::Message& from) {
+// @@protoc_insertion_point(generalized_merge_from_start:game.MailboxChangedNotify)
+  GOOGLE_DCHECK_NE(&from, this);
+  const MailboxChangedNotify* source =
+      ::google::protobuf::internal::DynamicCastToGenerated<const MailboxChangedNotify>(
+          &from);
+  if (source == NULL) {
+  // @@protoc_insertion_point(generalized_merge_from_cast_fail:game.MailboxChangedNotify)
+    ::google::protobuf::internal::ReflectionOps::Merge(from, this);
+  } else {
+  // @@protoc_insertion_point(generalized_merge_from_cast_success:game.MailboxChangedNotify)
+    MergeFrom(*source);
+  }
+}
+
+void MailboxChangedNotify::MergeFrom(const MailboxChangedNotify& from) {
+// @@protoc_insertion_point(class_specific_merge_from_start:game.MailboxChangedNotify)
+  GOOGLE_DCHECK_NE(&from, this);
+  _internal_metadata_.MergeFrom(from._internal_metadata_);
+  ::google::protobuf::uint32 cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  if (from.player_id() != 0) {
+    set_player_id(from.player_id());
+  }
+  if (from.mailbox_version() != 0) {
+    set_mailbox_version(from.mailbox_version());
+  }
+  if (from.unread_count() != 0) {
+    set_unread_count(from.unread_count());
+  }
+}
+
+void MailboxChangedNotify::CopyFrom(const ::google::protobuf::Message& from) {
+// @@protoc_insertion_point(generalized_copy_from_start:game.MailboxChangedNotify)
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+void MailboxChangedNotify::CopyFrom(const MailboxChangedNotify& from) {
+// @@protoc_insertion_point(class_specific_copy_from_start:game.MailboxChangedNotify)
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+bool MailboxChangedNotify::IsInitialized() const {
+  return true;
+}
+
+void MailboxChangedNotify::Swap(MailboxChangedNotify* other) {
+  if (other == this) return;
+  InternalSwap(other);
+}
+void MailboxChangedNotify::InternalSwap(MailboxChangedNotify* other) {
+  using std::swap;
+  swap(player_id_, other->player_id_);
+  swap(mailbox_version_, other->mailbox_version_);
+  swap(unread_count_, other->unread_count_);
+  _internal_metadata_.Swap(&other->_internal_metadata_);
+  swap(_cached_size_, other->_cached_size_);
+}
+
+::google::protobuf::Metadata MailboxChangedNotify::GetMetadata() const {
+  protobuf_game_2eproto::protobuf_AssignDescriptorsOnce();
+  return ::protobuf_game_2eproto::file_level_metadata[kIndexInFileMessages];
+}
+
+
+// ===================================================================
+
 void GameRequest::InitAsDefaultInstance() {
   ::game::_GameRequest_default_instance_.consume_item_ = const_cast< ::game::ConsumeItemReq*>(
       ::game::ConsumeItemReq::internal_default_instance());
@@ -27313,6 +33202,12 @@ void GameRequest::InitAsDefaultInstance() {
       ::game::FriendListReq::internal_default_instance());
   ::game::_GameRequest_default_instance_.push_ack_ = const_cast< ::game::PushAckReq*>(
       ::game::PushAckReq::internal_default_instance());
+  ::game::_GameRequest_default_instance_.get_self_profile_ = const_cast< ::game::GetSelfProfileReq*>(
+      ::game::GetSelfProfileReq::internal_default_instance());
+  ::game::_GameRequest_default_instance_.move_ = const_cast< ::game::MoveReq*>(
+      ::game::MoveReq::internal_default_instance());
+  ::game::_GameRequest_default_instance_.player_mail_send_ = const_cast< ::game::PlayerMailSendReq*>(
+      ::game::PlayerMailSendReq::internal_default_instance());
 }
 void GameRequest::set_allocated_consume_item(::game::ConsumeItemReq* consume_item) {
   ::google::protobuf::Arena* message_arena = GetArenaNoVirtual();
@@ -27678,6 +33573,48 @@ void GameRequest::set_allocated_push_ack(::game::PushAckReq* push_ack) {
   }
   // @@protoc_insertion_point(field_set_allocated:game.GameRequest.push_ack)
 }
+void GameRequest::set_allocated_get_self_profile(::game::GetSelfProfileReq* get_self_profile) {
+  ::google::protobuf::Arena* message_arena = GetArenaNoVirtual();
+  clear_body();
+  if (get_self_profile) {
+    ::google::protobuf::Arena* submessage_arena = NULL;
+    if (message_arena != submessage_arena) {
+      get_self_profile = ::google::protobuf::internal::GetOwnedMessage(
+          message_arena, get_self_profile, submessage_arena);
+    }
+    set_has_get_self_profile();
+    body_.get_self_profile_ = get_self_profile;
+  }
+  // @@protoc_insertion_point(field_set_allocated:game.GameRequest.get_self_profile)
+}
+void GameRequest::set_allocated_move(::game::MoveReq* move) {
+  ::google::protobuf::Arena* message_arena = GetArenaNoVirtual();
+  clear_body();
+  if (move) {
+    ::google::protobuf::Arena* submessage_arena = NULL;
+    if (message_arena != submessage_arena) {
+      move = ::google::protobuf::internal::GetOwnedMessage(
+          message_arena, move, submessage_arena);
+    }
+    set_has_move();
+    body_.move_ = move;
+  }
+  // @@protoc_insertion_point(field_set_allocated:game.GameRequest.move)
+}
+void GameRequest::set_allocated_player_mail_send(::game::PlayerMailSendReq* player_mail_send) {
+  ::google::protobuf::Arena* message_arena = GetArenaNoVirtual();
+  clear_body();
+  if (player_mail_send) {
+    ::google::protobuf::Arena* submessage_arena = NULL;
+    if (message_arena != submessage_arena) {
+      player_mail_send = ::google::protobuf::internal::GetOwnedMessage(
+          message_arena, player_mail_send, submessage_arena);
+    }
+    set_has_player_mail_send();
+    body_.player_mail_send_ = player_mail_send;
+  }
+  // @@protoc_insertion_point(field_set_allocated:game.GameRequest.player_mail_send)
+}
 #if !defined(_MSC_VER) || _MSC_VER >= 1900
 const int GameRequest::kSeqFieldNumber;
 const int GameRequest::kSessionTokenFieldNumber;
@@ -27707,6 +33644,9 @@ const int GameRequest::kMapPingFieldNumber;
 const int GameRequest::kChatSendFieldNumber;
 const int GameRequest::kFriendListFieldNumber;
 const int GameRequest::kPushAckFieldNumber;
+const int GameRequest::kGetSelfProfileFieldNumber;
+const int GameRequest::kMoveFieldNumber;
+const int GameRequest::kPlayerMailSendFieldNumber;
 #endif  // !defined(_MSC_VER) || _MSC_VER >= 1900
 
 GameRequest::GameRequest()
@@ -27831,6 +33771,18 @@ GameRequest::GameRequest(const GameRequest& from)
     }
     case kPushAck: {
       mutable_push_ack()->::game::PushAckReq::MergeFrom(from.push_ack());
+      break;
+    }
+    case kGetSelfProfile: {
+      mutable_get_self_profile()->::game::GetSelfProfileReq::MergeFrom(from.get_self_profile());
+      break;
+    }
+    case kMove: {
+      mutable_move()->::game::MoveReq::MergeFrom(from.move());
+      break;
+    }
+    case kPlayerMailSend: {
+      mutable_player_mail_send()->::game::PlayerMailSendReq::MergeFrom(from.player_mail_send());
       break;
     }
     case BODY_NOT_SET: {
@@ -27987,6 +33939,18 @@ void GameRequest::clear_body() {
     }
     case kPushAck: {
       delete body_.push_ack_;
+      break;
+    }
+    case kGetSelfProfile: {
+      delete body_.get_self_profile_;
+      break;
+    }
+    case kMove: {
+      delete body_.move_;
+      break;
+    }
+    case kPlayerMailSend: {
+      delete body_.player_mail_send_;
       break;
     }
     case BODY_NOT_SET: {
@@ -28361,6 +34325,42 @@ bool GameRequest::MergePartialFromCodedStream(
         break;
       }
 
+      // .game.GetSelfProfileReq get_self_profile = 60;
+      case 60: {
+        if (static_cast< ::google::protobuf::uint8>(tag) ==
+            static_cast< ::google::protobuf::uint8>(226u /* 482 & 0xFF */)) {
+          DO_(::google::protobuf::internal::WireFormatLite::ReadMessage(
+               input, mutable_get_self_profile()));
+        } else {
+          goto handle_unusual;
+        }
+        break;
+      }
+
+      // .game.MoveReq move = 61;
+      case 61: {
+        if (static_cast< ::google::protobuf::uint8>(tag) ==
+            static_cast< ::google::protobuf::uint8>(234u /* 490 & 0xFF */)) {
+          DO_(::google::protobuf::internal::WireFormatLite::ReadMessage(
+               input, mutable_move()));
+        } else {
+          goto handle_unusual;
+        }
+        break;
+      }
+
+      // .game.PlayerMailSendReq player_mail_send = 63;
+      case 63: {
+        if (static_cast< ::google::protobuf::uint8>(tag) ==
+            static_cast< ::google::protobuf::uint8>(250u /* 506 & 0xFF */)) {
+          DO_(::google::protobuf::internal::WireFormatLite::ReadMessage(
+               input, mutable_player_mail_send()));
+        } else {
+          goto handle_unusual;
+        }
+        break;
+      }
+
       default: {
       handle_unusual:
         if (tag == 0) {
@@ -28556,6 +34556,24 @@ void GameRequest::SerializeWithCachedSizes(
   if (has_push_ack()) {
     ::google::protobuf::internal::WireFormatLite::WriteMessageMaybeToArray(
       52, *body_.push_ack_, output);
+  }
+
+  // .game.GetSelfProfileReq get_self_profile = 60;
+  if (has_get_self_profile()) {
+    ::google::protobuf::internal::WireFormatLite::WriteMessageMaybeToArray(
+      60, *body_.get_self_profile_, output);
+  }
+
+  // .game.MoveReq move = 61;
+  if (has_move()) {
+    ::google::protobuf::internal::WireFormatLite::WriteMessageMaybeToArray(
+      61, *body_.move_, output);
+  }
+
+  // .game.PlayerMailSendReq player_mail_send = 63;
+  if (has_player_mail_send()) {
+    ::google::protobuf::internal::WireFormatLite::WriteMessageMaybeToArray(
+      63, *body_.player_mail_send_, output);
   }
 
   if ((_internal_metadata_.have_unknown_fields() &&  ::google::protobuf::internal::GetProto3PreserveUnknownsDefault())) {
@@ -28768,6 +34786,27 @@ void GameRequest::SerializeWithCachedSizes(
     target = ::google::protobuf::internal::WireFormatLite::
       InternalWriteMessageToArray(
         52, *body_.push_ack_, deterministic, target);
+  }
+
+  // .game.GetSelfProfileReq get_self_profile = 60;
+  if (has_get_self_profile()) {
+    target = ::google::protobuf::internal::WireFormatLite::
+      InternalWriteMessageToArray(
+        60, *body_.get_self_profile_, deterministic, target);
+  }
+
+  // .game.MoveReq move = 61;
+  if (has_move()) {
+    target = ::google::protobuf::internal::WireFormatLite::
+      InternalWriteMessageToArray(
+        61, *body_.move_, deterministic, target);
+  }
+
+  // .game.PlayerMailSendReq player_mail_send = 63;
+  if (has_player_mail_send()) {
+    target = ::google::protobuf::internal::WireFormatLite::
+      InternalWriteMessageToArray(
+        63, *body_.player_mail_send_, deterministic, target);
   }
 
   if ((_internal_metadata_.have_unknown_fields() &&  ::google::protobuf::internal::GetProto3PreserveUnknownsDefault())) {
@@ -28984,6 +35023,27 @@ size_t GameRequest::ByteSizeLong() const {
           *body_.push_ack_);
       break;
     }
+    // .game.GetSelfProfileReq get_self_profile = 60;
+    case kGetSelfProfile: {
+      total_size += 2 +
+        ::google::protobuf::internal::WireFormatLite::MessageSize(
+          *body_.get_self_profile_);
+      break;
+    }
+    // .game.MoveReq move = 61;
+    case kMove: {
+      total_size += 2 +
+        ::google::protobuf::internal::WireFormatLite::MessageSize(
+          *body_.move_);
+      break;
+    }
+    // .game.PlayerMailSendReq player_mail_send = 63;
+    case kPlayerMailSend: {
+      total_size += 2 +
+        ::google::protobuf::internal::WireFormatLite::MessageSize(
+          *body_.player_mail_send_);
+      break;
+    }
     case BODY_NOT_SET: {
       break;
     }
@@ -29129,6 +35189,18 @@ void GameRequest::MergeFrom(const GameRequest& from) {
       mutable_push_ack()->::game::PushAckReq::MergeFrom(from.push_ack());
       break;
     }
+    case kGetSelfProfile: {
+      mutable_get_self_profile()->::game::GetSelfProfileReq::MergeFrom(from.get_self_profile());
+      break;
+    }
+    case kMove: {
+      mutable_move()->::game::MoveReq::MergeFrom(from.move());
+      break;
+    }
+    case kPlayerMailSend: {
+      mutable_player_mail_send()->::game::PlayerMailSendReq::MergeFrom(from.player_mail_send());
+      break;
+    }
     case BODY_NOT_SET: {
       break;
     }
@@ -29232,6 +35304,16 @@ void GameResponse::InitAsDefaultInstance() {
       ::game::ServerPushEnvelope::internal_default_instance());
   ::game::_GameResponse_default_instance_.full_snapshot_ = const_cast< ::game::FullStateSnapshotRsp*>(
       ::game::FullStateSnapshotRsp::internal_default_instance());
+  ::game::_GameResponse_default_instance_.get_self_profile_ = const_cast< ::game::GetSelfProfileRsp*>(
+      ::game::GetSelfProfileRsp::internal_default_instance());
+  ::game::_GameResponse_default_instance_.move_ = const_cast< ::game::MoveRsp*>(
+      ::game::MoveRsp::internal_default_instance());
+  ::game::_GameResponse_default_instance_.aoi_delta_ = const_cast< ::game::AoiDelta*>(
+      ::game::AoiDelta::internal_default_instance());
+  ::game::_GameResponse_default_instance_.player_mail_send_ = const_cast< ::game::PlayerMailSendRsp*>(
+      ::game::PlayerMailSendRsp::internal_default_instance());
+  ::game::_GameResponse_default_instance_.mailbox_changed_ = const_cast< ::game::MailboxChangedNotify*>(
+      ::game::MailboxChangedNotify::internal_default_instance());
 }
 void GameResponse::set_allocated_consume_item(::game::ConsumeItemRsp* consume_item) {
   ::google::protobuf::Arena* message_arena = GetArenaNoVirtual();
@@ -29625,6 +35707,76 @@ void GameResponse::set_allocated_full_snapshot(::game::FullStateSnapshotRsp* ful
   }
   // @@protoc_insertion_point(field_set_allocated:game.GameResponse.full_snapshot)
 }
+void GameResponse::set_allocated_get_self_profile(::game::GetSelfProfileRsp* get_self_profile) {
+  ::google::protobuf::Arena* message_arena = GetArenaNoVirtual();
+  clear_body();
+  if (get_self_profile) {
+    ::google::protobuf::Arena* submessage_arena = NULL;
+    if (message_arena != submessage_arena) {
+      get_self_profile = ::google::protobuf::internal::GetOwnedMessage(
+          message_arena, get_self_profile, submessage_arena);
+    }
+    set_has_get_self_profile();
+    body_.get_self_profile_ = get_self_profile;
+  }
+  // @@protoc_insertion_point(field_set_allocated:game.GameResponse.get_self_profile)
+}
+void GameResponse::set_allocated_move(::game::MoveRsp* move) {
+  ::google::protobuf::Arena* message_arena = GetArenaNoVirtual();
+  clear_body();
+  if (move) {
+    ::google::protobuf::Arena* submessage_arena = NULL;
+    if (message_arena != submessage_arena) {
+      move = ::google::protobuf::internal::GetOwnedMessage(
+          message_arena, move, submessage_arena);
+    }
+    set_has_move();
+    body_.move_ = move;
+  }
+  // @@protoc_insertion_point(field_set_allocated:game.GameResponse.move)
+}
+void GameResponse::set_allocated_aoi_delta(::game::AoiDelta* aoi_delta) {
+  ::google::protobuf::Arena* message_arena = GetArenaNoVirtual();
+  clear_body();
+  if (aoi_delta) {
+    ::google::protobuf::Arena* submessage_arena = NULL;
+    if (message_arena != submessage_arena) {
+      aoi_delta = ::google::protobuf::internal::GetOwnedMessage(
+          message_arena, aoi_delta, submessage_arena);
+    }
+    set_has_aoi_delta();
+    body_.aoi_delta_ = aoi_delta;
+  }
+  // @@protoc_insertion_point(field_set_allocated:game.GameResponse.aoi_delta)
+}
+void GameResponse::set_allocated_player_mail_send(::game::PlayerMailSendRsp* player_mail_send) {
+  ::google::protobuf::Arena* message_arena = GetArenaNoVirtual();
+  clear_body();
+  if (player_mail_send) {
+    ::google::protobuf::Arena* submessage_arena = NULL;
+    if (message_arena != submessage_arena) {
+      player_mail_send = ::google::protobuf::internal::GetOwnedMessage(
+          message_arena, player_mail_send, submessage_arena);
+    }
+    set_has_player_mail_send();
+    body_.player_mail_send_ = player_mail_send;
+  }
+  // @@protoc_insertion_point(field_set_allocated:game.GameResponse.player_mail_send)
+}
+void GameResponse::set_allocated_mailbox_changed(::game::MailboxChangedNotify* mailbox_changed) {
+  ::google::protobuf::Arena* message_arena = GetArenaNoVirtual();
+  clear_body();
+  if (mailbox_changed) {
+    ::google::protobuf::Arena* submessage_arena = NULL;
+    if (message_arena != submessage_arena) {
+      mailbox_changed = ::google::protobuf::internal::GetOwnedMessage(
+          message_arena, mailbox_changed, submessage_arena);
+    }
+    set_has_mailbox_changed();
+    body_.mailbox_changed_ = mailbox_changed;
+  }
+  // @@protoc_insertion_point(field_set_allocated:game.GameResponse.mailbox_changed)
+}
 #if !defined(_MSC_VER) || _MSC_VER >= 1900
 const int GameResponse::kSeqFieldNumber;
 const int GameResponse::kOkFieldNumber;
@@ -29657,6 +35809,11 @@ const int GameResponse::kFriendListFieldNumber;
 const int GameResponse::kPushAckFieldNumber;
 const int GameResponse::kServerPushFieldNumber;
 const int GameResponse::kFullSnapshotFieldNumber;
+const int GameResponse::kGetSelfProfileFieldNumber;
+const int GameResponse::kMoveFieldNumber;
+const int GameResponse::kAoiDeltaFieldNumber;
+const int GameResponse::kPlayerMailSendFieldNumber;
+const int GameResponse::kMailboxChangedFieldNumber;
 #endif  // !defined(_MSC_VER) || _MSC_VER >= 1900
 
 GameResponse::GameResponse()
@@ -29791,6 +35948,26 @@ GameResponse::GameResponse(const GameResponse& from)
     }
     case kFullSnapshot: {
       mutable_full_snapshot()->::game::FullStateSnapshotRsp::MergeFrom(from.full_snapshot());
+      break;
+    }
+    case kGetSelfProfile: {
+      mutable_get_self_profile()->::game::GetSelfProfileRsp::MergeFrom(from.get_self_profile());
+      break;
+    }
+    case kMove: {
+      mutable_move()->::game::MoveRsp::MergeFrom(from.move());
+      break;
+    }
+    case kAoiDelta: {
+      mutable_aoi_delta()->::game::AoiDelta::MergeFrom(from.aoi_delta());
+      break;
+    }
+    case kPlayerMailSend: {
+      mutable_player_mail_send()->::game::PlayerMailSendRsp::MergeFrom(from.player_mail_send());
+      break;
+    }
+    case kMailboxChanged: {
+      mutable_mailbox_changed()->::game::MailboxChangedNotify::MergeFrom(from.mailbox_changed());
       break;
     }
     case BODY_NOT_SET: {
@@ -29957,6 +36134,26 @@ void GameResponse::clear_body() {
     }
     case kFullSnapshot: {
       delete body_.full_snapshot_;
+      break;
+    }
+    case kGetSelfProfile: {
+      delete body_.get_self_profile_;
+      break;
+    }
+    case kMove: {
+      delete body_.move_;
+      break;
+    }
+    case kAoiDelta: {
+      delete body_.aoi_delta_;
+      break;
+    }
+    case kPlayerMailSend: {
+      delete body_.player_mail_send_;
+      break;
+    }
+    case kMailboxChanged: {
+      delete body_.mailbox_changed_;
       break;
     }
     case BODY_NOT_SET: {
@@ -30371,6 +36568,66 @@ bool GameResponse::MergePartialFromCodedStream(
         break;
       }
 
+      // .game.GetSelfProfileRsp get_self_profile = 60;
+      case 60: {
+        if (static_cast< ::google::protobuf::uint8>(tag) ==
+            static_cast< ::google::protobuf::uint8>(226u /* 482 & 0xFF */)) {
+          DO_(::google::protobuf::internal::WireFormatLite::ReadMessage(
+               input, mutable_get_self_profile()));
+        } else {
+          goto handle_unusual;
+        }
+        break;
+      }
+
+      // .game.MoveRsp move = 61;
+      case 61: {
+        if (static_cast< ::google::protobuf::uint8>(tag) ==
+            static_cast< ::google::protobuf::uint8>(234u /* 490 & 0xFF */)) {
+          DO_(::google::protobuf::internal::WireFormatLite::ReadMessage(
+               input, mutable_move()));
+        } else {
+          goto handle_unusual;
+        }
+        break;
+      }
+
+      // .game.AoiDelta aoi_delta = 62;
+      case 62: {
+        if (static_cast< ::google::protobuf::uint8>(tag) ==
+            static_cast< ::google::protobuf::uint8>(242u /* 498 & 0xFF */)) {
+          DO_(::google::protobuf::internal::WireFormatLite::ReadMessage(
+               input, mutable_aoi_delta()));
+        } else {
+          goto handle_unusual;
+        }
+        break;
+      }
+
+      // .game.PlayerMailSendRsp player_mail_send = 63;
+      case 63: {
+        if (static_cast< ::google::protobuf::uint8>(tag) ==
+            static_cast< ::google::protobuf::uint8>(250u /* 506 & 0xFF */)) {
+          DO_(::google::protobuf::internal::WireFormatLite::ReadMessage(
+               input, mutable_player_mail_send()));
+        } else {
+          goto handle_unusual;
+        }
+        break;
+      }
+
+      // .game.MailboxChangedNotify mailbox_changed = 64;
+      case 64: {
+        if (static_cast< ::google::protobuf::uint8>(tag) ==
+            static_cast< ::google::protobuf::uint8>(2u /* 514 & 0xFF */)) {
+          DO_(::google::protobuf::internal::WireFormatLite::ReadMessage(
+               input, mutable_mailbox_changed()));
+        } else {
+          goto handle_unusual;
+        }
+        break;
+      }
+
       default: {
       handle_unusual:
         if (tag == 0) {
@@ -30583,6 +36840,36 @@ void GameResponse::SerializeWithCachedSizes(
   if (has_full_snapshot()) {
     ::google::protobuf::internal::WireFormatLite::WriteMessageMaybeToArray(
       54, *body_.full_snapshot_, output);
+  }
+
+  // .game.GetSelfProfileRsp get_self_profile = 60;
+  if (has_get_self_profile()) {
+    ::google::protobuf::internal::WireFormatLite::WriteMessageMaybeToArray(
+      60, *body_.get_self_profile_, output);
+  }
+
+  // .game.MoveRsp move = 61;
+  if (has_move()) {
+    ::google::protobuf::internal::WireFormatLite::WriteMessageMaybeToArray(
+      61, *body_.move_, output);
+  }
+
+  // .game.AoiDelta aoi_delta = 62;
+  if (has_aoi_delta()) {
+    ::google::protobuf::internal::WireFormatLite::WriteMessageMaybeToArray(
+      62, *body_.aoi_delta_, output);
+  }
+
+  // .game.PlayerMailSendRsp player_mail_send = 63;
+  if (has_player_mail_send()) {
+    ::google::protobuf::internal::WireFormatLite::WriteMessageMaybeToArray(
+      63, *body_.player_mail_send_, output);
+  }
+
+  // .game.MailboxChangedNotify mailbox_changed = 64;
+  if (has_mailbox_changed()) {
+    ::google::protobuf::internal::WireFormatLite::WriteMessageMaybeToArray(
+      64, *body_.mailbox_changed_, output);
   }
 
   if ((_internal_metadata_.have_unknown_fields() &&  ::google::protobuf::internal::GetProto3PreserveUnknownsDefault())) {
@@ -30814,6 +37101,41 @@ void GameResponse::SerializeWithCachedSizes(
     target = ::google::protobuf::internal::WireFormatLite::
       InternalWriteMessageToArray(
         54, *body_.full_snapshot_, deterministic, target);
+  }
+
+  // .game.GetSelfProfileRsp get_self_profile = 60;
+  if (has_get_self_profile()) {
+    target = ::google::protobuf::internal::WireFormatLite::
+      InternalWriteMessageToArray(
+        60, *body_.get_self_profile_, deterministic, target);
+  }
+
+  // .game.MoveRsp move = 61;
+  if (has_move()) {
+    target = ::google::protobuf::internal::WireFormatLite::
+      InternalWriteMessageToArray(
+        61, *body_.move_, deterministic, target);
+  }
+
+  // .game.AoiDelta aoi_delta = 62;
+  if (has_aoi_delta()) {
+    target = ::google::protobuf::internal::WireFormatLite::
+      InternalWriteMessageToArray(
+        62, *body_.aoi_delta_, deterministic, target);
+  }
+
+  // .game.PlayerMailSendRsp player_mail_send = 63;
+  if (has_player_mail_send()) {
+    target = ::google::protobuf::internal::WireFormatLite::
+      InternalWriteMessageToArray(
+        63, *body_.player_mail_send_, deterministic, target);
+  }
+
+  // .game.MailboxChangedNotify mailbox_changed = 64;
+  if (has_mailbox_changed()) {
+    target = ::google::protobuf::internal::WireFormatLite::
+      InternalWriteMessageToArray(
+        64, *body_.mailbox_changed_, deterministic, target);
   }
 
   if ((_internal_metadata_.have_unknown_fields() &&  ::google::protobuf::internal::GetProto3PreserveUnknownsDefault())) {
@@ -31049,6 +37371,41 @@ size_t GameResponse::ByteSizeLong() const {
           *body_.full_snapshot_);
       break;
     }
+    // .game.GetSelfProfileRsp get_self_profile = 60;
+    case kGetSelfProfile: {
+      total_size += 2 +
+        ::google::protobuf::internal::WireFormatLite::MessageSize(
+          *body_.get_self_profile_);
+      break;
+    }
+    // .game.MoveRsp move = 61;
+    case kMove: {
+      total_size += 2 +
+        ::google::protobuf::internal::WireFormatLite::MessageSize(
+          *body_.move_);
+      break;
+    }
+    // .game.AoiDelta aoi_delta = 62;
+    case kAoiDelta: {
+      total_size += 2 +
+        ::google::protobuf::internal::WireFormatLite::MessageSize(
+          *body_.aoi_delta_);
+      break;
+    }
+    // .game.PlayerMailSendRsp player_mail_send = 63;
+    case kPlayerMailSend: {
+      total_size += 2 +
+        ::google::protobuf::internal::WireFormatLite::MessageSize(
+          *body_.player_mail_send_);
+      break;
+    }
+    // .game.MailboxChangedNotify mailbox_changed = 64;
+    case kMailboxChanged: {
+      total_size += 2 +
+        ::google::protobuf::internal::WireFormatLite::MessageSize(
+          *body_.mailbox_changed_);
+      break;
+    }
     case BODY_NOT_SET: {
       break;
     }
@@ -31203,6 +37560,26 @@ void GameResponse::MergeFrom(const GameResponse& from) {
     }
     case kFullSnapshot: {
       mutable_full_snapshot()->::game::FullStateSnapshotRsp::MergeFrom(from.full_snapshot());
+      break;
+    }
+    case kGetSelfProfile: {
+      mutable_get_self_profile()->::game::GetSelfProfileRsp::MergeFrom(from.get_self_profile());
+      break;
+    }
+    case kMove: {
+      mutable_move()->::game::MoveRsp::MergeFrom(from.move());
+      break;
+    }
+    case kAoiDelta: {
+      mutable_aoi_delta()->::game::AoiDelta::MergeFrom(from.aoi_delta());
+      break;
+    }
+    case kPlayerMailSend: {
+      mutable_player_mail_send()->::game::PlayerMailSendRsp::MergeFrom(from.player_mail_send());
+      break;
+    }
+    case kMailboxChanged: {
+      mutable_mailbox_changed()->::game::MailboxChangedNotify::MergeFrom(from.mailbox_changed());
       break;
     }
     case BODY_NOT_SET: {

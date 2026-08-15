@@ -28,6 +28,7 @@ message BindPlayerResponse {
   string error_code = 3;
   // PlayerReady 摘要（兼容外网可再包装为 GameResponse）
   uint32 bag_item_kinds = 4;
+  bytes profile_pb = 5;  // 序列化的 game.PlayerAttributes
 }
 
 message UnbindPlayerRequest {

@@ -59,6 +59,14 @@ uint64_t ExtractPlayerIdFromRequestPayload(const std::string &request_payload) {
         return req.chat_send().player_id();
     case game::GameRequest::kFriendList:
         return req.friend_list().player_id();
+    case game::GameRequest::kPushAck:
+        return req.push_ack().player_id();
+    case game::GameRequest::kGetSelfProfile:
+        return req.get_self_profile().player_id();
+    case game::GameRequest::kMove:
+        return req.move().player_id();
+    case game::GameRequest::kPlayerMailSend:
+        return req.player_mail_send().sender_player_id();
     default:
         return 0;
     }

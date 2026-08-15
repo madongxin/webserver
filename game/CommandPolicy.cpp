@@ -52,6 +52,9 @@ bool IsAuthenticatedClientAllowlisted(game::GameRequest::BodyCase body) {
     case game::GameRequest::kChatSend:
     case game::GameRequest::kFriendList:
     case game::GameRequest::kPushAck:
+    case game::GameRequest::kGetSelfProfile:
+    case game::GameRequest::kMove:
+    case game::GameRequest::kPlayerMailSend:
         return true;
     default:
         return false;

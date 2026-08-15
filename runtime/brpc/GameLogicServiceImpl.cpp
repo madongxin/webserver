@@ -7,9 +7,14 @@
 #include "GameService.h"
 #include "Logging.h"
 #include "MapInstanceRegistry.h"
+#include "MapRuntime.h"
 #include "MailService.h"
 #include "PlayerSerialQueue.h"
 #include "game.pb.h"
+
+#ifdef WEBSERVER_ENABLE_REDIS
+#include "PlacementStore.h"
+#endif
 
 #include <brpc/controller.h>
 
@@ -320,6 +325,12 @@ void GameLogicServiceImpl::BindPlayer(::google::protobuf::RpcController *control
             response->set_ok(true);
             response->set_message("prepare idempotent");
             response->set_bag_item_kinds(0);
+            game::PlayerAttributes attrs;
+            if (GameLogic::Instance().GetPlayerAttributes(player_id, &attrs)) {
+                std::string pb;
+                if (attrs.SerializeToString(&pb))
+                    response->set_profile_pb(pb);
+            }
             return;
         }
         // 新 fence/session：重置 client_seq
@@ -332,7 +343,8 @@ void GameLogicServiceImpl::BindPlayer(::google::protobuf::RpcController *control
     if (!PlayerSerialQueue::Instance().TryPost(player_id, [player_id, req_copy, rsp, closure]() {
             brpc::ClosureGuard g(closure);
             std::string load_err;
-            if (!GameLogic::Instance().BindAuthenticatedPlayer(player_id, &load_err)) {
+            game::PlayerAttributes attrs;
+            if (!GameLogic::Instance().BindAuthenticatedPlayer(player_id, &load_err, &attrs)) {
                 {
                     std::lock_guard<std::mutex> lk(g_bound_mu);
                     g_bound.erase(player_id);
@@ -345,9 +357,20 @@ void GameLogicServiceImpl::BindPlayer(::google::protobuf::RpcController *control
             rsp->set_ok(true);
             rsp->set_message("player ready");
             rsp->set_bag_item_kinds(0);
+            {
+                std::string pb;
+                if (attrs.SerializeToString(&pb))
+                    rsp->set_profile_pb(pb);
+            }
             LOG_INFO << "BindPlayer ok player_id=" << player_id
                      << " session=" << req_copy.session_id() << " gen=" << req_copy.generation()
                      << " gw=" << req_copy.gateway_instance_id();
+            AoiPushBatch pushes;
+            MapEntity self;
+            std::vector<MapEntity> snap;
+            if (MapRuntime::Instance().Reconnect(player_id, req_copy.gateway_instance_id(),
+                                                 req_copy.session_id(), &self, &snap, &pushes))
+                GameLogic::Instance().EmitAoi(pushes);
         })) {
         brpc::ClosureGuard g(closure);
         {
@@ -489,7 +512,20 @@ void GameLogicServiceImpl::UnbindPlayer(::google::protobuf::RpcController *contr
                 std::lock_guard<std::mutex> lk(g_bound_mu);
                 g_bound.erase(pid);
             }
-            MapInstanceRegistry::Instance().RemovePlayerFromAll(pid);
+            AoiPushBatch pushes;
+            if (reason == "tcp_disconnect") {
+                MapRuntime::Instance().Disconnect(pid, &pushes);
+            } else if (reason == "transfer_finalize") {
+                MapRuntime::Instance().LeaveAll(pid, &pushes);
+                MapInstanceRegistry::Instance().RemovePlayerFromAll(pid);
+            } else {
+                MapRuntime::Instance().LeaveAll(pid, &pushes);
+                MapInstanceRegistry::Instance().RemovePlayerFromAll(pid);
+#ifdef WEBSERVER_ENABLE_REDIS
+                PlacementStore::Instance().ReleaseByPlayer(pid);
+#endif
+            }
+            GameLogic::Instance().EmitAoi(pushes);
             GameLogic::Instance().FlushBag(pid, reason);
             rsp->set_ok(true);
             rsp->set_message("unbound");

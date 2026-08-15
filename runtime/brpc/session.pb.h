@@ -4200,6 +4200,20 @@ class ResolveOrCreateMapRequest : public ::google::protobuf::Message /* @@protoc
   ::std::string* release_preferred_owner();
   void set_allocated_preferred_owner(::std::string* preferred_owner);
 
+  // string operation_id = 7;
+  void clear_operation_id();
+  static const int kOperationIdFieldNumber = 7;
+  const ::std::string& operation_id() const;
+  void set_operation_id(const ::std::string& value);
+  #if LANG_CXX11
+  void set_operation_id(::std::string&& value);
+  #endif
+  void set_operation_id(const char* value);
+  void set_operation_id(const char* value, size_t size);
+  ::std::string* mutable_operation_id();
+  ::std::string* release_operation_id();
+  void set_allocated_operation_id(::std::string* operation_id);
+
   // uint64 map_template_id = 2;
   void clear_map_template_id();
   static const int kMapTemplateIdFieldNumber = 2;
@@ -4224,15 +4238,30 @@ class ResolveOrCreateMapRequest : public ::google::protobuf::Message /* @@protoc
   bool force_new() const;
   void set_force_new(bool value);
 
+  // uint64 player_id = 6;
+  void clear_player_id();
+  static const int kPlayerIdFieldNumber = 6;
+  ::google::protobuf::uint64 player_id() const;
+  void set_player_id(::google::protobuf::uint64 value);
+
+  // uint32 public_map_capacity = 8;
+  void clear_public_map_capacity();
+  static const int kPublicMapCapacityFieldNumber = 8;
+  ::google::protobuf::uint32 public_map_capacity() const;
+  void set_public_map_capacity(::google::protobuf::uint32 value);
+
   // @@protoc_insertion_point(class_scope:sess.ResolveOrCreateMapRequest)
  private:
 
   ::google::protobuf::internal::InternalMetadataWithArena _internal_metadata_;
   ::google::protobuf::internal::ArenaStringPtr preferred_owner_;
+  ::google::protobuf::internal::ArenaStringPtr operation_id_;
   ::google::protobuf::uint64 map_template_id_;
   ::google::protobuf::uint64 map_instance_id_;
   ::google::protobuf::uint32 realm_id_;
   bool force_new_;
+  ::google::protobuf::uint64 player_id_;
+  ::google::protobuf::uint32 public_map_capacity_;
   mutable int _cached_size_;
   friend struct ::protobuf_session_2eproto::TableStruct;
   friend void ::protobuf_session_2eproto::InitDefaultsResolveOrCreateMapRequestImpl();
@@ -11989,6 +12018,87 @@ inline void ResolveOrCreateMapRequest::set_force_new(bool value) {
   
   force_new_ = value;
   // @@protoc_insertion_point(field_set:sess.ResolveOrCreateMapRequest.force_new)
+}
+
+// uint64 player_id = 6;
+inline void ResolveOrCreateMapRequest::clear_player_id() {
+  player_id_ = GOOGLE_ULONGLONG(0);
+}
+inline ::google::protobuf::uint64 ResolveOrCreateMapRequest::player_id() const {
+  // @@protoc_insertion_point(field_get:sess.ResolveOrCreateMapRequest.player_id)
+  return player_id_;
+}
+inline void ResolveOrCreateMapRequest::set_player_id(::google::protobuf::uint64 value) {
+  
+  player_id_ = value;
+  // @@protoc_insertion_point(field_set:sess.ResolveOrCreateMapRequest.player_id)
+}
+
+// string operation_id = 7;
+inline void ResolveOrCreateMapRequest::clear_operation_id() {
+  operation_id_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline const ::std::string& ResolveOrCreateMapRequest::operation_id() const {
+  // @@protoc_insertion_point(field_get:sess.ResolveOrCreateMapRequest.operation_id)
+  return operation_id_.GetNoArena();
+}
+inline void ResolveOrCreateMapRequest::set_operation_id(const ::std::string& value) {
+  
+  operation_id_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), value);
+  // @@protoc_insertion_point(field_set:sess.ResolveOrCreateMapRequest.operation_id)
+}
+#if LANG_CXX11
+inline void ResolveOrCreateMapRequest::set_operation_id(::std::string&& value) {
+  
+  operation_id_.SetNoArena(
+    &::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::move(value));
+  // @@protoc_insertion_point(field_set_rvalue:sess.ResolveOrCreateMapRequest.operation_id)
+}
+#endif
+inline void ResolveOrCreateMapRequest::set_operation_id(const char* value) {
+  GOOGLE_DCHECK(value != NULL);
+  
+  operation_id_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::string(value));
+  // @@protoc_insertion_point(field_set_char:sess.ResolveOrCreateMapRequest.operation_id)
+}
+inline void ResolveOrCreateMapRequest::set_operation_id(const char* value, size_t size) {
+  
+  operation_id_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(),
+      ::std::string(reinterpret_cast<const char*>(value), size));
+  // @@protoc_insertion_point(field_set_pointer:sess.ResolveOrCreateMapRequest.operation_id)
+}
+inline ::std::string* ResolveOrCreateMapRequest::mutable_operation_id() {
+  
+  // @@protoc_insertion_point(field_mutable:sess.ResolveOrCreateMapRequest.operation_id)
+  return operation_id_.MutableNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline ::std::string* ResolveOrCreateMapRequest::release_operation_id() {
+  // @@protoc_insertion_point(field_release:sess.ResolveOrCreateMapRequest.operation_id)
+  
+  return operation_id_.ReleaseNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline void ResolveOrCreateMapRequest::set_allocated_operation_id(::std::string* operation_id) {
+  if (operation_id != NULL) {
+    
+  } else {
+    
+  }
+  operation_id_.SetAllocatedNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), operation_id);
+  // @@protoc_insertion_point(field_set_allocated:sess.ResolveOrCreateMapRequest.operation_id)
+}
+
+// uint32 public_map_capacity = 8;
+inline void ResolveOrCreateMapRequest::clear_public_map_capacity() {
+  public_map_capacity_ = 0u;
+}
+inline ::google::protobuf::uint32 ResolveOrCreateMapRequest::public_map_capacity() const {
+  // @@protoc_insertion_point(field_get:sess.ResolveOrCreateMapRequest.public_map_capacity)
+  return public_map_capacity_;
+}
+inline void ResolveOrCreateMapRequest::set_public_map_capacity(::google::protobuf::uint32 value) {
+  
+  public_map_capacity_ = value;
+  // @@protoc_insertion_point(field_set:sess.ResolveOrCreateMapRequest.public_map_capacity)
 }
 
 // -------------------------------------------------------------------

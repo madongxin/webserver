@@ -48,6 +48,11 @@ PY
 wait_redis
 wait_mysql
 ./scripts/test_placement.sh
+if [[ ! -x ./build/test/map_occupancy_test ]]; then
+  echo "ERROR: missing map_occupancy_test"
+  exit 1
+fi
+./build/test/map_occupancy_test
 ./build/test/session_store_test
 ./build/test/player_transfer_test
 ./build/test/placement_recovery_test
@@ -75,6 +80,16 @@ if [[ ! -x ./build/test/gamedb_mail_claim_test ]]; then
   exit 1
 fi
 ./build/test/gamedb_mail_claim_test
+if [[ ! -x ./build/test/player_profile_store_test ]]; then
+  echo "ERROR: missing player_profile_store_test"
+  exit 1
+fi
+./build/test/player_profile_store_test
+if [[ ! -x ./build/test/player_mail_send_test ]]; then
+  echo "ERROR: missing player_mail_send_test"
+  exit 1
+fi
+./build/test/player_mail_send_test
 if [[ ! -x ./build/test/healthy_logic_refresh_test ]]; then
   echo "ERROR: missing healthy_logic_refresh_test"
   exit 1

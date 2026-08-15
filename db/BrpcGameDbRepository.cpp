@@ -340,6 +340,69 @@ bool BrpcGameDbRepository::LoadInventory(uint64_t player_id, std::map<uint32_t, 
     return false;
 }
 
+namespace {
+
+void GdbProfileToGame(const gdb::PlayerProfile &in, game::PlayerAttributes *out) {
+    if (!out)
+        return;
+    out->set_player_id(in.player_id());
+    out->set_player_name(in.player_name());
+    out->set_hp(in.hp());
+    out->set_max_hp(in.max_hp());
+    out->set_mp(in.mp());
+    out->set_max_mp(in.max_mp());
+    out->set_attack(in.attack());
+    out->set_spell_power(in.spell_power());
+    out->set_defense(in.defense());
+    out->set_magic_resistance(in.magic_resistance());
+    out->set_crit_chance(in.crit_chance());
+    out->set_crit_damage(in.crit_damage());
+    out->set_move_speed(in.move_speed());
+    out->set_attack_speed(in.attack_speed());
+    out->set_stats_version(in.stats_version());
+}
+
+}  // namespace
+
+bool BrpcGameDbRepository::LoadPlayerProfile(uint64_t player_id, bool ensure_default,
+                                             game::PlayerAttributes *out, std::string *err) {
+    if (!out)
+        return false;
+    const size_t n = channel_count();
+    for (size_t i = 0; i < n; ++i) {
+        auto ch = ChannelAt((static_cast<size_t>(player_id) + i) % n);
+        if (!ch)
+            continue;
+        gdb::LoadPlayerProfileReq req;
+        gdb::LoadPlayerProfileRsp rsp;
+        brpc::Controller cntl;
+        req.set_player_id(player_id);
+        req.set_ensure_default(ensure_default);
+        gdb::GameDbService_Stub stub(ch.get());
+        stub.LoadPlayerProfile(&cntl, &req, &rsp, nullptr);
+        if (cntl.Failed()) {
+            if (err)
+                *err = cntl.ErrorText();
+            continue;
+        }
+        if (!rsp.ok()) {
+            if (err)
+                *err = rsp.message().empty() ? rsp.error_code() : rsp.message();
+            return false;
+        }
+        if (!rsp.exists()) {
+            if (err)
+                *err = "ERR_PROFILE_NOT_FOUND";
+            return false;
+        }
+        GdbProfileToGame(rsp.profile(), out);
+        return true;
+    }
+    if (err && err->empty())
+        *err = "gamedb unavailable";
+    return false;
+}
+
 bool BrpcGameDbRepository::QueryOperationResult(uint64_t player_id,
                                                 const std::string &idempotency_key,
                                                 const std::string &operation_type, bool *found,
@@ -592,6 +655,42 @@ bool BrpcGameDbRepository::FlushPlayer(uint64_t player_id, const std::string &re
         }
         if (version)
             *version = rsp.asset_version();
+        return true;
+    }
+    if (err && err->empty())
+        *err = "gamedb unavailable";
+    return false;
+}
+
+bool BrpcGameDbRepository::HandleGameFrame(uint64_t player_id, const std::string &request_payload,
+                                           std::string *response_frame, std::string *err) {
+    if (!response_frame)
+        return false;
+    const size_t n = channel_count();
+    for (size_t i = 0; i < n; ++i) {
+        auto ch = ChannelAt((static_cast<size_t>(player_id) + i) % n);
+        if (!ch)
+            continue;
+        gdb::HandleGameFrameReq req;
+        gdb::HandleGameFrameRsp rsp;
+        brpc::Controller cntl;
+        req.set_player_id(player_id);
+        req.set_request_payload(request_payload);
+        gdb::GameDbService_Stub stub(ch.get());
+        stub.HandleGameFrame(&cntl, &req, &rsp, nullptr);
+        if (cntl.Failed()) {
+            if (err)
+                *err = cntl.ErrorText();
+            continue;
+        }
+        if (!rsp.ok()) {
+            if (err)
+                *err = rsp.message().empty() ? "handle_frame_failed" : rsp.message();
+            if (!rsp.response_frame().empty())
+                *response_frame = rsp.response_frame();
+            return false;
+        }
+        *response_frame = rsp.response_frame();
         return true;
     }
     if (err && err->empty())

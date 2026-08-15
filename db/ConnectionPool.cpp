@@ -39,9 +39,10 @@ void ConnectionPool::ForbidInit(const char *reason) {
 bool ConnectionPool::IsForbidden() { return g_mysql_forbidden.load(); }
 
 ConnectionPool *ConnectionPool::getconnectionPool() {
-    // C++11 起局部 static 初始化线程安全；整个进程共用一个池
-    static ConnectionPool pool;
-    return &pool;
+    // C++11 起局部 static 初始化线程安全。堆分配且不 delete：后台 produce/recycle
+    // 线程已 detach，进程退出时销毁 condvar 会与 pthread_cond_wait 死锁。
+    static ConnectionPool *pool = new ConnectionPool();
+    return pool;
 }
 
 bool ConnectionPool::loadConfigFile() {

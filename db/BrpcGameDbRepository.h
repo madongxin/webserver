@@ -1,6 +1,7 @@
 #pragma once
 
 #include "IGameDbRepository.h"
+#include "game.pb.h"
 
 #include <atomic>
 #include <cstdint>
@@ -50,6 +51,8 @@ public:
     bool LoadPlayer(uint64_t player_id, uint64_t *asset_version, bool *exists, std::string *err);
     bool LoadInventory(uint64_t player_id, std::map<uint32_t, uint32_t> *bag, uint64_t *version,
                        std::string *err);
+    bool LoadPlayerProfile(uint64_t player_id, bool ensure_default, game::PlayerAttributes *out,
+                           std::string *err);
     bool ApplyAssetMutation(uint64_t player_id, const std::string &idempotency_key,
                             uint64_t expected_version, const std::string &mutation_type,
                             uint32_t item_id, uint32_t count, const std::string &trace_id,
@@ -64,6 +67,9 @@ public:
                               const std::string &operation_type, bool *found, bool *completed_ok,
                               bool *idempotent_hit, uint64_t *asset_version, uint32_t *remain_count,
                               std::string *err, std::string *status = nullptr);
+    /** Formal World 邮件：把 GameRequest payload 交给 GameDB MailService */
+    bool HandleGameFrame(uint64_t player_id, const std::string &request_payload,
+                         std::string *response_frame, std::string *err);
 
 private:
     BrpcGameDbRepository() = default;

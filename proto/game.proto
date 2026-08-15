@@ -2,6 +2,8 @@ syntax = "proto3";
 
 package game;
 
+option csharp_namespace = "GameMesh.Protocol";
+
 message LoginReq {
   uint64 player_id = 1;
   string device_id = 2;
@@ -21,6 +23,7 @@ message LoginRsp {
   bool kicked_previous = 6;
   string session_id = 7;     // 阶段 3：会话 ID（宽限期内重连携带）
   uint64 generation = 8;     // 会话世代，拒绝迟到断线回调
+  PlayerAttributes profile = 9;  // 服务器权威资料；登录后以本字段为准
 }
 
 message ReconnectReq {
@@ -412,7 +415,10 @@ message EnterMapReq {
   uint64 player_id = 1;
   uint32 realm_id = 2;
   uint64 map_template_id = 3;
-  uint64 map_instance_id = 4;  // 0=新建实例
+  uint64 map_instance_id = 4;  // 0=加入公共池（满员则原子新建）
+  uint64 map_data_version = 5;
+  string map_data_sha256 = 6;
+  string operation_id = 7;  // 占位幂等；空则服务器按 player+template 生成
 }
 
 message EnterMapRsp {
@@ -423,6 +429,12 @@ message EnterMapRsp {
   string gamelogic_instance_id = 5;
   uint64 owner_epoch = 6;
   uint64 route_version = 7;
+  Vec3 spawn_position = 8;
+  float spawn_yaw = 9;
+  uint64 map_data_version = 10;
+  string map_data_sha256 = 11;
+  EntitySnapshot self = 12;
+  repeated EntitySnapshot aoi_snapshot = 13;
 }
 
 message LeaveMapReq {
@@ -472,6 +484,102 @@ message FriendListRsp {
   string error_code = 3;
 }
 
+// ---------- Unity 联调：坐标 / 属性 / AOI / 玩家邮件（字段编号冻结）----------
+message Vec3 {
+  float x = 1;
+  float y = 2;
+  float z = 3;
+}
+
+message PlayerAttributes {
+  uint64 player_id = 1;
+  string player_name = 2;
+  int32 hp = 3;
+  int32 max_hp = 4;
+  int32 mp = 5;
+  int32 max_mp = 6;
+  int32 attack = 7;
+  int32 spell_power = 8;
+  int32 defense = 9;
+  int32 magic_resistance = 10;
+  float crit_chance = 11;   // 0..1
+  float crit_damage = 12;   // 暴击伤害倍率，例如 1.5
+  float move_speed = 13;    // 米/秒
+  float attack_speed = 14;  // 次/秒
+  uint64 stats_version = 15;
+}
+
+message EntitySnapshot {
+  uint64 player_id = 1;
+  string player_name = 2;
+  Vec3 position = 3;
+  float yaw = 4;
+  int32 hp = 5;
+  int32 max_hp = 6;
+  uint64 state_seq = 7;
+}
+
+message GetSelfProfileReq {
+  uint64 player_id = 1;
+}
+
+message GetSelfProfileRsp {
+  bool ok = 1;
+  string message = 2;
+  string error_code = 3;
+  PlayerAttributes profile = 4;
+}
+
+message MoveReq {
+  uint64 player_id = 1;
+  uint64 map_instance_id = 2;
+  Vec3 position = 3;
+  float yaw = 4;
+  int64 client_time_ms = 5;
+}
+
+message MoveRsp {
+  bool ok = 1;
+  string message = 2;
+  string error_code = 3;
+  Vec3 position = 4;
+  float yaw = 5;
+  uint64 state_seq = 6;
+  int64 server_time_ms = 7;
+}
+
+message AoiEvent {
+  int32 op = 1;  // 1=ENTER 2=MOVE 3=LEAVE
+  EntitySnapshot entity = 2;
+}
+
+message AoiDelta {
+  uint64 map_instance_id = 1;
+  repeated AoiEvent events = 2;
+}
+
+message PlayerMailSendReq {
+  uint64 sender_player_id = 1;  // Gateway 用连接身份覆盖
+  uint64 receiver_player_id = 2;
+  string title = 3;
+  string body = 4;
+  string operation_id = 5;
+}
+
+message PlayerMailSendRsp {
+  bool ok = 1;
+  string message = 2;
+  string error_code = 3;
+  uint64 mail_id = 4;
+  bool idempotent_hit = 5;
+}
+
+message MailboxChangedNotify {
+  uint64 player_id = 1;
+  int64 mailbox_version = 2;
+  uint32 unread_count = 3;
+}
+
 message GameRequest {
   uint64 seq = 1;
   string session_token = 2;
@@ -502,6 +610,9 @@ message GameRequest {
     ChatSendReq chat_send = 50;
     FriendListReq friend_list = 51;
     PushAckReq push_ack = 52;
+    GetSelfProfileReq get_self_profile = 60;
+    MoveReq move = 61;
+    PlayerMailSendReq player_mail_send = 63;
   }
 }
 
@@ -538,5 +649,10 @@ message GameResponse {
     PushAckRsp push_ack = 52;
     ServerPushEnvelope server_push = 53;
     FullStateSnapshotRsp full_snapshot = 54;
+    GetSelfProfileRsp get_self_profile = 60;
+    MoveRsp move = 61;
+    AoiDelta aoi_delta = 62;
+    PlayerMailSendRsp player_mail_send = 63;
+    MailboxChangedNotify mailbox_changed = 64;
   }
 }

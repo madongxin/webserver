@@ -9,6 +9,15 @@
  *   game_tcp_e2e_client dual-gw <gw0_host> <gw0_port> <gw1_host> <gw1_port> [map_tpl] [map_inst]
  *   game_tcp_e2e_client hold-kill-reconnect <gw0_host> <gw0_port> <gw1_host> <gw1_port> [map_tpl] [map_inst]
  *   game_tcp_e2e_client drain-login <host> <port>   # 期望失败（摘流后）
+ *   game_tcp_e2e_client register-login-profile <host> <port> [device] [password]
+ *   game_tcp_e2e_client enter-public-map <host> <port> [device] [password] [map_tpl]
+ *   game_tcp_e2e_client move <host> <port> <player> <password> <map_inst> <x> <y> <z> [yaw]
+ *   game_tcp_e2e_client send-player-mail <host> <port> <player> <password> <receiver> <title> <body> [op]
+ *   game_tcp_e2e_client mail-list <host> <port> <player> <password>
+ *   game_tcp_e2e_client two-player-aoi <gw0_host> <gw0_port> <gw1_host> <gw1_port> [map_tpl]
+ *   game_tcp_e2e_client map-capacity-51 <host> <port> [map_tpl] [n]
+ *   game_tcp_e2e_client unity-contract-check <host> <port> [device] [password]
+ *   game_tcp_e2e_client login-profile <host> <port> <player> <password> [device]
  *
  * 成功输出 key=value 行，便于脚本解析；失败非零。
  */
@@ -21,10 +30,17 @@
 #include <sys/socket.h>
 #include <unistd.h>
 
+#include <chrono>
+#include <cmath>
+#include <cctype>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <fstream>
+#include <sstream>
 #include <string>
+#include <unordered_map>
+#include <vector>
 
 namespace {
 
@@ -49,6 +65,30 @@ bool RecvAll(int fd, char *data, size_t n) {
     }
     return true;
 }
+
+struct SessionState {
+    uint64_t player_id = 0;
+    std::string token;
+    std::string session_id;
+    uint64_t generation = 0;
+    uint64_t last_server_seq = 0;
+    uint64_t acked_seq = 0;
+    uint64_t next_seq = 1;
+    uint64_t map_instance_id = 0;
+    uint64_t map_template_id = 0;
+    std::string logic_id;
+    uint64_t owner_epoch = 0;
+    float spawn_x = 0, spawn_y = 0, spawn_z = 0, spawn_yaw = 0;
+    std::string player_name;
+    uint64_t stats_version = 0;
+    std::vector<uint64_t> aoi_snapshot_ids;
+};
+
+struct TcpSession {
+    int fd = -1;
+    SessionState st;
+    std::vector<game::GameResponse> inbox;
+};
 
 int Connect(const char *host, int port) {
     const int fd = ::socket(AF_INET, SOCK_STREAM, 0);
@@ -92,7 +132,27 @@ bool RecvFrame(int fd, game::GameResponse *rsp, int timeout_ms) {
     return rsp->ParseFromString(body);
 }
 
-bool Exchange(int fd, const game::GameRequest &req, game::GameResponse *rsp, int timeout_ms = 8000) {
+int RemainingMs(std::chrono::steady_clock::time_point deadline) {
+    const auto now = std::chrono::steady_clock::now();
+    if (now >= deadline)
+        return 0;
+    return static_cast<int>(
+        std::chrono::duration_cast<std::chrono::milliseconds>(deadline - now).count());
+}
+
+void NotePush(SessionState *st, const game::GameResponse &push,
+              std::vector<game::GameResponse> *inbox) {
+    if (inbox)
+        inbox->push_back(push);
+    if (!push.has_server_push())
+        return;
+    const uint64_t seq = push.server_push().server_seq();
+    if (st && seq > st->last_server_seq)
+        st->last_server_seq = seq;
+}
+
+bool Exchange(int fd, const game::GameRequest &req, game::GameResponse *rsp, int timeout_ms,
+              SessionState *st, std::vector<game::GameResponse> *inbox) {
     std::string body;
     if (!req.SerializeToString(&body))
         return false;
@@ -101,7 +161,31 @@ bool Exchange(int fd, const game::GameRequest &req, game::GameResponse *rsp, int
         return false;
     if (!SendAll(fd, frame.data(), frame.size()))
         return false;
-    return RecvFrame(fd, rsp, timeout_ms);
+    const auto deadline =
+        std::chrono::steady_clock::now() + std::chrono::milliseconds(timeout_ms > 0 ? timeout_ms : 8000);
+    while (true) {
+        const int left = RemainingMs(deadline);
+        if (left <= 0)
+            return false;
+        game::GameResponse cur;
+        if (!RecvFrame(fd, &cur, left))
+            return false;
+        if (cur.has_server_push()) {
+            NotePush(st, cur, inbox);
+            continue;
+        }
+        if (req.seq() != 0 && cur.seq() != 0 && cur.seq() != req.seq()) {
+            if (inbox)
+                inbox->push_back(cur);
+            continue;
+        }
+        *rsp = std::move(cur);
+        return true;
+    }
+}
+
+bool Exchange(int fd, const game::GameRequest &req, game::GameResponse *rsp, int timeout_ms = 8000) {
+    return Exchange(fd, req, rsp, timeout_ms, nullptr, nullptr);
 }
 
 void PrintKv(const char *k, const std::string &v) {
@@ -121,16 +205,218 @@ void PrintKv(const char *k, bool v) {
     std::fflush(stdout);
 }
 
-struct SessionState {
-    uint64_t player_id = 0;
-    std::string token;
-    std::string session_id;
-    uint64_t generation = 0;
-    uint64_t last_server_seq = 0;
-    uint64_t map_instance_id = 0;
-    std::string logic_id;
-    uint64_t owner_epoch = 0;
-};
+std::string TrimCopy(std::string s) {
+    while (!s.empty() && std::isspace(static_cast<unsigned char>(s.front())))
+        s.erase(s.begin());
+    while (!s.empty() && std::isspace(static_cast<unsigned char>(s.back())))
+        s.pop_back();
+    return s;
+}
+
+std::string NormalizeHex(std::string s) {
+    s = TrimCopy(s);
+    const auto sp = s.find_first_of(" \t");
+    if (sp != std::string::npos)
+        s = s.substr(0, sp);
+    for (char &c : s) {
+        if (c >= 'A' && c <= 'F')
+            c = static_cast<char>(c - 'A' + 'a');
+    }
+    return s;
+}
+
+std::string LoadMapSha256() {
+    if (const char *e = std::getenv("GAMEMESH_MAP_SHA256")) {
+        const std::string v = NormalizeHex(e);
+        if (!v.empty())
+            return v;
+    }
+    const char *path = std::getenv("GAMEMESH_MAP_SHA256_FILE");
+    std::string p = path && *path ? path : "config/maps/map_1001.json.sha256";
+    std::ifstream in(p.c_str());
+    if (!in)
+        return "";
+    std::string line;
+    std::getline(in, line);
+    return NormalizeHex(line);
+}
+
+uint64_t LoadMapDataVersion() {
+    if (const char *e = std::getenv("GAMEMESH_MAP_DATA_VERSION"))
+        return std::strtoull(e, nullptr, 10);
+    return 1;
+}
+
+void PrintProfile(const char *prefix, const game::PlayerAttributes &p) {
+    const std::string pre = prefix ? prefix : "profile";
+    PrintKv((pre + "_player_id").c_str(), p.player_id());
+    PrintKv((pre + "_name").c_str(), p.player_name());
+    PrintKv((pre + "_hp").c_str(), static_cast<uint64_t>(p.hp()));
+    PrintKv((pre + "_max_hp").c_str(), static_cast<uint64_t>(p.max_hp()));
+    PrintKv((pre + "_mp").c_str(), static_cast<uint64_t>(p.mp()));
+    PrintKv((pre + "_max_mp").c_str(), static_cast<uint64_t>(p.max_mp()));
+    PrintKv((pre + "_attack").c_str(), static_cast<uint64_t>(p.attack()));
+    PrintKv((pre + "_spell_power").c_str(), static_cast<uint64_t>(p.spell_power()));
+    PrintKv((pre + "_defense").c_str(), static_cast<uint64_t>(p.defense()));
+    PrintKv((pre + "_magic_resistance").c_str(), static_cast<uint64_t>(p.magic_resistance()));
+    PrintKv((pre + "_move_speed").c_str(), std::to_string(p.move_speed()));
+    PrintKv((pre + "_attack_speed").c_str(), std::to_string(p.attack_speed()));
+    PrintKv((pre + "_stats_version").c_str(), p.stats_version());
+}
+
+bool ProfileComplete(const game::PlayerAttributes &p) {
+    return p.player_id() != 0 && !p.player_name().empty() && p.max_hp() > 0 && p.max_mp() > 0 &&
+           p.move_speed() > 0.f && p.stats_version() != 0;
+}
+
+bool InnerFromPush(const game::GameResponse &outer, game::GameResponse *inner) {
+    if (!inner || !outer.has_server_push())
+        return false;
+    return inner->ParseFromString(outer.server_push().payload());
+}
+
+bool Rpc(TcpSession *c, game::GameRequest *req, game::GameResponse *rsp, int timeout_ms = 8000) {
+    if (!c || c->fd < 0 || !req || !rsp)
+        return false;
+    if (req->seq() == 0 && !req->has_push_ack())
+        req->set_seq(c->st.next_seq++);
+    if (req->session_token().empty() && !c->st.token.empty())
+        req->set_session_token(c->st.token);
+    return Exchange(c->fd, *req, rsp, timeout_ms, &c->st, &c->inbox);
+}
+
+bool MaybeAck(TcpSession *c) {
+    if (!c || c->fd < 0)
+        return true;
+    if (c->st.last_server_seq == 0 || c->st.last_server_seq <= c->st.acked_seq)
+        return true;
+    game::GameRequest req;
+    auto *a = req.mutable_push_ack();
+    a->set_player_id(c->st.player_id);
+    a->set_ack_server_seq(c->st.last_server_seq);
+    a->set_session_id(c->st.session_id);
+    a->set_fence_token(c->st.token);
+    a->set_generation(c->st.generation);
+    game::GameResponse rsp;
+    if (!Rpc(c, &req, &rsp, 3000) || !rsp.has_push_ack())
+        return true;
+    if (rsp.push_ack().ok())
+        c->st.acked_seq = c->st.last_server_seq;
+    PrintKv("push_ack_ok", rsp.push_ack().ok());
+    PrintKv("push_ack_seq", c->st.acked_seq);
+    return true;
+}
+
+void DrainPushes(TcpSession *c, int timeout_ms) {
+    if (!c || c->fd < 0 || timeout_ms <= 0)
+        return;
+    const auto deadline =
+        std::chrono::steady_clock::now() + std::chrono::milliseconds(timeout_ms);
+    while (true) {
+        const int left = RemainingMs(deadline);
+        if (left <= 0)
+            break;
+        game::GameResponse cur;
+        if (!RecvFrame(c->fd, &cur, left > 250 ? 250 : left))
+            break;
+        if (cur.has_server_push())
+            NotePush(&c->st, cur, &c->inbox);
+        else
+            c->inbox.push_back(cur);
+    }
+    MaybeAck(c);
+}
+
+bool FindAoiEvent(const std::vector<game::GameResponse> &inbox, int op, uint64_t player_id,
+                  game::EntitySnapshot *out, int *seen_n, size_t from = 0) {
+    int n = 0;
+    bool found = false;
+    game::EntitySnapshot last;
+    if (from > inbox.size())
+        from = inbox.size();
+    for (size_t idx = from; idx < inbox.size(); ++idx) {
+        const auto &outer = inbox[idx];
+        game::GameResponse inner;
+        const game::AoiDelta *delta = nullptr;
+        if (outer.has_aoi_delta()) {
+            delta = &outer.aoi_delta();
+        } else if (InnerFromPush(outer, &inner) && inner.has_aoi_delta()) {
+            delta = &inner.aoi_delta();
+        } else {
+            continue;
+        }
+        for (int i = 0; i < delta->events_size(); ++i) {
+            const auto &ev = delta->events(i);
+            if (ev.op() != op)
+                continue;
+            if (player_id != 0 && ev.entity().player_id() != player_id)
+                continue;
+            ++n;
+            last = ev.entity();
+            found = true;
+        }
+    }
+    if (seen_n)
+        *seen_n = n;
+    if (found && out)
+        *out = last;
+    return found;
+}
+
+bool WaitAoi(TcpSession *c, int op, uint64_t player_id, int timeout_ms, game::EntitySnapshot *out,
+             int *seen_n, size_t from = 0) {
+    const auto deadline =
+        std::chrono::steady_clock::now() + std::chrono::milliseconds(timeout_ms);
+    while (true) {
+        if (FindAoiEvent(c->inbox, op, player_id, out, seen_n, from))
+            return true;
+        const int left = RemainingMs(deadline);
+        if (left <= 0) {
+            PrintKv("aoi_wait_timeout_op", op);
+            PrintKv("aoi_wait_want_player", player_id);
+            PrintKv("aoi_inbox_n", static_cast<uint64_t>(c->inbox.size()));
+            for (const auto &outer : c->inbox) {
+                if (outer.has_server_push()) {
+                    PrintKv("inbox_push_type", outer.server_push().message_type());
+                    game::GameResponse inner;
+                    if (InnerFromPush(outer, &inner)) {
+                        PrintKv("inbox_inner_has_aoi", inner.has_aoi_delta());
+                        if (inner.has_aoi_delta()) {
+                            PrintKv("inbox_aoi_events",
+                                    static_cast<uint64_t>(inner.aoi_delta().events_size()));
+                            for (int i = 0; i < inner.aoi_delta().events_size(); ++i) {
+                                PrintKv("inbox_aoi_op", inner.aoi_delta().events(i).op());
+                                PrintKv("inbox_aoi_pid",
+                                        inner.aoi_delta().events(i).entity().player_id());
+                            }
+                        }
+                    } else {
+                        PrintKv("inbox_inner_parse", 0);
+                    }
+                } else if (outer.has_aoi_delta()) {
+                    PrintKv("inbox_outer_aoi", 1);
+                }
+            }
+            return FindAoiEvent(c->inbox, op, player_id, out, seen_n, from);
+        }
+        DrainPushes(c, left > 300 ? 300 : left);
+    }
+}
+
+bool FindMailboxChanged(const std::vector<game::GameResponse> &inbox, uint64_t player_id) {
+    for (const auto &outer : inbox) {
+        game::GameResponse inner;
+        if (outer.has_mailbox_changed() &&
+            (player_id == 0 || outer.mailbox_changed().player_id() == player_id))
+            return true;
+        if (InnerFromPush(outer, &inner) && inner.has_mailbox_changed() &&
+            (player_id == 0 || inner.mailbox_changed().player_id() == player_id))
+            return true;
+        if (outer.has_server_push() && outer.server_push().message_type() == "mailbox.changed.v1")
+            return true;
+    }
+    return false;
+}
 
 bool DoRegisterLogin(int fd, const std::string &device, const std::string &password,
                      SessionState *st) {
@@ -172,36 +458,78 @@ bool DoRegisterLogin(int fd, const std::string &device, const std::string &passw
     st->token = lr.login().token();
     st->session_id = lr.login().session_id();
     st->generation = lr.login().generation();
+    st->next_seq = 3;
     PrintKv("token", st->token);
     PrintKv("session_id", st->session_id);
     PrintKv("generation", st->generation);
+    if (lr.login().has_profile()) {
+        st->player_name = lr.login().profile().player_name();
+        st->stats_version = lr.login().profile().stats_version();
+        PrintProfile("login_profile", lr.login().profile());
+        PrintKv("login_profile_complete", ProfileComplete(lr.login().profile()));
+    }
     PrintKv("login_ok", true);
     return true;
 }
 
-bool DoEnterMap(int fd, SessionState *st, uint64_t map_tpl, uint64_t map_inst) {
+bool DoEnterMap(int fd, SessionState *st, uint64_t map_tpl, uint64_t map_inst,
+                std::vector<game::GameResponse> *inbox = nullptr) {
     game::GameRequest req;
-    req.set_seq(10);
+    req.set_seq(st->next_seq++);
     req.set_session_token(st->token);
     auto *e = req.mutable_enter_map();
     e->set_player_id(st->player_id);
     e->set_realm_id(1);
     e->set_map_template_id(map_tpl);
     e->set_map_instance_id(map_inst);
+    const std::string hash = LoadMapSha256();
+    if (!hash.empty() && map_tpl == 1001) {
+        e->set_map_data_version(LoadMapDataVersion());
+        e->set_map_data_sha256(hash);
+    }
+    e->set_operation_id(std::string("enter:") + std::to_string(st->player_id) + ":" +
+                        std::to_string(map_tpl));
     game::GameResponse rsp;
-    if (!Exchange(fd, req, &rsp, 15000) || !rsp.ok() || !rsp.has_enter_map() ||
+    if (!Exchange(fd, req, &rsp, 15000, st, inbox) || !rsp.ok() || !rsp.has_enter_map() ||
         !rsp.enter_map().ok()) {
         std::printf("error=enter_map msg=%s\n", rsp.message().c_str());
+        if (rsp.has_enter_map()) {
+            PrintKv("enter_map_error", rsp.enter_map().message());
+            if (!rsp.enter_map().map_data_sha256().empty())
+                PrintKv("server_map_sha256", rsp.enter_map().map_data_sha256());
+            PrintKv("server_map_data_version", rsp.enter_map().map_data_version());
+        }
         std::fflush(stdout);
         return false;
     }
     st->map_instance_id = rsp.enter_map().map_instance_id();
+    st->map_template_id = rsp.enter_map().map_template_id();
     st->logic_id = rsp.enter_map().gamelogic_instance_id();
     st->owner_epoch = rsp.enter_map().owner_epoch();
+    if (rsp.enter_map().has_spawn_position()) {
+        st->spawn_x = rsp.enter_map().spawn_position().x();
+        st->spawn_y = rsp.enter_map().spawn_position().y();
+        st->spawn_z = rsp.enter_map().spawn_position().z();
+        st->spawn_yaw = rsp.enter_map().spawn_yaw();
+        PrintKv("spawn_x", std::to_string(st->spawn_x));
+        PrintKv("spawn_y", std::to_string(st->spawn_y));
+        PrintKv("spawn_z", std::to_string(st->spawn_z));
+        PrintKv("spawn_yaw", std::to_string(st->spawn_yaw));
+    }
+    if (rsp.enter_map().has_self())
+        PrintKv("self_player_id", rsp.enter_map().self().player_id());
+    st->aoi_snapshot_ids.clear();
+    for (int i = 0; i < rsp.enter_map().aoi_snapshot_size(); ++i) {
+        const uint64_t pid = rsp.enter_map().aoi_snapshot(i).player_id();
+        st->aoi_snapshot_ids.push_back(pid);
+        PrintKv("aoi_snapshot_player", pid);
+    }
+    PrintKv("aoi_snapshot_n", static_cast<uint64_t>(rsp.enter_map().aoi_snapshot_size()));
     PrintKv("map_instance_id", st->map_instance_id);
     PrintKv("gamelogic_instance_id", st->logic_id);
     PrintKv("owner_epoch", st->owner_epoch);
     PrintKv("route_version", rsp.enter_map().route_version());
+    PrintKv("map_data_sha256", rsp.enter_map().map_data_sha256());
     PrintKv("enter_map_ok", true);
 
     // 可能紧随可靠 Push（enter_map_notify）；短超时避免压测把空等算进失败
@@ -210,21 +538,34 @@ bool DoEnterMap(int fd, SessionState *st, uint64_t map_tpl, uint64_t map_inst) {
         if (!RecvFrame(fd, &push, 200))
             break;
         if (push.has_server_push()) {
-            const uint64_t seq = push.server_push().server_seq();
-            if (seq > st->last_server_seq)
-                st->last_server_seq = seq;
+            NotePush(st, push, inbox);
             PrintKv("push_recv", 1);
-            PrintKv("server_seq", seq);
+            PrintKv("server_seq", push.server_push().server_seq());
             PrintKv("push_msg", push.server_push().message_type());
         } else if (push.message() == "enter_map_notify" || push.has_enter_map()) {
-            // 兼容旧路径：无 envelope 时至少记到 1
             if (st->last_server_seq == 0)
                 st->last_server_seq = 1;
+            if (inbox)
+                inbox->push_back(push);
             PrintKv("push_recv", 1);
             PrintKv("push_msg", push.message());
+        } else if (inbox) {
+            inbox->push_back(push);
         }
     }
     return true;
+}
+
+bool DoEnterMap(TcpSession *c, uint64_t map_tpl, uint64_t map_inst) {
+    return DoEnterMap(c->fd, &c->st, map_tpl, map_inst, &c->inbox);
+}
+
+bool SnapshotHas(const SessionState &st, uint64_t player_id) {
+    for (uint64_t id : st.aoi_snapshot_ids) {
+        if (id == player_id)
+            return true;
+    }
+    return false;
 }
 
 bool DoReconnect(int fd, SessionState *st, uint64_t last_seq, int *replay_n, bool *need_snap) {
@@ -236,7 +577,8 @@ bool DoReconnect(int fd, SessionState *st, uint64_t last_seq, int *replay_n, boo
     r->set_reconnect_ticket(st->token);
     r->set_last_server_seq(last_seq);
     game::GameResponse rsp;
-    if (!Exchange(fd, req, &rsp, 15000) || !rsp.ok() || !rsp.has_reconnect() ||
+    std::vector<game::GameResponse> pending;
+    if (!Exchange(fd, req, &rsp, 15000, st, &pending) || !rsp.ok() || !rsp.has_reconnect() ||
         !rsp.reconnect().ok()) {
         std::printf("error=reconnect msg=%s\n", rsp.message().c_str());
         std::fflush(stdout);
@@ -256,37 +598,32 @@ bool DoReconnect(int fd, SessionState *st, uint64_t last_seq, int *replay_n, boo
 
     int n = 0;
     uint64_t max_seq = last_seq;
-    for (int i = 0; i < 8; ++i) {
-        game::GameResponse push;
-        if (!RecvFrame(fd, &push, 200))
-            break;
+    auto consume_push = [&](const game::GameResponse &push) -> int {
         if (!push.has_server_push()) {
-            // 非 envelope 帧不算可靠回放成功
             PrintKv("replay_non_envelope", 1);
             PrintKv("replay_msg", push.message());
-            continue;
+            return 0;
         }
         const uint64_t seq = push.server_push().server_seq();
         if (seq == 0) {
             std::printf("error=replay_missing_server_seq\n");
             std::fflush(stdout);
-            return false;
+            return -1;
         }
         if (seq <= last_seq) {
             std::printf("error=replay_seq_not_after_last seq=%llu last=%llu\n",
                         static_cast<unsigned long long>(seq),
                         static_cast<unsigned long long>(last_seq));
             std::fflush(stdout);
-            return false;
+            return -1;
         }
         if (max_seq != last_seq && seq != max_seq + 1 && !rsp.reconnect().need_full_snapshot()) {
-            // 回放路径要求连续；snapshot 路径可能只有一个 baseline
             if (push.server_push().message_type() != "full_snapshot") {
                 std::printf("error=replay_seq_gap got=%llu expect=%llu\n",
                             static_cast<unsigned long long>(seq),
                             static_cast<unsigned long long>(max_seq + 1));
                 std::fflush(stdout);
-                return false;
+                return -1;
             }
         }
         if (seq > max_seq)
@@ -295,6 +632,20 @@ bool DoReconnect(int fd, SessionState *st, uint64_t last_seq, int *replay_n, boo
         PrintKv("replay_frame", static_cast<uint64_t>(n));
         PrintKv("server_seq", seq);
         PrintKv("replay_msg", push.server_push().message_type());
+        return 1;
+    };
+    for (const auto &p : pending) {
+        const int cr = consume_push(p);
+        if (cr < 0)
+            return false;
+    }
+    for (int i = 0; i < 8; ++i) {
+        game::GameResponse push;
+        if (!RecvFrame(fd, &push, 200))
+            break;
+        const int cr = consume_push(push);
+        if (cr < 0)
+            return false;
     }
     if (max_seq > st->last_server_seq)
         st->last_server_seq = max_seq;
@@ -302,6 +653,178 @@ bool DoReconnect(int fd, SessionState *st, uint64_t last_seq, int *replay_n, boo
         *replay_n = n;
     PrintKv("replay_n", n);
     return true;
+}
+
+bool DoGetSelfProfile(TcpSession *c, game::PlayerAttributes *out) {
+    game::GameRequest req;
+    req.mutable_get_self_profile()->set_player_id(c->st.player_id);
+    game::GameResponse rsp;
+    if (!Rpc(c, &req, &rsp, 8000) || !rsp.ok() || !rsp.has_get_self_profile() ||
+        !rsp.get_self_profile().ok() || !rsp.get_self_profile().has_profile()) {
+        std::printf("error=get_self_profile msg=%s\n", rsp.message().c_str());
+        std::fflush(stdout);
+        return false;
+    }
+    const auto &p = rsp.get_self_profile().profile();
+    c->st.player_name = p.player_name();
+    c->st.stats_version = p.stats_version();
+    PrintProfile("profile", p);
+    PrintKv("profile_complete", ProfileComplete(p));
+    if (out)
+        *out = p;
+    return ProfileComplete(p);
+}
+
+bool DoMoveTo(TcpSession *c, float x, float y, float z, float yaw, game::MoveRsp *out) {
+    game::GameRequest req;
+    auto *m = req.mutable_move();
+    m->set_player_id(c->st.player_id);
+    m->set_map_instance_id(c->st.map_instance_id);
+    m->mutable_position()->set_x(x);
+    m->mutable_position()->set_y(y);
+    m->mutable_position()->set_z(z);
+    m->set_yaw(yaw);
+    m->set_client_time_ms(static_cast<int64_t>(
+        std::chrono::duration_cast<std::chrono::milliseconds>(
+            std::chrono::system_clock::now().time_since_epoch())
+            .count()));
+    game::GameResponse rsp;
+    if (!Rpc(c, &req, &rsp, 8000) || !rsp.ok() || !rsp.has_move() || !rsp.move().ok()) {
+        std::printf("error=move msg=%s code=%s\n", rsp.message().c_str(),
+                    rsp.has_move() ? rsp.move().error_code().c_str() : "");
+        std::fflush(stdout);
+        return false;
+    }
+    PrintKv("move_ok", true);
+    PrintKv("move_x", std::to_string(rsp.move().position().x()));
+    PrintKv("move_y", std::to_string(rsp.move().position().y()));
+    PrintKv("move_z", std::to_string(rsp.move().position().z()));
+    PrintKv("move_state_seq", rsp.move().state_seq());
+    if (out)
+        *out = rsp.move();
+    return true;
+}
+
+bool DoLogout(TcpSession *c) {
+    game::GameRequest req;
+    auto *l = req.mutable_logout();
+    l->set_player_id(c->st.player_id);
+    l->set_token(c->st.token);
+    game::GameResponse rsp;
+    if (!Rpc(c, &req, &rsp, 8000) || !rsp.ok() || (rsp.has_logout() && !rsp.logout().ok())) {
+        std::printf("error=logout msg=%s\n", rsp.message().c_str());
+        std::fflush(stdout);
+        return false;
+    }
+    PrintKv("logout_ok", true);
+    return true;
+}
+
+bool DoPlayerMailSend(TcpSession *c, uint64_t receiver, const std::string &title,
+                      const std::string &body, const std::string &op, uint64_t *mail_id) {
+    game::GameRequest req;
+    auto *m = req.mutable_player_mail_send();
+    m->set_sender_player_id(c->st.player_id);
+    m->set_receiver_player_id(receiver);
+    m->set_title(title);
+    m->set_body(body);
+    m->set_operation_id(op);
+    game::GameResponse rsp;
+    if (!Rpc(c, &req, &rsp, 15000) || !rsp.ok() || !rsp.has_player_mail_send() ||
+        !rsp.player_mail_send().ok()) {
+        std::printf("error=player_mail_send msg=%s code=%s\n", rsp.message().c_str(),
+                    rsp.has_player_mail_send() ? rsp.player_mail_send().error_code().c_str() : "");
+        std::fflush(stdout);
+        return false;
+    }
+    PrintKv("mail_send_ok", true);
+    PrintKv("mail_id", rsp.player_mail_send().mail_id());
+    if (mail_id)
+        *mail_id = rsp.player_mail_send().mail_id();
+    return true;
+}
+
+bool DoMailList(TcpSession *c, uint64_t *first_id, int *count) {
+    game::GameRequest req;
+    auto *m = req.mutable_mail_list();
+    m->set_player_id(c->st.player_id);
+    m->set_limit(20);
+    game::GameResponse rsp;
+    if (!Rpc(c, &req, &rsp, 8000) || !rsp.ok() || !rsp.has_mail_list() || !rsp.mail_list().ok()) {
+        std::printf("error=mail_list msg=%s\n", rsp.message().c_str());
+        std::fflush(stdout);
+        return false;
+    }
+    PrintKv("mail_list_ok", true);
+    PrintKv("mail_list_n", static_cast<uint64_t>(rsp.mail_list().mails_size()));
+    if (count)
+        *count = rsp.mail_list().mails_size();
+    if (first_id && rsp.mail_list().mails_size() > 0)
+        *first_id = rsp.mail_list().mails(0).mail_id();
+    return true;
+}
+
+bool DoMailGet(TcpSession *c, uint64_t mail_id, std::string *body_out) {
+    game::GameRequest req;
+    auto *m = req.mutable_mail_get();
+    m->set_player_id(c->st.player_id);
+    m->set_mail_id(mail_id);
+    game::GameResponse rsp;
+    if (!Rpc(c, &req, &rsp, 8000) || !rsp.ok() || !rsp.has_mail_get() || !rsp.mail_get().ok()) {
+        std::printf("error=mail_get msg=%s\n", rsp.message().c_str());
+        std::fflush(stdout);
+        return false;
+    }
+    PrintKv("mail_get_ok", true);
+    PrintKv("mail_get_body", rsp.mail_get().mail().body());
+    if (body_out)
+        *body_out = rsp.mail_get().mail().body();
+    return true;
+}
+
+bool DoLoginExisting(int fd, uint64_t player_id, const std::string &device,
+                     const std::string &password, SessionState *st) {
+    game::GameRequest login;
+    login.set_seq(st->next_seq++);
+    auto *l = login.mutable_login();
+    l->set_player_id(player_id);
+    l->set_device_id(device);
+    l->set_server_id(1);
+    l->set_credential(password);
+    l->set_kick_other_device(true);
+    game::GameResponse lr;
+    if (!Exchange(fd, login, &lr, 8000, st, nullptr) || !lr.ok() || !lr.has_login() ||
+        !lr.login().ok()) {
+        std::printf("error=login msg=%s\n", lr.message().c_str());
+        std::fflush(stdout);
+        return false;
+    }
+    st->player_id = player_id;
+    st->token = lr.login().token();
+    st->session_id = lr.login().session_id();
+    st->generation = lr.login().generation();
+    PrintKv("player_id", st->player_id);
+    PrintKv("token", st->token);
+    PrintKv("session_id", st->session_id);
+    PrintKv("generation", st->generation);
+    if (lr.login().has_profile()) {
+        st->player_name = lr.login().profile().player_name();
+        st->stats_version = lr.login().profile().stats_version();
+        PrintProfile("login_profile", lr.login().profile());
+        PrintKv("login_profile_complete", ProfileComplete(lr.login().profile()));
+    }
+    PrintKv("login_ok", true);
+    return true;
+}
+
+bool OpenRegister(TcpSession *c, const char *host, int port, const std::string &device,
+                  const std::string &password) {
+    c->fd = Connect(host, port);
+    if (c->fd < 0) {
+        std::perror("connect");
+        return false;
+    }
+    return DoRegisterLogin(c->fd, device, password, &c->st);
 }
 
 int CmdRegisterLogin(int argc, char **argv) {
@@ -556,13 +1079,492 @@ int CmdHoldKillReconnect(int argc, char **argv) {
     return 0;
 }
 
+int CmdRegisterLoginProfile(int argc, char **argv) {
+    if (argc < 4)
+        return 2;
+    TcpSession c;
+    const std::string device = argc >= 5 ? argv[4] : ("e2e-p-" + std::to_string(::getpid()));
+    const std::string password = argc >= 6 ? argv[5] : "e2epass1";
+    if (!OpenRegister(&c, argv[2], std::atoi(argv[3]), device, password)) {
+        if (c.fd >= 0)
+            ::close(c.fd);
+        return 12;
+    }
+    game::PlayerAttributes attrs;
+    const bool ok = DoGetSelfProfile(&c, &attrs);
+    if (ok && attrs.player_name() == "player") {
+        std::printf("error=profile_default_name\n");
+        std::fflush(stdout);
+        ::close(c.fd);
+        return 18;
+    }
+    ::close(c.fd);
+    return ok ? 0 : 12;
+}
+
+int CmdLoginProfile(int argc, char **argv) {
+    if (argc < 6)
+        return 2;
+    const char *host = argv[2];
+    const int port = std::atoi(argv[3]);
+    const uint64_t player = std::strtoull(argv[4], nullptr, 10);
+    const std::string password = argv[5];
+    const std::string device = argc >= 7 ? argv[6] : ("e2e-lp-" + std::to_string(::getpid()));
+    TcpSession c;
+    c.fd = Connect(host, port);
+    if (c.fd < 0)
+        return 6;
+    if (!DoLoginExisting(c.fd, player, device, password, &c.st)) {
+        ::close(c.fd);
+        return 12;
+    }
+    game::PlayerAttributes attrs;
+    const bool ok = DoGetSelfProfile(&c, &attrs);
+    ::close(c.fd);
+    return ok ? 0 : 12;
+}
+
+int CmdEnterPublicMap(int argc, char **argv) {
+    if (argc < 4)
+        return 2;
+    TcpSession c;
+    const std::string device = argc >= 5 ? argv[4] : ("e2e-m-" + std::to_string(::getpid()));
+    const std::string password = argc >= 6 ? argv[5] : "e2epass1";
+    const uint64_t tpl = argc >= 7 ? std::strtoull(argv[6], nullptr, 10) : 1001;
+    if (!OpenRegister(&c, argv[2], std::atoi(argv[3]), device, password)) {
+        if (c.fd >= 0)
+            ::close(c.fd);
+        return 12;
+    }
+    const bool ok = DoEnterMap(&c, tpl, 0);
+    DrainPushes(&c, 400);
+    ::close(c.fd);
+    return ok ? 0 : 13;
+}
+
+int CmdMove(int argc, char **argv) {
+    if (argc < 10)
+        return 2;
+    TcpSession c;
+    c.fd = Connect(argv[2], std::atoi(argv[3]));
+    if (c.fd < 0)
+        return 6;
+    const uint64_t player = std::strtoull(argv[4], nullptr, 10);
+    const std::string password = argv[5];
+    c.st.map_instance_id = std::strtoull(argv[6], nullptr, 10);
+    const float x = std::strtof(argv[7], nullptr);
+    const float y = std::strtof(argv[8], nullptr);
+    const float z = std::strtof(argv[9], nullptr);
+    const float yaw = argc >= 11 ? std::strtof(argv[10], nullptr) : 0.f;
+    if (!DoLoginExisting(c.fd, player, "e2e-move", password, &c.st)) {
+        ::close(c.fd);
+        return 12;
+    }
+    const bool ok = DoMoveTo(&c, x, y, z, yaw, nullptr);
+    ::close(c.fd);
+    return ok ? 0 : 13;
+}
+
+int CmdSendPlayerMail(int argc, char **argv) {
+    if (argc < 9)
+        return 2;
+    TcpSession c;
+    c.fd = Connect(argv[2], std::atoi(argv[3]));
+    if (c.fd < 0)
+        return 6;
+    const uint64_t player = std::strtoull(argv[4], nullptr, 10);
+    const std::string password = argv[5];
+    const uint64_t receiver = std::strtoull(argv[6], nullptr, 10);
+    const std::string title = argv[7];
+    const std::string body = argv[8];
+    const std::string op = argc >= 10 ? argv[9]
+                                      : ("mail:" + std::to_string(player) + ":" +
+                                         std::to_string(::getpid()));
+    if (!DoLoginExisting(c.fd, player, "e2e-mail", password, &c.st)) {
+        ::close(c.fd);
+        return 12;
+    }
+    uint64_t mid = 0;
+    const bool ok = DoPlayerMailSend(&c, receiver, title, body, op, &mid);
+    ::close(c.fd);
+    return ok ? 0 : 13;
+}
+
+int CmdMailList(int argc, char **argv) {
+    if (argc < 6)
+        return 2;
+    TcpSession c;
+    c.fd = Connect(argv[2], std::atoi(argv[3]));
+    if (c.fd < 0)
+        return 6;
+    if (!DoLoginExisting(c.fd, std::strtoull(argv[4], nullptr, 10), "e2e-ml", argv[5], &c.st)) {
+        ::close(c.fd);
+        return 12;
+    }
+    uint64_t first = 0;
+    int n = 0;
+    const bool ok = DoMailList(&c, &first, &n);
+    if (ok && first != 0)
+        PrintKv("mail_list_first_id", first);
+    ::close(c.fd);
+    return ok ? 0 : 13;
+}
+
+int CmdUnityContractCheck(int argc, char **argv) {
+    if (argc < 4)
+        return 2;
+    const char *host = argv[2];
+    const int port = std::atoi(argv[3]);
+    const std::string device = argc >= 5 ? argv[4] : ("e2e-uc-" + std::to_string(::getpid()));
+    const std::string password = argc >= 6 ? argv[5] : "e2epass1";
+    TcpSession c;
+    if (!OpenRegister(&c, host, port, device, password)) {
+        if (c.fd >= 0)
+            ::close(c.fd);
+        return 12;
+    }
+    game::PlayerAttributes attrs;
+    if (!DoGetSelfProfile(&c, &attrs) || attrs.player_name() == "player") {
+        std::printf("error=profile_incomplete_or_default\n");
+        std::fflush(stdout);
+        ::close(c.fd);
+        return 18;
+    }
+    PrintKv("csharp_namespace", std::string("GameMesh.Protocol"));
+    PrintKv("enter_map_req_sha256_field", 6);
+    PrintKv("aoi_delta_field", 62);
+    PrintKv("mailbox_changed_field", 64);
+
+    game::GameRequest bad;
+    auto *e = bad.mutable_enter_map();
+    e->set_player_id(c.st.player_id);
+    e->set_realm_id(1);
+    e->set_map_template_id(1001);
+    e->set_map_instance_id(0);
+    e->set_map_data_version(1);
+    e->set_map_data_sha256("ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff");
+    e->set_operation_id("mismatch:" + std::to_string(c.st.player_id));
+    game::GameResponse br;
+    if (!Rpc(&c, &bad, &br, 15000)) {
+        std::printf("error=mismatch_no_response\n");
+        std::fflush(stdout);
+        ::close(c.fd);
+        return 19;
+    }
+    const bool mismatch = !br.ok() && br.message().find("ERR_MAP_DATA_MISMATCH") != std::string::npos;
+    PrintKv("map_hash_mismatch_rejected", mismatch);
+    if (br.has_enter_map() && !br.enter_map().map_data_sha256().empty())
+        PrintKv("server_map_sha256", br.enter_map().map_data_sha256());
+    if (!mismatch) {
+        std::printf("error=expected_map_data_mismatch got=%s\n", br.message().c_str());
+        std::fflush(stdout);
+        ::close(c.fd);
+        return 19;
+    }
+    if (!DoEnterMap(&c, 1001, 0)) {
+        ::close(c.fd);
+        return 13;
+    }
+    PrintKv("unity_contract_ok", 1);
+    ::close(c.fd);
+    return 0;
+}
+
+int CmdTwoPlayerAoi(int argc, char **argv) {
+    if (argc < 6)
+        return 2;
+    const char *h0 = argv[2];
+    const int p0 = std::atoi(argv[3]);
+    const char *h1 = argv[4];
+    const int p1 = std::atoi(argv[5]);
+    const uint64_t tpl = argc >= 7 ? std::strtoull(argv[6], nullptr, 10) : 1001ULL;
+    const std::string pass = "e2epass1";
+    TcpSession a, b;
+    if (!OpenRegister(&a, h0, p0, "e2e-aoi-a-" + std::to_string(::getpid()), pass)) {
+        if (a.fd >= 0)
+            ::close(a.fd);
+        return 12;
+    }
+    if (!OpenRegister(&b, h1, p1, "e2e-aoi-b-" + std::to_string(::getpid()), pass)) {
+        if (b.fd >= 0)
+            ::close(b.fd);
+        ::close(a.fd);
+        return 12;
+    }
+    if (a.st.player_id == b.st.player_id) {
+        std::printf("error=same_player_id\n");
+        std::fflush(stdout);
+        ::close(a.fd);
+        ::close(b.fd);
+        return 20;
+    }
+    game::PlayerAttributes pa, pb;
+    if (!DoGetSelfProfile(&a, &pa) || !DoGetSelfProfile(&b, &pb)) {
+        ::close(a.fd);
+        ::close(b.fd);
+        return 18;
+    }
+    if (!DoEnterMap(&a, tpl, 0)) {
+        ::close(a.fd);
+        ::close(b.fd);
+        return 13;
+    }
+    DrainPushes(&a, 300);
+    if (!DoEnterMap(&b, tpl, 0)) {
+        ::close(a.fd);
+        ::close(b.fd);
+        return 13;
+    }
+    PrintKv("a_map_instance_id", a.st.map_instance_id);
+    PrintKv("b_map_instance_id", b.st.map_instance_id);
+    PrintKv("a_owner", a.st.logic_id);
+    PrintKv("b_owner", b.st.logic_id);
+    if (a.st.map_instance_id == 0 || a.st.map_instance_id != b.st.map_instance_id ||
+        a.st.logic_id != b.st.logic_id) {
+        std::printf("error=not_same_instance_or_owner\n");
+        std::fflush(stdout);
+        ::close(a.fd);
+        ::close(b.fd);
+        return 21;
+    }
+    PrintKv("same_instance", 1);
+    PrintKv("same_owner", 1);
+    PrintKv("a_inbox_after_enter", static_cast<uint64_t>(a.inbox.size()));
+    PrintKv("a_last_seq_after_enter", a.st.last_server_seq);
+
+    DrainPushes(&a, 2000);
+    PrintKv("a_inbox_after_b_enter", static_cast<uint64_t>(a.inbox.size()));
+    PrintKv("a_last_seq_after_b_enter", a.st.last_server_seq);
+
+    game::EntitySnapshot snap;
+    int seen = 0;
+    const bool b_saw_a =
+        SnapshotHas(b.st, a.st.player_id) || WaitAoi(&b, 1, a.st.player_id, 8000, &snap, &seen);
+    PrintKv("b_aoi_enter_a", b_saw_a);
+    const bool a_saw_b =
+        SnapshotHas(a.st, b.st.player_id) || WaitAoi(&a, 1, b.st.player_id, 8000, &snap, &seen);
+    PrintKv("a_aoi_enter_b", a_saw_b);
+    if (!b_saw_a || !a_saw_b) {
+        std::printf("error=missing_mutual_aoi_enter\n");
+        std::fflush(stdout);
+        ::close(a.fd);
+        ::close(b.fd);
+        return 22;
+    }
+
+    const float nx = a.st.spawn_x + 1.0f;
+    game::MoveRsp mv;
+    if (!DoMoveTo(&a, nx, a.st.spawn_y, a.st.spawn_z, a.st.spawn_yaw, &mv)) {
+        ::close(a.fd);
+        ::close(b.fd);
+        return 23;
+    }
+    game::EntitySnapshot moved;
+    if (!WaitAoi(&b, 2, a.st.player_id, 8000, &moved, &seen)) {
+        std::printf("error=missing_aoi_move\n");
+        std::fflush(stdout);
+        ::close(a.fd);
+        ::close(b.fd);
+        return 24;
+    }
+    PrintKv("b_aoi_move_player", moved.player_id());
+    PrintKv("b_aoi_move_state_seq", moved.state_seq());
+    PrintKv("b_aoi_move_x", std::to_string(moved.position().x()));
+    if (moved.player_id() != a.st.player_id || moved.state_seq() == 0) {
+        std::printf("error=aoi_move_fields\n");
+        std::fflush(stdout);
+        ::close(a.fd);
+        ::close(b.fd);
+        return 24;
+    }
+    if (std::fabs(moved.position().x() - nx) > 0.5f) {
+        std::printf("error=aoi_move_coord\n");
+        std::fflush(stdout);
+        ::close(a.fd);
+        ::close(b.fd);
+        return 24;
+    }
+    PrintKv("aoi_move_ok", 1);
+
+    const std::string mail_body = "hello-from-a";
+    uint64_t mail_id = 0;
+    if (!DoPlayerMailSend(&a, b.st.player_id, "s3-mail", mail_body,
+                          "s3mail:" + std::to_string(a.st.player_id) + ":" +
+                              std::to_string(::getpid()),
+                          &mail_id)) {
+        ::close(a.fd);
+        ::close(b.fd);
+        return 25;
+    }
+    const auto mail_deadline =
+        std::chrono::steady_clock::now() + std::chrono::milliseconds(8000);
+    bool got_notify = FindMailboxChanged(b.inbox, b.st.player_id);
+    while (!got_notify && RemainingMs(mail_deadline) > 0)
+        DrainPushes(&b, 300), got_notify = FindMailboxChanged(b.inbox, b.st.player_id);
+    PrintKv("mailbox_changed", got_notify);
+    uint64_t listed = mail_id;
+    int list_n = 0;
+    if (!DoMailList(&b, &listed, &list_n) || list_n <= 0) {
+        std::printf("error=mail_list_empty\n");
+        std::fflush(stdout);
+        ::close(a.fd);
+        ::close(b.fd);
+        return 25;
+    }
+    const uint64_t get_id = mail_id != 0 ? mail_id : listed;
+    std::string got_body;
+    if (!DoMailGet(&b, get_id, &got_body) || got_body != mail_body) {
+        std::printf("error=mail_body_mismatch got=%s\n", got_body.c_str());
+        std::fflush(stdout);
+        ::close(a.fd);
+        ::close(b.fd);
+        return 25;
+    }
+    PrintKv("mail_e2e_ok", 1);
+
+    const uint64_t old_map = a.st.map_instance_id;
+    const std::string old_owner = a.st.logic_id;
+    ::close(a.fd);
+    a.fd = -1;
+    PrintKv("a_gw0_closed", 1);
+    ::usleep(120000);
+    game::EntitySnapshot left;
+    const bool b_leave = WaitAoi(&b, 3, a.st.player_id, 8000, &left, &seen);
+    PrintKv("b_aoi_leave_on_disconnect", b_leave);
+
+    const size_t reconnect_from = b.inbox.size();
+    a.fd = Connect(h1, p1);
+    if (a.fd < 0) {
+        std::perror("connect gw1");
+        ::close(b.fd);
+        return 7;
+    }
+    int replay_n = 0;
+    bool need_snap = false;
+    if (!DoReconnect(a.fd, &a.st, a.st.last_server_seq, &replay_n, &need_snap)) {
+        ::close(a.fd);
+        ::close(b.fd);
+        return 14;
+    }
+    DrainPushes(&a, 800);
+    DrainPushes(&b, 800);
+    game::EntitySnapshot reenter;
+    const bool b_reenter = WaitAoi(&b, 1, a.st.player_id, 8000, &reenter, &seen, reconnect_from);
+    PrintKv("b_aoi_enter_on_reconnect", b_reenter);
+    PrintKv("reconnect_same_map", old_map);
+    PrintKv("reconnect_owner", old_owner);
+    int enter_n = 0;
+    FindAoiEvent(b.inbox, 1, a.st.player_id, nullptr, &enter_n, reconnect_from);
+    PrintKv("b_enter_events_for_a", static_cast<uint64_t>(enter_n));
+    PrintKv("duplicate_entity", enter_n > 1 ? 1 : 0);
+    if (!b_reenter) {
+        std::printf("error=aoi_not_restored_after_reconnect\n");
+        std::fflush(stdout);
+        ::close(a.fd);
+        ::close(b.fd);
+        return 26;
+    }
+    PrintKv("reconnect_aoi_restored", 1);
+
+    const size_t logout_from = b.inbox.size();
+    if (!DoLogout(&a)) {
+        ::close(a.fd);
+        ::close(b.fd);
+        return 27;
+    }
+    const bool b_leave_logout = WaitAoi(&b, 3, a.st.player_id, 8000, &left, &seen, logout_from);
+    PrintKv("b_aoi_leave_on_logout", b_leave_logout);
+    ::close(a.fd);
+    a.fd = Connect(h1, p1);
+    bool session_released = false;
+    if (a.fd >= 0) {
+        int rn = 0;
+        bool snap = false;
+        SessionState stale = a.st;
+        const bool rec = DoReconnect(a.fd, &stale, stale.last_server_seq, &rn, &snap);
+        session_released = !rec;
+        PrintKv("reconnect_after_logout", rec);
+        ::close(a.fd);
+        a.fd = -1;
+    }
+    PrintKv("session_released", session_released);
+    if (!b_leave_logout || !session_released) {
+        std::printf("error=logout_did_not_release\n");
+        std::fflush(stdout);
+        ::close(b.fd);
+        return 27;
+    }
+    PrintKv("two_player_aoi_ok", 1);
+    ::close(b.fd);
+    return 0;
+}
+
+int CmdMapCapacity51(int argc, char **argv) {
+    if (argc < 4)
+        return 2;
+    const char *host = argv[2];
+    const int port = std::atoi(argv[3]);
+    const uint64_t tpl = argc >= 5 ? std::strtoull(argv[4], nullptr, 10) : 1001ULL;
+    const int n = argc >= 6 ? std::atoi(argv[5]) : 51;
+    if (n < 2 || n > 80)
+        return 2;
+    std::vector<TcpSession> ss(static_cast<size_t>(n));
+    std::unordered_map<uint64_t, int> counts;
+    std::unordered_map<uint64_t, std::string> owners;
+    int opened = 0;
+    for (int i = 0; i < n; ++i) {
+        auto &c = ss[static_cast<size_t>(i)];
+        const std::string device =
+            "e2e-cap-" + std::to_string(::getpid()) + "-" + std::to_string(i);
+        if (!OpenRegister(&c, host, port, device, "e2epass1")) {
+            std::printf("error=capacity_register i=%d\n", i);
+            std::fflush(stdout);
+            break;
+        }
+        if (!DoEnterMap(&c, tpl, 0)) {
+            std::printf("error=capacity_enter i=%d\n", i);
+            std::fflush(stdout);
+            break;
+        }
+        ++opened;
+        counts[c.st.map_instance_id] += 1;
+        owners[c.st.map_instance_id] = c.st.logic_id;
+        PrintKv(("cap_i" + std::to_string(i) + "_map").c_str(), c.st.map_instance_id);
+    }
+    int max_n = 0;
+    for (const auto &kv : counts) {
+        if (kv.second > max_n)
+            max_n = kv.second;
+        PrintKv(("occ_" + std::to_string(kv.first)).c_str(), static_cast<uint64_t>(kv.second));
+        PrintKv(("owner_" + std::to_string(kv.first)).c_str(), owners[kv.first]);
+    }
+    PrintKv("capacity_players", static_cast<uint64_t>(opened));
+    PrintKv("capacity_instances", static_cast<uint64_t>(counts.size()));
+    PrintKv("max_instance_n", static_cast<uint64_t>(max_n));
+    const bool ok = opened == n && counts.size() >= 2 && max_n <= 50;
+    PrintKv("map_capacity_ok", ok);
+    for (auto &c : ss) {
+        if (c.fd >= 0)
+            ::close(c.fd);
+    }
+    if (!ok) {
+        std::printf("error=capacity_gate opened=%d instances=%zu max=%d\n", opened, counts.size(),
+                    max_n);
+        std::fflush(stdout);
+        return 28;
+    }
+    return 0;
+}
+
 }  // namespace
 
 int main(int argc, char **argv) {
     if (argc < 2) {
         std::fprintf(stderr,
                      "usage: %s <register-login|enter-map|reconnect|dual-gw|drain-login|"
-                     "hold-kill-reconnect> ...\n",
+                     "hold-kill-reconnect|register-login-profile|enter-public-map|move|"
+                     "send-player-mail|mail-list|two-player-aoi|map-capacity-51|"
+                     "unity-contract-check|login-profile> ...\n",
                      argv[0]);
         return 2;
     }
@@ -579,6 +1581,24 @@ int main(int argc, char **argv) {
         return CmdDrainLogin(argc, argv);
     if (cmd == "hold-kill-reconnect")
         return CmdHoldKillReconnect(argc, argv);
+    if (cmd == "register-login-profile")
+        return CmdRegisterLoginProfile(argc, argv);
+    if (cmd == "login-profile")
+        return CmdLoginProfile(argc, argv);
+    if (cmd == "enter-public-map")
+        return CmdEnterPublicMap(argc, argv);
+    if (cmd == "move")
+        return CmdMove(argc, argv);
+    if (cmd == "send-player-mail")
+        return CmdSendPlayerMail(argc, argv);
+    if (cmd == "mail-list")
+        return CmdMailList(argc, argv);
+    if (cmd == "two-player-aoi")
+        return CmdTwoPlayerAoi(argc, argv);
+    if (cmd == "map-capacity-51")
+        return CmdMapCapacity51(argc, argv);
+    if (cmd == "unity-contract-check")
+        return CmdUnityContractCheck(argc, argv);
     std::fprintf(stderr, "unknown cmd %s\n", cmd.c_str());
     return 2;
 }

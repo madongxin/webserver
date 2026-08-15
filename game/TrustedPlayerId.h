@@ -15,7 +15,7 @@ enum class TrustedPlayerIdResult {
 };
 
 /** 当前 GameRequest oneof 中含 player_id 的分支数（测试锁定；含 login/reconnect；不含 mail_deliver） */
-inline constexpr int kTrustedPlayerIdBodyCaseCount = 24;
+inline constexpr int kTrustedPlayerIdBodyCaseCount = 27;
 
 inline bool GameRequestBodyHasPlayerId(game::GameRequest::BodyCase c) {
     switch (c) {
@@ -43,6 +43,9 @@ inline bool GameRequestBodyHasPlayerId(game::GameRequest::BodyCase c) {
     case game::GameRequest::kChatSend:
     case game::GameRequest::kFriendList:
     case game::GameRequest::kPushAck:
+    case game::GameRequest::kGetSelfProfile:
+    case game::GameRequest::kMove:
+    case game::GameRequest::kPlayerMailSend:
         return true;
     case game::GameRequest::kRegister:
     case game::GameRequest::BODY_NOT_SET:
@@ -101,6 +104,12 @@ inline uint64_t ReportedPlayerId(const game::GameRequest &req) {
         return req.friend_list().player_id();
     case game::GameRequest::kPushAck:
         return req.push_ack().player_id();
+    case game::GameRequest::kGetSelfProfile:
+        return req.get_self_profile().player_id();
+    case game::GameRequest::kMove:
+        return req.move().player_id();
+    case game::GameRequest::kPlayerMailSend:
+        return req.player_mail_send().sender_player_id();
     default:
         return 0;
     }
@@ -179,6 +188,15 @@ inline void SetBodyPlayerId(game::GameRequest *req, uint64_t pid) {
         break;
     case game::GameRequest::kPushAck:
         req->mutable_push_ack()->set_player_id(pid);
+        break;
+    case game::GameRequest::kGetSelfProfile:
+        req->mutable_get_self_profile()->set_player_id(pid);
+        break;
+    case game::GameRequest::kMove:
+        req->mutable_move()->set_player_id(pid);
+        break;
+    case game::GameRequest::kPlayerMailSend:
+        req->mutable_player_mail_send()->set_sender_player_id(pid);
         break;
     default:
         break;

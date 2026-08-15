@@ -2,9 +2,11 @@
 
 #include "AsyncMysqlGameDbRepository.h"
 #include "GameDbAssetStore.h"
+#include "GameService.h"
 #include "IGameDbRepository.h"
 #include "Logging.h"
 #include "PlayerAccountStore.h"
+#include "PlayerProfileStore.h"
 
 #include <brpc/controller.h>
 
@@ -351,5 +353,173 @@ void GameDbServiceImpl::FlushPlayer(::google::protobuf::RpcController *controlle
     response->set_ok(false);
     response->set_error_code("MYSQL_DISABLED");
     response->set_message("mysql not enabled");
+#endif
+}
+
+namespace {
+
+void RowToGdb(const PlayerProfileRow &row, gdb::PlayerProfile *out) {
+    if (!out)
+        return;
+    out->set_player_id(row.player_id);
+    out->set_player_name(row.player_name);
+    out->set_hp(row.hp);
+    out->set_max_hp(row.max_hp);
+    out->set_mp(row.mp);
+    out->set_max_mp(row.max_mp);
+    out->set_attack(row.attack);
+    out->set_spell_power(row.spell_power);
+    out->set_defense(row.defense);
+    out->set_magic_resistance(row.magic_resistance);
+    out->set_crit_chance(row.crit_chance);
+    out->set_crit_damage(row.crit_damage);
+    out->set_move_speed(row.move_speed);
+    out->set_attack_speed(row.attack_speed);
+    out->set_stats_version(row.stats_version);
+}
+
+PlayerProfileRow GdbToRow(const gdb::PlayerProfile &in) {
+    PlayerProfileRow row;
+    row.player_id = in.player_id();
+    row.player_name = in.player_name();
+    row.hp = in.hp();
+    row.max_hp = in.max_hp();
+    row.mp = in.mp();
+    row.max_mp = in.max_mp();
+    row.attack = in.attack();
+    row.spell_power = in.spell_power();
+    row.defense = in.defense();
+    row.magic_resistance = in.magic_resistance();
+    row.crit_chance = in.crit_chance();
+    row.crit_damage = in.crit_damage();
+    row.move_speed = in.move_speed();
+    row.attack_speed = in.attack_speed();
+    row.stats_version = in.stats_version();
+    row.exists = true;
+    return row;
+}
+
+}  // namespace
+
+void GameDbServiceImpl::LoadPlayerProfile(::google::protobuf::RpcController *controller,
+                                          const ::gdb::LoadPlayerProfileReq *request,
+                                          ::gdb::LoadPlayerProfileRsp *response,
+                                          ::google::protobuf::Closure *done) {
+    (void)controller;
+    brpc::ClosureGuard done_guard(done);
+    response->Clear();
+    if (!request || request->player_id() == 0) {
+        response->set_ok(false);
+        response->set_error_code("INVALID_ARG");
+        response->set_message("player_id required");
+        return;
+    }
+#ifdef WEBSERVER_ENABLE_MYSQL
+    PlayerProfileStore::Instance().EnsureTable();
+    PlayerProfileRow row;
+    std::string err;
+    if (!PlayerProfileStore::Instance().Load(request->player_id(), &row, &err)) {
+        response->set_ok(false);
+        response->set_error_code("DB_UNAVAILABLE");
+        response->set_message(err);
+        return;
+    }
+    if (!row.exists && request->ensure_default()) {
+        AccountAuthRow acc;
+        std::string name = "player";
+        if (PlayerAccountStore::Instance().LoadAuth(request->player_id(), &acc) && acc.exists &&
+            !acc.display_name.empty())
+            name = acc.display_name;
+        if (!acc.exists) {
+            response->set_ok(false);
+            response->set_exists(false);
+            response->set_error_code("ACCOUNT_NOT_FOUND");
+            response->set_message("account not found");
+            return;
+        }
+        if (!PlayerProfileStore::Instance().EnsureDefault(request->player_id(), name, &err)) {
+            response->set_ok(false);
+            response->set_error_code("PROFILE_ENSURE_FAILED");
+            response->set_message(err);
+            return;
+        }
+        if (!PlayerProfileStore::Instance().Load(request->player_id(), &row, &err) || !row.exists) {
+            response->set_ok(false);
+            response->set_error_code("PROFILE_ENSURE_FAILED");
+            response->set_message(err.empty() ? "profile missing after ensure" : err);
+            return;
+        }
+    }
+    response->set_ok(true);
+    response->set_exists(row.exists);
+    response->set_message(row.exists ? "ok" : "not found");
+    if (!row.exists)
+        response->set_error_code("ERR_PROFILE_NOT_FOUND");
+    else
+        RowToGdb(row, response->mutable_profile());
+#else
+    response->set_ok(false);
+    response->set_error_code("MYSQL_DISABLED");
+    response->set_message("mysql not enabled");
+#endif
+}
+
+void GameDbServiceImpl::SavePlayerProfile(::google::protobuf::RpcController *controller,
+                                          const ::gdb::SavePlayerProfileReq *request,
+                                          ::gdb::SavePlayerProfileRsp *response,
+                                          ::google::protobuf::Closure *done) {
+    (void)controller;
+    brpc::ClosureGuard done_guard(done);
+    response->Clear();
+    if (!request || !request->has_profile() || request->profile().player_id() == 0) {
+        response->set_ok(false);
+        response->set_error_code("INVALID_ARG");
+        response->set_message("profile.player_id required");
+        return;
+    }
+#ifdef WEBSERVER_ENABLE_MYSQL
+    PlayerProfileRow row = GdbToRow(request->profile());
+    uint64_t ver = 0;
+    std::string err, code;
+    if (!PlayerProfileStore::Instance().Save(row, request->expected_stats_version(), &ver, &err,
+                                             &code)) {
+        response->set_ok(false);
+        response->set_error_code(code.empty() ? "SAVE_FAILED" : code);
+        response->set_message(err);
+        return;
+    }
+    response->set_ok(true);
+    response->set_message("ok");
+    response->set_stats_version(ver);
+#else
+    response->set_ok(false);
+    response->set_error_code("MYSQL_DISABLED");
+    response->set_message("mysql not enabled");
+#endif
+}
+
+void GameDbServiceImpl::HandleGameFrame(::google::protobuf::RpcController *controller,
+                                        const ::gdb::HandleGameFrameReq *request,
+                                        ::gdb::HandleGameFrameRsp *response,
+                                        ::google::protobuf::Closure *done) {
+    (void)controller;
+    brpc::ClosureGuard done_guard(done);
+    response->Clear();
+    if (!request || request->request_payload().empty()) {
+        response->set_ok(false);
+        response->set_message("empty payload");
+        return;
+    }
+#ifdef WEBSERVER_ENABLE_GAME_PROTOBUF
+    std::string out;
+    const bool ok = gameproto::HandleFrame(request->request_payload(), &out);
+    response->set_ok(ok);
+    response->set_message(ok ? "ok" : "handle_frame_failed");
+    if (!out.empty())
+        response->set_response_frame(out);
+#else
+    (void)request;
+    response->set_ok(false);
+    response->set_message("protobuf disabled");
 #endif
 }
