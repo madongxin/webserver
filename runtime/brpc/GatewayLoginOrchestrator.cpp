@@ -423,14 +423,25 @@ bool OrchestrateGatewayReconnect(const std::string &gateway_instance_id, uint64_
             snap_rsp.set_ok(true);
             snap_rsp.set_message("full_snapshot");
             auto *fs = snap_rsp.mutable_full_snapshot();
-            fs->set_ok(true);
-            fs->set_message("FULL_SNAPSHOT");
-            fs->set_player_id(req.reconnect().player_id());
-            fs->set_asset_version(xrsp.snapshot().state().asset_version());
-            for (const auto &it : xrsp.snapshot().state().bag()) {
-                fs->add_item_ids(it.item_id());
-                fs->add_item_counts(it.count());
+            bool filled = false;
+            if (!xrsp.public_full_snapshot().empty() &&
+                fs->ParseFromString(xrsp.public_full_snapshot()) && fs->ok()) {
+                filled = true;
+            } else {
+                fs->set_ok(true);
+                fs->set_message("FULL_SNAPSHOT");
+                fs->set_player_id(req.reconnect().player_id());
+                fs->set_asset_version(xrsp.snapshot().state().asset_version());
+                for (const auto &it : xrsp.snapshot().state().bag()) {
+                    fs->add_item_ids(it.item_id());
+                    fs->add_item_counts(it.count());
+                }
+                filled = fs->ok() && (fs->player_id() != 0);
             }
+            if (!filled) {
+                body->set_need_full_snapshot(true);
+                body->set_message("reconnect ok; full_snapshot_empty_retry");
+            } else {
             std::string snap_payload;
             uint64_t seq = 0;
             bool stored = true;
@@ -481,6 +492,7 @@ bool OrchestrateGatewayReconnect(const std::string &gateway_instance_id, uint64_
                     route_out->pending_push_payloads.push_back(std::move(env_bytes));
                 else
                     route_out->pending_push_payloads.push_back(std::move(snap_payload));
+            }
             }
         }
     }

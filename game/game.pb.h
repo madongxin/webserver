@@ -36,7 +36,7 @@ namespace protobuf_game_2eproto {
 struct TableStruct {
   static const ::google::protobuf::internal::ParseTableField entries[];
   static const ::google::protobuf::internal::AuxillaryParseTableField aux[];
-  static const ::google::protobuf::internal::ParseTable schema[73];
+  static const ::google::protobuf::internal::ParseTable schema[86];
   static const ::google::protobuf::internal::FieldMetadata field_metadata[];
   static const ::google::protobuf::internal::SerializationTable serialization_table[];
   static const ::google::protobuf::uint32 offsets[];
@@ -58,6 +58,12 @@ void InitDefaultsServerPushEnvelopeImpl();
 void InitDefaultsServerPushEnvelope();
 void InitDefaultsFullStateSnapshotRspImpl();
 void InitDefaultsFullStateSnapshotRsp();
+void InitDefaultsWorldSnapshotReqImpl();
+void InitDefaultsWorldSnapshotReq();
+void InitDefaultsRespawnReqImpl();
+void InitDefaultsRespawnReq();
+void InitDefaultsRespawnRspImpl();
+void InitDefaultsRespawnRsp();
 void InitDefaultsValidateSessionReqImpl();
 void InitDefaultsValidateSessionReq();
 void InitDefaultsValidateSessionRspImpl();
@@ -156,6 +162,8 @@ void InitDefaultsChatSendReqImpl();
 void InitDefaultsChatSendReq();
 void InitDefaultsChatSendRspImpl();
 void InitDefaultsChatSendRsp();
+void InitDefaultsChatNotifyImpl();
+void InitDefaultsChatNotify();
 void InitDefaultsFriendListReqImpl();
 void InitDefaultsFriendListReq();
 void InitDefaultsFriendListRspImpl();
@@ -170,6 +178,16 @@ void InitDefaultsGetSelfProfileReqImpl();
 void InitDefaultsGetSelfProfileReq();
 void InitDefaultsGetSelfProfileRspImpl();
 void InitDefaultsGetSelfProfileRsp();
+void InitDefaultsPlayerBriefImpl();
+void InitDefaultsPlayerBrief();
+void InitDefaultsGetPlayerBriefReqImpl();
+void InitDefaultsGetPlayerBriefReq();
+void InitDefaultsGetPlayerBriefRspImpl();
+void InitDefaultsGetPlayerBriefRsp();
+void InitDefaultsQueryOnlineStateReqImpl();
+void InitDefaultsQueryOnlineStateReq();
+void InitDefaultsQueryOnlineStateRspImpl();
+void InitDefaultsQueryOnlineStateRsp();
 void InitDefaultsMoveReqImpl();
 void InitDefaultsMoveReq();
 void InitDefaultsMoveRspImpl();
@@ -184,6 +202,14 @@ void InitDefaultsPlayerMailSendRspImpl();
 void InitDefaultsPlayerMailSendRsp();
 void InitDefaultsMailboxChangedNotifyImpl();
 void InitDefaultsMailboxChangedNotify();
+void InitDefaultsClientHelloReqImpl();
+void InitDefaultsClientHelloReq();
+void InitDefaultsServerHelloRspImpl();
+void InitDefaultsServerHelloRsp();
+void InitDefaultsHeartbeatReqImpl();
+void InitDefaultsHeartbeatReq();
+void InitDefaultsHeartbeatRspImpl();
+void InitDefaultsHeartbeatRsp();
 void InitDefaultsGameRequestImpl();
 void InitDefaultsGameRequest();
 void InitDefaultsGameResponseImpl();
@@ -197,6 +223,9 @@ inline void InitDefaults() {
   InitDefaultsPushAckRsp();
   InitDefaultsServerPushEnvelope();
   InitDefaultsFullStateSnapshotRsp();
+  InitDefaultsWorldSnapshotReq();
+  InitDefaultsRespawnReq();
+  InitDefaultsRespawnRsp();
   InitDefaultsValidateSessionReq();
   InitDefaultsValidateSessionRsp();
   InitDefaultsCheckOnlineReq();
@@ -246,6 +275,7 @@ inline void InitDefaults() {
   InitDefaultsMapPingRsp();
   InitDefaultsChatSendReq();
   InitDefaultsChatSendRsp();
+  InitDefaultsChatNotify();
   InitDefaultsFriendListReq();
   InitDefaultsFriendListRsp();
   InitDefaultsVec3();
@@ -253,6 +283,11 @@ inline void InitDefaults() {
   InitDefaultsEntitySnapshot();
   InitDefaultsGetSelfProfileReq();
   InitDefaultsGetSelfProfileRsp();
+  InitDefaultsPlayerBrief();
+  InitDefaultsGetPlayerBriefReq();
+  InitDefaultsGetPlayerBriefRsp();
+  InitDefaultsQueryOnlineStateReq();
+  InitDefaultsQueryOnlineStateRsp();
   InitDefaultsMoveReq();
   InitDefaultsMoveRsp();
   InitDefaultsAoiEvent();
@@ -260,6 +295,10 @@ inline void InitDefaults() {
   InitDefaultsPlayerMailSendReq();
   InitDefaultsPlayerMailSendRsp();
   InitDefaultsMailboxChangedNotify();
+  InitDefaultsClientHelloReq();
+  InitDefaultsServerHelloRsp();
+  InitDefaultsHeartbeatReq();
+  InitDefaultsHeartbeatRsp();
   InitDefaultsGameRequest();
   InitDefaultsGameResponse();
 }
@@ -271,6 +310,9 @@ extern AoiDeltaDefaultTypeInternal _AoiDelta_default_instance_;
 class AoiEvent;
 class AoiEventDefaultTypeInternal;
 extern AoiEventDefaultTypeInternal _AoiEvent_default_instance_;
+class ChatNotify;
+class ChatNotifyDefaultTypeInternal;
+extern ChatNotifyDefaultTypeInternal _ChatNotify_default_instance_;
 class ChatSendReq;
 class ChatSendReqDefaultTypeInternal;
 extern ChatSendReqDefaultTypeInternal _ChatSendReq_default_instance_;
@@ -283,6 +325,9 @@ extern CheckOnlineReqDefaultTypeInternal _CheckOnlineReq_default_instance_;
 class CheckOnlineRsp;
 class CheckOnlineRspDefaultTypeInternal;
 extern CheckOnlineRspDefaultTypeInternal _CheckOnlineRsp_default_instance_;
+class ClientHelloReq;
+class ClientHelloReqDefaultTypeInternal;
+extern ClientHelloReqDefaultTypeInternal _ClientHelloReq_default_instance_;
 class ConsumeItemReq;
 class ConsumeItemReqDefaultTypeInternal;
 extern ConsumeItemReqDefaultTypeInternal _ConsumeItemReq_default_instance_;
@@ -319,6 +364,12 @@ extern GameRequestDefaultTypeInternal _GameRequest_default_instance_;
 class GameResponse;
 class GameResponseDefaultTypeInternal;
 extern GameResponseDefaultTypeInternal _GameResponse_default_instance_;
+class GetPlayerBriefReq;
+class GetPlayerBriefReqDefaultTypeInternal;
+extern GetPlayerBriefReqDefaultTypeInternal _GetPlayerBriefReq_default_instance_;
+class GetPlayerBriefRsp;
+class GetPlayerBriefRspDefaultTypeInternal;
+extern GetPlayerBriefRspDefaultTypeInternal _GetPlayerBriefRsp_default_instance_;
 class GetSelfProfileReq;
 class GetSelfProfileReqDefaultTypeInternal;
 extern GetSelfProfileReqDefaultTypeInternal _GetSelfProfileReq_default_instance_;
@@ -331,6 +382,12 @@ extern GrantItemReqDefaultTypeInternal _GrantItemReq_default_instance_;
 class GrantItemRsp;
 class GrantItemRspDefaultTypeInternal;
 extern GrantItemRspDefaultTypeInternal _GrantItemRsp_default_instance_;
+class HeartbeatReq;
+class HeartbeatReqDefaultTypeInternal;
+extern HeartbeatReqDefaultTypeInternal _HeartbeatReq_default_instance_;
+class HeartbeatRsp;
+class HeartbeatRspDefaultTypeInternal;
+extern HeartbeatRspDefaultTypeInternal _HeartbeatRsp_default_instance_;
 class LeaveMapReq;
 class LeaveMapReqDefaultTypeInternal;
 extern LeaveMapReqDefaultTypeInternal _LeaveMapReq_default_instance_;
@@ -442,6 +499,9 @@ extern MoveRspDefaultTypeInternal _MoveRsp_default_instance_;
 class PlayerAttributes;
 class PlayerAttributesDefaultTypeInternal;
 extern PlayerAttributesDefaultTypeInternal _PlayerAttributes_default_instance_;
+class PlayerBrief;
+class PlayerBriefDefaultTypeInternal;
+extern PlayerBriefDefaultTypeInternal _PlayerBrief_default_instance_;
 class PlayerMailSendReq;
 class PlayerMailSendReqDefaultTypeInternal;
 extern PlayerMailSendReqDefaultTypeInternal _PlayerMailSendReq_default_instance_;
@@ -454,6 +514,12 @@ extern PushAckReqDefaultTypeInternal _PushAckReq_default_instance_;
 class PushAckRsp;
 class PushAckRspDefaultTypeInternal;
 extern PushAckRspDefaultTypeInternal _PushAckRsp_default_instance_;
+class QueryOnlineStateReq;
+class QueryOnlineStateReqDefaultTypeInternal;
+extern QueryOnlineStateReqDefaultTypeInternal _QueryOnlineStateReq_default_instance_;
+class QueryOnlineStateRsp;
+class QueryOnlineStateRspDefaultTypeInternal;
+extern QueryOnlineStateRspDefaultTypeInternal _QueryOnlineStateRsp_default_instance_;
 class ReconnectReq;
 class ReconnectReqDefaultTypeInternal;
 extern ReconnectReqDefaultTypeInternal _ReconnectReq_default_instance_;
@@ -472,6 +538,15 @@ extern ReleaseSkillReqDefaultTypeInternal _ReleaseSkillReq_default_instance_;
 class ReleaseSkillRsp;
 class ReleaseSkillRspDefaultTypeInternal;
 extern ReleaseSkillRspDefaultTypeInternal _ReleaseSkillRsp_default_instance_;
+class RespawnReq;
+class RespawnReqDefaultTypeInternal;
+extern RespawnReqDefaultTypeInternal _RespawnReq_default_instance_;
+class RespawnRsp;
+class RespawnRspDefaultTypeInternal;
+extern RespawnRspDefaultTypeInternal _RespawnRsp_default_instance_;
+class ServerHelloRsp;
+class ServerHelloRspDefaultTypeInternal;
+extern ServerHelloRspDefaultTypeInternal _ServerHelloRsp_default_instance_;
 class ServerPushEnvelope;
 class ServerPushEnvelopeDefaultTypeInternal;
 extern ServerPushEnvelopeDefaultTypeInternal _ServerPushEnvelope_default_instance_;
@@ -484,6 +559,9 @@ extern ValidateSessionRspDefaultTypeInternal _ValidateSessionRsp_default_instanc
 class Vec3;
 class Vec3DefaultTypeInternal;
 extern Vec3DefaultTypeInternal _Vec3_default_instance_;
+class WorldSnapshotReq;
+class WorldSnapshotReqDefaultTypeInternal;
+extern WorldSnapshotReqDefaultTypeInternal _WorldSnapshotReq_default_instance_;
 }  // namespace game
 namespace game {
 
@@ -1635,6 +1713,18 @@ class FullStateSnapshotRsp : public ::google::protobuf::Message /* @@protoc_inse
   ::google::protobuf::RepeatedField< ::google::protobuf::uint32 >*
       mutable_item_counts();
 
+  // repeated .game.EntitySnapshot aoi_entities = 16;
+  int aoi_entities_size() const;
+  void clear_aoi_entities();
+  static const int kAoiEntitiesFieldNumber = 16;
+  const ::game::EntitySnapshot& aoi_entities(int index) const;
+  ::game::EntitySnapshot* mutable_aoi_entities(int index);
+  ::game::EntitySnapshot* add_aoi_entities();
+  ::google::protobuf::RepeatedPtrField< ::game::EntitySnapshot >*
+      mutable_aoi_entities();
+  const ::google::protobuf::RepeatedPtrField< ::game::EntitySnapshot >&
+      aoi_entities() const;
+
   // string message = 2;
   void clear_message();
   static const int kMessageFieldNumber = 2;
@@ -1649,6 +1739,80 @@ class FullStateSnapshotRsp : public ::google::protobuf::Message /* @@protoc_inse
   ::std::string* release_message();
   void set_allocated_message(::std::string* message);
 
+  // string gamelogic_instance_id = 12;
+  void clear_gamelogic_instance_id();
+  static const int kGamelogicInstanceIdFieldNumber = 12;
+  const ::std::string& gamelogic_instance_id() const;
+  void set_gamelogic_instance_id(const ::std::string& value);
+  #if LANG_CXX11
+  void set_gamelogic_instance_id(::std::string&& value);
+  #endif
+  void set_gamelogic_instance_id(const char* value);
+  void set_gamelogic_instance_id(const char* value, size_t size);
+  ::std::string* mutable_gamelogic_instance_id();
+  ::std::string* release_gamelogic_instance_id();
+  void set_allocated_gamelogic_instance_id(::std::string* gamelogic_instance_id);
+
+  // string recovery_reason = 18;
+  void clear_recovery_reason();
+  static const int kRecoveryReasonFieldNumber = 18;
+  const ::std::string& recovery_reason() const;
+  void set_recovery_reason(const ::std::string& value);
+  #if LANG_CXX11
+  void set_recovery_reason(::std::string&& value);
+  #endif
+  void set_recovery_reason(const char* value);
+  void set_recovery_reason(const char* value, size_t size);
+  ::std::string* mutable_recovery_reason();
+  ::std::string* release_recovery_reason();
+  void set_allocated_recovery_reason(::std::string* recovery_reason);
+
+  // string life_state = 19;
+  void clear_life_state();
+  static const int kLifeStateFieldNumber = 19;
+  const ::std::string& life_state() const;
+  void set_life_state(const ::std::string& value);
+  #if LANG_CXX11
+  void set_life_state(::std::string&& value);
+  #endif
+  void set_life_state(const char* value);
+  void set_life_state(const char* value, size_t size);
+  ::std::string* mutable_life_state();
+  ::std::string* release_life_state();
+  void set_allocated_life_state(::std::string* life_state);
+
+  // string error_code = 20;
+  void clear_error_code();
+  static const int kErrorCodeFieldNumber = 20;
+  const ::std::string& error_code() const;
+  void set_error_code(const ::std::string& value);
+  #if LANG_CXX11
+  void set_error_code(::std::string&& value);
+  #endif
+  void set_error_code(const char* value);
+  void set_error_code(const char* value, size_t size);
+  ::std::string* mutable_error_code();
+  ::std::string* release_error_code();
+  void set_allocated_error_code(::std::string* error_code);
+
+  // .game.PlayerAttributes profile = 8;
+  bool has_profile() const;
+  void clear_profile();
+  static const int kProfileFieldNumber = 8;
+  const ::game::PlayerAttributes& profile() const;
+  ::game::PlayerAttributes* release_profile();
+  ::game::PlayerAttributes* mutable_profile();
+  void set_allocated_profile(::game::PlayerAttributes* profile);
+
+  // .game.EntitySnapshot self = 15;
+  bool has_self() const;
+  void clear_self();
+  static const int kSelfFieldNumber = 15;
+  const ::game::EntitySnapshot& self() const;
+  ::game::EntitySnapshot* release_self();
+  ::game::EntitySnapshot* mutable_self();
+  void set_allocated_self(::game::EntitySnapshot* self);
+
   // uint64 player_id = 3;
   void clear_player_id();
   static const int kPlayerIdFieldNumber = 3;
@@ -1661,17 +1825,53 @@ class FullStateSnapshotRsp : public ::google::protobuf::Message /* @@protoc_inse
   ::google::protobuf::uint64 asset_version() const;
   void set_asset_version(::google::protobuf::uint64 value);
 
+  // bool ok = 1;
+  void clear_ok();
+  static const int kOkFieldNumber = 1;
+  bool ok() const;
+  void set_ok(bool value);
+
+  // uint32 realm_id = 9;
+  void clear_realm_id();
+  static const int kRealmIdFieldNumber = 9;
+  ::google::protobuf::uint32 realm_id() const;
+  void set_realm_id(::google::protobuf::uint32 value);
+
   // uint64 baseline_server_seq = 7;
   void clear_baseline_server_seq();
   static const int kBaselineServerSeqFieldNumber = 7;
   ::google::protobuf::uint64 baseline_server_seq() const;
   void set_baseline_server_seq(::google::protobuf::uint64 value);
 
-  // bool ok = 1;
-  void clear_ok();
-  static const int kOkFieldNumber = 1;
-  bool ok() const;
-  void set_ok(bool value);
+  // uint64 map_template_id = 10;
+  void clear_map_template_id();
+  static const int kMapTemplateIdFieldNumber = 10;
+  ::google::protobuf::uint64 map_template_id() const;
+  void set_map_template_id(::google::protobuf::uint64 value);
+
+  // uint64 map_instance_id = 11;
+  void clear_map_instance_id();
+  static const int kMapInstanceIdFieldNumber = 11;
+  ::google::protobuf::uint64 map_instance_id() const;
+  void set_map_instance_id(::google::protobuf::uint64 value);
+
+  // uint64 owner_epoch = 13;
+  void clear_owner_epoch();
+  static const int kOwnerEpochFieldNumber = 13;
+  ::google::protobuf::uint64 owner_epoch() const;
+  void set_owner_epoch(::google::protobuf::uint64 value);
+
+  // uint64 route_version = 14;
+  void clear_route_version();
+  static const int kRouteVersionFieldNumber = 14;
+  ::google::protobuf::uint64 route_version() const;
+  void set_route_version(::google::protobuf::uint64 value);
+
+  // uint32 snapshot_version = 17;
+  void clear_snapshot_version();
+  static const int kSnapshotVersionFieldNumber = 17;
+  ::google::protobuf::uint32 snapshot_version() const;
+  void set_snapshot_version(::google::protobuf::uint32 value);
 
   // @@protoc_insertion_point(class_scope:game.FullStateSnapshotRsp)
  private:
@@ -1681,14 +1881,408 @@ class FullStateSnapshotRsp : public ::google::protobuf::Message /* @@protoc_inse
   mutable int _item_ids_cached_byte_size_;
   ::google::protobuf::RepeatedField< ::google::protobuf::uint32 > item_counts_;
   mutable int _item_counts_cached_byte_size_;
+  ::google::protobuf::RepeatedPtrField< ::game::EntitySnapshot > aoi_entities_;
   ::google::protobuf::internal::ArenaStringPtr message_;
+  ::google::protobuf::internal::ArenaStringPtr gamelogic_instance_id_;
+  ::google::protobuf::internal::ArenaStringPtr recovery_reason_;
+  ::google::protobuf::internal::ArenaStringPtr life_state_;
+  ::google::protobuf::internal::ArenaStringPtr error_code_;
+  ::game::PlayerAttributes* profile_;
+  ::game::EntitySnapshot* self_;
   ::google::protobuf::uint64 player_id_;
   ::google::protobuf::uint64 asset_version_;
-  ::google::protobuf::uint64 baseline_server_seq_;
   bool ok_;
+  ::google::protobuf::uint32 realm_id_;
+  ::google::protobuf::uint64 baseline_server_seq_;
+  ::google::protobuf::uint64 map_template_id_;
+  ::google::protobuf::uint64 map_instance_id_;
+  ::google::protobuf::uint64 owner_epoch_;
+  ::google::protobuf::uint64 route_version_;
+  ::google::protobuf::uint32 snapshot_version_;
   mutable int _cached_size_;
   friend struct ::protobuf_game_2eproto::TableStruct;
   friend void ::protobuf_game_2eproto::InitDefaultsFullStateSnapshotRspImpl();
+};
+// -------------------------------------------------------------------
+
+class WorldSnapshotReq : public ::google::protobuf::Message /* @@protoc_insertion_point(class_definition:game.WorldSnapshotReq) */ {
+ public:
+  WorldSnapshotReq();
+  virtual ~WorldSnapshotReq();
+
+  WorldSnapshotReq(const WorldSnapshotReq& from);
+
+  inline WorldSnapshotReq& operator=(const WorldSnapshotReq& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  #if LANG_CXX11
+  WorldSnapshotReq(WorldSnapshotReq&& from) noexcept
+    : WorldSnapshotReq() {
+    *this = ::std::move(from);
+  }
+
+  inline WorldSnapshotReq& operator=(WorldSnapshotReq&& from) noexcept {
+    if (GetArenaNoVirtual() == from.GetArenaNoVirtual()) {
+      if (this != &from) InternalSwap(&from);
+    } else {
+      CopyFrom(from);
+    }
+    return *this;
+  }
+  #endif
+  static const ::google::protobuf::Descriptor* descriptor();
+  static const WorldSnapshotReq& default_instance();
+
+  static void InitAsDefaultInstance();  // FOR INTERNAL USE ONLY
+  static inline const WorldSnapshotReq* internal_default_instance() {
+    return reinterpret_cast<const WorldSnapshotReq*>(
+               &_WorldSnapshotReq_default_instance_);
+  }
+  static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
+    8;
+
+  void Swap(WorldSnapshotReq* other);
+  friend void swap(WorldSnapshotReq& a, WorldSnapshotReq& b) {
+    a.Swap(&b);
+  }
+
+  // implements Message ----------------------------------------------
+
+  inline WorldSnapshotReq* New() const PROTOBUF_FINAL { return New(NULL); }
+
+  WorldSnapshotReq* New(::google::protobuf::Arena* arena) const PROTOBUF_FINAL;
+  void CopyFrom(const ::google::protobuf::Message& from) PROTOBUF_FINAL;
+  void MergeFrom(const ::google::protobuf::Message& from) PROTOBUF_FINAL;
+  void CopyFrom(const WorldSnapshotReq& from);
+  void MergeFrom(const WorldSnapshotReq& from);
+  void Clear() PROTOBUF_FINAL;
+  bool IsInitialized() const PROTOBUF_FINAL;
+
+  size_t ByteSizeLong() const PROTOBUF_FINAL;
+  bool MergePartialFromCodedStream(
+      ::google::protobuf::io::CodedInputStream* input) PROTOBUF_FINAL;
+  void SerializeWithCachedSizes(
+      ::google::protobuf::io::CodedOutputStream* output) const PROTOBUF_FINAL;
+  ::google::protobuf::uint8* InternalSerializeWithCachedSizesToArray(
+      bool deterministic, ::google::protobuf::uint8* target) const PROTOBUF_FINAL;
+  int GetCachedSize() const PROTOBUF_FINAL { return _cached_size_; }
+  private:
+  void SharedCtor();
+  void SharedDtor();
+  void SetCachedSize(int size) const PROTOBUF_FINAL;
+  void InternalSwap(WorldSnapshotReq* other);
+  private:
+  inline ::google::protobuf::Arena* GetArenaNoVirtual() const {
+    return NULL;
+  }
+  inline void* MaybeArenaPtr() const {
+    return NULL;
+  }
+  public:
+
+  ::google::protobuf::Metadata GetMetadata() const PROTOBUF_FINAL;
+
+  // nested types ----------------------------------------------------
+
+  // accessors -------------------------------------------------------
+
+  // uint64 player_id = 1;
+  void clear_player_id();
+  static const int kPlayerIdFieldNumber = 1;
+  ::google::protobuf::uint64 player_id() const;
+  void set_player_id(::google::protobuf::uint64 value);
+
+  // uint64 last_applied_server_seq = 2;
+  void clear_last_applied_server_seq();
+  static const int kLastAppliedServerSeqFieldNumber = 2;
+  ::google::protobuf::uint64 last_applied_server_seq() const;
+  void set_last_applied_server_seq(::google::protobuf::uint64 value);
+
+  // @@protoc_insertion_point(class_scope:game.WorldSnapshotReq)
+ private:
+
+  ::google::protobuf::internal::InternalMetadataWithArena _internal_metadata_;
+  ::google::protobuf::uint64 player_id_;
+  ::google::protobuf::uint64 last_applied_server_seq_;
+  mutable int _cached_size_;
+  friend struct ::protobuf_game_2eproto::TableStruct;
+  friend void ::protobuf_game_2eproto::InitDefaultsWorldSnapshotReqImpl();
+};
+// -------------------------------------------------------------------
+
+class RespawnReq : public ::google::protobuf::Message /* @@protoc_insertion_point(class_definition:game.RespawnReq) */ {
+ public:
+  RespawnReq();
+  virtual ~RespawnReq();
+
+  RespawnReq(const RespawnReq& from);
+
+  inline RespawnReq& operator=(const RespawnReq& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  #if LANG_CXX11
+  RespawnReq(RespawnReq&& from) noexcept
+    : RespawnReq() {
+    *this = ::std::move(from);
+  }
+
+  inline RespawnReq& operator=(RespawnReq&& from) noexcept {
+    if (GetArenaNoVirtual() == from.GetArenaNoVirtual()) {
+      if (this != &from) InternalSwap(&from);
+    } else {
+      CopyFrom(from);
+    }
+    return *this;
+  }
+  #endif
+  static const ::google::protobuf::Descriptor* descriptor();
+  static const RespawnReq& default_instance();
+
+  static void InitAsDefaultInstance();  // FOR INTERNAL USE ONLY
+  static inline const RespawnReq* internal_default_instance() {
+    return reinterpret_cast<const RespawnReq*>(
+               &_RespawnReq_default_instance_);
+  }
+  static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
+    9;
+
+  void Swap(RespawnReq* other);
+  friend void swap(RespawnReq& a, RespawnReq& b) {
+    a.Swap(&b);
+  }
+
+  // implements Message ----------------------------------------------
+
+  inline RespawnReq* New() const PROTOBUF_FINAL { return New(NULL); }
+
+  RespawnReq* New(::google::protobuf::Arena* arena) const PROTOBUF_FINAL;
+  void CopyFrom(const ::google::protobuf::Message& from) PROTOBUF_FINAL;
+  void MergeFrom(const ::google::protobuf::Message& from) PROTOBUF_FINAL;
+  void CopyFrom(const RespawnReq& from);
+  void MergeFrom(const RespawnReq& from);
+  void Clear() PROTOBUF_FINAL;
+  bool IsInitialized() const PROTOBUF_FINAL;
+
+  size_t ByteSizeLong() const PROTOBUF_FINAL;
+  bool MergePartialFromCodedStream(
+      ::google::protobuf::io::CodedInputStream* input) PROTOBUF_FINAL;
+  void SerializeWithCachedSizes(
+      ::google::protobuf::io::CodedOutputStream* output) const PROTOBUF_FINAL;
+  ::google::protobuf::uint8* InternalSerializeWithCachedSizesToArray(
+      bool deterministic, ::google::protobuf::uint8* target) const PROTOBUF_FINAL;
+  int GetCachedSize() const PROTOBUF_FINAL { return _cached_size_; }
+  private:
+  void SharedCtor();
+  void SharedDtor();
+  void SetCachedSize(int size) const PROTOBUF_FINAL;
+  void InternalSwap(RespawnReq* other);
+  private:
+  inline ::google::protobuf::Arena* GetArenaNoVirtual() const {
+    return NULL;
+  }
+  inline void* MaybeArenaPtr() const {
+    return NULL;
+  }
+  public:
+
+  ::google::protobuf::Metadata GetMetadata() const PROTOBUF_FINAL;
+
+  // nested types ----------------------------------------------------
+
+  // accessors -------------------------------------------------------
+
+  // string operation_id = 3;
+  void clear_operation_id();
+  static const int kOperationIdFieldNumber = 3;
+  const ::std::string& operation_id() const;
+  void set_operation_id(const ::std::string& value);
+  #if LANG_CXX11
+  void set_operation_id(::std::string&& value);
+  #endif
+  void set_operation_id(const char* value);
+  void set_operation_id(const char* value, size_t size);
+  ::std::string* mutable_operation_id();
+  ::std::string* release_operation_id();
+  void set_allocated_operation_id(::std::string* operation_id);
+
+  // uint64 player_id = 1;
+  void clear_player_id();
+  static const int kPlayerIdFieldNumber = 1;
+  ::google::protobuf::uint64 player_id() const;
+  void set_player_id(::google::protobuf::uint64 value);
+
+  // uint64 map_instance_id = 2;
+  void clear_map_instance_id();
+  static const int kMapInstanceIdFieldNumber = 2;
+  ::google::protobuf::uint64 map_instance_id() const;
+  void set_map_instance_id(::google::protobuf::uint64 value);
+
+  // @@protoc_insertion_point(class_scope:game.RespawnReq)
+ private:
+
+  ::google::protobuf::internal::InternalMetadataWithArena _internal_metadata_;
+  ::google::protobuf::internal::ArenaStringPtr operation_id_;
+  ::google::protobuf::uint64 player_id_;
+  ::google::protobuf::uint64 map_instance_id_;
+  mutable int _cached_size_;
+  friend struct ::protobuf_game_2eproto::TableStruct;
+  friend void ::protobuf_game_2eproto::InitDefaultsRespawnReqImpl();
+};
+// -------------------------------------------------------------------
+
+class RespawnRsp : public ::google::protobuf::Message /* @@protoc_insertion_point(class_definition:game.RespawnRsp) */ {
+ public:
+  RespawnRsp();
+  virtual ~RespawnRsp();
+
+  RespawnRsp(const RespawnRsp& from);
+
+  inline RespawnRsp& operator=(const RespawnRsp& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  #if LANG_CXX11
+  RespawnRsp(RespawnRsp&& from) noexcept
+    : RespawnRsp() {
+    *this = ::std::move(from);
+  }
+
+  inline RespawnRsp& operator=(RespawnRsp&& from) noexcept {
+    if (GetArenaNoVirtual() == from.GetArenaNoVirtual()) {
+      if (this != &from) InternalSwap(&from);
+    } else {
+      CopyFrom(from);
+    }
+    return *this;
+  }
+  #endif
+  static const ::google::protobuf::Descriptor* descriptor();
+  static const RespawnRsp& default_instance();
+
+  static void InitAsDefaultInstance();  // FOR INTERNAL USE ONLY
+  static inline const RespawnRsp* internal_default_instance() {
+    return reinterpret_cast<const RespawnRsp*>(
+               &_RespawnRsp_default_instance_);
+  }
+  static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
+    10;
+
+  void Swap(RespawnRsp* other);
+  friend void swap(RespawnRsp& a, RespawnRsp& b) {
+    a.Swap(&b);
+  }
+
+  // implements Message ----------------------------------------------
+
+  inline RespawnRsp* New() const PROTOBUF_FINAL { return New(NULL); }
+
+  RespawnRsp* New(::google::protobuf::Arena* arena) const PROTOBUF_FINAL;
+  void CopyFrom(const ::google::protobuf::Message& from) PROTOBUF_FINAL;
+  void MergeFrom(const ::google::protobuf::Message& from) PROTOBUF_FINAL;
+  void CopyFrom(const RespawnRsp& from);
+  void MergeFrom(const RespawnRsp& from);
+  void Clear() PROTOBUF_FINAL;
+  bool IsInitialized() const PROTOBUF_FINAL;
+
+  size_t ByteSizeLong() const PROTOBUF_FINAL;
+  bool MergePartialFromCodedStream(
+      ::google::protobuf::io::CodedInputStream* input) PROTOBUF_FINAL;
+  void SerializeWithCachedSizes(
+      ::google::protobuf::io::CodedOutputStream* output) const PROTOBUF_FINAL;
+  ::google::protobuf::uint8* InternalSerializeWithCachedSizesToArray(
+      bool deterministic, ::google::protobuf::uint8* target) const PROTOBUF_FINAL;
+  int GetCachedSize() const PROTOBUF_FINAL { return _cached_size_; }
+  private:
+  void SharedCtor();
+  void SharedDtor();
+  void SetCachedSize(int size) const PROTOBUF_FINAL;
+  void InternalSwap(RespawnRsp* other);
+  private:
+  inline ::google::protobuf::Arena* GetArenaNoVirtual() const {
+    return NULL;
+  }
+  inline void* MaybeArenaPtr() const {
+    return NULL;
+  }
+  public:
+
+  ::google::protobuf::Metadata GetMetadata() const PROTOBUF_FINAL;
+
+  // nested types ----------------------------------------------------
+
+  // accessors -------------------------------------------------------
+
+  // string message = 2;
+  void clear_message();
+  static const int kMessageFieldNumber = 2;
+  const ::std::string& message() const;
+  void set_message(const ::std::string& value);
+  #if LANG_CXX11
+  void set_message(::std::string&& value);
+  #endif
+  void set_message(const char* value);
+  void set_message(const char* value, size_t size);
+  ::std::string* mutable_message();
+  ::std::string* release_message();
+  void set_allocated_message(::std::string* message);
+
+  // string error_code = 3;
+  void clear_error_code();
+  static const int kErrorCodeFieldNumber = 3;
+  const ::std::string& error_code() const;
+  void set_error_code(const ::std::string& value);
+  #if LANG_CXX11
+  void set_error_code(::std::string&& value);
+  #endif
+  void set_error_code(const char* value);
+  void set_error_code(const char* value, size_t size);
+  ::std::string* mutable_error_code();
+  ::std::string* release_error_code();
+  void set_allocated_error_code(::std::string* error_code);
+
+  // string life_state = 5;
+  void clear_life_state();
+  static const int kLifeStateFieldNumber = 5;
+  const ::std::string& life_state() const;
+  void set_life_state(const ::std::string& value);
+  #if LANG_CXX11
+  void set_life_state(::std::string&& value);
+  #endif
+  void set_life_state(const char* value);
+  void set_life_state(const char* value, size_t size);
+  ::std::string* mutable_life_state();
+  ::std::string* release_life_state();
+  void set_allocated_life_state(::std::string* life_state);
+
+  // .game.EntitySnapshot self = 4;
+  bool has_self() const;
+  void clear_self();
+  static const int kSelfFieldNumber = 4;
+  const ::game::EntitySnapshot& self() const;
+  ::game::EntitySnapshot* release_self();
+  ::game::EntitySnapshot* mutable_self();
+  void set_allocated_self(::game::EntitySnapshot* self);
+
+  // bool ok = 1;
+  void clear_ok();
+  static const int kOkFieldNumber = 1;
+  bool ok() const;
+  void set_ok(bool value);
+
+  // @@protoc_insertion_point(class_scope:game.RespawnRsp)
+ private:
+
+  ::google::protobuf::internal::InternalMetadataWithArena _internal_metadata_;
+  ::google::protobuf::internal::ArenaStringPtr message_;
+  ::google::protobuf::internal::ArenaStringPtr error_code_;
+  ::google::protobuf::internal::ArenaStringPtr life_state_;
+  ::game::EntitySnapshot* self_;
+  bool ok_;
+  mutable int _cached_size_;
+  friend struct ::protobuf_game_2eproto::TableStruct;
+  friend void ::protobuf_game_2eproto::InitDefaultsRespawnRspImpl();
 };
 // -------------------------------------------------------------------
 
@@ -1727,7 +2321,7 @@ class ValidateSessionReq : public ::google::protobuf::Message /* @@protoc_insert
                &_ValidateSessionReq_default_instance_);
   }
   static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
-    8;
+    11;
 
   void Swap(ValidateSessionReq* other);
   friend void swap(ValidateSessionReq& a, ValidateSessionReq& b) {
@@ -1841,7 +2435,7 @@ class ValidateSessionRsp : public ::google::protobuf::Message /* @@protoc_insert
                &_ValidateSessionRsp_default_instance_);
   }
   static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
-    9;
+    12;
 
   void Swap(ValidateSessionRsp* other);
   friend void swap(ValidateSessionRsp& a, ValidateSessionRsp& b) {
@@ -1998,7 +2592,7 @@ class CheckOnlineReq : public ::google::protobuf::Message /* @@protoc_insertion_
                &_CheckOnlineReq_default_instance_);
   }
   static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
-    10;
+    13;
 
   void Swap(CheckOnlineReq* other);
   friend void swap(CheckOnlineReq& a, CheckOnlineReq& b) {
@@ -2097,7 +2691,7 @@ class CheckOnlineRsp : public ::google::protobuf::Message /* @@protoc_insertion_
                &_CheckOnlineRsp_default_instance_);
   }
   static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
-    11;
+    14;
 
   void Swap(CheckOnlineRsp* other);
   friend void swap(CheckOnlineRsp& a, CheckOnlineRsp& b) {
@@ -2218,7 +2812,7 @@ class LogoutReq : public ::google::protobuf::Message /* @@protoc_insertion_point
                &_LogoutReq_default_instance_);
   }
   static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
-    12;
+    15;
 
   void Swap(LogoutReq* other);
   friend void swap(LogoutReq& a, LogoutReq& b) {
@@ -2332,7 +2926,7 @@ class LogoutRsp : public ::google::protobuf::Message /* @@protoc_insertion_point
                &_LogoutRsp_default_instance_);
   }
   static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
-    13;
+    16;
 
   void Swap(LogoutRsp* other);
   friend void swap(LogoutRsp& a, LogoutRsp& b) {
@@ -2446,7 +3040,7 @@ class RegisterReq : public ::google::protobuf::Message /* @@protoc_insertion_poi
                &_RegisterReq_default_instance_);
   }
   static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
-    14;
+    17;
 
   void Swap(RegisterReq* other);
   friend void swap(RegisterReq& a, RegisterReq& b) {
@@ -2583,7 +3177,7 @@ class RegisterRsp : public ::google::protobuf::Message /* @@protoc_insertion_poi
                &_RegisterRsp_default_instance_);
   }
   static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
-    15;
+    18;
 
   void Swap(RegisterRsp* other);
   friend void swap(RegisterRsp& a, RegisterRsp& b) {
@@ -2704,7 +3298,7 @@ class FlushBagReq : public ::google::protobuf::Message /* @@protoc_insertion_poi
                &_FlushBagReq_default_instance_);
   }
   static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
-    16;
+    19;
 
   void Swap(FlushBagReq* other);
   friend void swap(FlushBagReq& a, FlushBagReq& b) {
@@ -2818,7 +3412,7 @@ class FlushBagRsp : public ::google::protobuf::Message /* @@protoc_insertion_poi
                &_FlushBagRsp_default_instance_);
   }
   static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
-    17;
+    20;
 
   void Swap(FlushBagRsp* other);
   friend void swap(FlushBagRsp& a, FlushBagRsp& b) {
@@ -2932,7 +3526,7 @@ class ConsumeItemReq : public ::google::protobuf::Message /* @@protoc_insertion_
                &_ConsumeItemReq_default_instance_);
   }
   static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
-    18;
+    21;
 
   void Swap(ConsumeItemReq* other);
   friend void swap(ConsumeItemReq& a, ConsumeItemReq& b) {
@@ -3045,7 +3639,7 @@ class ConsumeItemRsp : public ::google::protobuf::Message /* @@protoc_insertion_
                &_ConsumeItemRsp_default_instance_);
   }
   static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
-    19;
+    22;
 
   void Swap(ConsumeItemRsp* other);
   friend void swap(ConsumeItemRsp& a, ConsumeItemRsp& b) {
@@ -3166,7 +3760,7 @@ class ReleaseSkillReq : public ::google::protobuf::Message /* @@protoc_insertion
                &_ReleaseSkillReq_default_instance_);
   }
   static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
-    20;
+    23;
 
   void Swap(ReleaseSkillReq* other);
   friend void swap(ReleaseSkillReq& a, ReleaseSkillReq& b) {
@@ -3286,7 +3880,7 @@ class ReleaseSkillRsp : public ::google::protobuf::Message /* @@protoc_insertion
                &_ReleaseSkillRsp_default_instance_);
   }
   static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
-    21;
+    24;
 
   void Swap(ReleaseSkillRsp* other);
   friend void swap(ReleaseSkillRsp& a, ReleaseSkillRsp& b) {
@@ -3407,7 +4001,7 @@ class GrantItemReq : public ::google::protobuf::Message /* @@protoc_insertion_po
                &_GrantItemReq_default_instance_);
   }
   static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
-    22;
+    25;
 
   void Swap(GrantItemReq* other);
   friend void swap(GrantItemReq& a, GrantItemReq& b) {
@@ -3542,7 +4136,7 @@ class GrantItemRsp : public ::google::protobuf::Message /* @@protoc_insertion_po
                &_GrantItemRsp_default_instance_);
   }
   static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
-    23;
+    26;
 
   void Swap(GrantItemRsp* other);
   friend void swap(GrantItemRsp& a, GrantItemRsp& b) {
@@ -3670,7 +4264,7 @@ class MailAttachmentDto : public ::google::protobuf::Message /* @@protoc_inserti
                &_MailAttachmentDto_default_instance_);
   }
   static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
-    24;
+    27;
 
   void Swap(MailAttachmentDto* other);
   friend void swap(MailAttachmentDto& a, MailAttachmentDto& b) {
@@ -3843,7 +4437,7 @@ class MailBrief : public ::google::protobuf::Message /* @@protoc_insertion_point
                &_MailBrief_default_instance_);
   }
   static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
-    25;
+    28;
 
   void Swap(MailBrief* other);
   friend void swap(MailBrief& a, MailBrief& b) {
@@ -4074,7 +4668,7 @@ class MailDetail : public ::google::protobuf::Message /* @@protoc_insertion_poin
                &_MailDetail_default_instance_);
   }
   static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
-    26;
+    29;
 
   void Swap(MailDetail* other);
   friend void swap(MailDetail& a, MailDetail& b) {
@@ -4227,7 +4821,7 @@ class MailboxSummaryReq : public ::google::protobuf::Message /* @@protoc_inserti
                &_MailboxSummaryReq_default_instance_);
   }
   static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
-    27;
+    30;
 
   void Swap(MailboxSummaryReq* other);
   friend void swap(MailboxSummaryReq& a, MailboxSummaryReq& b) {
@@ -4326,7 +4920,7 @@ class MailboxSummaryRsp : public ::google::protobuf::Message /* @@protoc_inserti
                &_MailboxSummaryRsp_default_instance_);
   }
   static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
-    28;
+    31;
 
   void Swap(MailboxSummaryRsp* other);
   friend void swap(MailboxSummaryRsp& a, MailboxSummaryRsp& b) {
@@ -4525,7 +5119,7 @@ class MailListReq : public ::google::protobuf::Message /* @@protoc_insertion_poi
                &_MailListReq_default_instance_);
   }
   static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
-    29;
+    32;
 
   void Swap(MailListReq* other);
   friend void swap(MailListReq& a, MailListReq& b) {
@@ -4711,7 +5305,7 @@ class MailListRsp : public ::google::protobuf::Message /* @@protoc_insertion_poi
                &_MailListRsp_default_instance_);
   }
   static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
-    30;
+    33;
 
   void Swap(MailListRsp* other);
   friend void swap(MailListRsp& a, MailListRsp& b) {
@@ -4882,7 +5476,7 @@ class MailGetReq : public ::google::protobuf::Message /* @@protoc_insertion_poin
                &_MailGetReq_default_instance_);
   }
   static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
-    31;
+    34;
 
   void Swap(MailGetReq* other);
   friend void swap(MailGetReq& a, MailGetReq& b) {
@@ -4988,7 +5582,7 @@ class MailGetRsp : public ::google::protobuf::Message /* @@protoc_insertion_poin
                &_MailGetRsp_default_instance_);
   }
   static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
-    32;
+    35;
 
   void Swap(MailGetRsp* other);
   friend void swap(MailGetRsp& a, MailGetRsp& b) {
@@ -5141,7 +5735,7 @@ class MailReadReq : public ::google::protobuf::Message /* @@protoc_insertion_poi
                &_MailReadReq_default_instance_);
   }
   static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
-    33;
+    36;
 
   void Swap(MailReadReq* other);
   friend void swap(MailReadReq& a, MailReadReq& b) {
@@ -5262,7 +5856,7 @@ class MailReadRsp : public ::google::protobuf::Message /* @@protoc_insertion_poi
                &_MailReadRsp_default_instance_);
   }
   static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
-    34;
+    37;
 
   void Swap(MailReadRsp* other);
   friend void swap(MailReadRsp& a, MailReadRsp& b) {
@@ -5412,7 +6006,7 @@ class MailClaimReq : public ::google::protobuf::Message /* @@protoc_insertion_po
                &_MailClaimReq_default_instance_);
   }
   static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
-    35;
+    38;
 
   void Swap(MailClaimReq* other);
   friend void swap(MailClaimReq& a, MailClaimReq& b) {
@@ -5548,7 +6142,7 @@ class MailClaimResult : public ::google::protobuf::Message /* @@protoc_insertion
                &_MailClaimResult_default_instance_);
   }
   static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
-    36;
+    39;
 
   void Swap(MailClaimResult* other);
   friend void swap(MailClaimResult& a, MailClaimResult& b) {
@@ -5699,7 +6293,7 @@ class MailClaimRsp : public ::google::protobuf::Message /* @@protoc_insertion_po
                &_MailClaimRsp_default_instance_);
   }
   static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
-    37;
+    40;
 
   void Swap(MailClaimRsp* other);
   friend void swap(MailClaimRsp& a, MailClaimRsp& b) {
@@ -5852,7 +6446,7 @@ class MailBatchClaimReq : public ::google::protobuf::Message /* @@protoc_inserti
                &_MailBatchClaimReq_default_instance_);
   }
   static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
-    38;
+    41;
 
   void Swap(MailBatchClaimReq* other);
   friend void swap(MailBatchClaimReq& a, MailBatchClaimReq& b) {
@@ -5995,7 +6589,7 @@ class MailBatchClaimRsp : public ::google::protobuf::Message /* @@protoc_inserti
                &_MailBatchClaimRsp_default_instance_);
   }
   static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
-    39;
+    42;
 
   void Swap(MailBatchClaimRsp* other);
   friend void swap(MailBatchClaimRsp& a, MailBatchClaimRsp& b) {
@@ -6151,7 +6745,7 @@ class MailFavoriteReq : public ::google::protobuf::Message /* @@protoc_insertion
                &_MailFavoriteReq_default_instance_);
   }
   static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
-    40;
+    43;
 
   void Swap(MailFavoriteReq* other);
   friend void swap(MailFavoriteReq& a, MailFavoriteReq& b) {
@@ -6279,7 +6873,7 @@ class MailFavoriteRsp : public ::google::protobuf::Message /* @@protoc_insertion
                &_MailFavoriteRsp_default_instance_);
   }
   static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
-    41;
+    44;
 
   void Swap(MailFavoriteRsp* other);
   friend void swap(MailFavoriteRsp& a, MailFavoriteRsp& b) {
@@ -6429,7 +7023,7 @@ class MailBatchReadReq : public ::google::protobuf::Message /* @@protoc_insertio
                &_MailBatchReadReq_default_instance_);
   }
   static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
-    42;
+    45;
 
   void Swap(MailBatchReadReq* other);
   friend void swap(MailBatchReadReq& a, MailBatchReadReq& b) {
@@ -6557,7 +7151,7 @@ class MailBatchReadRsp : public ::google::protobuf::Message /* @@protoc_insertio
                &_MailBatchReadRsp_default_instance_);
   }
   static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
-    43;
+    46;
 
   void Swap(MailBatchReadRsp* other);
   friend void swap(MailBatchReadRsp& a, MailBatchReadRsp& b) {
@@ -6707,7 +7301,7 @@ class MailBatchDeleteReq : public ::google::protobuf::Message /* @@protoc_insert
                &_MailBatchDeleteReq_default_instance_);
   }
   static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
-    44;
+    47;
 
   void Swap(MailBatchDeleteReq* other);
   friend void swap(MailBatchDeleteReq& a, MailBatchDeleteReq& b) {
@@ -6835,7 +7429,7 @@ class MailBatchDeleteRsp : public ::google::protobuf::Message /* @@protoc_insert
                &_MailBatchDeleteRsp_default_instance_);
   }
   static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
-    45;
+    48;
 
   void Swap(MailBatchDeleteRsp* other);
   friend void swap(MailBatchDeleteRsp& a, MailBatchDeleteRsp& b) {
@@ -6999,7 +7593,7 @@ class MailDeliverAttachment : public ::google::protobuf::Message /* @@protoc_ins
                &_MailDeliverAttachment_default_instance_);
   }
   static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
-    46;
+    49;
 
   void Swap(MailDeliverAttachment* other);
   friend void swap(MailDeliverAttachment& a, MailDeliverAttachment& b) {
@@ -7150,7 +7744,7 @@ class MailDeliverReq : public ::google::protobuf::Message /* @@protoc_insertion_
                &_MailDeliverReq_default_instance_);
   }
   static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
-    47;
+    50;
 
   void Swap(MailDeliverReq* other);
   friend void swap(MailDeliverReq& a, MailDeliverReq& b) {
@@ -7440,7 +8034,7 @@ class MailDeliverRsp : public ::google::protobuf::Message /* @@protoc_insertion_
                &_MailDeliverRsp_default_instance_);
   }
   static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
-    48;
+    51;
 
   void Swap(MailDeliverRsp* other);
   friend void swap(MailDeliverRsp& a, MailDeliverRsp& b) {
@@ -7590,7 +8184,7 @@ class EnterMapReq : public ::google::protobuf::Message /* @@protoc_insertion_poi
                &_EnterMapReq_default_instance_);
   }
   static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
-    49;
+    52;
 
   void Swap(EnterMapReq* other);
   friend void swap(EnterMapReq& a, EnterMapReq& b) {
@@ -7747,7 +8341,7 @@ class EnterMapRsp : public ::google::protobuf::Message /* @@protoc_insertion_poi
                &_EnterMapRsp_default_instance_);
   }
   static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
-    50;
+    53;
 
   void Swap(EnterMapRsp* other);
   friend void swap(EnterMapRsp& a, EnterMapRsp& b) {
@@ -7966,7 +8560,7 @@ class LeaveMapReq : public ::google::protobuf::Message /* @@protoc_insertion_poi
                &_LeaveMapReq_default_instance_);
   }
   static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
-    51;
+    54;
 
   void Swap(LeaveMapReq* other);
   friend void swap(LeaveMapReq& a, LeaveMapReq& b) {
@@ -8072,7 +8666,7 @@ class LeaveMapRsp : public ::google::protobuf::Message /* @@protoc_insertion_poi
                &_LeaveMapRsp_default_instance_);
   }
   static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
-    52;
+    55;
 
   void Swap(LeaveMapRsp* other);
   friend void swap(LeaveMapRsp& a, LeaveMapRsp& b) {
@@ -8186,7 +8780,7 @@ class MapPingReq : public ::google::protobuf::Message /* @@protoc_insertion_poin
                &_MapPingReq_default_instance_);
   }
   static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
-    53;
+    56;
 
   void Swap(MapPingReq* other);
   friend void swap(MapPingReq& a, MapPingReq& b) {
@@ -8292,7 +8886,7 @@ class MapPingRsp : public ::google::protobuf::Message /* @@protoc_insertion_poin
                &_MapPingRsp_default_instance_);
   }
   static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
-    54;
+    57;
 
   void Swap(MapPingRsp* other);
   friend void swap(MapPingRsp& a, MapPingRsp& b) {
@@ -8435,7 +9029,7 @@ class ChatSendReq : public ::google::protobuf::Message /* @@protoc_insertion_poi
                &_ChatSendReq_default_instance_);
   }
   static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
-    55;
+    58;
 
   void Swap(ChatSendReq* other);
   friend void swap(ChatSendReq& a, ChatSendReq& b) {
@@ -8564,7 +9158,7 @@ class ChatSendRsp : public ::google::protobuf::Message /* @@protoc_insertion_poi
                &_ChatSendRsp_default_instance_);
   }
   static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
-    56;
+    59;
 
   void Swap(ChatSendRsp* other);
   friend void swap(ChatSendRsp& a, ChatSendRsp& b) {
@@ -8639,6 +9233,32 @@ class ChatSendRsp : public ::google::protobuf::Message /* @@protoc_insertion_poi
   ::std::string* release_error_code();
   void set_allocated_error_code(::std::string* error_code);
 
+  // string channel = 6;
+  void clear_channel();
+  static const int kChannelFieldNumber = 6;
+  const ::std::string& channel() const;
+  void set_channel(const ::std::string& value);
+  #if LANG_CXX11
+  void set_channel(::std::string&& value);
+  #endif
+  void set_channel(const char* value);
+  void set_channel(const char* value, size_t size);
+  ::std::string* mutable_channel();
+  ::std::string* release_channel();
+  void set_allocated_channel(::std::string* channel);
+
+  // uint64 message_id = 4;
+  void clear_message_id();
+  static const int kMessageIdFieldNumber = 4;
+  ::google::protobuf::uint64 message_id() const;
+  void set_message_id(::google::protobuf::uint64 value);
+
+  // int64 server_time_ms = 5;
+  void clear_server_time_ms();
+  static const int kServerTimeMsFieldNumber = 5;
+  ::google::protobuf::int64 server_time_ms() const;
+  void set_server_time_ms(::google::protobuf::int64 value);
+
   // bool ok = 1;
   void clear_ok();
   static const int kOkFieldNumber = 1;
@@ -8651,10 +9271,171 @@ class ChatSendRsp : public ::google::protobuf::Message /* @@protoc_insertion_poi
   ::google::protobuf::internal::InternalMetadataWithArena _internal_metadata_;
   ::google::protobuf::internal::ArenaStringPtr message_;
   ::google::protobuf::internal::ArenaStringPtr error_code_;
+  ::google::protobuf::internal::ArenaStringPtr channel_;
+  ::google::protobuf::uint64 message_id_;
+  ::google::protobuf::int64 server_time_ms_;
   bool ok_;
   mutable int _cached_size_;
   friend struct ::protobuf_game_2eproto::TableStruct;
   friend void ::protobuf_game_2eproto::InitDefaultsChatSendRspImpl();
+};
+// -------------------------------------------------------------------
+
+class ChatNotify : public ::google::protobuf::Message /* @@protoc_insertion_point(class_definition:game.ChatNotify) */ {
+ public:
+  ChatNotify();
+  virtual ~ChatNotify();
+
+  ChatNotify(const ChatNotify& from);
+
+  inline ChatNotify& operator=(const ChatNotify& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  #if LANG_CXX11
+  ChatNotify(ChatNotify&& from) noexcept
+    : ChatNotify() {
+    *this = ::std::move(from);
+  }
+
+  inline ChatNotify& operator=(ChatNotify&& from) noexcept {
+    if (GetArenaNoVirtual() == from.GetArenaNoVirtual()) {
+      if (this != &from) InternalSwap(&from);
+    } else {
+      CopyFrom(from);
+    }
+    return *this;
+  }
+  #endif
+  static const ::google::protobuf::Descriptor* descriptor();
+  static const ChatNotify& default_instance();
+
+  static void InitAsDefaultInstance();  // FOR INTERNAL USE ONLY
+  static inline const ChatNotify* internal_default_instance() {
+    return reinterpret_cast<const ChatNotify*>(
+               &_ChatNotify_default_instance_);
+  }
+  static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
+    60;
+
+  void Swap(ChatNotify* other);
+  friend void swap(ChatNotify& a, ChatNotify& b) {
+    a.Swap(&b);
+  }
+
+  // implements Message ----------------------------------------------
+
+  inline ChatNotify* New() const PROTOBUF_FINAL { return New(NULL); }
+
+  ChatNotify* New(::google::protobuf::Arena* arena) const PROTOBUF_FINAL;
+  void CopyFrom(const ::google::protobuf::Message& from) PROTOBUF_FINAL;
+  void MergeFrom(const ::google::protobuf::Message& from) PROTOBUF_FINAL;
+  void CopyFrom(const ChatNotify& from);
+  void MergeFrom(const ChatNotify& from);
+  void Clear() PROTOBUF_FINAL;
+  bool IsInitialized() const PROTOBUF_FINAL;
+
+  size_t ByteSizeLong() const PROTOBUF_FINAL;
+  bool MergePartialFromCodedStream(
+      ::google::protobuf::io::CodedInputStream* input) PROTOBUF_FINAL;
+  void SerializeWithCachedSizes(
+      ::google::protobuf::io::CodedOutputStream* output) const PROTOBUF_FINAL;
+  ::google::protobuf::uint8* InternalSerializeWithCachedSizesToArray(
+      bool deterministic, ::google::protobuf::uint8* target) const PROTOBUF_FINAL;
+  int GetCachedSize() const PROTOBUF_FINAL { return _cached_size_; }
+  private:
+  void SharedCtor();
+  void SharedDtor();
+  void SetCachedSize(int size) const PROTOBUF_FINAL;
+  void InternalSwap(ChatNotify* other);
+  private:
+  inline ::google::protobuf::Arena* GetArenaNoVirtual() const {
+    return NULL;
+  }
+  inline void* MaybeArenaPtr() const {
+    return NULL;
+  }
+  public:
+
+  ::google::protobuf::Metadata GetMetadata() const PROTOBUF_FINAL;
+
+  // nested types ----------------------------------------------------
+
+  // accessors -------------------------------------------------------
+
+  // string sender_name = 3;
+  void clear_sender_name();
+  static const int kSenderNameFieldNumber = 3;
+  const ::std::string& sender_name() const;
+  void set_sender_name(const ::std::string& value);
+  #if LANG_CXX11
+  void set_sender_name(::std::string&& value);
+  #endif
+  void set_sender_name(const char* value);
+  void set_sender_name(const char* value, size_t size);
+  ::std::string* mutable_sender_name();
+  ::std::string* release_sender_name();
+  void set_allocated_sender_name(::std::string* sender_name);
+
+  // string channel = 4;
+  void clear_channel();
+  static const int kChannelFieldNumber = 4;
+  const ::std::string& channel() const;
+  void set_channel(const ::std::string& value);
+  #if LANG_CXX11
+  void set_channel(::std::string&& value);
+  #endif
+  void set_channel(const char* value);
+  void set_channel(const char* value, size_t size);
+  ::std::string* mutable_channel();
+  ::std::string* release_channel();
+  void set_allocated_channel(::std::string* channel);
+
+  // string text = 5;
+  void clear_text();
+  static const int kTextFieldNumber = 5;
+  const ::std::string& text() const;
+  void set_text(const ::std::string& value);
+  #if LANG_CXX11
+  void set_text(::std::string&& value);
+  #endif
+  void set_text(const char* value);
+  void set_text(const char* value, size_t size);
+  ::std::string* mutable_text();
+  ::std::string* release_text();
+  void set_allocated_text(::std::string* text);
+
+  // uint64 message_id = 1;
+  void clear_message_id();
+  static const int kMessageIdFieldNumber = 1;
+  ::google::protobuf::uint64 message_id() const;
+  void set_message_id(::google::protobuf::uint64 value);
+
+  // uint64 sender_player_id = 2;
+  void clear_sender_player_id();
+  static const int kSenderPlayerIdFieldNumber = 2;
+  ::google::protobuf::uint64 sender_player_id() const;
+  void set_sender_player_id(::google::protobuf::uint64 value);
+
+  // int64 server_time_ms = 6;
+  void clear_server_time_ms();
+  static const int kServerTimeMsFieldNumber = 6;
+  ::google::protobuf::int64 server_time_ms() const;
+  void set_server_time_ms(::google::protobuf::int64 value);
+
+  // @@protoc_insertion_point(class_scope:game.ChatNotify)
+ private:
+
+  ::google::protobuf::internal::InternalMetadataWithArena _internal_metadata_;
+  ::google::protobuf::internal::ArenaStringPtr sender_name_;
+  ::google::protobuf::internal::ArenaStringPtr channel_;
+  ::google::protobuf::internal::ArenaStringPtr text_;
+  ::google::protobuf::uint64 message_id_;
+  ::google::protobuf::uint64 sender_player_id_;
+  ::google::protobuf::int64 server_time_ms_;
+  mutable int _cached_size_;
+  friend struct ::protobuf_game_2eproto::TableStruct;
+  friend void ::protobuf_game_2eproto::InitDefaultsChatNotifyImpl();
 };
 // -------------------------------------------------------------------
 
@@ -8693,7 +9474,7 @@ class FriendListReq : public ::google::protobuf::Message /* @@protoc_insertion_p
                &_FriendListReq_default_instance_);
   }
   static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
-    57;
+    61;
 
   void Swap(FriendListReq* other);
   friend void swap(FriendListReq& a, FriendListReq& b) {
@@ -8792,7 +9573,7 @@ class FriendListRsp : public ::google::protobuf::Message /* @@protoc_insertion_p
                &_FriendListRsp_default_instance_);
   }
   static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
-    58;
+    62;
 
   void Swap(FriendListRsp* other);
   friend void swap(FriendListRsp& a, FriendListRsp& b) {
@@ -8921,7 +9702,7 @@ class Vec3 : public ::google::protobuf::Message /* @@protoc_insertion_point(clas
                &_Vec3_default_instance_);
   }
   static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
-    59;
+    63;
 
   void Swap(Vec3* other);
   friend void swap(Vec3& a, Vec3& b) {
@@ -9034,7 +9815,7 @@ class PlayerAttributes : public ::google::protobuf::Message /* @@protoc_insertio
                &_PlayerAttributes_default_instance_);
   }
   static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
-    60;
+    64;
 
   void Swap(PlayerAttributes* other);
   friend void swap(PlayerAttributes& a, PlayerAttributes& b) {
@@ -9094,6 +9875,20 @@ class PlayerAttributes : public ::google::protobuf::Message /* @@protoc_insertio
   ::std::string* mutable_player_name();
   ::std::string* release_player_name();
   void set_allocated_player_name(::std::string* player_name);
+
+  // string life_state = 16;
+  void clear_life_state();
+  static const int kLifeStateFieldNumber = 16;
+  const ::std::string& life_state() const;
+  void set_life_state(const ::std::string& value);
+  #if LANG_CXX11
+  void set_life_state(::std::string&& value);
+  #endif
+  void set_life_state(const char* value);
+  void set_life_state(const char* value, size_t size);
+  ::std::string* mutable_life_state();
+  ::std::string* release_life_state();
+  void set_allocated_life_state(::std::string* life_state);
 
   // uint64 player_id = 1;
   void clear_player_id();
@@ -9184,6 +9979,7 @@ class PlayerAttributes : public ::google::protobuf::Message /* @@protoc_insertio
 
   ::google::protobuf::internal::InternalMetadataWithArena _internal_metadata_;
   ::google::protobuf::internal::ArenaStringPtr player_name_;
+  ::google::protobuf::internal::ArenaStringPtr life_state_;
   ::google::protobuf::uint64 player_id_;
   ::google::protobuf::int32 hp_;
   ::google::protobuf::int32 max_hp_;
@@ -9239,7 +10035,7 @@ class EntitySnapshot : public ::google::protobuf::Message /* @@protoc_insertion_
                &_EntitySnapshot_default_instance_);
   }
   static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
-    61;
+    65;
 
   void Swap(EntitySnapshot* other);
   friend void swap(EntitySnapshot& a, EntitySnapshot& b) {
@@ -9391,7 +10187,7 @@ class GetSelfProfileReq : public ::google::protobuf::Message /* @@protoc_inserti
                &_GetSelfProfileReq_default_instance_);
   }
   static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
-    62;
+    66;
 
   void Swap(GetSelfProfileReq* other);
   friend void swap(GetSelfProfileReq& a, GetSelfProfileReq& b) {
@@ -9490,7 +10286,7 @@ class GetSelfProfileRsp : public ::google::protobuf::Message /* @@protoc_inserti
                &_GetSelfProfileRsp_default_instance_);
   }
   static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
-    63;
+    67;
 
   void Swap(GetSelfProfileRsp* other);
   friend void swap(GetSelfProfileRsp& a, GetSelfProfileRsp& b) {
@@ -9594,6 +10390,651 @@ class GetSelfProfileRsp : public ::google::protobuf::Message /* @@protoc_inserti
 };
 // -------------------------------------------------------------------
 
+class PlayerBrief : public ::google::protobuf::Message /* @@protoc_insertion_point(class_definition:game.PlayerBrief) */ {
+ public:
+  PlayerBrief();
+  virtual ~PlayerBrief();
+
+  PlayerBrief(const PlayerBrief& from);
+
+  inline PlayerBrief& operator=(const PlayerBrief& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  #if LANG_CXX11
+  PlayerBrief(PlayerBrief&& from) noexcept
+    : PlayerBrief() {
+    *this = ::std::move(from);
+  }
+
+  inline PlayerBrief& operator=(PlayerBrief&& from) noexcept {
+    if (GetArenaNoVirtual() == from.GetArenaNoVirtual()) {
+      if (this != &from) InternalSwap(&from);
+    } else {
+      CopyFrom(from);
+    }
+    return *this;
+  }
+  #endif
+  static const ::google::protobuf::Descriptor* descriptor();
+  static const PlayerBrief& default_instance();
+
+  static void InitAsDefaultInstance();  // FOR INTERNAL USE ONLY
+  static inline const PlayerBrief* internal_default_instance() {
+    return reinterpret_cast<const PlayerBrief*>(
+               &_PlayerBrief_default_instance_);
+  }
+  static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
+    68;
+
+  void Swap(PlayerBrief* other);
+  friend void swap(PlayerBrief& a, PlayerBrief& b) {
+    a.Swap(&b);
+  }
+
+  // implements Message ----------------------------------------------
+
+  inline PlayerBrief* New() const PROTOBUF_FINAL { return New(NULL); }
+
+  PlayerBrief* New(::google::protobuf::Arena* arena) const PROTOBUF_FINAL;
+  void CopyFrom(const ::google::protobuf::Message& from) PROTOBUF_FINAL;
+  void MergeFrom(const ::google::protobuf::Message& from) PROTOBUF_FINAL;
+  void CopyFrom(const PlayerBrief& from);
+  void MergeFrom(const PlayerBrief& from);
+  void Clear() PROTOBUF_FINAL;
+  bool IsInitialized() const PROTOBUF_FINAL;
+
+  size_t ByteSizeLong() const PROTOBUF_FINAL;
+  bool MergePartialFromCodedStream(
+      ::google::protobuf::io::CodedInputStream* input) PROTOBUF_FINAL;
+  void SerializeWithCachedSizes(
+      ::google::protobuf::io::CodedOutputStream* output) const PROTOBUF_FINAL;
+  ::google::protobuf::uint8* InternalSerializeWithCachedSizesToArray(
+      bool deterministic, ::google::protobuf::uint8* target) const PROTOBUF_FINAL;
+  int GetCachedSize() const PROTOBUF_FINAL { return _cached_size_; }
+  private:
+  void SharedCtor();
+  void SharedDtor();
+  void SetCachedSize(int size) const PROTOBUF_FINAL;
+  void InternalSwap(PlayerBrief* other);
+  private:
+  inline ::google::protobuf::Arena* GetArenaNoVirtual() const {
+    return NULL;
+  }
+  inline void* MaybeArenaPtr() const {
+    return NULL;
+  }
+  public:
+
+  ::google::protobuf::Metadata GetMetadata() const PROTOBUF_FINAL;
+
+  // nested types ----------------------------------------------------
+
+  // accessors -------------------------------------------------------
+
+  // string player_name = 2;
+  void clear_player_name();
+  static const int kPlayerNameFieldNumber = 2;
+  const ::std::string& player_name() const;
+  void set_player_name(const ::std::string& value);
+  #if LANG_CXX11
+  void set_player_name(::std::string&& value);
+  #endif
+  void set_player_name(const char* value);
+  void set_player_name(const char* value, size_t size);
+  ::std::string* mutable_player_name();
+  ::std::string* release_player_name();
+  void set_allocated_player_name(::std::string* player_name);
+
+  // uint64 player_id = 1;
+  void clear_player_id();
+  static const int kPlayerIdFieldNumber = 1;
+  ::google::protobuf::uint64 player_id() const;
+  void set_player_id(::google::protobuf::uint64 value);
+
+  // int32 max_hp = 3;
+  void clear_max_hp();
+  static const int kMaxHpFieldNumber = 3;
+  ::google::protobuf::int32 max_hp() const;
+  void set_max_hp(::google::protobuf::int32 value);
+
+  // int32 max_mp = 4;
+  void clear_max_mp();
+  static const int kMaxMpFieldNumber = 4;
+  ::google::protobuf::int32 max_mp() const;
+  void set_max_mp(::google::protobuf::int32 value);
+
+  // @@protoc_insertion_point(class_scope:game.PlayerBrief)
+ private:
+
+  ::google::protobuf::internal::InternalMetadataWithArena _internal_metadata_;
+  ::google::protobuf::internal::ArenaStringPtr player_name_;
+  ::google::protobuf::uint64 player_id_;
+  ::google::protobuf::int32 max_hp_;
+  ::google::protobuf::int32 max_mp_;
+  mutable int _cached_size_;
+  friend struct ::protobuf_game_2eproto::TableStruct;
+  friend void ::protobuf_game_2eproto::InitDefaultsPlayerBriefImpl();
+};
+// -------------------------------------------------------------------
+
+class GetPlayerBriefReq : public ::google::protobuf::Message /* @@protoc_insertion_point(class_definition:game.GetPlayerBriefReq) */ {
+ public:
+  GetPlayerBriefReq();
+  virtual ~GetPlayerBriefReq();
+
+  GetPlayerBriefReq(const GetPlayerBriefReq& from);
+
+  inline GetPlayerBriefReq& operator=(const GetPlayerBriefReq& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  #if LANG_CXX11
+  GetPlayerBriefReq(GetPlayerBriefReq&& from) noexcept
+    : GetPlayerBriefReq() {
+    *this = ::std::move(from);
+  }
+
+  inline GetPlayerBriefReq& operator=(GetPlayerBriefReq&& from) noexcept {
+    if (GetArenaNoVirtual() == from.GetArenaNoVirtual()) {
+      if (this != &from) InternalSwap(&from);
+    } else {
+      CopyFrom(from);
+    }
+    return *this;
+  }
+  #endif
+  static const ::google::protobuf::Descriptor* descriptor();
+  static const GetPlayerBriefReq& default_instance();
+
+  static void InitAsDefaultInstance();  // FOR INTERNAL USE ONLY
+  static inline const GetPlayerBriefReq* internal_default_instance() {
+    return reinterpret_cast<const GetPlayerBriefReq*>(
+               &_GetPlayerBriefReq_default_instance_);
+  }
+  static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
+    69;
+
+  void Swap(GetPlayerBriefReq* other);
+  friend void swap(GetPlayerBriefReq& a, GetPlayerBriefReq& b) {
+    a.Swap(&b);
+  }
+
+  // implements Message ----------------------------------------------
+
+  inline GetPlayerBriefReq* New() const PROTOBUF_FINAL { return New(NULL); }
+
+  GetPlayerBriefReq* New(::google::protobuf::Arena* arena) const PROTOBUF_FINAL;
+  void CopyFrom(const ::google::protobuf::Message& from) PROTOBUF_FINAL;
+  void MergeFrom(const ::google::protobuf::Message& from) PROTOBUF_FINAL;
+  void CopyFrom(const GetPlayerBriefReq& from);
+  void MergeFrom(const GetPlayerBriefReq& from);
+  void Clear() PROTOBUF_FINAL;
+  bool IsInitialized() const PROTOBUF_FINAL;
+
+  size_t ByteSizeLong() const PROTOBUF_FINAL;
+  bool MergePartialFromCodedStream(
+      ::google::protobuf::io::CodedInputStream* input) PROTOBUF_FINAL;
+  void SerializeWithCachedSizes(
+      ::google::protobuf::io::CodedOutputStream* output) const PROTOBUF_FINAL;
+  ::google::protobuf::uint8* InternalSerializeWithCachedSizesToArray(
+      bool deterministic, ::google::protobuf::uint8* target) const PROTOBUF_FINAL;
+  int GetCachedSize() const PROTOBUF_FINAL { return _cached_size_; }
+  private:
+  void SharedCtor();
+  void SharedDtor();
+  void SetCachedSize(int size) const PROTOBUF_FINAL;
+  void InternalSwap(GetPlayerBriefReq* other);
+  private:
+  inline ::google::protobuf::Arena* GetArenaNoVirtual() const {
+    return NULL;
+  }
+  inline void* MaybeArenaPtr() const {
+    return NULL;
+  }
+  public:
+
+  ::google::protobuf::Metadata GetMetadata() const PROTOBUF_FINAL;
+
+  // nested types ----------------------------------------------------
+
+  // accessors -------------------------------------------------------
+
+  // string player_name = 3;
+  void clear_player_name();
+  static const int kPlayerNameFieldNumber = 3;
+  const ::std::string& player_name() const;
+  void set_player_name(const ::std::string& value);
+  #if LANG_CXX11
+  void set_player_name(::std::string&& value);
+  #endif
+  void set_player_name(const char* value);
+  void set_player_name(const char* value, size_t size);
+  ::std::string* mutable_player_name();
+  ::std::string* release_player_name();
+  void set_allocated_player_name(::std::string* player_name);
+
+  // uint64 player_id = 1;
+  void clear_player_id();
+  static const int kPlayerIdFieldNumber = 1;
+  ::google::protobuf::uint64 player_id() const;
+  void set_player_id(::google::protobuf::uint64 value);
+
+  // uint64 target_player_id = 2;
+  void clear_target_player_id();
+  static const int kTargetPlayerIdFieldNumber = 2;
+  ::google::protobuf::uint64 target_player_id() const;
+  void set_target_player_id(::google::protobuf::uint64 value);
+
+  // @@protoc_insertion_point(class_scope:game.GetPlayerBriefReq)
+ private:
+
+  ::google::protobuf::internal::InternalMetadataWithArena _internal_metadata_;
+  ::google::protobuf::internal::ArenaStringPtr player_name_;
+  ::google::protobuf::uint64 player_id_;
+  ::google::protobuf::uint64 target_player_id_;
+  mutable int _cached_size_;
+  friend struct ::protobuf_game_2eproto::TableStruct;
+  friend void ::protobuf_game_2eproto::InitDefaultsGetPlayerBriefReqImpl();
+};
+// -------------------------------------------------------------------
+
+class GetPlayerBriefRsp : public ::google::protobuf::Message /* @@protoc_insertion_point(class_definition:game.GetPlayerBriefRsp) */ {
+ public:
+  GetPlayerBriefRsp();
+  virtual ~GetPlayerBriefRsp();
+
+  GetPlayerBriefRsp(const GetPlayerBriefRsp& from);
+
+  inline GetPlayerBriefRsp& operator=(const GetPlayerBriefRsp& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  #if LANG_CXX11
+  GetPlayerBriefRsp(GetPlayerBriefRsp&& from) noexcept
+    : GetPlayerBriefRsp() {
+    *this = ::std::move(from);
+  }
+
+  inline GetPlayerBriefRsp& operator=(GetPlayerBriefRsp&& from) noexcept {
+    if (GetArenaNoVirtual() == from.GetArenaNoVirtual()) {
+      if (this != &from) InternalSwap(&from);
+    } else {
+      CopyFrom(from);
+    }
+    return *this;
+  }
+  #endif
+  static const ::google::protobuf::Descriptor* descriptor();
+  static const GetPlayerBriefRsp& default_instance();
+
+  static void InitAsDefaultInstance();  // FOR INTERNAL USE ONLY
+  static inline const GetPlayerBriefRsp* internal_default_instance() {
+    return reinterpret_cast<const GetPlayerBriefRsp*>(
+               &_GetPlayerBriefRsp_default_instance_);
+  }
+  static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
+    70;
+
+  void Swap(GetPlayerBriefRsp* other);
+  friend void swap(GetPlayerBriefRsp& a, GetPlayerBriefRsp& b) {
+    a.Swap(&b);
+  }
+
+  // implements Message ----------------------------------------------
+
+  inline GetPlayerBriefRsp* New() const PROTOBUF_FINAL { return New(NULL); }
+
+  GetPlayerBriefRsp* New(::google::protobuf::Arena* arena) const PROTOBUF_FINAL;
+  void CopyFrom(const ::google::protobuf::Message& from) PROTOBUF_FINAL;
+  void MergeFrom(const ::google::protobuf::Message& from) PROTOBUF_FINAL;
+  void CopyFrom(const GetPlayerBriefRsp& from);
+  void MergeFrom(const GetPlayerBriefRsp& from);
+  void Clear() PROTOBUF_FINAL;
+  bool IsInitialized() const PROTOBUF_FINAL;
+
+  size_t ByteSizeLong() const PROTOBUF_FINAL;
+  bool MergePartialFromCodedStream(
+      ::google::protobuf::io::CodedInputStream* input) PROTOBUF_FINAL;
+  void SerializeWithCachedSizes(
+      ::google::protobuf::io::CodedOutputStream* output) const PROTOBUF_FINAL;
+  ::google::protobuf::uint8* InternalSerializeWithCachedSizesToArray(
+      bool deterministic, ::google::protobuf::uint8* target) const PROTOBUF_FINAL;
+  int GetCachedSize() const PROTOBUF_FINAL { return _cached_size_; }
+  private:
+  void SharedCtor();
+  void SharedDtor();
+  void SetCachedSize(int size) const PROTOBUF_FINAL;
+  void InternalSwap(GetPlayerBriefRsp* other);
+  private:
+  inline ::google::protobuf::Arena* GetArenaNoVirtual() const {
+    return NULL;
+  }
+  inline void* MaybeArenaPtr() const {
+    return NULL;
+  }
+  public:
+
+  ::google::protobuf::Metadata GetMetadata() const PROTOBUF_FINAL;
+
+  // nested types ----------------------------------------------------
+
+  // accessors -------------------------------------------------------
+
+  // string message = 2;
+  void clear_message();
+  static const int kMessageFieldNumber = 2;
+  const ::std::string& message() const;
+  void set_message(const ::std::string& value);
+  #if LANG_CXX11
+  void set_message(::std::string&& value);
+  #endif
+  void set_message(const char* value);
+  void set_message(const char* value, size_t size);
+  ::std::string* mutable_message();
+  ::std::string* release_message();
+  void set_allocated_message(::std::string* message);
+
+  // string error_code = 3;
+  void clear_error_code();
+  static const int kErrorCodeFieldNumber = 3;
+  const ::std::string& error_code() const;
+  void set_error_code(const ::std::string& value);
+  #if LANG_CXX11
+  void set_error_code(::std::string&& value);
+  #endif
+  void set_error_code(const char* value);
+  void set_error_code(const char* value, size_t size);
+  ::std::string* mutable_error_code();
+  ::std::string* release_error_code();
+  void set_allocated_error_code(::std::string* error_code);
+
+  // .game.PlayerBrief brief = 4;
+  bool has_brief() const;
+  void clear_brief();
+  static const int kBriefFieldNumber = 4;
+  const ::game::PlayerBrief& brief() const;
+  ::game::PlayerBrief* release_brief();
+  ::game::PlayerBrief* mutable_brief();
+  void set_allocated_brief(::game::PlayerBrief* brief);
+
+  // bool ok = 1;
+  void clear_ok();
+  static const int kOkFieldNumber = 1;
+  bool ok() const;
+  void set_ok(bool value);
+
+  // @@protoc_insertion_point(class_scope:game.GetPlayerBriefRsp)
+ private:
+
+  ::google::protobuf::internal::InternalMetadataWithArena _internal_metadata_;
+  ::google::protobuf::internal::ArenaStringPtr message_;
+  ::google::protobuf::internal::ArenaStringPtr error_code_;
+  ::game::PlayerBrief* brief_;
+  bool ok_;
+  mutable int _cached_size_;
+  friend struct ::protobuf_game_2eproto::TableStruct;
+  friend void ::protobuf_game_2eproto::InitDefaultsGetPlayerBriefRspImpl();
+};
+// -------------------------------------------------------------------
+
+class QueryOnlineStateReq : public ::google::protobuf::Message /* @@protoc_insertion_point(class_definition:game.QueryOnlineStateReq) */ {
+ public:
+  QueryOnlineStateReq();
+  virtual ~QueryOnlineStateReq();
+
+  QueryOnlineStateReq(const QueryOnlineStateReq& from);
+
+  inline QueryOnlineStateReq& operator=(const QueryOnlineStateReq& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  #if LANG_CXX11
+  QueryOnlineStateReq(QueryOnlineStateReq&& from) noexcept
+    : QueryOnlineStateReq() {
+    *this = ::std::move(from);
+  }
+
+  inline QueryOnlineStateReq& operator=(QueryOnlineStateReq&& from) noexcept {
+    if (GetArenaNoVirtual() == from.GetArenaNoVirtual()) {
+      if (this != &from) InternalSwap(&from);
+    } else {
+      CopyFrom(from);
+    }
+    return *this;
+  }
+  #endif
+  static const ::google::protobuf::Descriptor* descriptor();
+  static const QueryOnlineStateReq& default_instance();
+
+  static void InitAsDefaultInstance();  // FOR INTERNAL USE ONLY
+  static inline const QueryOnlineStateReq* internal_default_instance() {
+    return reinterpret_cast<const QueryOnlineStateReq*>(
+               &_QueryOnlineStateReq_default_instance_);
+  }
+  static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
+    71;
+
+  void Swap(QueryOnlineStateReq* other);
+  friend void swap(QueryOnlineStateReq& a, QueryOnlineStateReq& b) {
+    a.Swap(&b);
+  }
+
+  // implements Message ----------------------------------------------
+
+  inline QueryOnlineStateReq* New() const PROTOBUF_FINAL { return New(NULL); }
+
+  QueryOnlineStateReq* New(::google::protobuf::Arena* arena) const PROTOBUF_FINAL;
+  void CopyFrom(const ::google::protobuf::Message& from) PROTOBUF_FINAL;
+  void MergeFrom(const ::google::protobuf::Message& from) PROTOBUF_FINAL;
+  void CopyFrom(const QueryOnlineStateReq& from);
+  void MergeFrom(const QueryOnlineStateReq& from);
+  void Clear() PROTOBUF_FINAL;
+  bool IsInitialized() const PROTOBUF_FINAL;
+
+  size_t ByteSizeLong() const PROTOBUF_FINAL;
+  bool MergePartialFromCodedStream(
+      ::google::protobuf::io::CodedInputStream* input) PROTOBUF_FINAL;
+  void SerializeWithCachedSizes(
+      ::google::protobuf::io::CodedOutputStream* output) const PROTOBUF_FINAL;
+  ::google::protobuf::uint8* InternalSerializeWithCachedSizesToArray(
+      bool deterministic, ::google::protobuf::uint8* target) const PROTOBUF_FINAL;
+  int GetCachedSize() const PROTOBUF_FINAL { return _cached_size_; }
+  private:
+  void SharedCtor();
+  void SharedDtor();
+  void SetCachedSize(int size) const PROTOBUF_FINAL;
+  void InternalSwap(QueryOnlineStateReq* other);
+  private:
+  inline ::google::protobuf::Arena* GetArenaNoVirtual() const {
+    return NULL;
+  }
+  inline void* MaybeArenaPtr() const {
+    return NULL;
+  }
+  public:
+
+  ::google::protobuf::Metadata GetMetadata() const PROTOBUF_FINAL;
+
+  // nested types ----------------------------------------------------
+
+  // accessors -------------------------------------------------------
+
+  // uint64 player_id = 1;
+  void clear_player_id();
+  static const int kPlayerIdFieldNumber = 1;
+  ::google::protobuf::uint64 player_id() const;
+  void set_player_id(::google::protobuf::uint64 value);
+
+  // uint64 target_player_id = 2;
+  void clear_target_player_id();
+  static const int kTargetPlayerIdFieldNumber = 2;
+  ::google::protobuf::uint64 target_player_id() const;
+  void set_target_player_id(::google::protobuf::uint64 value);
+
+  // @@protoc_insertion_point(class_scope:game.QueryOnlineStateReq)
+ private:
+
+  ::google::protobuf::internal::InternalMetadataWithArena _internal_metadata_;
+  ::google::protobuf::uint64 player_id_;
+  ::google::protobuf::uint64 target_player_id_;
+  mutable int _cached_size_;
+  friend struct ::protobuf_game_2eproto::TableStruct;
+  friend void ::protobuf_game_2eproto::InitDefaultsQueryOnlineStateReqImpl();
+};
+// -------------------------------------------------------------------
+
+class QueryOnlineStateRsp : public ::google::protobuf::Message /* @@protoc_insertion_point(class_definition:game.QueryOnlineStateRsp) */ {
+ public:
+  QueryOnlineStateRsp();
+  virtual ~QueryOnlineStateRsp();
+
+  QueryOnlineStateRsp(const QueryOnlineStateRsp& from);
+
+  inline QueryOnlineStateRsp& operator=(const QueryOnlineStateRsp& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  #if LANG_CXX11
+  QueryOnlineStateRsp(QueryOnlineStateRsp&& from) noexcept
+    : QueryOnlineStateRsp() {
+    *this = ::std::move(from);
+  }
+
+  inline QueryOnlineStateRsp& operator=(QueryOnlineStateRsp&& from) noexcept {
+    if (GetArenaNoVirtual() == from.GetArenaNoVirtual()) {
+      if (this != &from) InternalSwap(&from);
+    } else {
+      CopyFrom(from);
+    }
+    return *this;
+  }
+  #endif
+  static const ::google::protobuf::Descriptor* descriptor();
+  static const QueryOnlineStateRsp& default_instance();
+
+  static void InitAsDefaultInstance();  // FOR INTERNAL USE ONLY
+  static inline const QueryOnlineStateRsp* internal_default_instance() {
+    return reinterpret_cast<const QueryOnlineStateRsp*>(
+               &_QueryOnlineStateRsp_default_instance_);
+  }
+  static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
+    72;
+
+  void Swap(QueryOnlineStateRsp* other);
+  friend void swap(QueryOnlineStateRsp& a, QueryOnlineStateRsp& b) {
+    a.Swap(&b);
+  }
+
+  // implements Message ----------------------------------------------
+
+  inline QueryOnlineStateRsp* New() const PROTOBUF_FINAL { return New(NULL); }
+
+  QueryOnlineStateRsp* New(::google::protobuf::Arena* arena) const PROTOBUF_FINAL;
+  void CopyFrom(const ::google::protobuf::Message& from) PROTOBUF_FINAL;
+  void MergeFrom(const ::google::protobuf::Message& from) PROTOBUF_FINAL;
+  void CopyFrom(const QueryOnlineStateRsp& from);
+  void MergeFrom(const QueryOnlineStateRsp& from);
+  void Clear() PROTOBUF_FINAL;
+  bool IsInitialized() const PROTOBUF_FINAL;
+
+  size_t ByteSizeLong() const PROTOBUF_FINAL;
+  bool MergePartialFromCodedStream(
+      ::google::protobuf::io::CodedInputStream* input) PROTOBUF_FINAL;
+  void SerializeWithCachedSizes(
+      ::google::protobuf::io::CodedOutputStream* output) const PROTOBUF_FINAL;
+  ::google::protobuf::uint8* InternalSerializeWithCachedSizesToArray(
+      bool deterministic, ::google::protobuf::uint8* target) const PROTOBUF_FINAL;
+  int GetCachedSize() const PROTOBUF_FINAL { return _cached_size_; }
+  private:
+  void SharedCtor();
+  void SharedDtor();
+  void SetCachedSize(int size) const PROTOBUF_FINAL;
+  void InternalSwap(QueryOnlineStateRsp* other);
+  private:
+  inline ::google::protobuf::Arena* GetArenaNoVirtual() const {
+    return NULL;
+  }
+  inline void* MaybeArenaPtr() const {
+    return NULL;
+  }
+  public:
+
+  ::google::protobuf::Metadata GetMetadata() const PROTOBUF_FINAL;
+
+  // nested types ----------------------------------------------------
+
+  // accessors -------------------------------------------------------
+
+  // string message = 2;
+  void clear_message();
+  static const int kMessageFieldNumber = 2;
+  const ::std::string& message() const;
+  void set_message(const ::std::string& value);
+  #if LANG_CXX11
+  void set_message(::std::string&& value);
+  #endif
+  void set_message(const char* value);
+  void set_message(const char* value, size_t size);
+  ::std::string* mutable_message();
+  ::std::string* release_message();
+  void set_allocated_message(::std::string* message);
+
+  // string error_code = 3;
+  void clear_error_code();
+  static const int kErrorCodeFieldNumber = 3;
+  const ::std::string& error_code() const;
+  void set_error_code(const ::std::string& value);
+  #if LANG_CXX11
+  void set_error_code(::std::string&& value);
+  #endif
+  void set_error_code(const char* value);
+  void set_error_code(const char* value, size_t size);
+  ::std::string* mutable_error_code();
+  ::std::string* release_error_code();
+  void set_allocated_error_code(::std::string* error_code);
+
+  // string state = 5;
+  void clear_state();
+  static const int kStateFieldNumber = 5;
+  const ::std::string& state() const;
+  void set_state(const ::std::string& value);
+  #if LANG_CXX11
+  void set_state(::std::string&& value);
+  #endif
+  void set_state(const char* value);
+  void set_state(const char* value, size_t size);
+  ::std::string* mutable_state();
+  ::std::string* release_state();
+  void set_allocated_state(::std::string* state);
+
+  // uint64 player_id = 4;
+  void clear_player_id();
+  static const int kPlayerIdFieldNumber = 4;
+  ::google::protobuf::uint64 player_id() const;
+  void set_player_id(::google::protobuf::uint64 value);
+
+  // bool ok = 1;
+  void clear_ok();
+  static const int kOkFieldNumber = 1;
+  bool ok() const;
+  void set_ok(bool value);
+
+  // @@protoc_insertion_point(class_scope:game.QueryOnlineStateRsp)
+ private:
+
+  ::google::protobuf::internal::InternalMetadataWithArena _internal_metadata_;
+  ::google::protobuf::internal::ArenaStringPtr message_;
+  ::google::protobuf::internal::ArenaStringPtr error_code_;
+  ::google::protobuf::internal::ArenaStringPtr state_;
+  ::google::protobuf::uint64 player_id_;
+  bool ok_;
+  mutable int _cached_size_;
+  friend struct ::protobuf_game_2eproto::TableStruct;
+  friend void ::protobuf_game_2eproto::InitDefaultsQueryOnlineStateRspImpl();
+};
+// -------------------------------------------------------------------
+
 class MoveReq : public ::google::protobuf::Message /* @@protoc_insertion_point(class_definition:game.MoveReq) */ {
  public:
   MoveReq();
@@ -9629,7 +11070,7 @@ class MoveReq : public ::google::protobuf::Message /* @@protoc_insertion_point(c
                &_MoveReq_default_instance_);
   }
   static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
-    64;
+    73;
 
   void Swap(MoveReq* other);
   friend void swap(MoveReq& a, MoveReq& b) {
@@ -9759,7 +11200,7 @@ class MoveRsp : public ::google::protobuf::Message /* @@protoc_insertion_point(c
                &_MoveRsp_default_instance_);
   }
   static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
-    65;
+    74;
 
   void Swap(MoveRsp* other);
   friend void swap(MoveRsp& a, MoveRsp& b) {
@@ -9919,7 +11360,7 @@ class AoiEvent : public ::google::protobuf::Message /* @@protoc_insertion_point(
                &_AoiEvent_default_instance_);
   }
   static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
-    66;
+    75;
 
   void Swap(AoiEvent* other);
   friend void swap(AoiEvent& a, AoiEvent& b) {
@@ -10028,7 +11469,7 @@ class AoiDelta : public ::google::protobuf::Message /* @@protoc_insertion_point(
                &_AoiDelta_default_instance_);
   }
   static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
-    67;
+    76;
 
   void Swap(AoiDelta* other);
   friend void swap(AoiDelta& a, AoiDelta& b) {
@@ -10140,7 +11581,7 @@ class PlayerMailSendReq : public ::google::protobuf::Message /* @@protoc_inserti
                &_PlayerMailSendReq_default_instance_);
   }
   static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
-    68;
+    77;
 
   void Swap(PlayerMailSendReq* other);
   friend void swap(PlayerMailSendReq& a, PlayerMailSendReq& b) {
@@ -10291,7 +11732,7 @@ class PlayerMailSendRsp : public ::google::protobuf::Message /* @@protoc_inserti
                &_PlayerMailSendRsp_default_instance_);
   }
   static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
-    69;
+    78;
 
   void Swap(PlayerMailSendRsp* other);
   friend void swap(PlayerMailSendRsp& a, PlayerMailSendRsp& b) {
@@ -10434,7 +11875,7 @@ class MailboxChangedNotify : public ::google::protobuf::Message /* @@protoc_inse
                &_MailboxChangedNotify_default_instance_);
   }
   static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
-    70;
+    79;
 
   void Swap(MailboxChangedNotify* other);
   friend void swap(MailboxChangedNotify& a, MailboxChangedNotify& b) {
@@ -10512,6 +11953,660 @@ class MailboxChangedNotify : public ::google::protobuf::Message /* @@protoc_inse
 };
 // -------------------------------------------------------------------
 
+class ClientHelloReq : public ::google::protobuf::Message /* @@protoc_insertion_point(class_definition:game.ClientHelloReq) */ {
+ public:
+  ClientHelloReq();
+  virtual ~ClientHelloReq();
+
+  ClientHelloReq(const ClientHelloReq& from);
+
+  inline ClientHelloReq& operator=(const ClientHelloReq& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  #if LANG_CXX11
+  ClientHelloReq(ClientHelloReq&& from) noexcept
+    : ClientHelloReq() {
+    *this = ::std::move(from);
+  }
+
+  inline ClientHelloReq& operator=(ClientHelloReq&& from) noexcept {
+    if (GetArenaNoVirtual() == from.GetArenaNoVirtual()) {
+      if (this != &from) InternalSwap(&from);
+    } else {
+      CopyFrom(from);
+    }
+    return *this;
+  }
+  #endif
+  static const ::google::protobuf::Descriptor* descriptor();
+  static const ClientHelloReq& default_instance();
+
+  static void InitAsDefaultInstance();  // FOR INTERNAL USE ONLY
+  static inline const ClientHelloReq* internal_default_instance() {
+    return reinterpret_cast<const ClientHelloReq*>(
+               &_ClientHelloReq_default_instance_);
+  }
+  static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
+    80;
+
+  void Swap(ClientHelloReq* other);
+  friend void swap(ClientHelloReq& a, ClientHelloReq& b) {
+    a.Swap(&b);
+  }
+
+  // implements Message ----------------------------------------------
+
+  inline ClientHelloReq* New() const PROTOBUF_FINAL { return New(NULL); }
+
+  ClientHelloReq* New(::google::protobuf::Arena* arena) const PROTOBUF_FINAL;
+  void CopyFrom(const ::google::protobuf::Message& from) PROTOBUF_FINAL;
+  void MergeFrom(const ::google::protobuf::Message& from) PROTOBUF_FINAL;
+  void CopyFrom(const ClientHelloReq& from);
+  void MergeFrom(const ClientHelloReq& from);
+  void Clear() PROTOBUF_FINAL;
+  bool IsInitialized() const PROTOBUF_FINAL;
+
+  size_t ByteSizeLong() const PROTOBUF_FINAL;
+  bool MergePartialFromCodedStream(
+      ::google::protobuf::io::CodedInputStream* input) PROTOBUF_FINAL;
+  void SerializeWithCachedSizes(
+      ::google::protobuf::io::CodedOutputStream* output) const PROTOBUF_FINAL;
+  ::google::protobuf::uint8* InternalSerializeWithCachedSizesToArray(
+      bool deterministic, ::google::protobuf::uint8* target) const PROTOBUF_FINAL;
+  int GetCachedSize() const PROTOBUF_FINAL { return _cached_size_; }
+  private:
+  void SharedCtor();
+  void SharedDtor();
+  void SetCachedSize(int size) const PROTOBUF_FINAL;
+  void InternalSwap(ClientHelloReq* other);
+  private:
+  inline ::google::protobuf::Arena* GetArenaNoVirtual() const {
+    return NULL;
+  }
+  inline void* MaybeArenaPtr() const {
+    return NULL;
+  }
+  public:
+
+  ::google::protobuf::Metadata GetMetadata() const PROTOBUF_FINAL;
+
+  // nested types ----------------------------------------------------
+
+  // accessors -------------------------------------------------------
+
+  // repeated string capabilities = 6;
+  int capabilities_size() const;
+  void clear_capabilities();
+  static const int kCapabilitiesFieldNumber = 6;
+  const ::std::string& capabilities(int index) const;
+  ::std::string* mutable_capabilities(int index);
+  void set_capabilities(int index, const ::std::string& value);
+  #if LANG_CXX11
+  void set_capabilities(int index, ::std::string&& value);
+  #endif
+  void set_capabilities(int index, const char* value);
+  void set_capabilities(int index, const char* value, size_t size);
+  ::std::string* add_capabilities();
+  void add_capabilities(const ::std::string& value);
+  #if LANG_CXX11
+  void add_capabilities(::std::string&& value);
+  #endif
+  void add_capabilities(const char* value);
+  void add_capabilities(const char* value, size_t size);
+  const ::google::protobuf::RepeatedPtrField< ::std::string>& capabilities() const;
+  ::google::protobuf::RepeatedPtrField< ::std::string>* mutable_capabilities();
+
+  // string schema_sha256 = 2;
+  void clear_schema_sha256();
+  static const int kSchemaSha256FieldNumber = 2;
+  const ::std::string& schema_sha256() const;
+  void set_schema_sha256(const ::std::string& value);
+  #if LANG_CXX11
+  void set_schema_sha256(::std::string&& value);
+  #endif
+  void set_schema_sha256(const char* value);
+  void set_schema_sha256(const char* value, size_t size);
+  ::std::string* mutable_schema_sha256();
+  ::std::string* release_schema_sha256();
+  void set_allocated_schema_sha256(::std::string* schema_sha256);
+
+  // string client_version = 3;
+  void clear_client_version();
+  static const int kClientVersionFieldNumber = 3;
+  const ::std::string& client_version() const;
+  void set_client_version(const ::std::string& value);
+  #if LANG_CXX11
+  void set_client_version(::std::string&& value);
+  #endif
+  void set_client_version(const char* value);
+  void set_client_version(const char* value, size_t size);
+  ::std::string* mutable_client_version();
+  ::std::string* release_client_version();
+  void set_allocated_client_version(::std::string* client_version);
+
+  // string platform = 4;
+  void clear_platform();
+  static const int kPlatformFieldNumber = 4;
+  const ::std::string& platform() const;
+  void set_platform(const ::std::string& value);
+  #if LANG_CXX11
+  void set_platform(::std::string&& value);
+  #endif
+  void set_platform(const char* value);
+  void set_platform(const char* value, size_t size);
+  ::std::string* mutable_platform();
+  ::std::string* release_platform();
+  void set_allocated_platform(::std::string* platform);
+
+  // string build_channel = 5;
+  void clear_build_channel();
+  static const int kBuildChannelFieldNumber = 5;
+  const ::std::string& build_channel() const;
+  void set_build_channel(const ::std::string& value);
+  #if LANG_CXX11
+  void set_build_channel(::std::string&& value);
+  #endif
+  void set_build_channel(const char* value);
+  void set_build_channel(const char* value, size_t size);
+  ::std::string* mutable_build_channel();
+  ::std::string* release_build_channel();
+  void set_allocated_build_channel(::std::string* build_channel);
+
+  // uint32 protocol_version = 1;
+  void clear_protocol_version();
+  static const int kProtocolVersionFieldNumber = 1;
+  ::google::protobuf::uint32 protocol_version() const;
+  void set_protocol_version(::google::protobuf::uint32 value);
+
+  // @@protoc_insertion_point(class_scope:game.ClientHelloReq)
+ private:
+
+  ::google::protobuf::internal::InternalMetadataWithArena _internal_metadata_;
+  ::google::protobuf::RepeatedPtrField< ::std::string> capabilities_;
+  ::google::protobuf::internal::ArenaStringPtr schema_sha256_;
+  ::google::protobuf::internal::ArenaStringPtr client_version_;
+  ::google::protobuf::internal::ArenaStringPtr platform_;
+  ::google::protobuf::internal::ArenaStringPtr build_channel_;
+  ::google::protobuf::uint32 protocol_version_;
+  mutable int _cached_size_;
+  friend struct ::protobuf_game_2eproto::TableStruct;
+  friend void ::protobuf_game_2eproto::InitDefaultsClientHelloReqImpl();
+};
+// -------------------------------------------------------------------
+
+class ServerHelloRsp : public ::google::protobuf::Message /* @@protoc_insertion_point(class_definition:game.ServerHelloRsp) */ {
+ public:
+  ServerHelloRsp();
+  virtual ~ServerHelloRsp();
+
+  ServerHelloRsp(const ServerHelloRsp& from);
+
+  inline ServerHelloRsp& operator=(const ServerHelloRsp& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  #if LANG_CXX11
+  ServerHelloRsp(ServerHelloRsp&& from) noexcept
+    : ServerHelloRsp() {
+    *this = ::std::move(from);
+  }
+
+  inline ServerHelloRsp& operator=(ServerHelloRsp&& from) noexcept {
+    if (GetArenaNoVirtual() == from.GetArenaNoVirtual()) {
+      if (this != &from) InternalSwap(&from);
+    } else {
+      CopyFrom(from);
+    }
+    return *this;
+  }
+  #endif
+  static const ::google::protobuf::Descriptor* descriptor();
+  static const ServerHelloRsp& default_instance();
+
+  static void InitAsDefaultInstance();  // FOR INTERNAL USE ONLY
+  static inline const ServerHelloRsp* internal_default_instance() {
+    return reinterpret_cast<const ServerHelloRsp*>(
+               &_ServerHelloRsp_default_instance_);
+  }
+  static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
+    81;
+
+  void Swap(ServerHelloRsp* other);
+  friend void swap(ServerHelloRsp& a, ServerHelloRsp& b) {
+    a.Swap(&b);
+  }
+
+  // implements Message ----------------------------------------------
+
+  inline ServerHelloRsp* New() const PROTOBUF_FINAL { return New(NULL); }
+
+  ServerHelloRsp* New(::google::protobuf::Arena* arena) const PROTOBUF_FINAL;
+  void CopyFrom(const ::google::protobuf::Message& from) PROTOBUF_FINAL;
+  void MergeFrom(const ::google::protobuf::Message& from) PROTOBUF_FINAL;
+  void CopyFrom(const ServerHelloRsp& from);
+  void MergeFrom(const ServerHelloRsp& from);
+  void Clear() PROTOBUF_FINAL;
+  bool IsInitialized() const PROTOBUF_FINAL;
+
+  size_t ByteSizeLong() const PROTOBUF_FINAL;
+  bool MergePartialFromCodedStream(
+      ::google::protobuf::io::CodedInputStream* input) PROTOBUF_FINAL;
+  void SerializeWithCachedSizes(
+      ::google::protobuf::io::CodedOutputStream* output) const PROTOBUF_FINAL;
+  ::google::protobuf::uint8* InternalSerializeWithCachedSizesToArray(
+      bool deterministic, ::google::protobuf::uint8* target) const PROTOBUF_FINAL;
+  int GetCachedSize() const PROTOBUF_FINAL { return _cached_size_; }
+  private:
+  void SharedCtor();
+  void SharedDtor();
+  void SetCachedSize(int size) const PROTOBUF_FINAL;
+  void InternalSwap(ServerHelloRsp* other);
+  private:
+  inline ::google::protobuf::Arena* GetArenaNoVirtual() const {
+    return NULL;
+  }
+  inline void* MaybeArenaPtr() const {
+    return NULL;
+  }
+  public:
+
+  ::google::protobuf::Metadata GetMetadata() const PROTOBUF_FINAL;
+
+  // nested types ----------------------------------------------------
+
+  // accessors -------------------------------------------------------
+
+  // repeated string capabilities = 11;
+  int capabilities_size() const;
+  void clear_capabilities();
+  static const int kCapabilitiesFieldNumber = 11;
+  const ::std::string& capabilities(int index) const;
+  ::std::string* mutable_capabilities(int index);
+  void set_capabilities(int index, const ::std::string& value);
+  #if LANG_CXX11
+  void set_capabilities(int index, ::std::string&& value);
+  #endif
+  void set_capabilities(int index, const char* value);
+  void set_capabilities(int index, const char* value, size_t size);
+  ::std::string* add_capabilities();
+  void add_capabilities(const ::std::string& value);
+  #if LANG_CXX11
+  void add_capabilities(::std::string&& value);
+  #endif
+  void add_capabilities(const char* value);
+  void add_capabilities(const char* value, size_t size);
+  const ::google::protobuf::RepeatedPtrField< ::std::string>& capabilities() const;
+  ::google::protobuf::RepeatedPtrField< ::std::string>* mutable_capabilities();
+
+  // string error_code = 2;
+  void clear_error_code();
+  static const int kErrorCodeFieldNumber = 2;
+  const ::std::string& error_code() const;
+  void set_error_code(const ::std::string& value);
+  #if LANG_CXX11
+  void set_error_code(::std::string&& value);
+  #endif
+  void set_error_code(const char* value);
+  void set_error_code(const char* value, size_t size);
+  ::std::string* mutable_error_code();
+  ::std::string* release_error_code();
+  void set_allocated_error_code(::std::string* error_code);
+
+  // string message = 3;
+  void clear_message();
+  static const int kMessageFieldNumber = 3;
+  const ::std::string& message() const;
+  void set_message(const ::std::string& value);
+  #if LANG_CXX11
+  void set_message(::std::string&& value);
+  #endif
+  void set_message(const char* value);
+  void set_message(const char* value, size_t size);
+  ::std::string* mutable_message();
+  ::std::string* release_message();
+  void set_allocated_message(::std::string* message);
+
+  // string schema_sha256 = 6;
+  void clear_schema_sha256();
+  static const int kSchemaSha256FieldNumber = 6;
+  const ::std::string& schema_sha256() const;
+  void set_schema_sha256(const ::std::string& value);
+  #if LANG_CXX11
+  void set_schema_sha256(::std::string&& value);
+  #endif
+  void set_schema_sha256(const char* value);
+  void set_schema_sha256(const char* value, size_t size);
+  ::std::string* mutable_schema_sha256();
+  ::std::string* release_schema_sha256();
+  void set_allocated_schema_sha256(::std::string* schema_sha256);
+
+  // string server_build = 7;
+  void clear_server_build();
+  static const int kServerBuildFieldNumber = 7;
+  const ::std::string& server_build() const;
+  void set_server_build(const ::std::string& value);
+  #if LANG_CXX11
+  void set_server_build(::std::string&& value);
+  #endif
+  void set_server_build(const char* value);
+  void set_server_build(const char* value, size_t size);
+  ::std::string* mutable_server_build();
+  ::std::string* release_server_build();
+  void set_allocated_server_build(::std::string* server_build);
+
+  // bool ok = 1;
+  void clear_ok();
+  static const int kOkFieldNumber = 1;
+  bool ok() const;
+  void set_ok(bool value);
+
+  // uint32 protocol_version = 4;
+  void clear_protocol_version();
+  static const int kProtocolVersionFieldNumber = 4;
+  ::google::protobuf::uint32 protocol_version() const;
+  void set_protocol_version(::google::protobuf::uint32 value);
+
+  // uint32 min_supported_protocol_version = 5;
+  void clear_min_supported_protocol_version();
+  static const int kMinSupportedProtocolVersionFieldNumber = 5;
+  ::google::protobuf::uint32 min_supported_protocol_version() const;
+  void set_min_supported_protocol_version(::google::protobuf::uint32 value);
+
+  // uint32 heartbeat_interval_ms = 9;
+  void clear_heartbeat_interval_ms();
+  static const int kHeartbeatIntervalMsFieldNumber = 9;
+  ::google::protobuf::uint32 heartbeat_interval_ms() const;
+  void set_heartbeat_interval_ms(::google::protobuf::uint32 value);
+
+  // int64 server_time_ms = 8;
+  void clear_server_time_ms();
+  static const int kServerTimeMsFieldNumber = 8;
+  ::google::protobuf::int64 server_time_ms() const;
+  void set_server_time_ms(::google::protobuf::int64 value);
+
+  // uint32 idle_timeout_ms = 10;
+  void clear_idle_timeout_ms();
+  static const int kIdleTimeoutMsFieldNumber = 10;
+  ::google::protobuf::uint32 idle_timeout_ms() const;
+  void set_idle_timeout_ms(::google::protobuf::uint32 value);
+
+  // @@protoc_insertion_point(class_scope:game.ServerHelloRsp)
+ private:
+
+  ::google::protobuf::internal::InternalMetadataWithArena _internal_metadata_;
+  ::google::protobuf::RepeatedPtrField< ::std::string> capabilities_;
+  ::google::protobuf::internal::ArenaStringPtr error_code_;
+  ::google::protobuf::internal::ArenaStringPtr message_;
+  ::google::protobuf::internal::ArenaStringPtr schema_sha256_;
+  ::google::protobuf::internal::ArenaStringPtr server_build_;
+  bool ok_;
+  ::google::protobuf::uint32 protocol_version_;
+  ::google::protobuf::uint32 min_supported_protocol_version_;
+  ::google::protobuf::uint32 heartbeat_interval_ms_;
+  ::google::protobuf::int64 server_time_ms_;
+  ::google::protobuf::uint32 idle_timeout_ms_;
+  mutable int _cached_size_;
+  friend struct ::protobuf_game_2eproto::TableStruct;
+  friend void ::protobuf_game_2eproto::InitDefaultsServerHelloRspImpl();
+};
+// -------------------------------------------------------------------
+
+class HeartbeatReq : public ::google::protobuf::Message /* @@protoc_insertion_point(class_definition:game.HeartbeatReq) */ {
+ public:
+  HeartbeatReq();
+  virtual ~HeartbeatReq();
+
+  HeartbeatReq(const HeartbeatReq& from);
+
+  inline HeartbeatReq& operator=(const HeartbeatReq& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  #if LANG_CXX11
+  HeartbeatReq(HeartbeatReq&& from) noexcept
+    : HeartbeatReq() {
+    *this = ::std::move(from);
+  }
+
+  inline HeartbeatReq& operator=(HeartbeatReq&& from) noexcept {
+    if (GetArenaNoVirtual() == from.GetArenaNoVirtual()) {
+      if (this != &from) InternalSwap(&from);
+    } else {
+      CopyFrom(from);
+    }
+    return *this;
+  }
+  #endif
+  static const ::google::protobuf::Descriptor* descriptor();
+  static const HeartbeatReq& default_instance();
+
+  static void InitAsDefaultInstance();  // FOR INTERNAL USE ONLY
+  static inline const HeartbeatReq* internal_default_instance() {
+    return reinterpret_cast<const HeartbeatReq*>(
+               &_HeartbeatReq_default_instance_);
+  }
+  static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
+    82;
+
+  void Swap(HeartbeatReq* other);
+  friend void swap(HeartbeatReq& a, HeartbeatReq& b) {
+    a.Swap(&b);
+  }
+
+  // implements Message ----------------------------------------------
+
+  inline HeartbeatReq* New() const PROTOBUF_FINAL { return New(NULL); }
+
+  HeartbeatReq* New(::google::protobuf::Arena* arena) const PROTOBUF_FINAL;
+  void CopyFrom(const ::google::protobuf::Message& from) PROTOBUF_FINAL;
+  void MergeFrom(const ::google::protobuf::Message& from) PROTOBUF_FINAL;
+  void CopyFrom(const HeartbeatReq& from);
+  void MergeFrom(const HeartbeatReq& from);
+  void Clear() PROTOBUF_FINAL;
+  bool IsInitialized() const PROTOBUF_FINAL;
+
+  size_t ByteSizeLong() const PROTOBUF_FINAL;
+  bool MergePartialFromCodedStream(
+      ::google::protobuf::io::CodedInputStream* input) PROTOBUF_FINAL;
+  void SerializeWithCachedSizes(
+      ::google::protobuf::io::CodedOutputStream* output) const PROTOBUF_FINAL;
+  ::google::protobuf::uint8* InternalSerializeWithCachedSizesToArray(
+      bool deterministic, ::google::protobuf::uint8* target) const PROTOBUF_FINAL;
+  int GetCachedSize() const PROTOBUF_FINAL { return _cached_size_; }
+  private:
+  void SharedCtor();
+  void SharedDtor();
+  void SetCachedSize(int size) const PROTOBUF_FINAL;
+  void InternalSwap(HeartbeatReq* other);
+  private:
+  inline ::google::protobuf::Arena* GetArenaNoVirtual() const {
+    return NULL;
+  }
+  inline void* MaybeArenaPtr() const {
+    return NULL;
+  }
+  public:
+
+  ::google::protobuf::Metadata GetMetadata() const PROTOBUF_FINAL;
+
+  // nested types ----------------------------------------------------
+
+  // accessors -------------------------------------------------------
+
+  // int64 client_monotonic_ms = 1;
+  void clear_client_monotonic_ms();
+  static const int kClientMonotonicMsFieldNumber = 1;
+  ::google::protobuf::int64 client_monotonic_ms() const;
+  void set_client_monotonic_ms(::google::protobuf::int64 value);
+
+  // uint64 last_server_seq = 2;
+  void clear_last_server_seq();
+  static const int kLastServerSeqFieldNumber = 2;
+  ::google::protobuf::uint64 last_server_seq() const;
+  void set_last_server_seq(::google::protobuf::uint64 value);
+
+  // int64 echo_ms = 3;
+  void clear_echo_ms();
+  static const int kEchoMsFieldNumber = 3;
+  ::google::protobuf::int64 echo_ms() const;
+  void set_echo_ms(::google::protobuf::int64 value);
+
+  // @@protoc_insertion_point(class_scope:game.HeartbeatReq)
+ private:
+
+  ::google::protobuf::internal::InternalMetadataWithArena _internal_metadata_;
+  ::google::protobuf::int64 client_monotonic_ms_;
+  ::google::protobuf::uint64 last_server_seq_;
+  ::google::protobuf::int64 echo_ms_;
+  mutable int _cached_size_;
+  friend struct ::protobuf_game_2eproto::TableStruct;
+  friend void ::protobuf_game_2eproto::InitDefaultsHeartbeatReqImpl();
+};
+// -------------------------------------------------------------------
+
+class HeartbeatRsp : public ::google::protobuf::Message /* @@protoc_insertion_point(class_definition:game.HeartbeatRsp) */ {
+ public:
+  HeartbeatRsp();
+  virtual ~HeartbeatRsp();
+
+  HeartbeatRsp(const HeartbeatRsp& from);
+
+  inline HeartbeatRsp& operator=(const HeartbeatRsp& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  #if LANG_CXX11
+  HeartbeatRsp(HeartbeatRsp&& from) noexcept
+    : HeartbeatRsp() {
+    *this = ::std::move(from);
+  }
+
+  inline HeartbeatRsp& operator=(HeartbeatRsp&& from) noexcept {
+    if (GetArenaNoVirtual() == from.GetArenaNoVirtual()) {
+      if (this != &from) InternalSwap(&from);
+    } else {
+      CopyFrom(from);
+    }
+    return *this;
+  }
+  #endif
+  static const ::google::protobuf::Descriptor* descriptor();
+  static const HeartbeatRsp& default_instance();
+
+  static void InitAsDefaultInstance();  // FOR INTERNAL USE ONLY
+  static inline const HeartbeatRsp* internal_default_instance() {
+    return reinterpret_cast<const HeartbeatRsp*>(
+               &_HeartbeatRsp_default_instance_);
+  }
+  static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
+    83;
+
+  void Swap(HeartbeatRsp* other);
+  friend void swap(HeartbeatRsp& a, HeartbeatRsp& b) {
+    a.Swap(&b);
+  }
+
+  // implements Message ----------------------------------------------
+
+  inline HeartbeatRsp* New() const PROTOBUF_FINAL { return New(NULL); }
+
+  HeartbeatRsp* New(::google::protobuf::Arena* arena) const PROTOBUF_FINAL;
+  void CopyFrom(const ::google::protobuf::Message& from) PROTOBUF_FINAL;
+  void MergeFrom(const ::google::protobuf::Message& from) PROTOBUF_FINAL;
+  void CopyFrom(const HeartbeatRsp& from);
+  void MergeFrom(const HeartbeatRsp& from);
+  void Clear() PROTOBUF_FINAL;
+  bool IsInitialized() const PROTOBUF_FINAL;
+
+  size_t ByteSizeLong() const PROTOBUF_FINAL;
+  bool MergePartialFromCodedStream(
+      ::google::protobuf::io::CodedInputStream* input) PROTOBUF_FINAL;
+  void SerializeWithCachedSizes(
+      ::google::protobuf::io::CodedOutputStream* output) const PROTOBUF_FINAL;
+  ::google::protobuf::uint8* InternalSerializeWithCachedSizesToArray(
+      bool deterministic, ::google::protobuf::uint8* target) const PROTOBUF_FINAL;
+  int GetCachedSize() const PROTOBUF_FINAL { return _cached_size_; }
+  private:
+  void SharedCtor();
+  void SharedDtor();
+  void SetCachedSize(int size) const PROTOBUF_FINAL;
+  void InternalSwap(HeartbeatRsp* other);
+  private:
+  inline ::google::protobuf::Arena* GetArenaNoVirtual() const {
+    return NULL;
+  }
+  inline void* MaybeArenaPtr() const {
+    return NULL;
+  }
+  public:
+
+  ::google::protobuf::Metadata GetMetadata() const PROTOBUF_FINAL;
+
+  // nested types ----------------------------------------------------
+
+  // accessors -------------------------------------------------------
+
+  // string error_code = 2;
+  void clear_error_code();
+  static const int kErrorCodeFieldNumber = 2;
+  const ::std::string& error_code() const;
+  void set_error_code(const ::std::string& value);
+  #if LANG_CXX11
+  void set_error_code(::std::string&& value);
+  #endif
+  void set_error_code(const char* value);
+  void set_error_code(const char* value, size_t size);
+  ::std::string* mutable_error_code();
+  ::std::string* release_error_code();
+  void set_allocated_error_code(::std::string* error_code);
+
+  // int64 server_time_ms = 3;
+  void clear_server_time_ms();
+  static const int kServerTimeMsFieldNumber = 3;
+  ::google::protobuf::int64 server_time_ms() const;
+  void set_server_time_ms(::google::protobuf::int64 value);
+
+  // bool ok = 1;
+  void clear_ok();
+  static const int kOkFieldNumber = 1;
+  bool ok() const;
+  void set_ok(bool value);
+
+  // uint32 jitter_hint_ms = 6;
+  void clear_jitter_hint_ms();
+  static const int kJitterHintMsFieldNumber = 6;
+  ::google::protobuf::uint32 jitter_hint_ms() const;
+  void set_jitter_hint_ms(::google::protobuf::uint32 value);
+
+  // int64 echo_ms = 4;
+  void clear_echo_ms();
+  static const int kEchoMsFieldNumber = 4;
+  ::google::protobuf::int64 echo_ms() const;
+  void set_echo_ms(::google::protobuf::int64 value);
+
+  // int64 server_recv_ms = 5;
+  void clear_server_recv_ms();
+  static const int kServerRecvMsFieldNumber = 5;
+  ::google::protobuf::int64 server_recv_ms() const;
+  void set_server_recv_ms(::google::protobuf::int64 value);
+
+  // @@protoc_insertion_point(class_scope:game.HeartbeatRsp)
+ private:
+
+  ::google::protobuf::internal::InternalMetadataWithArena _internal_metadata_;
+  ::google::protobuf::internal::ArenaStringPtr error_code_;
+  ::google::protobuf::int64 server_time_ms_;
+  bool ok_;
+  ::google::protobuf::uint32 jitter_hint_ms_;
+  ::google::protobuf::int64 echo_ms_;
+  ::google::protobuf::int64 server_recv_ms_;
+  mutable int _cached_size_;
+  friend struct ::protobuf_game_2eproto::TableStruct;
+  friend void ::protobuf_game_2eproto::InitDefaultsHeartbeatRspImpl();
+};
+// -------------------------------------------------------------------
+
 class GameRequest : public ::google::protobuf::Message /* @@protoc_insertion_point(class_definition:game.GameRequest) */ {
  public:
   GameRequest();
@@ -10571,6 +12666,12 @@ class GameRequest : public ::google::protobuf::Message /* @@protoc_insertion_poi
     kGetSelfProfile = 60,
     kMove = 61,
     kPlayerMailSend = 63,
+    kClientHello = 70,
+    kHeartbeat = 71,
+    kWorldSnapshot = 72,
+    kRespawn = 73,
+    kGetPlayerBrief = 74,
+    kQueryOnlineState = 75,
     BODY_NOT_SET = 0,
   };
 
@@ -10580,7 +12681,7 @@ class GameRequest : public ::google::protobuf::Message /* @@protoc_insertion_poi
                &_GameRequest_default_instance_);
   }
   static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
-    71;
+    84;
 
   void Swap(GameRequest* other);
   friend void swap(GameRequest& a, GameRequest& b) {
@@ -10908,6 +13009,60 @@ class GameRequest : public ::google::protobuf::Message /* @@protoc_insertion_poi
   ::game::PlayerMailSendReq* mutable_player_mail_send();
   void set_allocated_player_mail_send(::game::PlayerMailSendReq* player_mail_send);
 
+  // .game.ClientHelloReq client_hello = 70;
+  bool has_client_hello() const;
+  void clear_client_hello();
+  static const int kClientHelloFieldNumber = 70;
+  const ::game::ClientHelloReq& client_hello() const;
+  ::game::ClientHelloReq* release_client_hello();
+  ::game::ClientHelloReq* mutable_client_hello();
+  void set_allocated_client_hello(::game::ClientHelloReq* client_hello);
+
+  // .game.HeartbeatReq heartbeat = 71;
+  bool has_heartbeat() const;
+  void clear_heartbeat();
+  static const int kHeartbeatFieldNumber = 71;
+  const ::game::HeartbeatReq& heartbeat() const;
+  ::game::HeartbeatReq* release_heartbeat();
+  ::game::HeartbeatReq* mutable_heartbeat();
+  void set_allocated_heartbeat(::game::HeartbeatReq* heartbeat);
+
+  // .game.WorldSnapshotReq world_snapshot = 72;
+  bool has_world_snapshot() const;
+  void clear_world_snapshot();
+  static const int kWorldSnapshotFieldNumber = 72;
+  const ::game::WorldSnapshotReq& world_snapshot() const;
+  ::game::WorldSnapshotReq* release_world_snapshot();
+  ::game::WorldSnapshotReq* mutable_world_snapshot();
+  void set_allocated_world_snapshot(::game::WorldSnapshotReq* world_snapshot);
+
+  // .game.RespawnReq respawn = 73;
+  bool has_respawn() const;
+  void clear_respawn();
+  static const int kRespawnFieldNumber = 73;
+  const ::game::RespawnReq& respawn() const;
+  ::game::RespawnReq* release_respawn();
+  ::game::RespawnReq* mutable_respawn();
+  void set_allocated_respawn(::game::RespawnReq* respawn);
+
+  // .game.GetPlayerBriefReq get_player_brief = 74;
+  bool has_get_player_brief() const;
+  void clear_get_player_brief();
+  static const int kGetPlayerBriefFieldNumber = 74;
+  const ::game::GetPlayerBriefReq& get_player_brief() const;
+  ::game::GetPlayerBriefReq* release_get_player_brief();
+  ::game::GetPlayerBriefReq* mutable_get_player_brief();
+  void set_allocated_get_player_brief(::game::GetPlayerBriefReq* get_player_brief);
+
+  // .game.QueryOnlineStateReq query_online_state = 75;
+  bool has_query_online_state() const;
+  void clear_query_online_state();
+  static const int kQueryOnlineStateFieldNumber = 75;
+  const ::game::QueryOnlineStateReq& query_online_state() const;
+  ::game::QueryOnlineStateReq* release_query_online_state();
+  ::game::QueryOnlineStateReq* mutable_query_online_state();
+  void set_allocated_query_online_state(::game::QueryOnlineStateReq* query_online_state);
+
   BodyCase body_case() const;
   // @@protoc_insertion_point(class_scope:game.GameRequest)
  private:
@@ -10940,6 +13095,12 @@ class GameRequest : public ::google::protobuf::Message /* @@protoc_insertion_poi
   void set_has_get_self_profile();
   void set_has_move();
   void set_has_player_mail_send();
+  void set_has_client_hello();
+  void set_has_heartbeat();
+  void set_has_world_snapshot();
+  void set_has_respawn();
+  void set_has_get_player_brief();
+  void set_has_query_online_state();
 
   inline bool has_body() const;
   void clear_body();
@@ -10979,6 +13140,12 @@ class GameRequest : public ::google::protobuf::Message /* @@protoc_insertion_poi
     ::game::GetSelfProfileReq* get_self_profile_;
     ::game::MoveReq* move_;
     ::game::PlayerMailSendReq* player_mail_send_;
+    ::game::ClientHelloReq* client_hello_;
+    ::game::HeartbeatReq* heartbeat_;
+    ::game::WorldSnapshotReq* world_snapshot_;
+    ::game::RespawnReq* respawn_;
+    ::game::GetPlayerBriefReq* get_player_brief_;
+    ::game::QueryOnlineStateReq* query_online_state_;
   } body_;
   mutable int _cached_size_;
   ::google::protobuf::uint32 _oneof_case_[1];
@@ -11051,6 +13218,12 @@ class GameResponse : public ::google::protobuf::Message /* @@protoc_insertion_po
     kAoiDelta = 62,
     kPlayerMailSend = 63,
     kMailboxChanged = 64,
+    kServerHello = 70,
+    kHeartbeat = 71,
+    kRespawn = 72,
+    kChatNotify = 73,
+    kGetPlayerBrief = 74,
+    kQueryOnlineState = 75,
     BODY_NOT_SET = 0,
   };
 
@@ -11060,7 +13233,7 @@ class GameResponse : public ::google::protobuf::Message /* @@protoc_insertion_po
                &_GameResponse_default_instance_);
   }
   static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
-    72;
+    85;
 
   void Swap(GameResponse* other);
   friend void swap(GameResponse& a, GameResponse& b) {
@@ -11121,17 +13294,57 @@ class GameResponse : public ::google::protobuf::Message /* @@protoc_insertion_po
   ::std::string* release_message();
   void set_allocated_message(::std::string* message);
 
+  // string error_code = 4;
+  void clear_error_code();
+  static const int kErrorCodeFieldNumber = 4;
+  const ::std::string& error_code() const;
+  void set_error_code(const ::std::string& value);
+  #if LANG_CXX11
+  void set_error_code(::std::string&& value);
+  #endif
+  void set_error_code(const char* value);
+  void set_error_code(const char* value, size_t size);
+  ::std::string* mutable_error_code();
+  ::std::string* release_error_code();
+  void set_allocated_error_code(::std::string* error_code);
+
+  // string trace_id = 7;
+  void clear_trace_id();
+  static const int kTraceIdFieldNumber = 7;
+  const ::std::string& trace_id() const;
+  void set_trace_id(const ::std::string& value);
+  #if LANG_CXX11
+  void set_trace_id(::std::string&& value);
+  #endif
+  void set_trace_id(const char* value);
+  void set_trace_id(const char* value, size_t size);
+  ::std::string* mutable_trace_id();
+  ::std::string* release_trace_id();
+  void set_allocated_trace_id(::std::string* trace_id);
+
   // uint64 seq = 1;
   void clear_seq();
   static const int kSeqFieldNumber = 1;
   ::google::protobuf::uint64 seq() const;
   void set_seq(::google::protobuf::uint64 value);
 
+  // int64 server_time_ms = 6;
+  void clear_server_time_ms();
+  static const int kServerTimeMsFieldNumber = 6;
+  ::google::protobuf::int64 server_time_ms() const;
+  void set_server_time_ms(::google::protobuf::int64 value);
+
   // bool ok = 2;
   void clear_ok();
   static const int kOkFieldNumber = 2;
   bool ok() const;
   void set_ok(bool value);
+
+  // bool retryable = 5;
+  void clear_retryable();
+  static const int kRetryableFieldNumber = 5;
+  bool retryable() const;
+  void set_retryable(bool value);
 
   // .game.ConsumeItemRsp consume_item = 10;
   bool has_consume_item() const;
@@ -11430,6 +13643,60 @@ class GameResponse : public ::google::protobuf::Message /* @@protoc_insertion_po
   ::game::MailboxChangedNotify* mutable_mailbox_changed();
   void set_allocated_mailbox_changed(::game::MailboxChangedNotify* mailbox_changed);
 
+  // .game.ServerHelloRsp server_hello = 70;
+  bool has_server_hello() const;
+  void clear_server_hello();
+  static const int kServerHelloFieldNumber = 70;
+  const ::game::ServerHelloRsp& server_hello() const;
+  ::game::ServerHelloRsp* release_server_hello();
+  ::game::ServerHelloRsp* mutable_server_hello();
+  void set_allocated_server_hello(::game::ServerHelloRsp* server_hello);
+
+  // .game.HeartbeatRsp heartbeat = 71;
+  bool has_heartbeat() const;
+  void clear_heartbeat();
+  static const int kHeartbeatFieldNumber = 71;
+  const ::game::HeartbeatRsp& heartbeat() const;
+  ::game::HeartbeatRsp* release_heartbeat();
+  ::game::HeartbeatRsp* mutable_heartbeat();
+  void set_allocated_heartbeat(::game::HeartbeatRsp* heartbeat);
+
+  // .game.RespawnRsp respawn = 72;
+  bool has_respawn() const;
+  void clear_respawn();
+  static const int kRespawnFieldNumber = 72;
+  const ::game::RespawnRsp& respawn() const;
+  ::game::RespawnRsp* release_respawn();
+  ::game::RespawnRsp* mutable_respawn();
+  void set_allocated_respawn(::game::RespawnRsp* respawn);
+
+  // .game.ChatNotify chat_notify = 73;
+  bool has_chat_notify() const;
+  void clear_chat_notify();
+  static const int kChatNotifyFieldNumber = 73;
+  const ::game::ChatNotify& chat_notify() const;
+  ::game::ChatNotify* release_chat_notify();
+  ::game::ChatNotify* mutable_chat_notify();
+  void set_allocated_chat_notify(::game::ChatNotify* chat_notify);
+
+  // .game.GetPlayerBriefRsp get_player_brief = 74;
+  bool has_get_player_brief() const;
+  void clear_get_player_brief();
+  static const int kGetPlayerBriefFieldNumber = 74;
+  const ::game::GetPlayerBriefRsp& get_player_brief() const;
+  ::game::GetPlayerBriefRsp* release_get_player_brief();
+  ::game::GetPlayerBriefRsp* mutable_get_player_brief();
+  void set_allocated_get_player_brief(::game::GetPlayerBriefRsp* get_player_brief);
+
+  // .game.QueryOnlineStateRsp query_online_state = 75;
+  bool has_query_online_state() const;
+  void clear_query_online_state();
+  static const int kQueryOnlineStateFieldNumber = 75;
+  const ::game::QueryOnlineStateRsp& query_online_state() const;
+  ::game::QueryOnlineStateRsp* release_query_online_state();
+  ::game::QueryOnlineStateRsp* mutable_query_online_state();
+  void set_allocated_query_online_state(::game::QueryOnlineStateRsp* query_online_state);
+
   BodyCase body_case() const;
   // @@protoc_insertion_point(class_scope:game.GameResponse)
  private:
@@ -11466,6 +13733,12 @@ class GameResponse : public ::google::protobuf::Message /* @@protoc_insertion_po
   void set_has_aoi_delta();
   void set_has_player_mail_send();
   void set_has_mailbox_changed();
+  void set_has_server_hello();
+  void set_has_heartbeat();
+  void set_has_respawn();
+  void set_has_chat_notify();
+  void set_has_get_player_brief();
+  void set_has_query_online_state();
 
   inline bool has_body() const;
   void clear_body();
@@ -11473,8 +13746,12 @@ class GameResponse : public ::google::protobuf::Message /* @@protoc_insertion_po
 
   ::google::protobuf::internal::InternalMetadataWithArena _internal_metadata_;
   ::google::protobuf::internal::ArenaStringPtr message_;
+  ::google::protobuf::internal::ArenaStringPtr error_code_;
+  ::google::protobuf::internal::ArenaStringPtr trace_id_;
   ::google::protobuf::uint64 seq_;
+  ::google::protobuf::int64 server_time_ms_;
   bool ok_;
+  bool retryable_;
   union BodyUnion {
     BodyUnion() {}
     ::game::ConsumeItemRsp* consume_item_;
@@ -11510,6 +13787,12 @@ class GameResponse : public ::google::protobuf::Message /* @@protoc_insertion_po
     ::game::AoiDelta* aoi_delta_;
     ::game::PlayerMailSendRsp* player_mail_send_;
     ::game::MailboxChangedNotify* mailbox_changed_;
+    ::game::ServerHelloRsp* server_hello_;
+    ::game::HeartbeatRsp* heartbeat_;
+    ::game::RespawnRsp* respawn_;
+    ::game::ChatNotify* chat_notify_;
+    ::game::GetPlayerBriefRsp* get_player_brief_;
+    ::game::QueryOnlineStateRsp* query_online_state_;
   } body_;
   mutable int _cached_size_;
   ::google::protobuf::uint32 _oneof_case_[1];
@@ -12890,6 +15173,776 @@ inline void FullStateSnapshotRsp::set_baseline_server_seq(::google::protobuf::ui
   
   baseline_server_seq_ = value;
   // @@protoc_insertion_point(field_set:game.FullStateSnapshotRsp.baseline_server_seq)
+}
+
+// .game.PlayerAttributes profile = 8;
+inline bool FullStateSnapshotRsp::has_profile() const {
+  return this != internal_default_instance() && profile_ != NULL;
+}
+inline void FullStateSnapshotRsp::clear_profile() {
+  if (GetArenaNoVirtual() == NULL && profile_ != NULL) {
+    delete profile_;
+  }
+  profile_ = NULL;
+}
+inline const ::game::PlayerAttributes& FullStateSnapshotRsp::profile() const {
+  const ::game::PlayerAttributes* p = profile_;
+  // @@protoc_insertion_point(field_get:game.FullStateSnapshotRsp.profile)
+  return p != NULL ? *p : *reinterpret_cast<const ::game::PlayerAttributes*>(
+      &::game::_PlayerAttributes_default_instance_);
+}
+inline ::game::PlayerAttributes* FullStateSnapshotRsp::release_profile() {
+  // @@protoc_insertion_point(field_release:game.FullStateSnapshotRsp.profile)
+  
+  ::game::PlayerAttributes* temp = profile_;
+  profile_ = NULL;
+  return temp;
+}
+inline ::game::PlayerAttributes* FullStateSnapshotRsp::mutable_profile() {
+  
+  if (profile_ == NULL) {
+    profile_ = new ::game::PlayerAttributes;
+  }
+  // @@protoc_insertion_point(field_mutable:game.FullStateSnapshotRsp.profile)
+  return profile_;
+}
+inline void FullStateSnapshotRsp::set_allocated_profile(::game::PlayerAttributes* profile) {
+  ::google::protobuf::Arena* message_arena = GetArenaNoVirtual();
+  if (message_arena == NULL) {
+    delete profile_;
+  }
+  if (profile) {
+    ::google::protobuf::Arena* submessage_arena = NULL;
+    if (message_arena != submessage_arena) {
+      profile = ::google::protobuf::internal::GetOwnedMessage(
+          message_arena, profile, submessage_arena);
+    }
+    
+  } else {
+    
+  }
+  profile_ = profile;
+  // @@protoc_insertion_point(field_set_allocated:game.FullStateSnapshotRsp.profile)
+}
+
+// uint32 realm_id = 9;
+inline void FullStateSnapshotRsp::clear_realm_id() {
+  realm_id_ = 0u;
+}
+inline ::google::protobuf::uint32 FullStateSnapshotRsp::realm_id() const {
+  // @@protoc_insertion_point(field_get:game.FullStateSnapshotRsp.realm_id)
+  return realm_id_;
+}
+inline void FullStateSnapshotRsp::set_realm_id(::google::protobuf::uint32 value) {
+  
+  realm_id_ = value;
+  // @@protoc_insertion_point(field_set:game.FullStateSnapshotRsp.realm_id)
+}
+
+// uint64 map_template_id = 10;
+inline void FullStateSnapshotRsp::clear_map_template_id() {
+  map_template_id_ = GOOGLE_ULONGLONG(0);
+}
+inline ::google::protobuf::uint64 FullStateSnapshotRsp::map_template_id() const {
+  // @@protoc_insertion_point(field_get:game.FullStateSnapshotRsp.map_template_id)
+  return map_template_id_;
+}
+inline void FullStateSnapshotRsp::set_map_template_id(::google::protobuf::uint64 value) {
+  
+  map_template_id_ = value;
+  // @@protoc_insertion_point(field_set:game.FullStateSnapshotRsp.map_template_id)
+}
+
+// uint64 map_instance_id = 11;
+inline void FullStateSnapshotRsp::clear_map_instance_id() {
+  map_instance_id_ = GOOGLE_ULONGLONG(0);
+}
+inline ::google::protobuf::uint64 FullStateSnapshotRsp::map_instance_id() const {
+  // @@protoc_insertion_point(field_get:game.FullStateSnapshotRsp.map_instance_id)
+  return map_instance_id_;
+}
+inline void FullStateSnapshotRsp::set_map_instance_id(::google::protobuf::uint64 value) {
+  
+  map_instance_id_ = value;
+  // @@protoc_insertion_point(field_set:game.FullStateSnapshotRsp.map_instance_id)
+}
+
+// string gamelogic_instance_id = 12;
+inline void FullStateSnapshotRsp::clear_gamelogic_instance_id() {
+  gamelogic_instance_id_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline const ::std::string& FullStateSnapshotRsp::gamelogic_instance_id() const {
+  // @@protoc_insertion_point(field_get:game.FullStateSnapshotRsp.gamelogic_instance_id)
+  return gamelogic_instance_id_.GetNoArena();
+}
+inline void FullStateSnapshotRsp::set_gamelogic_instance_id(const ::std::string& value) {
+  
+  gamelogic_instance_id_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), value);
+  // @@protoc_insertion_point(field_set:game.FullStateSnapshotRsp.gamelogic_instance_id)
+}
+#if LANG_CXX11
+inline void FullStateSnapshotRsp::set_gamelogic_instance_id(::std::string&& value) {
+  
+  gamelogic_instance_id_.SetNoArena(
+    &::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::move(value));
+  // @@protoc_insertion_point(field_set_rvalue:game.FullStateSnapshotRsp.gamelogic_instance_id)
+}
+#endif
+inline void FullStateSnapshotRsp::set_gamelogic_instance_id(const char* value) {
+  GOOGLE_DCHECK(value != NULL);
+  
+  gamelogic_instance_id_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::string(value));
+  // @@protoc_insertion_point(field_set_char:game.FullStateSnapshotRsp.gamelogic_instance_id)
+}
+inline void FullStateSnapshotRsp::set_gamelogic_instance_id(const char* value, size_t size) {
+  
+  gamelogic_instance_id_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(),
+      ::std::string(reinterpret_cast<const char*>(value), size));
+  // @@protoc_insertion_point(field_set_pointer:game.FullStateSnapshotRsp.gamelogic_instance_id)
+}
+inline ::std::string* FullStateSnapshotRsp::mutable_gamelogic_instance_id() {
+  
+  // @@protoc_insertion_point(field_mutable:game.FullStateSnapshotRsp.gamelogic_instance_id)
+  return gamelogic_instance_id_.MutableNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline ::std::string* FullStateSnapshotRsp::release_gamelogic_instance_id() {
+  // @@protoc_insertion_point(field_release:game.FullStateSnapshotRsp.gamelogic_instance_id)
+  
+  return gamelogic_instance_id_.ReleaseNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline void FullStateSnapshotRsp::set_allocated_gamelogic_instance_id(::std::string* gamelogic_instance_id) {
+  if (gamelogic_instance_id != NULL) {
+    
+  } else {
+    
+  }
+  gamelogic_instance_id_.SetAllocatedNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), gamelogic_instance_id);
+  // @@protoc_insertion_point(field_set_allocated:game.FullStateSnapshotRsp.gamelogic_instance_id)
+}
+
+// uint64 owner_epoch = 13;
+inline void FullStateSnapshotRsp::clear_owner_epoch() {
+  owner_epoch_ = GOOGLE_ULONGLONG(0);
+}
+inline ::google::protobuf::uint64 FullStateSnapshotRsp::owner_epoch() const {
+  // @@protoc_insertion_point(field_get:game.FullStateSnapshotRsp.owner_epoch)
+  return owner_epoch_;
+}
+inline void FullStateSnapshotRsp::set_owner_epoch(::google::protobuf::uint64 value) {
+  
+  owner_epoch_ = value;
+  // @@protoc_insertion_point(field_set:game.FullStateSnapshotRsp.owner_epoch)
+}
+
+// uint64 route_version = 14;
+inline void FullStateSnapshotRsp::clear_route_version() {
+  route_version_ = GOOGLE_ULONGLONG(0);
+}
+inline ::google::protobuf::uint64 FullStateSnapshotRsp::route_version() const {
+  // @@protoc_insertion_point(field_get:game.FullStateSnapshotRsp.route_version)
+  return route_version_;
+}
+inline void FullStateSnapshotRsp::set_route_version(::google::protobuf::uint64 value) {
+  
+  route_version_ = value;
+  // @@protoc_insertion_point(field_set:game.FullStateSnapshotRsp.route_version)
+}
+
+// .game.EntitySnapshot self = 15;
+inline bool FullStateSnapshotRsp::has_self() const {
+  return this != internal_default_instance() && self_ != NULL;
+}
+inline void FullStateSnapshotRsp::clear_self() {
+  if (GetArenaNoVirtual() == NULL && self_ != NULL) {
+    delete self_;
+  }
+  self_ = NULL;
+}
+inline const ::game::EntitySnapshot& FullStateSnapshotRsp::self() const {
+  const ::game::EntitySnapshot* p = self_;
+  // @@protoc_insertion_point(field_get:game.FullStateSnapshotRsp.self)
+  return p != NULL ? *p : *reinterpret_cast<const ::game::EntitySnapshot*>(
+      &::game::_EntitySnapshot_default_instance_);
+}
+inline ::game::EntitySnapshot* FullStateSnapshotRsp::release_self() {
+  // @@protoc_insertion_point(field_release:game.FullStateSnapshotRsp.self)
+  
+  ::game::EntitySnapshot* temp = self_;
+  self_ = NULL;
+  return temp;
+}
+inline ::game::EntitySnapshot* FullStateSnapshotRsp::mutable_self() {
+  
+  if (self_ == NULL) {
+    self_ = new ::game::EntitySnapshot;
+  }
+  // @@protoc_insertion_point(field_mutable:game.FullStateSnapshotRsp.self)
+  return self_;
+}
+inline void FullStateSnapshotRsp::set_allocated_self(::game::EntitySnapshot* self) {
+  ::google::protobuf::Arena* message_arena = GetArenaNoVirtual();
+  if (message_arena == NULL) {
+    delete self_;
+  }
+  if (self) {
+    ::google::protobuf::Arena* submessage_arena = NULL;
+    if (message_arena != submessage_arena) {
+      self = ::google::protobuf::internal::GetOwnedMessage(
+          message_arena, self, submessage_arena);
+    }
+    
+  } else {
+    
+  }
+  self_ = self;
+  // @@protoc_insertion_point(field_set_allocated:game.FullStateSnapshotRsp.self)
+}
+
+// repeated .game.EntitySnapshot aoi_entities = 16;
+inline int FullStateSnapshotRsp::aoi_entities_size() const {
+  return aoi_entities_.size();
+}
+inline void FullStateSnapshotRsp::clear_aoi_entities() {
+  aoi_entities_.Clear();
+}
+inline const ::game::EntitySnapshot& FullStateSnapshotRsp::aoi_entities(int index) const {
+  // @@protoc_insertion_point(field_get:game.FullStateSnapshotRsp.aoi_entities)
+  return aoi_entities_.Get(index);
+}
+inline ::game::EntitySnapshot* FullStateSnapshotRsp::mutable_aoi_entities(int index) {
+  // @@protoc_insertion_point(field_mutable:game.FullStateSnapshotRsp.aoi_entities)
+  return aoi_entities_.Mutable(index);
+}
+inline ::game::EntitySnapshot* FullStateSnapshotRsp::add_aoi_entities() {
+  // @@protoc_insertion_point(field_add:game.FullStateSnapshotRsp.aoi_entities)
+  return aoi_entities_.Add();
+}
+inline ::google::protobuf::RepeatedPtrField< ::game::EntitySnapshot >*
+FullStateSnapshotRsp::mutable_aoi_entities() {
+  // @@protoc_insertion_point(field_mutable_list:game.FullStateSnapshotRsp.aoi_entities)
+  return &aoi_entities_;
+}
+inline const ::google::protobuf::RepeatedPtrField< ::game::EntitySnapshot >&
+FullStateSnapshotRsp::aoi_entities() const {
+  // @@protoc_insertion_point(field_list:game.FullStateSnapshotRsp.aoi_entities)
+  return aoi_entities_;
+}
+
+// uint32 snapshot_version = 17;
+inline void FullStateSnapshotRsp::clear_snapshot_version() {
+  snapshot_version_ = 0u;
+}
+inline ::google::protobuf::uint32 FullStateSnapshotRsp::snapshot_version() const {
+  // @@protoc_insertion_point(field_get:game.FullStateSnapshotRsp.snapshot_version)
+  return snapshot_version_;
+}
+inline void FullStateSnapshotRsp::set_snapshot_version(::google::protobuf::uint32 value) {
+  
+  snapshot_version_ = value;
+  // @@protoc_insertion_point(field_set:game.FullStateSnapshotRsp.snapshot_version)
+}
+
+// string recovery_reason = 18;
+inline void FullStateSnapshotRsp::clear_recovery_reason() {
+  recovery_reason_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline const ::std::string& FullStateSnapshotRsp::recovery_reason() const {
+  // @@protoc_insertion_point(field_get:game.FullStateSnapshotRsp.recovery_reason)
+  return recovery_reason_.GetNoArena();
+}
+inline void FullStateSnapshotRsp::set_recovery_reason(const ::std::string& value) {
+  
+  recovery_reason_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), value);
+  // @@protoc_insertion_point(field_set:game.FullStateSnapshotRsp.recovery_reason)
+}
+#if LANG_CXX11
+inline void FullStateSnapshotRsp::set_recovery_reason(::std::string&& value) {
+  
+  recovery_reason_.SetNoArena(
+    &::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::move(value));
+  // @@protoc_insertion_point(field_set_rvalue:game.FullStateSnapshotRsp.recovery_reason)
+}
+#endif
+inline void FullStateSnapshotRsp::set_recovery_reason(const char* value) {
+  GOOGLE_DCHECK(value != NULL);
+  
+  recovery_reason_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::string(value));
+  // @@protoc_insertion_point(field_set_char:game.FullStateSnapshotRsp.recovery_reason)
+}
+inline void FullStateSnapshotRsp::set_recovery_reason(const char* value, size_t size) {
+  
+  recovery_reason_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(),
+      ::std::string(reinterpret_cast<const char*>(value), size));
+  // @@protoc_insertion_point(field_set_pointer:game.FullStateSnapshotRsp.recovery_reason)
+}
+inline ::std::string* FullStateSnapshotRsp::mutable_recovery_reason() {
+  
+  // @@protoc_insertion_point(field_mutable:game.FullStateSnapshotRsp.recovery_reason)
+  return recovery_reason_.MutableNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline ::std::string* FullStateSnapshotRsp::release_recovery_reason() {
+  // @@protoc_insertion_point(field_release:game.FullStateSnapshotRsp.recovery_reason)
+  
+  return recovery_reason_.ReleaseNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline void FullStateSnapshotRsp::set_allocated_recovery_reason(::std::string* recovery_reason) {
+  if (recovery_reason != NULL) {
+    
+  } else {
+    
+  }
+  recovery_reason_.SetAllocatedNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), recovery_reason);
+  // @@protoc_insertion_point(field_set_allocated:game.FullStateSnapshotRsp.recovery_reason)
+}
+
+// string life_state = 19;
+inline void FullStateSnapshotRsp::clear_life_state() {
+  life_state_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline const ::std::string& FullStateSnapshotRsp::life_state() const {
+  // @@protoc_insertion_point(field_get:game.FullStateSnapshotRsp.life_state)
+  return life_state_.GetNoArena();
+}
+inline void FullStateSnapshotRsp::set_life_state(const ::std::string& value) {
+  
+  life_state_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), value);
+  // @@protoc_insertion_point(field_set:game.FullStateSnapshotRsp.life_state)
+}
+#if LANG_CXX11
+inline void FullStateSnapshotRsp::set_life_state(::std::string&& value) {
+  
+  life_state_.SetNoArena(
+    &::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::move(value));
+  // @@protoc_insertion_point(field_set_rvalue:game.FullStateSnapshotRsp.life_state)
+}
+#endif
+inline void FullStateSnapshotRsp::set_life_state(const char* value) {
+  GOOGLE_DCHECK(value != NULL);
+  
+  life_state_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::string(value));
+  // @@protoc_insertion_point(field_set_char:game.FullStateSnapshotRsp.life_state)
+}
+inline void FullStateSnapshotRsp::set_life_state(const char* value, size_t size) {
+  
+  life_state_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(),
+      ::std::string(reinterpret_cast<const char*>(value), size));
+  // @@protoc_insertion_point(field_set_pointer:game.FullStateSnapshotRsp.life_state)
+}
+inline ::std::string* FullStateSnapshotRsp::mutable_life_state() {
+  
+  // @@protoc_insertion_point(field_mutable:game.FullStateSnapshotRsp.life_state)
+  return life_state_.MutableNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline ::std::string* FullStateSnapshotRsp::release_life_state() {
+  // @@protoc_insertion_point(field_release:game.FullStateSnapshotRsp.life_state)
+  
+  return life_state_.ReleaseNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline void FullStateSnapshotRsp::set_allocated_life_state(::std::string* life_state) {
+  if (life_state != NULL) {
+    
+  } else {
+    
+  }
+  life_state_.SetAllocatedNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), life_state);
+  // @@protoc_insertion_point(field_set_allocated:game.FullStateSnapshotRsp.life_state)
+}
+
+// string error_code = 20;
+inline void FullStateSnapshotRsp::clear_error_code() {
+  error_code_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline const ::std::string& FullStateSnapshotRsp::error_code() const {
+  // @@protoc_insertion_point(field_get:game.FullStateSnapshotRsp.error_code)
+  return error_code_.GetNoArena();
+}
+inline void FullStateSnapshotRsp::set_error_code(const ::std::string& value) {
+  
+  error_code_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), value);
+  // @@protoc_insertion_point(field_set:game.FullStateSnapshotRsp.error_code)
+}
+#if LANG_CXX11
+inline void FullStateSnapshotRsp::set_error_code(::std::string&& value) {
+  
+  error_code_.SetNoArena(
+    &::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::move(value));
+  // @@protoc_insertion_point(field_set_rvalue:game.FullStateSnapshotRsp.error_code)
+}
+#endif
+inline void FullStateSnapshotRsp::set_error_code(const char* value) {
+  GOOGLE_DCHECK(value != NULL);
+  
+  error_code_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::string(value));
+  // @@protoc_insertion_point(field_set_char:game.FullStateSnapshotRsp.error_code)
+}
+inline void FullStateSnapshotRsp::set_error_code(const char* value, size_t size) {
+  
+  error_code_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(),
+      ::std::string(reinterpret_cast<const char*>(value), size));
+  // @@protoc_insertion_point(field_set_pointer:game.FullStateSnapshotRsp.error_code)
+}
+inline ::std::string* FullStateSnapshotRsp::mutable_error_code() {
+  
+  // @@protoc_insertion_point(field_mutable:game.FullStateSnapshotRsp.error_code)
+  return error_code_.MutableNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline ::std::string* FullStateSnapshotRsp::release_error_code() {
+  // @@protoc_insertion_point(field_release:game.FullStateSnapshotRsp.error_code)
+  
+  return error_code_.ReleaseNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline void FullStateSnapshotRsp::set_allocated_error_code(::std::string* error_code) {
+  if (error_code != NULL) {
+    
+  } else {
+    
+  }
+  error_code_.SetAllocatedNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), error_code);
+  // @@protoc_insertion_point(field_set_allocated:game.FullStateSnapshotRsp.error_code)
+}
+
+// -------------------------------------------------------------------
+
+// WorldSnapshotReq
+
+// uint64 player_id = 1;
+inline void WorldSnapshotReq::clear_player_id() {
+  player_id_ = GOOGLE_ULONGLONG(0);
+}
+inline ::google::protobuf::uint64 WorldSnapshotReq::player_id() const {
+  // @@protoc_insertion_point(field_get:game.WorldSnapshotReq.player_id)
+  return player_id_;
+}
+inline void WorldSnapshotReq::set_player_id(::google::protobuf::uint64 value) {
+  
+  player_id_ = value;
+  // @@protoc_insertion_point(field_set:game.WorldSnapshotReq.player_id)
+}
+
+// uint64 last_applied_server_seq = 2;
+inline void WorldSnapshotReq::clear_last_applied_server_seq() {
+  last_applied_server_seq_ = GOOGLE_ULONGLONG(0);
+}
+inline ::google::protobuf::uint64 WorldSnapshotReq::last_applied_server_seq() const {
+  // @@protoc_insertion_point(field_get:game.WorldSnapshotReq.last_applied_server_seq)
+  return last_applied_server_seq_;
+}
+inline void WorldSnapshotReq::set_last_applied_server_seq(::google::protobuf::uint64 value) {
+  
+  last_applied_server_seq_ = value;
+  // @@protoc_insertion_point(field_set:game.WorldSnapshotReq.last_applied_server_seq)
+}
+
+// -------------------------------------------------------------------
+
+// RespawnReq
+
+// uint64 player_id = 1;
+inline void RespawnReq::clear_player_id() {
+  player_id_ = GOOGLE_ULONGLONG(0);
+}
+inline ::google::protobuf::uint64 RespawnReq::player_id() const {
+  // @@protoc_insertion_point(field_get:game.RespawnReq.player_id)
+  return player_id_;
+}
+inline void RespawnReq::set_player_id(::google::protobuf::uint64 value) {
+  
+  player_id_ = value;
+  // @@protoc_insertion_point(field_set:game.RespawnReq.player_id)
+}
+
+// uint64 map_instance_id = 2;
+inline void RespawnReq::clear_map_instance_id() {
+  map_instance_id_ = GOOGLE_ULONGLONG(0);
+}
+inline ::google::protobuf::uint64 RespawnReq::map_instance_id() const {
+  // @@protoc_insertion_point(field_get:game.RespawnReq.map_instance_id)
+  return map_instance_id_;
+}
+inline void RespawnReq::set_map_instance_id(::google::protobuf::uint64 value) {
+  
+  map_instance_id_ = value;
+  // @@protoc_insertion_point(field_set:game.RespawnReq.map_instance_id)
+}
+
+// string operation_id = 3;
+inline void RespawnReq::clear_operation_id() {
+  operation_id_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline const ::std::string& RespawnReq::operation_id() const {
+  // @@protoc_insertion_point(field_get:game.RespawnReq.operation_id)
+  return operation_id_.GetNoArena();
+}
+inline void RespawnReq::set_operation_id(const ::std::string& value) {
+  
+  operation_id_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), value);
+  // @@protoc_insertion_point(field_set:game.RespawnReq.operation_id)
+}
+#if LANG_CXX11
+inline void RespawnReq::set_operation_id(::std::string&& value) {
+  
+  operation_id_.SetNoArena(
+    &::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::move(value));
+  // @@protoc_insertion_point(field_set_rvalue:game.RespawnReq.operation_id)
+}
+#endif
+inline void RespawnReq::set_operation_id(const char* value) {
+  GOOGLE_DCHECK(value != NULL);
+  
+  operation_id_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::string(value));
+  // @@protoc_insertion_point(field_set_char:game.RespawnReq.operation_id)
+}
+inline void RespawnReq::set_operation_id(const char* value, size_t size) {
+  
+  operation_id_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(),
+      ::std::string(reinterpret_cast<const char*>(value), size));
+  // @@protoc_insertion_point(field_set_pointer:game.RespawnReq.operation_id)
+}
+inline ::std::string* RespawnReq::mutable_operation_id() {
+  
+  // @@protoc_insertion_point(field_mutable:game.RespawnReq.operation_id)
+  return operation_id_.MutableNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline ::std::string* RespawnReq::release_operation_id() {
+  // @@protoc_insertion_point(field_release:game.RespawnReq.operation_id)
+  
+  return operation_id_.ReleaseNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline void RespawnReq::set_allocated_operation_id(::std::string* operation_id) {
+  if (operation_id != NULL) {
+    
+  } else {
+    
+  }
+  operation_id_.SetAllocatedNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), operation_id);
+  // @@protoc_insertion_point(field_set_allocated:game.RespawnReq.operation_id)
+}
+
+// -------------------------------------------------------------------
+
+// RespawnRsp
+
+// bool ok = 1;
+inline void RespawnRsp::clear_ok() {
+  ok_ = false;
+}
+inline bool RespawnRsp::ok() const {
+  // @@protoc_insertion_point(field_get:game.RespawnRsp.ok)
+  return ok_;
+}
+inline void RespawnRsp::set_ok(bool value) {
+  
+  ok_ = value;
+  // @@protoc_insertion_point(field_set:game.RespawnRsp.ok)
+}
+
+// string message = 2;
+inline void RespawnRsp::clear_message() {
+  message_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline const ::std::string& RespawnRsp::message() const {
+  // @@protoc_insertion_point(field_get:game.RespawnRsp.message)
+  return message_.GetNoArena();
+}
+inline void RespawnRsp::set_message(const ::std::string& value) {
+  
+  message_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), value);
+  // @@protoc_insertion_point(field_set:game.RespawnRsp.message)
+}
+#if LANG_CXX11
+inline void RespawnRsp::set_message(::std::string&& value) {
+  
+  message_.SetNoArena(
+    &::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::move(value));
+  // @@protoc_insertion_point(field_set_rvalue:game.RespawnRsp.message)
+}
+#endif
+inline void RespawnRsp::set_message(const char* value) {
+  GOOGLE_DCHECK(value != NULL);
+  
+  message_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::string(value));
+  // @@protoc_insertion_point(field_set_char:game.RespawnRsp.message)
+}
+inline void RespawnRsp::set_message(const char* value, size_t size) {
+  
+  message_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(),
+      ::std::string(reinterpret_cast<const char*>(value), size));
+  // @@protoc_insertion_point(field_set_pointer:game.RespawnRsp.message)
+}
+inline ::std::string* RespawnRsp::mutable_message() {
+  
+  // @@protoc_insertion_point(field_mutable:game.RespawnRsp.message)
+  return message_.MutableNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline ::std::string* RespawnRsp::release_message() {
+  // @@protoc_insertion_point(field_release:game.RespawnRsp.message)
+  
+  return message_.ReleaseNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline void RespawnRsp::set_allocated_message(::std::string* message) {
+  if (message != NULL) {
+    
+  } else {
+    
+  }
+  message_.SetAllocatedNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), message);
+  // @@protoc_insertion_point(field_set_allocated:game.RespawnRsp.message)
+}
+
+// string error_code = 3;
+inline void RespawnRsp::clear_error_code() {
+  error_code_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline const ::std::string& RespawnRsp::error_code() const {
+  // @@protoc_insertion_point(field_get:game.RespawnRsp.error_code)
+  return error_code_.GetNoArena();
+}
+inline void RespawnRsp::set_error_code(const ::std::string& value) {
+  
+  error_code_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), value);
+  // @@protoc_insertion_point(field_set:game.RespawnRsp.error_code)
+}
+#if LANG_CXX11
+inline void RespawnRsp::set_error_code(::std::string&& value) {
+  
+  error_code_.SetNoArena(
+    &::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::move(value));
+  // @@protoc_insertion_point(field_set_rvalue:game.RespawnRsp.error_code)
+}
+#endif
+inline void RespawnRsp::set_error_code(const char* value) {
+  GOOGLE_DCHECK(value != NULL);
+  
+  error_code_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::string(value));
+  // @@protoc_insertion_point(field_set_char:game.RespawnRsp.error_code)
+}
+inline void RespawnRsp::set_error_code(const char* value, size_t size) {
+  
+  error_code_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(),
+      ::std::string(reinterpret_cast<const char*>(value), size));
+  // @@protoc_insertion_point(field_set_pointer:game.RespawnRsp.error_code)
+}
+inline ::std::string* RespawnRsp::mutable_error_code() {
+  
+  // @@protoc_insertion_point(field_mutable:game.RespawnRsp.error_code)
+  return error_code_.MutableNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline ::std::string* RespawnRsp::release_error_code() {
+  // @@protoc_insertion_point(field_release:game.RespawnRsp.error_code)
+  
+  return error_code_.ReleaseNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline void RespawnRsp::set_allocated_error_code(::std::string* error_code) {
+  if (error_code != NULL) {
+    
+  } else {
+    
+  }
+  error_code_.SetAllocatedNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), error_code);
+  // @@protoc_insertion_point(field_set_allocated:game.RespawnRsp.error_code)
+}
+
+// .game.EntitySnapshot self = 4;
+inline bool RespawnRsp::has_self() const {
+  return this != internal_default_instance() && self_ != NULL;
+}
+inline void RespawnRsp::clear_self() {
+  if (GetArenaNoVirtual() == NULL && self_ != NULL) {
+    delete self_;
+  }
+  self_ = NULL;
+}
+inline const ::game::EntitySnapshot& RespawnRsp::self() const {
+  const ::game::EntitySnapshot* p = self_;
+  // @@protoc_insertion_point(field_get:game.RespawnRsp.self)
+  return p != NULL ? *p : *reinterpret_cast<const ::game::EntitySnapshot*>(
+      &::game::_EntitySnapshot_default_instance_);
+}
+inline ::game::EntitySnapshot* RespawnRsp::release_self() {
+  // @@protoc_insertion_point(field_release:game.RespawnRsp.self)
+  
+  ::game::EntitySnapshot* temp = self_;
+  self_ = NULL;
+  return temp;
+}
+inline ::game::EntitySnapshot* RespawnRsp::mutable_self() {
+  
+  if (self_ == NULL) {
+    self_ = new ::game::EntitySnapshot;
+  }
+  // @@protoc_insertion_point(field_mutable:game.RespawnRsp.self)
+  return self_;
+}
+inline void RespawnRsp::set_allocated_self(::game::EntitySnapshot* self) {
+  ::google::protobuf::Arena* message_arena = GetArenaNoVirtual();
+  if (message_arena == NULL) {
+    delete self_;
+  }
+  if (self) {
+    ::google::protobuf::Arena* submessage_arena = NULL;
+    if (message_arena != submessage_arena) {
+      self = ::google::protobuf::internal::GetOwnedMessage(
+          message_arena, self, submessage_arena);
+    }
+    
+  } else {
+    
+  }
+  self_ = self;
+  // @@protoc_insertion_point(field_set_allocated:game.RespawnRsp.self)
+}
+
+// string life_state = 5;
+inline void RespawnRsp::clear_life_state() {
+  life_state_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline const ::std::string& RespawnRsp::life_state() const {
+  // @@protoc_insertion_point(field_get:game.RespawnRsp.life_state)
+  return life_state_.GetNoArena();
+}
+inline void RespawnRsp::set_life_state(const ::std::string& value) {
+  
+  life_state_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), value);
+  // @@protoc_insertion_point(field_set:game.RespawnRsp.life_state)
+}
+#if LANG_CXX11
+inline void RespawnRsp::set_life_state(::std::string&& value) {
+  
+  life_state_.SetNoArena(
+    &::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::move(value));
+  // @@protoc_insertion_point(field_set_rvalue:game.RespawnRsp.life_state)
+}
+#endif
+inline void RespawnRsp::set_life_state(const char* value) {
+  GOOGLE_DCHECK(value != NULL);
+  
+  life_state_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::string(value));
+  // @@protoc_insertion_point(field_set_char:game.RespawnRsp.life_state)
+}
+inline void RespawnRsp::set_life_state(const char* value, size_t size) {
+  
+  life_state_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(),
+      ::std::string(reinterpret_cast<const char*>(value), size));
+  // @@protoc_insertion_point(field_set_pointer:game.RespawnRsp.life_state)
+}
+inline ::std::string* RespawnRsp::mutable_life_state() {
+  
+  // @@protoc_insertion_point(field_mutable:game.RespawnRsp.life_state)
+  return life_state_.MutableNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline ::std::string* RespawnRsp::release_life_state() {
+  // @@protoc_insertion_point(field_release:game.RespawnRsp.life_state)
+  
+  return life_state_.ReleaseNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline void RespawnRsp::set_allocated_life_state(::std::string* life_state) {
+  if (life_state != NULL) {
+    
+  } else {
+    
+  }
+  life_state_.SetAllocatedNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), life_state);
+  // @@protoc_insertion_point(field_set_allocated:game.RespawnRsp.life_state)
 }
 
 // -------------------------------------------------------------------
@@ -20206,6 +23259,292 @@ inline void ChatSendRsp::set_allocated_error_code(::std::string* error_code) {
   // @@protoc_insertion_point(field_set_allocated:game.ChatSendRsp.error_code)
 }
 
+// uint64 message_id = 4;
+inline void ChatSendRsp::clear_message_id() {
+  message_id_ = GOOGLE_ULONGLONG(0);
+}
+inline ::google::protobuf::uint64 ChatSendRsp::message_id() const {
+  // @@protoc_insertion_point(field_get:game.ChatSendRsp.message_id)
+  return message_id_;
+}
+inline void ChatSendRsp::set_message_id(::google::protobuf::uint64 value) {
+  
+  message_id_ = value;
+  // @@protoc_insertion_point(field_set:game.ChatSendRsp.message_id)
+}
+
+// int64 server_time_ms = 5;
+inline void ChatSendRsp::clear_server_time_ms() {
+  server_time_ms_ = GOOGLE_LONGLONG(0);
+}
+inline ::google::protobuf::int64 ChatSendRsp::server_time_ms() const {
+  // @@protoc_insertion_point(field_get:game.ChatSendRsp.server_time_ms)
+  return server_time_ms_;
+}
+inline void ChatSendRsp::set_server_time_ms(::google::protobuf::int64 value) {
+  
+  server_time_ms_ = value;
+  // @@protoc_insertion_point(field_set:game.ChatSendRsp.server_time_ms)
+}
+
+// string channel = 6;
+inline void ChatSendRsp::clear_channel() {
+  channel_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline const ::std::string& ChatSendRsp::channel() const {
+  // @@protoc_insertion_point(field_get:game.ChatSendRsp.channel)
+  return channel_.GetNoArena();
+}
+inline void ChatSendRsp::set_channel(const ::std::string& value) {
+  
+  channel_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), value);
+  // @@protoc_insertion_point(field_set:game.ChatSendRsp.channel)
+}
+#if LANG_CXX11
+inline void ChatSendRsp::set_channel(::std::string&& value) {
+  
+  channel_.SetNoArena(
+    &::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::move(value));
+  // @@protoc_insertion_point(field_set_rvalue:game.ChatSendRsp.channel)
+}
+#endif
+inline void ChatSendRsp::set_channel(const char* value) {
+  GOOGLE_DCHECK(value != NULL);
+  
+  channel_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::string(value));
+  // @@protoc_insertion_point(field_set_char:game.ChatSendRsp.channel)
+}
+inline void ChatSendRsp::set_channel(const char* value, size_t size) {
+  
+  channel_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(),
+      ::std::string(reinterpret_cast<const char*>(value), size));
+  // @@protoc_insertion_point(field_set_pointer:game.ChatSendRsp.channel)
+}
+inline ::std::string* ChatSendRsp::mutable_channel() {
+  
+  // @@protoc_insertion_point(field_mutable:game.ChatSendRsp.channel)
+  return channel_.MutableNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline ::std::string* ChatSendRsp::release_channel() {
+  // @@protoc_insertion_point(field_release:game.ChatSendRsp.channel)
+  
+  return channel_.ReleaseNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline void ChatSendRsp::set_allocated_channel(::std::string* channel) {
+  if (channel != NULL) {
+    
+  } else {
+    
+  }
+  channel_.SetAllocatedNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), channel);
+  // @@protoc_insertion_point(field_set_allocated:game.ChatSendRsp.channel)
+}
+
+// -------------------------------------------------------------------
+
+// ChatNotify
+
+// uint64 message_id = 1;
+inline void ChatNotify::clear_message_id() {
+  message_id_ = GOOGLE_ULONGLONG(0);
+}
+inline ::google::protobuf::uint64 ChatNotify::message_id() const {
+  // @@protoc_insertion_point(field_get:game.ChatNotify.message_id)
+  return message_id_;
+}
+inline void ChatNotify::set_message_id(::google::protobuf::uint64 value) {
+  
+  message_id_ = value;
+  // @@protoc_insertion_point(field_set:game.ChatNotify.message_id)
+}
+
+// uint64 sender_player_id = 2;
+inline void ChatNotify::clear_sender_player_id() {
+  sender_player_id_ = GOOGLE_ULONGLONG(0);
+}
+inline ::google::protobuf::uint64 ChatNotify::sender_player_id() const {
+  // @@protoc_insertion_point(field_get:game.ChatNotify.sender_player_id)
+  return sender_player_id_;
+}
+inline void ChatNotify::set_sender_player_id(::google::protobuf::uint64 value) {
+  
+  sender_player_id_ = value;
+  // @@protoc_insertion_point(field_set:game.ChatNotify.sender_player_id)
+}
+
+// string sender_name = 3;
+inline void ChatNotify::clear_sender_name() {
+  sender_name_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline const ::std::string& ChatNotify::sender_name() const {
+  // @@protoc_insertion_point(field_get:game.ChatNotify.sender_name)
+  return sender_name_.GetNoArena();
+}
+inline void ChatNotify::set_sender_name(const ::std::string& value) {
+  
+  sender_name_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), value);
+  // @@protoc_insertion_point(field_set:game.ChatNotify.sender_name)
+}
+#if LANG_CXX11
+inline void ChatNotify::set_sender_name(::std::string&& value) {
+  
+  sender_name_.SetNoArena(
+    &::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::move(value));
+  // @@protoc_insertion_point(field_set_rvalue:game.ChatNotify.sender_name)
+}
+#endif
+inline void ChatNotify::set_sender_name(const char* value) {
+  GOOGLE_DCHECK(value != NULL);
+  
+  sender_name_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::string(value));
+  // @@protoc_insertion_point(field_set_char:game.ChatNotify.sender_name)
+}
+inline void ChatNotify::set_sender_name(const char* value, size_t size) {
+  
+  sender_name_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(),
+      ::std::string(reinterpret_cast<const char*>(value), size));
+  // @@protoc_insertion_point(field_set_pointer:game.ChatNotify.sender_name)
+}
+inline ::std::string* ChatNotify::mutable_sender_name() {
+  
+  // @@protoc_insertion_point(field_mutable:game.ChatNotify.sender_name)
+  return sender_name_.MutableNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline ::std::string* ChatNotify::release_sender_name() {
+  // @@protoc_insertion_point(field_release:game.ChatNotify.sender_name)
+  
+  return sender_name_.ReleaseNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline void ChatNotify::set_allocated_sender_name(::std::string* sender_name) {
+  if (sender_name != NULL) {
+    
+  } else {
+    
+  }
+  sender_name_.SetAllocatedNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), sender_name);
+  // @@protoc_insertion_point(field_set_allocated:game.ChatNotify.sender_name)
+}
+
+// string channel = 4;
+inline void ChatNotify::clear_channel() {
+  channel_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline const ::std::string& ChatNotify::channel() const {
+  // @@protoc_insertion_point(field_get:game.ChatNotify.channel)
+  return channel_.GetNoArena();
+}
+inline void ChatNotify::set_channel(const ::std::string& value) {
+  
+  channel_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), value);
+  // @@protoc_insertion_point(field_set:game.ChatNotify.channel)
+}
+#if LANG_CXX11
+inline void ChatNotify::set_channel(::std::string&& value) {
+  
+  channel_.SetNoArena(
+    &::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::move(value));
+  // @@protoc_insertion_point(field_set_rvalue:game.ChatNotify.channel)
+}
+#endif
+inline void ChatNotify::set_channel(const char* value) {
+  GOOGLE_DCHECK(value != NULL);
+  
+  channel_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::string(value));
+  // @@protoc_insertion_point(field_set_char:game.ChatNotify.channel)
+}
+inline void ChatNotify::set_channel(const char* value, size_t size) {
+  
+  channel_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(),
+      ::std::string(reinterpret_cast<const char*>(value), size));
+  // @@protoc_insertion_point(field_set_pointer:game.ChatNotify.channel)
+}
+inline ::std::string* ChatNotify::mutable_channel() {
+  
+  // @@protoc_insertion_point(field_mutable:game.ChatNotify.channel)
+  return channel_.MutableNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline ::std::string* ChatNotify::release_channel() {
+  // @@protoc_insertion_point(field_release:game.ChatNotify.channel)
+  
+  return channel_.ReleaseNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline void ChatNotify::set_allocated_channel(::std::string* channel) {
+  if (channel != NULL) {
+    
+  } else {
+    
+  }
+  channel_.SetAllocatedNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), channel);
+  // @@protoc_insertion_point(field_set_allocated:game.ChatNotify.channel)
+}
+
+// string text = 5;
+inline void ChatNotify::clear_text() {
+  text_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline const ::std::string& ChatNotify::text() const {
+  // @@protoc_insertion_point(field_get:game.ChatNotify.text)
+  return text_.GetNoArena();
+}
+inline void ChatNotify::set_text(const ::std::string& value) {
+  
+  text_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), value);
+  // @@protoc_insertion_point(field_set:game.ChatNotify.text)
+}
+#if LANG_CXX11
+inline void ChatNotify::set_text(::std::string&& value) {
+  
+  text_.SetNoArena(
+    &::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::move(value));
+  // @@protoc_insertion_point(field_set_rvalue:game.ChatNotify.text)
+}
+#endif
+inline void ChatNotify::set_text(const char* value) {
+  GOOGLE_DCHECK(value != NULL);
+  
+  text_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::string(value));
+  // @@protoc_insertion_point(field_set_char:game.ChatNotify.text)
+}
+inline void ChatNotify::set_text(const char* value, size_t size) {
+  
+  text_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(),
+      ::std::string(reinterpret_cast<const char*>(value), size));
+  // @@protoc_insertion_point(field_set_pointer:game.ChatNotify.text)
+}
+inline ::std::string* ChatNotify::mutable_text() {
+  
+  // @@protoc_insertion_point(field_mutable:game.ChatNotify.text)
+  return text_.MutableNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline ::std::string* ChatNotify::release_text() {
+  // @@protoc_insertion_point(field_release:game.ChatNotify.text)
+  
+  return text_.ReleaseNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline void ChatNotify::set_allocated_text(::std::string* text) {
+  if (text != NULL) {
+    
+  } else {
+    
+  }
+  text_.SetAllocatedNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), text);
+  // @@protoc_insertion_point(field_set_allocated:game.ChatNotify.text)
+}
+
+// int64 server_time_ms = 6;
+inline void ChatNotify::clear_server_time_ms() {
+  server_time_ms_ = GOOGLE_LONGLONG(0);
+}
+inline ::google::protobuf::int64 ChatNotify::server_time_ms() const {
+  // @@protoc_insertion_point(field_get:game.ChatNotify.server_time_ms)
+  return server_time_ms_;
+}
+inline void ChatNotify::set_server_time_ms(::google::protobuf::int64 value) {
+  
+  server_time_ms_ = value;
+  // @@protoc_insertion_point(field_set:game.ChatNotify.server_time_ms)
+}
+
 // -------------------------------------------------------------------
 
 // FriendListReq
@@ -20647,6 +23986,59 @@ inline void PlayerAttributes::set_stats_version(::google::protobuf::uint64 value
   // @@protoc_insertion_point(field_set:game.PlayerAttributes.stats_version)
 }
 
+// string life_state = 16;
+inline void PlayerAttributes::clear_life_state() {
+  life_state_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline const ::std::string& PlayerAttributes::life_state() const {
+  // @@protoc_insertion_point(field_get:game.PlayerAttributes.life_state)
+  return life_state_.GetNoArena();
+}
+inline void PlayerAttributes::set_life_state(const ::std::string& value) {
+  
+  life_state_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), value);
+  // @@protoc_insertion_point(field_set:game.PlayerAttributes.life_state)
+}
+#if LANG_CXX11
+inline void PlayerAttributes::set_life_state(::std::string&& value) {
+  
+  life_state_.SetNoArena(
+    &::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::move(value));
+  // @@protoc_insertion_point(field_set_rvalue:game.PlayerAttributes.life_state)
+}
+#endif
+inline void PlayerAttributes::set_life_state(const char* value) {
+  GOOGLE_DCHECK(value != NULL);
+  
+  life_state_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::string(value));
+  // @@protoc_insertion_point(field_set_char:game.PlayerAttributes.life_state)
+}
+inline void PlayerAttributes::set_life_state(const char* value, size_t size) {
+  
+  life_state_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(),
+      ::std::string(reinterpret_cast<const char*>(value), size));
+  // @@protoc_insertion_point(field_set_pointer:game.PlayerAttributes.life_state)
+}
+inline ::std::string* PlayerAttributes::mutable_life_state() {
+  
+  // @@protoc_insertion_point(field_mutable:game.PlayerAttributes.life_state)
+  return life_state_.MutableNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline ::std::string* PlayerAttributes::release_life_state() {
+  // @@protoc_insertion_point(field_release:game.PlayerAttributes.life_state)
+  
+  return life_state_.ReleaseNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline void PlayerAttributes::set_allocated_life_state(::std::string* life_state) {
+  if (life_state != NULL) {
+    
+  } else {
+    
+  }
+  life_state_.SetAllocatedNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), life_state);
+  // @@protoc_insertion_point(field_set_allocated:game.PlayerAttributes.life_state)
+}
+
 // -------------------------------------------------------------------
 
 // EntitySnapshot
@@ -21014,6 +24406,587 @@ inline void GetSelfProfileRsp::set_allocated_profile(::game::PlayerAttributes* p
   }
   profile_ = profile;
   // @@protoc_insertion_point(field_set_allocated:game.GetSelfProfileRsp.profile)
+}
+
+// -------------------------------------------------------------------
+
+// PlayerBrief
+
+// uint64 player_id = 1;
+inline void PlayerBrief::clear_player_id() {
+  player_id_ = GOOGLE_ULONGLONG(0);
+}
+inline ::google::protobuf::uint64 PlayerBrief::player_id() const {
+  // @@protoc_insertion_point(field_get:game.PlayerBrief.player_id)
+  return player_id_;
+}
+inline void PlayerBrief::set_player_id(::google::protobuf::uint64 value) {
+  
+  player_id_ = value;
+  // @@protoc_insertion_point(field_set:game.PlayerBrief.player_id)
+}
+
+// string player_name = 2;
+inline void PlayerBrief::clear_player_name() {
+  player_name_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline const ::std::string& PlayerBrief::player_name() const {
+  // @@protoc_insertion_point(field_get:game.PlayerBrief.player_name)
+  return player_name_.GetNoArena();
+}
+inline void PlayerBrief::set_player_name(const ::std::string& value) {
+  
+  player_name_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), value);
+  // @@protoc_insertion_point(field_set:game.PlayerBrief.player_name)
+}
+#if LANG_CXX11
+inline void PlayerBrief::set_player_name(::std::string&& value) {
+  
+  player_name_.SetNoArena(
+    &::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::move(value));
+  // @@protoc_insertion_point(field_set_rvalue:game.PlayerBrief.player_name)
+}
+#endif
+inline void PlayerBrief::set_player_name(const char* value) {
+  GOOGLE_DCHECK(value != NULL);
+  
+  player_name_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::string(value));
+  // @@protoc_insertion_point(field_set_char:game.PlayerBrief.player_name)
+}
+inline void PlayerBrief::set_player_name(const char* value, size_t size) {
+  
+  player_name_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(),
+      ::std::string(reinterpret_cast<const char*>(value), size));
+  // @@protoc_insertion_point(field_set_pointer:game.PlayerBrief.player_name)
+}
+inline ::std::string* PlayerBrief::mutable_player_name() {
+  
+  // @@protoc_insertion_point(field_mutable:game.PlayerBrief.player_name)
+  return player_name_.MutableNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline ::std::string* PlayerBrief::release_player_name() {
+  // @@protoc_insertion_point(field_release:game.PlayerBrief.player_name)
+  
+  return player_name_.ReleaseNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline void PlayerBrief::set_allocated_player_name(::std::string* player_name) {
+  if (player_name != NULL) {
+    
+  } else {
+    
+  }
+  player_name_.SetAllocatedNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), player_name);
+  // @@protoc_insertion_point(field_set_allocated:game.PlayerBrief.player_name)
+}
+
+// int32 max_hp = 3;
+inline void PlayerBrief::clear_max_hp() {
+  max_hp_ = 0;
+}
+inline ::google::protobuf::int32 PlayerBrief::max_hp() const {
+  // @@protoc_insertion_point(field_get:game.PlayerBrief.max_hp)
+  return max_hp_;
+}
+inline void PlayerBrief::set_max_hp(::google::protobuf::int32 value) {
+  
+  max_hp_ = value;
+  // @@protoc_insertion_point(field_set:game.PlayerBrief.max_hp)
+}
+
+// int32 max_mp = 4;
+inline void PlayerBrief::clear_max_mp() {
+  max_mp_ = 0;
+}
+inline ::google::protobuf::int32 PlayerBrief::max_mp() const {
+  // @@protoc_insertion_point(field_get:game.PlayerBrief.max_mp)
+  return max_mp_;
+}
+inline void PlayerBrief::set_max_mp(::google::protobuf::int32 value) {
+  
+  max_mp_ = value;
+  // @@protoc_insertion_point(field_set:game.PlayerBrief.max_mp)
+}
+
+// -------------------------------------------------------------------
+
+// GetPlayerBriefReq
+
+// uint64 player_id = 1;
+inline void GetPlayerBriefReq::clear_player_id() {
+  player_id_ = GOOGLE_ULONGLONG(0);
+}
+inline ::google::protobuf::uint64 GetPlayerBriefReq::player_id() const {
+  // @@protoc_insertion_point(field_get:game.GetPlayerBriefReq.player_id)
+  return player_id_;
+}
+inline void GetPlayerBriefReq::set_player_id(::google::protobuf::uint64 value) {
+  
+  player_id_ = value;
+  // @@protoc_insertion_point(field_set:game.GetPlayerBriefReq.player_id)
+}
+
+// uint64 target_player_id = 2;
+inline void GetPlayerBriefReq::clear_target_player_id() {
+  target_player_id_ = GOOGLE_ULONGLONG(0);
+}
+inline ::google::protobuf::uint64 GetPlayerBriefReq::target_player_id() const {
+  // @@protoc_insertion_point(field_get:game.GetPlayerBriefReq.target_player_id)
+  return target_player_id_;
+}
+inline void GetPlayerBriefReq::set_target_player_id(::google::protobuf::uint64 value) {
+  
+  target_player_id_ = value;
+  // @@protoc_insertion_point(field_set:game.GetPlayerBriefReq.target_player_id)
+}
+
+// string player_name = 3;
+inline void GetPlayerBriefReq::clear_player_name() {
+  player_name_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline const ::std::string& GetPlayerBriefReq::player_name() const {
+  // @@protoc_insertion_point(field_get:game.GetPlayerBriefReq.player_name)
+  return player_name_.GetNoArena();
+}
+inline void GetPlayerBriefReq::set_player_name(const ::std::string& value) {
+  
+  player_name_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), value);
+  // @@protoc_insertion_point(field_set:game.GetPlayerBriefReq.player_name)
+}
+#if LANG_CXX11
+inline void GetPlayerBriefReq::set_player_name(::std::string&& value) {
+  
+  player_name_.SetNoArena(
+    &::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::move(value));
+  // @@protoc_insertion_point(field_set_rvalue:game.GetPlayerBriefReq.player_name)
+}
+#endif
+inline void GetPlayerBriefReq::set_player_name(const char* value) {
+  GOOGLE_DCHECK(value != NULL);
+  
+  player_name_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::string(value));
+  // @@protoc_insertion_point(field_set_char:game.GetPlayerBriefReq.player_name)
+}
+inline void GetPlayerBriefReq::set_player_name(const char* value, size_t size) {
+  
+  player_name_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(),
+      ::std::string(reinterpret_cast<const char*>(value), size));
+  // @@protoc_insertion_point(field_set_pointer:game.GetPlayerBriefReq.player_name)
+}
+inline ::std::string* GetPlayerBriefReq::mutable_player_name() {
+  
+  // @@protoc_insertion_point(field_mutable:game.GetPlayerBriefReq.player_name)
+  return player_name_.MutableNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline ::std::string* GetPlayerBriefReq::release_player_name() {
+  // @@protoc_insertion_point(field_release:game.GetPlayerBriefReq.player_name)
+  
+  return player_name_.ReleaseNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline void GetPlayerBriefReq::set_allocated_player_name(::std::string* player_name) {
+  if (player_name != NULL) {
+    
+  } else {
+    
+  }
+  player_name_.SetAllocatedNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), player_name);
+  // @@protoc_insertion_point(field_set_allocated:game.GetPlayerBriefReq.player_name)
+}
+
+// -------------------------------------------------------------------
+
+// GetPlayerBriefRsp
+
+// bool ok = 1;
+inline void GetPlayerBriefRsp::clear_ok() {
+  ok_ = false;
+}
+inline bool GetPlayerBriefRsp::ok() const {
+  // @@protoc_insertion_point(field_get:game.GetPlayerBriefRsp.ok)
+  return ok_;
+}
+inline void GetPlayerBriefRsp::set_ok(bool value) {
+  
+  ok_ = value;
+  // @@protoc_insertion_point(field_set:game.GetPlayerBriefRsp.ok)
+}
+
+// string message = 2;
+inline void GetPlayerBriefRsp::clear_message() {
+  message_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline const ::std::string& GetPlayerBriefRsp::message() const {
+  // @@protoc_insertion_point(field_get:game.GetPlayerBriefRsp.message)
+  return message_.GetNoArena();
+}
+inline void GetPlayerBriefRsp::set_message(const ::std::string& value) {
+  
+  message_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), value);
+  // @@protoc_insertion_point(field_set:game.GetPlayerBriefRsp.message)
+}
+#if LANG_CXX11
+inline void GetPlayerBriefRsp::set_message(::std::string&& value) {
+  
+  message_.SetNoArena(
+    &::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::move(value));
+  // @@protoc_insertion_point(field_set_rvalue:game.GetPlayerBriefRsp.message)
+}
+#endif
+inline void GetPlayerBriefRsp::set_message(const char* value) {
+  GOOGLE_DCHECK(value != NULL);
+  
+  message_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::string(value));
+  // @@protoc_insertion_point(field_set_char:game.GetPlayerBriefRsp.message)
+}
+inline void GetPlayerBriefRsp::set_message(const char* value, size_t size) {
+  
+  message_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(),
+      ::std::string(reinterpret_cast<const char*>(value), size));
+  // @@protoc_insertion_point(field_set_pointer:game.GetPlayerBriefRsp.message)
+}
+inline ::std::string* GetPlayerBriefRsp::mutable_message() {
+  
+  // @@protoc_insertion_point(field_mutable:game.GetPlayerBriefRsp.message)
+  return message_.MutableNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline ::std::string* GetPlayerBriefRsp::release_message() {
+  // @@protoc_insertion_point(field_release:game.GetPlayerBriefRsp.message)
+  
+  return message_.ReleaseNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline void GetPlayerBriefRsp::set_allocated_message(::std::string* message) {
+  if (message != NULL) {
+    
+  } else {
+    
+  }
+  message_.SetAllocatedNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), message);
+  // @@protoc_insertion_point(field_set_allocated:game.GetPlayerBriefRsp.message)
+}
+
+// string error_code = 3;
+inline void GetPlayerBriefRsp::clear_error_code() {
+  error_code_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline const ::std::string& GetPlayerBriefRsp::error_code() const {
+  // @@protoc_insertion_point(field_get:game.GetPlayerBriefRsp.error_code)
+  return error_code_.GetNoArena();
+}
+inline void GetPlayerBriefRsp::set_error_code(const ::std::string& value) {
+  
+  error_code_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), value);
+  // @@protoc_insertion_point(field_set:game.GetPlayerBriefRsp.error_code)
+}
+#if LANG_CXX11
+inline void GetPlayerBriefRsp::set_error_code(::std::string&& value) {
+  
+  error_code_.SetNoArena(
+    &::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::move(value));
+  // @@protoc_insertion_point(field_set_rvalue:game.GetPlayerBriefRsp.error_code)
+}
+#endif
+inline void GetPlayerBriefRsp::set_error_code(const char* value) {
+  GOOGLE_DCHECK(value != NULL);
+  
+  error_code_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::string(value));
+  // @@protoc_insertion_point(field_set_char:game.GetPlayerBriefRsp.error_code)
+}
+inline void GetPlayerBriefRsp::set_error_code(const char* value, size_t size) {
+  
+  error_code_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(),
+      ::std::string(reinterpret_cast<const char*>(value), size));
+  // @@protoc_insertion_point(field_set_pointer:game.GetPlayerBriefRsp.error_code)
+}
+inline ::std::string* GetPlayerBriefRsp::mutable_error_code() {
+  
+  // @@protoc_insertion_point(field_mutable:game.GetPlayerBriefRsp.error_code)
+  return error_code_.MutableNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline ::std::string* GetPlayerBriefRsp::release_error_code() {
+  // @@protoc_insertion_point(field_release:game.GetPlayerBriefRsp.error_code)
+  
+  return error_code_.ReleaseNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline void GetPlayerBriefRsp::set_allocated_error_code(::std::string* error_code) {
+  if (error_code != NULL) {
+    
+  } else {
+    
+  }
+  error_code_.SetAllocatedNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), error_code);
+  // @@protoc_insertion_point(field_set_allocated:game.GetPlayerBriefRsp.error_code)
+}
+
+// .game.PlayerBrief brief = 4;
+inline bool GetPlayerBriefRsp::has_brief() const {
+  return this != internal_default_instance() && brief_ != NULL;
+}
+inline void GetPlayerBriefRsp::clear_brief() {
+  if (GetArenaNoVirtual() == NULL && brief_ != NULL) {
+    delete brief_;
+  }
+  brief_ = NULL;
+}
+inline const ::game::PlayerBrief& GetPlayerBriefRsp::brief() const {
+  const ::game::PlayerBrief* p = brief_;
+  // @@protoc_insertion_point(field_get:game.GetPlayerBriefRsp.brief)
+  return p != NULL ? *p : *reinterpret_cast<const ::game::PlayerBrief*>(
+      &::game::_PlayerBrief_default_instance_);
+}
+inline ::game::PlayerBrief* GetPlayerBriefRsp::release_brief() {
+  // @@protoc_insertion_point(field_release:game.GetPlayerBriefRsp.brief)
+  
+  ::game::PlayerBrief* temp = brief_;
+  brief_ = NULL;
+  return temp;
+}
+inline ::game::PlayerBrief* GetPlayerBriefRsp::mutable_brief() {
+  
+  if (brief_ == NULL) {
+    brief_ = new ::game::PlayerBrief;
+  }
+  // @@protoc_insertion_point(field_mutable:game.GetPlayerBriefRsp.brief)
+  return brief_;
+}
+inline void GetPlayerBriefRsp::set_allocated_brief(::game::PlayerBrief* brief) {
+  ::google::protobuf::Arena* message_arena = GetArenaNoVirtual();
+  if (message_arena == NULL) {
+    delete brief_;
+  }
+  if (brief) {
+    ::google::protobuf::Arena* submessage_arena = NULL;
+    if (message_arena != submessage_arena) {
+      brief = ::google::protobuf::internal::GetOwnedMessage(
+          message_arena, brief, submessage_arena);
+    }
+    
+  } else {
+    
+  }
+  brief_ = brief;
+  // @@protoc_insertion_point(field_set_allocated:game.GetPlayerBriefRsp.brief)
+}
+
+// -------------------------------------------------------------------
+
+// QueryOnlineStateReq
+
+// uint64 player_id = 1;
+inline void QueryOnlineStateReq::clear_player_id() {
+  player_id_ = GOOGLE_ULONGLONG(0);
+}
+inline ::google::protobuf::uint64 QueryOnlineStateReq::player_id() const {
+  // @@protoc_insertion_point(field_get:game.QueryOnlineStateReq.player_id)
+  return player_id_;
+}
+inline void QueryOnlineStateReq::set_player_id(::google::protobuf::uint64 value) {
+  
+  player_id_ = value;
+  // @@protoc_insertion_point(field_set:game.QueryOnlineStateReq.player_id)
+}
+
+// uint64 target_player_id = 2;
+inline void QueryOnlineStateReq::clear_target_player_id() {
+  target_player_id_ = GOOGLE_ULONGLONG(0);
+}
+inline ::google::protobuf::uint64 QueryOnlineStateReq::target_player_id() const {
+  // @@protoc_insertion_point(field_get:game.QueryOnlineStateReq.target_player_id)
+  return target_player_id_;
+}
+inline void QueryOnlineStateReq::set_target_player_id(::google::protobuf::uint64 value) {
+  
+  target_player_id_ = value;
+  // @@protoc_insertion_point(field_set:game.QueryOnlineStateReq.target_player_id)
+}
+
+// -------------------------------------------------------------------
+
+// QueryOnlineStateRsp
+
+// bool ok = 1;
+inline void QueryOnlineStateRsp::clear_ok() {
+  ok_ = false;
+}
+inline bool QueryOnlineStateRsp::ok() const {
+  // @@protoc_insertion_point(field_get:game.QueryOnlineStateRsp.ok)
+  return ok_;
+}
+inline void QueryOnlineStateRsp::set_ok(bool value) {
+  
+  ok_ = value;
+  // @@protoc_insertion_point(field_set:game.QueryOnlineStateRsp.ok)
+}
+
+// string message = 2;
+inline void QueryOnlineStateRsp::clear_message() {
+  message_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline const ::std::string& QueryOnlineStateRsp::message() const {
+  // @@protoc_insertion_point(field_get:game.QueryOnlineStateRsp.message)
+  return message_.GetNoArena();
+}
+inline void QueryOnlineStateRsp::set_message(const ::std::string& value) {
+  
+  message_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), value);
+  // @@protoc_insertion_point(field_set:game.QueryOnlineStateRsp.message)
+}
+#if LANG_CXX11
+inline void QueryOnlineStateRsp::set_message(::std::string&& value) {
+  
+  message_.SetNoArena(
+    &::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::move(value));
+  // @@protoc_insertion_point(field_set_rvalue:game.QueryOnlineStateRsp.message)
+}
+#endif
+inline void QueryOnlineStateRsp::set_message(const char* value) {
+  GOOGLE_DCHECK(value != NULL);
+  
+  message_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::string(value));
+  // @@protoc_insertion_point(field_set_char:game.QueryOnlineStateRsp.message)
+}
+inline void QueryOnlineStateRsp::set_message(const char* value, size_t size) {
+  
+  message_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(),
+      ::std::string(reinterpret_cast<const char*>(value), size));
+  // @@protoc_insertion_point(field_set_pointer:game.QueryOnlineStateRsp.message)
+}
+inline ::std::string* QueryOnlineStateRsp::mutable_message() {
+  
+  // @@protoc_insertion_point(field_mutable:game.QueryOnlineStateRsp.message)
+  return message_.MutableNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline ::std::string* QueryOnlineStateRsp::release_message() {
+  // @@protoc_insertion_point(field_release:game.QueryOnlineStateRsp.message)
+  
+  return message_.ReleaseNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline void QueryOnlineStateRsp::set_allocated_message(::std::string* message) {
+  if (message != NULL) {
+    
+  } else {
+    
+  }
+  message_.SetAllocatedNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), message);
+  // @@protoc_insertion_point(field_set_allocated:game.QueryOnlineStateRsp.message)
+}
+
+// string error_code = 3;
+inline void QueryOnlineStateRsp::clear_error_code() {
+  error_code_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline const ::std::string& QueryOnlineStateRsp::error_code() const {
+  // @@protoc_insertion_point(field_get:game.QueryOnlineStateRsp.error_code)
+  return error_code_.GetNoArena();
+}
+inline void QueryOnlineStateRsp::set_error_code(const ::std::string& value) {
+  
+  error_code_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), value);
+  // @@protoc_insertion_point(field_set:game.QueryOnlineStateRsp.error_code)
+}
+#if LANG_CXX11
+inline void QueryOnlineStateRsp::set_error_code(::std::string&& value) {
+  
+  error_code_.SetNoArena(
+    &::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::move(value));
+  // @@protoc_insertion_point(field_set_rvalue:game.QueryOnlineStateRsp.error_code)
+}
+#endif
+inline void QueryOnlineStateRsp::set_error_code(const char* value) {
+  GOOGLE_DCHECK(value != NULL);
+  
+  error_code_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::string(value));
+  // @@protoc_insertion_point(field_set_char:game.QueryOnlineStateRsp.error_code)
+}
+inline void QueryOnlineStateRsp::set_error_code(const char* value, size_t size) {
+  
+  error_code_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(),
+      ::std::string(reinterpret_cast<const char*>(value), size));
+  // @@protoc_insertion_point(field_set_pointer:game.QueryOnlineStateRsp.error_code)
+}
+inline ::std::string* QueryOnlineStateRsp::mutable_error_code() {
+  
+  // @@protoc_insertion_point(field_mutable:game.QueryOnlineStateRsp.error_code)
+  return error_code_.MutableNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline ::std::string* QueryOnlineStateRsp::release_error_code() {
+  // @@protoc_insertion_point(field_release:game.QueryOnlineStateRsp.error_code)
+  
+  return error_code_.ReleaseNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline void QueryOnlineStateRsp::set_allocated_error_code(::std::string* error_code) {
+  if (error_code != NULL) {
+    
+  } else {
+    
+  }
+  error_code_.SetAllocatedNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), error_code);
+  // @@protoc_insertion_point(field_set_allocated:game.QueryOnlineStateRsp.error_code)
+}
+
+// uint64 player_id = 4;
+inline void QueryOnlineStateRsp::clear_player_id() {
+  player_id_ = GOOGLE_ULONGLONG(0);
+}
+inline ::google::protobuf::uint64 QueryOnlineStateRsp::player_id() const {
+  // @@protoc_insertion_point(field_get:game.QueryOnlineStateRsp.player_id)
+  return player_id_;
+}
+inline void QueryOnlineStateRsp::set_player_id(::google::protobuf::uint64 value) {
+  
+  player_id_ = value;
+  // @@protoc_insertion_point(field_set:game.QueryOnlineStateRsp.player_id)
+}
+
+// string state = 5;
+inline void QueryOnlineStateRsp::clear_state() {
+  state_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline const ::std::string& QueryOnlineStateRsp::state() const {
+  // @@protoc_insertion_point(field_get:game.QueryOnlineStateRsp.state)
+  return state_.GetNoArena();
+}
+inline void QueryOnlineStateRsp::set_state(const ::std::string& value) {
+  
+  state_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), value);
+  // @@protoc_insertion_point(field_set:game.QueryOnlineStateRsp.state)
+}
+#if LANG_CXX11
+inline void QueryOnlineStateRsp::set_state(::std::string&& value) {
+  
+  state_.SetNoArena(
+    &::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::move(value));
+  // @@protoc_insertion_point(field_set_rvalue:game.QueryOnlineStateRsp.state)
+}
+#endif
+inline void QueryOnlineStateRsp::set_state(const char* value) {
+  GOOGLE_DCHECK(value != NULL);
+  
+  state_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::string(value));
+  // @@protoc_insertion_point(field_set_char:game.QueryOnlineStateRsp.state)
+}
+inline void QueryOnlineStateRsp::set_state(const char* value, size_t size) {
+  
+  state_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(),
+      ::std::string(reinterpret_cast<const char*>(value), size));
+  // @@protoc_insertion_point(field_set_pointer:game.QueryOnlineStateRsp.state)
+}
+inline ::std::string* QueryOnlineStateRsp::mutable_state() {
+  
+  // @@protoc_insertion_point(field_mutable:game.QueryOnlineStateRsp.state)
+  return state_.MutableNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline ::std::string* QueryOnlineStateRsp::release_state() {
+  // @@protoc_insertion_point(field_release:game.QueryOnlineStateRsp.state)
+  
+  return state_.ReleaseNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline void QueryOnlineStateRsp::set_allocated_state(::std::string* state) {
+  if (state != NULL) {
+    
+  } else {
+    
+  }
+  state_.SetAllocatedNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), state);
+  // @@protoc_insertion_point(field_set_allocated:game.QueryOnlineStateRsp.state)
 }
 
 // -------------------------------------------------------------------
@@ -21845,6 +25818,847 @@ inline void MailboxChangedNotify::set_unread_count(::google::protobuf::uint32 va
   
   unread_count_ = value;
   // @@protoc_insertion_point(field_set:game.MailboxChangedNotify.unread_count)
+}
+
+// -------------------------------------------------------------------
+
+// ClientHelloReq
+
+// uint32 protocol_version = 1;
+inline void ClientHelloReq::clear_protocol_version() {
+  protocol_version_ = 0u;
+}
+inline ::google::protobuf::uint32 ClientHelloReq::protocol_version() const {
+  // @@protoc_insertion_point(field_get:game.ClientHelloReq.protocol_version)
+  return protocol_version_;
+}
+inline void ClientHelloReq::set_protocol_version(::google::protobuf::uint32 value) {
+  
+  protocol_version_ = value;
+  // @@protoc_insertion_point(field_set:game.ClientHelloReq.protocol_version)
+}
+
+// string schema_sha256 = 2;
+inline void ClientHelloReq::clear_schema_sha256() {
+  schema_sha256_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline const ::std::string& ClientHelloReq::schema_sha256() const {
+  // @@protoc_insertion_point(field_get:game.ClientHelloReq.schema_sha256)
+  return schema_sha256_.GetNoArena();
+}
+inline void ClientHelloReq::set_schema_sha256(const ::std::string& value) {
+  
+  schema_sha256_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), value);
+  // @@protoc_insertion_point(field_set:game.ClientHelloReq.schema_sha256)
+}
+#if LANG_CXX11
+inline void ClientHelloReq::set_schema_sha256(::std::string&& value) {
+  
+  schema_sha256_.SetNoArena(
+    &::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::move(value));
+  // @@protoc_insertion_point(field_set_rvalue:game.ClientHelloReq.schema_sha256)
+}
+#endif
+inline void ClientHelloReq::set_schema_sha256(const char* value) {
+  GOOGLE_DCHECK(value != NULL);
+  
+  schema_sha256_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::string(value));
+  // @@protoc_insertion_point(field_set_char:game.ClientHelloReq.schema_sha256)
+}
+inline void ClientHelloReq::set_schema_sha256(const char* value, size_t size) {
+  
+  schema_sha256_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(),
+      ::std::string(reinterpret_cast<const char*>(value), size));
+  // @@protoc_insertion_point(field_set_pointer:game.ClientHelloReq.schema_sha256)
+}
+inline ::std::string* ClientHelloReq::mutable_schema_sha256() {
+  
+  // @@protoc_insertion_point(field_mutable:game.ClientHelloReq.schema_sha256)
+  return schema_sha256_.MutableNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline ::std::string* ClientHelloReq::release_schema_sha256() {
+  // @@protoc_insertion_point(field_release:game.ClientHelloReq.schema_sha256)
+  
+  return schema_sha256_.ReleaseNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline void ClientHelloReq::set_allocated_schema_sha256(::std::string* schema_sha256) {
+  if (schema_sha256 != NULL) {
+    
+  } else {
+    
+  }
+  schema_sha256_.SetAllocatedNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), schema_sha256);
+  // @@protoc_insertion_point(field_set_allocated:game.ClientHelloReq.schema_sha256)
+}
+
+// string client_version = 3;
+inline void ClientHelloReq::clear_client_version() {
+  client_version_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline const ::std::string& ClientHelloReq::client_version() const {
+  // @@protoc_insertion_point(field_get:game.ClientHelloReq.client_version)
+  return client_version_.GetNoArena();
+}
+inline void ClientHelloReq::set_client_version(const ::std::string& value) {
+  
+  client_version_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), value);
+  // @@protoc_insertion_point(field_set:game.ClientHelloReq.client_version)
+}
+#if LANG_CXX11
+inline void ClientHelloReq::set_client_version(::std::string&& value) {
+  
+  client_version_.SetNoArena(
+    &::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::move(value));
+  // @@protoc_insertion_point(field_set_rvalue:game.ClientHelloReq.client_version)
+}
+#endif
+inline void ClientHelloReq::set_client_version(const char* value) {
+  GOOGLE_DCHECK(value != NULL);
+  
+  client_version_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::string(value));
+  // @@protoc_insertion_point(field_set_char:game.ClientHelloReq.client_version)
+}
+inline void ClientHelloReq::set_client_version(const char* value, size_t size) {
+  
+  client_version_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(),
+      ::std::string(reinterpret_cast<const char*>(value), size));
+  // @@protoc_insertion_point(field_set_pointer:game.ClientHelloReq.client_version)
+}
+inline ::std::string* ClientHelloReq::mutable_client_version() {
+  
+  // @@protoc_insertion_point(field_mutable:game.ClientHelloReq.client_version)
+  return client_version_.MutableNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline ::std::string* ClientHelloReq::release_client_version() {
+  // @@protoc_insertion_point(field_release:game.ClientHelloReq.client_version)
+  
+  return client_version_.ReleaseNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline void ClientHelloReq::set_allocated_client_version(::std::string* client_version) {
+  if (client_version != NULL) {
+    
+  } else {
+    
+  }
+  client_version_.SetAllocatedNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), client_version);
+  // @@protoc_insertion_point(field_set_allocated:game.ClientHelloReq.client_version)
+}
+
+// string platform = 4;
+inline void ClientHelloReq::clear_platform() {
+  platform_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline const ::std::string& ClientHelloReq::platform() const {
+  // @@protoc_insertion_point(field_get:game.ClientHelloReq.platform)
+  return platform_.GetNoArena();
+}
+inline void ClientHelloReq::set_platform(const ::std::string& value) {
+  
+  platform_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), value);
+  // @@protoc_insertion_point(field_set:game.ClientHelloReq.platform)
+}
+#if LANG_CXX11
+inline void ClientHelloReq::set_platform(::std::string&& value) {
+  
+  platform_.SetNoArena(
+    &::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::move(value));
+  // @@protoc_insertion_point(field_set_rvalue:game.ClientHelloReq.platform)
+}
+#endif
+inline void ClientHelloReq::set_platform(const char* value) {
+  GOOGLE_DCHECK(value != NULL);
+  
+  platform_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::string(value));
+  // @@protoc_insertion_point(field_set_char:game.ClientHelloReq.platform)
+}
+inline void ClientHelloReq::set_platform(const char* value, size_t size) {
+  
+  platform_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(),
+      ::std::string(reinterpret_cast<const char*>(value), size));
+  // @@protoc_insertion_point(field_set_pointer:game.ClientHelloReq.platform)
+}
+inline ::std::string* ClientHelloReq::mutable_platform() {
+  
+  // @@protoc_insertion_point(field_mutable:game.ClientHelloReq.platform)
+  return platform_.MutableNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline ::std::string* ClientHelloReq::release_platform() {
+  // @@protoc_insertion_point(field_release:game.ClientHelloReq.platform)
+  
+  return platform_.ReleaseNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline void ClientHelloReq::set_allocated_platform(::std::string* platform) {
+  if (platform != NULL) {
+    
+  } else {
+    
+  }
+  platform_.SetAllocatedNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), platform);
+  // @@protoc_insertion_point(field_set_allocated:game.ClientHelloReq.platform)
+}
+
+// string build_channel = 5;
+inline void ClientHelloReq::clear_build_channel() {
+  build_channel_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline const ::std::string& ClientHelloReq::build_channel() const {
+  // @@protoc_insertion_point(field_get:game.ClientHelloReq.build_channel)
+  return build_channel_.GetNoArena();
+}
+inline void ClientHelloReq::set_build_channel(const ::std::string& value) {
+  
+  build_channel_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), value);
+  // @@protoc_insertion_point(field_set:game.ClientHelloReq.build_channel)
+}
+#if LANG_CXX11
+inline void ClientHelloReq::set_build_channel(::std::string&& value) {
+  
+  build_channel_.SetNoArena(
+    &::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::move(value));
+  // @@protoc_insertion_point(field_set_rvalue:game.ClientHelloReq.build_channel)
+}
+#endif
+inline void ClientHelloReq::set_build_channel(const char* value) {
+  GOOGLE_DCHECK(value != NULL);
+  
+  build_channel_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::string(value));
+  // @@protoc_insertion_point(field_set_char:game.ClientHelloReq.build_channel)
+}
+inline void ClientHelloReq::set_build_channel(const char* value, size_t size) {
+  
+  build_channel_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(),
+      ::std::string(reinterpret_cast<const char*>(value), size));
+  // @@protoc_insertion_point(field_set_pointer:game.ClientHelloReq.build_channel)
+}
+inline ::std::string* ClientHelloReq::mutable_build_channel() {
+  
+  // @@protoc_insertion_point(field_mutable:game.ClientHelloReq.build_channel)
+  return build_channel_.MutableNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline ::std::string* ClientHelloReq::release_build_channel() {
+  // @@protoc_insertion_point(field_release:game.ClientHelloReq.build_channel)
+  
+  return build_channel_.ReleaseNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline void ClientHelloReq::set_allocated_build_channel(::std::string* build_channel) {
+  if (build_channel != NULL) {
+    
+  } else {
+    
+  }
+  build_channel_.SetAllocatedNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), build_channel);
+  // @@protoc_insertion_point(field_set_allocated:game.ClientHelloReq.build_channel)
+}
+
+// repeated string capabilities = 6;
+inline int ClientHelloReq::capabilities_size() const {
+  return capabilities_.size();
+}
+inline void ClientHelloReq::clear_capabilities() {
+  capabilities_.Clear();
+}
+inline const ::std::string& ClientHelloReq::capabilities(int index) const {
+  // @@protoc_insertion_point(field_get:game.ClientHelloReq.capabilities)
+  return capabilities_.Get(index);
+}
+inline ::std::string* ClientHelloReq::mutable_capabilities(int index) {
+  // @@protoc_insertion_point(field_mutable:game.ClientHelloReq.capabilities)
+  return capabilities_.Mutable(index);
+}
+inline void ClientHelloReq::set_capabilities(int index, const ::std::string& value) {
+  // @@protoc_insertion_point(field_set:game.ClientHelloReq.capabilities)
+  capabilities_.Mutable(index)->assign(value);
+}
+#if LANG_CXX11
+inline void ClientHelloReq::set_capabilities(int index, ::std::string&& value) {
+  // @@protoc_insertion_point(field_set:game.ClientHelloReq.capabilities)
+  capabilities_.Mutable(index)->assign(std::move(value));
+}
+#endif
+inline void ClientHelloReq::set_capabilities(int index, const char* value) {
+  GOOGLE_DCHECK(value != NULL);
+  capabilities_.Mutable(index)->assign(value);
+  // @@protoc_insertion_point(field_set_char:game.ClientHelloReq.capabilities)
+}
+inline void ClientHelloReq::set_capabilities(int index, const char* value, size_t size) {
+  capabilities_.Mutable(index)->assign(
+    reinterpret_cast<const char*>(value), size);
+  // @@protoc_insertion_point(field_set_pointer:game.ClientHelloReq.capabilities)
+}
+inline ::std::string* ClientHelloReq::add_capabilities() {
+  // @@protoc_insertion_point(field_add_mutable:game.ClientHelloReq.capabilities)
+  return capabilities_.Add();
+}
+inline void ClientHelloReq::add_capabilities(const ::std::string& value) {
+  capabilities_.Add()->assign(value);
+  // @@protoc_insertion_point(field_add:game.ClientHelloReq.capabilities)
+}
+#if LANG_CXX11
+inline void ClientHelloReq::add_capabilities(::std::string&& value) {
+  capabilities_.Add(std::move(value));
+  // @@protoc_insertion_point(field_add:game.ClientHelloReq.capabilities)
+}
+#endif
+inline void ClientHelloReq::add_capabilities(const char* value) {
+  GOOGLE_DCHECK(value != NULL);
+  capabilities_.Add()->assign(value);
+  // @@protoc_insertion_point(field_add_char:game.ClientHelloReq.capabilities)
+}
+inline void ClientHelloReq::add_capabilities(const char* value, size_t size) {
+  capabilities_.Add()->assign(reinterpret_cast<const char*>(value), size);
+  // @@protoc_insertion_point(field_add_pointer:game.ClientHelloReq.capabilities)
+}
+inline const ::google::protobuf::RepeatedPtrField< ::std::string>&
+ClientHelloReq::capabilities() const {
+  // @@protoc_insertion_point(field_list:game.ClientHelloReq.capabilities)
+  return capabilities_;
+}
+inline ::google::protobuf::RepeatedPtrField< ::std::string>*
+ClientHelloReq::mutable_capabilities() {
+  // @@protoc_insertion_point(field_mutable_list:game.ClientHelloReq.capabilities)
+  return &capabilities_;
+}
+
+// -------------------------------------------------------------------
+
+// ServerHelloRsp
+
+// bool ok = 1;
+inline void ServerHelloRsp::clear_ok() {
+  ok_ = false;
+}
+inline bool ServerHelloRsp::ok() const {
+  // @@protoc_insertion_point(field_get:game.ServerHelloRsp.ok)
+  return ok_;
+}
+inline void ServerHelloRsp::set_ok(bool value) {
+  
+  ok_ = value;
+  // @@protoc_insertion_point(field_set:game.ServerHelloRsp.ok)
+}
+
+// string error_code = 2;
+inline void ServerHelloRsp::clear_error_code() {
+  error_code_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline const ::std::string& ServerHelloRsp::error_code() const {
+  // @@protoc_insertion_point(field_get:game.ServerHelloRsp.error_code)
+  return error_code_.GetNoArena();
+}
+inline void ServerHelloRsp::set_error_code(const ::std::string& value) {
+  
+  error_code_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), value);
+  // @@protoc_insertion_point(field_set:game.ServerHelloRsp.error_code)
+}
+#if LANG_CXX11
+inline void ServerHelloRsp::set_error_code(::std::string&& value) {
+  
+  error_code_.SetNoArena(
+    &::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::move(value));
+  // @@protoc_insertion_point(field_set_rvalue:game.ServerHelloRsp.error_code)
+}
+#endif
+inline void ServerHelloRsp::set_error_code(const char* value) {
+  GOOGLE_DCHECK(value != NULL);
+  
+  error_code_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::string(value));
+  // @@protoc_insertion_point(field_set_char:game.ServerHelloRsp.error_code)
+}
+inline void ServerHelloRsp::set_error_code(const char* value, size_t size) {
+  
+  error_code_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(),
+      ::std::string(reinterpret_cast<const char*>(value), size));
+  // @@protoc_insertion_point(field_set_pointer:game.ServerHelloRsp.error_code)
+}
+inline ::std::string* ServerHelloRsp::mutable_error_code() {
+  
+  // @@protoc_insertion_point(field_mutable:game.ServerHelloRsp.error_code)
+  return error_code_.MutableNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline ::std::string* ServerHelloRsp::release_error_code() {
+  // @@protoc_insertion_point(field_release:game.ServerHelloRsp.error_code)
+  
+  return error_code_.ReleaseNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline void ServerHelloRsp::set_allocated_error_code(::std::string* error_code) {
+  if (error_code != NULL) {
+    
+  } else {
+    
+  }
+  error_code_.SetAllocatedNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), error_code);
+  // @@protoc_insertion_point(field_set_allocated:game.ServerHelloRsp.error_code)
+}
+
+// string message = 3;
+inline void ServerHelloRsp::clear_message() {
+  message_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline const ::std::string& ServerHelloRsp::message() const {
+  // @@protoc_insertion_point(field_get:game.ServerHelloRsp.message)
+  return message_.GetNoArena();
+}
+inline void ServerHelloRsp::set_message(const ::std::string& value) {
+  
+  message_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), value);
+  // @@protoc_insertion_point(field_set:game.ServerHelloRsp.message)
+}
+#if LANG_CXX11
+inline void ServerHelloRsp::set_message(::std::string&& value) {
+  
+  message_.SetNoArena(
+    &::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::move(value));
+  // @@protoc_insertion_point(field_set_rvalue:game.ServerHelloRsp.message)
+}
+#endif
+inline void ServerHelloRsp::set_message(const char* value) {
+  GOOGLE_DCHECK(value != NULL);
+  
+  message_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::string(value));
+  // @@protoc_insertion_point(field_set_char:game.ServerHelloRsp.message)
+}
+inline void ServerHelloRsp::set_message(const char* value, size_t size) {
+  
+  message_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(),
+      ::std::string(reinterpret_cast<const char*>(value), size));
+  // @@protoc_insertion_point(field_set_pointer:game.ServerHelloRsp.message)
+}
+inline ::std::string* ServerHelloRsp::mutable_message() {
+  
+  // @@protoc_insertion_point(field_mutable:game.ServerHelloRsp.message)
+  return message_.MutableNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline ::std::string* ServerHelloRsp::release_message() {
+  // @@protoc_insertion_point(field_release:game.ServerHelloRsp.message)
+  
+  return message_.ReleaseNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline void ServerHelloRsp::set_allocated_message(::std::string* message) {
+  if (message != NULL) {
+    
+  } else {
+    
+  }
+  message_.SetAllocatedNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), message);
+  // @@protoc_insertion_point(field_set_allocated:game.ServerHelloRsp.message)
+}
+
+// uint32 protocol_version = 4;
+inline void ServerHelloRsp::clear_protocol_version() {
+  protocol_version_ = 0u;
+}
+inline ::google::protobuf::uint32 ServerHelloRsp::protocol_version() const {
+  // @@protoc_insertion_point(field_get:game.ServerHelloRsp.protocol_version)
+  return protocol_version_;
+}
+inline void ServerHelloRsp::set_protocol_version(::google::protobuf::uint32 value) {
+  
+  protocol_version_ = value;
+  // @@protoc_insertion_point(field_set:game.ServerHelloRsp.protocol_version)
+}
+
+// uint32 min_supported_protocol_version = 5;
+inline void ServerHelloRsp::clear_min_supported_protocol_version() {
+  min_supported_protocol_version_ = 0u;
+}
+inline ::google::protobuf::uint32 ServerHelloRsp::min_supported_protocol_version() const {
+  // @@protoc_insertion_point(field_get:game.ServerHelloRsp.min_supported_protocol_version)
+  return min_supported_protocol_version_;
+}
+inline void ServerHelloRsp::set_min_supported_protocol_version(::google::protobuf::uint32 value) {
+  
+  min_supported_protocol_version_ = value;
+  // @@protoc_insertion_point(field_set:game.ServerHelloRsp.min_supported_protocol_version)
+}
+
+// string schema_sha256 = 6;
+inline void ServerHelloRsp::clear_schema_sha256() {
+  schema_sha256_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline const ::std::string& ServerHelloRsp::schema_sha256() const {
+  // @@protoc_insertion_point(field_get:game.ServerHelloRsp.schema_sha256)
+  return schema_sha256_.GetNoArena();
+}
+inline void ServerHelloRsp::set_schema_sha256(const ::std::string& value) {
+  
+  schema_sha256_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), value);
+  // @@protoc_insertion_point(field_set:game.ServerHelloRsp.schema_sha256)
+}
+#if LANG_CXX11
+inline void ServerHelloRsp::set_schema_sha256(::std::string&& value) {
+  
+  schema_sha256_.SetNoArena(
+    &::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::move(value));
+  // @@protoc_insertion_point(field_set_rvalue:game.ServerHelloRsp.schema_sha256)
+}
+#endif
+inline void ServerHelloRsp::set_schema_sha256(const char* value) {
+  GOOGLE_DCHECK(value != NULL);
+  
+  schema_sha256_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::string(value));
+  // @@protoc_insertion_point(field_set_char:game.ServerHelloRsp.schema_sha256)
+}
+inline void ServerHelloRsp::set_schema_sha256(const char* value, size_t size) {
+  
+  schema_sha256_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(),
+      ::std::string(reinterpret_cast<const char*>(value), size));
+  // @@protoc_insertion_point(field_set_pointer:game.ServerHelloRsp.schema_sha256)
+}
+inline ::std::string* ServerHelloRsp::mutable_schema_sha256() {
+  
+  // @@protoc_insertion_point(field_mutable:game.ServerHelloRsp.schema_sha256)
+  return schema_sha256_.MutableNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline ::std::string* ServerHelloRsp::release_schema_sha256() {
+  // @@protoc_insertion_point(field_release:game.ServerHelloRsp.schema_sha256)
+  
+  return schema_sha256_.ReleaseNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline void ServerHelloRsp::set_allocated_schema_sha256(::std::string* schema_sha256) {
+  if (schema_sha256 != NULL) {
+    
+  } else {
+    
+  }
+  schema_sha256_.SetAllocatedNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), schema_sha256);
+  // @@protoc_insertion_point(field_set_allocated:game.ServerHelloRsp.schema_sha256)
+}
+
+// string server_build = 7;
+inline void ServerHelloRsp::clear_server_build() {
+  server_build_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline const ::std::string& ServerHelloRsp::server_build() const {
+  // @@protoc_insertion_point(field_get:game.ServerHelloRsp.server_build)
+  return server_build_.GetNoArena();
+}
+inline void ServerHelloRsp::set_server_build(const ::std::string& value) {
+  
+  server_build_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), value);
+  // @@protoc_insertion_point(field_set:game.ServerHelloRsp.server_build)
+}
+#if LANG_CXX11
+inline void ServerHelloRsp::set_server_build(::std::string&& value) {
+  
+  server_build_.SetNoArena(
+    &::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::move(value));
+  // @@protoc_insertion_point(field_set_rvalue:game.ServerHelloRsp.server_build)
+}
+#endif
+inline void ServerHelloRsp::set_server_build(const char* value) {
+  GOOGLE_DCHECK(value != NULL);
+  
+  server_build_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::string(value));
+  // @@protoc_insertion_point(field_set_char:game.ServerHelloRsp.server_build)
+}
+inline void ServerHelloRsp::set_server_build(const char* value, size_t size) {
+  
+  server_build_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(),
+      ::std::string(reinterpret_cast<const char*>(value), size));
+  // @@protoc_insertion_point(field_set_pointer:game.ServerHelloRsp.server_build)
+}
+inline ::std::string* ServerHelloRsp::mutable_server_build() {
+  
+  // @@protoc_insertion_point(field_mutable:game.ServerHelloRsp.server_build)
+  return server_build_.MutableNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline ::std::string* ServerHelloRsp::release_server_build() {
+  // @@protoc_insertion_point(field_release:game.ServerHelloRsp.server_build)
+  
+  return server_build_.ReleaseNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline void ServerHelloRsp::set_allocated_server_build(::std::string* server_build) {
+  if (server_build != NULL) {
+    
+  } else {
+    
+  }
+  server_build_.SetAllocatedNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), server_build);
+  // @@protoc_insertion_point(field_set_allocated:game.ServerHelloRsp.server_build)
+}
+
+// int64 server_time_ms = 8;
+inline void ServerHelloRsp::clear_server_time_ms() {
+  server_time_ms_ = GOOGLE_LONGLONG(0);
+}
+inline ::google::protobuf::int64 ServerHelloRsp::server_time_ms() const {
+  // @@protoc_insertion_point(field_get:game.ServerHelloRsp.server_time_ms)
+  return server_time_ms_;
+}
+inline void ServerHelloRsp::set_server_time_ms(::google::protobuf::int64 value) {
+  
+  server_time_ms_ = value;
+  // @@protoc_insertion_point(field_set:game.ServerHelloRsp.server_time_ms)
+}
+
+// uint32 heartbeat_interval_ms = 9;
+inline void ServerHelloRsp::clear_heartbeat_interval_ms() {
+  heartbeat_interval_ms_ = 0u;
+}
+inline ::google::protobuf::uint32 ServerHelloRsp::heartbeat_interval_ms() const {
+  // @@protoc_insertion_point(field_get:game.ServerHelloRsp.heartbeat_interval_ms)
+  return heartbeat_interval_ms_;
+}
+inline void ServerHelloRsp::set_heartbeat_interval_ms(::google::protobuf::uint32 value) {
+  
+  heartbeat_interval_ms_ = value;
+  // @@protoc_insertion_point(field_set:game.ServerHelloRsp.heartbeat_interval_ms)
+}
+
+// uint32 idle_timeout_ms = 10;
+inline void ServerHelloRsp::clear_idle_timeout_ms() {
+  idle_timeout_ms_ = 0u;
+}
+inline ::google::protobuf::uint32 ServerHelloRsp::idle_timeout_ms() const {
+  // @@protoc_insertion_point(field_get:game.ServerHelloRsp.idle_timeout_ms)
+  return idle_timeout_ms_;
+}
+inline void ServerHelloRsp::set_idle_timeout_ms(::google::protobuf::uint32 value) {
+  
+  idle_timeout_ms_ = value;
+  // @@protoc_insertion_point(field_set:game.ServerHelloRsp.idle_timeout_ms)
+}
+
+// repeated string capabilities = 11;
+inline int ServerHelloRsp::capabilities_size() const {
+  return capabilities_.size();
+}
+inline void ServerHelloRsp::clear_capabilities() {
+  capabilities_.Clear();
+}
+inline const ::std::string& ServerHelloRsp::capabilities(int index) const {
+  // @@protoc_insertion_point(field_get:game.ServerHelloRsp.capabilities)
+  return capabilities_.Get(index);
+}
+inline ::std::string* ServerHelloRsp::mutable_capabilities(int index) {
+  // @@protoc_insertion_point(field_mutable:game.ServerHelloRsp.capabilities)
+  return capabilities_.Mutable(index);
+}
+inline void ServerHelloRsp::set_capabilities(int index, const ::std::string& value) {
+  // @@protoc_insertion_point(field_set:game.ServerHelloRsp.capabilities)
+  capabilities_.Mutable(index)->assign(value);
+}
+#if LANG_CXX11
+inline void ServerHelloRsp::set_capabilities(int index, ::std::string&& value) {
+  // @@protoc_insertion_point(field_set:game.ServerHelloRsp.capabilities)
+  capabilities_.Mutable(index)->assign(std::move(value));
+}
+#endif
+inline void ServerHelloRsp::set_capabilities(int index, const char* value) {
+  GOOGLE_DCHECK(value != NULL);
+  capabilities_.Mutable(index)->assign(value);
+  // @@protoc_insertion_point(field_set_char:game.ServerHelloRsp.capabilities)
+}
+inline void ServerHelloRsp::set_capabilities(int index, const char* value, size_t size) {
+  capabilities_.Mutable(index)->assign(
+    reinterpret_cast<const char*>(value), size);
+  // @@protoc_insertion_point(field_set_pointer:game.ServerHelloRsp.capabilities)
+}
+inline ::std::string* ServerHelloRsp::add_capabilities() {
+  // @@protoc_insertion_point(field_add_mutable:game.ServerHelloRsp.capabilities)
+  return capabilities_.Add();
+}
+inline void ServerHelloRsp::add_capabilities(const ::std::string& value) {
+  capabilities_.Add()->assign(value);
+  // @@protoc_insertion_point(field_add:game.ServerHelloRsp.capabilities)
+}
+#if LANG_CXX11
+inline void ServerHelloRsp::add_capabilities(::std::string&& value) {
+  capabilities_.Add(std::move(value));
+  // @@protoc_insertion_point(field_add:game.ServerHelloRsp.capabilities)
+}
+#endif
+inline void ServerHelloRsp::add_capabilities(const char* value) {
+  GOOGLE_DCHECK(value != NULL);
+  capabilities_.Add()->assign(value);
+  // @@protoc_insertion_point(field_add_char:game.ServerHelloRsp.capabilities)
+}
+inline void ServerHelloRsp::add_capabilities(const char* value, size_t size) {
+  capabilities_.Add()->assign(reinterpret_cast<const char*>(value), size);
+  // @@protoc_insertion_point(field_add_pointer:game.ServerHelloRsp.capabilities)
+}
+inline const ::google::protobuf::RepeatedPtrField< ::std::string>&
+ServerHelloRsp::capabilities() const {
+  // @@protoc_insertion_point(field_list:game.ServerHelloRsp.capabilities)
+  return capabilities_;
+}
+inline ::google::protobuf::RepeatedPtrField< ::std::string>*
+ServerHelloRsp::mutable_capabilities() {
+  // @@protoc_insertion_point(field_mutable_list:game.ServerHelloRsp.capabilities)
+  return &capabilities_;
+}
+
+// -------------------------------------------------------------------
+
+// HeartbeatReq
+
+// int64 client_monotonic_ms = 1;
+inline void HeartbeatReq::clear_client_monotonic_ms() {
+  client_monotonic_ms_ = GOOGLE_LONGLONG(0);
+}
+inline ::google::protobuf::int64 HeartbeatReq::client_monotonic_ms() const {
+  // @@protoc_insertion_point(field_get:game.HeartbeatReq.client_monotonic_ms)
+  return client_monotonic_ms_;
+}
+inline void HeartbeatReq::set_client_monotonic_ms(::google::protobuf::int64 value) {
+  
+  client_monotonic_ms_ = value;
+  // @@protoc_insertion_point(field_set:game.HeartbeatReq.client_monotonic_ms)
+}
+
+// uint64 last_server_seq = 2;
+inline void HeartbeatReq::clear_last_server_seq() {
+  last_server_seq_ = GOOGLE_ULONGLONG(0);
+}
+inline ::google::protobuf::uint64 HeartbeatReq::last_server_seq() const {
+  // @@protoc_insertion_point(field_get:game.HeartbeatReq.last_server_seq)
+  return last_server_seq_;
+}
+inline void HeartbeatReq::set_last_server_seq(::google::protobuf::uint64 value) {
+  
+  last_server_seq_ = value;
+  // @@protoc_insertion_point(field_set:game.HeartbeatReq.last_server_seq)
+}
+
+// int64 echo_ms = 3;
+inline void HeartbeatReq::clear_echo_ms() {
+  echo_ms_ = GOOGLE_LONGLONG(0);
+}
+inline ::google::protobuf::int64 HeartbeatReq::echo_ms() const {
+  // @@protoc_insertion_point(field_get:game.HeartbeatReq.echo_ms)
+  return echo_ms_;
+}
+inline void HeartbeatReq::set_echo_ms(::google::protobuf::int64 value) {
+  
+  echo_ms_ = value;
+  // @@protoc_insertion_point(field_set:game.HeartbeatReq.echo_ms)
+}
+
+// -------------------------------------------------------------------
+
+// HeartbeatRsp
+
+// bool ok = 1;
+inline void HeartbeatRsp::clear_ok() {
+  ok_ = false;
+}
+inline bool HeartbeatRsp::ok() const {
+  // @@protoc_insertion_point(field_get:game.HeartbeatRsp.ok)
+  return ok_;
+}
+inline void HeartbeatRsp::set_ok(bool value) {
+  
+  ok_ = value;
+  // @@protoc_insertion_point(field_set:game.HeartbeatRsp.ok)
+}
+
+// string error_code = 2;
+inline void HeartbeatRsp::clear_error_code() {
+  error_code_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline const ::std::string& HeartbeatRsp::error_code() const {
+  // @@protoc_insertion_point(field_get:game.HeartbeatRsp.error_code)
+  return error_code_.GetNoArena();
+}
+inline void HeartbeatRsp::set_error_code(const ::std::string& value) {
+  
+  error_code_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), value);
+  // @@protoc_insertion_point(field_set:game.HeartbeatRsp.error_code)
+}
+#if LANG_CXX11
+inline void HeartbeatRsp::set_error_code(::std::string&& value) {
+  
+  error_code_.SetNoArena(
+    &::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::move(value));
+  // @@protoc_insertion_point(field_set_rvalue:game.HeartbeatRsp.error_code)
+}
+#endif
+inline void HeartbeatRsp::set_error_code(const char* value) {
+  GOOGLE_DCHECK(value != NULL);
+  
+  error_code_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::string(value));
+  // @@protoc_insertion_point(field_set_char:game.HeartbeatRsp.error_code)
+}
+inline void HeartbeatRsp::set_error_code(const char* value, size_t size) {
+  
+  error_code_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(),
+      ::std::string(reinterpret_cast<const char*>(value), size));
+  // @@protoc_insertion_point(field_set_pointer:game.HeartbeatRsp.error_code)
+}
+inline ::std::string* HeartbeatRsp::mutable_error_code() {
+  
+  // @@protoc_insertion_point(field_mutable:game.HeartbeatRsp.error_code)
+  return error_code_.MutableNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline ::std::string* HeartbeatRsp::release_error_code() {
+  // @@protoc_insertion_point(field_release:game.HeartbeatRsp.error_code)
+  
+  return error_code_.ReleaseNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline void HeartbeatRsp::set_allocated_error_code(::std::string* error_code) {
+  if (error_code != NULL) {
+    
+  } else {
+    
+  }
+  error_code_.SetAllocatedNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), error_code);
+  // @@protoc_insertion_point(field_set_allocated:game.HeartbeatRsp.error_code)
+}
+
+// int64 server_time_ms = 3;
+inline void HeartbeatRsp::clear_server_time_ms() {
+  server_time_ms_ = GOOGLE_LONGLONG(0);
+}
+inline ::google::protobuf::int64 HeartbeatRsp::server_time_ms() const {
+  // @@protoc_insertion_point(field_get:game.HeartbeatRsp.server_time_ms)
+  return server_time_ms_;
+}
+inline void HeartbeatRsp::set_server_time_ms(::google::protobuf::int64 value) {
+  
+  server_time_ms_ = value;
+  // @@protoc_insertion_point(field_set:game.HeartbeatRsp.server_time_ms)
+}
+
+// int64 echo_ms = 4;
+inline void HeartbeatRsp::clear_echo_ms() {
+  echo_ms_ = GOOGLE_LONGLONG(0);
+}
+inline ::google::protobuf::int64 HeartbeatRsp::echo_ms() const {
+  // @@protoc_insertion_point(field_get:game.HeartbeatRsp.echo_ms)
+  return echo_ms_;
+}
+inline void HeartbeatRsp::set_echo_ms(::google::protobuf::int64 value) {
+  
+  echo_ms_ = value;
+  // @@protoc_insertion_point(field_set:game.HeartbeatRsp.echo_ms)
+}
+
+// int64 server_recv_ms = 5;
+inline void HeartbeatRsp::clear_server_recv_ms() {
+  server_recv_ms_ = GOOGLE_LONGLONG(0);
+}
+inline ::google::protobuf::int64 HeartbeatRsp::server_recv_ms() const {
+  // @@protoc_insertion_point(field_get:game.HeartbeatRsp.server_recv_ms)
+  return server_recv_ms_;
+}
+inline void HeartbeatRsp::set_server_recv_ms(::google::protobuf::int64 value) {
+  
+  server_recv_ms_ = value;
+  // @@protoc_insertion_point(field_set:game.HeartbeatRsp.server_recv_ms)
+}
+
+// uint32 jitter_hint_ms = 6;
+inline void HeartbeatRsp::clear_jitter_hint_ms() {
+  jitter_hint_ms_ = 0u;
+}
+inline ::google::protobuf::uint32 HeartbeatRsp::jitter_hint_ms() const {
+  // @@protoc_insertion_point(field_get:game.HeartbeatRsp.jitter_hint_ms)
+  return jitter_hint_ms_;
+}
+inline void HeartbeatRsp::set_jitter_hint_ms(::google::protobuf::uint32 value) {
+  
+  jitter_hint_ms_ = value;
+  // @@protoc_insertion_point(field_set:game.HeartbeatRsp.jitter_hint_ms)
 }
 
 // -------------------------------------------------------------------
@@ -23078,6 +27892,246 @@ inline ::game::PlayerMailSendReq* GameRequest::mutable_player_mail_send() {
   return body_.player_mail_send_;
 }
 
+// .game.ClientHelloReq client_hello = 70;
+inline bool GameRequest::has_client_hello() const {
+  return body_case() == kClientHello;
+}
+inline void GameRequest::set_has_client_hello() {
+  _oneof_case_[0] = kClientHello;
+}
+inline void GameRequest::clear_client_hello() {
+  if (has_client_hello()) {
+    delete body_.client_hello_;
+    clear_has_body();
+  }
+}
+inline ::game::ClientHelloReq* GameRequest::release_client_hello() {
+  // @@protoc_insertion_point(field_release:game.GameRequest.client_hello)
+  if (has_client_hello()) {
+    clear_has_body();
+      ::game::ClientHelloReq* temp = body_.client_hello_;
+    body_.client_hello_ = NULL;
+    return temp;
+  } else {
+    return NULL;
+  }
+}
+inline const ::game::ClientHelloReq& GameRequest::client_hello() const {
+  // @@protoc_insertion_point(field_get:game.GameRequest.client_hello)
+  return has_client_hello()
+      ? *body_.client_hello_
+      : *reinterpret_cast< ::game::ClientHelloReq*>(&::game::_ClientHelloReq_default_instance_);
+}
+inline ::game::ClientHelloReq* GameRequest::mutable_client_hello() {
+  if (!has_client_hello()) {
+    clear_body();
+    set_has_client_hello();
+    body_.client_hello_ = new ::game::ClientHelloReq;
+  }
+  // @@protoc_insertion_point(field_mutable:game.GameRequest.client_hello)
+  return body_.client_hello_;
+}
+
+// .game.HeartbeatReq heartbeat = 71;
+inline bool GameRequest::has_heartbeat() const {
+  return body_case() == kHeartbeat;
+}
+inline void GameRequest::set_has_heartbeat() {
+  _oneof_case_[0] = kHeartbeat;
+}
+inline void GameRequest::clear_heartbeat() {
+  if (has_heartbeat()) {
+    delete body_.heartbeat_;
+    clear_has_body();
+  }
+}
+inline ::game::HeartbeatReq* GameRequest::release_heartbeat() {
+  // @@protoc_insertion_point(field_release:game.GameRequest.heartbeat)
+  if (has_heartbeat()) {
+    clear_has_body();
+      ::game::HeartbeatReq* temp = body_.heartbeat_;
+    body_.heartbeat_ = NULL;
+    return temp;
+  } else {
+    return NULL;
+  }
+}
+inline const ::game::HeartbeatReq& GameRequest::heartbeat() const {
+  // @@protoc_insertion_point(field_get:game.GameRequest.heartbeat)
+  return has_heartbeat()
+      ? *body_.heartbeat_
+      : *reinterpret_cast< ::game::HeartbeatReq*>(&::game::_HeartbeatReq_default_instance_);
+}
+inline ::game::HeartbeatReq* GameRequest::mutable_heartbeat() {
+  if (!has_heartbeat()) {
+    clear_body();
+    set_has_heartbeat();
+    body_.heartbeat_ = new ::game::HeartbeatReq;
+  }
+  // @@protoc_insertion_point(field_mutable:game.GameRequest.heartbeat)
+  return body_.heartbeat_;
+}
+
+// .game.WorldSnapshotReq world_snapshot = 72;
+inline bool GameRequest::has_world_snapshot() const {
+  return body_case() == kWorldSnapshot;
+}
+inline void GameRequest::set_has_world_snapshot() {
+  _oneof_case_[0] = kWorldSnapshot;
+}
+inline void GameRequest::clear_world_snapshot() {
+  if (has_world_snapshot()) {
+    delete body_.world_snapshot_;
+    clear_has_body();
+  }
+}
+inline ::game::WorldSnapshotReq* GameRequest::release_world_snapshot() {
+  // @@protoc_insertion_point(field_release:game.GameRequest.world_snapshot)
+  if (has_world_snapshot()) {
+    clear_has_body();
+      ::game::WorldSnapshotReq* temp = body_.world_snapshot_;
+    body_.world_snapshot_ = NULL;
+    return temp;
+  } else {
+    return NULL;
+  }
+}
+inline const ::game::WorldSnapshotReq& GameRequest::world_snapshot() const {
+  // @@protoc_insertion_point(field_get:game.GameRequest.world_snapshot)
+  return has_world_snapshot()
+      ? *body_.world_snapshot_
+      : *reinterpret_cast< ::game::WorldSnapshotReq*>(&::game::_WorldSnapshotReq_default_instance_);
+}
+inline ::game::WorldSnapshotReq* GameRequest::mutable_world_snapshot() {
+  if (!has_world_snapshot()) {
+    clear_body();
+    set_has_world_snapshot();
+    body_.world_snapshot_ = new ::game::WorldSnapshotReq;
+  }
+  // @@protoc_insertion_point(field_mutable:game.GameRequest.world_snapshot)
+  return body_.world_snapshot_;
+}
+
+// .game.RespawnReq respawn = 73;
+inline bool GameRequest::has_respawn() const {
+  return body_case() == kRespawn;
+}
+inline void GameRequest::set_has_respawn() {
+  _oneof_case_[0] = kRespawn;
+}
+inline void GameRequest::clear_respawn() {
+  if (has_respawn()) {
+    delete body_.respawn_;
+    clear_has_body();
+  }
+}
+inline ::game::RespawnReq* GameRequest::release_respawn() {
+  // @@protoc_insertion_point(field_release:game.GameRequest.respawn)
+  if (has_respawn()) {
+    clear_has_body();
+      ::game::RespawnReq* temp = body_.respawn_;
+    body_.respawn_ = NULL;
+    return temp;
+  } else {
+    return NULL;
+  }
+}
+inline const ::game::RespawnReq& GameRequest::respawn() const {
+  // @@protoc_insertion_point(field_get:game.GameRequest.respawn)
+  return has_respawn()
+      ? *body_.respawn_
+      : *reinterpret_cast< ::game::RespawnReq*>(&::game::_RespawnReq_default_instance_);
+}
+inline ::game::RespawnReq* GameRequest::mutable_respawn() {
+  if (!has_respawn()) {
+    clear_body();
+    set_has_respawn();
+    body_.respawn_ = new ::game::RespawnReq;
+  }
+  // @@protoc_insertion_point(field_mutable:game.GameRequest.respawn)
+  return body_.respawn_;
+}
+
+// .game.GetPlayerBriefReq get_player_brief = 74;
+inline bool GameRequest::has_get_player_brief() const {
+  return body_case() == kGetPlayerBrief;
+}
+inline void GameRequest::set_has_get_player_brief() {
+  _oneof_case_[0] = kGetPlayerBrief;
+}
+inline void GameRequest::clear_get_player_brief() {
+  if (has_get_player_brief()) {
+    delete body_.get_player_brief_;
+    clear_has_body();
+  }
+}
+inline ::game::GetPlayerBriefReq* GameRequest::release_get_player_brief() {
+  // @@protoc_insertion_point(field_release:game.GameRequest.get_player_brief)
+  if (has_get_player_brief()) {
+    clear_has_body();
+      ::game::GetPlayerBriefReq* temp = body_.get_player_brief_;
+    body_.get_player_brief_ = NULL;
+    return temp;
+  } else {
+    return NULL;
+  }
+}
+inline const ::game::GetPlayerBriefReq& GameRequest::get_player_brief() const {
+  // @@protoc_insertion_point(field_get:game.GameRequest.get_player_brief)
+  return has_get_player_brief()
+      ? *body_.get_player_brief_
+      : *reinterpret_cast< ::game::GetPlayerBriefReq*>(&::game::_GetPlayerBriefReq_default_instance_);
+}
+inline ::game::GetPlayerBriefReq* GameRequest::mutable_get_player_brief() {
+  if (!has_get_player_brief()) {
+    clear_body();
+    set_has_get_player_brief();
+    body_.get_player_brief_ = new ::game::GetPlayerBriefReq;
+  }
+  // @@protoc_insertion_point(field_mutable:game.GameRequest.get_player_brief)
+  return body_.get_player_brief_;
+}
+
+// .game.QueryOnlineStateReq query_online_state = 75;
+inline bool GameRequest::has_query_online_state() const {
+  return body_case() == kQueryOnlineState;
+}
+inline void GameRequest::set_has_query_online_state() {
+  _oneof_case_[0] = kQueryOnlineState;
+}
+inline void GameRequest::clear_query_online_state() {
+  if (has_query_online_state()) {
+    delete body_.query_online_state_;
+    clear_has_body();
+  }
+}
+inline ::game::QueryOnlineStateReq* GameRequest::release_query_online_state() {
+  // @@protoc_insertion_point(field_release:game.GameRequest.query_online_state)
+  if (has_query_online_state()) {
+    clear_has_body();
+      ::game::QueryOnlineStateReq* temp = body_.query_online_state_;
+    body_.query_online_state_ = NULL;
+    return temp;
+  } else {
+    return NULL;
+  }
+}
+inline const ::game::QueryOnlineStateReq& GameRequest::query_online_state() const {
+  // @@protoc_insertion_point(field_get:game.GameRequest.query_online_state)
+  return has_query_online_state()
+      ? *body_.query_online_state_
+      : *reinterpret_cast< ::game::QueryOnlineStateReq*>(&::game::_QueryOnlineStateReq_default_instance_);
+}
+inline ::game::QueryOnlineStateReq* GameRequest::mutable_query_online_state() {
+  if (!has_query_online_state()) {
+    clear_body();
+    set_has_query_online_state();
+    body_.query_online_state_ = new ::game::QueryOnlineStateReq;
+  }
+  // @@protoc_insertion_point(field_mutable:game.GameRequest.query_online_state)
+  return body_.query_online_state_;
+}
+
 inline bool GameRequest::has_body() const {
   return body_case() != BODY_NOT_SET;
 }
@@ -23170,6 +28224,140 @@ inline void GameResponse::set_allocated_message(::std::string* message) {
   }
   message_.SetAllocatedNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), message);
   // @@protoc_insertion_point(field_set_allocated:game.GameResponse.message)
+}
+
+// string error_code = 4;
+inline void GameResponse::clear_error_code() {
+  error_code_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline const ::std::string& GameResponse::error_code() const {
+  // @@protoc_insertion_point(field_get:game.GameResponse.error_code)
+  return error_code_.GetNoArena();
+}
+inline void GameResponse::set_error_code(const ::std::string& value) {
+  
+  error_code_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), value);
+  // @@protoc_insertion_point(field_set:game.GameResponse.error_code)
+}
+#if LANG_CXX11
+inline void GameResponse::set_error_code(::std::string&& value) {
+  
+  error_code_.SetNoArena(
+    &::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::move(value));
+  // @@protoc_insertion_point(field_set_rvalue:game.GameResponse.error_code)
+}
+#endif
+inline void GameResponse::set_error_code(const char* value) {
+  GOOGLE_DCHECK(value != NULL);
+  
+  error_code_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::string(value));
+  // @@protoc_insertion_point(field_set_char:game.GameResponse.error_code)
+}
+inline void GameResponse::set_error_code(const char* value, size_t size) {
+  
+  error_code_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(),
+      ::std::string(reinterpret_cast<const char*>(value), size));
+  // @@protoc_insertion_point(field_set_pointer:game.GameResponse.error_code)
+}
+inline ::std::string* GameResponse::mutable_error_code() {
+  
+  // @@protoc_insertion_point(field_mutable:game.GameResponse.error_code)
+  return error_code_.MutableNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline ::std::string* GameResponse::release_error_code() {
+  // @@protoc_insertion_point(field_release:game.GameResponse.error_code)
+  
+  return error_code_.ReleaseNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline void GameResponse::set_allocated_error_code(::std::string* error_code) {
+  if (error_code != NULL) {
+    
+  } else {
+    
+  }
+  error_code_.SetAllocatedNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), error_code);
+  // @@protoc_insertion_point(field_set_allocated:game.GameResponse.error_code)
+}
+
+// bool retryable = 5;
+inline void GameResponse::clear_retryable() {
+  retryable_ = false;
+}
+inline bool GameResponse::retryable() const {
+  // @@protoc_insertion_point(field_get:game.GameResponse.retryable)
+  return retryable_;
+}
+inline void GameResponse::set_retryable(bool value) {
+  
+  retryable_ = value;
+  // @@protoc_insertion_point(field_set:game.GameResponse.retryable)
+}
+
+// int64 server_time_ms = 6;
+inline void GameResponse::clear_server_time_ms() {
+  server_time_ms_ = GOOGLE_LONGLONG(0);
+}
+inline ::google::protobuf::int64 GameResponse::server_time_ms() const {
+  // @@protoc_insertion_point(field_get:game.GameResponse.server_time_ms)
+  return server_time_ms_;
+}
+inline void GameResponse::set_server_time_ms(::google::protobuf::int64 value) {
+  
+  server_time_ms_ = value;
+  // @@protoc_insertion_point(field_set:game.GameResponse.server_time_ms)
+}
+
+// string trace_id = 7;
+inline void GameResponse::clear_trace_id() {
+  trace_id_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline const ::std::string& GameResponse::trace_id() const {
+  // @@protoc_insertion_point(field_get:game.GameResponse.trace_id)
+  return trace_id_.GetNoArena();
+}
+inline void GameResponse::set_trace_id(const ::std::string& value) {
+  
+  trace_id_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), value);
+  // @@protoc_insertion_point(field_set:game.GameResponse.trace_id)
+}
+#if LANG_CXX11
+inline void GameResponse::set_trace_id(::std::string&& value) {
+  
+  trace_id_.SetNoArena(
+    &::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::move(value));
+  // @@protoc_insertion_point(field_set_rvalue:game.GameResponse.trace_id)
+}
+#endif
+inline void GameResponse::set_trace_id(const char* value) {
+  GOOGLE_DCHECK(value != NULL);
+  
+  trace_id_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::string(value));
+  // @@protoc_insertion_point(field_set_char:game.GameResponse.trace_id)
+}
+inline void GameResponse::set_trace_id(const char* value, size_t size) {
+  
+  trace_id_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(),
+      ::std::string(reinterpret_cast<const char*>(value), size));
+  // @@protoc_insertion_point(field_set_pointer:game.GameResponse.trace_id)
+}
+inline ::std::string* GameResponse::mutable_trace_id() {
+  
+  // @@protoc_insertion_point(field_mutable:game.GameResponse.trace_id)
+  return trace_id_.MutableNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline ::std::string* GameResponse::release_trace_id() {
+  // @@protoc_insertion_point(field_release:game.GameResponse.trace_id)
+  
+  return trace_id_.ReleaseNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline void GameResponse::set_allocated_trace_id(::std::string* trace_id) {
+  if (trace_id != NULL) {
+    
+  } else {
+    
+  }
+  trace_id_.SetAllocatedNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), trace_id);
+  // @@protoc_insertion_point(field_set_allocated:game.GameResponse.trace_id)
 }
 
 // .game.ConsumeItemRsp consume_item = 10;
@@ -24492,6 +29680,246 @@ inline ::game::MailboxChangedNotify* GameResponse::mutable_mailbox_changed() {
   return body_.mailbox_changed_;
 }
 
+// .game.ServerHelloRsp server_hello = 70;
+inline bool GameResponse::has_server_hello() const {
+  return body_case() == kServerHello;
+}
+inline void GameResponse::set_has_server_hello() {
+  _oneof_case_[0] = kServerHello;
+}
+inline void GameResponse::clear_server_hello() {
+  if (has_server_hello()) {
+    delete body_.server_hello_;
+    clear_has_body();
+  }
+}
+inline ::game::ServerHelloRsp* GameResponse::release_server_hello() {
+  // @@protoc_insertion_point(field_release:game.GameResponse.server_hello)
+  if (has_server_hello()) {
+    clear_has_body();
+      ::game::ServerHelloRsp* temp = body_.server_hello_;
+    body_.server_hello_ = NULL;
+    return temp;
+  } else {
+    return NULL;
+  }
+}
+inline const ::game::ServerHelloRsp& GameResponse::server_hello() const {
+  // @@protoc_insertion_point(field_get:game.GameResponse.server_hello)
+  return has_server_hello()
+      ? *body_.server_hello_
+      : *reinterpret_cast< ::game::ServerHelloRsp*>(&::game::_ServerHelloRsp_default_instance_);
+}
+inline ::game::ServerHelloRsp* GameResponse::mutable_server_hello() {
+  if (!has_server_hello()) {
+    clear_body();
+    set_has_server_hello();
+    body_.server_hello_ = new ::game::ServerHelloRsp;
+  }
+  // @@protoc_insertion_point(field_mutable:game.GameResponse.server_hello)
+  return body_.server_hello_;
+}
+
+// .game.HeartbeatRsp heartbeat = 71;
+inline bool GameResponse::has_heartbeat() const {
+  return body_case() == kHeartbeat;
+}
+inline void GameResponse::set_has_heartbeat() {
+  _oneof_case_[0] = kHeartbeat;
+}
+inline void GameResponse::clear_heartbeat() {
+  if (has_heartbeat()) {
+    delete body_.heartbeat_;
+    clear_has_body();
+  }
+}
+inline ::game::HeartbeatRsp* GameResponse::release_heartbeat() {
+  // @@protoc_insertion_point(field_release:game.GameResponse.heartbeat)
+  if (has_heartbeat()) {
+    clear_has_body();
+      ::game::HeartbeatRsp* temp = body_.heartbeat_;
+    body_.heartbeat_ = NULL;
+    return temp;
+  } else {
+    return NULL;
+  }
+}
+inline const ::game::HeartbeatRsp& GameResponse::heartbeat() const {
+  // @@protoc_insertion_point(field_get:game.GameResponse.heartbeat)
+  return has_heartbeat()
+      ? *body_.heartbeat_
+      : *reinterpret_cast< ::game::HeartbeatRsp*>(&::game::_HeartbeatRsp_default_instance_);
+}
+inline ::game::HeartbeatRsp* GameResponse::mutable_heartbeat() {
+  if (!has_heartbeat()) {
+    clear_body();
+    set_has_heartbeat();
+    body_.heartbeat_ = new ::game::HeartbeatRsp;
+  }
+  // @@protoc_insertion_point(field_mutable:game.GameResponse.heartbeat)
+  return body_.heartbeat_;
+}
+
+// .game.RespawnRsp respawn = 72;
+inline bool GameResponse::has_respawn() const {
+  return body_case() == kRespawn;
+}
+inline void GameResponse::set_has_respawn() {
+  _oneof_case_[0] = kRespawn;
+}
+inline void GameResponse::clear_respawn() {
+  if (has_respawn()) {
+    delete body_.respawn_;
+    clear_has_body();
+  }
+}
+inline ::game::RespawnRsp* GameResponse::release_respawn() {
+  // @@protoc_insertion_point(field_release:game.GameResponse.respawn)
+  if (has_respawn()) {
+    clear_has_body();
+      ::game::RespawnRsp* temp = body_.respawn_;
+    body_.respawn_ = NULL;
+    return temp;
+  } else {
+    return NULL;
+  }
+}
+inline const ::game::RespawnRsp& GameResponse::respawn() const {
+  // @@protoc_insertion_point(field_get:game.GameResponse.respawn)
+  return has_respawn()
+      ? *body_.respawn_
+      : *reinterpret_cast< ::game::RespawnRsp*>(&::game::_RespawnRsp_default_instance_);
+}
+inline ::game::RespawnRsp* GameResponse::mutable_respawn() {
+  if (!has_respawn()) {
+    clear_body();
+    set_has_respawn();
+    body_.respawn_ = new ::game::RespawnRsp;
+  }
+  // @@protoc_insertion_point(field_mutable:game.GameResponse.respawn)
+  return body_.respawn_;
+}
+
+// .game.ChatNotify chat_notify = 73;
+inline bool GameResponse::has_chat_notify() const {
+  return body_case() == kChatNotify;
+}
+inline void GameResponse::set_has_chat_notify() {
+  _oneof_case_[0] = kChatNotify;
+}
+inline void GameResponse::clear_chat_notify() {
+  if (has_chat_notify()) {
+    delete body_.chat_notify_;
+    clear_has_body();
+  }
+}
+inline ::game::ChatNotify* GameResponse::release_chat_notify() {
+  // @@protoc_insertion_point(field_release:game.GameResponse.chat_notify)
+  if (has_chat_notify()) {
+    clear_has_body();
+      ::game::ChatNotify* temp = body_.chat_notify_;
+    body_.chat_notify_ = NULL;
+    return temp;
+  } else {
+    return NULL;
+  }
+}
+inline const ::game::ChatNotify& GameResponse::chat_notify() const {
+  // @@protoc_insertion_point(field_get:game.GameResponse.chat_notify)
+  return has_chat_notify()
+      ? *body_.chat_notify_
+      : *reinterpret_cast< ::game::ChatNotify*>(&::game::_ChatNotify_default_instance_);
+}
+inline ::game::ChatNotify* GameResponse::mutable_chat_notify() {
+  if (!has_chat_notify()) {
+    clear_body();
+    set_has_chat_notify();
+    body_.chat_notify_ = new ::game::ChatNotify;
+  }
+  // @@protoc_insertion_point(field_mutable:game.GameResponse.chat_notify)
+  return body_.chat_notify_;
+}
+
+// .game.GetPlayerBriefRsp get_player_brief = 74;
+inline bool GameResponse::has_get_player_brief() const {
+  return body_case() == kGetPlayerBrief;
+}
+inline void GameResponse::set_has_get_player_brief() {
+  _oneof_case_[0] = kGetPlayerBrief;
+}
+inline void GameResponse::clear_get_player_brief() {
+  if (has_get_player_brief()) {
+    delete body_.get_player_brief_;
+    clear_has_body();
+  }
+}
+inline ::game::GetPlayerBriefRsp* GameResponse::release_get_player_brief() {
+  // @@protoc_insertion_point(field_release:game.GameResponse.get_player_brief)
+  if (has_get_player_brief()) {
+    clear_has_body();
+      ::game::GetPlayerBriefRsp* temp = body_.get_player_brief_;
+    body_.get_player_brief_ = NULL;
+    return temp;
+  } else {
+    return NULL;
+  }
+}
+inline const ::game::GetPlayerBriefRsp& GameResponse::get_player_brief() const {
+  // @@protoc_insertion_point(field_get:game.GameResponse.get_player_brief)
+  return has_get_player_brief()
+      ? *body_.get_player_brief_
+      : *reinterpret_cast< ::game::GetPlayerBriefRsp*>(&::game::_GetPlayerBriefRsp_default_instance_);
+}
+inline ::game::GetPlayerBriefRsp* GameResponse::mutable_get_player_brief() {
+  if (!has_get_player_brief()) {
+    clear_body();
+    set_has_get_player_brief();
+    body_.get_player_brief_ = new ::game::GetPlayerBriefRsp;
+  }
+  // @@protoc_insertion_point(field_mutable:game.GameResponse.get_player_brief)
+  return body_.get_player_brief_;
+}
+
+// .game.QueryOnlineStateRsp query_online_state = 75;
+inline bool GameResponse::has_query_online_state() const {
+  return body_case() == kQueryOnlineState;
+}
+inline void GameResponse::set_has_query_online_state() {
+  _oneof_case_[0] = kQueryOnlineState;
+}
+inline void GameResponse::clear_query_online_state() {
+  if (has_query_online_state()) {
+    delete body_.query_online_state_;
+    clear_has_body();
+  }
+}
+inline ::game::QueryOnlineStateRsp* GameResponse::release_query_online_state() {
+  // @@protoc_insertion_point(field_release:game.GameResponse.query_online_state)
+  if (has_query_online_state()) {
+    clear_has_body();
+      ::game::QueryOnlineStateRsp* temp = body_.query_online_state_;
+    body_.query_online_state_ = NULL;
+    return temp;
+  } else {
+    return NULL;
+  }
+}
+inline const ::game::QueryOnlineStateRsp& GameResponse::query_online_state() const {
+  // @@protoc_insertion_point(field_get:game.GameResponse.query_online_state)
+  return has_query_online_state()
+      ? *body_.query_online_state_
+      : *reinterpret_cast< ::game::QueryOnlineStateRsp*>(&::game::_QueryOnlineStateRsp_default_instance_);
+}
+inline ::game::QueryOnlineStateRsp* GameResponse::mutable_query_online_state() {
+  if (!has_query_online_state()) {
+    clear_body();
+    set_has_query_online_state();
+    body_.query_online_state_ = new ::game::QueryOnlineStateRsp;
+  }
+  // @@protoc_insertion_point(field_mutable:game.GameResponse.query_online_state)
+  return body_.query_online_state_;
+}
+
 inline bool GameResponse::has_body() const {
   return body_case() != BODY_NOT_SET;
 }
@@ -24504,6 +29932,32 @@ inline GameResponse::BodyCase GameResponse::body_case() const {
 #ifdef __GNUC__
   #pragma GCC diagnostic pop
 #endif  // __GNUC__
+// -------------------------------------------------------------------
+
+// -------------------------------------------------------------------
+
+// -------------------------------------------------------------------
+
+// -------------------------------------------------------------------
+
+// -------------------------------------------------------------------
+
+// -------------------------------------------------------------------
+
+// -------------------------------------------------------------------
+
+// -------------------------------------------------------------------
+
+// -------------------------------------------------------------------
+
+// -------------------------------------------------------------------
+
+// -------------------------------------------------------------------
+
+// -------------------------------------------------------------------
+
+// -------------------------------------------------------------------
+
 // -------------------------------------------------------------------
 
 // -------------------------------------------------------------------

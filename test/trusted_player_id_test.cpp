@@ -69,6 +69,10 @@ int main() {
     CHECK_ONE(mutable_push_ack, push_ack);
     CHECK_ONE(mutable_get_self_profile, get_self_profile);
     CHECK_ONE(mutable_move, move);
+    CHECK_ONE(mutable_world_snapshot, world_snapshot);
+    CHECK_ONE(mutable_respawn, respawn);
+    CHECK_ONE(mutable_get_player_brief, get_player_brief);
+    CHECK_ONE(mutable_query_online_state, query_online_state);
     {
         game::GameRequest req;
         req.mutable_player_mail_send()->set_sender_player_id(1);
@@ -84,6 +88,15 @@ int main() {
 
     game::GameRequest empty;
     Expect(ApplyTrustedPlayerId(&empty, 1) == TrustedPlayerIdResult::NoPlayerField, "empty");
+
+    {
+        game::GameRequest req;
+        req.mutable_get_player_brief()->set_player_id(1);
+        req.mutable_get_player_brief()->set_target_player_id(99);
+        Expect(ApplyTrustedPlayerId(&req, 42) == TrustedPlayerIdResult::Mismatch, "brief overlay");
+        Expect(req.get_player_brief().player_id() == 42, "brief querier overlay");
+        Expect(req.get_player_brief().target_player_id() == 99, "brief target preserved");
+    }
 
     if (fails) {
         std::printf("trusted_player_id_test FAIL count=%d covered=%d\n", fails, covered);

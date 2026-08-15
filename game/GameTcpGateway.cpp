@@ -13,6 +13,7 @@
 #include "GameRequestTransport.h"
 #include "GatewayAuthFlow.h"
 #include "GatewayAuthPolicy.h"
+#include "GatewayConnGuard.h"
 #include "GatewayConnRegistry.h"
 #include "GatewayDisconnectAsync.h"
 #include "GatewayIdentity.h"
@@ -22,7 +23,9 @@
 #include "Logging.h"
 #include "OpsMetrics.h"
 #include "PlayerSerialQueue.h"
+#include "ProtocolHandshake.h"
 #include "ProtoFraming.h"
+#include "PublicError.h"
 #include "ReplySink.h"
 #include "RpcOffloadPool.h"
 #include "ServiceHealth.h"
@@ -113,6 +116,37 @@ void ForgetBind(uint64_t conn_id) {
     std::lock_guard<std::mutex> lk(g_bind_mu);
     g_conn_bind.erase(conn_id);
     GatewayConnRegistry::Instance().Forget(conn_id);
+}
+
+void SendPublicErr(const std::shared_ptr<ReplySink> &sink, uint64_t conn_id, uint64_t seq,
+                   const char *code, const char *msg) {
+    std::string out;
+    if (gameproto::EncodePublicErrorFrame(code, msg, seq, conn_id, &out) && sink)
+        sink->SendFrame(out);
+}
+
+void ScheduleIdleCheck(std::weak_ptr<TcpConnection> weak, uint64_t id) {
+    auto conn = weak.lock();
+    if (!conn)
+        return;
+    conn->loop()->RunAfter(0.5, [weak, id]() {
+        auto c = weak.lock();
+        if (!c)
+            return;
+        const bool hello_ok = GatewayConnGuard::Instance().HelloOk(id);
+        uint32_t idle_ms = gameproto::IdleTimeoutMs();
+        if (!hello_ok && ClientHelloRequired())
+            idle_ms = gameproto::HelloDeadlineMs();
+        if (idle_ms < 200)
+            idle_ms = 200;
+        if (GatewayConnGuard::Instance().IdleExpired(id, idle_ms)) {
+            OpsMetrics::Instance().IncIdleTimeout();
+            LOG_WARN << "Gateway idle timeout conn#" << id << " hello_ok=" << hello_ok;
+            c->HandleClose();
+            return;
+        }
+        ScheduleIdleCheck(weak, id);
+    });
 }
 
 class BindingReplySink : public ReplySink {
@@ -240,12 +274,24 @@ void GameTcpGateway::Run() {
             c->HandleClose();
             return;
         }
+        const std::string lim = GatewayConnGuard::Instance().CheckConnectRate(c->fd());
+        if (!lim.empty()) {
+            OpsMetrics::Instance().IncConnRateLimited();
+            LOG_WARN << "Gateway connect rate-limited conn#" << c->id();
+            c->HandleClose();
+            return;
+        }
+        GatewayConnGuard::Instance().OnConnected(c->id(), c->fd());
         GatewayAuthFlow::Instance().OnConnected(c->id());
+        std::weak_ptr<TcpConnection> weak = c;
+        const uint64_t id = c->id();
+        c->loop()->QueueOneFunc([weak, id]() { ScheduleIdleCheck(weak, id); });
     });
     server->set_message_callback([this](const std::shared_ptr<TcpConnection> &c) { OnMessage(c); });
     server->set_disconnect_callback([](const std::shared_ptr<TcpConnection> &c) {
         OpsMetrics::Instance().IncTcpDisconnect();
         GatewayAuthFlow::Instance().OnDisconnected(c->id());
+        GatewayConnGuard::Instance().OnDisconnected(c->id());
         ConnBind bind;
         {
             std::lock_guard<std::mutex> lk(g_bind_mu);
@@ -386,16 +432,91 @@ void GameTcpGateway::OnMessage(const std::shared_ptr<TcpConnection> &conn) {
         const bool bound =
             GatewayConnRegistry::Instance().FindByConnection(conn->id(), &sticky);
 
+        const std::string frame_lim =
+            GatewayConnGuard::Instance().CheckFrameRate(conn->id(), frame.size());
+        if (!frame_lim.empty()) {
+            SendPublicErr(tcp_sink, conn->id(), 0, gameproto::kErrRateLimited, "frame rate limited");
+            continue;
+        }
+        GatewayConnGuard::Instance().NoteActivity(conn->id(), frame.size());
+
+        game::GameRequest peek;
+        if (!peek.ParseFromString(frame)) {
+            OpsMetrics::Instance().IncIllegalFrame();
+            SendPublicErr(tcp_sink, conn->id(), 0, gameproto::kErrInvalidArgument, "invalid protobuf");
+            LOG_WARN << "GameTcpGateway illegal protobuf conn#" << conn->id();
+            conn->HandleClose();
+            return;
+        }
+
+        if (peek.has_client_hello()) {
+            game::GameResponse outer;
+            outer.set_seq(peek.seq());
+            game::ServerHelloRsp hello;
+            gameproto::HandleClientHello(peek.client_hello(), conn->id(), &hello, &outer);
+            if (hello.ok()) {
+                GatewayConnGuard::Instance().SetHelloOk(conn->id(), true);
+                OpsMetrics::Instance().IncHelloOk();
+                LOG_INFO << "ClientHello ok conn#" << conn->id()
+                         << " platform=" << peek.client_hello().platform()
+                         << " client_version=" << peek.client_hello().client_version();
+            } else {
+                GatewayConnGuard::Instance().SetHelloOk(conn->id(), false);
+                OpsMetrics::Instance().IncHelloFail();
+                LOG_WARN << "ClientHello fail conn#" << conn->id()
+                         << " code=" << hello.error_code();
+            }
+            std::string body, out;
+            if (outer.SerializeToString(&body) && gameproto::EncodeFrame(body, &out))
+                tcp_sink->SendFrame(out);
+            continue;
+        }
+
+        if (peek.has_heartbeat()) {
+            if (ClientHelloRequired() && !GatewayConnGuard::Instance().HelloOk(conn->id())) {
+                SendPublicErr(tcp_sink, conn->id(), peek.seq(), gameproto::kErrUnauthenticated,
+                              "hello required");
+                continue;
+            }
+            const std::string hb_lim =
+                GatewayConnGuard::Instance().CheckHeartbeatRate(conn->id(), bound);
+            if (!hb_lim.empty()) {
+                OpsMetrics::Instance().IncHeartbeatLimited();
+                SendPublicErr(tcp_sink, conn->id(), peek.seq(), gameproto::kErrRateLimited,
+                              "heartbeat rate limited");
+                continue;
+            }
+            game::GameResponse outer;
+            outer.set_seq(peek.seq());
+            outer.set_ok(true);
+            auto *hb = outer.mutable_heartbeat();
+            hb->set_ok(true);
+            hb->set_error_code(gameproto::kErrOk);
+            hb->set_server_time_ms(gameproto::PublicNowMs());
+            hb->set_echo_ms(peek.heartbeat().echo_ms());
+            hb->set_server_recv_ms(gameproto::PublicNowMs());
+            hb->set_jitter_hint_ms(gameproto::HeartbeatIntervalMs() / 5);
+            gameproto::PromotePublicError(&outer, conn->id());
+            std::string body, out;
+            if (outer.SerializeToString(&body) && gameproto::EncodeFrame(body, &out))
+                tcp_sink->SendFrame(out);
+            OpsMetrics::Instance().IncHeartbeatOk();
+            continue;
+        }
+
+        if (ClientHelloRequired() && !GatewayConnGuard::Instance().HelloOk(conn->id()) &&
+            (peek.has_login() || peek.has_register_() || peek.has_reconnect())) {
+            SendPublicErr(tcp_sink, conn->id(), peek.seq(), gameproto::kErrUnauthenticated,
+                          "hello required");
+            continue;
+        }
+
 #ifdef WEBSERVER_ENABLE_BRPC
         // 登录前白名单；未绑定业务命令 fail-closed
         if (!bound && !gameproto::IsPreAuthWhitelistPayload(frame) &&
             !gameproto::IsGatewayOwnedAuthPayload(frame)) {
-            game::GameResponse rsp;
-            rsp.set_ok(false);
-            rsp.set_message("unauthenticated");
-            std::string body, out;
-            if (rsp.SerializeToString(&body) && gameproto::EncodeFrame(body, &out))
-                tcp_sink->SendFrame(out);
+            SendPublicErr(tcp_sink, conn->id(), peek.seq(), gameproto::kErrUnauthenticated,
+                          "unauthenticated");
             continue;
         }
 
@@ -407,12 +528,14 @@ void GameTcpGateway::OnMessage(const std::shared_ptr<TcpConnection> &conn) {
             if (ServiceHealth::Instance().draining() &&
                 (peek.has_login() || peek.has_register_())) {
                 OpsMetrics::Instance().IncDrainReject();
-                game::GameResponse dr;
-                dr.set_ok(false);
-                dr.set_message("gateway draining");
-                std::string body, out;
-                if (dr.SerializeToString(&body) && gameproto::EncodeFrame(body, &out))
-                    tcp_sink->SendFrame(out);
+                SendPublicErr(tcp_sink, conn->id(), peek.seq(), gameproto::kErrOverloaded,
+                              "gateway draining");
+                continue;
+            }
+            const std::string auth_lim = GatewayConnGuard::Instance().CheckAuthCommandRate(conn->id());
+            if (!auth_lim.empty() && (peek.has_login() || peek.has_register_())) {
+                SendPublicErr(tcp_sink, conn->id(), peek.seq(), gameproto::kErrRateLimited,
+                              "auth rate limited");
                 continue;
             }
             const uint64_t shard_key = bound                          ? sticky.player_id
@@ -429,12 +552,8 @@ void GameTcpGateway::OnMessage(const std::shared_ptr<TcpConnection> &conn) {
             uint64_t flow_gen = 0;
             const bool needs_flow = peek.has_login() || peek.has_reconnect();
             if (needs_flow && !GatewayAuthFlow::Instance().TryBegin(conn_id, &flow_gen)) {
-                game::GameResponse busy;
-                busy.set_ok(false);
-                busy.set_message("auth flow in progress");
-                std::string body, out;
-                if (busy.SerializeToString(&body) && gameproto::EncodeFrame(body, &out))
-                    tcp_sink->SendFrame(out);
+                SendPublicErr(tcp_sink, conn->id(), peek.seq(), gameproto::kErrOverloaded,
+                              "auth flow in progress");
                 continue;
             }
 
@@ -545,12 +664,8 @@ void GameTcpGateway::OnMessage(const std::shared_ptr<TcpConnection> &conn) {
                 if (needs_flow)
                     GatewayAuthFlow::Instance().End(conn_id, flow_gen);
                 OpsMetrics::Instance().IncQueueOverload();
-                game::GameResponse ov;
-                ov.set_ok(false);
-                ov.set_message("ERR_OVERLOAD");
-                std::string body, out;
-                if (ov.SerializeToString(&body) && gameproto::EncodeFrame(body, &out))
-                    tcp_sink->SendFrame(out);
+                SendPublicErr(tcp_sink, conn->id(), peek.seq(), gameproto::kErrOverloaded,
+                              "queue overloaded");
             }
             continue;
         }
@@ -561,12 +676,25 @@ void GameTcpGateway::OnMessage(const std::shared_ptr<TcpConnection> &conn) {
             std::string cerr;
             if (!gameproto::AllowClientTcpPayload(frame, bound, FormalModeEnabled(), &cerr)) {
                 OpsMetrics::Instance().IncCommandForbidden();
-                game::GameResponse fr;
-                fr.set_ok(false);
-                fr.set_message(cerr.empty() ? "ERR_COMMAND_FORBIDDEN" : cerr);
-                std::string body, out;
-                if (fr.SerializeToString(&body) && gameproto::EncodeFrame(body, &out))
-                    tcp_sink->SendFrame(out);
+                SendPublicErr(tcp_sink, conn->id(), peek.seq(), gameproto::kErrCommandForbidden,
+                              cerr.empty() ? "command forbidden" : cerr.c_str());
+                continue;
+            }
+        }
+
+        if (peek.has_chat_send()) {
+            const std::string chat_lim = GatewayConnGuard::Instance().CheckChatRate(conn->id());
+            if (!chat_lim.empty()) {
+                SendPublicErr(tcp_sink, conn->id(), peek.seq(), gameproto::kErrRateLimited,
+                              "chat rate limited");
+                continue;
+            }
+        }
+        if (peek.has_get_player_brief() && !peek.get_player_brief().player_name().empty()) {
+            const std::string nlim = GatewayConnGuard::Instance().CheckNameQueryRate(conn->id());
+            if (!nlim.empty()) {
+                SendPublicErr(tcp_sink, conn->id(), peek.seq(), gameproto::kErrRateLimited,
+                              "name query rate limited");
                 continue;
             }
         }
@@ -630,9 +758,9 @@ void GameTcpGateway::OnMessage(const std::shared_ptr<TcpConnection> &conn) {
                             ack_msg = ar.error_code.empty() ? "ERR_ACK_AHEAD" : ar.error_code;
                         } else if (ar.status == PushReplayStore::AckStatus::Stale) {
                             OpsMetrics::Instance().IncPushAckStaleRejected();
-                            ack_msg = ar.error_code.empty() ? "ERR_ACK_STALE" : ar.error_code;
+                            ack_msg = gameproto::kErrAoiResyncRequired;
                         } else if (ar.status == PushReplayStore::AckStatus::Gap) {
-                            ack_msg = ar.error_code.empty() ? "NEED_SNAPSHOT" : ar.error_code;
+                            ack_msg = gameproto::kErrAoiResyncRequired;
                         } else {
                             ack_msg = ar.error_code.empty() ? "ack rejected" : ar.error_code;
                         }
@@ -651,6 +779,7 @@ void GameTcpGateway::OnMessage(const std::shared_ptr<TcpConnection> &conn) {
                 ack->set_trimmed_to_seq(ok_ack ? trimmed : 0);
                 rsp.set_ok(ok_ack);
                 rsp.set_message(ack->message());
+                gameproto::PromotePublicError(&rsp, conn->id());
                 std::string body, out;
                 if (rsp.SerializeToString(&body) && gameproto::EncodeFrame(body, &out))
                     tcp_sink->SendFrame(out);
@@ -660,13 +789,8 @@ void GameTcpGateway::OnMessage(const std::shared_ptr<TcpConnection> &conn) {
             if (peek.has_enter_map()) {
                 if (ServiceHealth::Instance().draining()) {
                     OpsMetrics::Instance().IncDrainReject();
-                    game::GameResponse dr;
-                    dr.set_ok(false);
-                    dr.set_seq(peek.seq());
-                    dr.set_message("gateway draining");
-                    std::string body, out;
-                    if (dr.SerializeToString(&body) && gameproto::EncodeFrame(body, &out))
-                        tcp_sink->SendFrame(out);
+                    SendPublicErr(tcp_sink, conn->id(), peek.seq(), gameproto::kErrOverloaded,
+                                  "gateway draining");
                     continue;
                 }
                 const uint64_t conn_id = conn->id();
@@ -686,13 +810,8 @@ void GameTcpGateway::OnMessage(const std::shared_ptr<TcpConnection> &conn) {
                                 sink->SendFrame(out);
                         })) {
                     OpsMetrics::Instance().IncQueueOverload();
-                    game::GameResponse ov;
-                    ov.set_ok(false);
-                    ov.set_seq(peek.seq());
-                    ov.set_message("ERR_OVERLOAD");
-                    std::string body, out;
-                    if (ov.SerializeToString(&body) && gameproto::EncodeFrame(body, &out))
-                        tcp_sink->SendFrame(out);
+                    SendPublicErr(tcp_sink, conn->id(), peek.seq(), gameproto::kErrOverloaded,
+                                  "queue overloaded");
                 }
                 continue;
             }

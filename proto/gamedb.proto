@@ -221,9 +221,66 @@ service GameDbService {
   rpc QueryOperationResult(QueryOperationResultReq) returns (QueryOperationResultRsp);
   rpc LoadPlayerProfile(LoadPlayerProfileReq) returns (LoadPlayerProfileRsp);
   rpc SavePlayerProfile(SavePlayerProfileReq) returns (SavePlayerProfileRsp);
+  rpc LoadLastSafePosition(LoadLastSafePositionReq) returns (LoadLastSafePositionRsp);
+  rpc SaveLastSafePosition(SaveLastSafePositionReq) returns (SaveLastSafePositionRsp);
+  rpc LoadPlayerBrief(LoadPlayerBriefReq) returns (LoadPlayerBriefRsp);
 
   /** World 在 Formal 下无 MySQL：邮件帧转 GameDB 执行 MailService */
   rpc HandleGameFrame(HandleGameFrameReq) returns (HandleGameFrameRsp);
+}
+
+message LastSafePosition {
+  uint64 player_id = 1;
+  uint32 realm_id = 2;
+  uint64 map_template_id = 3;
+  float x = 4;
+  float y = 5;
+  float z = 6;
+  float yaw = 7;
+  uint64 position_version = 8;
+  int64 updated_at_unix = 9;
+}
+
+message LoadLastSafePositionReq {
+  uint64 player_id = 1;
+}
+
+message LoadLastSafePositionRsp {
+  bool ok = 1;
+  string message = 2;
+  string error_code = 3;
+  bool exists = 4;
+  LastSafePosition pos = 5;
+}
+
+message SaveLastSafePositionReq {
+  LastSafePosition pos = 1;
+  uint64 expected_position_version = 2;  // 0=不校验，自增
+}
+
+message SaveLastSafePositionRsp {
+  bool ok = 1;
+  string message = 2;
+  string error_code = 3;
+  uint64 position_version = 4;
+  bool skipped = 5;
+}
+
+message LoadPlayerBriefReq {
+  uint64 player_id = 1;
+  string player_name = 2;  // 精确名字；player_id 优先
+}
+
+message LoadPlayerBriefRsp {
+  bool ok = 1;
+  string message = 2;
+  string error_code = 3;
+  bool exists = 4;
+  bool ambiguous = 5;
+  uint64 player_id = 6;
+  string player_name = 7;
+  int32 max_hp = 8;
+  int32 max_mp = 9;
 }
 
 message HandleGameFrameReq {

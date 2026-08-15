@@ -28,6 +28,8 @@ HTTP_W="${GAMEMESH_HTTP_W:-8092}"
 WORLD="${GAMEMESH_WORLD:-8301}"
 HTTP_S="${GAMEMESH_HTTP_S:-8093}"
 SESSION="${GAMEMESH_SESSION:-8401}"
+PUSH_G0=$((GAME_G0 + 100))
+PUSH_G1=$((GAME_G1 + 100))
 
 # GameDB ×2
 HTTP_D0="${GAMEMESH_HTTP_D0:-8094}"
@@ -62,6 +64,11 @@ if [[ -f "$RUN_DIR/pids" ]]; then
   echo "已有正式实例在跑（$RUN_DIR/pids）。请先："
   echo "  ./scripts/stop_formal.sh"
   exit 1
+fi
+
+# player_profile 等表由 versioned SQL 升级；Formal 运行期不做隐式 DDL
+if [[ -f "$ROOT/config/mysql.cnf" ]]; then
+  "$ROOT/scripts/migrate_db.sh"
 fi
 
 detect_advertise_host() {
@@ -115,6 +122,7 @@ printf '%s\n' \
   "listen_addr=0.0.0.0:${WORLD}" \
   "idle_timeout_sec=30" \
   "gamedb_addrs=127.0.0.1:${GAMEDB0},127.0.0.1:${GAMEDB1}" \
+  "gateway_push_addrs=gw-0=${GAMEMESH_ADVERTISE_HOST}:${PUSH_G0},gw-1=${GAMEMESH_ADVERTISE_HOST}:${PUSH_G1}" \
   "ssl_enable=0" >"$WORLD_CNF"
 
 printf '%s\n' \
@@ -129,10 +137,10 @@ printf '%s\n' \
   "listen_addr=0.0.0.0:${GAMEDB0}" \
   "idle_timeout_sec=30" \
   "nats_url=" \
+  "session_addrs=127.0.0.1:${SESSION}${GAMEMESH_SESSION2:+,127.0.0.1:${GAMEMESH_SESSION2}}" \
+  "gateway_push_addrs=gw-0=${GAMEMESH_ADVERTISE_HOST}:${PUSH_G0},gw-1=${GAMEMESH_ADVERTISE_HOST}:${PUSH_G1}" \
   "ssl_enable=0" >"$GAMEDB_CNF"
 
-PUSH_G0=$((GAME_G0 + 100))
-PUSH_G1=$((GAME_G1 + 100))
 printf '%s\n' \
   "listen_addr=0.0.0.0:${LOGIC0}" \
   "idle_timeout_sec=30" \

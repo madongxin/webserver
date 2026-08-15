@@ -15,6 +15,7 @@
 
 #ifdef WEBSERVER_ENABLE_REDIS
 #include "RedisPool.h"
+#include "SessionStore.h"
 #endif
 #ifdef WEBSERVER_ENABLE_BRPC
 #include "GameLogicPush.h"
@@ -1195,12 +1196,32 @@ bool ConsumePlayerMailQuota(uint64_t sender_id, int limit, int window_sec) {
 
 void BestEffortMailboxChanged(uint64_t receiver_id) {
 #ifdef WEBSERVER_ENABLE_BRPC
-    if (receiver_id == 0 || !SessionRpcClient::Instance().ready())
+    if (receiver_id == 0)
         return;
-    sess::GetPlayerRouteRequest rreq;
-    rreq.set_player_id(receiver_id);
     sess::GetPlayerRouteResponse rrsp;
-    if (!SessionRpcClient::Instance().GetPlayerRoute(rreq, &rrsp) || !rrsp.ok())
+    bool got = false;
+    if (SessionRpcClient::Instance().ready()) {
+        sess::GetPlayerRouteRequest rreq;
+        rreq.set_player_id(receiver_id);
+        got = SessionRpcClient::Instance().GetPlayerRoute(rreq, &rrsp) && rrsp.ok();
+    }
+#ifdef WEBSERVER_ENABLE_REDIS
+    if (!got && SessionStore::Instance().Available()) {
+        SessionRecord rec;
+        std::string route_state, transfer_id, err;
+        if (SessionStore::Instance().GetPlayerRoute(receiver_id, "", &rec, &route_state,
+                                                    &transfer_id, &err)) {
+            rrsp.set_ok(true);
+            rrsp.set_session_id(rec.session_id);
+            rrsp.set_fence_token(rec.token);
+            rrsp.set_generation(rec.generation);
+            rrsp.set_gateway_instance_id(rec.gateway_id);
+            rrsp.set_route_state(route_state.empty() ? "ONLINE" : route_state);
+            got = true;
+        }
+    }
+#endif
+    if (!got || !rrsp.ok())
         return;
     if (rrsp.gateway_instance_id().empty() || rrsp.session_id().empty())
         return;
@@ -1222,7 +1243,8 @@ void BestEffortMailboxChanged(uint64_t receiver_id) {
     if (!inner.SerializeToString(&payload))
         return;
     GameLogicPush::PushToBoundGateway(rrsp.gateway_instance_id(), receiver_id, rrsp.session_id(),
-                                      "mailbox.changed.v1", payload, true, false, 0);
+                                      "mailbox.changed.v1", payload, true, false, 0,
+                                      rrsp.fence_token(), rrsp.generation());
 #else
     (void)receiver_id;
 #endif

@@ -46,6 +46,15 @@ void TestWhitelist() {
     Expect(gameproto::IsPreAuthWhitelistPayload(Serialize(recon)), "reconnect whitelist");
     Expect(gameproto::IsGatewayOwnedAuthPayload(Serialize(recon)), "reconnect gateway-owned");
 
+    game::GameRequest hello;
+    hello.mutable_client_hello()->set_protocol_version(1);
+    Expect(gameproto::IsPreAuthWhitelistPayload(Serialize(hello)), "hello whitelist");
+    Expect(!gameproto::IsGatewayOwnedAuthPayload(Serialize(hello)), "hello not auth orchestrator");
+
+    game::GameRequest hb;
+    hb.mutable_heartbeat()->set_echo_ms(1);
+    Expect(gameproto::IsPreAuthWhitelistPayload(Serialize(hb)), "heartbeat whitelist");
+
     game::GameRequest mail;
     mail.mutable_mail_list()->set_player_id(1);
     Expect(!gameproto::IsPreAuthWhitelistPayload(Serialize(mail)), "mail not whitelist");

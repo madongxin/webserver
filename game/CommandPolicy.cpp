@@ -55,6 +55,11 @@ bool IsAuthenticatedClientAllowlisted(game::GameRequest::BodyCase body) {
     case game::GameRequest::kGetSelfProfile:
     case game::GameRequest::kMove:
     case game::GameRequest::kPlayerMailSend:
+    case game::GameRequest::kHeartbeat:
+    case game::GameRequest::kWorldSnapshot:
+    case game::GameRequest::kRespawn:
+    case game::GameRequest::kGetPlayerBrief:
+    case game::GameRequest::kQueryOnlineState:
         return true;
     default:
         return false;
@@ -78,6 +83,8 @@ CommandDecision ValidateCommandPolicy(game::GameRequest::BodyCase body, CommandT
         case game::GameRequest::kLogin:
         case game::GameRequest::kRegister:
         case game::GameRequest::kReconnect:
+        case game::GameRequest::kClientHello:
+        case game::GameRequest::kHeartbeat:
             return CommandDecision::Allow;
         default:
             if (err_code)

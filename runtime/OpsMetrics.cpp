@@ -1,10 +1,23 @@
 #include "OpsMetrics.h"
 
+#include <mutex>
 #include <sstream>
+#include <unordered_map>
+
+namespace {
+std::mutex g_err_mu;
+std::unordered_map<std::string, uint64_t> g_err_counts;
+}  // namespace
 
 OpsMetrics &OpsMetrics::Instance() {
     static OpsMetrics g;
     return g;
+}
+
+void OpsMetrics::IncErrorCode(const std::string &code) {
+    const std::string key = code.empty() ? "ERR_INTERNAL" : code;
+    std::lock_guard<std::mutex> lk(g_err_mu);
+    g_err_counts[key] += 1;
 }
 
 std::string OpsMetrics::PrometheusText() const {
@@ -56,6 +69,26 @@ std::string OpsMetrics::PrometheusText() const {
         queue_overload_.load(std::memory_order_relaxed));
     ctr("gamemesh_command_forbidden_total", "Client command policy rejects.",
         command_forbidden_.load(std::memory_order_relaxed));
+    ctr("gamemesh_hello_ok_total", "ClientHello successes.",
+        hello_ok_.load(std::memory_order_relaxed));
+    ctr("gamemesh_hello_fail_total", "ClientHello failures.",
+        hello_fail_.load(std::memory_order_relaxed));
+    ctr("gamemesh_heartbeat_ok_total", "Heartbeat successes.",
+        heartbeat_ok_.load(std::memory_order_relaxed));
+    ctr("gamemesh_heartbeat_limited_total", "Heartbeat rate-limited.",
+        heartbeat_limited_.load(std::memory_order_relaxed));
+    ctr("gamemesh_idle_timeout_total", "TCP idle timeout closes.",
+        idle_timeout_.load(std::memory_order_relaxed));
+    ctr("gamemesh_conn_rate_limited_total", "Per-IP connect rate rejects.",
+        conn_rate_limited_.load(std::memory_order_relaxed));
+    {
+        std::lock_guard<std::mutex> lk(g_err_mu);
+        os << "# HELP gamemesh_error_code_total Public error_code responses.\n"
+              "# TYPE gamemesh_error_code_total counter\n";
+        for (const auto &kv : g_err_counts)
+            os << "gamemesh_error_code_total{code=\"" << kv.first << "\"} " << kv.second << "\n";
+        os << "\n";
+    }
     gauge("gamemesh_online_players", "Bound gateway connections (approx).",
           online_players_.load(std::memory_order_relaxed));
     gauge("gamemesh_outbox_backlog", "Unpublished outbox rows (GameDB).",

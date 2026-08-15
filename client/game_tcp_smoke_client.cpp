@@ -91,10 +91,31 @@ int main(int argc, char **argv) {
     const int port = std::atoi(argv[2]);
     const bool do_register = (std::strcmp(argv[3], "register") == 0);
 
+#ifndef GAMEMESH_SCHEMA_SHA256
+#define GAMEMESH_SCHEMA_SHA256 ""
+#endif
+
     int fd = Connect(host, port);
     if (fd < 0) {
         std::perror("connect");
         return 6;
+    }
+    {
+        game::GameRequest hello;
+        hello.set_seq(0);
+        auto *h = hello.mutable_client_hello();
+        h->set_protocol_version(1);
+        h->set_schema_sha256(GAMEMESH_SCHEMA_SHA256);
+        h->set_client_version("smoke-1.0.0");
+        h->set_platform("cpp-smoke");
+        game::GameResponse hr;
+        if (!Exchange(fd, hello, &hr) || !hr.ok() || !hr.has_server_hello() ||
+            !hr.server_hello().ok()) {
+            std::printf("hello fail ok=%d code=%s msg=%s\n", hr.ok() ? 1 : 0,
+                        hr.error_code().c_str(), hr.message().c_str());
+            ::close(fd);
+            return 12;
+        }
     }
 
     uint64_t player_id = 0;

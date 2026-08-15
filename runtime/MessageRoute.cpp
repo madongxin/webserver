@@ -27,6 +27,8 @@ bool IsWorldBoundRequest(const game::GameRequest &req) {
     switch (req.body_case()) {
     case game::GameRequest::kChatSend:
     case game::GameRequest::kFriendList:
+    case game::GameRequest::kGetPlayerBrief:
+    case game::GameRequest::kQueryOnlineState:
         return true;
     default:
         return false;

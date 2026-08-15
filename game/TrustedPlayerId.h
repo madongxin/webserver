@@ -15,7 +15,7 @@ enum class TrustedPlayerIdResult {
 };
 
 /** 当前 GameRequest oneof 中含 player_id 的分支数（测试锁定；含 login/reconnect；不含 mail_deliver） */
-inline constexpr int kTrustedPlayerIdBodyCaseCount = 27;
+inline constexpr int kTrustedPlayerIdBodyCaseCount = 31;
 
 inline bool GameRequestBodyHasPlayerId(game::GameRequest::BodyCase c) {
     switch (c) {
@@ -46,6 +46,10 @@ inline bool GameRequestBodyHasPlayerId(game::GameRequest::BodyCase c) {
     case game::GameRequest::kGetSelfProfile:
     case game::GameRequest::kMove:
     case game::GameRequest::kPlayerMailSend:
+    case game::GameRequest::kWorldSnapshot:
+    case game::GameRequest::kRespawn:
+    case game::GameRequest::kGetPlayerBrief:
+    case game::GameRequest::kQueryOnlineState:
         return true;
     case game::GameRequest::kRegister:
     case game::GameRequest::BODY_NOT_SET:
@@ -110,6 +114,14 @@ inline uint64_t ReportedPlayerId(const game::GameRequest &req) {
         return req.move().player_id();
     case game::GameRequest::kPlayerMailSend:
         return req.player_mail_send().sender_player_id();
+    case game::GameRequest::kWorldSnapshot:
+        return req.world_snapshot().player_id();
+    case game::GameRequest::kRespawn:
+        return req.respawn().player_id();
+    case game::GameRequest::kGetPlayerBrief:
+        return req.get_player_brief().player_id();
+    case game::GameRequest::kQueryOnlineState:
+        return req.query_online_state().player_id();
     default:
         return 0;
     }
@@ -197,6 +209,18 @@ inline void SetBodyPlayerId(game::GameRequest *req, uint64_t pid) {
         break;
     case game::GameRequest::kPlayerMailSend:
         req->mutable_player_mail_send()->set_sender_player_id(pid);
+        break;
+    case game::GameRequest::kWorldSnapshot:
+        req->mutable_world_snapshot()->set_player_id(pid);
+        break;
+    case game::GameRequest::kRespawn:
+        req->mutable_respawn()->set_player_id(pid);
+        break;
+    case game::GameRequest::kGetPlayerBrief:
+        req->mutable_get_player_brief()->set_player_id(pid);
+        break;
+    case game::GameRequest::kQueryOnlineState:
+        req->mutable_query_online_state()->set_player_id(pid);
         break;
     default:
         break;

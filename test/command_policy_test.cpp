@@ -55,6 +55,32 @@ int main() {
     Expect(ValidateCommandPolicy(game::GameRequest::kLogin, CommandTrustLevel::PreAuthClient, true,
                                  &code) == CommandDecision::Allow,
            "preauth login");
+    Expect(ValidateCommandPolicy(game::GameRequest::kClientHello, CommandTrustLevel::PreAuthClient,
+                                 true, &code) == CommandDecision::Allow,
+           "preauth hello");
+    Expect(ValidateCommandPolicy(game::GameRequest::kHeartbeat, CommandTrustLevel::PreAuthClient,
+                                 true, &code) == CommandDecision::Allow,
+           "preauth heartbeat");
+    Expect(ValidateCommandPolicy(game::GameRequest::kWorldSnapshot,
+                                 CommandTrustLevel::AuthenticatedClient, true, &code) ==
+               CommandDecision::Allow,
+           "world snapshot allowlisted");
+    Expect(ValidateCommandPolicy(game::GameRequest::kRespawn,
+                                 CommandTrustLevel::AuthenticatedClient, true, &code) ==
+               CommandDecision::Allow,
+           "respawn allowlisted");
+    Expect(ValidateCommandPolicy(game::GameRequest::kGetPlayerBrief,
+                                 CommandTrustLevel::AuthenticatedClient, true, &code) ==
+               CommandDecision::Allow,
+           "get_player_brief allowlisted");
+    Expect(ValidateCommandPolicy(game::GameRequest::kQueryOnlineState,
+                                 CommandTrustLevel::AuthenticatedClient, true, &code) ==
+               CommandDecision::Allow,
+           "query_online_state allowlisted");
+    Expect(ValidateCommandPolicy(game::GameRequest::kChatSend,
+                                 CommandTrustLevel::AuthenticatedClient, true, &code) ==
+               CommandDecision::Allow,
+           "chat_send allowlisted");
 
     ::unsetenv("GAMEMESH_ALLOW_UNSAFE_DEBUG_COMMANDS");
     ::unsetenv("GAMEMESH_FORMAL");

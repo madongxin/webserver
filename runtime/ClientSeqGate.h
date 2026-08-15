@@ -22,7 +22,7 @@ inline ClientSeqDecision EvaluateClientSeq(uint64_t last_client_seq, uint64_t cl
     }
     if (last_client_seq != 0 && client_seq != last_client_seq + 1) {
         if (err)
-            *err = "ERR_CLIENT_SEQ_OUT_OF_ORDER";
+            *err = "ERR_STALE_SEQ";
         return ClientSeqDecision::Reject;
     }
     return ClientSeqDecision::Execute;

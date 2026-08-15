@@ -1997,6 +1997,20 @@ class ExportPlayerSnapshotResponse : public ::google::protobuf::Message /* @@pro
   ::std::string* release_error_code();
   void set_allocated_error_code(::std::string* error_code);
 
+  // bytes public_full_snapshot = 5;
+  void clear_public_full_snapshot();
+  static const int kPublicFullSnapshotFieldNumber = 5;
+  const ::std::string& public_full_snapshot() const;
+  void set_public_full_snapshot(const ::std::string& value);
+  #if LANG_CXX11
+  void set_public_full_snapshot(::std::string&& value);
+  #endif
+  void set_public_full_snapshot(const char* value);
+  void set_public_full_snapshot(const void* value, size_t size);
+  ::std::string* mutable_public_full_snapshot();
+  ::std::string* release_public_full_snapshot();
+  void set_allocated_public_full_snapshot(::std::string* public_full_snapshot);
+
   // .glrpc.PlayerTransferSnapshot snapshot = 4;
   bool has_snapshot() const;
   void clear_snapshot();
@@ -2018,6 +2032,7 @@ class ExportPlayerSnapshotResponse : public ::google::protobuf::Message /* @@pro
   ::google::protobuf::internal::InternalMetadataWithArena _internal_metadata_;
   ::google::protobuf::internal::ArenaStringPtr message_;
   ::google::protobuf::internal::ArenaStringPtr error_code_;
+  ::google::protobuf::internal::ArenaStringPtr public_full_snapshot_;
   ::glrpc::PlayerTransferSnapshot* snapshot_;
   bool ok_;
   mutable int _cached_size_;
@@ -5269,6 +5284,59 @@ inline void ExportPlayerSnapshotResponse::set_allocated_snapshot(::glrpc::Player
   }
   snapshot_ = snapshot;
   // @@protoc_insertion_point(field_set_allocated:glrpc.ExportPlayerSnapshotResponse.snapshot)
+}
+
+// bytes public_full_snapshot = 5;
+inline void ExportPlayerSnapshotResponse::clear_public_full_snapshot() {
+  public_full_snapshot_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline const ::std::string& ExportPlayerSnapshotResponse::public_full_snapshot() const {
+  // @@protoc_insertion_point(field_get:glrpc.ExportPlayerSnapshotResponse.public_full_snapshot)
+  return public_full_snapshot_.GetNoArena();
+}
+inline void ExportPlayerSnapshotResponse::set_public_full_snapshot(const ::std::string& value) {
+  
+  public_full_snapshot_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), value);
+  // @@protoc_insertion_point(field_set:glrpc.ExportPlayerSnapshotResponse.public_full_snapshot)
+}
+#if LANG_CXX11
+inline void ExportPlayerSnapshotResponse::set_public_full_snapshot(::std::string&& value) {
+  
+  public_full_snapshot_.SetNoArena(
+    &::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::move(value));
+  // @@protoc_insertion_point(field_set_rvalue:glrpc.ExportPlayerSnapshotResponse.public_full_snapshot)
+}
+#endif
+inline void ExportPlayerSnapshotResponse::set_public_full_snapshot(const char* value) {
+  GOOGLE_DCHECK(value != NULL);
+  
+  public_full_snapshot_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::string(value));
+  // @@protoc_insertion_point(field_set_char:glrpc.ExportPlayerSnapshotResponse.public_full_snapshot)
+}
+inline void ExportPlayerSnapshotResponse::set_public_full_snapshot(const void* value, size_t size) {
+  
+  public_full_snapshot_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(),
+      ::std::string(reinterpret_cast<const char*>(value), size));
+  // @@protoc_insertion_point(field_set_pointer:glrpc.ExportPlayerSnapshotResponse.public_full_snapshot)
+}
+inline ::std::string* ExportPlayerSnapshotResponse::mutable_public_full_snapshot() {
+  
+  // @@protoc_insertion_point(field_mutable:glrpc.ExportPlayerSnapshotResponse.public_full_snapshot)
+  return public_full_snapshot_.MutableNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline ::std::string* ExportPlayerSnapshotResponse::release_public_full_snapshot() {
+  // @@protoc_insertion_point(field_release:glrpc.ExportPlayerSnapshotResponse.public_full_snapshot)
+  
+  return public_full_snapshot_.ReleaseNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline void ExportPlayerSnapshotResponse::set_allocated_public_full_snapshot(::std::string* public_full_snapshot) {
+  if (public_full_snapshot != NULL) {
+    
+  } else {
+    
+  }
+  public_full_snapshot_.SetAllocatedNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), public_full_snapshot);
+  // @@protoc_insertion_point(field_set_allocated:glrpc.ExportPlayerSnapshotResponse.public_full_snapshot)
 }
 
 // -------------------------------------------------------------------

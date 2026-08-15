@@ -54,6 +54,7 @@ public:
 
     bool Has(uint64_t map_instance_id) const;
     uint64_t Epoch(uint64_t map_instance_id) const;
+    uint64_t TemplateId(uint64_t map_instance_id) const;
 
     bool AddPlayer(uint64_t map_instance_id, uint64_t player_id);
     bool RemovePlayer(uint64_t map_instance_id, uint64_t player_id);

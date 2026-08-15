@@ -47,3 +47,18 @@ inline bool FormalModeAllowsMysql(const std::string &role) {
         return true;
     return role == "gamedb" || role == "all";
 }
+
+/** 运行期隐式 DDL（CREATE TABLE）。默认关闭；仅本地显式 GAMEMESH_BOOTSTRAP_DDL=1。Formal 同样必须显式开。 */
+inline bool BootstrapDdlEnabled() {
+    return ExperimentalFeatureEnabled("GAMEMESH_BOOTSTRAP_DDL");
+}
+
+/**
+ * Formal 默认强制 ClientHello。GAMEMESH_ALLOW_LEGACY_NO_HELLO=1 为有截止日的兼容开关
+ *（文档约定 2026-09-15 后删除）。
+ */
+inline bool ClientHelloRequired() {
+    if (ExperimentalFeatureEnabled("GAMEMESH_ALLOW_LEGACY_NO_HELLO"))
+        return false;
+    return FormalModeEnabled();
+}

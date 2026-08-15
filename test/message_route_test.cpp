@@ -42,6 +42,17 @@ int main() {
     }
     {
         game::GameRequest req;
+        req.mutable_get_player_brief()->set_player_id(1);
+        EXPECT_TRUE(gameproto::IsWorldBoundRequest(req));
+        EXPECT_TRUE(!gameproto::IsMailBoundRequest(req));
+    }
+    {
+        game::GameRequest req;
+        req.mutable_query_online_state()->set_player_id(1);
+        EXPECT_TRUE(gameproto::IsWorldBoundRequest(req));
+    }
+    {
+        game::GameRequest req;
         req.mutable_enter_map()->set_player_id(1);
         req.mutable_enter_map()->set_map_template_id(9);
         EXPECT_TRUE(gameproto::IsLogicBoundRequest(req));

@@ -22,6 +22,8 @@ bool IsPreAuthWhitelistPayload(const std::string &payload) {
     case game::GameRequest::kLogin:
     case game::GameRequest::kRegister:
     case game::GameRequest::kReconnect:
+    case game::GameRequest::kClientHello:
+    case game::GameRequest::kHeartbeat:
         return true;
     default:
         return false;

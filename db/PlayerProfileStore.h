@@ -33,6 +33,7 @@ class PlayerProfileStore {
 public:
     static PlayerProfileStore &Instance();
 
+    /** 结构存在性检查。生产建表走 scripts/migrate_db.sh；仅 GAMEMESH_BOOTSTRAP_DDL=1 时才 CREATE。 */
     bool EnsureTable();
     bool Available() const { return available_; }
 
@@ -44,6 +45,12 @@ public:
     bool EnsureDefault(uint64_t player_id, const std::string &player_name, std::string *err);
 
     bool Load(uint64_t player_id, PlayerProfileRow *out, std::string *err);
+
+    /**
+     * 精确名字（调用方已规范化）。0 行 exists=false；1 行成功；≥2 行失败 ERR_NAME_AMBIGUOUS。
+     */
+    bool LoadByExactName(const std::string &player_name, PlayerProfileRow *out, std::string *err,
+                         std::string *err_code);
 
     /**
      * 版本保护保存。expected_stats_version==0 不校验。

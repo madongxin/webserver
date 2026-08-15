@@ -25,13 +25,21 @@ namespace {
 
 std::atomic<uint64_t> g_dispatch_req_id{1};
 
-std::string BuildErrorFrame(const std::string &request_payload, const std::string &message) {
+std::string BuildErrorFrame(const std::string &request_payload, const std::string &message,
+                            const std::string &error_code = {}) {
     game::GameRequest req;
     game::GameResponse rsp;
     if (req.ParseFromString(request_payload))
         rsp.set_seq(req.seq());
     rsp.set_ok(false);
     rsp.set_message(message);
+    std::string code = error_code;
+    if (code == "ERR_CLIENT_SEQ_OUT_OF_ORDER")
+        code = "ERR_STALE_SEQ";
+    if (code.empty() && message.compare(0, 4, "ERR_") == 0)
+        code = message == "ERR_CLIENT_SEQ_OUT_OF_ORDER" ? "ERR_STALE_SEQ" : message;
+    if (!code.empty())
+        rsp.set_error_code(code);
     std::string body;
     if (!rsp.SerializeToString(&body))
         return {};
@@ -75,7 +83,7 @@ void OnDispatchDone(DispatchCallContext *ctx) {
             ctx->rsp.message().empty() ? (ctx->rsp.error_code().empty() ? "dispatch_failed"
                                                                         : ctx->rsp.error_code())
                                        : ctx->rsp.message();
-        const std::string err = BuildErrorFrame(ctx->request_payload, msg);
+        const std::string err = BuildErrorFrame(ctx->request_payload, msg, ctx->rsp.error_code());
         if (!err.empty())
             ctx->sink->SendFrame(err);
         return;

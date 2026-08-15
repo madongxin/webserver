@@ -424,7 +424,26 @@ if want_id ~= '0' and want_id ~= '' then
   return R
 end
 
-local members = redis.call('SMEMBERS', pool_key)
+local function pool_type(k)
+  local t = redis.call('TYPE', k)
+  if type(t) == 'table' then t = t['ok'] or '' end
+  return t
+end
+
+-- 旧 SET 无序；迁到 ZSET，score=instance id（INCR 即创建序）
+local function pool_ids()
+  local t = pool_type(pool_key)
+  if t == 'set' then
+    local old = redis.call('SMEMBERS', pool_key)
+    redis.call('DEL', pool_key)
+    for _, id in ipairs(old) do
+      redis.call('ZADD', pool_key, tonumber(id) or 0, tostring(id))
+    end
+  end
+  return redis.call('ZRANGE', pool_key, 0, -1)
+end
+
+local members = pool_ids()
 for _, id in ipairs(members) do
   local L, n = try_join(id)
   if L then
@@ -449,7 +468,7 @@ redis.call('HMSET', ikey,
   'updatedAt', tostring(now),
   'leaseUntil', tostring(lease_until))
 redis.call('EXPIRE', ikey, 86400)
-redis.call('SADD', pool_key, tostring(id))
+redis.call('ZADD', pool_key, id, tostring(id))
 redis.call('EXPIRE', pool_key, 86400)
 redis.call('SADD', occ_key(id), player)
 redis.call('EXPIRE', occ_key(id), 86400)

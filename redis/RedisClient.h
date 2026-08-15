@@ -45,6 +45,7 @@
  *   redis.HGetAll("game:session:1001", &out);
  */
 
+#include <cstdint>
 #include <map>
 #include <string>
 #include <vector>
@@ -116,6 +117,11 @@ public:
      */
     bool Eval(const std::string &script, const std::vector<std::string> &keys,
               const std::vector<std::string> &args, std::vector<std::string> *out);
+
+    bool SAdd(const std::string &key, const std::string &member);
+    bool SRem(const std::string &key, const std::string &member);
+    bool SMembers(const std::string &key, std::vector<std::string> *out);
+    bool Incr(const std::string &key, int64_t *out);
 
 private:
     /**

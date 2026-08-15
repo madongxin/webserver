@@ -7,6 +7,7 @@
 #include "Logging.h"
 #include "PlayerAccountStore.h"
 #include "PlayerProfileStore.h"
+#include "LastSafePositionStore.h"
 
 #include <brpc/controller.h>
 
@@ -491,6 +492,156 @@ void GameDbServiceImpl::SavePlayerProfile(::google::protobuf::RpcController *con
     response->set_ok(true);
     response->set_message("ok");
     response->set_stats_version(ver);
+#else
+    response->set_ok(false);
+    response->set_error_code("MYSQL_DISABLED");
+    response->set_message("mysql not enabled");
+#endif
+}
+
+void GameDbServiceImpl::LoadLastSafePosition(::google::protobuf::RpcController *controller,
+                                             const ::gdb::LoadLastSafePositionReq *request,
+                                             ::gdb::LoadLastSafePositionRsp *response,
+                                             ::google::protobuf::Closure *done) {
+    (void)controller;
+    brpc::ClosureGuard done_guard(done);
+    response->Clear();
+    if (!request || request->player_id() == 0) {
+        response->set_ok(false);
+        response->set_error_code("INVALID_ARG");
+        response->set_message("player_id required");
+        return;
+    }
+#ifdef WEBSERVER_ENABLE_MYSQL
+    LastSafePositionStore::Instance().EnsureTable();
+    LastSafePositionRow row;
+    std::string err;
+    if (!LastSafePositionStore::Instance().Load(request->player_id(), &row, &err)) {
+        response->set_ok(false);
+        response->set_error_code("DB_UNAVAILABLE");
+        response->set_message(err);
+        return;
+    }
+    response->set_ok(true);
+    response->set_exists(row.exists);
+    response->set_message(row.exists ? "ok" : "not found");
+    if (row.exists) {
+        auto *p = response->mutable_pos();
+        p->set_player_id(row.player_id);
+        p->set_realm_id(row.realm_id);
+        p->set_map_template_id(row.map_template_id);
+        p->set_x(row.x);
+        p->set_y(row.y);
+        p->set_z(row.z);
+        p->set_yaw(row.yaw);
+        p->set_position_version(row.position_version);
+    }
+#else
+    response->set_ok(false);
+    response->set_error_code("MYSQL_DISABLED");
+    response->set_message("mysql not enabled");
+#endif
+}
+
+void GameDbServiceImpl::SaveLastSafePosition(::google::protobuf::RpcController *controller,
+                                             const ::gdb::SaveLastSafePositionReq *request,
+                                             ::gdb::SaveLastSafePositionRsp *response,
+                                             ::google::protobuf::Closure *done) {
+    (void)controller;
+    brpc::ClosureGuard done_guard(done);
+    response->Clear();
+    if (!request || !request->has_pos() || request->pos().player_id() == 0) {
+        response->set_ok(false);
+        response->set_error_code("INVALID_ARG");
+        response->set_message("pos.player_id required");
+        return;
+    }
+#ifdef WEBSERVER_ENABLE_MYSQL
+    LastSafePositionRow row;
+    row.player_id = request->pos().player_id();
+    row.realm_id = request->pos().realm_id() != 0 ? request->pos().realm_id() : 1;
+    row.map_template_id = request->pos().map_template_id();
+    row.x = request->pos().x();
+    row.y = request->pos().y();
+    row.z = request->pos().z();
+    row.yaw = request->pos().yaw();
+    uint64_t ver = 0;
+    bool skipped = false;
+    std::string err, code;
+    if (!LastSafePositionStore::Instance().Save(row, request->expected_position_version(), &ver,
+                                                &skipped, &err, &code)) {
+        response->set_ok(false);
+        response->set_skipped(skipped);
+        response->set_error_code(code.empty() ? "SAVE_FAILED" : code);
+        response->set_message(err);
+        return;
+    }
+    response->set_ok(true);
+    response->set_message("ok");
+    response->set_position_version(ver);
+    response->set_skipped(false);
+#else
+    response->set_ok(false);
+    response->set_error_code("MYSQL_DISABLED");
+    response->set_message("mysql not enabled");
+#endif
+}
+
+void GameDbServiceImpl::LoadPlayerBrief(::google::protobuf::RpcController *controller,
+                                        const ::gdb::LoadPlayerBriefReq *request,
+                                        ::gdb::LoadPlayerBriefRsp *response,
+                                        ::google::protobuf::Closure *done) {
+    (void)controller;
+    brpc::ClosureGuard done_guard(done);
+    response->Clear();
+    if (!request || (request->player_id() == 0 && request->player_name().empty())) {
+        response->set_ok(false);
+        response->set_error_code("ERR_INVALID_ARGUMENT");
+        response->set_message("player_id or player_name required");
+        return;
+    }
+#ifdef WEBSERVER_ENABLE_MYSQL
+    PlayerProfileStore::Instance().EnsureTable();
+    PlayerProfileRow row;
+    std::string err, code;
+    if (request->player_id() != 0) {
+        if (!PlayerProfileStore::Instance().Load(request->player_id(), &row, &err)) {
+            response->set_ok(false);
+            response->set_error_code("ERR_DEPENDENCY_UNAVAILABLE");
+            response->set_message(err);
+            return;
+        }
+        if (!row.exists) {
+            response->set_ok(true);
+            response->set_exists(false);
+            response->set_error_code("ERR_PROFILE_NOT_FOUND");
+            response->set_message("not found");
+            return;
+        }
+    } else {
+        if (!PlayerProfileStore::Instance().LoadByExactName(request->player_name(), &row, &err,
+                                                            &code)) {
+            response->set_ok(false);
+            response->set_ambiguous(code == "ERR_NAME_AMBIGUOUS");
+            response->set_error_code(code.empty() ? "ERR_DEPENDENCY_UNAVAILABLE" : code);
+            response->set_message(err);
+            return;
+        }
+        if (!row.exists) {
+            response->set_ok(true);
+            response->set_exists(false);
+            response->set_error_code("ERR_NOT_FOUND");
+            response->set_message("not found");
+            return;
+        }
+    }
+    response->set_ok(true);
+    response->set_exists(true);
+    response->set_message("ok");
+    response->set_player_id(row.player_id);
+    response->set_player_name(row.player_name);
+    response->set_max_hp(row.max_hp);
+    response->set_max_mp(row.max_mp);
 #else
     response->set_ok(false);
     response->set_error_code("MYSQL_DISABLED");

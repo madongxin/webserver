@@ -244,3 +244,65 @@ bool RedisClient::Eval(const std::string &script, const std::vector<std::string>
     freeReplyObject(r);
     return true;
 }
+
+bool RedisClient::SAdd(const std::string &key, const std::string &member) {
+    if (!ctx_ || key.empty() || member.empty())
+        return false;
+    redisReply *r = static_cast<redisReply *>(
+        redisCommand(static_cast<redisContext *>(ctx_), "SADD %s %s", key.c_str(), member.c_str()));
+    return CheckReply(r, "SADD");
+}
+
+bool RedisClient::SRem(const std::string &key, const std::string &member) {
+    if (!ctx_ || key.empty() || member.empty())
+        return false;
+    redisReply *r = static_cast<redisReply *>(
+        redisCommand(static_cast<redisContext *>(ctx_), "SREM %s %s", key.c_str(), member.c_str()));
+    return CheckReply(r, "SREM");
+}
+
+bool RedisClient::SMembers(const std::string &key, std::vector<std::string> *out) {
+    if (!ctx_ || key.empty() || !out)
+        return false;
+    out->clear();
+    redisReply *r = static_cast<redisReply *>(
+        redisCommand(static_cast<redisContext *>(ctx_), "SMEMBERS %s", key.c_str()));
+    if (!r) {
+        Disconnect();
+        return false;
+    }
+    if (r->type == REDIS_REPLY_NIL) {
+        freeReplyObject(r);
+        return true;
+    }
+    if (r->type != REDIS_REPLY_ARRAY) {
+        freeReplyObject(r);
+        return false;
+    }
+    out->reserve(r->elements);
+    for (size_t i = 0; i < r->elements; ++i) {
+        redisReply *e = r->element[i];
+        if (e && e->type == REDIS_REPLY_STRING && e->str)
+            out->emplace_back(e->str, e->len);
+    }
+    freeReplyObject(r);
+    return true;
+}
+
+bool RedisClient::Incr(const std::string &key, int64_t *out) {
+    if (!ctx_ || key.empty() || !out)
+        return false;
+    redisReply *r = static_cast<redisReply *>(
+        redisCommand(static_cast<redisContext *>(ctx_), "INCR %s", key.c_str()));
+    if (!r) {
+        Disconnect();
+        return false;
+    }
+    if (r->type != REDIS_REPLY_INTEGER) {
+        freeReplyObject(r);
+        return false;
+    }
+    *out = r->integer;
+    freeReplyObject(r);
+    return true;
+}

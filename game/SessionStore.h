@@ -199,6 +199,22 @@ public:
     /** 用过期本地快照走 CAS；Redis 权威记录可能已被重连更新。 */
     bool ForceExpireGraceFromStaleLocalForTest(uint64_t player_id);
 
+    struct OnlinePushTarget {
+        uint64_t player_id = 0;
+        std::string gateway_id;
+        std::string session_id;
+        std::string fence_token;
+        uint64_t generation = 0;
+    };
+
+    /** 聊天广播：仅 ONLINE 且有 gateway/session。不返回 token 给公网。 */
+    bool ListOnlinePushTargets(std::vector<OnlinePushTarget> *out, size_t max_n = 256);
+    /** 公网在线态：online | offline | disconnected。无会话视为 offline。 */
+    bool QueryPublicOnlineState(uint64_t player_id, std::string *state);
+    bool ConsumeChatQuota(uint64_t player_id, int limit, int window_sec);
+    bool ConsumeNameQueryQuota(uint64_t player_id, int limit, int window_sec);
+    uint64_t NextWorldChatMessageId();
+
 private:
     SessionStore() = default;
     std::string SessionKey(uint64_t player_id) const;
@@ -208,6 +224,10 @@ private:
     bool ExpireIfGraceElapsed(uint64_t player_id, SessionRecord *rec);
     static std::string StateToString(SessionState s);
     static SessionState StateFromString(const std::string &s);
+    std::string OnlineSetKey() const;
+    void TrackOnline(uint64_t player_id);
+    void UntrackOnline(uint64_t player_id);
+    bool ConsumeKeyedQuota(const std::string &key, int limit, int window_sec);
 
     enum class OpBegin { Execute, Done, Pending, Error };
     OpBegin BeginOperation(const std::string &operation_id, AcquireSessionResult *cached,

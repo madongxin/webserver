@@ -64,7 +64,7 @@ public:
                AoiPushBatch *pushes, std::string *err);
     MapMoveReject Move(uint64_t map_instance_id, uint64_t player_id, float x, float y, float z,
                        float yaw, uint64_t client_seq, int64_t now_ms, MapEntity *confirmed,
-                       AoiPushBatch *pushes, std::string *err_code);
+                       AoiPushBatch *pushes, std::string *err_code, bool ignore_speed = false);
     bool Leave(uint64_t map_instance_id, uint64_t player_id, AoiPushBatch *pushes);
     void LeaveAll(uint64_t player_id, AoiPushBatch *pushes);
     bool Disconnect(uint64_t player_id, AoiPushBatch *pushes);
@@ -75,6 +75,9 @@ public:
     bool HasPlayer(uint64_t map_instance_id, uint64_t player_id) const;
     uint32_t ConnectedCount(uint64_t map_instance_id) const;
     uint64_t PlayerMap(uint64_t player_id) const;
+    bool SnapshotView(uint64_t player_id, MapEntity *self_out, std::vector<MapEntity> *aoi_snapshot,
+                      uint64_t *map_instance_id) const;
+    std::vector<uint64_t> ListPlayers() const;
     void ClearForTest();
 
 private:

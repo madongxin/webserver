@@ -10,6 +10,7 @@
 #include <algorithm>
 #include <atomic>
 #include <memory>
+#include <unistd.h>
 
 GatewayAuthClients &GatewayAuthClients::Instance() {
     static GatewayAuthClients g;
@@ -406,11 +407,23 @@ bool GatewayAuthClients::BindPlayer(const std::string &logic_instance_id,
     auto ch = SharedLogicChannel(logic_instance_id);
     if (!ch || !rsp)
         return false;
-    glrpc::GameLogicService_Stub stub(ch.get());
-    brpc::Controller cntl;
-    cntl.set_timeout_ms(timeout_ms_);
-    stub.BindPlayer(&cntl, &req, rsp, nullptr);
-    return !cntl.Failed() && rsp->ok();
+    for (int attempt = 0; attempt < 4; ++attempt) {
+        glrpc::GameLogicService_Stub stub(ch.get());
+        brpc::Controller cntl;
+        cntl.set_timeout_ms(timeout_ms_);
+        rsp->Clear();
+        stub.BindPlayer(&cntl, &req, rsp, nullptr);
+        if (!cntl.Failed() && rsp->ok())
+            return true;
+        if (!cntl.Failed())
+            return false;
+        LOG_WARN << "BindPlayer rpc failed logic=" << logic_instance_id << " attempt=" << attempt
+                 << " err=" << cntl.ErrorText();
+        if (attempt == 3)
+            break;
+        ::usleep(250000);
+    }
+    return false;
 }
 
 bool GatewayAuthClients::UnbindPlayer(const std::string &logic_instance_id,

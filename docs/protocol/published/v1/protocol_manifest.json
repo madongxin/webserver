@@ -1,0 +1,22 @@
+{
+  "protocol_name": "gamemesh.game",
+  "protocol_version": 1,
+  "min_supported_protocol_version": 1,
+  "server_git_sha": "145a64753aacd0d9e1dc7916edee81d15f183148",
+  "git_sha": "145a64753aacd0d9e1dc7916edee81d15f183148",
+  "dirty": true,
+  "schema_file": "game.proto",
+  "schema_files": ["game.proto"],
+  "schema_sha256": "aed5c952a1aa817a13464af8ae05c14d14c19da0ceedd6b61663d2b39f255bcb",
+  "game_proto_sha256": "aed5c952a1aa817a13464af8ae05c14d14c19da0ceedd6b61663d2b39f255bcb",
+  "descriptor_file": "game.desc",
+  "descriptor_sha256": "52482ea59d1a64688dbd64035c4e9b8c3a445dbfdfe5b006d5ceb83ac960fa11",
+  "descriptor_set_sha256": "52482ea59d1a64688dbd64035c4e9b8c3a445dbfdfe5b006d5ceb83ac960fa11",
+  "frame_format": "uint32_be_length_prefixed",
+  "frame": "uint32_be_length_prefixed",
+  "max_frame_bytes": 4194304,
+  "package": "game",
+  "csharp_namespace": "GameMesh.Protocol",
+  "generated_at_utc": "2026-08-15T08:29:02Z",
+  "push_message_types": ["aoi.delta.v1", "mailbox.changed.v1", "player.state.v1"]
+}

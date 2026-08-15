@@ -80,10 +80,10 @@ if kill -0 "$PID_L0" 2>/dev/null; then
 fi
 mkdir -p "$GAMEMESH_RUN_DIR/logs"
 if [[ "$(basename "$LOGIC_BIN")" == "server" ]]; then
-  GAMEMESH_INSTANCE_ID=gl-0 nohup "$LOGIC_BIN" gamelogic "$HTTP_L0" "$LOGIC_PORT" \
+  GAMEMESH_FORMAL=1 GAMEMESH_INSTANCE_ID=gl-0 nohup "$LOGIC_BIN" gamelogic "$HTTP_L0" "$LOGIC_PORT" \
     >>"$GAMEMESH_RUN_DIR/logs/logic0.log" 2>&1 &
 else
-  GAMEMESH_INSTANCE_ID=gl-0 nohup "$LOGIC_BIN" "$HTTP_L0" "$LOGIC_PORT" \
+  GAMEMESH_FORMAL=1 GAMEMESH_INSTANCE_ID=gl-0 nohup "$LOGIC_BIN" "$HTTP_L0" "$LOGIC_PORT" \
     >>"$GAMEMESH_RUN_DIR/logs/logic0.log" 2>&1 &
 fi
 newpid=$!
@@ -98,9 +98,23 @@ for _ in $(seq 1 50); do
   sleep 0.2
 done
 [[ "$ready" -eq 1 ]] || { echo "ERROR: gl-0 did not come back" >&2; exit 1; }
+sleep 2
+e2e_wait_login "$CLIENT" "$HOST" "$GW0"
 
-reload="$("$CLIENT" login-profile "$HOST" "$GW0" "$player" e2epass1 "$DEVICE-reload")"
+reload=""
+rc=1
+for _ in $(seq 1 30); do
+  set +e
+  reload="$("$CLIENT" login-profile "$HOST" "$GW0" "$player" e2epass1 "$DEVICE-reload" 2>&1)"
+  rc=$?
+  set -e
+  if [[ "$rc" -eq 0 ]]; then
+    break
+  fi
+  sleep 0.5
+done
 echo "$reload"
+[[ "$rc" -eq 0 ]] || { echo "ERROR: login-profile after gl-0 restart rc=$rc" >&2; exit "$rc"; }
 require "$reload" 'login_ok=1'
 require "$reload" "profile_name=${name}"
 require "$reload" "profile_stats_version=${ver}"

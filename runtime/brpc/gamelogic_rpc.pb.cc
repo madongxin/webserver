@@ -575,6 +575,7 @@ const ::google::protobuf::uint32 TableStruct::offsets[] GOOGLE_PROTOBUF_ATTRIBUT
   GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::glrpc::ExportPlayerSnapshotResponse, message_),
   GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::glrpc::ExportPlayerSnapshotResponse, error_code_),
   GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::glrpc::ExportPlayerSnapshotResponse, snapshot_),
+  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::glrpc::ExportPlayerSnapshotResponse, public_full_snapshot_),
   ~0u,  // no _has_bits_
   GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::glrpc::ImportPlayerSnapshotRequest, _internal_metadata_),
   ~0u,  // no _extensions_
@@ -636,10 +637,10 @@ static const ::google::protobuf::internal::MigrationSchema schemas[] GOOGLE_PROT
   { 87, -1, sizeof(::glrpc::PlayerTransferSnapshot)},
   { 106, -1, sizeof(::glrpc::ExportPlayerSnapshotRequest)},
   { 119, -1, sizeof(::glrpc::ExportPlayerSnapshotResponse)},
-  { 128, -1, sizeof(::glrpc::ImportPlayerSnapshotRequest)},
-  { 135, -1, sizeof(::glrpc::ImportPlayerSnapshotResponse)},
-  { 144, -1, sizeof(::glrpc::ClientCommand)},
-  { 165, -1, sizeof(::glrpc::CommandResult)},
+  { 129, -1, sizeof(::glrpc::ImportPlayerSnapshotRequest)},
+  { 136, -1, sizeof(::glrpc::ImportPlayerSnapshotResponse)},
+  { 145, -1, sizeof(::glrpc::ClientCommand)},
+  { 166, -1, sizeof(::glrpc::CommandResult)},
 };
 
 static ::google::protobuf::Message const * const file_default_instances[] = {
@@ -726,43 +727,43 @@ void AddDescriptorsImpl() {
       "er_id\030\004 \001(\t\022\033\n\023target_gamelogic_id\030\005 \001(\t"
       "\022\036\n\026target_map_instance_id\030\006 \001(\004\022\032\n\022targ"
       "et_owner_epoch\030\007 \001(\004\022\027\n\017idempotency_key\030"
-      "\010 \001(\t\"\200\001\n\034ExportPlayerSnapshotResponse\022\n"
+      "\010 \001(\t\"\236\001\n\034ExportPlayerSnapshotResponse\022\n"
       "\n\002ok\030\001 \001(\010\022\017\n\007message\030\002 \001(\t\022\022\n\nerror_cod"
       "e\030\003 \001(\t\022/\n\010snapshot\030\004 \001(\0132\035.glrpc.Player"
-      "TransferSnapshot\"g\n\033ImportPlayerSnapshot"
-      "Request\022/\n\010snapshot\030\001 \001(\0132\035.glrpc.Player"
-      "TransferSnapshot\022\027\n\017idempotency_key\030\002 \001("
-      "\t\"h\n\034ImportPlayerSnapshotResponse\022\n\n\002ok\030"
-      "\001 \001(\010\022\017\n\007message\030\002 \001(\t\022\022\n\nerror_code\030\003 \001"
-      "(\t\022\027\n\017already_applied\030\004 \001(\010\"\355\002\n\rClientCo"
-      "mmand\022\022\n\nrequest_id\030\001 \001(\004\022\021\n\tplayer_id\030\002"
-      " \001(\004\022\022\n\nsession_id\030\003 \001(\t\022\023\n\013fence_token\030"
-      "\004 \001(\t\022\035\n\025gamelogic_instance_id\030\005 \001(\t\022\027\n\017"
-      "map_instance_id\030\006 \001(\004\022\027\n\017map_owner_epoch"
-      "\030\007 \001(\004\022\022\n\nclient_seq\030\010 \001(\004\022\024\n\014message_ty"
-      "pe\030\t \001(\t\022\017\n\007payload\030\n \001(\014\022\025\n\rtrace_conte"
-      "xt\030\013 \001(\t\022\027\n\017idempotency_key\030\014 \001(\t\022\022\n\ngen"
-      "eration\030\r \001(\004\022\025\n\rroute_version\030\016 \001(\004\022\023\n\013"
-      "deadline_ms\030\017 \001(\005\022\020\n\010trace_id\030\020 \001(\t\"l\n\rC"
-      "ommandResult\022\n\n\002ok\030\001 \001(\010\022\017\n\007message\030\002 \001("
-      "\t\022\022\n\nerror_code\030\003 \001(\t\022\026\n\016response_frame\030"
-      "\004 \001(\014\022\022\n\nserver_seq\030\005 \001(\0042\341\003\n\020GameLogicS"
-      "ervice\022A\n\nBindPlayer\022\030.glrpc.BindPlayerR"
-      "equest\032\031.glrpc.BindPlayerResponse\0226\n\010Dis"
-      "patch\022\024.glrpc.ClientCommand\032\024.glrpc.Comm"
-      "andResult\022G\n\014UnbindPlayer\022\032.glrpc.Unbind"
-      "PlayerRequest\032\033.glrpc.UnbindPlayerRespon"
-      "se\022G\n\014FreezePlayer\022\032.glrpc.FreezePlayerR"
-      "equest\032\033.glrpc.FreezePlayerResponse\022_\n\024E"
-      "xportPlayerSnapshot\022\".glrpc.ExportPlayer"
-      "SnapshotRequest\032#.glrpc.ExportPlayerSnap"
-      "shotResponse\022_\n\024ImportPlayerSnapshot\022\".g"
-      "lrpc.ImportPlayerSnapshotRequest\032#.glrpc"
-      ".ImportPlayerSnapshotResponseB\003\200\001\001b\006prot"
-      "o3"
+      "TransferSnapshot\022\034\n\024public_full_snapshot"
+      "\030\005 \001(\014\"g\n\033ImportPlayerSnapshotRequest\022/\n"
+      "\010snapshot\030\001 \001(\0132\035.glrpc.PlayerTransferSn"
+      "apshot\022\027\n\017idempotency_key\030\002 \001(\t\"h\n\034Impor"
+      "tPlayerSnapshotResponse\022\n\n\002ok\030\001 \001(\010\022\017\n\007m"
+      "essage\030\002 \001(\t\022\022\n\nerror_code\030\003 \001(\t\022\027\n\017alre"
+      "ady_applied\030\004 \001(\010\"\355\002\n\rClientCommand\022\022\n\nr"
+      "equest_id\030\001 \001(\004\022\021\n\tplayer_id\030\002 \001(\004\022\022\n\nse"
+      "ssion_id\030\003 \001(\t\022\023\n\013fence_token\030\004 \001(\t\022\035\n\025g"
+      "amelogic_instance_id\030\005 \001(\t\022\027\n\017map_instan"
+      "ce_id\030\006 \001(\004\022\027\n\017map_owner_epoch\030\007 \001(\004\022\022\n\n"
+      "client_seq\030\010 \001(\004\022\024\n\014message_type\030\t \001(\t\022\017"
+      "\n\007payload\030\n \001(\014\022\025\n\rtrace_context\030\013 \001(\t\022\027"
+      "\n\017idempotency_key\030\014 \001(\t\022\022\n\ngeneration\030\r "
+      "\001(\004\022\025\n\rroute_version\030\016 \001(\004\022\023\n\013deadline_m"
+      "s\030\017 \001(\005\022\020\n\010trace_id\030\020 \001(\t\"l\n\rCommandResu"
+      "lt\022\n\n\002ok\030\001 \001(\010\022\017\n\007message\030\002 \001(\t\022\022\n\nerror"
+      "_code\030\003 \001(\t\022\026\n\016response_frame\030\004 \001(\014\022\022\n\ns"
+      "erver_seq\030\005 \001(\0042\341\003\n\020GameLogicService\022A\n\n"
+      "BindPlayer\022\030.glrpc.BindPlayerRequest\032\031.g"
+      "lrpc.BindPlayerResponse\0226\n\010Dispatch\022\024.gl"
+      "rpc.ClientCommand\032\024.glrpc.CommandResult\022"
+      "G\n\014UnbindPlayer\022\032.glrpc.UnbindPlayerRequ"
+      "est\032\033.glrpc.UnbindPlayerResponse\022G\n\014Free"
+      "zePlayer\022\032.glrpc.FreezePlayerRequest\032\033.g"
+      "lrpc.FreezePlayerResponse\022_\n\024ExportPlaye"
+      "rSnapshot\022\".glrpc.ExportPlayerSnapshotRe"
+      "quest\032#.glrpc.ExportPlayerSnapshotRespon"
+      "se\022_\n\024ImportPlayerSnapshot\022\".glrpc.Impor"
+      "tPlayerSnapshotRequest\032#.glrpc.ImportPla"
+      "yerSnapshotResponseB\003\200\001\001b\006proto3"
   };
   ::google::protobuf::DescriptorPool::InternalAddGeneratedFile(
-      descriptor, 3042);
+      descriptor, 3072);
   ::google::protobuf::MessageFactory::InternalRegisterGeneratedFile(
     "gamelogic_rpc.proto", &protobuf_RegisterTypes);
 }
@@ -6059,6 +6060,7 @@ const int ExportPlayerSnapshotResponse::kOkFieldNumber;
 const int ExportPlayerSnapshotResponse::kMessageFieldNumber;
 const int ExportPlayerSnapshotResponse::kErrorCodeFieldNumber;
 const int ExportPlayerSnapshotResponse::kSnapshotFieldNumber;
+const int ExportPlayerSnapshotResponse::kPublicFullSnapshotFieldNumber;
 #endif  // !defined(_MSC_VER) || _MSC_VER >= 1900
 
 ExportPlayerSnapshotResponse::ExportPlayerSnapshotResponse()
@@ -6082,6 +6084,10 @@ ExportPlayerSnapshotResponse::ExportPlayerSnapshotResponse(const ExportPlayerSna
   if (from.error_code().size() > 0) {
     error_code_.AssignWithDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), from.error_code_);
   }
+  public_full_snapshot_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  if (from.public_full_snapshot().size() > 0) {
+    public_full_snapshot_.AssignWithDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), from.public_full_snapshot_);
+  }
   if (from.has_snapshot()) {
     snapshot_ = new ::glrpc::PlayerTransferSnapshot(*from.snapshot_);
   } else {
@@ -6094,6 +6100,7 @@ ExportPlayerSnapshotResponse::ExportPlayerSnapshotResponse(const ExportPlayerSna
 void ExportPlayerSnapshotResponse::SharedCtor() {
   message_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
   error_code_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  public_full_snapshot_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
   ::memset(&snapshot_, 0, static_cast<size_t>(
       reinterpret_cast<char*>(&ok_) -
       reinterpret_cast<char*>(&snapshot_)) + sizeof(ok_));
@@ -6108,6 +6115,7 @@ ExportPlayerSnapshotResponse::~ExportPlayerSnapshotResponse() {
 void ExportPlayerSnapshotResponse::SharedDtor() {
   message_.DestroyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
   error_code_.DestroyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  public_full_snapshot_.DestroyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
   if (this != internal_default_instance()) delete snapshot_;
 }
 
@@ -6142,6 +6150,7 @@ void ExportPlayerSnapshotResponse::Clear() {
 
   message_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
   error_code_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  public_full_snapshot_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
   if (GetArenaNoVirtual() == NULL && snapshot_ != NULL) {
     delete snapshot_;
   }
@@ -6218,6 +6227,18 @@ bool ExportPlayerSnapshotResponse::MergePartialFromCodedStream(
         break;
       }
 
+      // bytes public_full_snapshot = 5;
+      case 5: {
+        if (static_cast< ::google::protobuf::uint8>(tag) ==
+            static_cast< ::google::protobuf::uint8>(42u /* 42 & 0xFF */)) {
+          DO_(::google::protobuf::internal::WireFormatLite::ReadBytes(
+                input, this->mutable_public_full_snapshot()));
+        } else {
+          goto handle_unusual;
+        }
+        break;
+      }
+
       default: {
       handle_unusual:
         if (tag == 0) {
@@ -6275,6 +6296,12 @@ void ExportPlayerSnapshotResponse::SerializeWithCachedSizes(
       4, *this->snapshot_, output);
   }
 
+  // bytes public_full_snapshot = 5;
+  if (this->public_full_snapshot().size() > 0) {
+    ::google::protobuf::internal::WireFormatLite::WriteBytesMaybeAliased(
+      5, this->public_full_snapshot(), output);
+  }
+
   if ((_internal_metadata_.have_unknown_fields() &&  ::google::protobuf::internal::GetProto3PreserveUnknownsDefault())) {
     ::google::protobuf::internal::WireFormat::SerializeUnknownFields(
         (::google::protobuf::internal::GetProto3PreserveUnknownsDefault()   ? _internal_metadata_.unknown_fields()   : _internal_metadata_.default_instance()), output);
@@ -6323,6 +6350,13 @@ void ExportPlayerSnapshotResponse::SerializeWithCachedSizes(
         4, *this->snapshot_, deterministic, target);
   }
 
+  // bytes public_full_snapshot = 5;
+  if (this->public_full_snapshot().size() > 0) {
+    target =
+      ::google::protobuf::internal::WireFormatLite::WriteBytesToArray(
+        5, this->public_full_snapshot(), target);
+  }
+
   if ((_internal_metadata_.have_unknown_fields() &&  ::google::protobuf::internal::GetProto3PreserveUnknownsDefault())) {
     target = ::google::protobuf::internal::WireFormat::SerializeUnknownFieldsToArray(
         (::google::protobuf::internal::GetProto3PreserveUnknownsDefault()   ? _internal_metadata_.unknown_fields()   : _internal_metadata_.default_instance()), target);
@@ -6352,6 +6386,13 @@ size_t ExportPlayerSnapshotResponse::ByteSizeLong() const {
     total_size += 1 +
       ::google::protobuf::internal::WireFormatLite::StringSize(
         this->error_code());
+  }
+
+  // bytes public_full_snapshot = 5;
+  if (this->public_full_snapshot().size() > 0) {
+    total_size += 1 +
+      ::google::protobuf::internal::WireFormatLite::BytesSize(
+        this->public_full_snapshot());
   }
 
   // .glrpc.PlayerTransferSnapshot snapshot = 4;
@@ -6403,6 +6444,10 @@ void ExportPlayerSnapshotResponse::MergeFrom(const ExportPlayerSnapshotResponse&
 
     error_code_.AssignWithDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), from.error_code_);
   }
+  if (from.public_full_snapshot().size() > 0) {
+
+    public_full_snapshot_.AssignWithDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), from.public_full_snapshot_);
+  }
   if (from.has_snapshot()) {
     mutable_snapshot()->::glrpc::PlayerTransferSnapshot::MergeFrom(from.snapshot());
   }
@@ -6437,6 +6482,7 @@ void ExportPlayerSnapshotResponse::InternalSwap(ExportPlayerSnapshotResponse* ot
   using std::swap;
   message_.Swap(&other->message_);
   error_code_.Swap(&other->error_code_);
+  public_full_snapshot_.Swap(&other->public_full_snapshot_);
   swap(snapshot_, other->snapshot_);
   swap(ok_, other->ok_);
   _internal_metadata_.Swap(&other->_internal_metadata_);

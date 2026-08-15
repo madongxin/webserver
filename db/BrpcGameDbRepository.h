@@ -53,6 +53,22 @@ public:
                        std::string *err);
     bool LoadPlayerProfile(uint64_t player_id, bool ensure_default, game::PlayerAttributes *out,
                            std::string *err);
+    bool LoadPlayerBrief(uint64_t player_id, const std::string &player_name, game::PlayerBrief *out,
+                         std::string *err_code, std::string *err);
+    struct LastSafePos {
+        uint64_t player_id = 0;
+        uint32_t realm_id = 1;
+        uint64_t map_template_id = 0;
+        float x = 0;
+        float y = 0;
+        float z = 0;
+        float yaw = 0;
+        uint64_t position_version = 0;
+        bool exists = false;
+    };
+    bool LoadLastSafePosition(uint64_t player_id, LastSafePos *out, std::string *err);
+    bool SaveLastSafePosition(const LastSafePos &pos, uint64_t expected_version,
+                              uint64_t *out_version, bool *skipped, std::string *err);
     bool ApplyAssetMutation(uint64_t player_id, const std::string &idempotency_key,
                             uint64_t expected_version, const std::string &mutation_type,
                             uint32_t item_id, uint32_t count, const std::string &trace_id,

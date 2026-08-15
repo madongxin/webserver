@@ -44,6 +44,18 @@ public:
                            const ::gdb::SavePlayerProfileReq *request,
                            ::gdb::SavePlayerProfileRsp *response,
                            ::google::protobuf::Closure *done) override;
+    void LoadLastSafePosition(::google::protobuf::RpcController *controller,
+                              const ::gdb::LoadLastSafePositionReq *request,
+                              ::gdb::LoadLastSafePositionRsp *response,
+                              ::google::protobuf::Closure *done) override;
+    void SaveLastSafePosition(::google::protobuf::RpcController *controller,
+                              const ::gdb::SaveLastSafePositionReq *request,
+                              ::gdb::SaveLastSafePositionRsp *response,
+                              ::google::protobuf::Closure *done) override;
+    void LoadPlayerBrief(::google::protobuf::RpcController *controller,
+                         const ::gdb::LoadPlayerBriefReq *request,
+                         ::gdb::LoadPlayerBriefRsp *response,
+                         ::google::protobuf::Closure *done) override;
     void HandleGameFrame(::google::protobuf::RpcController *controller,
                          const ::gdb::HandleGameFrameReq *request,
                          ::gdb::HandleGameFrameRsp *response,

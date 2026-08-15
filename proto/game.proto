@@ -67,7 +67,7 @@ message ServerPushEnvelope {
   bool coalescable = 5;
 }
 
-/** 全量状态同步（Replay 缺口时下发，禁止只回标志） */
+/** 全量状态同步（Replay 缺口 / WorldSnapshotReq；禁止只回标志或 ok=true 空快照） */
 message FullStateSnapshotRsp {
   bool ok = 1;
   string message = 2;
@@ -76,6 +76,40 @@ message FullStateSnapshotRsp {
   repeated uint32 item_ids = 5;
   repeated uint32 item_counts = 6;
   uint64 baseline_server_seq = 7;
+  PlayerAttributes profile = 8;
+  uint32 realm_id = 9;
+  uint64 map_template_id = 10;
+  uint64 map_instance_id = 11;
+  string gamelogic_instance_id = 12;  // 仅诊断，客户端不得选路
+  uint64 owner_epoch = 13;
+  uint64 route_version = 14;
+  EntitySnapshot self = 15;
+  repeated EntitySnapshot aoi_entities = 16;
+  uint32 snapshot_version = 17;
+  // INSTANCE_LIVE | REENTER_FROM_SAFE_POS | SPAWN_FALLBACK | NOT_ON_MAP
+  string recovery_reason = 18;
+  string life_state = 19;  // ALIVE | DEAD | RESPAWNING
+  string error_code = 20;
+}
+
+/** 客户端显式请求世界快照（AOI gap / 重连后）。回包走 GameResponse.full_snapshot=54。 */
+message WorldSnapshotReq {
+  uint64 player_id = 1;
+  uint64 last_applied_server_seq = 2;
+}
+
+message RespawnReq {
+  uint64 player_id = 1;
+  uint64 map_instance_id = 2;
+  string operation_id = 3;
+}
+
+message RespawnRsp {
+  bool ok = 1;
+  string message = 2;
+  string error_code = 3;
+  EntitySnapshot self = 4;
+  string life_state = 5;
 }
 
 message ValidateSessionReq {
@@ -472,6 +506,18 @@ message ChatSendRsp {
   bool ok = 1;
   string message = 2;
   string error_code = 3;
+  uint64 message_id = 4;
+  int64 server_time_ms = 5;
+  string channel = 6;
+}
+
+message ChatNotify {
+  uint64 message_id = 1;
+  uint64 sender_player_id = 2;
+  string sender_name = 3;
+  string channel = 4;
+  string text = 5;
+  int64 server_time_ms = 6;
 }
 
 message FriendListReq {
@@ -507,6 +553,7 @@ message PlayerAttributes {
   float move_speed = 13;    // 米/秒
   float attack_speed = 14;  // 次/秒
   uint64 stats_version = 15;
+  string life_state = 16;  // ALIVE | DEAD | RESPAWNING；缺省视为 ALIVE
 }
 
 message EntitySnapshot {
@@ -528,6 +575,40 @@ message GetSelfProfileRsp {
   string message = 2;
   string error_code = 3;
   PlayerAttributes profile = 4;
+}
+
+/** 公开资料：仅非敏感展示字段。按 player_id 或精确名字（规范化后精确匹配）。 */
+message PlayerBrief {
+  uint64 player_id = 1;
+  string player_name = 2;
+  int32 max_hp = 3;
+  int32 max_mp = 4;
+}
+
+message GetPlayerBriefReq {
+  uint64 player_id = 1;          // 查询者（Gateway 覆盖）
+  uint64 target_player_id = 2;   // 目标；与 player_name 二选一
+  string player_name = 3;
+}
+
+message GetPlayerBriefRsp {
+  bool ok = 1;
+  string message = 2;
+  string error_code = 3;
+  PlayerBrief brief = 4;
+}
+
+message QueryOnlineStateReq {
+  uint64 player_id = 1;          // 查询者（Gateway 覆盖）
+  uint64 target_player_id = 2;   // 0=查自己
+}
+
+message QueryOnlineStateRsp {
+  bool ok = 1;
+  string message = 2;
+  string error_code = 3;
+  uint64 player_id = 4;
+  string state = 5;  // online | offline | disconnected
 }
 
 message MoveReq {
@@ -580,6 +661,44 @@ message MailboxChangedNotify {
   uint32 unread_count = 3;
 }
 
+message ClientHelloReq {
+  uint32 protocol_version = 1;
+  string schema_sha256 = 2;
+  string client_version = 3;
+  string platform = 4;
+  string build_channel = 5;
+  repeated string capabilities = 6;
+}
+
+message ServerHelloRsp {
+  bool ok = 1;
+  string error_code = 2;
+  string message = 3;
+  uint32 protocol_version = 4;
+  uint32 min_supported_protocol_version = 5;
+  string schema_sha256 = 6;
+  string server_build = 7;
+  int64 server_time_ms = 8;
+  uint32 heartbeat_interval_ms = 9;
+  uint32 idle_timeout_ms = 10;
+  repeated string capabilities = 11;
+}
+
+message HeartbeatReq {
+  int64 client_monotonic_ms = 1;
+  uint64 last_server_seq = 2;
+  int64 echo_ms = 3;
+}
+
+message HeartbeatRsp {
+  bool ok = 1;
+  string error_code = 2;
+  int64 server_time_ms = 3;
+  int64 echo_ms = 4;
+  int64 server_recv_ms = 5;
+  uint32 jitter_hint_ms = 6;
+}
+
 message GameRequest {
   uint64 seq = 1;
   string session_token = 2;
@@ -613,6 +732,12 @@ message GameRequest {
     GetSelfProfileReq get_self_profile = 60;
     MoveReq move = 61;
     PlayerMailSendReq player_mail_send = 63;
+    ClientHelloReq client_hello = 70;
+    HeartbeatReq heartbeat = 71;
+    WorldSnapshotReq world_snapshot = 72;
+    RespawnReq respawn = 73;
+    GetPlayerBriefReq get_player_brief = 74;
+    QueryOnlineStateReq query_online_state = 75;
   }
 }
 
@@ -620,6 +745,10 @@ message GameResponse {
   uint64 seq = 1;
   bool ok = 2;
   string message = 3;
+  string error_code = 4;
+  bool retryable = 5;
+  int64 server_time_ms = 6;
+  string trace_id = 7;
   oneof body {
     ConsumeItemRsp consume_item = 10;
     ReleaseSkillRsp release_skill = 11;
@@ -654,5 +783,11 @@ message GameResponse {
     AoiDelta aoi_delta = 62;
     PlayerMailSendRsp player_mail_send = 63;
     MailboxChangedNotify mailbox_changed = 64;
+    ServerHelloRsp server_hello = 70;
+    HeartbeatRsp heartbeat = 71;
+    RespawnRsp respawn = 72;
+    ChatNotify chat_notify = 73;
+    GetPlayerBriefRsp get_player_brief = 74;
+    QueryOnlineStateRsp query_online_state = 75;
   }
 }

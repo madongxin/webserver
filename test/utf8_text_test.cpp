@@ -1,4 +1,5 @@
 #include "Utf8Text.h"
+#include "SocialText.h"
 
 #include <cstdio>
 #include <string>
@@ -29,6 +30,13 @@ int main() {
     const std::string long64(64, 'x');
     Expect(utf8text::ValidBoundedText(long64, 1, 64, false, &tec), "64 ok");
     Expect(!utf8text::ValidBoundedText(long64 + "y", 1, 64, false, &tec), "65 fail");
+    std::string nm;
+    Expect(social::NormalizePlayerName("  玩家甲  ", &nm, &tec) && nm == "玩家甲", "trim name");
+    Expect(!social::NormalizePlayerName("   ", &nm, &tec), "blank name");
+    Expect(social::ValidWorldChannel("") && social::ValidWorldChannel("world"), "world ch");
+    Expect(!social::ValidWorldChannel("guild"), "no guild");
+    Expect(social::ValidWorldChatText("hi", 200, 800, &tec), "chat ok");
+    Expect(!social::ValidWorldChatText(std::string(801, 'x'), 2000, 800, &tec), "chat bytes");
     if (fails) {
         std::printf("utf8_text_test FAIL count=%d\n", fails);
         return 1;

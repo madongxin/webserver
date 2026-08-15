@@ -5,6 +5,7 @@
 #include "RedisConfigPath.h"
 #include "RedisPool.h"
 
+#include <algorithm>
 #include <atomic>
 #include <cstdio>
 #include <cstdlib>
@@ -107,6 +108,8 @@ int main() {
         return Fail("51st stayed on full instance");
     if (PlacementStore::Instance().Occupancy(first) != 50)
         return Fail("first still 50 after overflow");
+    if (PlacementStore::Instance().Occupancy(out51.placement.map_instance_id) != 1)
+        return Fail("51st occupancy != 1");
 
     // 指定满员实例：错误，不换图
     ResolveOrCreateInput pin;
@@ -137,9 +140,9 @@ int main() {
     if (PlacementStore::Instance().Occupancy(out51.placement.map_instance_id) != 0)
         return Fail("released occupancy not 0");
 
-    // 100 并发，另一 template，容量 50
+    // 101 并发，另一 template，容量 50 → [50,50,1]
     const uint64_t tpl2 = 1002;
-    constexpr int kN = 100;
+    constexpr int kN = 101;
     std::vector<uint64_t> got(kN, 0);
     std::atomic<int> ok{0};
     std::atomic<int> fail{0};
@@ -178,8 +181,13 @@ int main() {
         if (PlacementStore::Instance().Occupancy(kv.first) != static_cast<uint32_t>(kv.second))
             return Fail("occupancy mismatch");
     }
-    if (counts.size() < 2)
-        return Fail("expected at least 2 instances for 100/50");
+    std::vector<int> layout;
+    layout.reserve(counts.size());
+    for (const auto &kv : counts)
+        layout.push_back(kv.second);
+    std::sort(layout.begin(), layout.end(), std::greater<int>());
+    if (layout.size() != 3 || layout[0] != 50 || layout[1] != 50 || layout[2] != 1)
+        return Fail("expected occupancy [50,50,1]");
 
     // 失败补偿：释放全部，容量归零
     for (int i = 0; i < kN; ++i)
@@ -189,6 +197,6 @@ int main() {
             return Fail("leak after release");
     }
 
-    std::printf("OK map_occupancy_test instances=%zu\n", counts.size());
+    std::printf("OK map_occupancy_test layout=50,50,1 instances=%zu\n", counts.size());
     return 0;
 }

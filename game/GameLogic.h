@@ -45,6 +45,12 @@ public:
     bool HandleGrantItemForTest(const game::GrantItemReq &req, game::GameResponse *rsp) {
         return HandleGrantItem(req, rsp);
     }
+    bool HandleMoveForTest(const game::MoveReq &req, game::GameResponse *rsp) {
+        return HandleMove(req, rsp);
+    }
+    bool HandleRespawnForTest(const game::RespawnReq &req, game::GameResponse *rsp) {
+        return HandleRespawn(req, rsp);
+    }
     /** 事务失败时回退内存（尽力而为） */
     bool RollbackItemReward(uint64_t player_id, uint32_t item_id, uint32_t count);
 
@@ -61,8 +67,13 @@ public:
                             std::map<uint32_t, int64_t> *skill_cds, uint64_t *asset_version);
     bool ImportRuntimeState(uint64_t player_id, const std::map<uint32_t, uint32_t> &bag,
                             const std::map<uint32_t, int64_t> &skill_cds, uint64_t asset_version);
-    /** 全量快照（Push 缺口）：填充 FullStateSnapshotRsp */
+    /** 全量快照（Push 缺口 / WorldSnapshot）：填充 FullStateSnapshotRsp */
     bool BuildFullStateSnapshot(uint64_t player_id, game::FullStateSnapshotRsp *out);
+    bool BuildFullStateSnapshot(uint64_t player_id, uint64_t baseline_server_seq,
+                                game::FullStateSnapshotRsp *out);
+    void FlushLastSafe(uint64_t player_id, const char *reason);
+    void FlushAllLastSafe(const char *reason);
+    void SetLifeStateForTest(uint64_t player_id, int32_t hp, const std::string &life_state);
 
 private:
     GameLogic() = default;
@@ -83,7 +94,11 @@ private:
     bool HandleChatSend(const game::ChatSendReq &req, game::GameResponse *rsp);
     bool HandleFriendList(const game::FriendListReq &req, game::GameResponse *rsp);
     bool HandleGetSelfProfile(const game::GetSelfProfileReq &req, game::GameResponse *rsp);
+    bool HandleGetPlayerBrief(const game::GetPlayerBriefReq &req, game::GameResponse *rsp);
+    bool HandleQueryOnlineState(const game::QueryOnlineStateReq &req, game::GameResponse *rsp);
     bool HandleMove(const game::MoveReq &req, game::GameResponse *rsp);
+    bool HandleWorldSnapshot(const game::WorldSnapshotReq &req, game::GameResponse *rsp);
+    bool HandleRespawn(const game::RespawnReq &req, game::GameResponse *rsp);
     bool RequireSessionToken(const game::GameRequest &req, uint64_t player_id, game::GameResponse *rsp);
     /** @return false：Formal 下 GameDB 加载失败，不得当作空背包成功 */
     bool EnsurePlayerLoaded(uint64_t player_id, std::string *err);
@@ -102,6 +117,23 @@ private:
     std::map<uint64_t, bool> player_load_ok_;
     std::map<uint64_t, bool> asset_dirty_;
     std::map<uint64_t, game::PlayerAttributes> profiles_;
+    struct LastSafeMem {
+        uint32_t realm_id = 1;
+        uint64_t map_template_id = 0;
+        uint64_t map_instance_id = 0;
+        float x = 0;
+        float y = 0;
+        float z = 0;
+        float yaw = 0;
+        uint64_t position_version = 0;
+        int64_t last_flush_ms = 0;
+        bool dirty = false;
+        std::string respawn_op;
+    };
+    std::map<uint64_t, LastSafeMem> last_safe_;
+    void MaybePersistLastSafe(uint64_t player_id, const MapEntity &e, uint64_t map_instance_id,
+                              bool force);
+    std::string LifeStateOf(uint64_t player_id);
     bool reload_blocked_for_test_ = false;
     bool apply_blocked_for_test_ = false;
     bool reload_override_for_test_ = false;

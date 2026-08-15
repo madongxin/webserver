@@ -10,6 +10,7 @@
 #include "Logging.h"
 #include "OpsMetrics.h"
 #include "ProtoFraming.h"
+#include "PublicError.h"
 #include "TrustedPlayerId.h"
 #include "game.pb.h"
 
@@ -35,7 +36,9 @@ bool HandleFrame(const std::string &request_payload, std::string *response_frame
                 game::GameResponse rsp;
                 rsp.set_seq(req.seq());
                 rsp.set_ok(false);
-                rsp.set_message("ERR_PLAYER_ID_MISMATCH");
+                rsp.set_message("player identity mismatch");
+                gameproto::FillPublicError(&rsp, gameproto::kErrUnauthenticated,
+                                           "player identity mismatch", req.seq(), 0);
                 std::string rsp_bytes;
                 if (!rsp.SerializeToString(&rsp_bytes))
                     return false;
@@ -46,6 +49,7 @@ bool HandleFrame(const std::string &request_payload, std::string *response_frame
 
     game::GameResponse rsp;
     GameLogic::Instance().Handle(req, &rsp);
+    gameproto::PromotePublicError(&rsp, 0);
 
     std::string rsp_bytes;
     if (!rsp.SerializeToString(&rsp_bytes)) {

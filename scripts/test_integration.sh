@@ -47,6 +47,8 @@ PY
 }
 wait_redis
 wait_mysql
+"$ROOT/scripts/test_migrate_db.sh"
+"$ROOT/scripts/migrate_db.sh"
 ./scripts/test_placement.sh
 if [[ ! -x ./build/test/map_occupancy_test ]]; then
   echo "ERROR: missing map_occupancy_test"
@@ -85,6 +87,11 @@ if [[ ! -x ./build/test/player_profile_store_test ]]; then
   exit 1
 fi
 ./build/test/player_profile_store_test
+if [[ ! -x ./build/test/last_safe_position_store_test ]]; then
+  echo "ERROR: missing last_safe_position_store_test"
+  exit 1
+fi
+./build/test/last_safe_position_store_test
 if [[ ! -x ./build/test/player_mail_send_test ]]; then
   echo "ERROR: missing player_mail_send_test"
   exit 1

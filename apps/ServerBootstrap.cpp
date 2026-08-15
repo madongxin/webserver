@@ -37,6 +37,7 @@
 #endif
 #ifdef WEBSERVER_ENABLE_GAME_PROTOBUF
 #include "GameTcpGateway.h"
+#include "GameLogic.h"
 #endif
 #ifdef WEBSERVER_ENABLE_REDIS
 #include "PlacementStore.h"
@@ -1006,7 +1007,8 @@ int RunServer(const LaunchOpts &launch) {
                     SessionStore::Instance().key_prefix());
             }
             // Gateway / GameLogic：跨 GW 可靠 Push 回放
-            if (role == "all" || role == "gateway" || role == "gamelogic" || role == "session") {
+            if (role == "all" || role == "gateway" || role == "gamelogic" || role == "session" ||
+                role == "gamedb") {
                 PushReplayStore::Instance().InitFromSessionPrefix(
                     SessionStore::Instance().key_prefix());
             }
@@ -1086,6 +1088,32 @@ int RunServer(const LaunchOpts &launch) {
         return out;
     };
 
+    auto apply_gateway_push_addrs = [&]() {
+        std::string push_map = GatewayConfigPath::ReadValue("gateway_push_addrs");
+        if (push_map.empty()) {
+            std::string logic_cnf = "../config/gamelogic.cnf";
+            std::string resolved;
+            if (GameMeshPaths::ResolveProjectSubdir("config/gamelogic.cnf", &resolved))
+                logic_cnf = resolved;
+            push_map = load_kv(logic_cnf, "gateway_push_addrs");
+        }
+        auto entries = split_addrs(push_map);
+        for (const auto &e : entries) {
+            const auto eq = e.find('=');
+            if (eq == std::string::npos)
+                continue;
+            const std::string id = e.substr(0, eq);
+            const std::string addr = e.substr(eq + 1);
+            GatewayPushClient::Instance().SetGatewayPushAddr(id, addr);
+            IServiceRegistry::ServiceInstance inst;
+            inst.service = "gateway_push";
+            inst.instance_id = id;
+            inst.address = addr;
+            inst.status = "UP";
+            StaticServiceRegistry::Get().RegisterInstance(inst);
+        }
+    };
+
     {
         const std::string etcd = GatewayConfigPath::ReadValue("etcd_endpoints");
         if (!etcd.empty())
@@ -1157,6 +1185,19 @@ int RunServer(const LaunchOpts &launch) {
             RedisServiceRegistry::Get().RegisterInstance(inst, 30);
         if (EtcdDiscovery::Instance().enabled())
             EtcdDiscovery::Instance().Register("gamedb", gid, adv, 30);
+        {
+            std::string session_addr = GatewayConfigPath::ReadValue("session_addrs");
+            if (session_addr.empty()) {
+                std::string logic_cnf = "../config/gamelogic.cnf";
+                std::string resolved;
+                if (GameMeshPaths::ResolveProjectSubdir("config/gamelogic.cnf", &resolved))
+                    logic_cnf = resolved;
+                session_addr = load_kv(logic_cnf, "session_addrs");
+            }
+            if (!session_addr.empty())
+                SessionRpcClient::Instance().Init(session_addr);
+        }
+        apply_gateway_push_addrs();
         LOG_INFO << "role=gamedb listen=" << listen << " instance_id=" << gid
                  << " advertise=" << adv;
     } else if (role == "gamelogic") {
@@ -1209,32 +1250,7 @@ int RunServer(const LaunchOpts &launch) {
                 auto addrs = split_addrs(gamedb_addr);
                 BrpcGameDbRepository::Instance().Init(addrs);
             }
-            // Push 端点：从配置 gateway_push_addrs=id=host:port,... 或服务发现；禁止写死端口
-            {
-                std::string push_map = GatewayConfigPath::ReadValue("gateway_push_addrs");
-                if (push_map.empty()) {
-                    std::string logic_cnf = "../config/gamelogic.cnf";
-                    std::string resolved;
-                    if (GameMeshPaths::ResolveProjectSubdir("config/gamelogic.cnf", &resolved))
-                        logic_cnf = resolved;
-                    push_map = load_kv(logic_cnf, "gateway_push_addrs");
-                }
-                auto entries = split_addrs(push_map);  // 复用 CSV；项为 id=addr
-                for (const auto &e : entries) {
-                    const auto eq = e.find('=');
-                    if (eq == std::string::npos)
-                        continue;
-                    const std::string id = e.substr(0, eq);
-                    const std::string addr = e.substr(eq + 1);
-                    GatewayPushClient::Instance().SetGatewayPushAddr(id, addr);
-                    IServiceRegistry::ServiceInstance inst;
-                    inst.service = "gateway_push";
-                    inst.instance_id = id;
-                    inst.address = addr;
-                    inst.status = "UP";
-                    StaticServiceRegistry::Get().RegisterInstance(inst);
-                }
-            }
+            apply_gateway_push_addrs();
             std::string logic_listen = GameLogicBrpcServer::Instance().listen_addr();
             const std::string lid = MapInstanceRegistry::Instance().local_instance_id();
             const std::string adv = AdvertiseFromListen(logic_listen);
@@ -1493,6 +1509,7 @@ int RunServer(const LaunchOpts &launch) {
                 BrpcGameDbRepository::Instance().Init(addrs);
             }
         }
+        apply_gateway_push_addrs();
 #ifdef WEBSERVER_ENABLE_GAME_PROTOBUF
 #ifdef WEBSERVER_ENABLE_MYSQL
         if (MailService::Instance().Init())
@@ -1546,8 +1563,8 @@ int RunServer(const LaunchOpts &launch) {
         });
     }
 #endif
-    // GameLogic：动态发现 gateway_push，热更新 Push Channel
-    if (role == "gamelogic" || role == "all") {
+    // GameLogic / World / GameDB：聊天与邮箱变更都从这些角色 Push
+    if (role == "gamelogic" || role == "world" || role == "gamedb" || role == "all") {
         loop.RunEvery(5.0, []() {
             if (!RedisServiceRegistry::Get().ready())
                 return;
@@ -1667,6 +1684,10 @@ int RunServer(const LaunchOpts &launch) {
     }
 #ifdef WEBSERVER_ENABLE_BRPC
     unregister_local();
+#ifdef WEBSERVER_ENABLE_GAME_PROTOBUF
+    if (role == "gamelogic" || role == "all")
+        GameLogic::Instance().FlushAllLastSafe("graceful_shutdown");
+#endif
     if (role == "session" || role == "all")
         SessionBrpcServer::Instance().Stop();
     if (role == "gamelogic" || role == "all")

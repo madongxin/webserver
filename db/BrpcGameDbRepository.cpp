@@ -403,6 +403,150 @@ bool BrpcGameDbRepository::LoadPlayerProfile(uint64_t player_id, bool ensure_def
     return false;
 }
 
+bool BrpcGameDbRepository::LoadPlayerBrief(uint64_t player_id, const std::string &player_name,
+                                           game::PlayerBrief *out, std::string *err_code,
+                                           std::string *err) {
+    if (!out)
+        return false;
+    const size_t n = channel_count();
+    for (size_t i = 0; i < n; ++i) {
+        const size_t idx = player_id != 0 ? (static_cast<size_t>(player_id) + i) % n : i;
+        auto ch = ChannelAt(idx);
+        if (!ch)
+            continue;
+        gdb::LoadPlayerBriefReq req;
+        gdb::LoadPlayerBriefRsp rsp;
+        brpc::Controller cntl;
+        req.set_player_id(player_id);
+        req.set_player_name(player_name);
+        gdb::GameDbService_Stub stub(ch.get());
+        stub.LoadPlayerBrief(&cntl, &req, &rsp, nullptr);
+        if (cntl.Failed()) {
+            if (err)
+                *err = cntl.ErrorText();
+            continue;
+        }
+        if (rsp.ambiguous() || rsp.error_code() == "ERR_NAME_AMBIGUOUS") {
+            if (err_code)
+                *err_code = "ERR_NAME_AMBIGUOUS";
+            if (err)
+                *err = rsp.message().empty() ? "name matches multiple players" : rsp.message();
+            return false;
+        }
+        if (!rsp.ok()) {
+            if (err_code)
+                *err_code = rsp.error_code().empty() ? "ERR_DEPENDENCY_UNAVAILABLE" : rsp.error_code();
+            if (err)
+                *err = rsp.message();
+            return false;
+        }
+        if (!rsp.exists()) {
+            if (err_code)
+                *err_code = rsp.error_code().empty() ? "ERR_NOT_FOUND" : rsp.error_code();
+            if (err)
+                *err = rsp.message().empty() ? "not found" : rsp.message();
+            return false;
+        }
+        out->set_player_id(rsp.player_id());
+        out->set_player_name(rsp.player_name());
+        out->set_max_hp(rsp.max_hp());
+        out->set_max_mp(rsp.max_mp());
+        return true;
+    }
+    if (err_code)
+        *err_code = "ERR_DEPENDENCY_UNAVAILABLE";
+    if (err && err->empty())
+        *err = "gamedb unavailable";
+    return false;
+}
+
+bool BrpcGameDbRepository::LoadLastSafePosition(uint64_t player_id, LastSafePos *out,
+                                                std::string *err) {
+    if (!out)
+        return false;
+    *out = LastSafePos{};
+    const size_t n = channel_count();
+    for (size_t i = 0; i < n; ++i) {
+        auto ch = ChannelAt((static_cast<size_t>(player_id) + i) % n);
+        if (!ch)
+            continue;
+        gdb::LoadLastSafePositionReq req;
+        gdb::LoadLastSafePositionRsp rsp;
+        brpc::Controller cntl;
+        req.set_player_id(player_id);
+        gdb::GameDbService_Stub stub(ch.get());
+        stub.LoadLastSafePosition(&cntl, &req, &rsp, nullptr);
+        if (cntl.Failed()) {
+            if (err)
+                *err = cntl.ErrorText();
+            continue;
+        }
+        if (!rsp.ok()) {
+            if (err)
+                *err = rsp.message().empty() ? rsp.error_code() : rsp.message();
+            return false;
+        }
+        out->exists = rsp.exists();
+        out->player_id = player_id;
+        if (rsp.has_pos()) {
+            out->realm_id = rsp.pos().realm_id();
+            out->map_template_id = rsp.pos().map_template_id();
+            out->x = rsp.pos().x();
+            out->y = rsp.pos().y();
+            out->z = rsp.pos().z();
+            out->yaw = rsp.pos().yaw();
+            out->position_version = rsp.pos().position_version();
+        }
+        return true;
+    }
+    if (err && err->empty())
+        *err = "gamedb unavailable";
+    return false;
+}
+
+bool BrpcGameDbRepository::SaveLastSafePosition(const LastSafePos &pos, uint64_t expected_version,
+                                                uint64_t *out_version, bool *skipped,
+                                                std::string *err) {
+    const size_t n = channel_count();
+    for (size_t i = 0; i < n; ++i) {
+        auto ch = ChannelAt((static_cast<size_t>(pos.player_id) + i) % n);
+        if (!ch)
+            continue;
+        gdb::SaveLastSafePositionReq req;
+        gdb::SaveLastSafePositionRsp rsp;
+        brpc::Controller cntl;
+        auto *p = req.mutable_pos();
+        p->set_player_id(pos.player_id);
+        p->set_realm_id(pos.realm_id);
+        p->set_map_template_id(pos.map_template_id);
+        p->set_x(pos.x);
+        p->set_y(pos.y);
+        p->set_z(pos.z);
+        p->set_yaw(pos.yaw);
+        req.set_expected_position_version(expected_version);
+        gdb::GameDbService_Stub stub(ch.get());
+        stub.SaveLastSafePosition(&cntl, &req, &rsp, nullptr);
+        if (cntl.Failed()) {
+            if (err)
+                *err = cntl.ErrorText();
+            continue;
+        }
+        if (skipped)
+            *skipped = rsp.skipped();
+        if (!rsp.ok()) {
+            if (err)
+                *err = rsp.message().empty() ? rsp.error_code() : rsp.message();
+            return false;
+        }
+        if (out_version)
+            *out_version = rsp.position_version();
+        return true;
+    }
+    if (err && err->empty())
+        *err = "gamedb unavailable";
+    return false;
+}
+
 bool BrpcGameDbRepository::QueryOperationResult(uint64_t player_id,
                                                 const std::string &idempotency_key,
                                                 const std::string &operation_type, bool *found,

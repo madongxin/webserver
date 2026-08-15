@@ -67,6 +67,14 @@ uint64_t ExtractPlayerIdFromRequestPayload(const std::string &request_payload) {
         return req.move().player_id();
     case game::GameRequest::kPlayerMailSend:
         return req.player_mail_send().sender_player_id();
+    case game::GameRequest::kWorldSnapshot:
+        return req.world_snapshot().player_id();
+    case game::GameRequest::kRespawn:
+        return req.respawn().player_id();
+    case game::GameRequest::kGetPlayerBrief:
+        return req.get_player_brief().player_id();
+    case game::GameRequest::kQueryOnlineState:
+        return req.query_online_state().player_id();
     default:
         return 0;
     }

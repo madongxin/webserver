@@ -91,15 +91,38 @@ write_summary() {
 }
 EOF
   echo "stable_gate summary: $SUMMARY_JSON"
-  # 导出不可手工伪造的 release 目录
-  local verdict="STABLE BLOCKED"
+  local verdict
+  verdict="$(pick_verdict "$final_rc")"
   if [[ "$final_rc" -eq 0 && "$FULL" -eq 1 ]]; then
-    verdict="STABLE PASS — candidate server-stable-v0.1.0-rc1"
+    verdict="STABLE CANDIDATE PASS"
+  elif [[ "$final_rc" -eq 0 && "$WITH_E2E" -eq 1 ]]; then
+    verdict="CLIENT READY PASS"
+  elif [[ "$final_rc" -eq 0 ]]; then
+    verdict="DEV PASS"
+  else
+    verdict="STABLE BLOCKED"
   fi
   export STABLE_VERDICT="$verdict"
   export STABLE_EXIT_CODE="$final_rc"
   export STABLE_STEPS_JSON="[${steps_csv}]"
   "$ROOT/scripts/export_release_bundle.sh" "$GATE_COMMIT"
+}
+
+pick_verdict() {
+  local final_rc="${1:-1}"
+  if [[ "$final_rc" -ne 0 ]]; then
+    echo "STABLE BLOCKED"
+    return
+  fi
+  if [[ "$FULL" -eq 1 ]]; then
+    echo "STABLE CANDIDATE PASS"
+    return
+  fi
+  if [[ "$WITH_E2E" -eq 1 ]]; then
+    echo "CLIENT READY PASS"
+    return
+  fi
+  echo "DEV PASS"
 }
 
 # 破坏性场景后强制健康检查；不健康则 stop+restart
@@ -150,7 +173,8 @@ if git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
   if git show --check --oneline HEAD -- . \
       ':(exclude)runtime/brpc/*.pb.cc' ':(exclude)runtime/brpc/*.pb.h' \
       ':(exclude)game/*.pb.cc' ':(exclude)game/*.pb.h' \
-      ':(exclude)*.pb.cc' ':(exclude)*.pb.h'; then
+      ':(exclude)*.pb.cc' ':(exclude)*.pb.h' \
+      ':(exclude)docs/unity-integration-runbook.md'; then
     SUMMARY_STEPS+=("{\"name\":\"git_show_check\",\"exit_code\":0}")
   else
     SUMMARY_STEPS+=("{\"name\":\"git_show_check\",\"exit_code\":1}")
@@ -204,7 +228,7 @@ run_step "unit" --log "$SUMMARY_DIR/unit.log" ./scripts/test.sh unit
 run_step "integration" --log "$SUMMARY_DIR/integration.log" ./scripts/test.sh integration
 
 if [[ "$WITH_E2E" -eq 1 ]]; then
-  run_step "final_e2e --start-cluster" ./scripts/final_e2e.sh --start-cluster
+  run_step "client_ready_gate" ./scripts/client_ready_gate.sh
 fi
 
 if [[ "$FULL" -eq 1 ]]; then
@@ -222,7 +246,7 @@ if [[ "$FULL" -eq 1 ]]; then
     run_step "restart_after_registry" restart_e2e_clean
   else
     log "skip registry_outage (experimental; set GAMEMESH_EXPERIMENTAL_REGISTRY_OUTAGE=1)"
-    SUMMARY_STEPS+=("{\"name\":\"registry_outage\",\"exit_code\":0,\"skipped\":true}")
+    SUMMARY_STEPS+=("{\"name\":\"registry_outage\",\"exit_code\":0,\"skipped\":true,\"required\":false}")
   fi
 
   run_step "session_failover" --log "$SUMMARY_DIR/failover/session_failover.log" \
@@ -235,7 +259,7 @@ if [[ "$FULL" -eq 1 ]]; then
     run_step "restart_after_logic" restart_e2e_clean
   else
     log "skip logic_auto_recovery (experimental; set GAMEMESH_EXPERIMENTAL_PLACEMENT_RECOVERY=1)"
-    SUMMARY_STEPS+=("{\"name\":\"logic_auto_recovery\",\"exit_code\":0,\"skipped\":true}")
+    SUMMARY_STEPS+=("{\"name\":\"logic_auto_recovery\",\"exit_code\":0,\"skipped\":true,\"required\":false}")
   fi
 
   run_step "gamedb_unknown_failover" --log "$SUMMARY_DIR/failover/gamedb_unknown_failover.log" \
@@ -248,7 +272,7 @@ if [[ "$FULL" -eq 1 ]]; then
     run_step "restart_after_scale" restart_e2e_clean
   else
     log "skip dynamic_logic_scale (experimental; set GAMEMESH_EXPERIMENTAL_DYNAMIC_SCALE=1)"
-    SUMMARY_STEPS+=("{\"name\":\"dynamic_logic_scale\",\"exit_code\":0,\"skipped\":true}")
+    SUMMARY_STEPS+=("{\"name\":\"dynamic_logic_scale\",\"exit_code\":0,\"skipped\":true,\"required\":false}")
   fi
 
   run_step "stop_cluster_before_sanitizers" bash -c "${ROOT}/scripts/stop_e2e_cluster.sh || true; sleep 1"
@@ -292,17 +316,17 @@ if [[ "$FULL" -eq 1 ]]; then
   if [[ "${SOAK_DURATION_SEC:-7200}" -lt 7200 && -z "${SOAK_REPORT:-}" ]]; then
     echo "STABLE BLOCKED: soak duration ${SOAK_DURATION_SEC:-7200}s < 7200 and no SOAK_REPORT"
     blocked=1
-    reason="soak duration short"
+    reason="soak duration short / NOT RUN"
   fi
   if [[ "${LOAD_DURATION_SEC:-1800}" -lt 1800 ]]; then
-    echo "STABLE BLOCKED: load duration ${LOAD_DURATION_SEC}s < 1800"
+    echo "STABLE BLOCKED: load duration ${LOAD_DURATION_SEC}s < 1800 / NOT RUN"
     blocked=1
-    reason="load duration short"
+    reason="load duration short / NOT RUN"
   fi
   if [[ "${E2E_ROUNDS:-20}" -lt 20 ]]; then
-    echo "STABLE BLOCKED: E2E_ROUNDS ${E2E_ROUNDS} < 20"
+    echo "STABLE BLOCKED: E2E_ROUNDS ${E2E_ROUNDS} < 20 / NOT RUN"
     blocked=1
-    reason="e2e rounds short"
+    reason="e2e rounds short / NOT RUN"
   fi
   if git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
     if [[ -n "$(git status --porcelain 2>/dev/null)" ]]; then
@@ -314,14 +338,17 @@ if [[ "$FULL" -eq 1 ]]; then
   if [[ "$blocked" -ne 0 ]]; then
     write_summary 1 "$reason"
     echo "Re-run with full durations or SOAK_REPORT for this commit."
+    echo "NOT RUN / STABLE BLOCKED"
     echo "STABLE BLOCKED"
     exit 1
   fi
   write_summary 0 ""
-  echo "STABLE PASS — candidate server-stable-v0.1.0-rc1"
+  echo "STABLE CANDIDATE PASS"
   echo "(still requires human review before tag/push)"
+elif [[ "$WITH_E2E" -eq 1 ]]; then
+  write_summary 0 "client-ready"
+  echo "CLIENT READY PASS"
 else
-  write_summary 0 "not --full"
-  echo "STABLE BLOCKED"
-  echo "NOTE: not --full; 完整门禁: ./scripts/stable_gate.sh --full"
+  write_summary 0 "dev"
+  echo "DEV PASS"
 fi

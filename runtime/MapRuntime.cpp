@@ -169,7 +169,8 @@ bool MapRuntime::Enter(uint64_t map_instance_id, std::shared_ptr<const MapStatic
 
 MapMoveReject MapRuntime::Move(uint64_t map_instance_id, uint64_t player_id, float x, float y,
                                float z, float yaw, uint64_t client_seq, int64_t now_ms,
-                               MapEntity *confirmed, AoiPushBatch *pushes, std::string *err_code) {
+                               MapEntity *confirmed, AoiPushBatch *pushes, std::string *err_code,
+                               bool ignore_speed) {
     auto fail = [&](MapMoveReject r, const char *code) {
         if (err_code)
             *err_code = code;
@@ -204,7 +205,7 @@ MapMoveReject MapRuntime::Move(uint64_t map_instance_id, uint64_t player_id, flo
         dt = static_cast<float>(t1 - e.last_move_server_ms) / 1000.f;
     const float speed = e.move_speed > 0.f ? e.move_speed : 10.f;
     const float max_dist = speed * dt * 1.25f + 0.5f;
-    if (dist > max_dist)
+    if (!ignore_speed && dist > max_dist)
         return fail(MapMoveReject::TooFast, "ERR_MOVE_TOO_FAST");
 
     const auto old_vis = VisibleIds(st, e);
@@ -384,6 +385,46 @@ uint64_t MapRuntime::PlayerMap(uint64_t player_id) const {
     std::lock_guard<std::mutex> lk(mu_);
     auto it = player_map_.find(player_id);
     return it == player_map_.end() ? 0 : it->second;
+}
+
+bool MapRuntime::SnapshotView(uint64_t player_id, MapEntity *self_out,
+                              std::vector<MapEntity> *aoi_snapshot,
+                              uint64_t *map_instance_id) const {
+    std::lock_guard<std::mutex> lk(mu_);
+    auto pit = player_map_.find(player_id);
+    if (pit == player_map_.end())
+        return false;
+    const uint64_t mid = pit->second;
+    auto mit = maps_.find(mid);
+    if (mit == maps_.end() || !mit->second)
+        return false;
+    const InstanceState &st = *mit->second;
+    auto eit = st.entities.find(player_id);
+    if (eit == st.entities.end())
+        return false;
+    if (map_instance_id)
+        *map_instance_id = mid;
+    if (self_out)
+        *self_out = eit->second;
+    if (aoi_snapshot) {
+        aoi_snapshot->clear();
+        const auto vis = VisibleIds(st, eit->second);
+        for (uint64_t vid : vis) {
+            auto it = st.entities.find(vid);
+            if (it != st.entities.end() && it->second.connected)
+                aoi_snapshot->push_back(it->second);
+        }
+    }
+    return true;
+}
+
+std::vector<uint64_t> MapRuntime::ListPlayers() const {
+    std::lock_guard<std::mutex> lk(mu_);
+    std::vector<uint64_t> out;
+    out.reserve(player_map_.size());
+    for (const auto &kv : player_map_)
+        out.push_back(kv.first);
+    return out;
 }
 
 void MapRuntime::ClearForTest() {

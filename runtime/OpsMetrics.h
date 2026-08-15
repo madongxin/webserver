@@ -35,6 +35,13 @@ public:
     void IncIdentityMismatch() { identity_mismatch_.fetch_add(1, std::memory_order_relaxed); }
     void IncQueueOverload() { queue_overload_.fetch_add(1, std::memory_order_relaxed); }
     void IncCommandForbidden() { command_forbidden_.fetch_add(1, std::memory_order_relaxed); }
+    void IncHelloOk() { hello_ok_.fetch_add(1, std::memory_order_relaxed); }
+    void IncHelloFail() { hello_fail_.fetch_add(1, std::memory_order_relaxed); }
+    void IncHeartbeatOk() { heartbeat_ok_.fetch_add(1, std::memory_order_relaxed); }
+    void IncHeartbeatLimited() { heartbeat_limited_.fetch_add(1, std::memory_order_relaxed); }
+    void IncIdleTimeout() { idle_timeout_.fetch_add(1, std::memory_order_relaxed); }
+    void IncConnRateLimited() { conn_rate_limited_.fetch_add(1, std::memory_order_relaxed); }
+    void IncErrorCode(const std::string &code);
 
     void SetOnlinePlayers(int64_t n) { online_players_.store(n, std::memory_order_relaxed); }
     void SetOutboxBacklog(int64_t n) { outbox_backlog_.store(n, std::memory_order_relaxed); }
@@ -97,6 +104,12 @@ private:
     std::atomic<uint64_t> identity_mismatch_{0};
     std::atomic<uint64_t> queue_overload_{0};
     std::atomic<uint64_t> command_forbidden_{0};
+    std::atomic<uint64_t> hello_ok_{0};
+    std::atomic<uint64_t> hello_fail_{0};
+    std::atomic<uint64_t> heartbeat_ok_{0};
+    std::atomic<uint64_t> heartbeat_limited_{0};
+    std::atomic<uint64_t> idle_timeout_{0};
+    std::atomic<uint64_t> conn_rate_limited_{0};
     std::atomic<int64_t> online_players_{0};
     std::atomic<int64_t> outbox_backlog_{0};
     std::atomic<int64_t> mailbox_pending_{0};

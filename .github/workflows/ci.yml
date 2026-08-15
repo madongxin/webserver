@@ -30,7 +30,8 @@ jobs:
           git show --check --oneline HEAD -- . \
             ':(exclude)runtime/brpc/*.pb.cc' ':(exclude)runtime/brpc/*.pb.h' \
             ':(exclude)game/*.pb.cc' ':(exclude)game/*.pb.h' \
-            ':(exclude)*.pb.cc' ':(exclude)*.pb.h'
+            ':(exclude)*.pb.cc' ':(exclude)*.pb.h' \
+            ':(exclude)docs/unity-integration-runbook.md'
           # 工作树手写路径不得有尾随空白/冲突标记
           git diff --check -- scripts docs deploy .github CMakeLists.txt AGENTS.md apps game db runtime \
             ':(exclude)*.pb.cc' ':(exclude)*.pb.h'
@@ -151,9 +152,14 @@ jobs:
           git show --check --oneline HEAD -- . \
             ':(exclude)runtime/brpc/*.pb.cc' ':(exclude)runtime/brpc/*.pb.h' \
             ':(exclude)game/*.pb.cc' ':(exclude)game/*.pb.h' \
-            ':(exclude)*.pb.cc' ':(exclude)*.pb.h'
+            ':(exclude)*.pb.cc' ':(exclude)*.pb.h' \
+            ':(exclude)docs/unity-integration-runbook.md'
           git diff --check -- scripts docs deploy .github CMakeLists.txt AGENTS.md \
             ':(exclude)*.pb.cc' ':(exclude)*.pb.h'
+      - name: public protocol
+        run: ./scripts/check_public_protocol.sh
+      - name: SQL migration
+        run: ./scripts/test_migrate_db.sh
       - name: build Debug
         run: ./scripts/build.sh Debug
       - name: build Release
@@ -170,5 +176,21 @@ jobs:
         env:
           GAMEMESH_REQUIRE_BRPC_TSAN: "1"
         run: ./scripts/test_sanitizers.sh all
+      - name: client-ready TCP
+        env:
+          GAMEMESH_JOBS: "2"
+        run: ./scripts/client_ready_gate.sh
+      - name: export unity protocol artifact
+        run: |
+          SHA="$(git rev-parse HEAD)"
+          OUT="${RUNNER_TEMP}/protocol-${SHA}"
+          mkdir -p "$OUT"
+          ./scripts/export_unity_protocol.sh "$OUT"
+          echo "PROTOCOL_ARTIFACT_DIR=$OUT" >> "$GITHUB_ENV"
+          echo "PROTOCOL_SHA=$SHA" >> "$GITHUB_ENV"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: gamemesh-protocol-${{ github.sha }}
+          path: ${{ env.PROTOCOL_ARTIFACT_DIR }}
       - name: shellcheck
         run: shellcheck -x scripts/*.sh deploy/docker-entrypoint.sh

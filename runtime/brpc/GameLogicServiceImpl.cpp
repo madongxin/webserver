@@ -167,7 +167,8 @@ void ExecuteDispatch(const glrpc::ClientCommand &request, glrpc::CommandResult *
                 response->set_message("player frozen for transfer");
                 return;
             }
-            if (request.route_version() != 0 && it->second.route_version != 0 &&
+            const bool is_enter_map = request.message_type() == "enter_map";
+            if (!is_enter_map && request.route_version() != 0 && it->second.route_version != 0 &&
                 request.route_version() < it->second.route_version) {
                 response->set_ok(false);
                 response->set_error_code("ERR_ROUTE_STALE");
@@ -181,7 +182,7 @@ void ExecuteDispatch(const glrpc::ClientCommand &request, glrpc::CommandResult *
     const SeqDecision sd = CheckClientSeq(request.player_id(), request.client_seq(), &cached, &err);
     if (sd == SeqDecision::Reject) {
         response->set_ok(false);
-        response->set_error_code("ERR_CLIENT_SEQ_OUT_OF_ORDER");
+        response->set_error_code("ERR_STALE_SEQ");
         response->set_message(err.empty() ? "client_seq out of order" : err);
         return;
     }
@@ -526,6 +527,7 @@ void GameLogicServiceImpl::UnbindPlayer(::google::protobuf::RpcController *contr
 #endif
             }
             GameLogic::Instance().EmitAoi(pushes);
+            GameLogic::Instance().FlushLastSafe(pid, reason.c_str());
             GameLogic::Instance().FlushBag(pid, reason);
             rsp->set_ok(true);
             rsp->set_message("unbound");
@@ -676,6 +678,13 @@ void GameLogicServiceImpl::ExportPlayerSnapshot(
                 e->set_cd_until_ms(kv.second);
             }
             snap->set_checksum(ChecksumRuntimeState(*st));
+            game::FullStateSnapshotRsp pub;
+            if (GameLogic::Instance().BuildFullStateSnapshot(req_copy.player_id(), 0, &pub) &&
+                pub.ok()) {
+                std::string bytes;
+                if (pub.SerializeToString(&bytes))
+                    rsp->set_public_full_snapshot(bytes);
+            }
             rsp->set_ok(true);
             rsp->set_message("exported");
             LOG_INFO << "ExportPlayerSnapshot player=" << req_copy.player_id()

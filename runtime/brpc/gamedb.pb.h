@@ -37,7 +37,7 @@ namespace protobuf_gamedb_2eproto {
 struct TableStruct {
   static const ::google::protobuf::internal::ParseTableField entries[];
   static const ::google::protobuf::internal::AuxillaryParseTableField aux[];
-  static const ::google::protobuf::internal::ParseTable schema[27];
+  static const ::google::protobuf::internal::ParseTable schema[34];
   static const ::google::protobuf::internal::FieldMetadata field_metadata[];
   static const ::google::protobuf::internal::SerializationTable serialization_table[];
   static const ::google::protobuf::uint32 offsets[];
@@ -93,6 +93,20 @@ void InitDefaultsQueryOperationResultReqImpl();
 void InitDefaultsQueryOperationResultReq();
 void InitDefaultsQueryOperationResultRspImpl();
 void InitDefaultsQueryOperationResultRsp();
+void InitDefaultsLastSafePositionImpl();
+void InitDefaultsLastSafePosition();
+void InitDefaultsLoadLastSafePositionReqImpl();
+void InitDefaultsLoadLastSafePositionReq();
+void InitDefaultsLoadLastSafePositionRspImpl();
+void InitDefaultsLoadLastSafePositionRsp();
+void InitDefaultsSaveLastSafePositionReqImpl();
+void InitDefaultsSaveLastSafePositionReq();
+void InitDefaultsSaveLastSafePositionRspImpl();
+void InitDefaultsSaveLastSafePositionRsp();
+void InitDefaultsLoadPlayerBriefReqImpl();
+void InitDefaultsLoadPlayerBriefReq();
+void InitDefaultsLoadPlayerBriefRspImpl();
+void InitDefaultsLoadPlayerBriefRsp();
 void InitDefaultsHandleGameFrameReqImpl();
 void InitDefaultsHandleGameFrameReq();
 void InitDefaultsHandleGameFrameRspImpl();
@@ -123,6 +137,13 @@ inline void InitDefaults() {
   InitDefaultsSavePlayerProfileRsp();
   InitDefaultsQueryOperationResultReq();
   InitDefaultsQueryOperationResultRsp();
+  InitDefaultsLastSafePosition();
+  InitDefaultsLoadLastSafePositionReq();
+  InitDefaultsLoadLastSafePositionRsp();
+  InitDefaultsSaveLastSafePositionReq();
+  InitDefaultsSaveLastSafePositionRsp();
+  InitDefaultsLoadPlayerBriefReq();
+  InitDefaultsLoadPlayerBriefRsp();
   InitDefaultsHandleGameFrameReq();
   InitDefaultsHandleGameFrameRsp();
 }
@@ -158,12 +179,27 @@ extern HandleGameFrameReqDefaultTypeInternal _HandleGameFrameReq_default_instanc
 class HandleGameFrameRsp;
 class HandleGameFrameRspDefaultTypeInternal;
 extern HandleGameFrameRspDefaultTypeInternal _HandleGameFrameRsp_default_instance_;
+class LastSafePosition;
+class LastSafePositionDefaultTypeInternal;
+extern LastSafePositionDefaultTypeInternal _LastSafePosition_default_instance_;
 class LoadInventoryReq;
 class LoadInventoryReqDefaultTypeInternal;
 extern LoadInventoryReqDefaultTypeInternal _LoadInventoryReq_default_instance_;
 class LoadInventoryRsp;
 class LoadInventoryRspDefaultTypeInternal;
 extern LoadInventoryRspDefaultTypeInternal _LoadInventoryRsp_default_instance_;
+class LoadLastSafePositionReq;
+class LoadLastSafePositionReqDefaultTypeInternal;
+extern LoadLastSafePositionReqDefaultTypeInternal _LoadLastSafePositionReq_default_instance_;
+class LoadLastSafePositionRsp;
+class LoadLastSafePositionRspDefaultTypeInternal;
+extern LoadLastSafePositionRspDefaultTypeInternal _LoadLastSafePositionRsp_default_instance_;
+class LoadPlayerBriefReq;
+class LoadPlayerBriefReqDefaultTypeInternal;
+extern LoadPlayerBriefReqDefaultTypeInternal _LoadPlayerBriefReq_default_instance_;
+class LoadPlayerBriefRsp;
+class LoadPlayerBriefRspDefaultTypeInternal;
+extern LoadPlayerBriefRspDefaultTypeInternal _LoadPlayerBriefRsp_default_instance_;
 class LoadPlayerProfileReq;
 class LoadPlayerProfileReqDefaultTypeInternal;
 extern LoadPlayerProfileReqDefaultTypeInternal _LoadPlayerProfileReq_default_instance_;
@@ -197,6 +233,12 @@ extern RegisterAccountReqDefaultTypeInternal _RegisterAccountReq_default_instanc
 class RegisterAccountRsp;
 class RegisterAccountRspDefaultTypeInternal;
 extern RegisterAccountRspDefaultTypeInternal _RegisterAccountRsp_default_instance_;
+class SaveLastSafePositionReq;
+class SaveLastSafePositionReqDefaultTypeInternal;
+extern SaveLastSafePositionReqDefaultTypeInternal _SaveLastSafePositionReq_default_instance_;
+class SaveLastSafePositionRsp;
+class SaveLastSafePositionRspDefaultTypeInternal;
+extern SaveLastSafePositionRspDefaultTypeInternal _SaveLastSafePositionRsp_default_instance_;
 class SavePlayerProfileReq;
 class SavePlayerProfileReqDefaultTypeInternal;
 extern SavePlayerProfileReqDefaultTypeInternal _SavePlayerProfileReq_default_instance_;
@@ -3770,6 +3812,951 @@ class QueryOperationResultRsp : public ::google::protobuf::Message /* @@protoc_i
 };
 // -------------------------------------------------------------------
 
+class LastSafePosition : public ::google::protobuf::Message /* @@protoc_insertion_point(class_definition:gdb.LastSafePosition) */ {
+ public:
+  LastSafePosition();
+  virtual ~LastSafePosition();
+
+  LastSafePosition(const LastSafePosition& from);
+
+  inline LastSafePosition& operator=(const LastSafePosition& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  #if LANG_CXX11
+  LastSafePosition(LastSafePosition&& from) noexcept
+    : LastSafePosition() {
+    *this = ::std::move(from);
+  }
+
+  inline LastSafePosition& operator=(LastSafePosition&& from) noexcept {
+    if (GetArenaNoVirtual() == from.GetArenaNoVirtual()) {
+      if (this != &from) InternalSwap(&from);
+    } else {
+      CopyFrom(from);
+    }
+    return *this;
+  }
+  #endif
+  static const ::google::protobuf::Descriptor* descriptor();
+  static const LastSafePosition& default_instance();
+
+  static void InitAsDefaultInstance();  // FOR INTERNAL USE ONLY
+  static inline const LastSafePosition* internal_default_instance() {
+    return reinterpret_cast<const LastSafePosition*>(
+               &_LastSafePosition_default_instance_);
+  }
+  static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
+    25;
+
+  void Swap(LastSafePosition* other);
+  friend void swap(LastSafePosition& a, LastSafePosition& b) {
+    a.Swap(&b);
+  }
+
+  // implements Message ----------------------------------------------
+
+  inline LastSafePosition* New() const PROTOBUF_FINAL { return New(NULL); }
+
+  LastSafePosition* New(::google::protobuf::Arena* arena) const PROTOBUF_FINAL;
+  void CopyFrom(const ::google::protobuf::Message& from) PROTOBUF_FINAL;
+  void MergeFrom(const ::google::protobuf::Message& from) PROTOBUF_FINAL;
+  void CopyFrom(const LastSafePosition& from);
+  void MergeFrom(const LastSafePosition& from);
+  void Clear() PROTOBUF_FINAL;
+  bool IsInitialized() const PROTOBUF_FINAL;
+
+  size_t ByteSizeLong() const PROTOBUF_FINAL;
+  bool MergePartialFromCodedStream(
+      ::google::protobuf::io::CodedInputStream* input) PROTOBUF_FINAL;
+  void SerializeWithCachedSizes(
+      ::google::protobuf::io::CodedOutputStream* output) const PROTOBUF_FINAL;
+  ::google::protobuf::uint8* InternalSerializeWithCachedSizesToArray(
+      bool deterministic, ::google::protobuf::uint8* target) const PROTOBUF_FINAL;
+  int GetCachedSize() const PROTOBUF_FINAL { return _cached_size_; }
+  private:
+  void SharedCtor();
+  void SharedDtor();
+  void SetCachedSize(int size) const PROTOBUF_FINAL;
+  void InternalSwap(LastSafePosition* other);
+  private:
+  inline ::google::protobuf::Arena* GetArenaNoVirtual() const {
+    return NULL;
+  }
+  inline void* MaybeArenaPtr() const {
+    return NULL;
+  }
+  public:
+
+  ::google::protobuf::Metadata GetMetadata() const PROTOBUF_FINAL;
+
+  // nested types ----------------------------------------------------
+
+  // accessors -------------------------------------------------------
+
+  // uint64 player_id = 1;
+  void clear_player_id();
+  static const int kPlayerIdFieldNumber = 1;
+  ::google::protobuf::uint64 player_id() const;
+  void set_player_id(::google::protobuf::uint64 value);
+
+  // uint64 map_template_id = 3;
+  void clear_map_template_id();
+  static const int kMapTemplateIdFieldNumber = 3;
+  ::google::protobuf::uint64 map_template_id() const;
+  void set_map_template_id(::google::protobuf::uint64 value);
+
+  // uint32 realm_id = 2;
+  void clear_realm_id();
+  static const int kRealmIdFieldNumber = 2;
+  ::google::protobuf::uint32 realm_id() const;
+  void set_realm_id(::google::protobuf::uint32 value);
+
+  // float x = 4;
+  void clear_x();
+  static const int kXFieldNumber = 4;
+  float x() const;
+  void set_x(float value);
+
+  // float y = 5;
+  void clear_y();
+  static const int kYFieldNumber = 5;
+  float y() const;
+  void set_y(float value);
+
+  // float z = 6;
+  void clear_z();
+  static const int kZFieldNumber = 6;
+  float z() const;
+  void set_z(float value);
+
+  // uint64 position_version = 8;
+  void clear_position_version();
+  static const int kPositionVersionFieldNumber = 8;
+  ::google::protobuf::uint64 position_version() const;
+  void set_position_version(::google::protobuf::uint64 value);
+
+  // int64 updated_at_unix = 9;
+  void clear_updated_at_unix();
+  static const int kUpdatedAtUnixFieldNumber = 9;
+  ::google::protobuf::int64 updated_at_unix() const;
+  void set_updated_at_unix(::google::protobuf::int64 value);
+
+  // float yaw = 7;
+  void clear_yaw();
+  static const int kYawFieldNumber = 7;
+  float yaw() const;
+  void set_yaw(float value);
+
+  // @@protoc_insertion_point(class_scope:gdb.LastSafePosition)
+ private:
+
+  ::google::protobuf::internal::InternalMetadataWithArena _internal_metadata_;
+  ::google::protobuf::uint64 player_id_;
+  ::google::protobuf::uint64 map_template_id_;
+  ::google::protobuf::uint32 realm_id_;
+  float x_;
+  float y_;
+  float z_;
+  ::google::protobuf::uint64 position_version_;
+  ::google::protobuf::int64 updated_at_unix_;
+  float yaw_;
+  mutable int _cached_size_;
+  friend struct ::protobuf_gamedb_2eproto::TableStruct;
+  friend void ::protobuf_gamedb_2eproto::InitDefaultsLastSafePositionImpl();
+};
+// -------------------------------------------------------------------
+
+class LoadLastSafePositionReq : public ::google::protobuf::Message /* @@protoc_insertion_point(class_definition:gdb.LoadLastSafePositionReq) */ {
+ public:
+  LoadLastSafePositionReq();
+  virtual ~LoadLastSafePositionReq();
+
+  LoadLastSafePositionReq(const LoadLastSafePositionReq& from);
+
+  inline LoadLastSafePositionReq& operator=(const LoadLastSafePositionReq& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  #if LANG_CXX11
+  LoadLastSafePositionReq(LoadLastSafePositionReq&& from) noexcept
+    : LoadLastSafePositionReq() {
+    *this = ::std::move(from);
+  }
+
+  inline LoadLastSafePositionReq& operator=(LoadLastSafePositionReq&& from) noexcept {
+    if (GetArenaNoVirtual() == from.GetArenaNoVirtual()) {
+      if (this != &from) InternalSwap(&from);
+    } else {
+      CopyFrom(from);
+    }
+    return *this;
+  }
+  #endif
+  static const ::google::protobuf::Descriptor* descriptor();
+  static const LoadLastSafePositionReq& default_instance();
+
+  static void InitAsDefaultInstance();  // FOR INTERNAL USE ONLY
+  static inline const LoadLastSafePositionReq* internal_default_instance() {
+    return reinterpret_cast<const LoadLastSafePositionReq*>(
+               &_LoadLastSafePositionReq_default_instance_);
+  }
+  static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
+    26;
+
+  void Swap(LoadLastSafePositionReq* other);
+  friend void swap(LoadLastSafePositionReq& a, LoadLastSafePositionReq& b) {
+    a.Swap(&b);
+  }
+
+  // implements Message ----------------------------------------------
+
+  inline LoadLastSafePositionReq* New() const PROTOBUF_FINAL { return New(NULL); }
+
+  LoadLastSafePositionReq* New(::google::protobuf::Arena* arena) const PROTOBUF_FINAL;
+  void CopyFrom(const ::google::protobuf::Message& from) PROTOBUF_FINAL;
+  void MergeFrom(const ::google::protobuf::Message& from) PROTOBUF_FINAL;
+  void CopyFrom(const LoadLastSafePositionReq& from);
+  void MergeFrom(const LoadLastSafePositionReq& from);
+  void Clear() PROTOBUF_FINAL;
+  bool IsInitialized() const PROTOBUF_FINAL;
+
+  size_t ByteSizeLong() const PROTOBUF_FINAL;
+  bool MergePartialFromCodedStream(
+      ::google::protobuf::io::CodedInputStream* input) PROTOBUF_FINAL;
+  void SerializeWithCachedSizes(
+      ::google::protobuf::io::CodedOutputStream* output) const PROTOBUF_FINAL;
+  ::google::protobuf::uint8* InternalSerializeWithCachedSizesToArray(
+      bool deterministic, ::google::protobuf::uint8* target) const PROTOBUF_FINAL;
+  int GetCachedSize() const PROTOBUF_FINAL { return _cached_size_; }
+  private:
+  void SharedCtor();
+  void SharedDtor();
+  void SetCachedSize(int size) const PROTOBUF_FINAL;
+  void InternalSwap(LoadLastSafePositionReq* other);
+  private:
+  inline ::google::protobuf::Arena* GetArenaNoVirtual() const {
+    return NULL;
+  }
+  inline void* MaybeArenaPtr() const {
+    return NULL;
+  }
+  public:
+
+  ::google::protobuf::Metadata GetMetadata() const PROTOBUF_FINAL;
+
+  // nested types ----------------------------------------------------
+
+  // accessors -------------------------------------------------------
+
+  // uint64 player_id = 1;
+  void clear_player_id();
+  static const int kPlayerIdFieldNumber = 1;
+  ::google::protobuf::uint64 player_id() const;
+  void set_player_id(::google::protobuf::uint64 value);
+
+  // @@protoc_insertion_point(class_scope:gdb.LoadLastSafePositionReq)
+ private:
+
+  ::google::protobuf::internal::InternalMetadataWithArena _internal_metadata_;
+  ::google::protobuf::uint64 player_id_;
+  mutable int _cached_size_;
+  friend struct ::protobuf_gamedb_2eproto::TableStruct;
+  friend void ::protobuf_gamedb_2eproto::InitDefaultsLoadLastSafePositionReqImpl();
+};
+// -------------------------------------------------------------------
+
+class LoadLastSafePositionRsp : public ::google::protobuf::Message /* @@protoc_insertion_point(class_definition:gdb.LoadLastSafePositionRsp) */ {
+ public:
+  LoadLastSafePositionRsp();
+  virtual ~LoadLastSafePositionRsp();
+
+  LoadLastSafePositionRsp(const LoadLastSafePositionRsp& from);
+
+  inline LoadLastSafePositionRsp& operator=(const LoadLastSafePositionRsp& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  #if LANG_CXX11
+  LoadLastSafePositionRsp(LoadLastSafePositionRsp&& from) noexcept
+    : LoadLastSafePositionRsp() {
+    *this = ::std::move(from);
+  }
+
+  inline LoadLastSafePositionRsp& operator=(LoadLastSafePositionRsp&& from) noexcept {
+    if (GetArenaNoVirtual() == from.GetArenaNoVirtual()) {
+      if (this != &from) InternalSwap(&from);
+    } else {
+      CopyFrom(from);
+    }
+    return *this;
+  }
+  #endif
+  static const ::google::protobuf::Descriptor* descriptor();
+  static const LoadLastSafePositionRsp& default_instance();
+
+  static void InitAsDefaultInstance();  // FOR INTERNAL USE ONLY
+  static inline const LoadLastSafePositionRsp* internal_default_instance() {
+    return reinterpret_cast<const LoadLastSafePositionRsp*>(
+               &_LoadLastSafePositionRsp_default_instance_);
+  }
+  static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
+    27;
+
+  void Swap(LoadLastSafePositionRsp* other);
+  friend void swap(LoadLastSafePositionRsp& a, LoadLastSafePositionRsp& b) {
+    a.Swap(&b);
+  }
+
+  // implements Message ----------------------------------------------
+
+  inline LoadLastSafePositionRsp* New() const PROTOBUF_FINAL { return New(NULL); }
+
+  LoadLastSafePositionRsp* New(::google::protobuf::Arena* arena) const PROTOBUF_FINAL;
+  void CopyFrom(const ::google::protobuf::Message& from) PROTOBUF_FINAL;
+  void MergeFrom(const ::google::protobuf::Message& from) PROTOBUF_FINAL;
+  void CopyFrom(const LoadLastSafePositionRsp& from);
+  void MergeFrom(const LoadLastSafePositionRsp& from);
+  void Clear() PROTOBUF_FINAL;
+  bool IsInitialized() const PROTOBUF_FINAL;
+
+  size_t ByteSizeLong() const PROTOBUF_FINAL;
+  bool MergePartialFromCodedStream(
+      ::google::protobuf::io::CodedInputStream* input) PROTOBUF_FINAL;
+  void SerializeWithCachedSizes(
+      ::google::protobuf::io::CodedOutputStream* output) const PROTOBUF_FINAL;
+  ::google::protobuf::uint8* InternalSerializeWithCachedSizesToArray(
+      bool deterministic, ::google::protobuf::uint8* target) const PROTOBUF_FINAL;
+  int GetCachedSize() const PROTOBUF_FINAL { return _cached_size_; }
+  private:
+  void SharedCtor();
+  void SharedDtor();
+  void SetCachedSize(int size) const PROTOBUF_FINAL;
+  void InternalSwap(LoadLastSafePositionRsp* other);
+  private:
+  inline ::google::protobuf::Arena* GetArenaNoVirtual() const {
+    return NULL;
+  }
+  inline void* MaybeArenaPtr() const {
+    return NULL;
+  }
+  public:
+
+  ::google::protobuf::Metadata GetMetadata() const PROTOBUF_FINAL;
+
+  // nested types ----------------------------------------------------
+
+  // accessors -------------------------------------------------------
+
+  // string message = 2;
+  void clear_message();
+  static const int kMessageFieldNumber = 2;
+  const ::std::string& message() const;
+  void set_message(const ::std::string& value);
+  #if LANG_CXX11
+  void set_message(::std::string&& value);
+  #endif
+  void set_message(const char* value);
+  void set_message(const char* value, size_t size);
+  ::std::string* mutable_message();
+  ::std::string* release_message();
+  void set_allocated_message(::std::string* message);
+
+  // string error_code = 3;
+  void clear_error_code();
+  static const int kErrorCodeFieldNumber = 3;
+  const ::std::string& error_code() const;
+  void set_error_code(const ::std::string& value);
+  #if LANG_CXX11
+  void set_error_code(::std::string&& value);
+  #endif
+  void set_error_code(const char* value);
+  void set_error_code(const char* value, size_t size);
+  ::std::string* mutable_error_code();
+  ::std::string* release_error_code();
+  void set_allocated_error_code(::std::string* error_code);
+
+  // .gdb.LastSafePosition pos = 5;
+  bool has_pos() const;
+  void clear_pos();
+  static const int kPosFieldNumber = 5;
+  const ::gdb::LastSafePosition& pos() const;
+  ::gdb::LastSafePosition* release_pos();
+  ::gdb::LastSafePosition* mutable_pos();
+  void set_allocated_pos(::gdb::LastSafePosition* pos);
+
+  // bool ok = 1;
+  void clear_ok();
+  static const int kOkFieldNumber = 1;
+  bool ok() const;
+  void set_ok(bool value);
+
+  // bool exists = 4;
+  void clear_exists();
+  static const int kExistsFieldNumber = 4;
+  bool exists() const;
+  void set_exists(bool value);
+
+  // @@protoc_insertion_point(class_scope:gdb.LoadLastSafePositionRsp)
+ private:
+
+  ::google::protobuf::internal::InternalMetadataWithArena _internal_metadata_;
+  ::google::protobuf::internal::ArenaStringPtr message_;
+  ::google::protobuf::internal::ArenaStringPtr error_code_;
+  ::gdb::LastSafePosition* pos_;
+  bool ok_;
+  bool exists_;
+  mutable int _cached_size_;
+  friend struct ::protobuf_gamedb_2eproto::TableStruct;
+  friend void ::protobuf_gamedb_2eproto::InitDefaultsLoadLastSafePositionRspImpl();
+};
+// -------------------------------------------------------------------
+
+class SaveLastSafePositionReq : public ::google::protobuf::Message /* @@protoc_insertion_point(class_definition:gdb.SaveLastSafePositionReq) */ {
+ public:
+  SaveLastSafePositionReq();
+  virtual ~SaveLastSafePositionReq();
+
+  SaveLastSafePositionReq(const SaveLastSafePositionReq& from);
+
+  inline SaveLastSafePositionReq& operator=(const SaveLastSafePositionReq& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  #if LANG_CXX11
+  SaveLastSafePositionReq(SaveLastSafePositionReq&& from) noexcept
+    : SaveLastSafePositionReq() {
+    *this = ::std::move(from);
+  }
+
+  inline SaveLastSafePositionReq& operator=(SaveLastSafePositionReq&& from) noexcept {
+    if (GetArenaNoVirtual() == from.GetArenaNoVirtual()) {
+      if (this != &from) InternalSwap(&from);
+    } else {
+      CopyFrom(from);
+    }
+    return *this;
+  }
+  #endif
+  static const ::google::protobuf::Descriptor* descriptor();
+  static const SaveLastSafePositionReq& default_instance();
+
+  static void InitAsDefaultInstance();  // FOR INTERNAL USE ONLY
+  static inline const SaveLastSafePositionReq* internal_default_instance() {
+    return reinterpret_cast<const SaveLastSafePositionReq*>(
+               &_SaveLastSafePositionReq_default_instance_);
+  }
+  static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
+    28;
+
+  void Swap(SaveLastSafePositionReq* other);
+  friend void swap(SaveLastSafePositionReq& a, SaveLastSafePositionReq& b) {
+    a.Swap(&b);
+  }
+
+  // implements Message ----------------------------------------------
+
+  inline SaveLastSafePositionReq* New() const PROTOBUF_FINAL { return New(NULL); }
+
+  SaveLastSafePositionReq* New(::google::protobuf::Arena* arena) const PROTOBUF_FINAL;
+  void CopyFrom(const ::google::protobuf::Message& from) PROTOBUF_FINAL;
+  void MergeFrom(const ::google::protobuf::Message& from) PROTOBUF_FINAL;
+  void CopyFrom(const SaveLastSafePositionReq& from);
+  void MergeFrom(const SaveLastSafePositionReq& from);
+  void Clear() PROTOBUF_FINAL;
+  bool IsInitialized() const PROTOBUF_FINAL;
+
+  size_t ByteSizeLong() const PROTOBUF_FINAL;
+  bool MergePartialFromCodedStream(
+      ::google::protobuf::io::CodedInputStream* input) PROTOBUF_FINAL;
+  void SerializeWithCachedSizes(
+      ::google::protobuf::io::CodedOutputStream* output) const PROTOBUF_FINAL;
+  ::google::protobuf::uint8* InternalSerializeWithCachedSizesToArray(
+      bool deterministic, ::google::protobuf::uint8* target) const PROTOBUF_FINAL;
+  int GetCachedSize() const PROTOBUF_FINAL { return _cached_size_; }
+  private:
+  void SharedCtor();
+  void SharedDtor();
+  void SetCachedSize(int size) const PROTOBUF_FINAL;
+  void InternalSwap(SaveLastSafePositionReq* other);
+  private:
+  inline ::google::protobuf::Arena* GetArenaNoVirtual() const {
+    return NULL;
+  }
+  inline void* MaybeArenaPtr() const {
+    return NULL;
+  }
+  public:
+
+  ::google::protobuf::Metadata GetMetadata() const PROTOBUF_FINAL;
+
+  // nested types ----------------------------------------------------
+
+  // accessors -------------------------------------------------------
+
+  // .gdb.LastSafePosition pos = 1;
+  bool has_pos() const;
+  void clear_pos();
+  static const int kPosFieldNumber = 1;
+  const ::gdb::LastSafePosition& pos() const;
+  ::gdb::LastSafePosition* release_pos();
+  ::gdb::LastSafePosition* mutable_pos();
+  void set_allocated_pos(::gdb::LastSafePosition* pos);
+
+  // uint64 expected_position_version = 2;
+  void clear_expected_position_version();
+  static const int kExpectedPositionVersionFieldNumber = 2;
+  ::google::protobuf::uint64 expected_position_version() const;
+  void set_expected_position_version(::google::protobuf::uint64 value);
+
+  // @@protoc_insertion_point(class_scope:gdb.SaveLastSafePositionReq)
+ private:
+
+  ::google::protobuf::internal::InternalMetadataWithArena _internal_metadata_;
+  ::gdb::LastSafePosition* pos_;
+  ::google::protobuf::uint64 expected_position_version_;
+  mutable int _cached_size_;
+  friend struct ::protobuf_gamedb_2eproto::TableStruct;
+  friend void ::protobuf_gamedb_2eproto::InitDefaultsSaveLastSafePositionReqImpl();
+};
+// -------------------------------------------------------------------
+
+class SaveLastSafePositionRsp : public ::google::protobuf::Message /* @@protoc_insertion_point(class_definition:gdb.SaveLastSafePositionRsp) */ {
+ public:
+  SaveLastSafePositionRsp();
+  virtual ~SaveLastSafePositionRsp();
+
+  SaveLastSafePositionRsp(const SaveLastSafePositionRsp& from);
+
+  inline SaveLastSafePositionRsp& operator=(const SaveLastSafePositionRsp& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  #if LANG_CXX11
+  SaveLastSafePositionRsp(SaveLastSafePositionRsp&& from) noexcept
+    : SaveLastSafePositionRsp() {
+    *this = ::std::move(from);
+  }
+
+  inline SaveLastSafePositionRsp& operator=(SaveLastSafePositionRsp&& from) noexcept {
+    if (GetArenaNoVirtual() == from.GetArenaNoVirtual()) {
+      if (this != &from) InternalSwap(&from);
+    } else {
+      CopyFrom(from);
+    }
+    return *this;
+  }
+  #endif
+  static const ::google::protobuf::Descriptor* descriptor();
+  static const SaveLastSafePositionRsp& default_instance();
+
+  static void InitAsDefaultInstance();  // FOR INTERNAL USE ONLY
+  static inline const SaveLastSafePositionRsp* internal_default_instance() {
+    return reinterpret_cast<const SaveLastSafePositionRsp*>(
+               &_SaveLastSafePositionRsp_default_instance_);
+  }
+  static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
+    29;
+
+  void Swap(SaveLastSafePositionRsp* other);
+  friend void swap(SaveLastSafePositionRsp& a, SaveLastSafePositionRsp& b) {
+    a.Swap(&b);
+  }
+
+  // implements Message ----------------------------------------------
+
+  inline SaveLastSafePositionRsp* New() const PROTOBUF_FINAL { return New(NULL); }
+
+  SaveLastSafePositionRsp* New(::google::protobuf::Arena* arena) const PROTOBUF_FINAL;
+  void CopyFrom(const ::google::protobuf::Message& from) PROTOBUF_FINAL;
+  void MergeFrom(const ::google::protobuf::Message& from) PROTOBUF_FINAL;
+  void CopyFrom(const SaveLastSafePositionRsp& from);
+  void MergeFrom(const SaveLastSafePositionRsp& from);
+  void Clear() PROTOBUF_FINAL;
+  bool IsInitialized() const PROTOBUF_FINAL;
+
+  size_t ByteSizeLong() const PROTOBUF_FINAL;
+  bool MergePartialFromCodedStream(
+      ::google::protobuf::io::CodedInputStream* input) PROTOBUF_FINAL;
+  void SerializeWithCachedSizes(
+      ::google::protobuf::io::CodedOutputStream* output) const PROTOBUF_FINAL;
+  ::google::protobuf::uint8* InternalSerializeWithCachedSizesToArray(
+      bool deterministic, ::google::protobuf::uint8* target) const PROTOBUF_FINAL;
+  int GetCachedSize() const PROTOBUF_FINAL { return _cached_size_; }
+  private:
+  void SharedCtor();
+  void SharedDtor();
+  void SetCachedSize(int size) const PROTOBUF_FINAL;
+  void InternalSwap(SaveLastSafePositionRsp* other);
+  private:
+  inline ::google::protobuf::Arena* GetArenaNoVirtual() const {
+    return NULL;
+  }
+  inline void* MaybeArenaPtr() const {
+    return NULL;
+  }
+  public:
+
+  ::google::protobuf::Metadata GetMetadata() const PROTOBUF_FINAL;
+
+  // nested types ----------------------------------------------------
+
+  // accessors -------------------------------------------------------
+
+  // string message = 2;
+  void clear_message();
+  static const int kMessageFieldNumber = 2;
+  const ::std::string& message() const;
+  void set_message(const ::std::string& value);
+  #if LANG_CXX11
+  void set_message(::std::string&& value);
+  #endif
+  void set_message(const char* value);
+  void set_message(const char* value, size_t size);
+  ::std::string* mutable_message();
+  ::std::string* release_message();
+  void set_allocated_message(::std::string* message);
+
+  // string error_code = 3;
+  void clear_error_code();
+  static const int kErrorCodeFieldNumber = 3;
+  const ::std::string& error_code() const;
+  void set_error_code(const ::std::string& value);
+  #if LANG_CXX11
+  void set_error_code(::std::string&& value);
+  #endif
+  void set_error_code(const char* value);
+  void set_error_code(const char* value, size_t size);
+  ::std::string* mutable_error_code();
+  ::std::string* release_error_code();
+  void set_allocated_error_code(::std::string* error_code);
+
+  // uint64 position_version = 4;
+  void clear_position_version();
+  static const int kPositionVersionFieldNumber = 4;
+  ::google::protobuf::uint64 position_version() const;
+  void set_position_version(::google::protobuf::uint64 value);
+
+  // bool ok = 1;
+  void clear_ok();
+  static const int kOkFieldNumber = 1;
+  bool ok() const;
+  void set_ok(bool value);
+
+  // bool skipped = 5;
+  void clear_skipped();
+  static const int kSkippedFieldNumber = 5;
+  bool skipped() const;
+  void set_skipped(bool value);
+
+  // @@protoc_insertion_point(class_scope:gdb.SaveLastSafePositionRsp)
+ private:
+
+  ::google::protobuf::internal::InternalMetadataWithArena _internal_metadata_;
+  ::google::protobuf::internal::ArenaStringPtr message_;
+  ::google::protobuf::internal::ArenaStringPtr error_code_;
+  ::google::protobuf::uint64 position_version_;
+  bool ok_;
+  bool skipped_;
+  mutable int _cached_size_;
+  friend struct ::protobuf_gamedb_2eproto::TableStruct;
+  friend void ::protobuf_gamedb_2eproto::InitDefaultsSaveLastSafePositionRspImpl();
+};
+// -------------------------------------------------------------------
+
+class LoadPlayerBriefReq : public ::google::protobuf::Message /* @@protoc_insertion_point(class_definition:gdb.LoadPlayerBriefReq) */ {
+ public:
+  LoadPlayerBriefReq();
+  virtual ~LoadPlayerBriefReq();
+
+  LoadPlayerBriefReq(const LoadPlayerBriefReq& from);
+
+  inline LoadPlayerBriefReq& operator=(const LoadPlayerBriefReq& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  #if LANG_CXX11
+  LoadPlayerBriefReq(LoadPlayerBriefReq&& from) noexcept
+    : LoadPlayerBriefReq() {
+    *this = ::std::move(from);
+  }
+
+  inline LoadPlayerBriefReq& operator=(LoadPlayerBriefReq&& from) noexcept {
+    if (GetArenaNoVirtual() == from.GetArenaNoVirtual()) {
+      if (this != &from) InternalSwap(&from);
+    } else {
+      CopyFrom(from);
+    }
+    return *this;
+  }
+  #endif
+  static const ::google::protobuf::Descriptor* descriptor();
+  static const LoadPlayerBriefReq& default_instance();
+
+  static void InitAsDefaultInstance();  // FOR INTERNAL USE ONLY
+  static inline const LoadPlayerBriefReq* internal_default_instance() {
+    return reinterpret_cast<const LoadPlayerBriefReq*>(
+               &_LoadPlayerBriefReq_default_instance_);
+  }
+  static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
+    30;
+
+  void Swap(LoadPlayerBriefReq* other);
+  friend void swap(LoadPlayerBriefReq& a, LoadPlayerBriefReq& b) {
+    a.Swap(&b);
+  }
+
+  // implements Message ----------------------------------------------
+
+  inline LoadPlayerBriefReq* New() const PROTOBUF_FINAL { return New(NULL); }
+
+  LoadPlayerBriefReq* New(::google::protobuf::Arena* arena) const PROTOBUF_FINAL;
+  void CopyFrom(const ::google::protobuf::Message& from) PROTOBUF_FINAL;
+  void MergeFrom(const ::google::protobuf::Message& from) PROTOBUF_FINAL;
+  void CopyFrom(const LoadPlayerBriefReq& from);
+  void MergeFrom(const LoadPlayerBriefReq& from);
+  void Clear() PROTOBUF_FINAL;
+  bool IsInitialized() const PROTOBUF_FINAL;
+
+  size_t ByteSizeLong() const PROTOBUF_FINAL;
+  bool MergePartialFromCodedStream(
+      ::google::protobuf::io::CodedInputStream* input) PROTOBUF_FINAL;
+  void SerializeWithCachedSizes(
+      ::google::protobuf::io::CodedOutputStream* output) const PROTOBUF_FINAL;
+  ::google::protobuf::uint8* InternalSerializeWithCachedSizesToArray(
+      bool deterministic, ::google::protobuf::uint8* target) const PROTOBUF_FINAL;
+  int GetCachedSize() const PROTOBUF_FINAL { return _cached_size_; }
+  private:
+  void SharedCtor();
+  void SharedDtor();
+  void SetCachedSize(int size) const PROTOBUF_FINAL;
+  void InternalSwap(LoadPlayerBriefReq* other);
+  private:
+  inline ::google::protobuf::Arena* GetArenaNoVirtual() const {
+    return NULL;
+  }
+  inline void* MaybeArenaPtr() const {
+    return NULL;
+  }
+  public:
+
+  ::google::protobuf::Metadata GetMetadata() const PROTOBUF_FINAL;
+
+  // nested types ----------------------------------------------------
+
+  // accessors -------------------------------------------------------
+
+  // string player_name = 2;
+  void clear_player_name();
+  static const int kPlayerNameFieldNumber = 2;
+  const ::std::string& player_name() const;
+  void set_player_name(const ::std::string& value);
+  #if LANG_CXX11
+  void set_player_name(::std::string&& value);
+  #endif
+  void set_player_name(const char* value);
+  void set_player_name(const char* value, size_t size);
+  ::std::string* mutable_player_name();
+  ::std::string* release_player_name();
+  void set_allocated_player_name(::std::string* player_name);
+
+  // uint64 player_id = 1;
+  void clear_player_id();
+  static const int kPlayerIdFieldNumber = 1;
+  ::google::protobuf::uint64 player_id() const;
+  void set_player_id(::google::protobuf::uint64 value);
+
+  // @@protoc_insertion_point(class_scope:gdb.LoadPlayerBriefReq)
+ private:
+
+  ::google::protobuf::internal::InternalMetadataWithArena _internal_metadata_;
+  ::google::protobuf::internal::ArenaStringPtr player_name_;
+  ::google::protobuf::uint64 player_id_;
+  mutable int _cached_size_;
+  friend struct ::protobuf_gamedb_2eproto::TableStruct;
+  friend void ::protobuf_gamedb_2eproto::InitDefaultsLoadPlayerBriefReqImpl();
+};
+// -------------------------------------------------------------------
+
+class LoadPlayerBriefRsp : public ::google::protobuf::Message /* @@protoc_insertion_point(class_definition:gdb.LoadPlayerBriefRsp) */ {
+ public:
+  LoadPlayerBriefRsp();
+  virtual ~LoadPlayerBriefRsp();
+
+  LoadPlayerBriefRsp(const LoadPlayerBriefRsp& from);
+
+  inline LoadPlayerBriefRsp& operator=(const LoadPlayerBriefRsp& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  #if LANG_CXX11
+  LoadPlayerBriefRsp(LoadPlayerBriefRsp&& from) noexcept
+    : LoadPlayerBriefRsp() {
+    *this = ::std::move(from);
+  }
+
+  inline LoadPlayerBriefRsp& operator=(LoadPlayerBriefRsp&& from) noexcept {
+    if (GetArenaNoVirtual() == from.GetArenaNoVirtual()) {
+      if (this != &from) InternalSwap(&from);
+    } else {
+      CopyFrom(from);
+    }
+    return *this;
+  }
+  #endif
+  static const ::google::protobuf::Descriptor* descriptor();
+  static const LoadPlayerBriefRsp& default_instance();
+
+  static void InitAsDefaultInstance();  // FOR INTERNAL USE ONLY
+  static inline const LoadPlayerBriefRsp* internal_default_instance() {
+    return reinterpret_cast<const LoadPlayerBriefRsp*>(
+               &_LoadPlayerBriefRsp_default_instance_);
+  }
+  static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
+    31;
+
+  void Swap(LoadPlayerBriefRsp* other);
+  friend void swap(LoadPlayerBriefRsp& a, LoadPlayerBriefRsp& b) {
+    a.Swap(&b);
+  }
+
+  // implements Message ----------------------------------------------
+
+  inline LoadPlayerBriefRsp* New() const PROTOBUF_FINAL { return New(NULL); }
+
+  LoadPlayerBriefRsp* New(::google::protobuf::Arena* arena) const PROTOBUF_FINAL;
+  void CopyFrom(const ::google::protobuf::Message& from) PROTOBUF_FINAL;
+  void MergeFrom(const ::google::protobuf::Message& from) PROTOBUF_FINAL;
+  void CopyFrom(const LoadPlayerBriefRsp& from);
+  void MergeFrom(const LoadPlayerBriefRsp& from);
+  void Clear() PROTOBUF_FINAL;
+  bool IsInitialized() const PROTOBUF_FINAL;
+
+  size_t ByteSizeLong() const PROTOBUF_FINAL;
+  bool MergePartialFromCodedStream(
+      ::google::protobuf::io::CodedInputStream* input) PROTOBUF_FINAL;
+  void SerializeWithCachedSizes(
+      ::google::protobuf::io::CodedOutputStream* output) const PROTOBUF_FINAL;
+  ::google::protobuf::uint8* InternalSerializeWithCachedSizesToArray(
+      bool deterministic, ::google::protobuf::uint8* target) const PROTOBUF_FINAL;
+  int GetCachedSize() const PROTOBUF_FINAL { return _cached_size_; }
+  private:
+  void SharedCtor();
+  void SharedDtor();
+  void SetCachedSize(int size) const PROTOBUF_FINAL;
+  void InternalSwap(LoadPlayerBriefRsp* other);
+  private:
+  inline ::google::protobuf::Arena* GetArenaNoVirtual() const {
+    return NULL;
+  }
+  inline void* MaybeArenaPtr() const {
+    return NULL;
+  }
+  public:
+
+  ::google::protobuf::Metadata GetMetadata() const PROTOBUF_FINAL;
+
+  // nested types ----------------------------------------------------
+
+  // accessors -------------------------------------------------------
+
+  // string message = 2;
+  void clear_message();
+  static const int kMessageFieldNumber = 2;
+  const ::std::string& message() const;
+  void set_message(const ::std::string& value);
+  #if LANG_CXX11
+  void set_message(::std::string&& value);
+  #endif
+  void set_message(const char* value);
+  void set_message(const char* value, size_t size);
+  ::std::string* mutable_message();
+  ::std::string* release_message();
+  void set_allocated_message(::std::string* message);
+
+  // string error_code = 3;
+  void clear_error_code();
+  static const int kErrorCodeFieldNumber = 3;
+  const ::std::string& error_code() const;
+  void set_error_code(const ::std::string& value);
+  #if LANG_CXX11
+  void set_error_code(::std::string&& value);
+  #endif
+  void set_error_code(const char* value);
+  void set_error_code(const char* value, size_t size);
+  ::std::string* mutable_error_code();
+  ::std::string* release_error_code();
+  void set_allocated_error_code(::std::string* error_code);
+
+  // string player_name = 7;
+  void clear_player_name();
+  static const int kPlayerNameFieldNumber = 7;
+  const ::std::string& player_name() const;
+  void set_player_name(const ::std::string& value);
+  #if LANG_CXX11
+  void set_player_name(::std::string&& value);
+  #endif
+  void set_player_name(const char* value);
+  void set_player_name(const char* value, size_t size);
+  ::std::string* mutable_player_name();
+  ::std::string* release_player_name();
+  void set_allocated_player_name(::std::string* player_name);
+
+  // bool ok = 1;
+  void clear_ok();
+  static const int kOkFieldNumber = 1;
+  bool ok() const;
+  void set_ok(bool value);
+
+  // bool exists = 4;
+  void clear_exists();
+  static const int kExistsFieldNumber = 4;
+  bool exists() const;
+  void set_exists(bool value);
+
+  // bool ambiguous = 5;
+  void clear_ambiguous();
+  static const int kAmbiguousFieldNumber = 5;
+  bool ambiguous() const;
+  void set_ambiguous(bool value);
+
+  // int32 max_hp = 8;
+  void clear_max_hp();
+  static const int kMaxHpFieldNumber = 8;
+  ::google::protobuf::int32 max_hp() const;
+  void set_max_hp(::google::protobuf::int32 value);
+
+  // uint64 player_id = 6;
+  void clear_player_id();
+  static const int kPlayerIdFieldNumber = 6;
+  ::google::protobuf::uint64 player_id() const;
+  void set_player_id(::google::protobuf::uint64 value);
+
+  // int32 max_mp = 9;
+  void clear_max_mp();
+  static const int kMaxMpFieldNumber = 9;
+  ::google::protobuf::int32 max_mp() const;
+  void set_max_mp(::google::protobuf::int32 value);
+
+  // @@protoc_insertion_point(class_scope:gdb.LoadPlayerBriefRsp)
+ private:
+
+  ::google::protobuf::internal::InternalMetadataWithArena _internal_metadata_;
+  ::google::protobuf::internal::ArenaStringPtr message_;
+  ::google::protobuf::internal::ArenaStringPtr error_code_;
+  ::google::protobuf::internal::ArenaStringPtr player_name_;
+  bool ok_;
+  bool exists_;
+  bool ambiguous_;
+  ::google::protobuf::int32 max_hp_;
+  ::google::protobuf::uint64 player_id_;
+  ::google::protobuf::int32 max_mp_;
+  mutable int _cached_size_;
+  friend struct ::protobuf_gamedb_2eproto::TableStruct;
+  friend void ::protobuf_gamedb_2eproto::InitDefaultsLoadPlayerBriefRspImpl();
+};
+// -------------------------------------------------------------------
+
 class HandleGameFrameReq : public ::google::protobuf::Message /* @@protoc_insertion_point(class_definition:gdb.HandleGameFrameReq) */ {
  public:
   HandleGameFrameReq();
@@ -3805,7 +4792,7 @@ class HandleGameFrameReq : public ::google::protobuf::Message /* @@protoc_insert
                &_HandleGameFrameReq_default_instance_);
   }
   static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
-    25;
+    32;
 
   void Swap(HandleGameFrameReq* other);
   friend void swap(HandleGameFrameReq& a, HandleGameFrameReq& b) {
@@ -3919,7 +4906,7 @@ class HandleGameFrameRsp : public ::google::protobuf::Message /* @@protoc_insert
                &_HandleGameFrameRsp_default_instance_);
   }
   static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
-    26;
+    33;
 
   void Swap(HandleGameFrameRsp* other);
   friend void swap(HandleGameFrameRsp& a, HandleGameFrameRsp& b) {
@@ -4070,6 +5057,18 @@ class GameDbService : public ::google::protobuf::Service {
                        const ::gdb::SavePlayerProfileReq* request,
                        ::gdb::SavePlayerProfileRsp* response,
                        ::google::protobuf::Closure* done);
+  virtual void LoadLastSafePosition(::google::protobuf::RpcController* controller,
+                       const ::gdb::LoadLastSafePositionReq* request,
+                       ::gdb::LoadLastSafePositionRsp* response,
+                       ::google::protobuf::Closure* done);
+  virtual void SaveLastSafePosition(::google::protobuf::RpcController* controller,
+                       const ::gdb::SaveLastSafePositionReq* request,
+                       ::gdb::SaveLastSafePositionRsp* response,
+                       ::google::protobuf::Closure* done);
+  virtual void LoadPlayerBrief(::google::protobuf::RpcController* controller,
+                       const ::gdb::LoadPlayerBriefReq* request,
+                       ::gdb::LoadPlayerBriefRsp* response,
+                       ::google::protobuf::Closure* done);
   virtual void HandleGameFrame(::google::protobuf::RpcController* controller,
                        const ::gdb::HandleGameFrameReq* request,
                        ::gdb::HandleGameFrameRsp* response,
@@ -4146,6 +5145,18 @@ class GameDbService_Stub : public GameDbService {
   void SavePlayerProfile(::google::protobuf::RpcController* controller,
                        const ::gdb::SavePlayerProfileReq* request,
                        ::gdb::SavePlayerProfileRsp* response,
+                       ::google::protobuf::Closure* done);
+  void LoadLastSafePosition(::google::protobuf::RpcController* controller,
+                       const ::gdb::LoadLastSafePositionReq* request,
+                       ::gdb::LoadLastSafePositionRsp* response,
+                       ::google::protobuf::Closure* done);
+  void SaveLastSafePosition(::google::protobuf::RpcController* controller,
+                       const ::gdb::SaveLastSafePositionReq* request,
+                       ::gdb::SaveLastSafePositionRsp* response,
+                       ::google::protobuf::Closure* done);
+  void LoadPlayerBrief(::google::protobuf::RpcController* controller,
+                       const ::gdb::LoadPlayerBriefReq* request,
+                       ::gdb::LoadPlayerBriefRsp* response,
                        ::google::protobuf::Closure* done);
   void HandleGameFrame(::google::protobuf::RpcController* controller,
                        const ::gdb::HandleGameFrameReq* request,
@@ -7844,6 +8855,880 @@ inline void QueryOperationResultRsp::set_allocated_status(::std::string* status)
 
 // -------------------------------------------------------------------
 
+// LastSafePosition
+
+// uint64 player_id = 1;
+inline void LastSafePosition::clear_player_id() {
+  player_id_ = GOOGLE_ULONGLONG(0);
+}
+inline ::google::protobuf::uint64 LastSafePosition::player_id() const {
+  // @@protoc_insertion_point(field_get:gdb.LastSafePosition.player_id)
+  return player_id_;
+}
+inline void LastSafePosition::set_player_id(::google::protobuf::uint64 value) {
+  
+  player_id_ = value;
+  // @@protoc_insertion_point(field_set:gdb.LastSafePosition.player_id)
+}
+
+// uint32 realm_id = 2;
+inline void LastSafePosition::clear_realm_id() {
+  realm_id_ = 0u;
+}
+inline ::google::protobuf::uint32 LastSafePosition::realm_id() const {
+  // @@protoc_insertion_point(field_get:gdb.LastSafePosition.realm_id)
+  return realm_id_;
+}
+inline void LastSafePosition::set_realm_id(::google::protobuf::uint32 value) {
+  
+  realm_id_ = value;
+  // @@protoc_insertion_point(field_set:gdb.LastSafePosition.realm_id)
+}
+
+// uint64 map_template_id = 3;
+inline void LastSafePosition::clear_map_template_id() {
+  map_template_id_ = GOOGLE_ULONGLONG(0);
+}
+inline ::google::protobuf::uint64 LastSafePosition::map_template_id() const {
+  // @@protoc_insertion_point(field_get:gdb.LastSafePosition.map_template_id)
+  return map_template_id_;
+}
+inline void LastSafePosition::set_map_template_id(::google::protobuf::uint64 value) {
+  
+  map_template_id_ = value;
+  // @@protoc_insertion_point(field_set:gdb.LastSafePosition.map_template_id)
+}
+
+// float x = 4;
+inline void LastSafePosition::clear_x() {
+  x_ = 0;
+}
+inline float LastSafePosition::x() const {
+  // @@protoc_insertion_point(field_get:gdb.LastSafePosition.x)
+  return x_;
+}
+inline void LastSafePosition::set_x(float value) {
+  
+  x_ = value;
+  // @@protoc_insertion_point(field_set:gdb.LastSafePosition.x)
+}
+
+// float y = 5;
+inline void LastSafePosition::clear_y() {
+  y_ = 0;
+}
+inline float LastSafePosition::y() const {
+  // @@protoc_insertion_point(field_get:gdb.LastSafePosition.y)
+  return y_;
+}
+inline void LastSafePosition::set_y(float value) {
+  
+  y_ = value;
+  // @@protoc_insertion_point(field_set:gdb.LastSafePosition.y)
+}
+
+// float z = 6;
+inline void LastSafePosition::clear_z() {
+  z_ = 0;
+}
+inline float LastSafePosition::z() const {
+  // @@protoc_insertion_point(field_get:gdb.LastSafePosition.z)
+  return z_;
+}
+inline void LastSafePosition::set_z(float value) {
+  
+  z_ = value;
+  // @@protoc_insertion_point(field_set:gdb.LastSafePosition.z)
+}
+
+// float yaw = 7;
+inline void LastSafePosition::clear_yaw() {
+  yaw_ = 0;
+}
+inline float LastSafePosition::yaw() const {
+  // @@protoc_insertion_point(field_get:gdb.LastSafePosition.yaw)
+  return yaw_;
+}
+inline void LastSafePosition::set_yaw(float value) {
+  
+  yaw_ = value;
+  // @@protoc_insertion_point(field_set:gdb.LastSafePosition.yaw)
+}
+
+// uint64 position_version = 8;
+inline void LastSafePosition::clear_position_version() {
+  position_version_ = GOOGLE_ULONGLONG(0);
+}
+inline ::google::protobuf::uint64 LastSafePosition::position_version() const {
+  // @@protoc_insertion_point(field_get:gdb.LastSafePosition.position_version)
+  return position_version_;
+}
+inline void LastSafePosition::set_position_version(::google::protobuf::uint64 value) {
+  
+  position_version_ = value;
+  // @@protoc_insertion_point(field_set:gdb.LastSafePosition.position_version)
+}
+
+// int64 updated_at_unix = 9;
+inline void LastSafePosition::clear_updated_at_unix() {
+  updated_at_unix_ = GOOGLE_LONGLONG(0);
+}
+inline ::google::protobuf::int64 LastSafePosition::updated_at_unix() const {
+  // @@protoc_insertion_point(field_get:gdb.LastSafePosition.updated_at_unix)
+  return updated_at_unix_;
+}
+inline void LastSafePosition::set_updated_at_unix(::google::protobuf::int64 value) {
+  
+  updated_at_unix_ = value;
+  // @@protoc_insertion_point(field_set:gdb.LastSafePosition.updated_at_unix)
+}
+
+// -------------------------------------------------------------------
+
+// LoadLastSafePositionReq
+
+// uint64 player_id = 1;
+inline void LoadLastSafePositionReq::clear_player_id() {
+  player_id_ = GOOGLE_ULONGLONG(0);
+}
+inline ::google::protobuf::uint64 LoadLastSafePositionReq::player_id() const {
+  // @@protoc_insertion_point(field_get:gdb.LoadLastSafePositionReq.player_id)
+  return player_id_;
+}
+inline void LoadLastSafePositionReq::set_player_id(::google::protobuf::uint64 value) {
+  
+  player_id_ = value;
+  // @@protoc_insertion_point(field_set:gdb.LoadLastSafePositionReq.player_id)
+}
+
+// -------------------------------------------------------------------
+
+// LoadLastSafePositionRsp
+
+// bool ok = 1;
+inline void LoadLastSafePositionRsp::clear_ok() {
+  ok_ = false;
+}
+inline bool LoadLastSafePositionRsp::ok() const {
+  // @@protoc_insertion_point(field_get:gdb.LoadLastSafePositionRsp.ok)
+  return ok_;
+}
+inline void LoadLastSafePositionRsp::set_ok(bool value) {
+  
+  ok_ = value;
+  // @@protoc_insertion_point(field_set:gdb.LoadLastSafePositionRsp.ok)
+}
+
+// string message = 2;
+inline void LoadLastSafePositionRsp::clear_message() {
+  message_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline const ::std::string& LoadLastSafePositionRsp::message() const {
+  // @@protoc_insertion_point(field_get:gdb.LoadLastSafePositionRsp.message)
+  return message_.GetNoArena();
+}
+inline void LoadLastSafePositionRsp::set_message(const ::std::string& value) {
+  
+  message_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), value);
+  // @@protoc_insertion_point(field_set:gdb.LoadLastSafePositionRsp.message)
+}
+#if LANG_CXX11
+inline void LoadLastSafePositionRsp::set_message(::std::string&& value) {
+  
+  message_.SetNoArena(
+    &::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::move(value));
+  // @@protoc_insertion_point(field_set_rvalue:gdb.LoadLastSafePositionRsp.message)
+}
+#endif
+inline void LoadLastSafePositionRsp::set_message(const char* value) {
+  GOOGLE_DCHECK(value != NULL);
+  
+  message_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::string(value));
+  // @@protoc_insertion_point(field_set_char:gdb.LoadLastSafePositionRsp.message)
+}
+inline void LoadLastSafePositionRsp::set_message(const char* value, size_t size) {
+  
+  message_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(),
+      ::std::string(reinterpret_cast<const char*>(value), size));
+  // @@protoc_insertion_point(field_set_pointer:gdb.LoadLastSafePositionRsp.message)
+}
+inline ::std::string* LoadLastSafePositionRsp::mutable_message() {
+  
+  // @@protoc_insertion_point(field_mutable:gdb.LoadLastSafePositionRsp.message)
+  return message_.MutableNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline ::std::string* LoadLastSafePositionRsp::release_message() {
+  // @@protoc_insertion_point(field_release:gdb.LoadLastSafePositionRsp.message)
+  
+  return message_.ReleaseNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline void LoadLastSafePositionRsp::set_allocated_message(::std::string* message) {
+  if (message != NULL) {
+    
+  } else {
+    
+  }
+  message_.SetAllocatedNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), message);
+  // @@protoc_insertion_point(field_set_allocated:gdb.LoadLastSafePositionRsp.message)
+}
+
+// string error_code = 3;
+inline void LoadLastSafePositionRsp::clear_error_code() {
+  error_code_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline const ::std::string& LoadLastSafePositionRsp::error_code() const {
+  // @@protoc_insertion_point(field_get:gdb.LoadLastSafePositionRsp.error_code)
+  return error_code_.GetNoArena();
+}
+inline void LoadLastSafePositionRsp::set_error_code(const ::std::string& value) {
+  
+  error_code_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), value);
+  // @@protoc_insertion_point(field_set:gdb.LoadLastSafePositionRsp.error_code)
+}
+#if LANG_CXX11
+inline void LoadLastSafePositionRsp::set_error_code(::std::string&& value) {
+  
+  error_code_.SetNoArena(
+    &::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::move(value));
+  // @@protoc_insertion_point(field_set_rvalue:gdb.LoadLastSafePositionRsp.error_code)
+}
+#endif
+inline void LoadLastSafePositionRsp::set_error_code(const char* value) {
+  GOOGLE_DCHECK(value != NULL);
+  
+  error_code_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::string(value));
+  // @@protoc_insertion_point(field_set_char:gdb.LoadLastSafePositionRsp.error_code)
+}
+inline void LoadLastSafePositionRsp::set_error_code(const char* value, size_t size) {
+  
+  error_code_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(),
+      ::std::string(reinterpret_cast<const char*>(value), size));
+  // @@protoc_insertion_point(field_set_pointer:gdb.LoadLastSafePositionRsp.error_code)
+}
+inline ::std::string* LoadLastSafePositionRsp::mutable_error_code() {
+  
+  // @@protoc_insertion_point(field_mutable:gdb.LoadLastSafePositionRsp.error_code)
+  return error_code_.MutableNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline ::std::string* LoadLastSafePositionRsp::release_error_code() {
+  // @@protoc_insertion_point(field_release:gdb.LoadLastSafePositionRsp.error_code)
+  
+  return error_code_.ReleaseNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline void LoadLastSafePositionRsp::set_allocated_error_code(::std::string* error_code) {
+  if (error_code != NULL) {
+    
+  } else {
+    
+  }
+  error_code_.SetAllocatedNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), error_code);
+  // @@protoc_insertion_point(field_set_allocated:gdb.LoadLastSafePositionRsp.error_code)
+}
+
+// bool exists = 4;
+inline void LoadLastSafePositionRsp::clear_exists() {
+  exists_ = false;
+}
+inline bool LoadLastSafePositionRsp::exists() const {
+  // @@protoc_insertion_point(field_get:gdb.LoadLastSafePositionRsp.exists)
+  return exists_;
+}
+inline void LoadLastSafePositionRsp::set_exists(bool value) {
+  
+  exists_ = value;
+  // @@protoc_insertion_point(field_set:gdb.LoadLastSafePositionRsp.exists)
+}
+
+// .gdb.LastSafePosition pos = 5;
+inline bool LoadLastSafePositionRsp::has_pos() const {
+  return this != internal_default_instance() && pos_ != NULL;
+}
+inline void LoadLastSafePositionRsp::clear_pos() {
+  if (GetArenaNoVirtual() == NULL && pos_ != NULL) {
+    delete pos_;
+  }
+  pos_ = NULL;
+}
+inline const ::gdb::LastSafePosition& LoadLastSafePositionRsp::pos() const {
+  const ::gdb::LastSafePosition* p = pos_;
+  // @@protoc_insertion_point(field_get:gdb.LoadLastSafePositionRsp.pos)
+  return p != NULL ? *p : *reinterpret_cast<const ::gdb::LastSafePosition*>(
+      &::gdb::_LastSafePosition_default_instance_);
+}
+inline ::gdb::LastSafePosition* LoadLastSafePositionRsp::release_pos() {
+  // @@protoc_insertion_point(field_release:gdb.LoadLastSafePositionRsp.pos)
+  
+  ::gdb::LastSafePosition* temp = pos_;
+  pos_ = NULL;
+  return temp;
+}
+inline ::gdb::LastSafePosition* LoadLastSafePositionRsp::mutable_pos() {
+  
+  if (pos_ == NULL) {
+    pos_ = new ::gdb::LastSafePosition;
+  }
+  // @@protoc_insertion_point(field_mutable:gdb.LoadLastSafePositionRsp.pos)
+  return pos_;
+}
+inline void LoadLastSafePositionRsp::set_allocated_pos(::gdb::LastSafePosition* pos) {
+  ::google::protobuf::Arena* message_arena = GetArenaNoVirtual();
+  if (message_arena == NULL) {
+    delete pos_;
+  }
+  if (pos) {
+    ::google::protobuf::Arena* submessage_arena = NULL;
+    if (message_arena != submessage_arena) {
+      pos = ::google::protobuf::internal::GetOwnedMessage(
+          message_arena, pos, submessage_arena);
+    }
+    
+  } else {
+    
+  }
+  pos_ = pos;
+  // @@protoc_insertion_point(field_set_allocated:gdb.LoadLastSafePositionRsp.pos)
+}
+
+// -------------------------------------------------------------------
+
+// SaveLastSafePositionReq
+
+// .gdb.LastSafePosition pos = 1;
+inline bool SaveLastSafePositionReq::has_pos() const {
+  return this != internal_default_instance() && pos_ != NULL;
+}
+inline void SaveLastSafePositionReq::clear_pos() {
+  if (GetArenaNoVirtual() == NULL && pos_ != NULL) {
+    delete pos_;
+  }
+  pos_ = NULL;
+}
+inline const ::gdb::LastSafePosition& SaveLastSafePositionReq::pos() const {
+  const ::gdb::LastSafePosition* p = pos_;
+  // @@protoc_insertion_point(field_get:gdb.SaveLastSafePositionReq.pos)
+  return p != NULL ? *p : *reinterpret_cast<const ::gdb::LastSafePosition*>(
+      &::gdb::_LastSafePosition_default_instance_);
+}
+inline ::gdb::LastSafePosition* SaveLastSafePositionReq::release_pos() {
+  // @@protoc_insertion_point(field_release:gdb.SaveLastSafePositionReq.pos)
+  
+  ::gdb::LastSafePosition* temp = pos_;
+  pos_ = NULL;
+  return temp;
+}
+inline ::gdb::LastSafePosition* SaveLastSafePositionReq::mutable_pos() {
+  
+  if (pos_ == NULL) {
+    pos_ = new ::gdb::LastSafePosition;
+  }
+  // @@protoc_insertion_point(field_mutable:gdb.SaveLastSafePositionReq.pos)
+  return pos_;
+}
+inline void SaveLastSafePositionReq::set_allocated_pos(::gdb::LastSafePosition* pos) {
+  ::google::protobuf::Arena* message_arena = GetArenaNoVirtual();
+  if (message_arena == NULL) {
+    delete pos_;
+  }
+  if (pos) {
+    ::google::protobuf::Arena* submessage_arena = NULL;
+    if (message_arena != submessage_arena) {
+      pos = ::google::protobuf::internal::GetOwnedMessage(
+          message_arena, pos, submessage_arena);
+    }
+    
+  } else {
+    
+  }
+  pos_ = pos;
+  // @@protoc_insertion_point(field_set_allocated:gdb.SaveLastSafePositionReq.pos)
+}
+
+// uint64 expected_position_version = 2;
+inline void SaveLastSafePositionReq::clear_expected_position_version() {
+  expected_position_version_ = GOOGLE_ULONGLONG(0);
+}
+inline ::google::protobuf::uint64 SaveLastSafePositionReq::expected_position_version() const {
+  // @@protoc_insertion_point(field_get:gdb.SaveLastSafePositionReq.expected_position_version)
+  return expected_position_version_;
+}
+inline void SaveLastSafePositionReq::set_expected_position_version(::google::protobuf::uint64 value) {
+  
+  expected_position_version_ = value;
+  // @@protoc_insertion_point(field_set:gdb.SaveLastSafePositionReq.expected_position_version)
+}
+
+// -------------------------------------------------------------------
+
+// SaveLastSafePositionRsp
+
+// bool ok = 1;
+inline void SaveLastSafePositionRsp::clear_ok() {
+  ok_ = false;
+}
+inline bool SaveLastSafePositionRsp::ok() const {
+  // @@protoc_insertion_point(field_get:gdb.SaveLastSafePositionRsp.ok)
+  return ok_;
+}
+inline void SaveLastSafePositionRsp::set_ok(bool value) {
+  
+  ok_ = value;
+  // @@protoc_insertion_point(field_set:gdb.SaveLastSafePositionRsp.ok)
+}
+
+// string message = 2;
+inline void SaveLastSafePositionRsp::clear_message() {
+  message_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline const ::std::string& SaveLastSafePositionRsp::message() const {
+  // @@protoc_insertion_point(field_get:gdb.SaveLastSafePositionRsp.message)
+  return message_.GetNoArena();
+}
+inline void SaveLastSafePositionRsp::set_message(const ::std::string& value) {
+  
+  message_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), value);
+  // @@protoc_insertion_point(field_set:gdb.SaveLastSafePositionRsp.message)
+}
+#if LANG_CXX11
+inline void SaveLastSafePositionRsp::set_message(::std::string&& value) {
+  
+  message_.SetNoArena(
+    &::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::move(value));
+  // @@protoc_insertion_point(field_set_rvalue:gdb.SaveLastSafePositionRsp.message)
+}
+#endif
+inline void SaveLastSafePositionRsp::set_message(const char* value) {
+  GOOGLE_DCHECK(value != NULL);
+  
+  message_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::string(value));
+  // @@protoc_insertion_point(field_set_char:gdb.SaveLastSafePositionRsp.message)
+}
+inline void SaveLastSafePositionRsp::set_message(const char* value, size_t size) {
+  
+  message_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(),
+      ::std::string(reinterpret_cast<const char*>(value), size));
+  // @@protoc_insertion_point(field_set_pointer:gdb.SaveLastSafePositionRsp.message)
+}
+inline ::std::string* SaveLastSafePositionRsp::mutable_message() {
+  
+  // @@protoc_insertion_point(field_mutable:gdb.SaveLastSafePositionRsp.message)
+  return message_.MutableNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline ::std::string* SaveLastSafePositionRsp::release_message() {
+  // @@protoc_insertion_point(field_release:gdb.SaveLastSafePositionRsp.message)
+  
+  return message_.ReleaseNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline void SaveLastSafePositionRsp::set_allocated_message(::std::string* message) {
+  if (message != NULL) {
+    
+  } else {
+    
+  }
+  message_.SetAllocatedNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), message);
+  // @@protoc_insertion_point(field_set_allocated:gdb.SaveLastSafePositionRsp.message)
+}
+
+// string error_code = 3;
+inline void SaveLastSafePositionRsp::clear_error_code() {
+  error_code_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline const ::std::string& SaveLastSafePositionRsp::error_code() const {
+  // @@protoc_insertion_point(field_get:gdb.SaveLastSafePositionRsp.error_code)
+  return error_code_.GetNoArena();
+}
+inline void SaveLastSafePositionRsp::set_error_code(const ::std::string& value) {
+  
+  error_code_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), value);
+  // @@protoc_insertion_point(field_set:gdb.SaveLastSafePositionRsp.error_code)
+}
+#if LANG_CXX11
+inline void SaveLastSafePositionRsp::set_error_code(::std::string&& value) {
+  
+  error_code_.SetNoArena(
+    &::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::move(value));
+  // @@protoc_insertion_point(field_set_rvalue:gdb.SaveLastSafePositionRsp.error_code)
+}
+#endif
+inline void SaveLastSafePositionRsp::set_error_code(const char* value) {
+  GOOGLE_DCHECK(value != NULL);
+  
+  error_code_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::string(value));
+  // @@protoc_insertion_point(field_set_char:gdb.SaveLastSafePositionRsp.error_code)
+}
+inline void SaveLastSafePositionRsp::set_error_code(const char* value, size_t size) {
+  
+  error_code_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(),
+      ::std::string(reinterpret_cast<const char*>(value), size));
+  // @@protoc_insertion_point(field_set_pointer:gdb.SaveLastSafePositionRsp.error_code)
+}
+inline ::std::string* SaveLastSafePositionRsp::mutable_error_code() {
+  
+  // @@protoc_insertion_point(field_mutable:gdb.SaveLastSafePositionRsp.error_code)
+  return error_code_.MutableNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline ::std::string* SaveLastSafePositionRsp::release_error_code() {
+  // @@protoc_insertion_point(field_release:gdb.SaveLastSafePositionRsp.error_code)
+  
+  return error_code_.ReleaseNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline void SaveLastSafePositionRsp::set_allocated_error_code(::std::string* error_code) {
+  if (error_code != NULL) {
+    
+  } else {
+    
+  }
+  error_code_.SetAllocatedNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), error_code);
+  // @@protoc_insertion_point(field_set_allocated:gdb.SaveLastSafePositionRsp.error_code)
+}
+
+// uint64 position_version = 4;
+inline void SaveLastSafePositionRsp::clear_position_version() {
+  position_version_ = GOOGLE_ULONGLONG(0);
+}
+inline ::google::protobuf::uint64 SaveLastSafePositionRsp::position_version() const {
+  // @@protoc_insertion_point(field_get:gdb.SaveLastSafePositionRsp.position_version)
+  return position_version_;
+}
+inline void SaveLastSafePositionRsp::set_position_version(::google::protobuf::uint64 value) {
+  
+  position_version_ = value;
+  // @@protoc_insertion_point(field_set:gdb.SaveLastSafePositionRsp.position_version)
+}
+
+// bool skipped = 5;
+inline void SaveLastSafePositionRsp::clear_skipped() {
+  skipped_ = false;
+}
+inline bool SaveLastSafePositionRsp::skipped() const {
+  // @@protoc_insertion_point(field_get:gdb.SaveLastSafePositionRsp.skipped)
+  return skipped_;
+}
+inline void SaveLastSafePositionRsp::set_skipped(bool value) {
+  
+  skipped_ = value;
+  // @@protoc_insertion_point(field_set:gdb.SaveLastSafePositionRsp.skipped)
+}
+
+// -------------------------------------------------------------------
+
+// LoadPlayerBriefReq
+
+// uint64 player_id = 1;
+inline void LoadPlayerBriefReq::clear_player_id() {
+  player_id_ = GOOGLE_ULONGLONG(0);
+}
+inline ::google::protobuf::uint64 LoadPlayerBriefReq::player_id() const {
+  // @@protoc_insertion_point(field_get:gdb.LoadPlayerBriefReq.player_id)
+  return player_id_;
+}
+inline void LoadPlayerBriefReq::set_player_id(::google::protobuf::uint64 value) {
+  
+  player_id_ = value;
+  // @@protoc_insertion_point(field_set:gdb.LoadPlayerBriefReq.player_id)
+}
+
+// string player_name = 2;
+inline void LoadPlayerBriefReq::clear_player_name() {
+  player_name_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline const ::std::string& LoadPlayerBriefReq::player_name() const {
+  // @@protoc_insertion_point(field_get:gdb.LoadPlayerBriefReq.player_name)
+  return player_name_.GetNoArena();
+}
+inline void LoadPlayerBriefReq::set_player_name(const ::std::string& value) {
+  
+  player_name_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), value);
+  // @@protoc_insertion_point(field_set:gdb.LoadPlayerBriefReq.player_name)
+}
+#if LANG_CXX11
+inline void LoadPlayerBriefReq::set_player_name(::std::string&& value) {
+  
+  player_name_.SetNoArena(
+    &::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::move(value));
+  // @@protoc_insertion_point(field_set_rvalue:gdb.LoadPlayerBriefReq.player_name)
+}
+#endif
+inline void LoadPlayerBriefReq::set_player_name(const char* value) {
+  GOOGLE_DCHECK(value != NULL);
+  
+  player_name_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::string(value));
+  // @@protoc_insertion_point(field_set_char:gdb.LoadPlayerBriefReq.player_name)
+}
+inline void LoadPlayerBriefReq::set_player_name(const char* value, size_t size) {
+  
+  player_name_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(),
+      ::std::string(reinterpret_cast<const char*>(value), size));
+  // @@protoc_insertion_point(field_set_pointer:gdb.LoadPlayerBriefReq.player_name)
+}
+inline ::std::string* LoadPlayerBriefReq::mutable_player_name() {
+  
+  // @@protoc_insertion_point(field_mutable:gdb.LoadPlayerBriefReq.player_name)
+  return player_name_.MutableNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline ::std::string* LoadPlayerBriefReq::release_player_name() {
+  // @@protoc_insertion_point(field_release:gdb.LoadPlayerBriefReq.player_name)
+  
+  return player_name_.ReleaseNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline void LoadPlayerBriefReq::set_allocated_player_name(::std::string* player_name) {
+  if (player_name != NULL) {
+    
+  } else {
+    
+  }
+  player_name_.SetAllocatedNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), player_name);
+  // @@protoc_insertion_point(field_set_allocated:gdb.LoadPlayerBriefReq.player_name)
+}
+
+// -------------------------------------------------------------------
+
+// LoadPlayerBriefRsp
+
+// bool ok = 1;
+inline void LoadPlayerBriefRsp::clear_ok() {
+  ok_ = false;
+}
+inline bool LoadPlayerBriefRsp::ok() const {
+  // @@protoc_insertion_point(field_get:gdb.LoadPlayerBriefRsp.ok)
+  return ok_;
+}
+inline void LoadPlayerBriefRsp::set_ok(bool value) {
+  
+  ok_ = value;
+  // @@protoc_insertion_point(field_set:gdb.LoadPlayerBriefRsp.ok)
+}
+
+// string message = 2;
+inline void LoadPlayerBriefRsp::clear_message() {
+  message_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline const ::std::string& LoadPlayerBriefRsp::message() const {
+  // @@protoc_insertion_point(field_get:gdb.LoadPlayerBriefRsp.message)
+  return message_.GetNoArena();
+}
+inline void LoadPlayerBriefRsp::set_message(const ::std::string& value) {
+  
+  message_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), value);
+  // @@protoc_insertion_point(field_set:gdb.LoadPlayerBriefRsp.message)
+}
+#if LANG_CXX11
+inline void LoadPlayerBriefRsp::set_message(::std::string&& value) {
+  
+  message_.SetNoArena(
+    &::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::move(value));
+  // @@protoc_insertion_point(field_set_rvalue:gdb.LoadPlayerBriefRsp.message)
+}
+#endif
+inline void LoadPlayerBriefRsp::set_message(const char* value) {
+  GOOGLE_DCHECK(value != NULL);
+  
+  message_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::string(value));
+  // @@protoc_insertion_point(field_set_char:gdb.LoadPlayerBriefRsp.message)
+}
+inline void LoadPlayerBriefRsp::set_message(const char* value, size_t size) {
+  
+  message_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(),
+      ::std::string(reinterpret_cast<const char*>(value), size));
+  // @@protoc_insertion_point(field_set_pointer:gdb.LoadPlayerBriefRsp.message)
+}
+inline ::std::string* LoadPlayerBriefRsp::mutable_message() {
+  
+  // @@protoc_insertion_point(field_mutable:gdb.LoadPlayerBriefRsp.message)
+  return message_.MutableNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline ::std::string* LoadPlayerBriefRsp::release_message() {
+  // @@protoc_insertion_point(field_release:gdb.LoadPlayerBriefRsp.message)
+  
+  return message_.ReleaseNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline void LoadPlayerBriefRsp::set_allocated_message(::std::string* message) {
+  if (message != NULL) {
+    
+  } else {
+    
+  }
+  message_.SetAllocatedNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), message);
+  // @@protoc_insertion_point(field_set_allocated:gdb.LoadPlayerBriefRsp.message)
+}
+
+// string error_code = 3;
+inline void LoadPlayerBriefRsp::clear_error_code() {
+  error_code_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline const ::std::string& LoadPlayerBriefRsp::error_code() const {
+  // @@protoc_insertion_point(field_get:gdb.LoadPlayerBriefRsp.error_code)
+  return error_code_.GetNoArena();
+}
+inline void LoadPlayerBriefRsp::set_error_code(const ::std::string& value) {
+  
+  error_code_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), value);
+  // @@protoc_insertion_point(field_set:gdb.LoadPlayerBriefRsp.error_code)
+}
+#if LANG_CXX11
+inline void LoadPlayerBriefRsp::set_error_code(::std::string&& value) {
+  
+  error_code_.SetNoArena(
+    &::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::move(value));
+  // @@protoc_insertion_point(field_set_rvalue:gdb.LoadPlayerBriefRsp.error_code)
+}
+#endif
+inline void LoadPlayerBriefRsp::set_error_code(const char* value) {
+  GOOGLE_DCHECK(value != NULL);
+  
+  error_code_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::string(value));
+  // @@protoc_insertion_point(field_set_char:gdb.LoadPlayerBriefRsp.error_code)
+}
+inline void LoadPlayerBriefRsp::set_error_code(const char* value, size_t size) {
+  
+  error_code_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(),
+      ::std::string(reinterpret_cast<const char*>(value), size));
+  // @@protoc_insertion_point(field_set_pointer:gdb.LoadPlayerBriefRsp.error_code)
+}
+inline ::std::string* LoadPlayerBriefRsp::mutable_error_code() {
+  
+  // @@protoc_insertion_point(field_mutable:gdb.LoadPlayerBriefRsp.error_code)
+  return error_code_.MutableNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline ::std::string* LoadPlayerBriefRsp::release_error_code() {
+  // @@protoc_insertion_point(field_release:gdb.LoadPlayerBriefRsp.error_code)
+  
+  return error_code_.ReleaseNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline void LoadPlayerBriefRsp::set_allocated_error_code(::std::string* error_code) {
+  if (error_code != NULL) {
+    
+  } else {
+    
+  }
+  error_code_.SetAllocatedNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), error_code);
+  // @@protoc_insertion_point(field_set_allocated:gdb.LoadPlayerBriefRsp.error_code)
+}
+
+// bool exists = 4;
+inline void LoadPlayerBriefRsp::clear_exists() {
+  exists_ = false;
+}
+inline bool LoadPlayerBriefRsp::exists() const {
+  // @@protoc_insertion_point(field_get:gdb.LoadPlayerBriefRsp.exists)
+  return exists_;
+}
+inline void LoadPlayerBriefRsp::set_exists(bool value) {
+  
+  exists_ = value;
+  // @@protoc_insertion_point(field_set:gdb.LoadPlayerBriefRsp.exists)
+}
+
+// bool ambiguous = 5;
+inline void LoadPlayerBriefRsp::clear_ambiguous() {
+  ambiguous_ = false;
+}
+inline bool LoadPlayerBriefRsp::ambiguous() const {
+  // @@protoc_insertion_point(field_get:gdb.LoadPlayerBriefRsp.ambiguous)
+  return ambiguous_;
+}
+inline void LoadPlayerBriefRsp::set_ambiguous(bool value) {
+  
+  ambiguous_ = value;
+  // @@protoc_insertion_point(field_set:gdb.LoadPlayerBriefRsp.ambiguous)
+}
+
+// uint64 player_id = 6;
+inline void LoadPlayerBriefRsp::clear_player_id() {
+  player_id_ = GOOGLE_ULONGLONG(0);
+}
+inline ::google::protobuf::uint64 LoadPlayerBriefRsp::player_id() const {
+  // @@protoc_insertion_point(field_get:gdb.LoadPlayerBriefRsp.player_id)
+  return player_id_;
+}
+inline void LoadPlayerBriefRsp::set_player_id(::google::protobuf::uint64 value) {
+  
+  player_id_ = value;
+  // @@protoc_insertion_point(field_set:gdb.LoadPlayerBriefRsp.player_id)
+}
+
+// string player_name = 7;
+inline void LoadPlayerBriefRsp::clear_player_name() {
+  player_name_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline const ::std::string& LoadPlayerBriefRsp::player_name() const {
+  // @@protoc_insertion_point(field_get:gdb.LoadPlayerBriefRsp.player_name)
+  return player_name_.GetNoArena();
+}
+inline void LoadPlayerBriefRsp::set_player_name(const ::std::string& value) {
+  
+  player_name_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), value);
+  // @@protoc_insertion_point(field_set:gdb.LoadPlayerBriefRsp.player_name)
+}
+#if LANG_CXX11
+inline void LoadPlayerBriefRsp::set_player_name(::std::string&& value) {
+  
+  player_name_.SetNoArena(
+    &::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::move(value));
+  // @@protoc_insertion_point(field_set_rvalue:gdb.LoadPlayerBriefRsp.player_name)
+}
+#endif
+inline void LoadPlayerBriefRsp::set_player_name(const char* value) {
+  GOOGLE_DCHECK(value != NULL);
+  
+  player_name_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::string(value));
+  // @@protoc_insertion_point(field_set_char:gdb.LoadPlayerBriefRsp.player_name)
+}
+inline void LoadPlayerBriefRsp::set_player_name(const char* value, size_t size) {
+  
+  player_name_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(),
+      ::std::string(reinterpret_cast<const char*>(value), size));
+  // @@protoc_insertion_point(field_set_pointer:gdb.LoadPlayerBriefRsp.player_name)
+}
+inline ::std::string* LoadPlayerBriefRsp::mutable_player_name() {
+  
+  // @@protoc_insertion_point(field_mutable:gdb.LoadPlayerBriefRsp.player_name)
+  return player_name_.MutableNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline ::std::string* LoadPlayerBriefRsp::release_player_name() {
+  // @@protoc_insertion_point(field_release:gdb.LoadPlayerBriefRsp.player_name)
+  
+  return player_name_.ReleaseNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline void LoadPlayerBriefRsp::set_allocated_player_name(::std::string* player_name) {
+  if (player_name != NULL) {
+    
+  } else {
+    
+  }
+  player_name_.SetAllocatedNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), player_name);
+  // @@protoc_insertion_point(field_set_allocated:gdb.LoadPlayerBriefRsp.player_name)
+}
+
+// int32 max_hp = 8;
+inline void LoadPlayerBriefRsp::clear_max_hp() {
+  max_hp_ = 0;
+}
+inline ::google::protobuf::int32 LoadPlayerBriefRsp::max_hp() const {
+  // @@protoc_insertion_point(field_get:gdb.LoadPlayerBriefRsp.max_hp)
+  return max_hp_;
+}
+inline void LoadPlayerBriefRsp::set_max_hp(::google::protobuf::int32 value) {
+  
+  max_hp_ = value;
+  // @@protoc_insertion_point(field_set:gdb.LoadPlayerBriefRsp.max_hp)
+}
+
+// int32 max_mp = 9;
+inline void LoadPlayerBriefRsp::clear_max_mp() {
+  max_mp_ = 0;
+}
+inline ::google::protobuf::int32 LoadPlayerBriefRsp::max_mp() const {
+  // @@protoc_insertion_point(field_get:gdb.LoadPlayerBriefRsp.max_mp)
+  return max_mp_;
+}
+inline void LoadPlayerBriefRsp::set_max_mp(::google::protobuf::int32 value) {
+  
+  max_mp_ = value;
+  // @@protoc_insertion_point(field_set:gdb.LoadPlayerBriefRsp.max_mp)
+}
+
+// -------------------------------------------------------------------
+
 // HandleGameFrameReq
 
 // uint64 player_id = 1;
@@ -8040,6 +9925,20 @@ inline void HandleGameFrameRsp::set_allocated_response_frame(::std::string* resp
 #ifdef __GNUC__
   #pragma GCC diagnostic pop
 #endif  // __GNUC__
+// -------------------------------------------------------------------
+
+// -------------------------------------------------------------------
+
+// -------------------------------------------------------------------
+
+// -------------------------------------------------------------------
+
+// -------------------------------------------------------------------
+
+// -------------------------------------------------------------------
+
+// -------------------------------------------------------------------
+
 // -------------------------------------------------------------------
 
 // -------------------------------------------------------------------

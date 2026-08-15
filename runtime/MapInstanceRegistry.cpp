@@ -100,6 +100,12 @@ uint64_t MapInstanceRegistry::Epoch(uint64_t map_instance_id) const {
     return it == maps_.end() ? 0 : it->second.owner_epoch;
 }
 
+uint64_t MapInstanceRegistry::TemplateId(uint64_t map_instance_id) const {
+    std::lock_guard<std::mutex> lk(mu_);
+    auto it = maps_.find(map_instance_id);
+    return it == maps_.end() ? 0 : it->second.map_template_id;
+}
+
 bool MapInstanceRegistry::AddPlayer(uint64_t map_instance_id, uint64_t player_id) {
     std::lock_guard<std::mutex> lk(mu_);
     auto it = maps_.find(map_instance_id);

@@ -2,6 +2,7 @@
 
 #include "Connection.h"
 #include "ConnectionPool.h"
+#include "FormalMode.h"
 #include "Logging.h"
 #include "PlayerProfileDefaults.h"
 #include "Utf8Text.h"
@@ -12,6 +13,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <mutex>
+#include <set>
 #include <sstream>
 
 namespace {
@@ -138,6 +140,73 @@ bool PlayerProfileStore::Validate(const PlayerProfileRow &row, std::string *err_
     return true;
 }
 
+namespace {
+
+const char kPlayerProfileDdl[] =
+    "CREATE TABLE IF NOT EXISTS player_profile ("
+    "player_id BIGINT NOT NULL PRIMARY KEY,"
+    "player_name VARCHAR(64) NOT NULL DEFAULT 'player',"
+    "hp INT NOT NULL,"
+    "max_hp INT NOT NULL,"
+    "mp INT NOT NULL,"
+    "max_mp INT NOT NULL,"
+    "attack INT NOT NULL,"
+    "spell_power INT NOT NULL,"
+    "defense INT NOT NULL,"
+    "magic_resistance INT NOT NULL,"
+    "crit_chance FLOAT NOT NULL,"
+    "crit_damage FLOAT NOT NULL,"
+    "move_speed FLOAT NOT NULL,"
+    "attack_speed FLOAT NOT NULL,"
+    "stats_version BIGINT NOT NULL DEFAULT 1,"
+    "created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,"
+    "updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,"
+    "KEY idx_player_profile_name (player_name)"
+    ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4";
+
+const char *kPlayerProfileCols[] = {
+    "player_id",     "player_name", "hp",          "max_hp",      "mp",
+    "max_mp",        "attack",      "spell_power", "defense",     "magic_resistance",
+    "crit_chance",   "crit_damage", "move_speed",  "attack_speed", "stats_version"};
+
+void DrainResult(MYSQL_RES *res) {
+    if (!res)
+        return;
+    while (mysql_fetch_row(res)) {
+    }
+    mysql_free_result(res);
+}
+
+bool ProfileTableExists(Connection *conn) {
+    MYSQL_RES *res = conn->query("SHOW TABLES LIKE 'player_profile'");
+    if (!res)
+        return false;
+    MYSQL_ROW row = mysql_fetch_row(res);
+    const bool ok = row && row[0];
+    DrainResult(res);
+    return ok;
+}
+
+bool ProfileColumnsOk(Connection *conn) {
+    MYSQL_RES *res = conn->query("SHOW COLUMNS FROM player_profile");
+    if (!res)
+        return false;
+    std::set<std::string> cols;
+    MYSQL_ROW row;
+    while ((row = mysql_fetch_row(res))) {
+        if (row[0])
+            cols.insert(row[0]);
+    }
+    mysql_free_result(res);
+    for (const char *c : kPlayerProfileCols) {
+        if (!cols.count(c))
+            return false;
+    }
+    return true;
+}
+
+}  // namespace
+
 bool PlayerProfileStore::EnsureTable() {
     std::lock_guard<std::mutex> lk(g_mu);
     if (table_ready_)
@@ -150,29 +219,21 @@ bool PlayerProfileStore::EnsureTable() {
     auto conn = ConnectionPool::getconnectionPool()->getConnection();
     if (!conn)
         return false;
-    const char *sql =
-        "CREATE TABLE IF NOT EXISTS player_profile ("
-        "player_id BIGINT NOT NULL PRIMARY KEY,"
-        "player_name VARCHAR(64) NOT NULL DEFAULT 'player',"
-        "hp INT NOT NULL,"
-        "max_hp INT NOT NULL,"
-        "mp INT NOT NULL,"
-        "max_mp INT NOT NULL,"
-        "attack INT NOT NULL,"
-        "spell_power INT NOT NULL,"
-        "defense INT NOT NULL,"
-        "magic_resistance INT NOT NULL,"
-        "crit_chance FLOAT NOT NULL,"
-        "crit_damage FLOAT NOT NULL,"
-        "move_speed FLOAT NOT NULL,"
-        "attack_speed FLOAT NOT NULL,"
-        "stats_version BIGINT NOT NULL DEFAULT 1,"
-        "created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,"
-        "updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,"
-        "KEY idx_player_profile_name (player_name)"
-        ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4";
-    if (!conn->update(sql))
+    if (BootstrapDdlEnabled()) {
+        if (!conn->update(kPlayerProfileDdl))
+            return false;
+    }
+    if (!ProfileTableExists(conn.get())) {
+        available_ = false;
+        LOG_ERROR << "PlayerProfileStore: player_profile missing; run ./scripts/migrate_db.sh "
+                     "(or GAMEMESH_BOOTSTRAP_DDL=1 for local bootstrap)";
         return false;
+    }
+    if (!ProfileColumnsOk(conn.get())) {
+        available_ = false;
+        LOG_ERROR << "PlayerProfileStore: player_profile columns incomplete; run migrate_db.sh";
+        return false;
+    }
     table_ready_ = true;
     LOG_INFO << "PlayerProfileStore: table player_profile ready";
     return true;
@@ -258,6 +319,63 @@ bool PlayerProfileStore::Load(uint64_t player_id, PlayerProfileRow *out, std::st
             *err = "parse failed";
         return false;
     }
+    return true;
+}
+
+bool PlayerProfileStore::LoadByExactName(const std::string &player_name, PlayerProfileRow *out,
+                                         std::string *err, std::string *err_code) {
+    if (!out || player_name.empty()) {
+        if (err)
+            *err = "bad arg";
+        if (err_code)
+            *err_code = "ERR_INVALID_ARGUMENT";
+        return false;
+    }
+    if (!EnsureTable()) {
+        if (err)
+            *err = "db unavailable";
+        if (err_code)
+            *err_code = "ERR_DEPENDENCY_UNAVAILABLE";
+        return false;
+    }
+    *out = PlayerProfileRow{};
+    auto conn = ConnectionPool::getconnectionPool()->getConnection();
+    if (!conn) {
+        if (err)
+            *err = "no connection";
+        if (err_code)
+            *err_code = "ERR_DEPENDENCY_UNAVAILABLE";
+        return false;
+    }
+    std::ostringstream sql;
+    sql << "SELECT " << kSelectCols << " FROM player_profile WHERE player_name='"
+        << SqlLit(conn.get(), player_name) << "' LIMIT 3";
+    MYSQL_RES *res = conn->query(sql.str());
+    if (!res) {
+        if (err)
+            *err = "query failed";
+        if (err_code)
+            *err_code = "ERR_DEPENDENCY_UNAVAILABLE";
+        return false;
+    }
+    if (!FetchRow(res, out)) {
+        mysql_free_result(res);
+        if (err)
+            *err = "parse failed";
+        if (err_code)
+            *err_code = "ERR_INTERNAL";
+        return false;
+    }
+    if (out->exists && mysql_fetch_row(res) != nullptr) {
+        mysql_free_result(res);
+        *out = PlayerProfileRow{};
+        if (err)
+            *err = "name matches multiple players";
+        if (err_code)
+            *err_code = "ERR_NAME_AMBIGUOUS";
+        return false;
+    }
+    mysql_free_result(res);
     return true;
 }
 

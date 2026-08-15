@@ -1374,16 +1374,21 @@ bool SessionStore::BindConnection(uint64_t player_id, const std::string &token,
                                   const std::string &gateway_id, uint64_t connection_id) {
     if (!available_ || player_id == 0 || token.empty())
         return false;
-    auto lease = RedisPool::Instance().Acquire();
-    if (!lease)
-        return false;
-    std::vector<std::string> keys{SessionKey(player_id)};
-    std::vector<std::string> args{token, gateway_id, std::to_string(connection_id),
-                                  std::to_string(default_ttl_sec_)};
-    std::vector<std::string> reply;
-    if (!lease->Eval(kLuaBindConnection, keys, args, &reply) || reply.empty())
-        return false;
-    return reply[0] == "1";
+    {
+        auto lease = RedisPool::Instance().Acquire();
+        if (!lease)
+            return false;
+        std::vector<std::string> keys{SessionKey(player_id)};
+        std::vector<std::string> args{token, gateway_id, std::to_string(connection_id),
+                                      std::to_string(default_ttl_sec_)};
+        std::vector<std::string> reply;
+        if (!lease->Eval(kLuaBindConnection, keys, args, &reply) || reply.empty())
+            return false;
+        if (reply[0] != "1")
+            return false;
+    }
+    TrackOnline(player_id);
+    return true;
 }
 
 bool SessionStore::MarkDisconnected(uint64_t player_id, const std::string &token,
@@ -1405,6 +1410,8 @@ bool SessionStore::MarkDisconnected(uint64_t player_id, const std::string &token
         return false;
     }
     LOG_INFO << "SessionStore: DISCONNECTED player_id=" << player_id << " grace_sec=" << grace_sec_;
+    lease = RedisPool::Lease();
+    UntrackOnline(player_id);
     return true;
 }
 
@@ -1466,6 +1473,8 @@ bool SessionStore::Kick(uint64_t player_id, const std::string &reason, KickResul
         r->old_generation = r->new_generation - 1;
     LOG_INFO << "SessionStore: Kick player_id=" << player_id << " reason=" << reason
              << " generation=" << r->new_generation << " old_gw=" << r->old_gateway_id;
+    lease = RedisPool::Lease();
+    UntrackOnline(player_id);
     return true;
 }
 
@@ -1558,7 +1567,9 @@ bool SessionStore::Logout(const game::LogoutReq &req, game::LogoutRsp *rsp) {
     rsp->set_ok(true);
     rsp->set_message(reply.size() > 1 && reply[1] == "ALREADY_OFFLINE" ? "already offline"
                                                                         : "logout ok");
+    lease = RedisPool::Lease();
     PlacementStore::Instance().ReleaseByPlayer(req.player_id());
+    UntrackOnline(req.player_id());
     return true;
 }
 
@@ -1786,6 +1797,136 @@ bool SessionStore::ValidateToken(uint64_t player_id, const std::string &token, s
         if (err)
             *err = "invalid session token";
         return false;
+    }
+    return true;
+}
+
+std::string SessionStore::OnlineSetKey() const {
+    return key_prefix_ + "online:players";
+}
+
+void SessionStore::TrackOnline(uint64_t player_id) {
+    if (!available_ || player_id == 0)
+        return;
+    auto lease = RedisPool::Instance().Acquire();
+    if (!lease)
+        return;
+    (void)lease->SAdd(OnlineSetKey(), std::to_string(player_id));
+}
+
+void SessionStore::UntrackOnline(uint64_t player_id) {
+    if (!available_ || player_id == 0)
+        return;
+    auto lease = RedisPool::Instance().Acquire();
+    if (!lease)
+        return;
+    (void)lease->SRem(OnlineSetKey(), std::to_string(player_id));
+}
+
+bool SessionStore::ConsumeKeyedQuota(const std::string &key, int limit, int window_sec) {
+    if (!available_ || key.empty() || limit <= 0)
+        return false;
+    auto lease = RedisPool::Instance().Acquire();
+    if (!lease)
+        return false;
+    static const char *kLua =
+        "local c=redis.call('INCR', KEYS[1]); if c==1 then redis.call('EXPIRE', KEYS[1], "
+        "tonumber(ARGV[1])) end; return c";
+    std::vector<std::string> out;
+    if (!lease->Eval(kLua, {key}, {std::to_string(window_sec > 0 ? window_sec : 2)}, &out) ||
+        out.empty())
+        return false;
+    return std::atoi(out[0].c_str()) <= limit;
+}
+
+bool SessionStore::ConsumeChatQuota(uint64_t player_id, int limit, int window_sec) {
+    if (player_id == 0)
+        return false;
+    return ConsumeKeyedQuota(key_prefix_ + "chatrate:" + std::to_string(player_id), limit,
+                             window_sec);
+}
+
+bool SessionStore::ConsumeNameQueryQuota(uint64_t player_id, int limit, int window_sec) {
+    if (player_id == 0)
+        return false;
+    return ConsumeKeyedQuota(key_prefix_ + "namequery:" + std::to_string(player_id), limit,
+                             window_sec);
+}
+
+uint64_t SessionStore::NextWorldChatMessageId() {
+    if (!available_)
+        return 0;
+    auto lease = RedisPool::Instance().Acquire();
+    if (!lease)
+        return 0;
+    int64_t n = 0;
+    if (!lease->Incr(key_prefix_ + "chat:world:seq", &n) || n <= 0)
+        return 0;
+    return static_cast<uint64_t>(n);
+}
+
+bool SessionStore::QueryPublicOnlineState(uint64_t player_id, std::string *state) {
+    if (!state)
+        return false;
+    *state = "offline";
+    if (!available_ || player_id == 0)
+        return true;
+    SessionRecord rec;
+    if (!LoadSession(player_id, &rec))
+        return true;
+    if (ExpireIfGraceElapsed(player_id, &rec))
+        return true;
+    if (rec.state == SessionState::Online)
+        *state = "online";
+    else if (rec.state == SessionState::Disconnected)
+        *state = "disconnected";
+    else
+        *state = "offline";
+    return true;
+}
+
+bool SessionStore::ListOnlinePushTargets(std::vector<OnlinePushTarget> *out, size_t max_n) {
+    if (!out)
+        return false;
+    out->clear();
+    if (!available_)
+        return false;
+    std::vector<std::string> members;
+    {
+        auto lease = RedisPool::Instance().Acquire();
+        if (!lease)
+            return false;
+        if (!lease->SMembers(OnlineSetKey(), &members))
+            return false;
+    }
+    if (max_n == 0)
+        max_n = 256;
+    size_t n = 0;
+    for (const auto &m : members) {
+        if (n >= max_n)
+            break;
+        const uint64_t pid = static_cast<uint64_t>(std::strtoull(m.c_str(), nullptr, 10));
+        if (pid == 0)
+            continue;
+        SessionRecord rec;
+        if (!LoadSession(pid, &rec)) {
+            UntrackOnline(pid);
+            continue;
+        }
+        if (ExpireIfGraceElapsed(pid, &rec) || rec.state != SessionState::Online) {
+            UntrackOnline(pid);
+            continue;
+        }
+        if (rec.gateway_id.empty() || rec.session_id.empty())
+            continue;
+        OnlinePushTarget t;
+        t.player_id = pid;
+        t.gateway_id = rec.gateway_id;
+        t.session_id = rec.session_id;
+        t.fence_token = rec.token;
+        t.generation = rec.generation;
+        out->push_back(std::move(t));
+        ++n;
     }
     return true;
 }

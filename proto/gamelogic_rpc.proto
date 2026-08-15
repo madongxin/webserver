@@ -110,6 +110,7 @@ message ExportPlayerSnapshotResponse {
   string message = 2;
   string error_code = 3;
   PlayerTransferSnapshot snapshot = 4;
+  bytes public_full_snapshot = 5;  // serialized game.FullStateSnapshotRsp
 }
 
 message ImportPlayerSnapshotRequest {
