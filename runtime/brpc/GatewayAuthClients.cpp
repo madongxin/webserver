@@ -329,6 +329,30 @@ bool GatewayAuthClients::LogoutV2(const sess::LogoutRequest &req, sess::LogoutRe
     return !cntl.Failed();
 }
 
+bool GatewayAuthClients::RestorePreviousSession(const sess::RestorePreviousSessionRequest &req,
+                                                sess::RestorePreviousSessionResponse *rsp) {
+    auto s = CurrentSnapshot();
+    if (!s || !s->session || !rsp)
+        return false;
+    sess::SessionService_Stub stub(s->session.get());
+    brpc::Controller cntl;
+    cntl.set_timeout_ms(timeout_ms_);
+    stub.RestorePreviousSession(&cntl, &req, rsp, nullptr);
+    return !cntl.Failed();
+}
+
+bool GatewayAuthClients::NotifySessionReplaced(const sess::NotifySessionReplacedRequest &req,
+                                               sess::NotifySessionReplacedResponse *rsp) {
+    auto s = CurrentSnapshot();
+    if (!s || !s->session || !rsp)
+        return false;
+    sess::SessionService_Stub stub(s->session.get());
+    brpc::Controller cntl;
+    cntl.set_timeout_ms(timeout_ms_);
+    stub.NotifySessionReplaced(&cntl, &req, rsp, nullptr);
+    return !cntl.Failed();
+}
+
 bool GatewayAuthClients::BeginPlayerTransfer(const sess::BeginPlayerTransferRequest &req,
                                              sess::BeginPlayerTransferResponse *rsp) {
     auto s = CurrentSnapshot();

@@ -41,6 +41,10 @@ public:
     bool GetSessionOperation(const sess::GetSessionOperationRequest &req,
                              sess::GetSessionOperationResponse *rsp);
     bool LogoutV2(const sess::LogoutRequest &req, sess::LogoutResponse *rsp);
+    bool RestorePreviousSession(const sess::RestorePreviousSessionRequest &req,
+                                sess::RestorePreviousSessionResponse *rsp);
+    bool NotifySessionReplaced(const sess::NotifySessionReplacedRequest &req,
+                               sess::NotifySessionReplacedResponse *rsp);
     bool BeginPlayerTransfer(const sess::BeginPlayerTransferRequest &req,
                              sess::BeginPlayerTransferResponse *rsp);
     bool CommitPlayerTransfer(const sess::CommitPlayerTransferRequest &req,

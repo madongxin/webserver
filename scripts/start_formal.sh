@@ -130,6 +130,7 @@ printf '%s\n' \
   "idle_timeout_sec=30" \
   "logic_instance_ids=gl-0,gl-1" \
   "gamedb_addrs=127.0.0.1:${GAMEDB0},127.0.0.1:${GAMEDB1}" \
+  "gateway_push_addrs=gw-0=${GAMEMESH_ADVERTISE_HOST}:${PUSH_G0},gw-1=${GAMEMESH_ADVERTISE_HOST}:${PUSH_G1}" \
   "ssl_enable=0" >"$SESSION_CNF"
 
 # gamedb/gamelogic 的 listen 以进程 argv 覆盖为准；cnf 写主实例便于手工启

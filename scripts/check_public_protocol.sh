@@ -21,6 +21,7 @@ required_msgs=(
   ClientHelloReq ServerHelloRsp HeartbeatReq HeartbeatRsp
   WorldSnapshotReq FullStateSnapshotRsp RespawnReq RespawnRsp
   ChatSendReq ChatNotify GetPlayerBriefReq QueryOnlineStateReq PlayerBrief
+  SessionReplacedNotify MapManifestEntry
 )
 for m in "${required_msgs[@]}"; do
   grep -q "message $m " proto/game.proto || die "missing message $m"
@@ -67,6 +68,12 @@ field("GameResponse", "respawn", 72)
 field("GameResponse", "chat_notify", 73)
 field("GameResponse", "get_player_brief", 74)
 field("GameResponse", "query_online_state", 75)
+field("GameResponse", "session_replaced", 76)
+field("ServerHelloRsp", "gameplay_config_version", 12)
+field("ServerHelloRsp", "map_manifest_version", 13)
+field("ServerHelloRsp", "maps", 14)
+field("SessionReplacedNotify", "reason_code", 1)
+field("SessionReplacedNotify", "server_time_ms", 2)
 field("FullStateSnapshotRsp", "baseline_server_seq", 7)
 field("FullStateSnapshotRsp", "profile", 8)
 field("FullStateSnapshotRsp", "aoi_entities", 16)
@@ -89,6 +96,7 @@ grep -q "kMoveFieldNumber = 61" game/game.pb.h || die "game.pb.h move field != 6
 grep -q "kPlayerMailSendFieldNumber = 63" game/game.pb.h || die "game.pb.h player_mail_send != 63"
 grep -q "kClientHelloFieldNumber = 70" game/game.pb.h || die "game.pb.h client_hello != 70"
 grep -q "kWorldSnapshotFieldNumber = 72" game/game.pb.h || die "game.pb.h world_snapshot != 72"
+grep -q "kSessionReplacedFieldNumber = 76" game/game.pb.h || die "game.pb.h session_replaced != 76"
 grep -q "kErrorCodeFieldNumber = 4" game/game.pb.h || die "game.pb.h error_code != 4"
 
 TMP="$(mktemp -d)"
@@ -99,6 +107,31 @@ trap 'rm -rf "$TMP"' EXIT
 [[ -s "$TMP/out/protocol_manifest.json" ]] || die "export missing manifest"
 [[ -s "$TMP/out/game.proto.sha256" ]] || die "export missing game.proto.sha256"
 [[ -s "$TMP/out/game.desc.sha256" ]] || die "export missing game.desc.sha256"
+python3 - "$TMP/out/protocol_manifest.json" "$ROOT" <<'PY' || exit 1
+import json, subprocess, sys
+m = json.load(open(sys.argv[1]))
+root = sys.argv[2]
+need = [
+    "server_commit", "protocol_version", "min_supported_protocol_version",
+    "schema_sha256", "descriptor_sha256", "frame_format", "max_frame_bytes",
+    "protoc_version", "required_types",
+]
+missing = [k for k in need if k not in m]
+if missing:
+    print("ERROR: manifest missing", missing); sys.exit(1)
+try:
+    head = subprocess.check_output(["git", "-C", root, "rev-parse", "HEAD"]).decode().strip()
+    if m["server_commit"] != head:
+        print("ERROR: server_commit", m["server_commit"], "!= HEAD", head); sys.exit(1)
+except Exception as e:
+    print("ERROR: git HEAD", e); sys.exit(1)
+req = set(m["required_types"])
+for t in ("ClientHelloReq", "ServerHelloRsp", "PushAckReq", "MailboxChangedNotify",
+          "SessionReplacedNotify"):
+    if t not in req:
+        print("ERROR: required_types missing", t); sys.exit(1)
+print("export manifest fields ok")
+PY
 
 # descriptor 可被 protoc 解析
 protoc --decode_raw < "$TMP/out/game.desc" >/dev/null \

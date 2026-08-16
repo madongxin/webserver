@@ -38,6 +38,7 @@
 #ifdef WEBSERVER_ENABLE_GAME_PROTOBUF
 #include "GameTcpGateway.h"
 #include "GameLogic.h"
+#include "MapCatalog.h"
 #endif
 #ifdef WEBSERVER_ENABLE_REDIS
 #include "PlacementStore.h"
@@ -1090,13 +1091,18 @@ int RunServer(const LaunchOpts &launch) {
 
     auto apply_gateway_push_addrs = [&]() {
         std::string push_map = GatewayConfigPath::ReadValue("gateway_push_addrs");
-        if (push_map.empty()) {
-            std::string logic_cnf = "../config/gamelogic.cnf";
+        auto try_cnf = [&](const char *rel) {
+            if (!push_map.empty())
+                return;
+            std::string p = std::string("../") + rel;
             std::string resolved;
-            if (GameMeshPaths::ResolveProjectSubdir("config/gamelogic.cnf", &resolved))
-                logic_cnf = resolved;
-            push_map = load_kv(logic_cnf, "gateway_push_addrs");
-        }
+            if (GameMeshPaths::ResolveProjectSubdir(rel, &resolved))
+                p = resolved;
+            push_map = load_kv(p, "gateway_push_addrs");
+        };
+        try_cnf("config/gamelogic.cnf");
+        try_cnf("config/session.cnf");
+        try_cnf("config/world.cnf");
         auto entries = split_addrs(push_map);
         for (const auto &e : entries) {
             const auto eq = e.find('=');
@@ -1154,6 +1160,7 @@ int RunServer(const LaunchOpts &launch) {
             RedisServiceRegistry::Get().RegisterInstance(inst, 30);
         if (EtcdDiscovery::Instance().enabled())
             EtcdDiscovery::Instance().Register("session", sid, adv, 30);
+        apply_gateway_push_addrs();
         LOG_INFO << "role=session listen=" << listen << " instance_id=" << sid;
     } else if (role == "gamedb") {
         if (logic_port_override > 0) {
@@ -1563,8 +1570,9 @@ int RunServer(const LaunchOpts &launch) {
         });
     }
 #endif
-    // GameLogic / World / GameDB：聊天与邮箱变更都从这些角色 Push
-    if (role == "gamelogic" || role == "world" || role == "gamedb" || role == "all") {
+    // GameLogic / World / GameDB / Session：Push 与 KickConnection 都走 gateway_push
+    if (role == "gamelogic" || role == "world" || role == "gamedb" || role == "session" ||
+        role == "all") {
         loop.RunEvery(5.0, []() {
             if (!RedisServiceRegistry::Get().ready())
                 return;
@@ -1629,6 +1637,14 @@ int RunServer(const LaunchOpts &launch) {
                 !GatewayIdentity::Instance().Resolve(&id_err)) {
                 LOG_ERROR << "GatewayIdentity resolve failed: " << id_err;
                 return 1;
+            }
+        }
+        {
+            std::string map_err;
+            if (!MapCatalog::Instance().EnsureDefault(&map_err)) {
+                LOG_ERROR << "MapCatalog load failed: " << map_err;
+                if (FormalModeEnabled())
+                    return 1;
             }
         }
         game_tcp_gw = new GameTcpGateway("0.0.0.0", game_port, GatewayIdentity::Instance().id());

@@ -115,6 +115,7 @@ void HandleClientHello(const game::ClientHelloReq &req, uint64_t conn_id, game::
     hello->add_capabilities("heartbeat.v1");
     hello->add_capabilities("aoi.delta.v1");
     hello->add_capabilities("mailbox.changed.v1");
+    hello->add_capabilities("session.replaced.v1");
 
     auto fail = [&](const char *code, const char *msg) {
         hello->set_ok(false);

@@ -3,9 +3,12 @@
 #include "GatewayConnRegistry.h"
 #include "Logging.h"
 #include "ProtoFraming.h"
+#include "PublicError.h"
 #include "game.pb.h"
 #include <brpc/controller.h>
 #include <brpc/server.h>
+
+#include <cstdlib>
 
 void GatewayPushServiceImpl::PushBatch(::google::protobuf::RpcController *controller,
                                        const ::gwpush::PushBatchRequest *request,
@@ -115,14 +118,36 @@ void GatewayPushServiceImpl::KickConnection(::google::protobuf::RpcController *c
         response->set_message("invalid kick");
         return;
     }
-    const bool closed = GatewayConnRegistry::Instance().CloseIfMatch(
-        request->player_id(), request->session_id(), request->generation());
+    const char *reason = request->reason().empty() ? "SESSION_REPLACED" : request->reason().c_str();
+    game::GameResponse notify;
+    notify.set_ok(true);
+    notify.set_seq(0);
+    notify.set_message("session replaced");
+    notify.set_error_code("OK");
+    notify.set_server_time_ms(gameproto::PublicNowMs());
+    auto *body = notify.mutable_session_replaced();
+    body->set_reason_code(reason);
+    body->set_server_time_ms(notify.server_time_ms());
+    body->set_message("logged in elsewhere");
+    std::string payload;
+    std::string frame;
+    if (!notify.SerializeToString(&payload) || !gameproto::EncodeFrame(payload, &frame))
+        frame.clear();
+    double grace = 0.08;
+    if (const char *e = std::getenv("GAMEMESH_KICK_NOTIFY_GRACE_MS")) {
+        char *end = nullptr;
+        const unsigned long ms = std::strtoul(e, &end, 10);
+        if (end != e && ms <= 500)
+            grace = static_cast<double>(ms) / 1000.0;
+    }
+    const bool closed = GatewayConnRegistry::Instance().NotifyAndCloseIfMatch(
+        request->player_id(), request->session_id(), request->generation(), frame, grace);
     response->set_ok(true);
     response->set_closed(closed);
     response->set_message(closed ? "closed" : "not_found");
     LOG_INFO << "KickConnection player=" << request->player_id()
-             << " session=" << request->session_id() << " gen=" << request->generation()
-             << " closed=" << closed;
+             << " gen=" << request->generation() << " closed=" << closed
+             << " reason=" << reason;
 }
 
 GatewayPushServer &GatewayPushServer::Instance() {

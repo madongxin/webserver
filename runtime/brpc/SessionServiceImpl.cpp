@@ -27,6 +27,35 @@ void FillPlacementPb(const PlacementRecord &r, sess::PlacementRecord *pb) {
     pb->set_lease_until(r.lease_until);
 }
 
+void FillAcquirePb(const AcquireSessionResult &out, sess::AcquireSessionResponse *response) {
+    if (!response)
+        return;
+    response->set_ok(out.ok);
+    response->set_message(out.message);
+    response->set_error_code(out.error_code);
+    response->set_session_id(out.session_id);
+    response->set_fence_token(out.fence_token);
+    response->set_generation(out.generation);
+    response->set_gamelogic_instance_id(out.gamelogic_instance_id);
+    response->set_map_instance_id(out.map_instance_id);
+    response->set_map_owner_epoch(out.map_owner_epoch);
+    response->set_route_version(out.route_version);
+    response->set_kicked_previous(out.kicked_previous);
+    response->set_login_time_sec(out.login_time_sec);
+    response->set_server_id(out.server_id);
+    response->set_previous_gateway_instance_id(out.previous_gateway_instance_id);
+    response->set_previous_session_id(out.previous_session_id);
+    response->set_previous_generation(out.previous_generation);
+    response->set_previous_fence_token(out.previous_fence_token);
+    response->set_previous_device_id(out.previous_device_id);
+    response->set_previous_gamelogic_instance_id(out.previous_gamelogic_instance_id);
+    response->set_previous_map_instance_id(out.previous_map_instance_id);
+    response->set_previous_map_owner_epoch(out.previous_map_owner_epoch);
+    response->set_previous_route_version(out.previous_route_version);
+    response->set_previous_server_id(out.previous_server_id);
+    response->set_previous_login_time_sec(out.previous_login_time_sec);
+}
+
 }  // namespace
 
 void SessionServiceImpl::AcquireSession(::google::protobuf::RpcController *controller,
@@ -49,19 +78,7 @@ void SessionServiceImpl::AcquireSession(::google::protobuf::RpcController *contr
     RefreshHealthyLogicOwners();
     AcquireSessionResult out;
     SessionStore::Instance().AcquireSession(in, &out);
-    response->set_ok(out.ok);
-    response->set_message(out.message);
-    response->set_error_code(out.error_code);
-    response->set_session_id(out.session_id);
-    response->set_fence_token(out.fence_token);
-    response->set_generation(out.generation);
-    response->set_gamelogic_instance_id(out.gamelogic_instance_id);
-    response->set_map_instance_id(out.map_instance_id);
-    response->set_map_owner_epoch(out.map_owner_epoch);
-    response->set_route_version(out.route_version);
-    response->set_kicked_previous(out.kicked_previous);
-    response->set_login_time_sec(out.login_time_sec);
-    response->set_server_id(out.server_id);
+    FillAcquirePb(out, response);
 }
 
 void SessionServiceImpl::MarkDisconnectedV2(::google::protobuf::RpcController *controller,
@@ -217,6 +234,10 @@ void SessionServiceImpl::GetSessionOperation(::google::protobuf::RpcController *
     response->set_kicked_previous(out.kicked_previous);
     response->set_login_time_sec(out.login_time_sec);
     response->set_server_id(out.server_id);
+    response->set_previous_gateway_instance_id(out.previous_gateway_instance_id);
+    response->set_previous_session_id(out.previous_session_id);
+    response->set_previous_generation(out.previous_generation);
+    response->set_previous_fence_token(out.previous_fence_token);
 }
 
 void SessionServiceImpl::LogoutV2(::google::protobuf::RpcController *controller,
@@ -252,6 +273,53 @@ void SessionServiceImpl::Kick(::google::protobuf::RpcController *controller,
     LOG_INFO << "Kick player_id=" << request->player_id() << " ok=" << ok
              << " new_gen=" << kr.new_generation << " old_gw=" << kr.old_gateway_id
              << " reason=" << request->reason();
+}
+
+void SessionServiceImpl::RestorePreviousSession(::google::protobuf::RpcController *controller,
+                                                const ::sess::RestorePreviousSessionRequest *request,
+                                                ::sess::RestorePreviousSessionResponse *response,
+                                                ::google::protobuf::Closure *done) {
+    (void)controller;
+    brpc::ClosureGuard done_guard(done);
+    response->Clear();
+    AcquireSessionResult prev;
+    prev.previous_fence_token = request->previous_fence_token();
+    prev.previous_session_id = request->previous_session_id();
+    prev.previous_generation = request->previous_generation();
+    prev.previous_gateway_instance_id = request->previous_gateway_instance_id();
+    prev.previous_device_id = request->previous_device_id();
+    prev.previous_gamelogic_instance_id = request->previous_gamelogic_instance_id();
+    prev.previous_map_instance_id = request->previous_map_instance_id();
+    prev.previous_map_owner_epoch = request->previous_map_owner_epoch();
+    prev.previous_route_version = request->previous_route_version();
+    prev.previous_server_id = request->previous_server_id();
+    prev.previous_login_time_sec = request->previous_login_time_sec();
+    std::string err;
+    const bool ok = SessionStore::Instance().RestorePreviousSession(
+        request->player_id(), request->current_fence_token(), prev, request->operation_id(), &err);
+    response->set_ok(ok);
+    response->set_message(ok ? "restored" : (err.empty() ? "restore failed" : err));
+}
+
+void SessionServiceImpl::NotifySessionReplaced(::google::protobuf::RpcController *controller,
+                                               const ::sess::NotifySessionReplacedRequest *request,
+                                               ::sess::NotifySessionReplacedResponse *response,
+                                               ::google::protobuf::Closure *done) {
+    (void)controller;
+    brpc::ClosureGuard done_guard(done);
+    response->Clear();
+    if (!request || request->player_id() == 0 || request->previous_gateway_instance_id().empty()) {
+        response->set_ok(false);
+        response->set_message("invalid notify");
+        return;
+    }
+    const std::string reason =
+        request->reason().empty() ? "SESSION_REPLACED" : request->reason();
+    GatewayPushClient::Instance().KickConnectionAsync(
+        request->previous_gateway_instance_id(), request->player_id(),
+        request->previous_session_id(), request->previous_generation(), reason);
+    response->set_ok(true);
+    response->set_message("kicked");
 }
 
 void SessionServiceImpl::ResolveOrCreateMap(::google::protobuf::RpcController *controller,

@@ -2,6 +2,10 @@
 
 #include "FormalMode.h"
 
+#ifdef WEBSERVER_ENABLE_GAME_PROTOBUF
+#include "MapCatalog.h"
+#endif
+
 #include <atomic>
 #include <chrono>
 
@@ -148,6 +152,18 @@ void HealthProbeStore::Refresh(const std::string &role) {
         if (!AuthGameDbReachable(800)) {
             next->ok = false;
             next->detail = "auth gamedb unreachable";
+        }
+    }
+#endif
+
+#ifdef WEBSERVER_ENABLE_GAME_PROTOBUF
+    if (next->ok && FormalModeEnabled() &&
+        (role == "gateway" || role == "gamelogic" || role == "all")) {
+        std::string merr;
+        if (!MapCatalog::Instance().EnsureDefault(&merr) || MapCatalog::Instance().empty() ||
+            MapCatalog::Instance().map_manifest_version() == 0) {
+            next->ok = false;
+            next->detail = merr.empty() ? "map catalog missing" : merr;
         }
     }
 #endif

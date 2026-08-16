@@ -670,6 +670,12 @@ message ClientHelloReq {
   repeated string capabilities = 6;
 }
 
+message MapManifestEntry {
+  uint64 map_template_id = 1;
+  uint64 data_version = 2;
+  string sha256 = 3;
+}
+
 message ServerHelloRsp {
   bool ok = 1;
   string error_code = 2;
@@ -682,6 +688,15 @@ message ServerHelloRsp {
   uint32 heartbeat_interval_ms = 9;
   uint32 idle_timeout_ms = 10;
   repeated string capabilities = 11;
+  uint32 gameplay_config_version = 12;
+  uint32 map_manifest_version = 13;
+  repeated MapManifestEntry maps = 14;
+}
+
+message SessionReplacedNotify {
+  string reason_code = 1;
+  int64 server_time_ms = 2;
+  string message = 3;
 }
 
 message HeartbeatReq {
@@ -789,5 +804,6 @@ message GameResponse {
     ChatNotify chat_notify = 73;
     GetPlayerBriefRsp get_player_brief = 74;
     QueryOnlineStateRsp query_online_state = 75;
+    SessionReplacedNotify session_replaced = 76;
   }
 }

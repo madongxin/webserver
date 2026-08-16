@@ -1,5 +1,7 @@
 {
   "schema_version": 1,
+  "map_manifest_version": 1,
+  "gameplay_config_version": 1,
   "maps": [
     {
       "map_template_id": 1001,

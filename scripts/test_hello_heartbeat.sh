@@ -37,9 +37,18 @@ run_cmd() {
   set -e
   echo "$out"
   [[ "$rc" -eq 0 ]] || { echo "ERROR: $name rc=$rc" >&2; exit "$rc"; }
+  LAST_OUT="$out"
 }
 
 run_cmd client-hello client-hello "$HOST" "$GW0"
+echo "$LAST_OUT" | grep -q 'map_manifest_version=1' || {
+  echo "ERROR: client-hello missing map_manifest_version=1" >&2
+  exit 1
+}
+echo "$LAST_OUT" | grep -q 'hello_maps_n=1' || {
+  echo "ERROR: client-hello missing hello_maps_n=1" >&2
+  exit 1
+}
 run_cmd hello-then-register register-login "$HOST" "$GW0" "e2e-s1-reg-$$" e2epass1
 run_cmd hello-bad-version hello-reject-login "$HOST" "$GW0" version
 run_cmd hello-bad-schema hello-reject-login "$HOST" "$GW0" schema

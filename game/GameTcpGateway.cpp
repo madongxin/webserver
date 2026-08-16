@@ -21,6 +21,7 @@
 #include "HealthProbe.h"
 #include "InProcessTransport.h"
 #include "Logging.h"
+#include "MapCatalog.h"
 #include "OpsMetrics.h"
 #include "PlayerSerialQueue.h"
 #include "ProtocolHandshake.h"
@@ -47,6 +48,8 @@
 #endif
 
 #include <atomic>
+#include <cstdlib>
+#include <functional>
 #include <memory>
 #include <mutex>
 #include <thread>
@@ -96,10 +99,18 @@ void RememberBind(uint64_t conn_id, uint64_t player_id, const std::string &token
         std::weak_ptr<TcpConnection> weak_conn = sink->tcp_connection();
         gb.send_frame = [weak_conn](const std::string &frame) {
             auto c = weak_conn.lock();
-            if (!c)
+            if (!c || !c->loop())
                 return;
-            TcpReplySink live(c);
-            live.SendFrame(frame);
+            auto do_send = [weak_conn, frame]() {
+                auto live = weak_conn.lock();
+                if (!live || live->state() != TcpConnection::Connected)
+                    return;
+                live->Send(frame);
+            };
+            if (c->loop()->IsInLoopThread())
+                do_send();
+            else
+                c->loop()->QueueOneFunc(std::move(do_send));
         };
         gb.close_conn = [weak_conn]() {
             auto c = weak_conn.lock();
@@ -107,6 +118,30 @@ void RememberBind(uint64_t conn_id, uint64_t player_id, const std::string &token
                 return;
             TcpReplySink live(c);
             live.CloseConnection();
+        };
+        gb.run_after = [weak_conn](double delay_sec, std::function<void()> cb) {
+            auto c = weak_conn.lock();
+            if (!c) {
+                if (cb)
+                    cb();
+                return;
+            }
+            c->loop()->RunAfter(delay_sec, [weak_conn, cb = std::move(cb)]() {
+                auto live = weak_conn.lock();
+                if (!live)
+                    return;
+                if (cb)
+                    cb();
+            });
+        };
+        gb.queue_on_loop = [weak_conn](std::function<void()> fn) {
+            auto c = weak_conn.lock();
+            if (!c || !c->loop()) {
+                if (fn)
+                    fn();
+                return;
+            }
+            c->loop()->QueueOneFunc(std::move(fn));
         };
     }
     GatewayConnRegistry::Instance().Remember(conn_id, std::move(gb));
@@ -454,6 +489,16 @@ void GameTcpGateway::OnMessage(const std::shared_ptr<TcpConnection> &conn) {
             outer.set_seq(peek.seq());
             game::ServerHelloRsp hello;
             gameproto::HandleClientHello(peek.client_hello(), conn->id(), &hello, &outer);
+            hello.set_gameplay_config_version(MapCatalog::Instance().gameplay_config_version());
+            hello.set_map_manifest_version(MapCatalog::Instance().map_manifest_version());
+            hello.clear_maps();
+            for (const auto &ent : MapCatalog::Instance().ManifestEntries()) {
+                auto *m = hello.add_maps();
+                m->set_map_template_id(ent.map_template_id);
+                m->set_data_version(ent.data_version);
+                m->set_sha256(ent.sha256);
+            }
+            *outer.mutable_server_hello() = hello;
             if (hello.ok()) {
                 GatewayConnGuard::Instance().SetHelloOk(conn->id(), true);
                 OpsMetrics::Instance().IncHelloOk();

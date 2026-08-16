@@ -75,6 +75,17 @@ struct AcquireSessionResult {
     bool kicked_previous = false;
     int64_t login_time_sec = 0;
     uint32_t server_id = 0;
+    std::string previous_gateway_instance_id;
+    std::string previous_session_id;
+    uint64_t previous_generation = 0;
+    std::string previous_fence_token;
+    std::string previous_device_id;
+    std::string previous_gamelogic_instance_id;
+    uint64_t previous_map_instance_id = 0;
+    uint64_t previous_map_owner_epoch = 0;
+    uint64_t previous_route_version = 0;
+    uint32_t previous_server_id = 0;
+    int64_t previous_login_time_sec = 0;
 };
 
 class SessionStore {
@@ -138,6 +149,15 @@ public:
     /** 顶号/踢人：CAS 抬升 generation 并使旧 fence 失效。 */
     bool Kick(uint64_t player_id, const std::string &reason, std::string *err);
     bool Kick(uint64_t player_id, const std::string &reason, KickResult *out);
+
+    /**
+     * Bind 失败补偿：仅当 Redis 仍是本次 Acquire 的 new fence 时恢复旧会话。
+     * previous_fence 为空则删除新会话。operation_id 非空时删除幂等 DONE，允许重试。
+     */
+    bool RestorePreviousSession(uint64_t player_id, const std::string &current_fence,
+                                const AcquireSessionResult &previous, const std::string &operation_id,
+                                std::string *err);
+    bool InvalidateOperation(const std::string &operation_id);
 
     /** 进图/迁移后更新权威路由（fence CAS；route_version 单调） */
     bool UpdatePlayerRoute(uint64_t player_id, const std::string &fence_token,

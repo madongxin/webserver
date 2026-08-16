@@ -116,6 +116,31 @@ int main() {
     if (aout.route_version == 0)
         return Fail("AcquireSession route_version");
 
+    {
+        AcquireSessionInput ain2 = ain;
+        ain2.device_id = "dev-route-2";
+        ain2.gateway_instance_id = "gw-8081";
+        AcquireSessionResult aout2;
+        if (!SessionStore::Instance().AcquireSession(ain2, &aout2) || !aout2.ok)
+            return Fail("second AcquireSession");
+        if (!aout2.kicked_previous)
+            return Fail("kicked_previous");
+        if (aout2.previous_session_id != aout.session_id)
+            return Fail("previous_session_id");
+        if (aout2.previous_generation != aout.generation)
+            return Fail("previous_generation");
+        if (aout2.previous_gateway_instance_id != "gw-8083")
+            return Fail("previous_gateway");
+        if (aout2.previous_fence_token != aout.fence_token)
+            return Fail("previous_fence");
+        std::string rerr;
+        if (!SessionStore::Instance().RestorePreviousSession(pid, aout2.fence_token, aout2, "",
+                                                             &rerr))
+            return Fail(("restore previous " + rerr).c_str());
+        if (!SessionStore::Instance().ValidateToken(pid, aout.fence_token, &err))
+            return Fail("old fence valid after restore");
+    }
+
     // MarkDisconnected ≠ Logout：仍可在宽限内 Reconnect（换 Gateway）
     if (!SessionStore::Instance().MarkDisconnected(pid, aout.fence_token, aout.generation))
         return Fail("MarkDisconnected after Acquire");

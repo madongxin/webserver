@@ -7,6 +7,7 @@
 #include <mutex>
 #include <string>
 #include <unordered_map>
+#include <vector>
 
 /** GameLogic 启动加载的只读地图目录；实例共享同一份 MapStaticData。 */
 class MapCatalog {
@@ -28,6 +29,16 @@ public:
 
     std::shared_ptr<const MapStaticData> Get(uint64_t map_template_id) const;
     bool empty() const;
+    uint32_t gameplay_config_version() const;
+    uint32_t map_manifest_version() const;
+
+    struct ManifestEntry {
+        uint64_t map_template_id = 0;
+        uint64_t data_version = 0;
+        std::string sha256;
+    };
+    std::vector<ManifestEntry> ManifestEntries() const;
+
     void ClearForTest();
     /** 测试注入（不经过目录/哈希文件） */
     void PutForTest(std::shared_ptr<const MapStaticData> data);
@@ -42,4 +53,7 @@ private:
     int aoi_view_radius_ = 2;
     int map_tick_hz_ = 10;
     std::unordered_map<uint64_t, std::shared_ptr<const MapStaticData>> maps_;
+    uint32_t gameplay_config_version_ = 0;
+    uint32_t map_manifest_version_ = 0;
+    std::vector<ManifestEntry> manifest_entries_;
 };

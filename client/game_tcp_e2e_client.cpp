@@ -31,6 +31,7 @@
 #include <unistd.h>
 
 #include <algorithm>
+#include <atomic>
 #include <chrono>
 #include <cmath>
 #include <cctype>
@@ -38,6 +39,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <fstream>
+#include <mutex>
 #include <sstream>
 #include <string>
 #include <thread>
@@ -146,7 +148,9 @@ int ConnectAndHello(const char *host, int port) {
     return raw_fd;
 }
 
-bool RecvFrame(int fd, game::GameResponse *rsp, int timeout_ms) {
+enum class RecvResult { kOk, kTimeout, kClosed };
+
+RecvResult RecvFrameEx(int fd, game::GameResponse *rsp, int timeout_ms) {
     if (timeout_ms > 0) {
         fd_set rfds;
         FD_ZERO(&rfds);
@@ -155,19 +159,27 @@ bool RecvFrame(int fd, game::GameResponse *rsp, int timeout_ms) {
         tv.tv_sec = timeout_ms / 1000;
         tv.tv_usec = (timeout_ms % 1000) * 1000;
         const int sel = ::select(fd + 1, &rfds, nullptr, nullptr, &tv);
-        if (sel <= 0)
-            return false;
+        if (sel == 0)
+            return RecvResult::kTimeout;
+        if (sel < 0)
+            return RecvResult::kClosed;
     }
     uint32_t be_len = 0;
     if (!RecvAll(fd, reinterpret_cast<char *>(&be_len), 4))
-        return false;
+        return RecvResult::kClosed;
     const uint32_t len = ntohl(be_len);
     if (len == 0 || len > 4 * 1024 * 1024)
-        return false;
+        return RecvResult::kClosed;
     std::string body(len, '\0');
     if (!RecvAll(fd, &body[0], len))
-        return false;
-    return rsp->ParseFromString(body);
+        return RecvResult::kClosed;
+    if (!rsp->ParseFromString(body))
+        return RecvResult::kClosed;
+    return RecvResult::kOk;
+}
+
+bool RecvFrame(int fd, game::GameResponse *rsp, int timeout_ms) {
+    return RecvFrameEx(fd, rsp, timeout_ms) == RecvResult::kOk;
 }
 
 int RemainingMs(std::chrono::steady_clock::time_point deadline) {
@@ -191,7 +203,7 @@ void NotePush(SessionState *st, const game::GameResponse &push,
 
 bool IsUnsolicitedNotify(const game::GameResponse &cur) {
     return cur.has_server_push() || cur.has_chat_notify() || cur.has_mailbox_changed() ||
-           cur.has_aoi_delta();
+           cur.has_aoi_delta() || cur.has_session_replaced();
 }
 
 bool Exchange(int fd, const game::GameRequest &req, game::GameResponse *rsp, int timeout_ms,
@@ -908,6 +920,7 @@ bool DoLoginExisting(int fd, uint64_t player_id, const std::string &device,
     PrintKv("token", st->token);
     PrintKv("session_id", st->session_id);
     PrintKv("generation", st->generation);
+    PrintKv("kicked_previous", lr.login().kicked_previous());
     if (lr.login().has_profile()) {
         st->player_name = lr.login().profile().player_name();
         st->stats_version = lr.login().profile().stats_version();
@@ -1697,6 +1710,11 @@ int CmdClientHello(int argc, char **argv) {
                 static_cast<uint64_t>(rsp.server_hello().heartbeat_interval_ms()));
         PrintKv("idle_timeout_ms", static_cast<uint64_t>(rsp.server_hello().idle_timeout_ms()));
         PrintKv("server_time_ms", static_cast<uint64_t>(rsp.server_hello().server_time_ms()));
+        PrintKv("gameplay_config_version",
+                static_cast<uint64_t>(rsp.server_hello().gameplay_config_version()));
+        PrintKv("map_manifest_version",
+                static_cast<uint64_t>(rsp.server_hello().map_manifest_version()));
+        PrintKv("hello_maps_n", static_cast<uint64_t>(rsp.server_hello().maps_size()));
     }
     ::close(fd);
     return ok ? 0 : 12;
@@ -2288,6 +2306,130 @@ int CmdS3Social(int argc, char **argv) {
     return 0;
 }
 
+int CmdDuplicateLogin(int argc, char **argv) {
+    if (argc < 6)
+        return 2;
+    const char *h0 = argv[2];
+    const int p0 = std::atoi(argv[3]);
+    const char *h1 = argv[4];
+    const int p1 = std::atoi(argv[5]);
+    const std::string password = argc >= 7 ? argv[6] : "e2epass1";
+    const std::string dev0 = std::string("dup-a-") + std::to_string(::getpid());
+    const std::string dev1 = std::string("dup-b-") + std::to_string(::getpid());
+
+    TcpSession a;
+    if (!OpenRegister(&a, h0, p0, dev0, password, "dup"))
+        return 12;
+    const uint64_t pid = a.st.player_id;
+    const std::string old_token = a.st.token;
+    const uint64_t old_gen = a.st.generation;
+
+    std::atomic<bool> got_notify{false};
+    std::atomic<bool> saw_eof{false};
+    std::atomic<bool> stop_drain{false};
+    std::string reason;
+    std::mutex reason_mu;
+    std::thread drain([&]() {
+        const auto until =
+            std::chrono::steady_clock::now() + std::chrono::milliseconds(8000);
+        while (!stop_drain.load() && std::chrono::steady_clock::now() < until) {
+            game::GameResponse cur;
+            const RecvResult st = RecvFrameEx(a.fd, &cur, 200);
+            if (st == RecvResult::kTimeout)
+                continue;
+            if (st == RecvResult::kClosed) {
+                saw_eof = true;
+                break;
+            }
+            game::GameResponse inner;
+            const game::SessionReplacedNotify *n = nullptr;
+            if (cur.has_session_replaced())
+                n = &cur.session_replaced();
+            else if (InnerFromPush(cur, &inner) && inner.has_session_replaced())
+                n = &inner.session_replaced();
+            if (n) {
+                std::lock_guard<std::mutex> lk(reason_mu);
+                reason = n->reason_code();
+                got_notify = true;
+                break;
+            }
+        }
+    });
+    auto stop_old_drain = [&]() {
+        stop_drain = true;
+        if (drain.joinable())
+            drain.join();
+    };
+
+    TcpSession b;
+    b.fd = ConnectAndHello(h1, p1);
+    if (b.fd < 0) {
+        stop_old_drain();
+        if (a.fd >= 0)
+            ::close(a.fd);
+        return 7;
+    }
+    b.st.next_seq = 1;
+    if (!DoLoginExisting(b.fd, pid, dev1, password, &b.st)) {
+        stop_old_drain();
+        if (b.fd >= 0)
+            ::close(b.fd);
+        if (a.fd >= 0)
+            ::close(a.fd);
+        return 12;
+    }
+    PrintKv("new_generation", b.st.generation);
+    PrintKv("generation_increased", b.st.generation > old_gen);
+
+    const auto deadline =
+        std::chrono::steady_clock::now() + std::chrono::milliseconds(2500);
+    while (!got_notify.load() && !saw_eof.load()) {
+        if (RemainingMs(deadline) <= 0)
+            break;
+        std::this_thread::sleep_for(std::chrono::milliseconds(50));
+    }
+    stop_old_drain();
+    {
+        std::lock_guard<std::mutex> lk(reason_mu);
+        PrintKv("old_got_session_replaced", got_notify.load());
+        PrintKv("replaced_reason", reason);
+    }
+    PrintKv("old_conn_closed", saw_eof.load() || got_notify.load());
+
+    game::PlayerAttributes attrs;
+    const bool profile_ok = DoGetSelfProfile(&b, &attrs);
+    PrintKv("new_profile_ok", profile_ok);
+
+    TcpSession stale;
+    stale.fd = ConnectAndHello(h0, p0);
+    if (stale.fd < 0) {
+        if (b.fd >= 0)
+            ::close(b.fd);
+        if (a.fd >= 0)
+            ::close(a.fd);
+        return 7;
+    }
+    stale.st.player_id = pid;
+    stale.st.token = old_token;
+    stale.st.session_id = a.st.session_id;
+    stale.st.generation = old_gen;
+    stale.st.next_seq = 10;
+    game::PlayerAttributes stale_attrs;
+    const bool stale_ok = DoGetSelfProfile(&stale, &stale_attrs);
+    PrintKv("old_fence_rejected", !stale_ok);
+
+    if (stale.fd >= 0)
+        ::close(stale.fd);
+    if (a.fd >= 0)
+        ::close(a.fd);
+    if (b.fd >= 0)
+        ::close(b.fd);
+
+    const bool pass = got_notify.load() && profile_ok && !stale_ok && b.st.generation > old_gen;
+    PrintKv("duplicate_login_ok", pass);
+    return pass ? 0 : 12;
+}
+
 }  // namespace
 
 int main(int argc, char **argv) {
@@ -2298,7 +2440,7 @@ int main(int argc, char **argv) {
                      "send-player-mail|mail-list|two-player-aoi|map-capacity-51|"
                      "unity-contract-check|login-profile|client-hello|hello-reject-login|"
                      "heartbeat|heartbeat-flood|idle-reconnect|s2-world-recovery|"
-                     "last-safe-save|last-safe-verify|s3-social> ...\n",
+                     "last-safe-save|last-safe-verify|s3-social|duplicate-login> ...\n",
                      argv[0]);
         return 2;
     }
@@ -2351,6 +2493,8 @@ int main(int argc, char **argv) {
         return CmdLastSafeVerify(argc, argv);
     if (cmd == "s3-social")
         return CmdS3Social(argc, argv);
+    if (cmd == "duplicate-login")
+        return CmdDuplicateLogin(argc, argv);
     std::fprintf(stderr, "unknown cmd %s\n", cmd.c_str());
     return 2;
 }

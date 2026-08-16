@@ -22,6 +22,9 @@ public:
         std::string gateway_instance_id;
         std::function<void(const std::string &frame)> send_frame;
         std::function<void()> close_conn;
+        std::function<void(double delay_sec, std::function<void()> cb)> run_after;
+        /** 把任务投到该连接 EventLoop；缺省则在调用线程同步执行（单测）。 */
+        std::function<void(std::function<void()> fn)> queue_on_loop;
     };
 
     static GatewayConnRegistry &Instance();
@@ -40,6 +43,12 @@ public:
     bool SendBySession(const std::string &session_id, const std::string &frame);
     /** 仅关闭匹配 player_id+session_id+generation 的旧连接；generation=0 时忽略 generation */
     bool CloseIfMatch(uint64_t player_id, const std::string &session_id, uint64_t generation);
+    /**
+     * 先向匹配连接发送 frame（顶号通知），再经 run_after 有界延迟关闭。
+     * 发送失败仍关闭。删除索引前校验仍指向旧 connection。
+     */
+    bool NotifyAndCloseIfMatch(uint64_t player_id, const std::string &session_id, uint64_t generation,
+                               const std::string &frame, double grace_sec);
 
 private:
     GatewayConnRegistry() = default;

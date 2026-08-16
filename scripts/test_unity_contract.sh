@@ -1,8 +1,20 @@
 #!/usr/bin/env bash
-# Unity 协议契约：schema/地图 hash、完整 Profile、错误地图哈希拒绝、GameLogic 重启后资料不丢。
+# Unity 协议契约：跨仓库 proto/hash 门禁 + TCP schema/地图 hash、完整 Profile、
+# 错误地图哈希拒绝、GameLogic 重启后资料不丢。
+# 用法：
+#   LUNA_REPO=/path/to/luna ./scripts/test_unity_contract.sh
+#   ./scripts/test_unity_contract.sh /path/to/luna
+# client_ready / 发布门禁设置 GAMEMESH_REQUIRE_LUNA_CONTRACT=1：缺少 luna 即失败。
 set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
+
+if [[ "${1:-}" != "" && -d "$1" ]]; then
+  export LUNA_REPO="$(cd "$1" && pwd)"
+  shift
+fi
+"$ROOT/scripts/check_luna_protocol_contract.sh" "${LUNA_REPO:-}"
+
 # shellcheck disable=SC1090
 source "$ROOT/scripts/e2e_inventory.sh"
 

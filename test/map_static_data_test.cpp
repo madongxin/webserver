@@ -102,6 +102,9 @@ int main() {
     Expect(MapCatalog::Instance().LoadDirectory(dir, &err), "catalog load");
     Expect(MapCatalog::Instance().Get(1001) != nullptr, "catalog has 1001");
     Expect(MapCatalog::Instance().Get(1001)->sha256() == expect_hash, "catalog hash");
+    Expect(MapCatalog::Instance().gameplay_config_version() == 1, "gameplay_config_version");
+    Expect(MapCatalog::Instance().map_manifest_version() == 1, "map_manifest_version");
+    Expect(!MapCatalog::Instance().ManifestEntries().empty(), "manifest entries");
 
     if (fails) {
         std::printf("map_static_data_test FAIL count=%d last=%s\n", fails, err.c_str());

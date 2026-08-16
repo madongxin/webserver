@@ -18,12 +18,23 @@ if [[ -f "$GW_CNF" ]]; then
 fi
 
 LOGIC_CNF="$ROOT/config/gamelogic.cnf"
-if [[ -f "$LOGIC_CNF" ]] && grep -q 'gateway_push_addrs=' "$LOGIC_CNF"; then
-  if grep -q '0.0.0.0' <<<"$(grep gateway_push_addrs "$LOGIC_CNF")"; then
-    echo "FAIL: gateway_push_addrs must not use 0.0.0.0"
-    exit 1
+SESSION_CNF="$ROOT/config/session.cnf"
+check_push_addrs() {
+  local cnf="$1" label="$2"
+  if [[ -f "$cnf" ]] && grep -q 'gateway_push_addrs=' "$cnf"; then
+    if grep -q '0.0.0.0' <<<"$(grep gateway_push_addrs "$cnf")"; then
+      echo "FAIL: $label gateway_push_addrs must not use 0.0.0.0"
+      exit 1
+    fi
+    echo "ok: $label gateway_push_addrs present without 0.0.0.0"
+    return 0
   fi
-  echo "ok: gateway_push_addrs present without 0.0.0.0"
+  return 1
+}
+if check_push_addrs "$LOGIC_CNF" "gamelogic.cnf"; then
+  :
+elif check_push_addrs "$SESSION_CNF" "session.cnf"; then
+  :
 else
   echo "INFO: run start_formal.sh to materialize gateway_push_addrs"
 fi

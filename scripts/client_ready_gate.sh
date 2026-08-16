@@ -11,6 +11,8 @@ export GAMEMESH_RUN_DIR="${GAMEMESH_RUN_DIR:-$ROOT/run/unity-e2e}"
 export GAMEMESH_MAP_SHA256_FILE="${GAMEMESH_MAP_SHA256_FILE:-$ROOT/config/maps/map_1001.json.sha256}"
 export GAMEMESH_MAP_DATA_VERSION="${GAMEMESH_MAP_DATA_VERSION:-1}"
 export GAMEMESH_SKIP_CLUSTER_STOP=1
+# 发布/就绪门禁必须核对 Unity 仓库协议；缺少 LUNA_REPO 不得 PASS。
+export GAMEMESH_REQUIRE_LUNA_CONTRACT=1
 
 CLIENT="${ROOT}/build/test/game_tcp_e2e_client"
 [[ -x "$CLIENT" ]] || { echo "ERROR: missing $CLIENT (./scripts/build.sh Debug)" >&2; exit 1; }
@@ -66,6 +68,17 @@ run_tcp() {
   [[ "$rc" -eq 0 ]] || die "$name failed rc=$rc (see $log)"
   grep -q "PASS" "$log" || die "$name missing PASS token in structured output"
 }
+
+echo "== client_ready: luna_protocol_contract =="
+set +e
+luna_out="$("$ROOT/scripts/check_luna_protocol_contract.sh" 2>&1)"
+luna_rc=$?
+set -e
+echo "$luna_out"
+STEPS+=("{\"name\":\"luna_protocol_contract\",\"exit_code\":${luna_rc}}")
+[[ "$luna_rc" -eq 0 ]] || die "luna protocol contract failed rc=$luna_rc"
+echo "$luna_out" | grep -q "luna_protocol_contract=PASS" \
+  || die "luna protocol contract missing PASS token"
 
 run_tcp hello_heartbeat "$ROOT/scripts/test_hello_heartbeat.sh"
 run_tcp unity_contract "$ROOT/scripts/test_unity_contract.sh"

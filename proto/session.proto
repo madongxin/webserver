@@ -70,6 +70,18 @@ message AcquireSessionResponse {
   bool kicked_previous = 11;
   int64 login_time_sec = 12;
   uint32 server_id = 13;
+  // 仅内部：旧连接三元组，禁止下发公网 LoginRsp
+  string previous_gateway_instance_id = 14;
+  string previous_session_id = 15;
+  uint64 previous_generation = 16;
+  string previous_fence_token = 17;
+  string previous_device_id = 18;
+  string previous_gamelogic_instance_id = 19;
+  uint64 previous_map_instance_id = 20;
+  uint64 previous_map_owner_epoch = 21;
+  uint64 previous_route_version = 22;
+  uint32 previous_server_id = 23;
+  int64 previous_login_time_sec = 24;
 }
 
 message MarkDisconnectedRequest {
@@ -116,6 +128,45 @@ message GetSessionOperationResponse {
   bool kicked_previous = 15;
   int64 login_time_sec = 16;
   uint32 server_id = 17;
+  string previous_gateway_instance_id = 18;
+  string previous_session_id = 19;
+  uint64 previous_generation = 20;
+  string previous_fence_token = 21;
+}
+
+message RestorePreviousSessionRequest {
+  uint64 player_id = 1;
+  string current_fence_token = 2;
+  string previous_fence_token = 3;
+  string previous_session_id = 4;
+  uint64 previous_generation = 5;
+  string previous_gateway_instance_id = 6;
+  string previous_device_id = 7;
+  string previous_gamelogic_instance_id = 8;
+  uint64 previous_map_instance_id = 9;
+  uint64 previous_map_owner_epoch = 10;
+  uint64 previous_route_version = 11;
+  uint32 previous_server_id = 12;
+  int64 previous_login_time_sec = 13;
+  string operation_id = 14;
+}
+
+message RestorePreviousSessionResponse {
+  bool ok = 1;
+  string message = 2;
+}
+
+message NotifySessionReplacedRequest {
+  uint64 player_id = 1;
+  string previous_gateway_instance_id = 2;
+  string previous_session_id = 3;
+  uint64 previous_generation = 4;
+  string reason = 5;
+}
+
+message NotifySessionReplacedResponse {
+  bool ok = 1;
+  string message = 2;
 }
 
 message ReconnectResponse {
@@ -395,6 +446,8 @@ service SessionService {
   rpc GetSessionOperation(GetSessionOperationRequest) returns (GetSessionOperationResponse);
   rpc LogoutV2(LogoutRequest) returns (LogoutResponse);
   rpc Kick(KickRequest) returns (KickResponse);
+  rpc RestorePreviousSession(RestorePreviousSessionRequest) returns (RestorePreviousSessionResponse);
+  rpc NotifySessionReplaced(NotifySessionReplacedRequest) returns (NotifySessionReplacedResponse);
 
   // --- Placement ---
   rpc ResolveOrCreateMap(ResolveOrCreateMapRequest) returns (ResolveOrCreateMapResponse);

@@ -45,7 +45,19 @@ fi
 PUB="$ROOT/docs/protocol/published/v1/game.desc"
 [[ -f "$PUB" ]] || { echo "ERROR: missing published descriptor $PUB" >&2; exit 1; }
 run_one protocol_compat_test "$PUB" "$proto_a/game.desc"
+python3 - "$proto_a/protocol_manifest.json" <<'PY' || exit 1
+import json, sys
+m = json.load(open(sys.argv[1]))
+for k in ("server_commit", "protocol_version", "min_supported_protocol_version",
+          "schema_sha256", "descriptor_sha256", "frame_format", "max_frame_bytes",
+          "protoc_version", "required_types"):
+    assert k in m, k
+assert isinstance(m["required_types"], list) and "ClientHelloReq" in m["required_types"]
+print("unit export manifest fields ok")
+PY
 rm -rf "$proto_a" "$proto_b"
+# Unity 跨仓库契约：未设置 LUNA_REPO 时 NOT RUN，不阻塞普通单元测试。
+"$ROOT/scripts/check_luna_protocol_contract.sh"
 run_one protocol_handshake_test
 run_one utf8_text_test
 run_one gateway_overload_test

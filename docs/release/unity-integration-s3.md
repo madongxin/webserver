@@ -1,6 +1,6 @@
 # Unity 联调批次（S3）
 
-状态：本批服务器端以真实 TCP 双客户端门禁为准，不以“理论可用”收口。未按用户要求前不 commit / tag / push。
+状态：S3 服务器能力已包含在提交 `60542e51ed5f7e757fced13cb2a069c29739aa36`。本文件不再把工作区写成 dirty `145a647`。C++ TCP 双客户端门禁是历史证据，**不等于** Unity 协议已对齐。
 
 ## 范围
 
@@ -13,8 +13,8 @@
 
 | 项 | 值 |
 | --- | --- |
-| 基线 | `145a64753aacd0d9e1dc7916edee81d15f183148`（S0–S3 均未提交） |
-| 工作区 | dirty，未 commit / tag / push |
+| 服务器 HEAD | `60542e51ed5f7e757fced13cb2a069c29739aa36`（S3 已随 foundation slice 提交） |
+| Unity 审计基线 | `38a0042a62a1e3975a5315a7e742dbc5342102f4`（仍绑定旧 hash `aed5c952…`，与服务器 `4c29a73…` **不兼容**） |
 | 协议 namespace | `GameMesh.Protocol` |
 | `game.proto` SHA-256 | `4c29a73aa7fbed19f122e122bc1832852e593f6bfaca0b7433249391e2ec643d` |
 | 地图模板 | 1001 |
@@ -55,7 +55,9 @@ S3 仅追加字段/message，未改已发布编号。无新 SQL 迁移。详见 
 - 协议：继续使用已导出的 `game.proto` + manifest hash；客户端勿混用未匹配的 C# 生成物
 - 不 `git reset --hard` 除非用户明确要求
 
-## 验证（2026-08-15，本工作区）
+## 验证（历史证据，2026-08-15）
+
+下列退出码来自 `60542e5` 提交前的 dirty 工作区 / 提交时的 C++ TCP 门禁，**不是**当前 closeout 会话的 `--full`，也 **不是** Unity `38a0042` 协议对齐证明。权威事实见 `docs/release/server-client-foundation-status.md`。
 
 | 命令 | 退出码 |
 | --- | ---: |

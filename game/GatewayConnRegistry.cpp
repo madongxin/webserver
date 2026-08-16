@@ -136,3 +136,76 @@ bool GatewayConnRegistry::CloseIfMatch(uint64_t player_id, const std::string &se
     }
     return !closers.empty();
 }
+
+bool GatewayConnRegistry::NotifyAndCloseIfMatch(uint64_t player_id, const std::string &session_id,
+                                                uint64_t generation, const std::string &frame,
+                                                double grace_sec) {
+    if (player_id == 0)
+        return false;
+    struct Job {
+        std::function<void(const std::string &)> send_frame;
+        std::function<void()> close_conn;
+        std::function<void(double, std::function<void()>)> run_after;
+        std::function<void(std::function<void()>)> queue_on_loop;
+        uint64_t connection_id = 0;
+        std::string session_id;
+        uint64_t player_id = 0;
+    };
+    std::vector<Job> jobs;
+    {
+        std::lock_guard<std::mutex> lk(mu_);
+        for (auto &kv : by_conn_) {
+            const Bind &b = kv.second;
+            if (b.player_id != player_id)
+                continue;
+            if (!session_id.empty() && b.session_id != session_id)
+                continue;
+            if (generation != 0 && b.generation != generation)
+                continue;
+            Job j;
+            j.send_frame = b.send_frame;
+            j.close_conn = b.close_conn;
+            j.run_after = b.run_after;
+            j.queue_on_loop = b.queue_on_loop;
+            j.connection_id = kv.first;
+            j.session_id = b.session_id;
+            j.player_id = b.player_id;
+            jobs.push_back(std::move(j));
+        }
+    }
+    for (auto &j : jobs) {
+        auto closer = j.close_conn;
+        auto conn_id = j.connection_id;
+        auto sid = j.session_id;
+        auto pid = j.player_id;
+        auto send = j.send_frame;
+        auto run_after = j.run_after;
+        auto guarded_close = [this, closer, conn_id, sid, pid]() {
+            {
+                std::lock_guard<std::mutex> lk(mu_);
+                auto it = by_conn_.find(conn_id);
+                if (it == by_conn_.end() || it->second.player_id != pid)
+                    return;
+                if (!sid.empty() && it->second.session_id != sid)
+                    return;
+                // session/player 索引可能已指向新连接；仍关闭本 TCP。
+                // Forget 只会在索引仍指向本 connection 时删除。
+            }
+            if (closer)
+                closer();
+        };
+        auto work = [send, frame, grace_sec, run_after, guarded_close]() {
+            if (!frame.empty() && send)
+                send(frame);
+            if (grace_sec > 0.0 && run_after)
+                run_after(grace_sec, guarded_close);
+            else
+                guarded_close();
+        };
+        if (j.queue_on_loop)
+            j.queue_on_loop(std::move(work));
+        else
+            work();
+    }
+    return !jobs.empty();
+}

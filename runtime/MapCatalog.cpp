@@ -71,7 +71,17 @@ bool MapCatalog::LoadDirectory(const std::string &dir, std::string *err) {
             *err = "manifest maps[] empty";
         return false;
     }
+    const uint32_t gameplay_ver = root.get("gameplay_config_version", 1).asUInt();
+    uint32_t manifest_ver = root.get("map_manifest_version", 0).asUInt();
+    if (manifest_ver == 0)
+        manifest_ver = root.get("schema_version", 1).asUInt();
+    if (gameplay_ver == 0 || manifest_ver == 0) {
+        if (err)
+            *err = "manifest versions must be > 0";
+        return false;
+    }
     std::unordered_map<uint64_t, std::shared_ptr<const MapStaticData>> loaded;
+    std::vector<MapCatalog::ManifestEntry> entries;
     for (const auto &m : maps) {
         const uint64_t tid = m.get("map_template_id", 0).asUInt64();
         const std::string file = m.get("file", "").asString();
@@ -100,13 +110,25 @@ bool MapCatalog::LoadDirectory(const std::string &dir, std::string *err) {
                 *err = "template id mismatch in " + file;
             return false;
         }
+        MapCatalog::ManifestEntry ent;
+        ent.map_template_id = tid;
+        ent.data_version = data->data_version();
+        if (m.isMember("data_version") && m["data_version"].asUInt64() != 0)
+            ent.data_version = m["data_version"].asUInt64();
+        if (ent.data_version == 0)
+            ent.data_version = data->data_version();
+        ent.sha256 = data->sha256();
         loaded[tid] = std::move(data);
+        entries.push_back(std::move(ent));
     }
     {
         std::lock_guard<std::mutex> lk(mu_);
         maps_ = std::move(loaded);
         map_data_dir_ = dir;
         loaded_ = true;
+        gameplay_config_version_ = gameplay_ver;
+        map_manifest_version_ = manifest_ver;
+        manifest_entries_ = std::move(entries);
     }
     LOG_INFO << "MapCatalog loaded dir=" << dir << " templates=" << maps_.size();
     return true;
@@ -146,6 +168,9 @@ void MapCatalog::ClearForTest() {
     std::lock_guard<std::mutex> lk(mu_);
     maps_.clear();
     loaded_ = false;
+    gameplay_config_version_ = 0;
+    map_manifest_version_ = 0;
+    manifest_entries_.clear();
 }
 
 void MapCatalog::PutForTest(std::shared_ptr<const MapStaticData> data) {
@@ -154,4 +179,19 @@ void MapCatalog::PutForTest(std::shared_ptr<const MapStaticData> data) {
     std::lock_guard<std::mutex> lk(mu_);
     maps_[data->map_template_id()] = std::move(data);
     loaded_ = true;
+}
+
+uint32_t MapCatalog::gameplay_config_version() const {
+    std::lock_guard<std::mutex> lk(mu_);
+    return gameplay_config_version_;
+}
+
+uint32_t MapCatalog::map_manifest_version() const {
+    std::lock_guard<std::mutex> lk(mu_);
+    return map_manifest_version_;
+}
+
+std::vector<MapCatalog::ManifestEntry> MapCatalog::ManifestEntries() const {
+    std::lock_guard<std::mutex> lk(mu_);
+    return manifest_entries_;
 }

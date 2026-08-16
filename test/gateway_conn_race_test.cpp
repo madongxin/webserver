@@ -7,6 +7,7 @@
 
 #include <cstdlib>
 #include <iostream>
+#include <functional>
 #include <string>
 
 namespace {
@@ -128,6 +129,61 @@ void TestCloseIfMatchGeneration() {
     reg.Forget(22);
 }
 
+void TestNotifyAndCloseIfMatch() {
+    auto &reg = GatewayConnRegistry::Instance();
+    reg.Forget(31);
+    reg.Forget(32);
+    bool sent = false;
+    bool closed_old = false;
+    bool closed_new = false;
+    GatewayConnRegistry::Bind oldb;
+    oldb.player_id = 601;
+    oldb.session_id = "sess-n";
+    oldb.generation = 1;
+    oldb.send_frame = [&](const std::string &) { sent = true; };
+    oldb.close_conn = [&]() { closed_old = true; };
+    oldb.run_after = [&](double, std::function<void()> cb) { cb(); };
+    reg.Remember(31, oldb);
+    GatewayConnRegistry::Bind newb = oldb;
+    newb.generation = 2;
+    newb.send_frame = [&](const std::string &) {};
+    newb.close_conn = [&]() { closed_new = true; };
+    newb.run_after = [&](double, std::function<void()> cb) { cb(); };
+    reg.Remember(32, newb);
+    Expect(reg.NotifyAndCloseIfMatch(601, "sess-n", 1, "frame", 0.05), "notify old");
+    Expect(sent, "notify sent");
+    Expect(closed_old, "old closed after notify");
+    Expect(!closed_new, "new not closed");
+    Expect(reg.FindByConnection(32, &newb), "new remains after notify close");
+    reg.Forget(31);
+    reg.Forget(32);
+}
+
+void TestNotifyQueuesOnLoop() {
+    auto &reg = GatewayConnRegistry::Instance();
+    reg.Forget(41);
+    bool queued = false;
+    bool sent = false;
+    bool closed = false;
+    GatewayConnRegistry::Bind b;
+    b.player_id = 701;
+    b.session_id = "sess-q";
+    b.generation = 1;
+    b.send_frame = [&](const std::string &) { sent = true; };
+    b.close_conn = [&]() { closed = true; };
+    b.run_after = [&](double, std::function<void()> cb) { cb(); };
+    b.queue_on_loop = [&](std::function<void()> fn) {
+        queued = true;
+        fn();
+    };
+    reg.Remember(41, b);
+    Expect(reg.NotifyAndCloseIfMatch(701, "sess-q", 1, "frame", 0.01), "queued notify");
+    Expect(queued, "queue_on_loop used");
+    Expect(sent, "sent on queued job");
+    Expect(closed, "closed on queued job");
+    reg.Forget(41);
+}
+
 void TestGatewayIdentityEnv() {
     setenv("GAMEMESH_INSTANCE_ID", "gw-race-test", 1);
     unsetenv("GAMEMESH_FORMAL");
@@ -148,6 +204,8 @@ int main() {
     TestRememberDoesNotClobberForeignIndex();
     TestAuthFlowGeneration();
     TestCloseIfMatchGeneration();
+    TestNotifyAndCloseIfMatch();
+    TestNotifyQueuesOnLoop();
     TestGatewayIdentityEnv();
     if (g_fail) {
         std::cerr << "gateway_conn_race_test FAIL count=" << g_fail << "\n";

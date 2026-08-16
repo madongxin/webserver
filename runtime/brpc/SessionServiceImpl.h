@@ -37,6 +37,14 @@ public:
                   ::google::protobuf::Closure *done) override;
     void Kick(::google::protobuf::RpcController *controller, const ::sess::KickRequest *request,
               ::sess::KickResponse *response, ::google::protobuf::Closure *done) override;
+    void RestorePreviousSession(::google::protobuf::RpcController *controller,
+                                const ::sess::RestorePreviousSessionRequest *request,
+                                ::sess::RestorePreviousSessionResponse *response,
+                                ::google::protobuf::Closure *done) override;
+    void NotifySessionReplaced(::google::protobuf::RpcController *controller,
+                               const ::sess::NotifySessionReplacedRequest *request,
+                               ::sess::NotifySessionReplacedResponse *response,
+                               ::google::protobuf::Closure *done) override;
 
     void ResolveOrCreateMap(::google::protobuf::RpcController *controller,
                             const ::sess::ResolveOrCreateMapRequest *request,

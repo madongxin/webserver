@@ -103,6 +103,16 @@ if state == 'DISCONNECTED' and deadline > 0 and now > deadline then
   state = nil
 end
 local old_gen = tonumber(f['generation'] or '0') or 0
+local old_gw = f['gatewayId'] or ''
+local old_sid = f['sessionId'] or ''
+local old_token = f['token'] or ''
+local old_device = f['deviceId'] or ''
+local old_logic = f['gamelogicInstanceId'] or ''
+local old_map = f['mapInstanceId'] or '0'
+local old_epoch = f['mapOwnerEpoch'] or '0'
+local old_rv = f['routeVersion'] or '0'
+local old_server = f['serverId'] or '0'
+local old_login = f['loginTime'] or '0'
 local kicked = 0
 if state ~= nil then
   kicked = 1
@@ -128,7 +138,9 @@ redis.call('HMSET', key,
   'mapOwnerEpoch', map_epoch,
   'routeVersion', route_version)
 redis.call('EXPIRE', key, ttl)
-return {'1', 'OK', tostring(gen), route_version, tostring(kicked), token, session_id, logic_id, map_id, map_epoch}
+return {'1', 'OK', tostring(gen), route_version, tostring(kicked), token, session_id, logic_id, map_id, map_epoch,
+        old_gw, old_sid, tostring(old_gen), old_token, old_device, old_logic, old_map, old_epoch, old_rv,
+        old_server, old_login}
 )LUA";
 
 // 幂等操作：PENDING / DONE|payload；同 operation_id 超时重试返回同一结果
@@ -161,6 +173,57 @@ local key = KEYS[1]
 if redis.call('GET', key) == 'PENDING' then
   redis.call('DEL', key)
 end
+return {'1'}
+)LUA";
+
+const char kLuaRestorePrevious[] = R"LUA(
+local key = KEYS[1]
+local expect_new = ARGV[1]
+local old_token = ARGV[2]
+local old_sid = ARGV[3]
+local old_gen = ARGV[4]
+local old_gw = ARGV[5]
+local old_device = ARGV[6]
+local old_logic = ARGV[7]
+local old_map = ARGV[8]
+local old_epoch = ARGV[9]
+local old_rv = ARGV[10]
+local old_server = ARGV[11]
+local old_login = ARGV[12]
+local ttl = tonumber(ARGV[13]) or 7200
+local raw = redis.call('HGETALL', key)
+if #raw == 0 then return {'0', 'NOT_FOUND'} end
+local f = {}
+for i = 1, #raw, 2 do f[raw[i]] = raw[i + 1] end
+if (f['token'] or '') ~= expect_new then
+  return {'0', 'NOT_OWNER'}
+end
+if old_token == '' or old_sid == '' then
+  redis.call('DEL', key)
+  return {'1', 'DELETED'}
+end
+redis.call('HMSET', key,
+  'token', old_token,
+  'sessionId', old_sid,
+  'generation', old_gen,
+  'gatewayId', old_gw,
+  'deviceId', old_device,
+  'gamelogicInstanceId', old_logic,
+  'mapInstanceId', old_map,
+  'mapOwnerEpoch', old_epoch,
+  'routeVersion', old_rv,
+  'serverId', old_server,
+  'loginTime', old_login,
+  'state', 'ONLINE',
+  'connectionId', '0',
+  'disconnectDeadline', '0')
+redis.call('EXPIRE', key, ttl)
+return {'1', 'RESTORED'}
+)LUA";
+
+const char kLuaOpInvalidate[] = R"LUA(
+local key = KEYS[1]
+redis.call('DEL', key)
 return {'1'}
 )LUA";
 
@@ -650,7 +713,14 @@ std::string PackOpResult(const std::string &kind, const AcquireSessionResult &r)
         << SanitizeOpField(r.session_id) << '|' << SanitizeOpField(r.fence_token) << '|'
         << r.generation << '|' << SanitizeOpField(r.gamelogic_instance_id) << '|'
         << r.map_instance_id << '|' << r.map_owner_epoch << '|' << r.route_version << '|'
-        << (r.kicked_previous ? '1' : '0') << '|' << r.login_time_sec << '|' << r.server_id;
+        << (r.kicked_previous ? '1' : '0') << '|' << r.login_time_sec << '|' << r.server_id
+        << '|' << SanitizeOpField(r.previous_gateway_instance_id) << '|'
+        << SanitizeOpField(r.previous_session_id) << '|' << r.previous_generation << '|'
+        << SanitizeOpField(r.previous_fence_token) << '|' << SanitizeOpField(r.previous_device_id)
+        << '|' << SanitizeOpField(r.previous_gamelogic_instance_id) << '|'
+        << r.previous_map_instance_id << '|' << r.previous_map_owner_epoch << '|'
+        << r.previous_route_version << '|' << r.previous_server_id << '|'
+        << r.previous_login_time_sec;
     return oss.str();
 }
 
@@ -694,6 +764,19 @@ bool UnpackOpResult(const std::string &packed, std::string *kind, AcquireSession
     out->kicked_previous = parts[11] == "1";
     out->login_time_sec = OpParseI64(parts[12]);
     out->server_id = static_cast<uint32_t>(OpParseU64(parts[13]));
+    if (parts.size() >= 24) {
+        out->previous_gateway_instance_id = parts[14];
+        out->previous_session_id = parts[15];
+        out->previous_generation = OpParseU64(parts[16]);
+        out->previous_fence_token = parts[17];
+        out->previous_device_id = parts[18];
+        out->previous_gamelogic_instance_id = parts[19];
+        out->previous_map_instance_id = OpParseU64(parts[20]);
+        out->previous_map_owner_epoch = OpParseU64(parts[21]);
+        out->previous_route_version = OpParseU64(parts[22]);
+        out->previous_server_id = static_cast<uint32_t>(OpParseU64(parts[23]));
+        out->previous_login_time_sec = OpParseI64(parts[24]);
+    }
     return true;
 }
 
@@ -1037,9 +1120,24 @@ bool SessionStore::AcquireSessionUnlocked(const AcquireSessionInput &in, Acquire
     out->map_owner_epoch = reply.size() > 9 ? ParseU64(reply[9]) : 0;
     out->login_time_sec = login_time;
     out->server_id = in.server_id;
+    if (out->kicked_previous && reply.size() > 13) {
+        out->previous_gateway_instance_id = reply.size() > 10 ? reply[10] : "";
+        out->previous_session_id = reply.size() > 11 ? reply[11] : "";
+        out->previous_generation = reply.size() > 12 ? ParseU64(reply[12]) : 0;
+        out->previous_fence_token = reply.size() > 13 ? reply[13] : "";
+        out->previous_device_id = reply.size() > 14 ? reply[14] : "";
+        out->previous_gamelogic_instance_id = reply.size() > 15 ? reply[15] : "";
+        out->previous_map_instance_id = reply.size() > 16 ? ParseU64(reply[16]) : 0;
+        out->previous_map_owner_epoch = reply.size() > 17 ? ParseU64(reply[17]) : 0;
+        out->previous_route_version = reply.size() > 18 ? ParseU64(reply[18]) : 0;
+        out->previous_server_id =
+            reply.size() > 19 ? static_cast<uint32_t>(ParseU64(reply[19])) : 0;
+        out->previous_login_time_sec = reply.size() > 20 ? static_cast<int64_t>(ParseU64(reply[20])) : 0;
+    }
     LOG_INFO << "SessionStore: AcquireSession player_id=" << in.player_id
              << " generation=" << out->generation << " logic=" << out->gamelogic_instance_id
-             << " kicked=" << (out->kicked_previous ? 1 : 0);
+             << " kicked=" << (out->kicked_previous ? 1 : 0)
+             << " prev_gw=" << out->previous_gateway_instance_id;
     return true;
 }
 
@@ -1475,6 +1573,67 @@ bool SessionStore::Kick(uint64_t player_id, const std::string &reason, KickResul
              << " generation=" << r->new_generation << " old_gw=" << r->old_gateway_id;
     lease = RedisPool::Lease();
     UntrackOnline(player_id);
+    return true;
+}
+
+bool SessionStore::InvalidateOperation(const std::string &operation_id) {
+    if (!available_ || operation_id.empty())
+        return false;
+    auto lease = RedisPool::Instance().Acquire();
+    if (!lease)
+        return false;
+    std::vector<std::string> keys{OpKey(operation_id)};
+    std::vector<std::string> args;
+    std::vector<std::string> reply;
+    return lease->Eval(kLuaOpInvalidate, keys, args, &reply) && !reply.empty() && reply[0] == "1";
+}
+
+bool SessionStore::RestorePreviousSession(uint64_t player_id, const std::string &current_fence,
+                                          const AcquireSessionResult &previous,
+                                          const std::string &operation_id, std::string *err) {
+    if (!available_ || player_id == 0 || current_fence.empty()) {
+        if (err)
+            *err = "invalid restore args";
+        return false;
+    }
+    auto lease = RedisPool::Instance().Acquire();
+    if (!lease) {
+        if (err)
+            *err = "POOL_EXHAUSTED";
+        return false;
+    }
+    std::vector<std::string> keys{SessionKey(player_id)};
+    std::vector<std::string> args{
+        current_fence,
+        previous.previous_fence_token,
+        previous.previous_session_id,
+        std::to_string(previous.previous_generation),
+        previous.previous_gateway_instance_id,
+        previous.previous_device_id,
+        previous.previous_gamelogic_instance_id,
+        std::to_string(previous.previous_map_instance_id),
+        std::to_string(previous.previous_map_owner_epoch),
+        std::to_string(previous.previous_route_version),
+        std::to_string(previous.previous_server_id),
+        std::to_string(previous.previous_login_time_sec),
+        std::to_string(default_ttl_sec_),
+    };
+    std::vector<std::string> reply;
+    if (!lease->Eval(kLuaRestorePrevious, keys, args, &reply) || reply.empty()) {
+        if (err)
+            *err = "LUA_FAILED";
+        return false;
+    }
+    if (reply[0] != "1") {
+        if (err)
+            *err = reply.size() > 1 ? reply[1] : "RESTORE_FAILED";
+        return false;
+    }
+    if (!operation_id.empty())
+        InvalidateOperation(operation_id);
+    LOG_INFO << "SessionStore: RestorePrevious player_id=" << player_id
+             << " result=" << (reply.size() > 1 ? reply[1] : "ok")
+             << " prev_gw=" << previous.previous_gateway_instance_id;
     return true;
 }
 

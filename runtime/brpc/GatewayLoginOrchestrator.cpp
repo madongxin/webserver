@@ -125,7 +125,27 @@ bool OrchestrateGatewayLogin(const std::string &gateway_instance_id, uint64_t co
     }
 
     if (srsp.gamelogic_instance_id().empty()) {
-        CompensateLogout(arsp.player_id(), srsp.session_id(), srsp.fence_token());
+        if (!srsp.previous_session_id().empty()) {
+            sess::RestorePreviousSessionRequest rreq;
+            rreq.set_player_id(arsp.player_id());
+            rreq.set_current_fence_token(srsp.fence_token());
+            rreq.set_previous_fence_token(srsp.previous_fence_token());
+            rreq.set_previous_session_id(srsp.previous_session_id());
+            rreq.set_previous_generation(srsp.previous_generation());
+            rreq.set_previous_gateway_instance_id(srsp.previous_gateway_instance_id());
+            rreq.set_previous_device_id(srsp.previous_device_id());
+            rreq.set_previous_gamelogic_instance_id(srsp.previous_gamelogic_instance_id());
+            rreq.set_previous_map_instance_id(srsp.previous_map_instance_id());
+            rreq.set_previous_map_owner_epoch(srsp.previous_map_owner_epoch());
+            rreq.set_previous_route_version(srsp.previous_route_version());
+            rreq.set_previous_server_id(srsp.previous_server_id());
+            rreq.set_previous_login_time_sec(srsp.previous_login_time_sec());
+            rreq.set_operation_id(sreq.operation_id());
+            sess::RestorePreviousSessionResponse rrsp;
+            GatewayAuthClients::Instance().RestorePreviousSession(rreq, &rrsp);
+        } else {
+            CompensateLogout(arsp.player_id(), srsp.session_id(), srsp.fence_token());
+        }
         login_body->set_ok(false);
         login_body->set_message("no logic assigned");
         rsp.set_ok(false);
@@ -148,12 +168,46 @@ bool OrchestrateGatewayLogin(const std::string &gateway_instance_id, uint64_t co
     glrpc::BindPlayerResponse brsp;
     if (!GatewayAuthClients::Instance().BindPlayer(srsp.gamelogic_instance_id(), breq, &brsp) ||
         !brsp.ok()) {
-        CompensateLogout(arsp.player_id(), srsp.session_id(), srsp.fence_token());
+        if (!srsp.previous_session_id().empty()) {
+            sess::RestorePreviousSessionRequest rreq;
+            rreq.set_player_id(arsp.player_id());
+            rreq.set_current_fence_token(srsp.fence_token());
+            rreq.set_previous_fence_token(srsp.previous_fence_token());
+            rreq.set_previous_session_id(srsp.previous_session_id());
+            rreq.set_previous_generation(srsp.previous_generation());
+            rreq.set_previous_gateway_instance_id(srsp.previous_gateway_instance_id());
+            rreq.set_previous_device_id(srsp.previous_device_id());
+            rreq.set_previous_gamelogic_instance_id(srsp.previous_gamelogic_instance_id());
+            rreq.set_previous_map_instance_id(srsp.previous_map_instance_id());
+            rreq.set_previous_map_owner_epoch(srsp.previous_map_owner_epoch());
+            rreq.set_previous_route_version(srsp.previous_route_version());
+            rreq.set_previous_server_id(srsp.previous_server_id());
+            rreq.set_previous_login_time_sec(srsp.previous_login_time_sec());
+            rreq.set_operation_id(sreq.operation_id());
+            sess::RestorePreviousSessionResponse rrsp;
+            GatewayAuthClients::Instance().RestorePreviousSession(rreq, &rrsp);
+            LOG_WARN << "Bind failed, restore previous player=" << arsp.player_id()
+                     << " ok=" << rrsp.ok();
+        } else {
+            CompensateLogout(arsp.player_id(), srsp.session_id(), srsp.fence_token());
+        }
         login_body->set_ok(false);
         login_body->set_message(brsp.message().empty() ? "bind player failed" : brsp.message());
         rsp.set_ok(false);
         rsp.set_message(login_body->message());
         return EncodeResponse(rsp, response_frame);
+    }
+
+    if (!srsp.previous_gateway_instance_id().empty() &&
+        (!srsp.previous_session_id().empty() || srsp.previous_generation() != 0)) {
+        sess::NotifySessionReplacedRequest nreq;
+        nreq.set_player_id(arsp.player_id());
+        nreq.set_previous_gateway_instance_id(srsp.previous_gateway_instance_id());
+        nreq.set_previous_session_id(srsp.previous_session_id());
+        nreq.set_previous_generation(srsp.previous_generation());
+        nreq.set_reason("SESSION_REPLACED");
+        sess::NotifySessionReplacedResponse nrsp;
+        GatewayAuthClients::Instance().NotifySessionReplaced(nreq, &nrsp);
     }
 
     if (SessionRpcClient::Instance().ready()) {

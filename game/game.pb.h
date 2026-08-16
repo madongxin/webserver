@@ -36,7 +36,7 @@ namespace protobuf_game_2eproto {
 struct TableStruct {
   static const ::google::protobuf::internal::ParseTableField entries[];
   static const ::google::protobuf::internal::AuxillaryParseTableField aux[];
-  static const ::google::protobuf::internal::ParseTable schema[86];
+  static const ::google::protobuf::internal::ParseTable schema[88];
   static const ::google::protobuf::internal::FieldMetadata field_metadata[];
   static const ::google::protobuf::internal::SerializationTable serialization_table[];
   static const ::google::protobuf::uint32 offsets[];
@@ -204,8 +204,12 @@ void InitDefaultsMailboxChangedNotifyImpl();
 void InitDefaultsMailboxChangedNotify();
 void InitDefaultsClientHelloReqImpl();
 void InitDefaultsClientHelloReq();
+void InitDefaultsMapManifestEntryImpl();
+void InitDefaultsMapManifestEntry();
 void InitDefaultsServerHelloRspImpl();
 void InitDefaultsServerHelloRsp();
+void InitDefaultsSessionReplacedNotifyImpl();
+void InitDefaultsSessionReplacedNotify();
 void InitDefaultsHeartbeatReqImpl();
 void InitDefaultsHeartbeatReq();
 void InitDefaultsHeartbeatRspImpl();
@@ -296,7 +300,9 @@ inline void InitDefaults() {
   InitDefaultsPlayerMailSendRsp();
   InitDefaultsMailboxChangedNotify();
   InitDefaultsClientHelloReq();
+  InitDefaultsMapManifestEntry();
   InitDefaultsServerHelloRsp();
+  InitDefaultsSessionReplacedNotify();
   InitDefaultsHeartbeatReq();
   InitDefaultsHeartbeatRsp();
   InitDefaultsGameRequest();
@@ -484,6 +490,9 @@ extern MailboxSummaryReqDefaultTypeInternal _MailboxSummaryReq_default_instance_
 class MailboxSummaryRsp;
 class MailboxSummaryRspDefaultTypeInternal;
 extern MailboxSummaryRspDefaultTypeInternal _MailboxSummaryRsp_default_instance_;
+class MapManifestEntry;
+class MapManifestEntryDefaultTypeInternal;
+extern MapManifestEntryDefaultTypeInternal _MapManifestEntry_default_instance_;
 class MapPingReq;
 class MapPingReqDefaultTypeInternal;
 extern MapPingReqDefaultTypeInternal _MapPingReq_default_instance_;
@@ -550,6 +559,9 @@ extern ServerHelloRspDefaultTypeInternal _ServerHelloRsp_default_instance_;
 class ServerPushEnvelope;
 class ServerPushEnvelopeDefaultTypeInternal;
 extern ServerPushEnvelopeDefaultTypeInternal _ServerPushEnvelope_default_instance_;
+class SessionReplacedNotify;
+class SessionReplacedNotifyDefaultTypeInternal;
+extern SessionReplacedNotifyDefaultTypeInternal _SessionReplacedNotify_default_instance_;
 class ValidateSessionReq;
 class ValidateSessionReqDefaultTypeInternal;
 extern ValidateSessionReqDefaultTypeInternal _ValidateSessionReq_default_instance_;
@@ -12135,6 +12147,127 @@ class ClientHelloReq : public ::google::protobuf::Message /* @@protoc_insertion_
 };
 // -------------------------------------------------------------------
 
+class MapManifestEntry : public ::google::protobuf::Message /* @@protoc_insertion_point(class_definition:game.MapManifestEntry) */ {
+ public:
+  MapManifestEntry();
+  virtual ~MapManifestEntry();
+
+  MapManifestEntry(const MapManifestEntry& from);
+
+  inline MapManifestEntry& operator=(const MapManifestEntry& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  #if LANG_CXX11
+  MapManifestEntry(MapManifestEntry&& from) noexcept
+    : MapManifestEntry() {
+    *this = ::std::move(from);
+  }
+
+  inline MapManifestEntry& operator=(MapManifestEntry&& from) noexcept {
+    if (GetArenaNoVirtual() == from.GetArenaNoVirtual()) {
+      if (this != &from) InternalSwap(&from);
+    } else {
+      CopyFrom(from);
+    }
+    return *this;
+  }
+  #endif
+  static const ::google::protobuf::Descriptor* descriptor();
+  static const MapManifestEntry& default_instance();
+
+  static void InitAsDefaultInstance();  // FOR INTERNAL USE ONLY
+  static inline const MapManifestEntry* internal_default_instance() {
+    return reinterpret_cast<const MapManifestEntry*>(
+               &_MapManifestEntry_default_instance_);
+  }
+  static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
+    81;
+
+  void Swap(MapManifestEntry* other);
+  friend void swap(MapManifestEntry& a, MapManifestEntry& b) {
+    a.Swap(&b);
+  }
+
+  // implements Message ----------------------------------------------
+
+  inline MapManifestEntry* New() const PROTOBUF_FINAL { return New(NULL); }
+
+  MapManifestEntry* New(::google::protobuf::Arena* arena) const PROTOBUF_FINAL;
+  void CopyFrom(const ::google::protobuf::Message& from) PROTOBUF_FINAL;
+  void MergeFrom(const ::google::protobuf::Message& from) PROTOBUF_FINAL;
+  void CopyFrom(const MapManifestEntry& from);
+  void MergeFrom(const MapManifestEntry& from);
+  void Clear() PROTOBUF_FINAL;
+  bool IsInitialized() const PROTOBUF_FINAL;
+
+  size_t ByteSizeLong() const PROTOBUF_FINAL;
+  bool MergePartialFromCodedStream(
+      ::google::protobuf::io::CodedInputStream* input) PROTOBUF_FINAL;
+  void SerializeWithCachedSizes(
+      ::google::protobuf::io::CodedOutputStream* output) const PROTOBUF_FINAL;
+  ::google::protobuf::uint8* InternalSerializeWithCachedSizesToArray(
+      bool deterministic, ::google::protobuf::uint8* target) const PROTOBUF_FINAL;
+  int GetCachedSize() const PROTOBUF_FINAL { return _cached_size_; }
+  private:
+  void SharedCtor();
+  void SharedDtor();
+  void SetCachedSize(int size) const PROTOBUF_FINAL;
+  void InternalSwap(MapManifestEntry* other);
+  private:
+  inline ::google::protobuf::Arena* GetArenaNoVirtual() const {
+    return NULL;
+  }
+  inline void* MaybeArenaPtr() const {
+    return NULL;
+  }
+  public:
+
+  ::google::protobuf::Metadata GetMetadata() const PROTOBUF_FINAL;
+
+  // nested types ----------------------------------------------------
+
+  // accessors -------------------------------------------------------
+
+  // string sha256 = 3;
+  void clear_sha256();
+  static const int kSha256FieldNumber = 3;
+  const ::std::string& sha256() const;
+  void set_sha256(const ::std::string& value);
+  #if LANG_CXX11
+  void set_sha256(::std::string&& value);
+  #endif
+  void set_sha256(const char* value);
+  void set_sha256(const char* value, size_t size);
+  ::std::string* mutable_sha256();
+  ::std::string* release_sha256();
+  void set_allocated_sha256(::std::string* sha256);
+
+  // uint64 map_template_id = 1;
+  void clear_map_template_id();
+  static const int kMapTemplateIdFieldNumber = 1;
+  ::google::protobuf::uint64 map_template_id() const;
+  void set_map_template_id(::google::protobuf::uint64 value);
+
+  // uint64 data_version = 2;
+  void clear_data_version();
+  static const int kDataVersionFieldNumber = 2;
+  ::google::protobuf::uint64 data_version() const;
+  void set_data_version(::google::protobuf::uint64 value);
+
+  // @@protoc_insertion_point(class_scope:game.MapManifestEntry)
+ private:
+
+  ::google::protobuf::internal::InternalMetadataWithArena _internal_metadata_;
+  ::google::protobuf::internal::ArenaStringPtr sha256_;
+  ::google::protobuf::uint64 map_template_id_;
+  ::google::protobuf::uint64 data_version_;
+  mutable int _cached_size_;
+  friend struct ::protobuf_game_2eproto::TableStruct;
+  friend void ::protobuf_game_2eproto::InitDefaultsMapManifestEntryImpl();
+};
+// -------------------------------------------------------------------
+
 class ServerHelloRsp : public ::google::protobuf::Message /* @@protoc_insertion_point(class_definition:game.ServerHelloRsp) */ {
  public:
   ServerHelloRsp();
@@ -12170,7 +12303,7 @@ class ServerHelloRsp : public ::google::protobuf::Message /* @@protoc_insertion_
                &_ServerHelloRsp_default_instance_);
   }
   static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
-    81;
+    82;
 
   void Swap(ServerHelloRsp* other);
   friend void swap(ServerHelloRsp& a, ServerHelloRsp& b) {
@@ -12238,6 +12371,18 @@ class ServerHelloRsp : public ::google::protobuf::Message /* @@protoc_insertion_
   void add_capabilities(const char* value, size_t size);
   const ::google::protobuf::RepeatedPtrField< ::std::string>& capabilities() const;
   ::google::protobuf::RepeatedPtrField< ::std::string>* mutable_capabilities();
+
+  // repeated .game.MapManifestEntry maps = 14;
+  int maps_size() const;
+  void clear_maps();
+  static const int kMapsFieldNumber = 14;
+  const ::game::MapManifestEntry& maps(int index) const;
+  ::game::MapManifestEntry* mutable_maps(int index);
+  ::game::MapManifestEntry* add_maps();
+  ::google::protobuf::RepeatedPtrField< ::game::MapManifestEntry >*
+      mutable_maps();
+  const ::google::protobuf::RepeatedPtrField< ::game::MapManifestEntry >&
+      maps() const;
 
   // string error_code = 2;
   void clear_error_code();
@@ -12331,11 +12476,24 @@ class ServerHelloRsp : public ::google::protobuf::Message /* @@protoc_insertion_
   ::google::protobuf::uint32 idle_timeout_ms() const;
   void set_idle_timeout_ms(::google::protobuf::uint32 value);
 
+  // uint32 gameplay_config_version = 12;
+  void clear_gameplay_config_version();
+  static const int kGameplayConfigVersionFieldNumber = 12;
+  ::google::protobuf::uint32 gameplay_config_version() const;
+  void set_gameplay_config_version(::google::protobuf::uint32 value);
+
+  // uint32 map_manifest_version = 13;
+  void clear_map_manifest_version();
+  static const int kMapManifestVersionFieldNumber = 13;
+  ::google::protobuf::uint32 map_manifest_version() const;
+  void set_map_manifest_version(::google::protobuf::uint32 value);
+
   // @@protoc_insertion_point(class_scope:game.ServerHelloRsp)
  private:
 
   ::google::protobuf::internal::InternalMetadataWithArena _internal_metadata_;
   ::google::protobuf::RepeatedPtrField< ::std::string> capabilities_;
+  ::google::protobuf::RepeatedPtrField< ::game::MapManifestEntry > maps_;
   ::google::protobuf::internal::ArenaStringPtr error_code_;
   ::google::protobuf::internal::ArenaStringPtr message_;
   ::google::protobuf::internal::ArenaStringPtr schema_sha256_;
@@ -12346,9 +12504,140 @@ class ServerHelloRsp : public ::google::protobuf::Message /* @@protoc_insertion_
   ::google::protobuf::uint32 heartbeat_interval_ms_;
   ::google::protobuf::int64 server_time_ms_;
   ::google::protobuf::uint32 idle_timeout_ms_;
+  ::google::protobuf::uint32 gameplay_config_version_;
+  ::google::protobuf::uint32 map_manifest_version_;
   mutable int _cached_size_;
   friend struct ::protobuf_game_2eproto::TableStruct;
   friend void ::protobuf_game_2eproto::InitDefaultsServerHelloRspImpl();
+};
+// -------------------------------------------------------------------
+
+class SessionReplacedNotify : public ::google::protobuf::Message /* @@protoc_insertion_point(class_definition:game.SessionReplacedNotify) */ {
+ public:
+  SessionReplacedNotify();
+  virtual ~SessionReplacedNotify();
+
+  SessionReplacedNotify(const SessionReplacedNotify& from);
+
+  inline SessionReplacedNotify& operator=(const SessionReplacedNotify& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  #if LANG_CXX11
+  SessionReplacedNotify(SessionReplacedNotify&& from) noexcept
+    : SessionReplacedNotify() {
+    *this = ::std::move(from);
+  }
+
+  inline SessionReplacedNotify& operator=(SessionReplacedNotify&& from) noexcept {
+    if (GetArenaNoVirtual() == from.GetArenaNoVirtual()) {
+      if (this != &from) InternalSwap(&from);
+    } else {
+      CopyFrom(from);
+    }
+    return *this;
+  }
+  #endif
+  static const ::google::protobuf::Descriptor* descriptor();
+  static const SessionReplacedNotify& default_instance();
+
+  static void InitAsDefaultInstance();  // FOR INTERNAL USE ONLY
+  static inline const SessionReplacedNotify* internal_default_instance() {
+    return reinterpret_cast<const SessionReplacedNotify*>(
+               &_SessionReplacedNotify_default_instance_);
+  }
+  static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
+    83;
+
+  void Swap(SessionReplacedNotify* other);
+  friend void swap(SessionReplacedNotify& a, SessionReplacedNotify& b) {
+    a.Swap(&b);
+  }
+
+  // implements Message ----------------------------------------------
+
+  inline SessionReplacedNotify* New() const PROTOBUF_FINAL { return New(NULL); }
+
+  SessionReplacedNotify* New(::google::protobuf::Arena* arena) const PROTOBUF_FINAL;
+  void CopyFrom(const ::google::protobuf::Message& from) PROTOBUF_FINAL;
+  void MergeFrom(const ::google::protobuf::Message& from) PROTOBUF_FINAL;
+  void CopyFrom(const SessionReplacedNotify& from);
+  void MergeFrom(const SessionReplacedNotify& from);
+  void Clear() PROTOBUF_FINAL;
+  bool IsInitialized() const PROTOBUF_FINAL;
+
+  size_t ByteSizeLong() const PROTOBUF_FINAL;
+  bool MergePartialFromCodedStream(
+      ::google::protobuf::io::CodedInputStream* input) PROTOBUF_FINAL;
+  void SerializeWithCachedSizes(
+      ::google::protobuf::io::CodedOutputStream* output) const PROTOBUF_FINAL;
+  ::google::protobuf::uint8* InternalSerializeWithCachedSizesToArray(
+      bool deterministic, ::google::protobuf::uint8* target) const PROTOBUF_FINAL;
+  int GetCachedSize() const PROTOBUF_FINAL { return _cached_size_; }
+  private:
+  void SharedCtor();
+  void SharedDtor();
+  void SetCachedSize(int size) const PROTOBUF_FINAL;
+  void InternalSwap(SessionReplacedNotify* other);
+  private:
+  inline ::google::protobuf::Arena* GetArenaNoVirtual() const {
+    return NULL;
+  }
+  inline void* MaybeArenaPtr() const {
+    return NULL;
+  }
+  public:
+
+  ::google::protobuf::Metadata GetMetadata() const PROTOBUF_FINAL;
+
+  // nested types ----------------------------------------------------
+
+  // accessors -------------------------------------------------------
+
+  // string reason_code = 1;
+  void clear_reason_code();
+  static const int kReasonCodeFieldNumber = 1;
+  const ::std::string& reason_code() const;
+  void set_reason_code(const ::std::string& value);
+  #if LANG_CXX11
+  void set_reason_code(::std::string&& value);
+  #endif
+  void set_reason_code(const char* value);
+  void set_reason_code(const char* value, size_t size);
+  ::std::string* mutable_reason_code();
+  ::std::string* release_reason_code();
+  void set_allocated_reason_code(::std::string* reason_code);
+
+  // string message = 3;
+  void clear_message();
+  static const int kMessageFieldNumber = 3;
+  const ::std::string& message() const;
+  void set_message(const ::std::string& value);
+  #if LANG_CXX11
+  void set_message(::std::string&& value);
+  #endif
+  void set_message(const char* value);
+  void set_message(const char* value, size_t size);
+  ::std::string* mutable_message();
+  ::std::string* release_message();
+  void set_allocated_message(::std::string* message);
+
+  // int64 server_time_ms = 2;
+  void clear_server_time_ms();
+  static const int kServerTimeMsFieldNumber = 2;
+  ::google::protobuf::int64 server_time_ms() const;
+  void set_server_time_ms(::google::protobuf::int64 value);
+
+  // @@protoc_insertion_point(class_scope:game.SessionReplacedNotify)
+ private:
+
+  ::google::protobuf::internal::InternalMetadataWithArena _internal_metadata_;
+  ::google::protobuf::internal::ArenaStringPtr reason_code_;
+  ::google::protobuf::internal::ArenaStringPtr message_;
+  ::google::protobuf::int64 server_time_ms_;
+  mutable int _cached_size_;
+  friend struct ::protobuf_game_2eproto::TableStruct;
+  friend void ::protobuf_game_2eproto::InitDefaultsSessionReplacedNotifyImpl();
 };
 // -------------------------------------------------------------------
 
@@ -12387,7 +12676,7 @@ class HeartbeatReq : public ::google::protobuf::Message /* @@protoc_insertion_po
                &_HeartbeatReq_default_instance_);
   }
   static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
-    82;
+    84;
 
   void Swap(HeartbeatReq* other);
   friend void swap(HeartbeatReq& a, HeartbeatReq& b) {
@@ -12500,7 +12789,7 @@ class HeartbeatRsp : public ::google::protobuf::Message /* @@protoc_insertion_po
                &_HeartbeatRsp_default_instance_);
   }
   static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
-    83;
+    85;
 
   void Swap(HeartbeatRsp* other);
   friend void swap(HeartbeatRsp& a, HeartbeatRsp& b) {
@@ -12681,7 +12970,7 @@ class GameRequest : public ::google::protobuf::Message /* @@protoc_insertion_poi
                &_GameRequest_default_instance_);
   }
   static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
-    84;
+    86;
 
   void Swap(GameRequest* other);
   friend void swap(GameRequest& a, GameRequest& b) {
@@ -13224,6 +13513,7 @@ class GameResponse : public ::google::protobuf::Message /* @@protoc_insertion_po
     kChatNotify = 73,
     kGetPlayerBrief = 74,
     kQueryOnlineState = 75,
+    kSessionReplaced = 76,
     BODY_NOT_SET = 0,
   };
 
@@ -13233,7 +13523,7 @@ class GameResponse : public ::google::protobuf::Message /* @@protoc_insertion_po
                &_GameResponse_default_instance_);
   }
   static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
-    85;
+    87;
 
   void Swap(GameResponse* other);
   friend void swap(GameResponse& a, GameResponse& b) {
@@ -13697,6 +13987,15 @@ class GameResponse : public ::google::protobuf::Message /* @@protoc_insertion_po
   ::game::QueryOnlineStateRsp* mutable_query_online_state();
   void set_allocated_query_online_state(::game::QueryOnlineStateRsp* query_online_state);
 
+  // .game.SessionReplacedNotify session_replaced = 76;
+  bool has_session_replaced() const;
+  void clear_session_replaced();
+  static const int kSessionReplacedFieldNumber = 76;
+  const ::game::SessionReplacedNotify& session_replaced() const;
+  ::game::SessionReplacedNotify* release_session_replaced();
+  ::game::SessionReplacedNotify* mutable_session_replaced();
+  void set_allocated_session_replaced(::game::SessionReplacedNotify* session_replaced);
+
   BodyCase body_case() const;
   // @@protoc_insertion_point(class_scope:game.GameResponse)
  private:
@@ -13739,6 +14038,7 @@ class GameResponse : public ::google::protobuf::Message /* @@protoc_insertion_po
   void set_has_chat_notify();
   void set_has_get_player_brief();
   void set_has_query_online_state();
+  void set_has_session_replaced();
 
   inline bool has_body() const;
   void clear_body();
@@ -13793,6 +14093,7 @@ class GameResponse : public ::google::protobuf::Message /* @@protoc_insertion_po
     ::game::ChatNotify* chat_notify_;
     ::game::GetPlayerBriefRsp* get_player_brief_;
     ::game::QueryOnlineStateRsp* query_online_state_;
+    ::game::SessionReplacedNotify* session_replaced_;
   } body_;
   mutable int _cached_size_;
   ::google::protobuf::uint32 _oneof_case_[1];
@@ -26121,6 +26422,91 @@ ClientHelloReq::mutable_capabilities() {
 
 // -------------------------------------------------------------------
 
+// MapManifestEntry
+
+// uint64 map_template_id = 1;
+inline void MapManifestEntry::clear_map_template_id() {
+  map_template_id_ = GOOGLE_ULONGLONG(0);
+}
+inline ::google::protobuf::uint64 MapManifestEntry::map_template_id() const {
+  // @@protoc_insertion_point(field_get:game.MapManifestEntry.map_template_id)
+  return map_template_id_;
+}
+inline void MapManifestEntry::set_map_template_id(::google::protobuf::uint64 value) {
+  
+  map_template_id_ = value;
+  // @@protoc_insertion_point(field_set:game.MapManifestEntry.map_template_id)
+}
+
+// uint64 data_version = 2;
+inline void MapManifestEntry::clear_data_version() {
+  data_version_ = GOOGLE_ULONGLONG(0);
+}
+inline ::google::protobuf::uint64 MapManifestEntry::data_version() const {
+  // @@protoc_insertion_point(field_get:game.MapManifestEntry.data_version)
+  return data_version_;
+}
+inline void MapManifestEntry::set_data_version(::google::protobuf::uint64 value) {
+  
+  data_version_ = value;
+  // @@protoc_insertion_point(field_set:game.MapManifestEntry.data_version)
+}
+
+// string sha256 = 3;
+inline void MapManifestEntry::clear_sha256() {
+  sha256_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline const ::std::string& MapManifestEntry::sha256() const {
+  // @@protoc_insertion_point(field_get:game.MapManifestEntry.sha256)
+  return sha256_.GetNoArena();
+}
+inline void MapManifestEntry::set_sha256(const ::std::string& value) {
+  
+  sha256_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), value);
+  // @@protoc_insertion_point(field_set:game.MapManifestEntry.sha256)
+}
+#if LANG_CXX11
+inline void MapManifestEntry::set_sha256(::std::string&& value) {
+  
+  sha256_.SetNoArena(
+    &::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::move(value));
+  // @@protoc_insertion_point(field_set_rvalue:game.MapManifestEntry.sha256)
+}
+#endif
+inline void MapManifestEntry::set_sha256(const char* value) {
+  GOOGLE_DCHECK(value != NULL);
+  
+  sha256_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::string(value));
+  // @@protoc_insertion_point(field_set_char:game.MapManifestEntry.sha256)
+}
+inline void MapManifestEntry::set_sha256(const char* value, size_t size) {
+  
+  sha256_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(),
+      ::std::string(reinterpret_cast<const char*>(value), size));
+  // @@protoc_insertion_point(field_set_pointer:game.MapManifestEntry.sha256)
+}
+inline ::std::string* MapManifestEntry::mutable_sha256() {
+  
+  // @@protoc_insertion_point(field_mutable:game.MapManifestEntry.sha256)
+  return sha256_.MutableNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline ::std::string* MapManifestEntry::release_sha256() {
+  // @@protoc_insertion_point(field_release:game.MapManifestEntry.sha256)
+  
+  return sha256_.ReleaseNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline void MapManifestEntry::set_allocated_sha256(::std::string* sha256) {
+  if (sha256 != NULL) {
+    
+  } else {
+    
+  }
+  sha256_.SetAllocatedNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), sha256);
+  // @@protoc_insertion_point(field_set_allocated:game.MapManifestEntry.sha256)
+}
+
+// -------------------------------------------------------------------
+
 // ServerHelloRsp
 
 // bool ok = 1;
@@ -26486,6 +26872,188 @@ inline ::google::protobuf::RepeatedPtrField< ::std::string>*
 ServerHelloRsp::mutable_capabilities() {
   // @@protoc_insertion_point(field_mutable_list:game.ServerHelloRsp.capabilities)
   return &capabilities_;
+}
+
+// uint32 gameplay_config_version = 12;
+inline void ServerHelloRsp::clear_gameplay_config_version() {
+  gameplay_config_version_ = 0u;
+}
+inline ::google::protobuf::uint32 ServerHelloRsp::gameplay_config_version() const {
+  // @@protoc_insertion_point(field_get:game.ServerHelloRsp.gameplay_config_version)
+  return gameplay_config_version_;
+}
+inline void ServerHelloRsp::set_gameplay_config_version(::google::protobuf::uint32 value) {
+  
+  gameplay_config_version_ = value;
+  // @@protoc_insertion_point(field_set:game.ServerHelloRsp.gameplay_config_version)
+}
+
+// uint32 map_manifest_version = 13;
+inline void ServerHelloRsp::clear_map_manifest_version() {
+  map_manifest_version_ = 0u;
+}
+inline ::google::protobuf::uint32 ServerHelloRsp::map_manifest_version() const {
+  // @@protoc_insertion_point(field_get:game.ServerHelloRsp.map_manifest_version)
+  return map_manifest_version_;
+}
+inline void ServerHelloRsp::set_map_manifest_version(::google::protobuf::uint32 value) {
+  
+  map_manifest_version_ = value;
+  // @@protoc_insertion_point(field_set:game.ServerHelloRsp.map_manifest_version)
+}
+
+// repeated .game.MapManifestEntry maps = 14;
+inline int ServerHelloRsp::maps_size() const {
+  return maps_.size();
+}
+inline void ServerHelloRsp::clear_maps() {
+  maps_.Clear();
+}
+inline const ::game::MapManifestEntry& ServerHelloRsp::maps(int index) const {
+  // @@protoc_insertion_point(field_get:game.ServerHelloRsp.maps)
+  return maps_.Get(index);
+}
+inline ::game::MapManifestEntry* ServerHelloRsp::mutable_maps(int index) {
+  // @@protoc_insertion_point(field_mutable:game.ServerHelloRsp.maps)
+  return maps_.Mutable(index);
+}
+inline ::game::MapManifestEntry* ServerHelloRsp::add_maps() {
+  // @@protoc_insertion_point(field_add:game.ServerHelloRsp.maps)
+  return maps_.Add();
+}
+inline ::google::protobuf::RepeatedPtrField< ::game::MapManifestEntry >*
+ServerHelloRsp::mutable_maps() {
+  // @@protoc_insertion_point(field_mutable_list:game.ServerHelloRsp.maps)
+  return &maps_;
+}
+inline const ::google::protobuf::RepeatedPtrField< ::game::MapManifestEntry >&
+ServerHelloRsp::maps() const {
+  // @@protoc_insertion_point(field_list:game.ServerHelloRsp.maps)
+  return maps_;
+}
+
+// -------------------------------------------------------------------
+
+// SessionReplacedNotify
+
+// string reason_code = 1;
+inline void SessionReplacedNotify::clear_reason_code() {
+  reason_code_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline const ::std::string& SessionReplacedNotify::reason_code() const {
+  // @@protoc_insertion_point(field_get:game.SessionReplacedNotify.reason_code)
+  return reason_code_.GetNoArena();
+}
+inline void SessionReplacedNotify::set_reason_code(const ::std::string& value) {
+  
+  reason_code_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), value);
+  // @@protoc_insertion_point(field_set:game.SessionReplacedNotify.reason_code)
+}
+#if LANG_CXX11
+inline void SessionReplacedNotify::set_reason_code(::std::string&& value) {
+  
+  reason_code_.SetNoArena(
+    &::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::move(value));
+  // @@protoc_insertion_point(field_set_rvalue:game.SessionReplacedNotify.reason_code)
+}
+#endif
+inline void SessionReplacedNotify::set_reason_code(const char* value) {
+  GOOGLE_DCHECK(value != NULL);
+  
+  reason_code_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::string(value));
+  // @@protoc_insertion_point(field_set_char:game.SessionReplacedNotify.reason_code)
+}
+inline void SessionReplacedNotify::set_reason_code(const char* value, size_t size) {
+  
+  reason_code_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(),
+      ::std::string(reinterpret_cast<const char*>(value), size));
+  // @@protoc_insertion_point(field_set_pointer:game.SessionReplacedNotify.reason_code)
+}
+inline ::std::string* SessionReplacedNotify::mutable_reason_code() {
+  
+  // @@protoc_insertion_point(field_mutable:game.SessionReplacedNotify.reason_code)
+  return reason_code_.MutableNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline ::std::string* SessionReplacedNotify::release_reason_code() {
+  // @@protoc_insertion_point(field_release:game.SessionReplacedNotify.reason_code)
+  
+  return reason_code_.ReleaseNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline void SessionReplacedNotify::set_allocated_reason_code(::std::string* reason_code) {
+  if (reason_code != NULL) {
+    
+  } else {
+    
+  }
+  reason_code_.SetAllocatedNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), reason_code);
+  // @@protoc_insertion_point(field_set_allocated:game.SessionReplacedNotify.reason_code)
+}
+
+// int64 server_time_ms = 2;
+inline void SessionReplacedNotify::clear_server_time_ms() {
+  server_time_ms_ = GOOGLE_LONGLONG(0);
+}
+inline ::google::protobuf::int64 SessionReplacedNotify::server_time_ms() const {
+  // @@protoc_insertion_point(field_get:game.SessionReplacedNotify.server_time_ms)
+  return server_time_ms_;
+}
+inline void SessionReplacedNotify::set_server_time_ms(::google::protobuf::int64 value) {
+  
+  server_time_ms_ = value;
+  // @@protoc_insertion_point(field_set:game.SessionReplacedNotify.server_time_ms)
+}
+
+// string message = 3;
+inline void SessionReplacedNotify::clear_message() {
+  message_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline const ::std::string& SessionReplacedNotify::message() const {
+  // @@protoc_insertion_point(field_get:game.SessionReplacedNotify.message)
+  return message_.GetNoArena();
+}
+inline void SessionReplacedNotify::set_message(const ::std::string& value) {
+  
+  message_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), value);
+  // @@protoc_insertion_point(field_set:game.SessionReplacedNotify.message)
+}
+#if LANG_CXX11
+inline void SessionReplacedNotify::set_message(::std::string&& value) {
+  
+  message_.SetNoArena(
+    &::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::move(value));
+  // @@protoc_insertion_point(field_set_rvalue:game.SessionReplacedNotify.message)
+}
+#endif
+inline void SessionReplacedNotify::set_message(const char* value) {
+  GOOGLE_DCHECK(value != NULL);
+  
+  message_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::string(value));
+  // @@protoc_insertion_point(field_set_char:game.SessionReplacedNotify.message)
+}
+inline void SessionReplacedNotify::set_message(const char* value, size_t size) {
+  
+  message_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(),
+      ::std::string(reinterpret_cast<const char*>(value), size));
+  // @@protoc_insertion_point(field_set_pointer:game.SessionReplacedNotify.message)
+}
+inline ::std::string* SessionReplacedNotify::mutable_message() {
+  
+  // @@protoc_insertion_point(field_mutable:game.SessionReplacedNotify.message)
+  return message_.MutableNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline ::std::string* SessionReplacedNotify::release_message() {
+  // @@protoc_insertion_point(field_release:game.SessionReplacedNotify.message)
+  
+  return message_.ReleaseNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline void SessionReplacedNotify::set_allocated_message(::std::string* message) {
+  if (message != NULL) {
+    
+  } else {
+    
+  }
+  message_.SetAllocatedNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), message);
+  // @@protoc_insertion_point(field_set_allocated:game.SessionReplacedNotify.message)
 }
 
 // -------------------------------------------------------------------
@@ -29920,6 +30488,46 @@ inline ::game::QueryOnlineStateRsp* GameResponse::mutable_query_online_state() {
   return body_.query_online_state_;
 }
 
+// .game.SessionReplacedNotify session_replaced = 76;
+inline bool GameResponse::has_session_replaced() const {
+  return body_case() == kSessionReplaced;
+}
+inline void GameResponse::set_has_session_replaced() {
+  _oneof_case_[0] = kSessionReplaced;
+}
+inline void GameResponse::clear_session_replaced() {
+  if (has_session_replaced()) {
+    delete body_.session_replaced_;
+    clear_has_body();
+  }
+}
+inline ::game::SessionReplacedNotify* GameResponse::release_session_replaced() {
+  // @@protoc_insertion_point(field_release:game.GameResponse.session_replaced)
+  if (has_session_replaced()) {
+    clear_has_body();
+      ::game::SessionReplacedNotify* temp = body_.session_replaced_;
+    body_.session_replaced_ = NULL;
+    return temp;
+  } else {
+    return NULL;
+  }
+}
+inline const ::game::SessionReplacedNotify& GameResponse::session_replaced() const {
+  // @@protoc_insertion_point(field_get:game.GameResponse.session_replaced)
+  return has_session_replaced()
+      ? *body_.session_replaced_
+      : *reinterpret_cast< ::game::SessionReplacedNotify*>(&::game::_SessionReplacedNotify_default_instance_);
+}
+inline ::game::SessionReplacedNotify* GameResponse::mutable_session_replaced() {
+  if (!has_session_replaced()) {
+    clear_body();
+    set_has_session_replaced();
+    body_.session_replaced_ = new ::game::SessionReplacedNotify;
+  }
+  // @@protoc_insertion_point(field_mutable:game.GameResponse.session_replaced)
+  return body_.session_replaced_;
+}
+
 inline bool GameResponse::has_body() const {
   return body_case() != BODY_NOT_SET;
 }
@@ -29932,6 +30540,10 @@ inline GameResponse::BodyCase GameResponse::body_case() const {
 #ifdef __GNUC__
   #pragma GCC diagnostic pop
 #endif  // __GNUC__
+// -------------------------------------------------------------------
+
+// -------------------------------------------------------------------
+
 // -------------------------------------------------------------------
 
 // -------------------------------------------------------------------
