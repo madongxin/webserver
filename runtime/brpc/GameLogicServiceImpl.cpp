@@ -112,7 +112,7 @@ bool GetPushTargetLocked(uint64_t player_id, std::string *gateway_instance_id,
     return !it->second.gateway_instance_id.empty() && !it->second.session_id.empty();
 }
 
-/** client_seq：0=不检查；==last 幂等；==last+1 前进；其它乱序拒绝 */
+/** client_seq：0=不检查；==last 幂等；>last 前进（允许 Gateway 本地消息造成的空洞）；<last 拒绝 */
 using SeqDecision = ClientSeqDecision;
 
 SeqDecision CheckClientSeq(uint64_t player_id, uint64_t client_seq, std::string *cached_frame,
@@ -494,12 +494,22 @@ void GameLogicServiceImpl::UnbindPlayer(::google::protobuf::RpcController *contr
         response->set_ok(false);
         return;
     }
-    std::string err;
-    if (!request->fence_token().empty() &&
-        !FenceOk(request->player_id(), request->session_id(), request->fence_token(), 0, &err)) {
-        response->set_ok(false);
-        response->set_message(err);
-        return;
+    {
+        std::lock_guard<std::mutex> lk(g_bound_mu);
+        auto it = g_bound.find(request->player_id());
+        if (it != g_bound.end()) {
+            if (!request->session_id().empty() && it->second.session_id != request->session_id()) {
+                response->set_ok(false);
+                response->set_message("session_id mismatch");
+                return;
+            }
+            if (!request->fence_token().empty() && it->second.fence_token != request->fence_token()) {
+                response->set_ok(false);
+                response->set_message("fence_token rejected");
+                return;
+            }
+        }
+        // 未绑定：幂等成功，仍走 LeaveAll 清残留 AOI。
     }
     // 串行队列上收尾，避免与在途 Dispatch 竞态
     const uint64_t pid = request->player_id();

@@ -179,6 +179,7 @@ jobs:
       - name: client-ready TCP
         env:
           GAMEMESH_JOBS: "2"
+          GAMEMESH_CI_TCP_ONLY: "1"
         run: ./scripts/client_ready_gate.sh
       - name: export unity protocol artifact
         run: |

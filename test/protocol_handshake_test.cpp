@@ -87,6 +87,25 @@ int main() {
     Expect(leak.message() == "dependency unavailable", "message sanitized");
     Expect(leak.retryable(), "dep retryable");
 
+    game::GameResponse cred;
+    cred.set_ok(false);
+    cred.set_message("invalid credential");
+    gameproto::PromotePublicError(&cred, 1);
+    Expect(cred.error_code() == std::string(gameproto::kErrBadCredential), "guess credential");
+
+    game::GameResponse pw;
+    pw.set_ok(false);
+    pw.set_message("device_id and password(>=6) required");
+    gameproto::PromotePublicError(&pw, 1);
+    Expect(pw.error_code() == std::string(gameproto::kErrInvalidArgument), "guess password arg");
+
+    game::GameResponse mapped;
+    mapped.set_ok(false);
+    mapped.set_error_code("BAD_CREDENTIAL");
+    mapped.set_message("invalid credential");
+    gameproto::PromotePublicError(&mapped, 1);
+    Expect(mapped.error_code() == std::string(gameproto::kErrBadCredential), "normalize BAD_CREDENTIAL");
+
     if (fails) {
         std::printf("protocol_handshake_test FAIL count=%d\n", fails);
         return 1;

@@ -1,0 +1,66 @@
+name: unity-contract
+# 跨仓库协议 / 真实 Unity 双客户端。需要显式提供 Luna 与客户端二进制，缺输入则失败而非伪装 PASS。
+on:
+  workflow_dispatch:
+    inputs:
+      luna_repo:
+        description: "Luna git URL (optional if secrets.LUNA_REPO is set)"
+        required: false
+      luna_ref:
+        description: "Luna git ref"
+        required: false
+        default: main
+      unity_client_artifact:
+        description: "Name of a previously uploaded Unity client artifact (optional)"
+        required: false
+
+jobs:
+  luna-contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: require Luna input
+        env:
+          LUNA_URL: ${{ github.event.inputs.luna_repo || secrets.LUNA_REPO }}
+        run: |
+          if [[ -z "${LUNA_URL}" ]]; then
+            echo "UNITY CONTRACT BLOCKED: no luna_repo input and secrets.LUNA_REPO unset"
+            echo "This job must not run without an explicit Luna checkout."
+            exit 1
+          fi
+      - name: checkout Luna
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ github.event.inputs.luna_repo || secrets.LUNA_REPO }}
+          ref: ${{ github.event.inputs.luna_ref || 'main' }}
+          path: luna
+          token: ${{ secrets.LUNA_TOKEN || github.token }}
+      - name: protocol contract
+        env:
+          LUNA_REPO: ${{ github.workspace }}/luna
+          GAMEMESH_REQUIRE_LUNA_CONTRACT: "1"
+        run: ./scripts/check_luna_protocol_contract.sh
+      - name: download unity client artifact
+        if: ${{ github.event.inputs.unity_client_artifact != '' }}
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ github.event.inputs.unity_client_artifact }}
+          path: unity-client
+      - name: unity two clients
+        env:
+          LUNA_REPO: ${{ github.workspace }}/luna
+          ARTIFACT_NAME: ${{ github.event.inputs.unity_client_artifact }}
+        run: |
+          if [[ -z "${ARTIFACT_NAME}" ]]; then
+            echo "UNITY TWO CLIENTS BLOCKED: UNITY_CLIENT_BIN / artifact not provided"
+            echo "Do not assume a Unity binary exists in a source-only job."
+            exit 1
+          fi
+          BIN="$(find unity-client -type f \( -name 'GameMeshClient' -o -name 'GameMeshClient.exe' -o -perm -u+x \) | head -1 || true)"
+          if [[ -z "$BIN" || ! -e "$BIN" ]]; then
+            echo "UNITY TWO CLIENTS BLOCKED: artifact '${ARTIFACT_NAME}' downloaded but no client binary found"
+            echo "Artifact must come from the same workflow run; this job does not invent a binary."
+            exit 1
+          fi
+          export UNITY_CLIENT_BIN="$BIN"
+          ./scripts/test_unity_two_clients.sh

@@ -1,6 +1,7 @@
 #include "TcpReplySink.h"
 
 #include "EventLoop.h"
+#include "OpsMetrics.h"
 #include "TcpConnection.h"
 
 TcpReplySink::TcpReplySink(const std::shared_ptr<TcpConnection> &conn)
@@ -16,6 +17,8 @@ void TcpReplySink::SendFrame(const std::string &response_frame) {
             return;
         if (c->state() != TcpConnection::Connected)
             return;
+        OpsMetrics::Instance().AddGatewayTxBytes(response_frame.size());
+        OpsMetrics::Instance().AddGatewayTxFrames(1);
         c->Send(response_frame);
     });
 }

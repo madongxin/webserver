@@ -1,10 +1,12 @@
 #include "GatewayLoginOrchestrator.h"
+#include "GatewayLogoutPolicy.h"
 
 #include "GatewayAuthClients.h"
 #include "GatewayConnRegistry.h"
 #include "Logging.h"
 #include "PlayerSerialQueue.h"
 #include "ProtoFraming.h"
+#include "PublicError.h"
 #include "PushReplayCache.h"
 #include "RpcOffloadPool.h"
 #include "SessionRpcClient.h"
@@ -21,7 +23,8 @@
 
 namespace gameproto {
 
-static bool EncodeResponse(const game::GameResponse &rsp, std::string *frame) {
+static bool EncodeResponse(game::GameResponse &rsp, std::string *frame, uint64_t conn_id = 0) {
+    gameproto::PromotePublicError(&rsp, conn_id);
     std::string body;
     if (!rsp.SerializeToString(&body))
         return false;
@@ -77,7 +80,7 @@ bool OrchestrateGatewayLogin(const std::string &gateway_instance_id, uint64_t co
     if (!req.ParseFromString(request_payload) || !req.has_login()) {
         rsp.set_ok(false);
         rsp.set_message("invalid login payload");
-        return EncodeResponse(rsp, response_frame);
+        return EncodeResponse(rsp, response_frame, connection_id);
     }
     rsp.set_seq(req.seq());
     auto *login_body = rsp.mutable_login();
@@ -87,7 +90,8 @@ bool OrchestrateGatewayLogin(const std::string &gateway_instance_id, uint64_t co
         login_body->set_message("auth/session client not ready");
         rsp.set_ok(false);
         rsp.set_message(login_body->message());
-        return EncodeResponse(rsp, response_frame);
+        rsp.set_error_code(gameproto::kErrDependencyUnavailable);
+        return EncodeResponse(rsp, response_frame, connection_id);
     }
 
     auth::LoginRequest areq;
@@ -101,7 +105,8 @@ bool OrchestrateGatewayLogin(const std::string &gateway_instance_id, uint64_t co
         login_body->set_message(arsp.message().empty() ? "auth failed" : arsp.message());
         rsp.set_ok(false);
         rsp.set_message(login_body->message());
-        return EncodeResponse(rsp, response_frame);
+        rsp.set_error_code(arsp.error_code());
+        return EncodeResponse(rsp, response_frame, connection_id);
     }
 
     sess::AcquireSessionRequest sreq;
@@ -121,7 +126,8 @@ bool OrchestrateGatewayLogin(const std::string &gateway_instance_id, uint64_t co
         login_body->set_message(srsp.message().empty() ? "acquire session failed" : srsp.message());
         rsp.set_ok(false);
         rsp.set_message(login_body->message());
-        return EncodeResponse(rsp, response_frame);
+        rsp.set_error_code(srsp.error_code());
+        return EncodeResponse(rsp, response_frame, connection_id);
     }
 
     if (srsp.gamelogic_instance_id().empty()) {
@@ -150,7 +156,8 @@ bool OrchestrateGatewayLogin(const std::string &gateway_instance_id, uint64_t co
         login_body->set_message("no logic assigned");
         rsp.set_ok(false);
         rsp.set_message(login_body->message());
-        return EncodeResponse(rsp, response_frame);
+        rsp.set_error_code(gameproto::kErrDependencyUnavailable);
+        return EncodeResponse(rsp, response_frame, connection_id);
     }
 
     glrpc::BindPlayerRequest breq;
@@ -195,7 +202,8 @@ bool OrchestrateGatewayLogin(const std::string &gateway_instance_id, uint64_t co
         login_body->set_message(brsp.message().empty() ? "bind player failed" : brsp.message());
         rsp.set_ok(false);
         rsp.set_message(login_body->message());
-        return EncodeResponse(rsp, response_frame);
+        rsp.set_error_code(brsp.error_code());
+        return EncodeResponse(rsp, response_frame, connection_id);
     }
 
     if (!srsp.previous_gateway_instance_id().empty() &&
@@ -240,7 +248,7 @@ bool OrchestrateGatewayLogin(const std::string &gateway_instance_id, uint64_t co
     rsp.set_message("login ok");
     LOG_INFO << "Gateway login orchestrated player=" << arsp.player_id()
              << " logic=" << srsp.gamelogic_instance_id() << " conn=" << connection_id;
-    return EncodeResponse(rsp, response_frame);
+    return EncodeResponse(rsp, response_frame, connection_id);
 }
 
 bool OrchestrateGatewayRegister(const std::string &request_payload, std::string *response_frame) {
@@ -270,6 +278,7 @@ bool OrchestrateGatewayRegister(const std::string &request_payload, std::string 
         body->set_message(arsp.message().empty() ? "register failed" : arsp.message());
         rsp.set_ok(false);
         rsp.set_message(body->message());
+        rsp.set_error_code(arsp.error_code());
         return EncodeResponse(rsp, response_frame);
     }
     body->set_ok(true);
@@ -565,55 +574,130 @@ bool OrchestrateGatewayReconnect(const std::string &gateway_instance_id, uint64_
 }
 
 bool OrchestrateGatewayLogout(const std::string &gateway_instance_id, uint64_t connection_id,
-                              const std::string &request_payload, std::string *response_frame) {
+                              const std::string &request_payload, std::string *response_frame,
+                              GatewayLogoutResult *result) {
     (void)gateway_instance_id;
+    GatewayLogoutResult local;
+    GatewayLogoutResult *out = result ? result : &local;
+    *out = GatewayLogoutResult{};
+
+    auto finish = [&](game::GameResponse &rsp) -> bool {
+        out->encoded = EncodeResponse(rsp, response_frame);
+        out->clear_bind = LogoutAuthoritativeOk(*out);
+        return out->encoded;
+    };
+
     game::GameRequest req;
     game::GameResponse rsp;
     if (!req.ParseFromString(request_payload) || !req.has_logout()) {
         rsp.set_ok(false);
+        rsp.set_error_code("ERR_INVALID_ARGUMENT");
         rsp.set_message("invalid logout");
-        return EncodeResponse(rsp, response_frame);
+        auto *body = rsp.mutable_logout();
+        body->set_ok(false);
+        body->set_message("invalid logout");
+        return finish(rsp);
     }
     rsp.set_seq(req.seq());
+
     GatewayConnRegistry::Bind bind;
     const bool has_bind = GatewayConnRegistry::Instance().FindByConnection(connection_id, &bind);
-    if (has_bind) {
-        if (bind.gamelogic_instance_id.empty()) {
+    if (!has_bind) {
+        // 未绑定：可能是重复 Logout。调用方用连接级标记判定幂等。
+        rsp.set_ok(false);
+        rsp.set_error_code("ERR_UNAUTHENTICATED");
+        rsp.set_message("not bound");
+        auto *body = rsp.mutable_logout();
+        body->set_ok(false);
+        body->set_message("not bound");
+        return finish(rsp);
+    }
+
+    // 已绑定连接：完全忽略客户端自报 player/session/fence。
+    const uint64_t player_id = bind.player_id;
+    const std::string session_id = bind.session_id;
+    const std::string fence = bind.token;
+
+    out->logic_ok = true;
+    if (!bind.gamelogic_instance_id.empty()) {
+        if (!GatewayAuthClients::Instance().ready()) {
+            out->logic_ok = false;
             rsp.set_ok(false);
-            rsp.set_message("logout missing logic route");
-            return EncodeResponse(rsp, response_frame);
+            rsp.set_error_code("ERR_DEPENDENCY_UNAVAILABLE");
+            rsp.set_message("logic client not ready");
+            auto *body = rsp.mutable_logout();
+            body->set_ok(false);
+            body->set_message("logic client not ready");
+            LOG_WARN << "Logout logic unavailable player=" << player_id
+                     << " gw=" << gateway_instance_id << " logic=" << bind.gamelogic_instance_id;
+            return finish(rsp);
         }
         glrpc::UnbindPlayerRequest ureq;
-        ureq.set_player_id(bind.player_id != 0 ? bind.player_id : req.logout().player_id());
-        ureq.set_session_id(bind.session_id);
-        ureq.set_fence_token(bind.token.empty() ? req.logout().token() : bind.token);
+        ureq.set_player_id(player_id);
+        ureq.set_session_id(session_id);
+        ureq.set_fence_token(fence);
         ureq.set_reason("logout");
-        ureq.set_idempotency_key(bind.session_id + ":unbind");
+        ureq.set_idempotency_key(session_id + ":unbind");
         glrpc::UnbindPlayerResponse ursp;
-        GatewayAuthClients::Instance().UnbindPlayer(bind.gamelogic_instance_id, ureq, &ursp);
-    }
-    game::LogoutRsp body;
-    if (has_bind && GatewayAuthClients::Instance().ready()) {
-        sess::LogoutRequest lreq;
-        lreq.set_player_id(bind.player_id);
-        lreq.set_session_id(bind.session_id);
-        lreq.set_fence_token(bind.token);
-        sess::LogoutResponse lrsp;
-        if (GatewayAuthClients::Instance().LogoutV2(lreq, &lrsp)) {
-            body.set_ok(lrsp.ok());
-            body.set_message(lrsp.message());
+        const bool rpc_ok =
+            GatewayAuthClients::Instance().UnbindPlayer(bind.gamelogic_instance_id, ureq, &ursp);
+        out->logic_ok = rpc_ok && ursp.ok();
+        if (!out->logic_ok) {
+            rsp.set_ok(false);
+            rsp.set_error_code("ERR_INTERNAL");
+            rsp.set_message(ursp.message().empty() ? "unbind failed" : ursp.message());
+            auto *body = rsp.mutable_logout();
+            body->set_ok(false);
+            body->set_message(rsp.message());
+            LOG_WARN << "Logout unbind failed player=" << player_id
+                     << " logic=" << bind.gamelogic_instance_id << " map=" << bind.map_instance_id
+                     << " rpc=" << rpc_ok << " msg=" << ursp.message();
+            return finish(rsp);
         }
-    } else if (SessionRpcClient::Instance().ready()) {
-        SessionRpcClient::Instance().Logout(req.logout(), &body);
-    } else {
-        body.set_ok(false);
-        body.set_message("session client not ready");
     }
+
+    game::LogoutRsp body;
+    body.set_ok(false);
+    if (GatewayAuthClients::Instance().ready()) {
+        sess::LogoutRequest lreq;
+        lreq.set_player_id(player_id);
+        lreq.set_session_id(session_id);
+        lreq.set_fence_token(fence);
+        sess::LogoutResponse lrsp;
+        const bool rpc_ok = GatewayAuthClients::Instance().LogoutV2(lreq, &lrsp);
+        out->session_ok = rpc_ok && lrsp.ok();
+        body.set_ok(out->session_ok);
+        body.set_message(lrsp.message().empty() ? (out->session_ok ? "logout ok" : "logout failed")
+                                                : lrsp.message());
+    } else if (SessionRpcClient::Instance().ready()) {
+        game::LogoutReq legacy;
+        legacy.set_player_id(player_id);
+        legacy.set_token(fence);
+        SessionRpcClient::Instance().Logout(legacy, &body);
+        out->session_ok = body.ok();
+    } else {
+        body.set_message("session client not ready");
+        out->session_ok = false;
+    }
+
     rsp.mutable_logout()->CopyFrom(body);
-    rsp.set_ok(body.ok());
+    if (!out->session_ok) {
+        rsp.set_ok(false);
+        rsp.set_error_code("ERR_DEPENDENCY_UNAVAILABLE");
+        rsp.set_message(body.message().empty() ? "session logout failed" : body.message());
+        LOG_WARN << "Logout session failed player=" << player_id
+                 << " logic=" << bind.gamelogic_instance_id << " map=" << bind.map_instance_id
+                 << " msg=" << body.message();
+        return finish(rsp);
+    }
+
+    rsp.set_ok(true);
+    rsp.set_error_code("OK");
     rsp.set_message(body.message());
-    GatewayConnRegistry::Instance().Forget(connection_id);
-    return EncodeResponse(rsp, response_frame);
+    LOG_INFO << "Gateway logout orchestrated player=" << player_id
+             << " logic=" << bind.gamelogic_instance_id << " map=" << bind.map_instance_id
+             << " conn=" << connection_id;
+    return finish(rsp);
 }
 
 namespace {

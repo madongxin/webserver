@@ -294,6 +294,55 @@ int main() {
             return Fail("old fence still valid after kick");
     }
 
+    {
+        const uint64_t lpid = 900099;
+        game::LogoutReq lo;
+        lo.set_player_id(lpid);
+        game::LogoutRsp lr;
+        SessionStore::Instance().Logout(lo, &lr);
+        AcquireSessionInput lin;
+        lin.player_id = lpid;
+        lin.device_id = "logout-dev";
+        lin.server_id = 1;
+        lin.kick_other_device = true;
+        lin.gateway_instance_id = "gw-0";
+        AcquireSessionResult lout;
+        if (!SessionStore::Instance().AcquireSession(lin, &lout) || !lout.ok)
+            return Fail("logout setup acquire");
+        game::LogoutReq bad;
+        bad.set_player_id(lpid);
+        bad.set_token("wrong-fence");
+        game::LogoutRsp bad_rsp;
+        if (SessionStore::Instance().Logout(bad, &bad_rsp) && bad_rsp.ok())
+            return Fail("logout wrong fence must fail");
+        if (!SessionStore::Instance().IsPlayerOnline(lpid))
+            return Fail("wrong fence logout dropped session");
+        game::LogoutReq live;
+        live.set_player_id(lpid);
+        live.set_token(lout.fence_token);
+        game::LogoutRsp live_rsp;
+        if (!SessionStore::Instance().Logout(live, &live_rsp) || !live_rsp.ok())
+            return Fail("logout live");
+        game::LogoutRsp again;
+        if (!SessionStore::Instance().Logout(live, &again) || !again.ok())
+            return Fail("logout idempotent");
+        if (std::string(again.message()).find("already offline") == std::string::npos &&
+            std::string(again.message()) != "logout ok")
+            return Fail("logout idempotent message");
+        if (SessionStore::Instance().IsPlayerOnline(lpid))
+            return Fail("logout still online");
+        // 主动 Logout 已 DEL；随后 MarkDisconnected 不得把 Session 写成 DISCONNECTED。
+        if (SessionStore::Instance().MarkDisconnected(lpid, lout.fence_token, lout.generation))
+            return Fail("MarkDisconnected after Logout resurrected");
+        game::ReconnectReq rlo;
+        rlo.set_player_id(lpid);
+        rlo.set_session_id(lout.session_id);
+        rlo.set_reconnect_ticket(lout.fence_token);
+        game::ReconnectRsp rrlo;
+        if (SessionStore::Instance().Reconnect(rlo, &rrlo) && rrlo.ok())
+            return Fail("Reconnect after Logout");
+    }
+
     std::printf("OK session_store_test login/replace/disconnect/reconnect/route/concurrent/idem\n");
     std::printf("PASS session_store_test\n");
     return 0;

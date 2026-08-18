@@ -89,8 +89,18 @@ std::string OpsMetrics::PrometheusText() const {
             os << "gamemesh_error_code_total{code=\"" << kv.first << "\"} " << kv.second << "\n";
         os << "\n";
     }
-    gauge("gamemesh_online_players", "Bound gateway connections (approx).",
+    gauge("gamemesh_online_players", "Bound unique players on this Gateway.",
           online_players_.load(std::memory_order_relaxed));
+    gauge("gamemesh_gateway_tcp_connections", "Current game TCP sockets (including pre-auth).",
+          gateway_tcp_connections_.load(std::memory_order_relaxed));
+    ctr("gamemesh_gateway_rx_bytes_total", "Game TCP bytes received (client → Gateway).",
+        gateway_rx_bytes_.load(std::memory_order_relaxed));
+    ctr("gamemesh_gateway_tx_bytes_total", "Game TCP bytes sent (Gateway → client).",
+        gateway_tx_bytes_.load(std::memory_order_relaxed));
+    ctr("gamemesh_gateway_rx_frames_total", "Game TCP frames received.",
+        gateway_rx_frames_.load(std::memory_order_relaxed));
+    ctr("gamemesh_gateway_tx_frames_total", "Game TCP frames sent.",
+        gateway_tx_frames_.load(std::memory_order_relaxed));
     gauge("gamemesh_outbox_backlog", "Unpublished outbox rows (GameDB).",
           outbox_backlog_.load(std::memory_order_relaxed));
     gauge("gamemesh_mailbox_pending", "PlayerSerialQueue pending_global.",

@@ -796,6 +796,11 @@ if(ENABLE_GAME_PROTOBUF)
   target_include_directories(gateway_conn_race_test PRIVATE runtime game base log timer)
   target_link_libraries(gateway_conn_race_test ${CMAKE_THREAD_LIBS_INIT})
 
+  add_executable(gateway_logout_policy_test
+    test/gateway_logout_policy_test.cpp)
+  target_include_directories(gateway_logout_policy_test PRIVATE runtime)
+  target_link_libraries(gateway_logout_policy_test ${CMAKE_THREAD_LIBS_INIT})
+
   add_executable(discovery_ha_test
     test/discovery_ha_test.cpp
     runtime/discovery/IServiceRegistry.cpp

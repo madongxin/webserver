@@ -43,6 +43,7 @@
 #include "GatewayAuthClients.h"
 #include "GatewayEnterMapOrchestrator.h"
 #include "GatewayLoginOrchestrator.h"
+#include "GatewayLogoutPolicy.h"
 #include "SessionRpcClient.h"
 #endif
 #endif
@@ -54,6 +55,7 @@
 #include <mutex>
 #include <thread>
 #include <unordered_map>
+#include <unordered_set>
 #include <vector>
 
 namespace {
@@ -67,6 +69,7 @@ struct ConnBind {
 
 std::mutex g_bind_mu;
 std::unordered_map<uint64_t, ConnBind> g_conn_bind;  // connection_id -> bind
+std::unordered_set<uint64_t> g_authoritative_logout;  // conn_id：主动 Logout 成功，断线不得 MarkDisconnected
 std::string g_gateway_id = "gw-0";
 std::atomic<bool> g_tcp_listening{false};
 
@@ -105,6 +108,8 @@ void RememberBind(uint64_t conn_id, uint64_t player_id, const std::string &token
                 auto live = weak_conn.lock();
                 if (!live || live->state() != TcpConnection::Connected)
                     return;
+                OpsMetrics::Instance().AddGatewayTxBytes(frame.size());
+                OpsMetrics::Instance().AddGatewayTxFrames(1);
                 live->Send(frame);
             };
             if (c->loop()->IsInLoopThread())
@@ -145,12 +150,32 @@ void RememberBind(uint64_t conn_id, uint64_t player_id, const std::string &token
         };
     }
     GatewayConnRegistry::Instance().Remember(conn_id, std::move(gb));
+    OpsMetrics::Instance().SetOnlinePlayers(GatewayConnRegistry::Instance().BoundPlayerCount());
 }
 
 void ForgetBind(uint64_t conn_id) {
     std::lock_guard<std::mutex> lk(g_bind_mu);
     g_conn_bind.erase(conn_id);
     GatewayConnRegistry::Instance().Forget(conn_id);
+    OpsMetrics::Instance().SetOnlinePlayers(GatewayConnRegistry::Instance().BoundPlayerCount());
+}
+
+void MarkAuthoritativeLogout(uint64_t conn_id) {
+    std::lock_guard<std::mutex> lk(g_bind_mu);
+    g_authoritative_logout.insert(conn_id);
+    g_conn_bind.erase(conn_id);
+    GatewayConnRegistry::Instance().Forget(conn_id);
+    OpsMetrics::Instance().SetOnlinePlayers(GatewayConnRegistry::Instance().BoundPlayerCount());
+}
+
+bool ConsumeAuthoritativeLogout(uint64_t conn_id) {
+    std::lock_guard<std::mutex> lk(g_bind_mu);
+    return g_authoritative_logout.erase(conn_id) > 0;
+}
+
+bool HasAuthoritativeLogout(uint64_t conn_id) {
+    std::lock_guard<std::mutex> lk(g_bind_mu);
+    return g_authoritative_logout.count(conn_id) > 0;
 }
 
 void SendPublicErr(const std::shared_ptr<ReplySink> &sink, uint64_t conn_id, uint64_t seq,
@@ -318,6 +343,7 @@ void GameTcpGateway::Run() {
         }
         GatewayConnGuard::Instance().OnConnected(c->id(), c->fd());
         GatewayAuthFlow::Instance().OnConnected(c->id());
+        (void)ConsumeAuthoritativeLogout(c->id());
         std::weak_ptr<TcpConnection> weak = c;
         const uint64_t id = c->id();
         c->loop()->QueueOneFunc([weak, id]() { ScheduleIdleCheck(weak, id); });
@@ -344,6 +370,12 @@ void GameTcpGateway::Run() {
         // 未绑定连接（Register 超时后客户端断开）走旧 early-return 会把 acceptor EventLoop 卡死，
         // listen backlog 堆满后所有新登录 no_response。
         ForgetBind(c->id());
+
+        const bool logout_done = ConsumeAuthoritativeLogout(c->id());
+        if (logout_done) {
+            // 主动 Logout 已释放 Session；断线不得把 Session 写回 DISCONNECTED。
+            return;
+        }
 
         if (bind.player_id != 0) {
 #ifdef WEBSERVER_ENABLE_REDIS
@@ -430,6 +462,9 @@ void GameTcpGateway::OnMessage(const std::shared_ptr<TcpConnection> &conn) {
     if (!rb || rb->readablebytes() <= 0)
         return;
 
+    const size_t nread = static_cast<size_t>(rb->readablebytes());
+    OpsMetrics::Instance().AddGatewayRxBytes(nread);
+
     // 流缓冲挂在连接上，仅由所属 EventLoop 访问，无需全局锁
     std::string &buf = conn->proto_stream();
     buf.append(rb->RetrieveAllAsString());
@@ -440,6 +475,7 @@ void GameTcpGateway::OnMessage(const std::shared_ptr<TcpConnection> &conn) {
         const auto dr = gameproto::DecodeOneFrame(&buf, &frame);
         if (dr == gameproto::FrameDecodeResult::Complete) {
             frames.push_back(std::move(frame));
+            OpsMetrics::Instance().AddGatewayRxFrames(1);
             frame.clear();
             continue;
         }
@@ -697,10 +733,30 @@ void GameTcpGateway::OnMessage(const std::shared_ptr<TcpConnection> &conn) {
                 started = PlayerSerialQueue::Instance().TryPost(
                     shard_key, [gw, conn_id, payload, sink]() {
                         std::string out;
-                        const bool ok =
-                            gameproto::OrchestrateGatewayLogout(gw, conn_id, payload, &out);
-                        if (ok)
-                            ForgetBind(conn_id);
+                        gameproto::GatewayLogoutResult lr;
+                        if (HasAuthoritativeLogout(conn_id)) {
+                            game::GameRequest req;
+                            game::GameResponse rsp;
+                            if (req.ParseFromString(payload))
+                                rsp.set_seq(req.seq());
+                            rsp.set_ok(true);
+                            rsp.set_error_code("OK");
+                            rsp.set_message("already offline");
+                            auto *body = rsp.mutable_logout();
+                            body->set_ok(true);
+                            body->set_message("already offline");
+                            std::string b;
+                            if (rsp.SerializeToString(&b))
+                                gameproto::EncodeFrame(b, &out);
+                            lr.encoded = !out.empty();
+                            lr.session_ok = true;
+                            lr.logic_ok = true;
+                        } else {
+                            (void)gameproto::OrchestrateGatewayLogout(gw, conn_id, payload, &out,
+                                                                      &lr);
+                            if (lr.clear_bind)
+                                MarkAuthoritativeLogout(conn_id);
+                        }
                         if (!out.empty() && sink)
                             sink->SendFrame(out);
                     });

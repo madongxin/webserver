@@ -1,0 +1,11 @@
+# GameMesh scrape 片段。合并进本机 /etc/prometheus/prometheus.yml 的 scrape_configs。
+# 目标列表由 scripts/sync_prometheus_sd.sh 根据 inventory.tsv 生成。
+
+  - job_name: gamemesh
+    metrics_path: /metrics
+    scrape_interval: 5s
+    scrape_timeout: 4s
+    file_sd_configs:
+      - files:
+          - /etc/prometheus/file_sd/gamemesh.json
+        refresh_interval: 10s

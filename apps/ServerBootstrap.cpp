@@ -86,12 +86,16 @@
 #include <atomic>
 #include <cctype>
 #include <chrono>
+#include <csignal>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
 #include <dirent.h>
 #include <fcntl.h>
 #include <fstream>
+#include <arpa/inet.h>
+#include <netinet/in.h>
+#include <sys/socket.h>
 #include <sys/stat.h>
 #include <unistd.h>
 #include <mutex>
@@ -125,6 +129,212 @@ std::string ReadFile(const std::string &path) {
     if (!in)
         return "";
     return std::string((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());
+}
+
+std::string InventoryTsvPath() {
+    if (const char *run = std::getenv("GAMEMESH_RUN_DIR")) {
+        if (*run)
+            return std::string(run) + "/inventory.tsv";
+    }
+    std::string formal;
+    if (GameMeshPaths::ResolveProjectSubdir("run/formal", &formal))
+        return formal + "/inventory.tsv";
+    return "";
+}
+
+bool PidAlive(int pid) {
+    if (pid <= 0)
+        return false;
+    return ::kill(pid, 0) == 0;
+}
+
+std::string ProcComm(int pid) {
+    std::string s = ReadFile("/proc/" + std::to_string(pid) + "/comm");
+    while (!s.empty() && (s.back() == '\n' || s.back() == '\r'))
+        s.pop_back();
+    return s;
+}
+
+int64_t ProcRssKb(int pid) {
+    const std::string st = ReadFile("/proc/" + std::to_string(pid) + "/status");
+    const auto pos = st.find("VmRSS:");
+    if (pos == std::string::npos)
+        return 0;
+    return std::strtoll(st.c_str() + pos + 6, nullptr, 10);
+}
+
+int HttpGetLocal(int port, const char *path, int timeout_ms, std::string *body) {
+    if (port <= 0 || !path)
+        return 0;
+    const int fd = ::socket(AF_INET, SOCK_STREAM, 0);
+    if (fd < 0)
+        return 0;
+    timeval tv{};
+    tv.tv_sec = timeout_ms / 1000;
+    tv.tv_usec = (timeout_ms % 1000) * 1000;
+    ::setsockopt(fd, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv));
+    ::setsockopt(fd, SOL_SOCKET, SO_SNDTIMEO, &tv, sizeof(tv));
+    sockaddr_in addr{};
+    addr.sin_family = AF_INET;
+    addr.sin_port = htons(static_cast<uint16_t>(port));
+    addr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+    if (::connect(fd, reinterpret_cast<sockaddr *>(&addr), sizeof(addr)) != 0) {
+        ::close(fd);
+        return 0;
+    }
+    std::ostringstream req;
+    req << "GET " << path << " HTTP/1.0\r\nHost: 127.0.0.1\r\nConnection: close\r\n\r\n";
+    const std::string s = req.str();
+    if (::send(fd, s.data(), s.size(), 0) < 0) {
+        ::close(fd);
+        return 0;
+    }
+    std::string raw;
+    char buf[2048];
+    while (true) {
+        const ssize_t n = ::recv(fd, buf, sizeof(buf), 0);
+        if (n <= 0)
+            break;
+        raw.append(buf, static_cast<size_t>(n));
+        if (raw.size() > 65536)
+            break;
+    }
+    ::close(fd);
+    int status = 0;
+    if (raw.size() >= 12 && raw.compare(0, 5, "HTTP/") == 0)
+        status = std::atoi(raw.c_str() + 9);
+    const auto hdr_end = raw.find("\r\n\r\n");
+    if (body) {
+        if (hdr_end != std::string::npos)
+            *body = raw.substr(hdr_end + 4);
+        else
+            *body = raw;
+    }
+    return status;
+}
+
+int ParseHttpPort(const std::string &field) {
+    if (field.empty() || field == "-")
+        return 0;
+    const auto colon = field.rfind(':');
+    if (colon != std::string::npos)
+        return std::atoi(field.c_str() + colon + 1);
+    return std::atoi(field.c_str());
+}
+
+struct ClusterProc {
+    std::string role, iid, rpc, comm, live_detail, ready_detail;
+    int pid = 0;
+    int http_port = 0;
+    int game_port = 0;
+    int64_t rss_kb = 0;
+    int live_http = 0;
+    int ready_http = 0;
+    bool alive = false;
+    bool live = false;
+    bool ready = false;
+};
+
+void ProbeClusterProc(ClusterProc *p) {
+    if (!p || !p->alive)
+        return;
+    if (p->pid == ::getpid()) {
+        p->live = ServiceHealth::Instance().IsLive(30);
+        const HealthDepsResult deps = EvaluateHealthDeps(ServiceHealth::Instance().service());
+        p->ready = ServiceHealth::Instance().ready() && deps.ok;
+        p->live_detail = "self";
+        p->ready_detail = deps.detail;
+        p->live_http = p->live ? 200 : 503;
+        p->ready_http = p->ready ? 200 : 503;
+        return;
+    }
+    if (p->http_port <= 0)
+        return;
+    std::string body;
+    // ready 路径可能同步 Ping GameDB（约 800ms），超时过短会误报未就绪
+    p->live_http = HttpGetLocal(p->http_port, "/health/live", 1500, &body);
+    p->live = (p->live_http == 200);
+    p->live_detail = body.size() > 240 ? body.substr(0, 240) : body;
+    body.clear();
+    p->ready_http = HttpGetLocal(p->http_port, "/health/ready", 1500, &body);
+    p->ready = (p->ready_http == 200);
+    p->ready_detail = body.size() > 240 ? body.substr(0, 240) : body;
+}
+
+Json::Value BuildClusterStatusJson() {
+    Json::Value out;
+    out["ok"] = true;
+    const std::string path = InventoryTsvPath();
+    out["inventory"] = path;
+    std::vector<ClusterProc> rows;
+    std::ifstream in(path);
+    std::string line;
+    while (std::getline(in, line)) {
+        if (line.empty() || line[0] == '#')
+            continue;
+        std::istringstream iss(line);
+        std::string role, iid, pid_s, rpc, http, game;
+        if (!(iss >> role >> iid >> pid_s >> rpc >> http >> game))
+            continue;
+        ClusterProc p;
+        p.role = role;
+        p.iid = iid;
+        p.pid = std::atoi(pid_s.c_str());
+        p.rpc = rpc;
+        p.http_port = ParseHttpPort(http);
+        p.game_port = ParseHttpPort(game);
+        p.alive = PidAlive(p.pid);
+        p.comm = p.alive ? ProcComm(p.pid) : "";
+        p.rss_kb = p.alive ? ProcRssKb(p.pid) : 0;
+        rows.push_back(std::move(p));
+    }
+    std::vector<std::thread> workers;
+    workers.reserve(rows.size());
+    for (auto &p : rows)
+        workers.emplace_back([&p]() { ProbeClusterProc(&p); });
+    for (auto &t : workers)
+        t.join();
+    Json::Value procs(Json::arrayValue);
+    int alive_n = 0, live_n = 0, ready_n = 0;
+    for (const auto &r : rows) {
+        Json::Value p;
+        p["role"] = r.role;
+        p["instance_id"] = r.iid;
+        p["pid"] = r.pid;
+        p["alive"] = r.alive;
+        p["rpc_addr"] = r.rpc;
+        p["http_port"] = r.http_port;
+        p["game_port"] = r.game_port;
+        p["comm"] = r.comm;
+        p["rss_kb"] = static_cast<Json::Int64>(r.rss_kb);
+        p["live"] = r.live;
+        p["ready"] = r.ready;
+        p["live_http"] = r.live_http;
+        p["ready_http"] = r.ready_http;
+        p["live_detail"] = r.live_detail;
+        p["ready_detail"] = r.ready_detail;
+        if (r.alive)
+            ++alive_n;
+        if (r.live)
+            ++live_n;
+        if (r.ready)
+            ++ready_n;
+        procs.append(p);
+    }
+    const int n = static_cast<int>(rows.size());
+    out["process_n"] = n;
+    out["alive_n"] = alive_n;
+    out["live_n"] = live_n;
+    out["ready_n"] = ready_n;
+    out["expected_n"] = 8;
+    out["all_alive"] = (n > 0 && alive_n == n);
+    out["all_ready"] = (n > 0 && ready_n == n);
+    out["processes"] = procs;
+    if (n == 0) {
+        out["ok"] = false;
+        out["error"] = "inventory.tsv empty or missing";
+    }
+    return out;
 }
 
 void SendHtml(HttpResponse *response, const std::string &body, bool head_only) {
@@ -587,10 +797,6 @@ void HttpResponseCallback(const HttpRequest &request, HttpResponse *response) {
     }
 #ifdef WEBSERVER_ENABLE_MYSQL
     if (url == "/api/db/ping") {
-        if (!AdminHttpEnabled()) {
-            SendPlain(response, "admin disabled", HttpResponse::HttpStatusCode::k403Forbidden);
-            return;
-        }
         Json::Value j;
         auto *pool = ConnectionPool::getconnectionPool();
         j["ok"] = pool->isInitialized();
@@ -598,20 +804,61 @@ void HttpResponseCallback(const HttpRequest &request, HttpResponse *response) {
         j["table"] = "gamemesh_metrics";
         j["flush_interval_sec"] = 10;
         if (pool->isInitialized()) {
-            if (auto conn = pool->getConnection()) {
-                MYSQL_RES *res =
-                    conn->query("SELECT COUNT(*), MAX(ts_unix) FROM gamemesh_metrics");
-                if (res) {
-                    MYSQL_ROW row = mysql_fetch_row(res);
-                    if (row && row[0]) {
-                        j["row_count"] = static_cast<Json::UInt64>(std::strtoull(row[0], nullptr, 10));
-                        if (row[1])
-                            j["last_ts_unix"] = static_cast<Json::Int64>(std::strtoll(row[1], nullptr, 10));
-                    }
-                    mysql_free_result(res);
-                }
+            MetricsHistoryQuery q;
+            if (MetricsDbWriter::Instance().QueryHistory(1, 1, &q)) {
+                j["row_count"] = static_cast<Json::UInt64>(q.total_rows);
+                if (q.last_ts_unix)
+                    j["last_ts_unix"] = static_cast<Json::Int64>(q.last_ts_unix);
+                if (!q.error.empty())
+                    j["error"] = q.error;
             }
         }
+        SendJson(response, j);
+        return;
+    }
+    if (url == "/api/metrics/history") {
+        int hours = 6;
+        int limit = 500;
+        const std::string hs = UrlParam(request, "hours");
+        const std::string ls = UrlParam(request, "limit");
+        if (!hs.empty())
+            hours = std::atoi(hs.c_str());
+        if (!ls.empty())
+            limit = std::atoi(ls.c_str());
+        MetricsHistoryQuery q;
+        MetricsDbWriter::Instance().QueryHistory(hours, limit, &q);
+        Json::Value j;
+        j["ok"] = q.ok;
+        j["mysql"] = q.mysql;
+        j["table"] = "gamemesh_metrics";
+        j["hours"] = hours;
+        j["limit"] = limit;
+        j["row_count"] = static_cast<Json::UInt64>(q.total_rows);
+        j["last_ts_unix"] = static_cast<Json::Int64>(q.last_ts_unix);
+        j["point_n"] = static_cast<Json::UInt>(q.points.size());
+        if (!q.error.empty())
+            j["error"] = q.error;
+        if (!q.mysql) {
+            j["hint"] = "Formal 下落库只在 GameDB 进程；请打开 GameDB HTTP（默认 8094）/monitor";
+        }
+        Json::Value arr(Json::arrayValue);
+        for (const auto &p : q.points) {
+            Json::Value e;
+            e["t"] = static_cast<Json::Int64>(p.ts_unix);
+            e["cpu_seconds_total"] = p.cpu_seconds_total;
+            e["rss_bytes"] = static_cast<Json::Int64>(p.rss_bytes);
+            e["rss_kb"] = static_cast<Json::Int64>(p.rss_bytes / 1024);
+            e["vm_size_bytes"] = static_cast<Json::Int64>(p.vm_size_bytes);
+            e["open_fds"] = p.open_fds;
+            e["process_threads"] = p.process_threads;
+            e["eventloop_tick_sec"] = p.eventloop_tick_sec;
+            e["eventloop_tick_peak_sec"] = p.eventloop_tick_peak_sec;
+            e["thread_states_json"] = p.thread_states_json;
+            e["tcp_send_queue_bytes"] = static_cast<Json::UInt64>(p.tcp_send_queue_bytes);
+            e["tcp_recv_queue_bytes"] = static_cast<Json::UInt64>(p.tcp_recv_queue_bytes);
+            arr.append(e);
+        }
+        j["points"] = arr;
         SendJson(response, j);
         return;
     }
@@ -704,6 +951,10 @@ void HttpResponseCallback(const HttpRequest &request, HttpResponse *response) {
     if (url == "/api/version") {
         response->SetContentType("application/json");
         SendPlain(response, ServiceHealth::Instance().VersionJson());
+        return;
+    }
+    if (url == "/api/cluster" || url == "/api/cluster/status") {
+        SendJson(response, BuildClusterStatusJson());
         return;
     }
     if (url == "/api/files") {

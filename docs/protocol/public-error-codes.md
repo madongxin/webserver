@@ -26,5 +26,8 @@
 | `ERR_MAIL_*` | 邮件子域错误 | 视子码 | 见邮件接口 |
 | `ERR_COMMAND_FORBIDDEN` | 公网命令策略拒绝 | 否 | 不要重试该命令 |
 | `ERR_INTERNAL` | 未分类内部错误 | 否 | 上报 trace_id |
+| `ERR_BAD_CREDENTIAL` | 账号或密码错误 | 否 | 核对密码后重新 Login |
+| `ERR_ACCOUNT_NOT_FOUND` | 账号未注册 | 否 | 先 Register |
+| `ERR_BANNED` | 账号已封禁 | 否 | 不可登录 |
 
 Gateway 在 Hello/心跳/未登录拒绝路径直接填写顶层码。GameLogic/GameDB 回包由 `PromotePublicError` 提升子响应 `error_code` 并消毒 `message`。

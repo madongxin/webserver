@@ -222,6 +222,10 @@ wait_log gateway1 "$RUN_DIR/logs/gw1.log" 'GameTcpGateway ready|Game protobuf TC
 wait_log gw0_push "$RUN_DIR/logs/gw0.log" 'GatewayPushServer listening'
 wait_log gw1_push "$RUN_DIR/logs/gw1.log" 'GatewayPushServer listening'
 
+if [[ -x "$ROOT/scripts/sync_prometheus_sd.sh" ]]; then
+  "$ROOT/scripts/sync_prometheus_sd.sh" || true
+fi
+
 cat >"$RUN_DIR/CLIENT.txt" <<EOF
 # Windows / 测试客户端连接信息（GameMesh Gateway ×2）
 Host=${ADVERTISE_HOST}
@@ -232,7 +236,9 @@ PortAlt=${GAME_G1}
 # 内网 Push Logic→Gateway: ${PUSH_G0}/${PUSH_G1}
 Protocol=TCP ProtoFraming + game.proto
 LoginPath=Client→Gateway→Auth→Session.AcquireSession→GameLogic.BindPlayer
-Topology=2x gateway, 2x gamelogic, 2x gamedb, 1x world(GlobalService), 1x session(+Auth)
+# 本机观察页（HTTP 管理口默认不对公网；经 nginx /gamemesh/ 反代）
+MetricsUI=http://127.0.0.1:${HTTP_D0}/monitor
+MetricsBackend=Prometheus job=gamemesh (file_sd from inventory.tsv)
 EOF
 
 echo
@@ -243,7 +249,8 @@ echo "  Port0 : ${GAME_G0}   ← 推荐默认"
 echo "  Port1 : ${GAME_G1}"
 echo "  安全组只需 TCP ${GAME_G0},${GAME_G1}"
 echo "  登录: Gateway→Auth→Session→BindPlayer"
-echo "  Push内网: ${PUSH_G0}/${PUSH_G1}（勿对公网）"
+echo "  观察页: http://127.0.0.1:${HTTP_D0}/monitor  （Prometheus job=gamemesh，按实例）"
+echo "  采集  : /etc/prometheus/file_sd/gamemesh.json  ← scripts/sync_prometheus_sd.sh"
 echo "=============================================="
 echo
 echo "拓扑: 2×gateway + 2×gamelogic + 2×gamedb + world(GlobalService) + session(+Auth)"

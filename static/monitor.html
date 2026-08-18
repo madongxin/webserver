@@ -112,84 +112,127 @@
       font-weight: 500;
       color: var(--muted);
     }
-    .chart-box canvas { width: 100% !important; height: 160px !important; }
+    .chart-box canvas { width: 100% !important; height: 180px !important; }
     .err-msg {
       color: var(--err);
       font-size: 12px;
       padding: 8px;
       display: none;
     }
+    table.data {
+      width: 100%;
+      border-collapse: collapse;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+      font-size: 12px;
+    }
+    table.data th, table.data td {
+      text-align: left;
+      padding: 6px 8px;
+      border-bottom: 1px solid var(--border);
+      white-space: nowrap;
+    }
+    table.data th { background: #f8f9fb; color: var(--muted); font-weight: 600; }
+    table.data tbody tr:hover { background: #f4f8ff; }
+    .table-wrap { overflow-x: auto; margin-top: 10px; }
     a { color: #1a73e8; }
   </style>
 </head>
 <body>
   <div class="dashboard">
     <h1>GameMesh 监控</h1>
-    <p class="subtitle">单页展示 HTTP、游戏网关、Redis、MySQL 与各进程指标 · Prometheus job + 本机 Watchdog</p>
+    <p class="subtitle">Prometheus 拉取各实例 <code>/metrics</code> · 通用进程指标（CPU / 内存 / FD / 线程 / IO）· live/ready 健康检查</p>
 
     <div class="toolbar">
       <label>Prometheus job <input id="job" type="text" value="gamemesh" size="16"></label>
       <label>时间范围 <select id="hours">
-        <option value="1">1 小时</option>
+        <option value="1" selected>1 小时</option>
         <option value="3">3 小时</option>
         <option value="6">6 小时</option>
         <option value="24">24 小时</option>
+        <option value="168">7 天</option>
       </select></label>
-      <label>步长(秒) <input id="step" type="number" value="60" min="15" max="300" style="width:56px"></label>
-      <label>自动刷新(秒) <input id="refresh" type="number" value="30" min="0" max="600" style="width:56px"></label>
+      <label>步长(秒) <input id="step" type="number" value="15" min="5" max="300" style="width:56px"></label>
+      <label>自动刷新(秒) <input id="refresh" type="number" value="15" min="0" max="600" style="width:56px"></label>
       <button type="button" id="btnRefresh">立即刷新</button>
       <span id="lastUpdate" style="color:var(--muted);font-size:12px"></span>
     </div>
 
     <div class="status-row" id="statusRow">
-      <div class="status-pill na" data-mod="http"><div class="name">HTTP 服务</div><div class="value">—</div></div>
-      <div class="status-pill na" data-mod="game"><div class="name">游戏 Protobuf TCP</div><div class="value">—</div></div>
-      <div class="status-pill na" data-mod="redis"><div class="name">Redis 会话</div><div class="value">—</div></div>
-      <div class="status-pill na" data-mod="mysql"><div class="name">MySQL 连接池</div><div class="value">—</div></div>
+      <div class="status-pill na" data-mod="targets"><div class="name">Prometheus 采集</div><div class="value">—</div></div>
+      <div class="status-pill na" data-mod="cluster"><div class="name">集群进程</div><div class="value">—</div></div>
+      <div class="status-pill na" data-mod="live"><div class="name">存活 /health/live</div><div class="value">—</div></div>
+      <div class="status-pill na" data-mod="ready"><div class="name">就绪 /health/ready</div><div class="value">—</div></div>
+      <div class="status-pill na" data-mod="players"><div class="name">在线玩家</div><div class="value">—</div></div>
+      <div class="status-pill na" data-mod="gwtraffic"><div class="name">Gateway 流量</div><div class="value">—</div></div>
     </div>
 
-    <div id="promErr" class="err-msg"></div>
+    <section class="module">
+      <h2>业务 · 玩家与 Gateway 流量</h2>
+      <p class="module-desc">在线玩家 = 各 Gateway 已绑定 player_id 之和。流量 = 游戏 TCP 收发字节与帧（不含 HTTP 管理口）。</p>
+      <div class="charts" id="bizCharts"></div>
+    </section>
 
     <section class="module">
-      <h2>模块一 · 进程资源 (Prometheus)</h2>
-      <p class="module-desc">由 Prometheus 抓取 <code>/metrics</code>，需配置 scrape job 与上方 job 名一致</p>
+      <h2>实例</h2>
+      <p class="module-desc">进程清单来自 <code>inventory.tsv</code>；采集状态来自 Prometheus <code>up</code>。曲线按 <code>instance_id</code> 分线。</p>
+      <div class="table-wrap">
+        <table class="data" id="clusterTable">
+          <thead>
+            <tr>
+              <th>角色</th>
+              <th>实例</th>
+              <th>PID</th>
+              <th>进程</th>
+              <th>进程在跑</th>
+              <th>采集 up</th>
+              <th>存活</th>
+              <th>就绪</th>
+              <th>CPU</th>
+              <th>RSS</th>
+              <th>FDs</th>
+              <th>线程</th>
+              <th>运行时间</th>
+              <th>HTTP</th>
+              <th>游戏 TCP</th>
+              <th>说明</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="module">
+      <h2>资源 · USE</h2>
+      <p class="module-desc">Utilization / Saturation：标准 <code>process_*</code> 指标。每条线一个实例。</p>
+      <div id="promErr" class="err-msg"></div>
       <div class="charts" id="promCharts"></div>
-    </section>
-
-    <section class="module">
-      <h2>模块二 · 线程状态 (Prometheus)</h2>
-      <p class="module-desc"><code>gamemesh_os_threads</code> 按 /proc 状态分组的线程数</p>
-      <div class="charts">
-        <div class="chart-box" style="grid-column: 1 / -1">
-          <h3>OS 线程 (按 state)</h3>
-          <canvas id="chartThreads"></canvas>
-        </div>
-      </div>
-    </section>
-
-    <section class="module">
-      <h2>模块三 · 本机采样 (Watchdog)</h2>
-      <p class="module-desc">服务端每 5 秒采样，不依赖 Prometheus</p>
-      <div class="charts">
-        <div class="chart-box"><h3>RSS (KB)</h3><canvas id="wdRss"></canvas></div>
-        <div class="chart-box"><h3>打开 FD 数</h3><canvas id="wdFds"></canvas></div>
-        <div class="chart-box"><h3>TCP 发送队列 (字节)</h3><canvas id="wdTcpSend"></canvas></div>
-        <div class="chart-box"><h3>TCP 接收队列 (字节)</h3><canvas id="wdTcpRecv"></canvas></div>
-      </div>
     </section>
   </div>
 
   <script>
     const params = new URLSearchParams(location.search);
     const charts = {};
-    const COLORS = ['#36a2eb', '#ff6384', '#4bc0c0', '#ff9f40', '#9966ff', '#c9cbcf'];
+    const COLORS = ['#1a73e8', '#e8710a', '#137333', '#c5221f', '#9334e6', '#00897b', '#f9ab00', '#5f6368'];
+    const API_BASE = (location.pathname.indexOf('/gamemesh/') === 0) ? '/gamemesh' : '';
+
+    function apiUrl(path) {
+      return API_BASE + path;
+    }
 
     function cfg() {
       return {
         job: document.getElementById('job').value.trim() || 'gamemesh',
         hours: parseInt(document.getElementById('hours').value, 10) || 1,
-        step: parseInt(document.getElementById('step').value, 10) || 60,
+        step: parseInt(document.getElementById('step').value, 10) || 15,
       };
+    }
+
+    function jobSel() {
+      return 'job="' + cfg().job + '"';
     }
 
     function syncUrl() {
@@ -206,7 +249,7 @@
     }
 
     function setStatus(mod, text, ok) {
-      const el = document.querySelector(`.status-pill[data-mod="${mod}"]`);
+      const el = document.querySelector('.status-pill[data-mod="' + mod + '"]');
       if (!el) return;
       el.className = 'status-pill ' + (ok === null ? 'na' : ok ? 'ok' : 'err');
       el.querySelector('.value').textContent = text;
@@ -222,77 +265,89 @@
       }
     }
 
-    async function refreshStatus() {
-      const health = await fetchJson('/api/health');
-      setStatus('http', health?.status === 'ok' ? '正常' : '异常', health?.status === 'ok');
+    function seriesLabel(s) {
+      const m = s.metric || {};
+      return m.instance_id || m.role || m.instance || m.__name__ || 'series';
+    }
 
-      const game = await fetchJson('/api/game/status');
-      if (game === null) {
-        setStatus('game', '未启用', null);
-      } else if (game.enabled && game.port > 0) {
-        setStatus('game', '端口 ' + game.port, true);
-      } else {
-        setStatus('game', '未启动', false);
-      }
+    function fmtBytes(n) {
+      const v = Number(n);
+      if (!isFinite(v) || v < 0) return '—';
+      if (v < 1024) return v + ' B';
+      if (v < 1048576) return (v / 1024).toFixed(1) + ' KB';
+      if (v < 1073741824) return (v / 1048576).toFixed(1) + ' MB';
+      return (v / 1073741824).toFixed(2) + ' GB';
+    }
 
-      const redis = await fetchJson('/api/redis/status');
-      if (redis === null) {
-        setStatus('redis', '未编译', null);
-      } else if (!redis.enabled) {
-        setStatus('redis', '未启用', null);
-      } else {
-        setStatus('redis', redis.available ? '已连接' : '不可用', redis.available);
-      }
+    function fmtCpu(n) {
+      const v = Number(n);
+      if (!isFinite(v)) return '—';
+      return (v * 100).toFixed(1) + '%';
+    }
 
-      const db = await fetchJson('/api/db/ping');
-      if (db === null) {
-        setStatus('mysql', '未编译', null);
-      } else if (!db.ok) {
-        setStatus('mysql', '未初始化', false);
-      } else {
-        let txt = (db.dbname || 'metrics') + ' · 每10s落库';
-        if (db.row_count != null) txt += ' · ' + db.row_count + ' 行';
-        if (db.last_ts_unix) {
-          const age = Math.floor(Date.now() / 1000) - db.last_ts_unix;
-          txt += age > 30 ? ' · 写入停滞' + age + 's' : ' · 正常';
-        }
-        setStatus('mysql', txt, db.last_ts_unix && (Date.now() / 1000 - db.last_ts_unix) < 30);
-      }
+    function fmtDur(sec) {
+      const s = Math.floor(Number(sec) || 0);
+      if (s < 0) return '—';
+      const d = Math.floor(s / 86400);
+      const h = Math.floor((s % 86400) / 3600);
+      const m = Math.floor((s % 3600) / 60);
+      if (d > 0) return d + 'd ' + h + 'h';
+      if (h > 0) return h + 'h ' + m + 'm';
+      return m + 'm';
+    }
+
+    function instantMap(result) {
+      const map = {};
+      (result || []).forEach(s => {
+        const id = (s.metric || {}).instance_id || (s.metric || {}).instance;
+        if (!id) return;
+        const v = s.value ? s.value[1] : (s.values && s.values.length ? s.values[s.values.length - 1][1] : null);
+        map[id] = v;
+      });
+      return map;
     }
 
     async function queryRange(promql) {
       const c = cfg();
       const end = Math.floor(Date.now() / 1000);
       const start = end - c.hours * 3600;
-      const url = `/api/prometheus/query_range?q=${encodeURIComponent(promql)}&start=${start}&end=${end}&step=${c.step}`;
+      const url = apiUrl('/api/prometheus/query_range') +
+        '?q=' + encodeURIComponent(promql) + '&start=' + start + '&end=' + end + '&step=' + c.step;
       const r = await fetch(url);
       if (!r.ok) throw new Error('Prometheus 代理 ' + r.status);
       const j = await r.json();
       if (j.status === 'error') throw new Error(j.error || 'query failed');
-      return j.data?.result || [];
+      return j.data && j.data.result ? j.data.result : [];
+    }
+
+    async function queryInstant(promql) {
+      const url = apiUrl('/api/prometheus/query') + '?q=' + encodeURIComponent(promql);
+      const r = await fetch(url);
+      if (!r.ok) throw new Error('Prometheus 代理 ' + r.status);
+      const j = await r.json();
+      if (j.status === 'error') throw new Error(j.error || 'query failed');
+      return j.data && j.data.result ? j.data.result : [];
     }
 
     function seriesToChartData(result) {
       if (!result.length) return { labels: [], datasets: [] };
-      const labels = (result[0].values || []).map(x =>
+      const longest = result.reduce((a, b) =>
+        ((a.values || []).length >= (b.values || []).length ? a : b), result[0]);
+      const labels = (longest.values || []).map(x =>
         new Date(x[0] * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
-      const datasets = result.map((s, i) => {
-        const state = s.metric?.state;
-        const label = state ? `state=${state}` : (s.metric?.__name__ || 'value');
-        return {
-          label,
-          data: (s.values || []).map(x => parseFloat(x[1])),
-          borderColor: COLORS[i % COLORS.length],
-          backgroundColor: 'transparent',
-          tension: 0.2,
-          pointRadius: 0,
-          borderWidth: 1.5,
-        };
-      });
+      const datasets = result.map((s, i) => ({
+        label: seriesLabel(s),
+        data: (s.values || []).map(x => parseFloat(x[1])),
+        borderColor: COLORS[i % COLORS.length],
+        backgroundColor: 'transparent',
+        tension: 0.2,
+        pointRadius: 0,
+        borderWidth: 1.5,
+      }));
       return { labels, datasets };
     }
 
-    function upsertChart(canvasId, label, chartData) {
+    function upsertChart(canvasId, chartData) {
       const canvas = document.getElementById(canvasId);
       if (!canvas) return;
       if (charts[canvasId]) {
@@ -307,7 +362,13 @@
           responsive: true,
           maintainAspectRatio: false,
           animation: false,
-          plugins: { legend: { display: chartData.datasets.length > 1, position: 'top', labels: { boxWidth: 10, font: { size: 10 } } } },
+          plugins: {
+            legend: {
+              display: chartData.datasets.length > 1,
+              position: 'top',
+              labels: { boxWidth: 10, font: { size: 10 } },
+            },
+          },
           scales: {
             x: { ticks: { maxTicksLimit: 8, font: { size: 10 } } },
             y: { ticks: { font: { size: 10 } } },
@@ -316,24 +377,50 @@
       });
     }
 
-    const PROM_PANELS = [
-      { id: 'pCpu', title: 'CPU 使用率', promql: j => `rate(process_cpu_seconds_total{job="${j}"}[1m])` },
-      { id: 'pRss', title: '常驻内存 RSS', promql: j => `process_resident_memory_bytes{job="${j}"}` },
-      { id: 'pFds', title: '打开文件描述符', promql: j => `process_open_fds{job="${j}"}` },
-      { id: 'pTick', title: 'EventLoop 上次耗时 (s)', promql: j => `gamemesh_eventloop_tick_seconds{job="${j}"}` },
-      { id: 'pPeak', title: 'EventLoop 峰值耗时 (s)', promql: j => `gamemesh_eventloop_tick_peak_seconds{job="${j}"}` },
-      { id: 'pLogic', title: 'GameLogic 上次耗时 (s)', promql: j => `gamemesh_logic_handle_seconds{job="${j}"}` },
-      { id: 'pLogicPeak', title: 'GameLogic 峰值耗时 (s)', promql: j => `gamemesh_logic_handle_peak_seconds{job="${j}"}` },
-      { id: 'pThr', title: '进程线程总数', promql: j => `process_threads{job="${j}"}` },
+    function fmtBps(n) {
+      const v = Number(n);
+      if (!isFinite(v) || v < 0) return '—';
+      if (v < 1024) return v.toFixed(0) + ' B/s';
+      if (v < 1048576) return (v / 1024).toFixed(1) + ' KB/s';
+      return (v / 1048576).toFixed(2) + ' MB/s';
+    }
+
+    function instantScalar(result) {
+      if (!result || !result.length) return null;
+      const s = result[0];
+      if (s.value) return parseFloat(s.value[1]);
+      if (s.values && s.values.length)
+        return parseFloat(s.values[s.values.length - 1][1]);
+      return null;
+    }
+
+    const BIZ_PANELS = [
+      { id: 'pPlayers', title: '在线玩家', promql: () => 'gamemesh_online_players{' + jobSel() + ',role="gateway"}' },
+      { id: 'pGwConn', title: 'Gateway TCP 连接', promql: () => 'gamemesh_gateway_tcp_connections{' + jobSel() + ',role="gateway"}' },
+      { id: 'pGwRx', title: 'Gateway 入站 (B/s)', promql: () => 'rate(gamemesh_gateway_rx_bytes_total{' + jobSel() + ',role="gateway"}[1m])' },
+      { id: 'pGwTx', title: 'Gateway 出站 (B/s)', promql: () => 'rate(gamemesh_gateway_tx_bytes_total{' + jobSel() + ',role="gateway"}[1m])' },
+      { id: 'pGwRxF', title: 'Gateway 入站帧/s', promql: () => 'rate(gamemesh_gateway_rx_frames_total{' + jobSel() + ',role="gateway"}[1m])' },
+      { id: 'pGwTxF', title: 'Gateway 出站帧/s', promql: () => 'rate(gamemesh_gateway_tx_frames_total{' + jobSel() + ',role="gateway"}[1m])' },
     ];
 
-    function ensurePromChartBoxes() {
-      const root = document.getElementById('promCharts');
-      if (root.children.length) return;
-      PROM_PANELS.forEach(p => {
+    const PROM_PANELS = [
+      { id: 'pCpu', title: 'CPU（核）', promql: () => 'rate(process_cpu_seconds_total{' + jobSel() + '}[1m])' },
+      { id: 'pRss', title: '内存 RSS', promql: () => 'process_resident_memory_bytes{' + jobSel() + '}' },
+      { id: 'pVm', title: '虚拟内存', promql: () => 'process_virtual_memory_bytes{' + jobSel() + '}' },
+      { id: 'pFds', title: '打开文件描述符', promql: () => 'process_open_fds{' + jobSel() + '}' },
+      { id: 'pFdUtil', title: 'FD 使用率', promql: () => 'process_open_fds{' + jobSel() + '} / process_max_fds{' + jobSel() + '}' },
+      { id: 'pThr', title: '线程数', promql: () => 'process_threads{' + jobSel() + '}' },
+      { id: 'pIoR', title: '磁盘读 B/s', promql: () => 'rate(process_io_read_bytes_total{' + jobSel() + '}[1m])' },
+      { id: 'pIoW', title: '磁盘写 B/s', promql: () => 'rate(process_io_write_bytes_total{' + jobSel() + '}[1m])' },
+    ];
+
+    function ensureChartBoxes(rootId, panels) {
+      const root = document.getElementById(rootId);
+      if (!root || root.children.length) return;
+      panels.forEach(p => {
         const box = document.createElement('div');
         box.className = 'chart-box';
-        box.innerHTML = `<h3>${p.title}</h3><canvas id="${p.id}"></canvas>`;
+        box.innerHTML = '<h3>' + p.title + '</h3><canvas id="' + p.id + '"></canvas>';
         root.appendChild(box);
       });
     }
@@ -341,41 +428,132 @@
     async function refreshPrometheus() {
       const errEl = document.getElementById('promErr');
       errEl.style.display = 'none';
-      ensurePromChartBoxes();
-      const job = cfg().job;
+      ensureChartBoxes('bizCharts', BIZ_PANELS);
+      ensureChartBoxes('promCharts', PROM_PANELS);
       try {
-        for (const p of PROM_PANELS) {
-          const result = await queryRange(p.promql(job));
-          upsertChart(p.id, p.title, seriesToChartData(result));
+        for (const p of BIZ_PANELS.concat(PROM_PANELS)) {
+          const result = await queryRange(p.promql());
+          upsertChart(p.id, seriesToChartData(result));
         }
-        const thResult = await queryRange(`gamemesh_os_threads{job="${job}"}`);
-        upsertChart('chartThreads', 'threads', seriesToChartData(thResult));
       } catch (e) {
-        errEl.textContent = 'Prometheus 图表加载失败: ' + e.message + '（请确认 Prometheus 已配置并可通过代理访问）';
+        errEl.textContent = 'Prometheus 查询失败: ' + e.message +
+          '。确认本机 Prometheus :9090 已配置 job=gamemesh，且 GameDB 可访问 127.0.0.1:9090。';
         errEl.style.display = 'block';
       }
     }
 
-    async function refreshWatchdog() {
-      const j = await fetchJson('/api/stats?history=120');
-      const hist = j?.history || [];
-      if (!hist.length) return;
-      const labels = hist.map(p => new Date(p.t * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
-      const mk = (key, canvasId, title) => {
-        upsertChart(canvasId, title, {
-          labels,
-          datasets: [{ label: title, data: hist.map(p => p[key]), borderColor: '#4bc0c0', tension: 0.2, pointRadius: 0, borderWidth: 1.5 }],
-        });
+    async function loadPromSnapshots() {
+      const empty = { up: {}, cpu: {}, rss: {}, fds: {}, thr: {}, uptime: {} };
+      try {
+        const js = jobSel();
+        const [up, cpu, rss, fds, thr, uptime, players, rx, tx] = await Promise.all([
+          queryInstant('up{' + js + '}'),
+          queryInstant('rate(process_cpu_seconds_total{' + js + '}[1m])'),
+          queryInstant('process_resident_memory_bytes{' + js + '}'),
+          queryInstant('process_open_fds{' + js + '}'),
+          queryInstant('process_threads{' + js + '}'),
+          queryInstant('time() - process_start_time_seconds{' + js + '}'),
+          queryInstant('sum(gamemesh_online_players{' + js + ',role="gateway"})'),
+          queryInstant('sum(rate(gamemesh_gateway_rx_bytes_total{' + js + ',role="gateway"}[1m]))'),
+          queryInstant('sum(rate(gamemesh_gateway_tx_bytes_total{' + js + ',role="gateway"}[1m]))'),
+        ]);
+        const upMap = instantMap(up);
+        const n = Object.keys(upMap).length;
+        const ok = Object.values(upMap).filter(v => Number(v) === 1).length;
+        setStatus('targets', n ? (ok + '/' + n + ' up') : '无 target', n > 0 && ok === n);
+        const playerN = instantScalar(players);
+        setStatus('players', playerN == null ? '—' : String(Math.round(playerN)),
+          playerN != null);
+        const rxN = instantScalar(rx);
+        const txN = instantScalar(tx);
+        if (rxN == null && txN == null) {
+          setStatus('gwtraffic', '—', null);
+        } else {
+          setStatus('gwtraffic',
+            '↓' + fmtBps(rxN || 0) + '  ↑' + fmtBps(txN || 0), true);
+        }
+        return {
+          up: upMap,
+          cpu: instantMap(cpu),
+          rss: instantMap(rss),
+          fds: instantMap(fds),
+          thr: instantMap(thr),
+          uptime: instantMap(uptime),
+        };
+      } catch {
+        setStatus('targets', 'Prometheus 不可用', false);
+        return empty;
+      }
+    }
+
+    async function refreshStatus() {
+      const [cluster, snap] = await Promise.all([
+        fetchJson(apiUrl('/api/cluster')),
+        loadPromSnapshots(),
+      ]);
+      const tbody = document.querySelector('#clusterTable tbody');
+      if (tbody)
+        tbody.innerHTML = '';
+      if (!cluster || !cluster.processes) {
+        setStatus('cluster', '无清单', false);
+        setStatus('live', '—', null);
+        setStatus('ready', '—', null);
+        return;
+      }
+      const n = cluster.process_n || 0;
+      const exp = cluster.expected_n || 8;
+      setStatus('cluster', cluster.alive_n + '/' + n + ' 在跑（期望 ' + exp + '）',
+        !!cluster.all_alive && n >= exp);
+      setStatus('live', cluster.live_n + '/' + n + ' 存活', cluster.live_n === n && n > 0);
+      setStatus('ready', cluster.ready_n + '/' + n + ' 就绪', cluster.ready_n === n && n > 0);
+      const mark = (ok) => ok ? '是' : '否';
+      const reason = (p) => {
+        if (!p.alive) return '进程不在（pid 已退出）';
+        if (p.ready) return '正常';
+        const d = (p.ready_detail || '').replace(/\s+/g, ' ').trim();
+        if (p.ready_http) return 'ready HTTP ' + p.ready_http + (d ? ' · ' + d : '');
+        if (!p.live) return 'live 探测失败' + (p.live_http ? ' HTTP ' + p.live_http : '');
+        return d || 'ready 探测超时/失败';
       };
-      mk('rss_kb', 'wdRss', 'RSS KB');
-      mk('fds', 'wdFds', 'FD');
-      mk('tcp_send_q', 'wdTcpSend', 'TCP send');
-      mk('tcp_recv_q', 'wdTcpRecv', 'TCP recv');
+      const lookup = (map, p) => {
+        if (map[p.instance_id] != null) return map[p.instance_id];
+        const inst = '127.0.0.1:' + p.http_port;
+        return map[inst];
+      };
+      (cluster.processes || []).forEach(p => {
+        const tr = document.createElement('tr');
+        const upv = lookup(snap.up, p);
+        const scraped = upv != null && Number(upv) === 1;
+        if (!p.alive)
+          tr.style.background = 'var(--err-bg)';
+        else if (!p.ready || (upv != null && !scraped))
+          tr.style.background = '#fff8e1';
+        const cells = [
+          p.role, p.instance_id, p.pid, p.comm || '',
+          mark(p.alive),
+          upv == null ? '—' : (scraped ? '是' : '否'),
+          mark(p.live), mark(p.ready),
+          fmtCpu(lookup(snap.cpu, p)),
+          fmtBytes(lookup(snap.rss, p)),
+          lookup(snap.fds, p) == null ? '—' : String(Math.round(Number(lookup(snap.fds, p)))),
+          lookup(snap.thr, p) == null ? '—' : String(Math.round(Number(lookup(snap.thr, p)))),
+          fmtDur(lookup(snap.uptime, p)),
+          p.http_port || '—',
+          p.game_port || '—',
+          reason(p),
+        ];
+        cells.forEach(v => {
+          const td = document.createElement('td');
+          td.textContent = v;
+          tr.appendChild(td);
+        });
+        tbody.appendChild(tr);
+      });
     }
 
     async function refreshAll() {
       syncUrl();
-      await Promise.all([refreshStatus(), refreshPrometheus(), refreshWatchdog()]);
+      await Promise.all([refreshStatus(), refreshPrometheus()]);
       document.getElementById('lastUpdate').textContent =
         '更新于 ' + new Date().toLocaleTimeString();
     }

@@ -53,6 +53,8 @@ for k in ("server_commit", "protocol_version", "min_supported_protocol_version",
           "protoc_version", "required_types"):
     assert k in m, k
 assert isinstance(m["required_types"], list) and "ClientHelloReq" in m["required_types"]
+assert "MapManifestEntry" in m["required_types"]
+assert "SessionReplacedNotify" in m["required_types"]
 print("unit export manifest fields ok")
 PY
 rm -rf "$proto_a" "$proto_b"
@@ -68,6 +70,7 @@ run_one phase1_channel_hold_test
 run_one channel_snapshot_race_test
 run_one gateway_disconnect_async_test
 run_one gateway_conn_race_test
+run_one gateway_logout_policy_test
 run_one discovery_ha_test
 run_one push_replay_cache_test
 run_one password_hash_test

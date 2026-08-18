@@ -377,7 +377,7 @@ client_time_ms
 
 使用外层 `GameRequest.seq` 作为 `client_seq`，要求：
 
-- 未登录、未进图、错误 fence/epoch/route、旧 seq 全部拒绝。
+- 未登录、未进图、错误 fence/epoch/route、**小于 last 的旧 seq** 全部拒绝。Hello/Heartbeat/PushAck 在 Gateway 本地处理，Logic 允许 seq 空洞（EnterMap=4 后 Move=6 合法）。
 - 坐标必须有限，拒绝 NaN/Inf。
 - 校验地图边界和 walkable grid。
 - 基于服务器上次确认位置、服务器时间、玩家 `move_speed` 和有限容差做速度校验。

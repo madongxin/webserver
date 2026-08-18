@@ -108,8 +108,12 @@ void TestClientSeq() {
     Expect(EvaluateClientSeq(1, 1, "frame-1", &cached, &err) == ClientSeqDecision::Idempotent &&
                cached == "frame-1",
            "seq idempotent");
-    Expect(EvaluateClientSeq(1, 3, "", &cached, &err) == ClientSeqDecision::Reject, "seq ooo");
+    Expect(EvaluateClientSeq(1, 3, "", &cached, &err) == ClientSeqDecision::Execute,
+           "seq gap after gateway-local heartbeat");
+    Expect(EvaluateClientSeq(4, 6, "", &cached, &err) == ClientSeqDecision::Execute,
+           "enter=4 heartbeat=5 move=6");
     Expect(EvaluateClientSeq(1, 2, "", &cached, &err) == ClientSeqDecision::Execute, "seq next");
+    Expect(EvaluateClientSeq(6, 4, "", &cached, &err) == ClientSeqDecision::Reject, "seq stale rewind");
     Expect(EvaluateClientSeq(5, 0, "", &cached, &err) == ClientSeqDecision::Execute,
            "seq 0 skip check");
 }

@@ -61,9 +61,22 @@ std::string GuessFromMessage(const std::string &msg) {
         return msg;
     if (msg == "ERR_OVERLOAD" || msg == "ERR_OVERLOADED")
         return kErrOverloaded;
+    if (ContainsFold(msg, "invalid credential") || ContainsFold(msg, "bad_credential") ||
+        ContainsFold(msg, "bad credential"))
+        return kErrBadCredential;
+    if (ContainsFold(msg, "account not registered") || ContainsFold(msg, "account not found"))
+        return kErrAccountNotFound;
+    if (ContainsFold(msg, "banned"))
+        return kErrBanned;
+    if ((ContainsFold(msg, "password") &&
+         (ContainsFold(msg, "required") || ContainsFold(msg, ">=6"))) ||
+        ContainsFold(msg, "invalid login payload") || ContainsFold(msg, "invalid register payload") ||
+        ContainsFold(msg, "invalid_arg"))
+        return kErrInvalidArgument;
     if (ContainsFold(msg, "unauthenticated") || ContainsFold(msg, "hello required"))
         return kErrUnauthenticated;
-    if (ContainsFold(msg, "mysql") || ContainsFold(msg, "redis") || ContainsFold(msg, "brpc") ||
+    if (ContainsFold(msg, "not ready") || ContainsFold(msg, "no logic assigned") ||
+        ContainsFold(msg, "mysql") || ContainsFold(msg, "redis") || ContainsFold(msg, "brpc") ||
         ContainsFold(msg, "hiredis") || ContainsFold(msg, "innodb"))
         return kErrDependencyUnavailable;
     if (ContainsFold(msg, "overload") || ContainsFold(msg, "overloaded"))
@@ -75,6 +88,24 @@ std::string GuessFromMessage(const std::string &msg) {
     if (msg.empty())
         return kErrInternal;
     return kErrInternal;
+}
+
+std::string NormalizePublicErrorCode(const std::string &code) {
+    if (code.empty() || code == "OK")
+        return code;
+    if (code == "INVALID_ARG" || code == "HASH_FAILED" || code == "PASSWORD_REQUIRED")
+        return kErrInvalidArgument;
+    if (code == "BAD_CREDENTIAL")
+        return kErrBadCredential;
+    if (code == "ACCOUNT_NOT_FOUND")
+        return kErrAccountNotFound;
+    if (code == "BANNED")
+        return kErrBanned;
+    if (code == "ACCOUNT_LOOKUP_FAILED" || code == "GAMEDB_REQUIRED" || code == "REGISTER_FAILED")
+        return kErrDependencyUnavailable;
+    if (code == "ERR_OVERLOAD")
+        return kErrOverloaded;
+    return code;
 }
 
 }  // namespace
@@ -141,12 +172,14 @@ void PromotePublicError(game::GameResponse *rsp, uint64_t conn_id) {
         code = kErrStaleSeq;
     if (code.empty())
         code = InnerErrorCode(*rsp);
+    code = NormalizePublicErrorCode(code);
     if (code.empty())
         code = GuessFromMessage(rsp->message());
     if (code == "ERR_CLIENT_SEQ_OUT_OF_ORDER")
         code = kErrStaleSeq;
     if (code.empty())
         code = kErrInternal;
+    code = NormalizePublicErrorCode(code);
     rsp->set_error_code(code);
     rsp->set_retryable(ErrorCodeRetryable(code));
     rsp->set_message(SanitizePublicMessage(rsp->message().empty() ? code : rsp->message()));

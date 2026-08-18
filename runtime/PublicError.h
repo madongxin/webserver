@@ -31,6 +31,9 @@ constexpr const char *kErrCommandForbidden = "ERR_COMMAND_FORBIDDEN";
 constexpr const char *kErrNameAmbiguous = "ERR_NAME_AMBIGUOUS";
 constexpr const char *kErrNotFound = "ERR_NOT_FOUND";
 constexpr const char *kErrChannelForbidden = "ERR_CHANNEL_FORBIDDEN";
+constexpr const char *kErrBadCredential = "ERR_BAD_CREDENTIAL";
+constexpr const char *kErrAccountNotFound = "ERR_ACCOUNT_NOT_FOUND";
+constexpr const char *kErrBanned = "ERR_BANNED";
 
 bool ErrorCodeRetryable(const std::string &code);
 int64_t PublicNowMs();

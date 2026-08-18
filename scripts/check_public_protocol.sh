@@ -127,7 +127,7 @@ except Exception as e:
     print("ERROR: git HEAD", e); sys.exit(1)
 req = set(m["required_types"])
 for t in ("ClientHelloReq", "ServerHelloRsp", "PushAckReq", "MailboxChangedNotify",
-          "SessionReplacedNotify"):
+          "SessionReplacedNotify", "MapManifestEntry"):
     if t not in req:
         print("ERROR: required_types missing", t); sys.exit(1)
 print("export manifest fields ok")

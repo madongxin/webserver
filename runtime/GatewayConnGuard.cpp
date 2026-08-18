@@ -1,5 +1,6 @@
 #include "GatewayConnGuard.h"
 
+#include "OpsMetrics.h"
 #include "ProtocolHandshake.h"
 
 #include <arpa/inet.h>
@@ -71,11 +72,13 @@ void GatewayConnGuard::OnConnected(uint64_t conn_id, int fd) {
     st.ip = IpFromFd(fd);
     std::lock_guard<std::mutex> lk(g_mu);
     g_conns[conn_id] = std::move(st);
+    OpsMetrics::Instance().SetGatewayTcpConnections(static_cast<int64_t>(g_conns.size()));
 }
 
 void GatewayConnGuard::OnDisconnected(uint64_t conn_id) {
     std::lock_guard<std::mutex> lk(g_mu);
     g_conns.erase(conn_id);
+    OpsMetrics::Instance().SetGatewayTcpConnections(static_cast<int64_t>(g_conns.size()));
 }
 
 void GatewayConnGuard::NoteActivity(uint64_t conn_id, size_t frame_bytes) {

@@ -44,6 +44,17 @@ public:
     void IncErrorCode(const std::string &code);
 
     void SetOnlinePlayers(int64_t n) { online_players_.store(n, std::memory_order_relaxed); }
+    void SetGatewayTcpConnections(int64_t n) {
+        gateway_tcp_connections_.store(n, std::memory_order_relaxed);
+    }
+    void AddGatewayRxBytes(uint64_t n) { gateway_rx_bytes_.fetch_add(n, std::memory_order_relaxed); }
+    void AddGatewayTxBytes(uint64_t n) { gateway_tx_bytes_.fetch_add(n, std::memory_order_relaxed); }
+    void AddGatewayRxFrames(uint64_t n = 1) {
+        gateway_rx_frames_.fetch_add(n, std::memory_order_relaxed);
+    }
+    void AddGatewayTxFrames(uint64_t n = 1) {
+        gateway_tx_frames_.fetch_add(n, std::memory_order_relaxed);
+    }
     void SetOutboxBacklog(int64_t n) { outbox_backlog_.store(n, std::memory_order_relaxed); }
     void SetMailboxPending(int64_t n) { mailbox_pending_.store(n, std::memory_order_relaxed); }
     void IncPlacementRecoverOk() { placement_recover_ok_.fetch_add(1, std::memory_order_relaxed); }
@@ -111,6 +122,11 @@ private:
     std::atomic<uint64_t> idle_timeout_{0};
     std::atomic<uint64_t> conn_rate_limited_{0};
     std::atomic<int64_t> online_players_{0};
+    std::atomic<int64_t> gateway_tcp_connections_{0};
+    std::atomic<uint64_t> gateway_rx_bytes_{0};
+    std::atomic<uint64_t> gateway_tx_bytes_{0};
+    std::atomic<uint64_t> gateway_rx_frames_{0};
+    std::atomic<uint64_t> gateway_tx_frames_{0};
     std::atomic<int64_t> outbox_backlog_{0};
     std::atomic<int64_t> mailbox_pending_{0};
     std::atomic<uint64_t> placement_recover_ok_{0};

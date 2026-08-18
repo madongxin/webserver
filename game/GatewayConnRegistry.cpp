@@ -80,6 +80,11 @@ bool GatewayConnRegistry::FindBySession(const std::string &session_id, Bind *out
     return true;
 }
 
+int64_t GatewayConnRegistry::BoundPlayerCount() {
+    std::lock_guard<std::mutex> lk(mu_);
+    return static_cast<int64_t>(player_to_conn_.size());
+}
+
 bool GatewayConnRegistry::FindByConnection(uint64_t connection_id, Bind *out) {
     std::lock_guard<std::mutex> lk(mu_);
     auto it = by_conn_.find(connection_id);

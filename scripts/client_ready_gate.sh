@@ -11,8 +11,13 @@ export GAMEMESH_RUN_DIR="${GAMEMESH_RUN_DIR:-$ROOT/run/unity-e2e}"
 export GAMEMESH_MAP_SHA256_FILE="${GAMEMESH_MAP_SHA256_FILE:-$ROOT/config/maps/map_1001.json.sha256}"
 export GAMEMESH_MAP_DATA_VERSION="${GAMEMESH_MAP_DATA_VERSION:-1}"
 export GAMEMESH_SKIP_CLUSTER_STOP=1
-# 发布/就绪门禁必须核对 Unity 仓库协议；缺少 LUNA_REPO 不得 PASS。
-export GAMEMESH_REQUIRE_LUNA_CONTRACT=1
+# 完整 CLIENT READY 必须核对 Unity；CI 无 luna 时用 GAMEMESH_CI_TCP_ONLY=1，只宣称 CLIENT TCP PASS。
+CI_TCP_ONLY="${GAMEMESH_CI_TCP_ONLY:-0}"
+if [[ "$CI_TCP_ONLY" == "1" ]]; then
+  export GAMEMESH_REQUIRE_LUNA_CONTRACT=0
+else
+  export GAMEMESH_REQUIRE_LUNA_CONTRACT=1
+fi
 
 CLIENT="${ROOT}/build/test/game_tcp_e2e_client"
 [[ -x "$CLIENT" ]] || { echo "ERROR: missing $CLIENT (./scripts/build.sh Debug)" >&2; exit 1; }
@@ -76,9 +81,20 @@ luna_rc=$?
 set -e
 echo "$luna_out"
 STEPS+=("{\"name\":\"luna_protocol_contract\",\"exit_code\":${luna_rc}}")
-[[ "$luna_rc" -eq 0 ]] || die "luna protocol contract failed rc=$luna_rc"
-echo "$luna_out" | grep -q "luna_protocol_contract=PASS" \
-  || die "luna protocol contract missing PASS token"
+if [[ "$CI_TCP_ONLY" == "1" ]]; then
+  if [[ "$luna_rc" -ne 0 ]]; then
+    die "luna protocol contract failed rc=$luna_rc"
+  fi
+  if echo "$luna_out" | grep -q "luna_protocol_contract=NOT_RUN"; then
+    echo "INFO: luna contract NOT RUN (GAMEMESH_CI_TCP_ONLY=1); not CLIENT READY"
+  elif ! echo "$luna_out" | grep -q "luna_protocol_contract=PASS"; then
+    die "luna protocol contract missing PASS/NOT_RUN token"
+  fi
+else
+  [[ "$luna_rc" -eq 0 ]] || die "luna protocol contract failed rc=$luna_rc"
+  echo "$luna_out" | grep -q "luna_protocol_contract=PASS" \
+    || die "luna protocol contract missing PASS token"
+fi
 
 run_tcp hello_heartbeat "$ROOT/scripts/test_hello_heartbeat.sh"
 run_tcp unity_contract "$ROOT/scripts/test_unity_contract.sh"
@@ -89,5 +105,10 @@ run_tcp s3_social "$ROOT/scripts/test_s3_social.sh"
 run_tcp world_snapshot "$ROOT/scripts/test_world_snapshot.sh"
 
 write_summary 0 ""
-echo "CLIENT READY PASS"
-echo "client_ready_gate.sh PASS"
+if [[ "$CI_TCP_ONLY" == "1" ]]; then
+  echo "CLIENT TCP PASS"
+  echo "client_ready_gate.sh TCP PASS (not CLIENT READY; luna contract not required)"
+else
+  echo "CLIENT READY PASS"
+  echo "client_ready_gate.sh PASS"
+fi

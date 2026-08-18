@@ -40,6 +40,8 @@ public:
     bool FindBySession(const std::string &session_id, Bind *out);
     bool FindByConnection(uint64_t connection_id, Bind *out);
     bool FindByPlayer(uint64_t player_id, Bind *out);
+    /** 当前绑定的不重复 player_id 数（在线玩家）。 */
+    int64_t BoundPlayerCount();
     bool SendBySession(const std::string &session_id, const std::string &frame);
     /** 仅关闭匹配 player_id+session_id+generation 的旧连接；generation=0 时忽略 generation */
     bool CloseIfMatch(uint64_t player_id, const std::string &session_id, uint64_t generation);

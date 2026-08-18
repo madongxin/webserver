@@ -7,15 +7,11 @@
 <body>
   <h2>GameMesh</h2>
   <ul>
-    <li><a href="/monitor">监控曲线 /monitor</a></li>
+    <li><a href="/monitor">落库监控 /monitor</a>（MySQL <code>gamemesh_metrics</code>；Formal 请开 GameDB :8094）</li>
+    <li><a href="/api/metrics/history?hours=6&amp;limit=50">JSON 历史 /api/metrics/history</a></li>
     <li><a href="/metrics">Prometheus /metrics</a></li>
     <li><a href="/fileserver">文件服务 /fileserver</a></li>
-    <li><a href="/gm">GM 控制台 /gm</a>（需先 <a href="/login">登录</a> demo/demo）</li>
+    <li><a href="/gm">GM 控制台 /gm</a>（需 <code>GAMEMESH_ENABLE_ADMIN=1</code>）</li>
   </ul>
-  <form action="/login" method="post">
-    <label>username <input name="username" value="demo"/></label>
-    <label>password <input name="password" type="password" value="demo"/></label>
-    <button type="submit">登录</button>
-  </form>
 </body>
 </html>

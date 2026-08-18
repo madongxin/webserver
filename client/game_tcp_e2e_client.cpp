@@ -12,6 +12,8 @@
  *   game_tcp_e2e_client register-login-profile <host> <port> [device] [password]
  *   game_tcp_e2e_client enter-public-map <host> <port> [device] [password] [map_tpl]
  *   game_tcp_e2e_client move <host> <port> <player> <password> <map_inst> <x> <y> <z> [yaw]
+ *   game_tcp_e2e_client unity-heartbeat-move <host> <port> [device] [password]
+ *       # Luna 序号：Hello=1 Register=2 Login=3 EnterMap=4 Heartbeat=5 Move=6 (+3m)
  *   game_tcp_e2e_client send-player-mail <host> <port> <player> <password> <receiver> <title> <body> [op]
  *   game_tcp_e2e_client mail-list <host> <port> <player> <password>
  *   game_tcp_e2e_client two-player-aoi <gw0_host> <gw0_port> <gw1_host> <gw1_port> [map_tpl]
@@ -86,6 +88,7 @@ struct SessionState {
     std::string player_name;
     uint64_t stats_version = 0;
     std::vector<uint64_t> aoi_snapshot_ids;
+    std::vector<game::EntitySnapshot> aoi_snapshot;
 };
 
 struct TcpSession {
@@ -386,10 +389,12 @@ void DrainPushes(TcpSession *c, int timeout_ms) {
 }
 
 bool FindAoiEvent(const std::vector<game::GameResponse> &inbox, int op, uint64_t player_id,
-                  game::EntitySnapshot *out, int *seen_n, size_t from = 0) {
+                  game::EntitySnapshot *out, int *seen_n, size_t from = 0,
+                  uint64_t *map_instance_id = nullptr) {
     int n = 0;
     bool found = false;
     game::EntitySnapshot last;
+    uint64_t last_map = 0;
     if (from > inbox.size())
         from = inbox.size();
     for (size_t idx = from; idx < inbox.size(); ++idx) {
@@ -411,6 +416,7 @@ bool FindAoiEvent(const std::vector<game::GameResponse> &inbox, int op, uint64_t
                 continue;
             ++n;
             last = ev.entity();
+            last_map = delta->map_instance_id();
             found = true;
         }
     }
@@ -418,15 +424,17 @@ bool FindAoiEvent(const std::vector<game::GameResponse> &inbox, int op, uint64_t
         *seen_n = n;
     if (found && out)
         *out = last;
+    if (found && map_instance_id)
+        *map_instance_id = last_map;
     return found;
 }
 
 bool WaitAoi(TcpSession *c, int op, uint64_t player_id, int timeout_ms, game::EntitySnapshot *out,
-             int *seen_n, size_t from = 0) {
+             int *seen_n, size_t from = 0, uint64_t *map_instance_id = nullptr) {
     const auto deadline =
         std::chrono::steady_clock::now() + std::chrono::milliseconds(timeout_ms);
     while (true) {
-        if (FindAoiEvent(c->inbox, op, player_id, out, seen_n, from))
+        if (FindAoiEvent(c->inbox, op, player_id, out, seen_n, from, map_instance_id))
             return true;
         const int left = RemainingMs(deadline);
         if (left <= 0) {
@@ -577,10 +585,12 @@ bool DoEnterMap(int fd, SessionState *st, uint64_t map_tpl, uint64_t map_inst,
     if (rsp.enter_map().has_self())
         PrintKv("self_player_id", rsp.enter_map().self().player_id());
     st->aoi_snapshot_ids.clear();
+    st->aoi_snapshot.clear();
     for (int i = 0; i < rsp.enter_map().aoi_snapshot_size(); ++i) {
-        const uint64_t pid = rsp.enter_map().aoi_snapshot(i).player_id();
-        st->aoi_snapshot_ids.push_back(pid);
-        PrintKv("aoi_snapshot_player", pid);
+        const auto &ent = rsp.enter_map().aoi_snapshot(i);
+        st->aoi_snapshot_ids.push_back(ent.player_id());
+        st->aoi_snapshot.push_back(ent);
+        PrintKv("aoi_snapshot_player", ent.player_id());
     }
     PrintKv("aoi_snapshot_n", static_cast<uint64_t>(rsp.enter_map().aoi_snapshot_size()));
     PrintKv("map_instance_id", st->map_instance_id);
@@ -618,7 +628,14 @@ bool DoEnterMap(TcpSession *c, uint64_t map_tpl, uint64_t map_inst) {
     return DoEnterMap(c->fd, &c->st, map_tpl, map_inst, &c->inbox);
 }
 
-bool SnapshotHas(const SessionState &st, uint64_t player_id) {
+bool SnapshotHas(const SessionState &st, uint64_t player_id, game::EntitySnapshot *out = nullptr) {
+    for (const auto &ent : st.aoi_snapshot) {
+        if (ent.player_id() == player_id) {
+            if (out)
+                *out = ent;
+            return true;
+        }
+    }
     for (uint64_t id : st.aoi_snapshot_ids) {
         if (id == player_id)
             return true;
@@ -1279,6 +1296,132 @@ int CmdMove(int argc, char **argv) {
     return ok ? 0 : 13;
 }
 
+// 复现 Luna presence-move-logout：连接级 seq 在 EnterMap 与 Move 之间被 Heartbeat 占用。
+int CmdUnityHeartbeatMove(int argc, char **argv) {
+    if (argc < 4)
+        return 2;
+    const char *host = argv[2];
+    const int port = std::atoi(argv[3]);
+    const std::string device = argc >= 5 ? argv[4] : ("e2e-uhm-" + std::to_string(::getpid()));
+    const std::string password = argc >= 6 ? argv[5] : "e2epass1";
+    TcpSession c;
+    c.fd = Connect(host, port);
+    if (c.fd < 0)
+        return 6;
+
+    game::GameRequest hello;
+    hello.set_seq(1);
+    auto *h = hello.mutable_client_hello();
+    h->set_protocol_version(1);
+    h->set_schema_sha256(GAMEMESH_SCHEMA_SHA256);
+    h->set_client_version("luna-e2e");
+    h->set_platform("unity");
+    h->set_build_channel("e2e");
+    game::GameResponse hello_rsp;
+    if (!Exchange(c.fd, hello, &hello_rsp) || !hello_rsp.ok() || !hello_rsp.has_server_hello() ||
+        !hello_rsp.server_hello().ok()) {
+        std::printf("error=hello seq=1\n");
+        ::close(c.fd);
+        return 12;
+    }
+    PrintKv("hello_ok", true);
+    PrintKv("hello_seq", hello_rsp.seq());
+
+    game::GameRequest reg;
+    reg.set_seq(2);
+    auto *r = reg.mutable_register_();
+    r->set_device_id(device);
+    r->set_display_name("luna-move");
+    r->set_password(password);
+    game::GameResponse rr;
+    if (!Exchange(c.fd, reg, &rr) || !rr.ok() || !rr.has_register_() || !rr.register_().ok()) {
+        std::printf("error=register seq=2 msg=%s\n", rr.message().c_str());
+        ::close(c.fd);
+        return 12;
+    }
+    c.st.player_id = rr.register_().player_id();
+    PrintKv("player_id", c.st.player_id);
+    PrintKv("register_seq", rr.seq());
+
+    game::GameRequest login;
+    login.set_seq(3);
+    auto *l = login.mutable_login();
+    l->set_player_id(c.st.player_id);
+    l->set_device_id(device);
+    l->set_server_id(1);
+    l->set_credential(password);
+    game::GameResponse lr;
+    if (!Exchange(c.fd, login, &lr) || !lr.ok() || !lr.has_login() || !lr.login().ok()) {
+        std::printf("error=login seq=3 msg=%s\n", lr.message().c_str());
+        ::close(c.fd);
+        return 12;
+    }
+    c.st.token = lr.login().token();
+    c.st.session_id = lr.login().session_id();
+    c.st.generation = lr.login().generation();
+    c.st.next_seq = 4;
+    PrintKv("login_ok", true);
+    PrintKv("login_seq", lr.seq());
+
+    if (!DoEnterMap(&c, 1001, 0)) {
+        ::close(c.fd);
+        return 13;
+    }
+    PrintKv("enter_seq", static_cast<uint64_t>(4));
+    PrintKv("spawn_x", std::to_string(c.st.spawn_x));
+
+    game::GameRequest hb;
+    auto *hbr = hb.mutable_heartbeat();
+    const int64_t echo = std::chrono::duration_cast<std::chrono::milliseconds>(
+                             std::chrono::steady_clock::now().time_since_epoch())
+                             .count();
+    hbr->set_client_monotonic_ms(echo);
+    hbr->set_echo_ms(echo);
+    hbr->set_last_server_seq(c.st.last_server_seq);
+    game::GameResponse hbrsp;
+    if (!Rpc(&c, &hb, &hbrsp, 4000) || !hbrsp.ok() || !hbrsp.has_heartbeat()) {
+        PrintKv("heartbeat_ok", false);
+        PrintKv("heartbeat_error", hbrsp.error_code());
+        ::close(c.fd);
+        return 14;
+    }
+    PrintKv("heartbeat_ok", true);
+    PrintKv("heartbeat_seq", hbrsp.seq());
+
+    const float tx = c.st.spawn_x + 3.f;
+    game::GameRequest mv;
+    auto *m = mv.mutable_move();
+    m->set_player_id(c.st.player_id);
+    m->set_map_instance_id(c.st.map_instance_id);
+    m->mutable_position()->set_x(tx);
+    m->mutable_position()->set_y(c.st.spawn_y);
+    m->mutable_position()->set_z(c.st.spawn_z);
+    m->set_yaw(c.st.spawn_yaw);
+    m->set_client_time_ms(static_cast<int64_t>(
+        std::chrono::duration_cast<std::chrono::milliseconds>(
+            std::chrono::system_clock::now().time_since_epoch())
+            .count()));
+    game::GameResponse mr;
+    const bool rpc_ok = Rpc(&c, &mv, &mr, 8000);
+    PrintKv("move_rpc_ok", rpc_ok);
+    PrintKv("move_seq", mr.seq());
+    PrintKv("move_ok_flag", mr.ok());
+    PrintKv("move_error_code", mr.error_code());
+    PrintKv("move_has_move", mr.has_move());
+    PrintKv("move_body_case", static_cast<uint64_t>(mr.body_case()));
+    if (mr.has_move()) {
+        PrintKv("move_rsp_ok", mr.move().ok());
+        PrintKv("move_rsp_error", mr.move().error_code());
+        PrintKv("move_state_seq", mr.move().state_seq());
+        PrintKv("move_x", std::to_string(mr.move().position().x()));
+    }
+    const bool move_ok = rpc_ok && mr.ok() && mr.has_move() && mr.move().ok();
+    PrintKv("unity_heartbeat_move_ok", move_ok);
+    DoLogout(&c);
+    ::close(c.fd);
+    return move_ok ? 0 : 15;
+}
+
 int CmdSendPlayerMail(int argc, char **argv) {
     if (argc < 9)
         return 2;
@@ -1429,6 +1572,8 @@ int CmdTwoPlayerAoi(int argc, char **argv) {
         ::close(b.fd);
         return 13;
     }
+    PrintKv("a_player_id", a.st.player_id);
+    PrintKv("b_player_id", b.st.player_id);
     PrintKv("a_map_instance_id", a.st.map_instance_id);
     PrintKv("b_map_instance_id", b.st.map_instance_id);
     PrintKv("a_owner", a.st.logic_id);
@@ -1450,14 +1595,31 @@ int CmdTwoPlayerAoi(int argc, char **argv) {
     PrintKv("a_inbox_after_b_enter", static_cast<uint64_t>(a.inbox.size()));
     PrintKv("a_last_seq_after_b_enter", a.st.last_server_seq);
 
-    game::EntitySnapshot snap;
+    game::EntitySnapshot snap_b;
     int seen = 0;
+    uint64_t enter_map_b = 0;
     const bool b_saw_a =
-        SnapshotHas(b.st, a.st.player_id) || WaitAoi(&b, 1, a.st.player_id, 8000, &snap, &seen);
+        SnapshotHas(b.st, a.st.player_id, &snap_b) ||
+        WaitAoi(&b, 1, a.st.player_id, 8000, &snap_b, &seen, 0, &enter_map_b);
     PrintKv("b_aoi_enter_a", b_saw_a);
+    PrintKv("b_enter_a_player_id", snap_b.player_id());
+    PrintKv("b_enter_a_entity_id", snap_b.player_id());
+    PrintKv("b_enter_a_name", snap_b.player_name());
+    PrintKv("b_enter_a_state_seq", snap_b.state_seq());
+    PrintKv("b_enter_a_x", std::to_string(snap_b.position().x()));
+    PrintKv("b_enter_a_map_instance_id", enter_map_b != 0 ? enter_map_b : b.st.map_instance_id);
+    game::EntitySnapshot snap_a;
+    uint64_t enter_map_a = 0;
     const bool a_saw_b =
-        SnapshotHas(a.st, b.st.player_id) || WaitAoi(&a, 1, b.st.player_id, 8000, &snap, &seen);
+        SnapshotHas(a.st, b.st.player_id, &snap_a) ||
+        WaitAoi(&a, 1, b.st.player_id, 8000, &snap_a, &seen, 0, &enter_map_a);
     PrintKv("a_aoi_enter_b", a_saw_b);
+    PrintKv("a_enter_b_player_id", snap_a.player_id());
+    PrintKv("a_enter_b_entity_id", snap_a.player_id());
+    PrintKv("a_enter_b_name", snap_a.player_name());
+    PrintKv("a_enter_b_state_seq", snap_a.state_seq());
+    PrintKv("a_enter_b_x", std::to_string(snap_a.position().x()));
+    PrintKv("a_enter_b_map_instance_id", enter_map_a != 0 ? enter_map_a : a.st.map_instance_id);
     if (!b_saw_a || !a_saw_b) {
         std::printf("error=missing_mutual_aoi_enter\n");
         std::fflush(stdout);
@@ -1465,7 +1627,23 @@ int CmdTwoPlayerAoi(int argc, char **argv) {
         ::close(b.fd);
         return 22;
     }
+    if (snap_b.player_id() != a.st.player_id || snap_a.player_id() != b.st.player_id) {
+        std::printf("error=aoi_enter_player_mismatch\n");
+        std::fflush(stdout);
+        ::close(a.fd);
+        ::close(b.fd);
+        return 22;
+    }
+    if (snap_b.player_name().empty() || snap_a.player_name().empty()) {
+        std::printf("error=aoi_enter_missing_name\n");
+        std::fflush(stdout);
+        ::close(a.fd);
+        ::close(b.fd);
+        return 22;
+    }
 
+    PrintKv("a_move_from_x", std::to_string(a.st.spawn_x));
+    PrintKv("b_move_from_x", std::to_string(b.st.spawn_x));
     const float nx = a.st.spawn_x + 1.0f;
     game::MoveRsp mv;
     if (!DoMoveTo(&a, nx, a.st.spawn_y, a.st.spawn_z, a.st.spawn_yaw, &mv)) {
@@ -1473,6 +1651,8 @@ int CmdTwoPlayerAoi(int argc, char **argv) {
         ::close(b.fd);
         return 23;
     }
+    PrintKv("a_move_to_x", std::to_string(nx));
+    PrintKv("a_move_state_seq", mv.state_seq());
     game::EntitySnapshot moved;
     if (!WaitAoi(&b, 2, a.st.player_id, 8000, &moved, &seen)) {
         std::printf("error=missing_aoi_move\n");
@@ -1493,6 +1673,42 @@ int CmdTwoPlayerAoi(int argc, char **argv) {
     }
     if (std::fabs(moved.position().x() - nx) > 0.5f) {
         std::printf("error=aoi_move_coord\n");
+        std::fflush(stdout);
+        ::close(a.fd);
+        ::close(b.fd);
+        return 24;
+    }
+    if (mv.state_seq() != 0 && moved.state_seq() < mv.state_seq()) {
+        std::printf("error=aoi_move_state_seq_regress\n");
+        std::fflush(stdout);
+        ::close(a.fd);
+        ::close(b.fd);
+        return 24;
+    }
+
+    const float nbx = b.st.spawn_x + 1.0f;
+    game::MoveRsp mvb;
+    if (!DoMoveTo(&b, nbx, b.st.spawn_y, b.st.spawn_z, b.st.spawn_yaw, &mvb)) {
+        ::close(a.fd);
+        ::close(b.fd);
+        return 23;
+    }
+    PrintKv("b_move_to_x", std::to_string(nbx));
+    PrintKv("b_move_state_seq", mvb.state_seq());
+    game::EntitySnapshot moved_a;
+    if (!WaitAoi(&a, 2, b.st.player_id, 8000, &moved_a, &seen)) {
+        std::printf("error=missing_aoi_move_b_to_a\n");
+        std::fflush(stdout);
+        ::close(a.fd);
+        ::close(b.fd);
+        return 24;
+    }
+    PrintKv("a_aoi_move_player", moved_a.player_id());
+    PrintKv("a_aoi_move_state_seq", moved_a.state_seq());
+    PrintKv("a_aoi_move_x", std::to_string(moved_a.position().x()));
+    if (moved_a.player_id() != b.st.player_id || std::fabs(moved_a.position().x() - nbx) > 0.5f ||
+        moved_a.state_seq() == 0) {
+        std::printf("error=aoi_move_b_to_a_fields\n");
         std::fflush(stdout);
         ::close(a.fd);
         ::close(b.fd);
@@ -1592,6 +1808,16 @@ int CmdTwoPlayerAoi(int argc, char **argv) {
         ::close(b.fd);
         return 27;
     }
+    const bool logout_again = DoLogout(&a);
+    PrintKv("logout_idempotent", logout_again);
+    game::MoveRsp stale_mv;
+    const bool stale_move =
+        DoMoveTo(&a, nx + 3.0f, a.st.spawn_y, a.st.spawn_z, a.st.spawn_yaw, &stale_mv);
+    PrintKv("logout_stale_move_rejected", !stale_move);
+    DrainPushes(&b, 400);
+    int post_logout_moves = 0;
+    FindAoiEvent(b.inbox, 2, a.st.player_id, nullptr, &post_logout_moves, logout_from);
+    PrintKv("b_aoi_move_after_a_logout", static_cast<uint64_t>(post_logout_moves));
     const bool b_leave_logout = WaitAoi(&b, 3, a.st.player_id, 8000, &left, &seen, logout_from);
     PrintKv("b_aoi_leave_on_logout", b_leave_logout);
     ::close(a.fd);
@@ -1608,12 +1834,17 @@ int CmdTwoPlayerAoi(int argc, char **argv) {
         a.fd = -1;
     }
     PrintKv("session_released", session_released);
-    if (!b_leave_logout || !session_released) {
+    if (!b_leave_logout || !session_released || stale_move || post_logout_moves > 0) {
         std::printf("error=logout_did_not_release\n");
         std::fflush(stdout);
         ::close(b.fd);
         return 27;
     }
+    if (!DoLogout(&b)) {
+        ::close(b.fd);
+        return 27;
+    }
+    PrintKv("b_logout_ok", 1);
     PrintKv("two_player_aoi_ok", 1);
     ::close(b.fd);
     return 0;
@@ -2437,6 +2668,7 @@ int main(int argc, char **argv) {
         std::fprintf(stderr,
                      "usage: %s <register-login|enter-map|reconnect|dual-gw|drain-login|"
                      "hold-kill-reconnect|register-login-profile|enter-public-map|move|"
+                     "unity-heartbeat-move|"
                      "send-player-mail|mail-list|two-player-aoi|map-capacity-51|"
                      "unity-contract-check|login-profile|client-hello|hello-reject-login|"
                      "heartbeat|heartbeat-flood|idle-reconnect|s2-world-recovery|"
@@ -2465,6 +2697,8 @@ int main(int argc, char **argv) {
         return CmdEnterPublicMap(argc, argv);
     if (cmd == "move")
         return CmdMove(argc, argv);
+    if (cmd == "unity-heartbeat-move")
+        return CmdUnityHeartbeatMove(argc, argv);
     if (cmd == "send-player-mail")
         return CmdSendPlayerMail(argc, argv);
     if (cmd == "mail-list")

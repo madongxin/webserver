@@ -78,7 +78,7 @@ required = [
     "PlayerAttributes", "EnterMapReq", "MoveReq", "AoiDelta",
     "FullStateSnapshotRsp", "WorldSnapshotReq", "RespawnReq", "RespawnRsp",
     "PlayerMailSendReq", "MailboxChangedNotify", "ServerPushEnvelope",
-    "SessionReplacedNotify",
+    "SessionReplacedNotify", "MapManifestEntry",
 ]
 missing = [t for t in required if not re.search(rf"message\s+{t}\b", proto_text)]
 if missing:
@@ -149,7 +149,7 @@ need = {
     "PlayerAttributes", "EnterMapReq", "MoveReq", "AoiDelta",
     "FullStateSnapshotRsp", "WorldSnapshotReq", "RespawnReq", "RespawnRsp",
     "PlayerMailSendReq", "MailboxChangedNotify", "ServerPushEnvelope",
-    "SessionReplacedNotify",
+    "SessionReplacedNotify", "MapManifestEntry",
 }
 missing = sorted(need - set(m["required_types"]))
 assert not missing, missing
