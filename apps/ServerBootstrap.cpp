@@ -38,6 +38,7 @@
 #ifdef WEBSERVER_ENABLE_GAME_PROTOBUF
 #include "GameTcpGateway.h"
 #include "GameLogic.h"
+#include "GatewayConnRegistry.h"
 #include "MapCatalog.h"
 #endif
 #ifdef WEBSERVER_ENABLE_REDIS
@@ -108,6 +109,7 @@
 
 
 AsyncLogging *asynclog = nullptr;
+std::string g_process_role;
 
 void AsyncOutputFunc(const char *msg, int len) {
     if (asynclog)
@@ -784,6 +786,19 @@ void HttpResponseCallback(const HttpRequest &request, HttpResponse *response) {
     }
 
     if (url == "/metrics") {
+        if (g_process_role == "gateway" || g_process_role == "all") {
+#ifdef WEBSERVER_ENABLE_GAME_PROTOBUF
+            OpsMetrics::Instance().SetOnlinePlayers(
+                GatewayConnRegistry::Instance().BoundPlayerCount());
+#endif
+        }
+        if (g_process_role == "session" || g_process_role == "all") {
+#ifdef WEBSERVER_ENABLE_REDIS
+            if (SessionStore::Instance().Available())
+                OpsMetrics::Instance().SetSessionOnlinePlayers(
+                    SessionStore::Instance().OnlinePlayerCount());
+#endif
+        }
         SendPrometheusMetrics(response, BuildPrometheusMetricsText(), head_only);
         return;
     }
@@ -1109,6 +1124,7 @@ int RunServer(const LaunchOpts &launch) {
     Logger::setFlush(AsyncFlushFunc);
 
     const std::string &role = opts.role;
+    g_process_role = role;
     const int port = opts.http_port;
     int game_port = opts.game_port;
 #ifdef WEBSERVER_ENABLE_BRPC

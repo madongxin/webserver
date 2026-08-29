@@ -5,41 +5,44 @@
 
 #include <algorithm>
 
-#include <google/protobuf/stubs/common.h>
-#include <google/protobuf/stubs/port.h>
-#include <google/protobuf/stubs/once.h>
 #include <google/protobuf/io/coded_stream.h>
-#include <google/protobuf/wire_format_lite_inl.h>
+#include <google/protobuf/extension_set.h>
+#include <google/protobuf/wire_format_lite.h>
 #include <google/protobuf/descriptor.h>
 #include <google/protobuf/generated_message_reflection.h>
 #include <google/protobuf/reflection_ops.h>
 #include <google/protobuf/wire_format.h>
-// This is a temporary google only hack
-#ifdef GOOGLE_PROTOBUF_ENFORCE_UNIQUENESS
-#include "third_party/protobuf/version.h"
-#endif
 // @@protoc_insertion_point(includes)
+#include <google/protobuf/port_def.inc>
+extern PROTOBUF_INTERNAL_EXPORT_kv_5fdemo_2eproto ::PROTOBUF_NAMESPACE_ID::internal::SCCInfo<0> scc_info_PlayerSnapshot_AttrsEntry_DoNotUse_kv_5fdemo_2eproto;
 namespace kvdemo {
 class PlayerSnapshot_AttrsEntry_DoNotUseDefaultTypeInternal {
  public:
-  ::google::protobuf::internal::ExplicitlyConstructed<PlayerSnapshot_AttrsEntry_DoNotUse>
-      _instance;
+  ::PROTOBUF_NAMESPACE_ID::internal::ExplicitlyConstructed<PlayerSnapshot_AttrsEntry_DoNotUse> _instance;
 } _PlayerSnapshot_AttrsEntry_DoNotUse_default_instance_;
 class PlayerSnapshotDefaultTypeInternal {
  public:
-  ::google::protobuf::internal::ExplicitlyConstructed<PlayerSnapshot>
-      _instance;
+  ::PROTOBUF_NAMESPACE_ID::internal::ExplicitlyConstructed<PlayerSnapshot> _instance;
 } _PlayerSnapshot_default_instance_;
 }  // namespace kvdemo
-namespace protobuf_kv_5fdemo_2eproto {
-void InitDefaultsPlayerSnapshot_AttrsEntry_DoNotUseImpl() {
+static void InitDefaultsscc_info_PlayerSnapshot_kv_5fdemo_2eproto() {
   GOOGLE_PROTOBUF_VERIFY_VERSION;
 
-#ifdef GOOGLE_PROTOBUF_ENFORCE_UNIQUENESS
-  ::google::protobuf::internal::InitProtobufDefaultsForceUnique();
-#else
-  ::google::protobuf::internal::InitProtobufDefaults();
-#endif  // GOOGLE_PROTOBUF_ENFORCE_UNIQUENESS
+  {
+    void* ptr = &::kvdemo::_PlayerSnapshot_default_instance_;
+    new (ptr) ::kvdemo::PlayerSnapshot();
+    ::PROTOBUF_NAMESPACE_ID::internal::OnShutdownDestroyMessage(ptr);
+  }
+  ::kvdemo::PlayerSnapshot::InitAsDefaultInstance();
+}
+
+::PROTOBUF_NAMESPACE_ID::internal::SCCInfo<1> scc_info_PlayerSnapshot_kv_5fdemo_2eproto =
+    {{ATOMIC_VAR_INIT(::PROTOBUF_NAMESPACE_ID::internal::SCCInfoBase::kUninitialized), 1, 0, InitDefaultsscc_info_PlayerSnapshot_kv_5fdemo_2eproto}, {
+      &scc_info_PlayerSnapshot_AttrsEntry_DoNotUse_kv_5fdemo_2eproto.base,}};
+
+static void InitDefaultsscc_info_PlayerSnapshot_AttrsEntry_DoNotUse_kv_5fdemo_2eproto() {
+  GOOGLE_PROTOBUF_VERIFY_VERSION;
+
   {
     void* ptr = &::kvdemo::_PlayerSnapshot_AttrsEntry_DoNotUse_default_instance_;
     new (ptr) ::kvdemo::PlayerSnapshot_AttrsEntry_DoNotUse();
@@ -47,128 +50,84 @@ void InitDefaultsPlayerSnapshot_AttrsEntry_DoNotUseImpl() {
   ::kvdemo::PlayerSnapshot_AttrsEntry_DoNotUse::InitAsDefaultInstance();
 }
 
-void InitDefaultsPlayerSnapshot_AttrsEntry_DoNotUse() {
-  static GOOGLE_PROTOBUF_DECLARE_ONCE(once);
-  ::google::protobuf::GoogleOnceInit(&once, &InitDefaultsPlayerSnapshot_AttrsEntry_DoNotUseImpl);
-}
+::PROTOBUF_NAMESPACE_ID::internal::SCCInfo<0> scc_info_PlayerSnapshot_AttrsEntry_DoNotUse_kv_5fdemo_2eproto =
+    {{ATOMIC_VAR_INIT(::PROTOBUF_NAMESPACE_ID::internal::SCCInfoBase::kUninitialized), 0, 0, InitDefaultsscc_info_PlayerSnapshot_AttrsEntry_DoNotUse_kv_5fdemo_2eproto}, {}};
 
-void InitDefaultsPlayerSnapshotImpl() {
-  GOOGLE_PROTOBUF_VERIFY_VERSION;
+static ::PROTOBUF_NAMESPACE_ID::Metadata file_level_metadata_kv_5fdemo_2eproto[2];
+static constexpr ::PROTOBUF_NAMESPACE_ID::EnumDescriptor const** file_level_enum_descriptors_kv_5fdemo_2eproto = nullptr;
+static constexpr ::PROTOBUF_NAMESPACE_ID::ServiceDescriptor const** file_level_service_descriptors_kv_5fdemo_2eproto = nullptr;
 
-#ifdef GOOGLE_PROTOBUF_ENFORCE_UNIQUENESS
-  ::google::protobuf::internal::InitProtobufDefaultsForceUnique();
-#else
-  ::google::protobuf::internal::InitProtobufDefaults();
-#endif  // GOOGLE_PROTOBUF_ENFORCE_UNIQUENESS
-  protobuf_kv_5fdemo_2eproto::InitDefaultsPlayerSnapshot_AttrsEntry_DoNotUse();
-  {
-    void* ptr = &::kvdemo::_PlayerSnapshot_default_instance_;
-    new (ptr) ::kvdemo::PlayerSnapshot();
-    ::google::protobuf::internal::OnShutdownDestroyMessage(ptr);
-  }
-  ::kvdemo::PlayerSnapshot::InitAsDefaultInstance();
-}
-
-void InitDefaultsPlayerSnapshot() {
-  static GOOGLE_PROTOBUF_DECLARE_ONCE(once);
-  ::google::protobuf::GoogleOnceInit(&once, &InitDefaultsPlayerSnapshotImpl);
-}
-
-::google::protobuf::Metadata file_level_metadata[2];
-
-const ::google::protobuf::uint32 TableStruct::offsets[] GOOGLE_PROTOBUF_ATTRIBUTE_SECTION_VARIABLE(protodesc_cold) = {
-  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::kvdemo::PlayerSnapshot_AttrsEntry_DoNotUse, _has_bits_),
-  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::kvdemo::PlayerSnapshot_AttrsEntry_DoNotUse, _internal_metadata_),
+const ::PROTOBUF_NAMESPACE_ID::uint32 TableStruct_kv_5fdemo_2eproto::offsets[] PROTOBUF_SECTION_VARIABLE(protodesc_cold) = {
+  PROTOBUF_FIELD_OFFSET(::kvdemo::PlayerSnapshot_AttrsEntry_DoNotUse, _has_bits_),
+  PROTOBUF_FIELD_OFFSET(::kvdemo::PlayerSnapshot_AttrsEntry_DoNotUse, _internal_metadata_),
   ~0u,  // no _extensions_
   ~0u,  // no _oneof_case_
   ~0u,  // no _weak_field_map_
-  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::kvdemo::PlayerSnapshot_AttrsEntry_DoNotUse, key_),
-  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::kvdemo::PlayerSnapshot_AttrsEntry_DoNotUse, value_),
+  PROTOBUF_FIELD_OFFSET(::kvdemo::PlayerSnapshot_AttrsEntry_DoNotUse, key_),
+  PROTOBUF_FIELD_OFFSET(::kvdemo::PlayerSnapshot_AttrsEntry_DoNotUse, value_),
   0,
   1,
   ~0u,  // no _has_bits_
-  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::kvdemo::PlayerSnapshot, _internal_metadata_),
+  PROTOBUF_FIELD_OFFSET(::kvdemo::PlayerSnapshot, _internal_metadata_),
   ~0u,  // no _extensions_
   ~0u,  // no _oneof_case_
   ~0u,  // no _weak_field_map_
-  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::kvdemo::PlayerSnapshot, player_id_),
-  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::kvdemo::PlayerSnapshot, nickname_),
-  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::kvdemo::PlayerSnapshot, level_),
-  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::kvdemo::PlayerSnapshot, updated_at_sec_),
-  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::kvdemo::PlayerSnapshot, attrs_),
+  PROTOBUF_FIELD_OFFSET(::kvdemo::PlayerSnapshot, player_id_),
+  PROTOBUF_FIELD_OFFSET(::kvdemo::PlayerSnapshot, nickname_),
+  PROTOBUF_FIELD_OFFSET(::kvdemo::PlayerSnapshot, level_),
+  PROTOBUF_FIELD_OFFSET(::kvdemo::PlayerSnapshot, updated_at_sec_),
+  PROTOBUF_FIELD_OFFSET(::kvdemo::PlayerSnapshot, attrs_),
 };
-static const ::google::protobuf::internal::MigrationSchema schemas[] GOOGLE_PROTOBUF_ATTRIBUTE_SECTION_VARIABLE(protodesc_cold) = {
+static const ::PROTOBUF_NAMESPACE_ID::internal::MigrationSchema schemas[] PROTOBUF_SECTION_VARIABLE(protodesc_cold) = {
   { 0, 7, sizeof(::kvdemo::PlayerSnapshot_AttrsEntry_DoNotUse)},
   { 9, -1, sizeof(::kvdemo::PlayerSnapshot)},
 };
 
-static ::google::protobuf::Message const * const file_default_instances[] = {
-  reinterpret_cast<const ::google::protobuf::Message*>(&::kvdemo::_PlayerSnapshot_AttrsEntry_DoNotUse_default_instance_),
-  reinterpret_cast<const ::google::protobuf::Message*>(&::kvdemo::_PlayerSnapshot_default_instance_),
+static ::PROTOBUF_NAMESPACE_ID::Message const * const file_default_instances[] = {
+  reinterpret_cast<const ::PROTOBUF_NAMESPACE_ID::Message*>(&::kvdemo::_PlayerSnapshot_AttrsEntry_DoNotUse_default_instance_),
+  reinterpret_cast<const ::PROTOBUF_NAMESPACE_ID::Message*>(&::kvdemo::_PlayerSnapshot_default_instance_),
 };
 
-void protobuf_AssignDescriptors() {
-  AddDescriptors();
-  ::google::protobuf::MessageFactory* factory = NULL;
-  AssignDescriptors(
-      "kv_demo.proto", schemas, file_default_instances, TableStruct::offsets, factory,
-      file_level_metadata, NULL, NULL);
-}
+const char descriptor_table_protodef_kv_5fdemo_2eproto[] PROTOBUF_SECTION_VARIABLE(protodesc_cold) =
+  "\n\rkv_demo.proto\022\006kvdemo\"\274\001\n\016PlayerSnapsh"
+  "ot\022\021\n\tplayer_id\030\001 \001(\004\022\020\n\010nickname\030\002 \001(\t\022"
+  "\r\n\005level\030\003 \001(\005\022\026\n\016updated_at_sec\030\004 \001(\003\0220"
+  "\n\005attrs\030\005 \003(\0132!.kvdemo.PlayerSnapshot.At"
+  "trsEntry\032,\n\nAttrsEntry\022\013\n\003key\030\001 \001(\t\022\r\n\005v"
+  "alue\030\002 \001(\005:\0028\001b\006proto3"
+  ;
+static const ::PROTOBUF_NAMESPACE_ID::internal::DescriptorTable*const descriptor_table_kv_5fdemo_2eproto_deps[1] = {
+};
+static ::PROTOBUF_NAMESPACE_ID::internal::SCCInfoBase*const descriptor_table_kv_5fdemo_2eproto_sccs[2] = {
+  &scc_info_PlayerSnapshot_kv_5fdemo_2eproto.base,
+  &scc_info_PlayerSnapshot_AttrsEntry_DoNotUse_kv_5fdemo_2eproto.base,
+};
+static ::PROTOBUF_NAMESPACE_ID::internal::once_flag descriptor_table_kv_5fdemo_2eproto_once;
+const ::PROTOBUF_NAMESPACE_ID::internal::DescriptorTable descriptor_table_kv_5fdemo_2eproto = {
+  false, false, descriptor_table_protodef_kv_5fdemo_2eproto, "kv_demo.proto", 222,
+  &descriptor_table_kv_5fdemo_2eproto_once, descriptor_table_kv_5fdemo_2eproto_sccs, descriptor_table_kv_5fdemo_2eproto_deps, 2, 0,
+  schemas, file_default_instances, TableStruct_kv_5fdemo_2eproto::offsets,
+  file_level_metadata_kv_5fdemo_2eproto, 2, file_level_enum_descriptors_kv_5fdemo_2eproto, file_level_service_descriptors_kv_5fdemo_2eproto,
+};
 
-void protobuf_AssignDescriptorsOnce() {
-  static GOOGLE_PROTOBUF_DECLARE_ONCE(once);
-  ::google::protobuf::GoogleOnceInit(&once, &protobuf_AssignDescriptors);
-}
-
-void protobuf_RegisterTypes(const ::std::string&) GOOGLE_PROTOBUF_ATTRIBUTE_COLD;
-void protobuf_RegisterTypes(const ::std::string&) {
-  protobuf_AssignDescriptorsOnce();
-  ::google::protobuf::internal::RegisterAllTypes(file_level_metadata, 2);
-}
-
-void AddDescriptorsImpl() {
-  InitDefaults();
-  static const char descriptor[] GOOGLE_PROTOBUF_ATTRIBUTE_SECTION_VARIABLE(protodesc_cold) = {
-      "\n\rkv_demo.proto\022\006kvdemo\"\274\001\n\016PlayerSnapsh"
-      "ot\022\021\n\tplayer_id\030\001 \001(\004\022\020\n\010nickname\030\002 \001(\t\022"
-      "\r\n\005level\030\003 \001(\005\022\026\n\016updated_at_sec\030\004 \001(\003\0220"
-      "\n\005attrs\030\005 \003(\0132!.kvdemo.PlayerSnapshot.At"
-      "trsEntry\032,\n\nAttrsEntry\022\013\n\003key\030\001 \001(\t\022\r\n\005v"
-      "alue\030\002 \001(\005:\0028\001b\006proto3"
-  };
-  ::google::protobuf::DescriptorPool::InternalAddGeneratedFile(
-      descriptor, 222);
-  ::google::protobuf::MessageFactory::InternalRegisterGeneratedFile(
-    "kv_demo.proto", &protobuf_RegisterTypes);
-}
-
-void AddDescriptors() {
-  static GOOGLE_PROTOBUF_DECLARE_ONCE(once);
-  ::google::protobuf::GoogleOnceInit(&once, &AddDescriptorsImpl);
-}
-// Force AddDescriptors() to be called at dynamic initialization time.
-struct StaticDescriptorInitializer {
-  StaticDescriptorInitializer() {
-    AddDescriptors();
-  }
-} static_descriptor_initializer;
-}  // namespace protobuf_kv_5fdemo_2eproto
+// Force running AddDescriptors() at dynamic initialization time.
+static bool dynamic_init_dummy_kv_5fdemo_2eproto = (static_cast<void>(::PROTOBUF_NAMESPACE_ID::internal::AddDescriptors(&descriptor_table_kv_5fdemo_2eproto)), true);
 namespace kvdemo {
 
 // ===================================================================
 
 PlayerSnapshot_AttrsEntry_DoNotUse::PlayerSnapshot_AttrsEntry_DoNotUse() {}
-PlayerSnapshot_AttrsEntry_DoNotUse::PlayerSnapshot_AttrsEntry_DoNotUse(::google::protobuf::Arena* arena) : SuperType(arena) {}
+PlayerSnapshot_AttrsEntry_DoNotUse::PlayerSnapshot_AttrsEntry_DoNotUse(::PROTOBUF_NAMESPACE_ID::Arena* arena)
+    : SuperType(arena) {}
 void PlayerSnapshot_AttrsEntry_DoNotUse::MergeFrom(const PlayerSnapshot_AttrsEntry_DoNotUse& other) {
   MergeFromInternal(other);
 }
-::google::protobuf::Metadata PlayerSnapshot_AttrsEntry_DoNotUse::GetMetadata() const {
-  ::protobuf_kv_5fdemo_2eproto::protobuf_AssignDescriptorsOnce();
-  return ::protobuf_kv_5fdemo_2eproto::file_level_metadata[0];
+::PROTOBUF_NAMESPACE_ID::Metadata PlayerSnapshot_AttrsEntry_DoNotUse::GetMetadata() const {
+  return GetMetadataStatic();
 }
 void PlayerSnapshot_AttrsEntry_DoNotUse::MergeFrom(
-    const ::google::protobuf::Message& other) {
-  ::google::protobuf::Message::MergeFrom(other);
+    const ::PROTOBUF_NAMESPACE_ID::Message& other) {
+  ::PROTOBUF_NAMESPACE_ID::Message::MergeFrom(other);
 }
 
 
@@ -176,31 +135,25 @@ void PlayerSnapshot_AttrsEntry_DoNotUse::MergeFrom(
 
 void PlayerSnapshot::InitAsDefaultInstance() {
 }
-#if !defined(_MSC_VER) || _MSC_VER >= 1900
-const int PlayerSnapshot::kPlayerIdFieldNumber;
-const int PlayerSnapshot::kNicknameFieldNumber;
-const int PlayerSnapshot::kLevelFieldNumber;
-const int PlayerSnapshot::kUpdatedAtSecFieldNumber;
-const int PlayerSnapshot::kAttrsFieldNumber;
-#endif  // !defined(_MSC_VER) || _MSC_VER >= 1900
+class PlayerSnapshot::_Internal {
+ public:
+};
 
-PlayerSnapshot::PlayerSnapshot()
-  : ::google::protobuf::Message(), _internal_metadata_(NULL) {
-  if (GOOGLE_PREDICT_TRUE(this != internal_default_instance())) {
-    ::protobuf_kv_5fdemo_2eproto::InitDefaultsPlayerSnapshot();
-  }
+PlayerSnapshot::PlayerSnapshot(::PROTOBUF_NAMESPACE_ID::Arena* arena)
+  : ::PROTOBUF_NAMESPACE_ID::Message(arena),
+  attrs_(arena) {
   SharedCtor();
-  // @@protoc_insertion_point(constructor:kvdemo.PlayerSnapshot)
+  RegisterArenaDtor(arena);
+  // @@protoc_insertion_point(arena_constructor:kvdemo.PlayerSnapshot)
 }
 PlayerSnapshot::PlayerSnapshot(const PlayerSnapshot& from)
-  : ::google::protobuf::Message(),
-      _internal_metadata_(NULL),
-      _cached_size_(0) {
-  _internal_metadata_.MergeFrom(from._internal_metadata_);
+  : ::PROTOBUF_NAMESPACE_ID::Message() {
+  _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
   attrs_.MergeFrom(from.attrs_);
-  nickname_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
-  if (from.nickname().size() > 0) {
-    nickname_.AssignWithDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), from.nickname_);
+  nickname_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
+  if (!from._internal_nickname().empty()) {
+    nickname_.Set(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), from._internal_nickname(),
+      GetArena());
   }
   ::memcpy(&player_id_, &from.player_id_,
     static_cast<size_t>(reinterpret_cast<char*>(&level_) -
@@ -209,346 +162,203 @@ PlayerSnapshot::PlayerSnapshot(const PlayerSnapshot& from)
 }
 
 void PlayerSnapshot::SharedCtor() {
-  nickname_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  ::PROTOBUF_NAMESPACE_ID::internal::InitSCC(&scc_info_PlayerSnapshot_kv_5fdemo_2eproto.base);
+  nickname_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
   ::memset(&player_id_, 0, static_cast<size_t>(
       reinterpret_cast<char*>(&level_) -
       reinterpret_cast<char*>(&player_id_)) + sizeof(level_));
-  _cached_size_ = 0;
 }
 
 PlayerSnapshot::~PlayerSnapshot() {
   // @@protoc_insertion_point(destructor:kvdemo.PlayerSnapshot)
   SharedDtor();
+  _internal_metadata_.Delete<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
 }
 
 void PlayerSnapshot::SharedDtor() {
-  nickname_.DestroyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  GOOGLE_DCHECK(GetArena() == nullptr);
+  nickname_.DestroyNoArena(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
 }
 
+void PlayerSnapshot::ArenaDtor(void* object) {
+  PlayerSnapshot* _this = reinterpret_cast< PlayerSnapshot* >(object);
+  (void)_this;
+}
+void PlayerSnapshot::RegisterArenaDtor(::PROTOBUF_NAMESPACE_ID::Arena*) {
+}
 void PlayerSnapshot::SetCachedSize(int size) const {
-  GOOGLE_SAFE_CONCURRENT_WRITES_BEGIN();
-  _cached_size_ = size;
-  GOOGLE_SAFE_CONCURRENT_WRITES_END();
+  _cached_size_.Set(size);
 }
-const ::google::protobuf::Descriptor* PlayerSnapshot::descriptor() {
-  ::protobuf_kv_5fdemo_2eproto::protobuf_AssignDescriptorsOnce();
-  return ::protobuf_kv_5fdemo_2eproto::file_level_metadata[kIndexInFileMessages].descriptor;
-}
-
 const PlayerSnapshot& PlayerSnapshot::default_instance() {
-  ::protobuf_kv_5fdemo_2eproto::InitDefaultsPlayerSnapshot();
+  ::PROTOBUF_NAMESPACE_ID::internal::InitSCC(&::scc_info_PlayerSnapshot_kv_5fdemo_2eproto.base);
   return *internal_default_instance();
 }
 
-PlayerSnapshot* PlayerSnapshot::New(::google::protobuf::Arena* arena) const {
-  PlayerSnapshot* n = new PlayerSnapshot;
-  if (arena != NULL) {
-    arena->Own(n);
-  }
-  return n;
-}
 
 void PlayerSnapshot::Clear() {
 // @@protoc_insertion_point(message_clear_start:kvdemo.PlayerSnapshot)
-  ::google::protobuf::uint32 cached_has_bits = 0;
+  ::PROTOBUF_NAMESPACE_ID::uint32 cached_has_bits = 0;
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
 
   attrs_.Clear();
-  nickname_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  nickname_.ClearToEmpty(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
   ::memset(&player_id_, 0, static_cast<size_t>(
       reinterpret_cast<char*>(&level_) -
       reinterpret_cast<char*>(&player_id_)) + sizeof(level_));
-  _internal_metadata_.Clear();
+  _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
 }
 
-bool PlayerSnapshot::MergePartialFromCodedStream(
-    ::google::protobuf::io::CodedInputStream* input) {
-#define DO_(EXPRESSION) if (!GOOGLE_PREDICT_TRUE(EXPRESSION)) goto failure
-  ::google::protobuf::uint32 tag;
-  // @@protoc_insertion_point(parse_start:kvdemo.PlayerSnapshot)
-  for (;;) {
-    ::std::pair< ::google::protobuf::uint32, bool> p = input->ReadTagWithCutoffNoLastTag(127u);
-    tag = p.first;
-    if (!p.second) goto handle_unusual;
-    switch (::google::protobuf::internal::WireFormatLite::GetTagFieldNumber(tag)) {
+const char* PlayerSnapshot::_InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::internal::ParseContext* ctx) {
+#define CHK_(x) if (PROTOBUF_PREDICT_FALSE(!(x))) goto failure
+  ::PROTOBUF_NAMESPACE_ID::Arena* arena = GetArena(); (void)arena;
+  while (!ctx->Done(&ptr)) {
+    ::PROTOBUF_NAMESPACE_ID::uint32 tag;
+    ptr = ::PROTOBUF_NAMESPACE_ID::internal::ReadTag(ptr, &tag);
+    CHK_(ptr);
+    switch (tag >> 3) {
       // uint64 player_id = 1;
-      case 1: {
-        if (static_cast< ::google::protobuf::uint8>(tag) ==
-            static_cast< ::google::protobuf::uint8>(8u /* 8 & 0xFF */)) {
-
-          DO_((::google::protobuf::internal::WireFormatLite::ReadPrimitive<
-                   ::google::protobuf::uint64, ::google::protobuf::internal::WireFormatLite::TYPE_UINT64>(
-                 input, &player_id_)));
-        } else {
-          goto handle_unusual;
-        }
-        break;
-      }
-
+      case 1:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 8)) {
+          player_id_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint64(&ptr);
+          CHK_(ptr);
+        } else goto handle_unusual;
+        continue;
       // string nickname = 2;
-      case 2: {
-        if (static_cast< ::google::protobuf::uint8>(tag) ==
-            static_cast< ::google::protobuf::uint8>(18u /* 18 & 0xFF */)) {
-          DO_(::google::protobuf::internal::WireFormatLite::ReadString(
-                input, this->mutable_nickname()));
-          DO_(::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
-            this->nickname().data(), static_cast<int>(this->nickname().length()),
-            ::google::protobuf::internal::WireFormatLite::PARSE,
-            "kvdemo.PlayerSnapshot.nickname"));
-        } else {
-          goto handle_unusual;
-        }
-        break;
-      }
-
+      case 2:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 18)) {
+          auto str = _internal_mutable_nickname();
+          ptr = ::PROTOBUF_NAMESPACE_ID::internal::InlineGreedyStringParser(str, ptr, ctx);
+          CHK_(::PROTOBUF_NAMESPACE_ID::internal::VerifyUTF8(str, "kvdemo.PlayerSnapshot.nickname"));
+          CHK_(ptr);
+        } else goto handle_unusual;
+        continue;
       // int32 level = 3;
-      case 3: {
-        if (static_cast< ::google::protobuf::uint8>(tag) ==
-            static_cast< ::google::protobuf::uint8>(24u /* 24 & 0xFF */)) {
-
-          DO_((::google::protobuf::internal::WireFormatLite::ReadPrimitive<
-                   ::google::protobuf::int32, ::google::protobuf::internal::WireFormatLite::TYPE_INT32>(
-                 input, &level_)));
-        } else {
-          goto handle_unusual;
-        }
-        break;
-      }
-
+      case 3:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 24)) {
+          level_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint64(&ptr);
+          CHK_(ptr);
+        } else goto handle_unusual;
+        continue;
       // int64 updated_at_sec = 4;
-      case 4: {
-        if (static_cast< ::google::protobuf::uint8>(tag) ==
-            static_cast< ::google::protobuf::uint8>(32u /* 32 & 0xFF */)) {
-
-          DO_((::google::protobuf::internal::WireFormatLite::ReadPrimitive<
-                   ::google::protobuf::int64, ::google::protobuf::internal::WireFormatLite::TYPE_INT64>(
-                 input, &updated_at_sec_)));
-        } else {
-          goto handle_unusual;
-        }
-        break;
-      }
-
+      case 4:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 32)) {
+          updated_at_sec_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint64(&ptr);
+          CHK_(ptr);
+        } else goto handle_unusual;
+        continue;
       // map<string, int32> attrs = 5;
-      case 5: {
-        if (static_cast< ::google::protobuf::uint8>(tag) ==
-            static_cast< ::google::protobuf::uint8>(42u /* 42 & 0xFF */)) {
-          PlayerSnapshot_AttrsEntry_DoNotUse::Parser< ::google::protobuf::internal::MapField<
-              PlayerSnapshot_AttrsEntry_DoNotUse,
-              ::std::string, ::google::protobuf::int32,
-              ::google::protobuf::internal::WireFormatLite::TYPE_STRING,
-              ::google::protobuf::internal::WireFormatLite::TYPE_INT32,
-              0 >,
-            ::google::protobuf::Map< ::std::string, ::google::protobuf::int32 > > parser(&attrs_);
-          DO_(::google::protobuf::internal::WireFormatLite::ReadMessageNoVirtual(
-              input, &parser));
-          DO_(::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
-            parser.key().data(), static_cast<int>(parser.key().length()),
-            ::google::protobuf::internal::WireFormatLite::PARSE,
-            "kvdemo.PlayerSnapshot.AttrsEntry.key"));
-        } else {
-          goto handle_unusual;
-        }
-        break;
-      }
-
+      case 5:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 42)) {
+          ptr -= 1;
+          do {
+            ptr += 1;
+            ptr = ctx->ParseMessage(&attrs_, ptr);
+            CHK_(ptr);
+            if (!ctx->DataAvailable(ptr)) break;
+          } while (::PROTOBUF_NAMESPACE_ID::internal::ExpectTag<42>(ptr));
+        } else goto handle_unusual;
+        continue;
       default: {
       handle_unusual:
-        if (tag == 0) {
+        if ((tag & 7) == 4 || tag == 0) {
+          ctx->SetLastTag(tag);
           goto success;
         }
-        DO_(::google::protobuf::internal::WireFormat::SkipField(
-              input, tag, _internal_metadata_.mutable_unknown_fields()));
-        break;
+        ptr = UnknownFieldParse(tag,
+            _internal_metadata_.mutable_unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(),
+            ptr, ctx);
+        CHK_(ptr != nullptr);
+        continue;
       }
-    }
-  }
+    }  // switch
+  }  // while
 success:
-  // @@protoc_insertion_point(parse_success:kvdemo.PlayerSnapshot)
-  return true;
+  return ptr;
 failure:
-  // @@protoc_insertion_point(parse_failure:kvdemo.PlayerSnapshot)
-  return false;
-#undef DO_
+  ptr = nullptr;
+  goto success;
+#undef CHK_
 }
 
-void PlayerSnapshot::SerializeWithCachedSizes(
-    ::google::protobuf::io::CodedOutputStream* output) const {
-  // @@protoc_insertion_point(serialize_start:kvdemo.PlayerSnapshot)
-  ::google::protobuf::uint32 cached_has_bits = 0;
-  (void) cached_has_bits;
-
-  // uint64 player_id = 1;
-  if (this->player_id() != 0) {
-    ::google::protobuf::internal::WireFormatLite::WriteUInt64(1, this->player_id(), output);
-  }
-
-  // string nickname = 2;
-  if (this->nickname().size() > 0) {
-    ::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
-      this->nickname().data(), static_cast<int>(this->nickname().length()),
-      ::google::protobuf::internal::WireFormatLite::SERIALIZE,
-      "kvdemo.PlayerSnapshot.nickname");
-    ::google::protobuf::internal::WireFormatLite::WriteStringMaybeAliased(
-      2, this->nickname(), output);
-  }
-
-  // int32 level = 3;
-  if (this->level() != 0) {
-    ::google::protobuf::internal::WireFormatLite::WriteInt32(3, this->level(), output);
-  }
-
-  // int64 updated_at_sec = 4;
-  if (this->updated_at_sec() != 0) {
-    ::google::protobuf::internal::WireFormatLite::WriteInt64(4, this->updated_at_sec(), output);
-  }
-
-  // map<string, int32> attrs = 5;
-  if (!this->attrs().empty()) {
-    typedef ::google::protobuf::Map< ::std::string, ::google::protobuf::int32 >::const_pointer
-        ConstPtr;
-    typedef ConstPtr SortItem;
-    typedef ::google::protobuf::internal::CompareByDerefFirst<SortItem> Less;
-    struct Utf8Check {
-      static void Check(ConstPtr p) {
-        ::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
-          p->first.data(), static_cast<int>(p->first.length()),
-          ::google::protobuf::internal::WireFormatLite::SERIALIZE,
-          "kvdemo.PlayerSnapshot.AttrsEntry.key");
-      }
-    };
-
-    if (output->IsSerializationDeterministic() &&
-        this->attrs().size() > 1) {
-      ::google::protobuf::scoped_array<SortItem> items(
-          new SortItem[this->attrs().size()]);
-      typedef ::google::protobuf::Map< ::std::string, ::google::protobuf::int32 >::size_type size_type;
-      size_type n = 0;
-      for (::google::protobuf::Map< ::std::string, ::google::protobuf::int32 >::const_iterator
-          it = this->attrs().begin();
-          it != this->attrs().end(); ++it, ++n) {
-        items[static_cast<ptrdiff_t>(n)] = SortItem(&*it);
-      }
-      ::std::sort(&items[0], &items[static_cast<ptrdiff_t>(n)], Less());
-      ::google::protobuf::scoped_ptr<PlayerSnapshot_AttrsEntry_DoNotUse> entry;
-      for (size_type i = 0; i < n; i++) {
-        entry.reset(attrs_.NewEntryWrapper(
-            items[static_cast<ptrdiff_t>(i)]->first, items[static_cast<ptrdiff_t>(i)]->second));
-        ::google::protobuf::internal::WireFormatLite::WriteMessageMaybeToArray(
-            5, *entry, output);
-        Utf8Check::Check(items[static_cast<ptrdiff_t>(i)]);
-      }
-    } else {
-      ::google::protobuf::scoped_ptr<PlayerSnapshot_AttrsEntry_DoNotUse> entry;
-      for (::google::protobuf::Map< ::std::string, ::google::protobuf::int32 >::const_iterator
-          it = this->attrs().begin();
-          it != this->attrs().end(); ++it) {
-        entry.reset(attrs_.NewEntryWrapper(
-            it->first, it->second));
-        ::google::protobuf::internal::WireFormatLite::WriteMessageMaybeToArray(
-            5, *entry, output);
-        Utf8Check::Check(&*it);
-      }
-    }
-  }
-
-  if ((_internal_metadata_.have_unknown_fields() &&  ::google::protobuf::internal::GetProto3PreserveUnknownsDefault())) {
-    ::google::protobuf::internal::WireFormat::SerializeUnknownFields(
-        (::google::protobuf::internal::GetProto3PreserveUnknownsDefault()   ? _internal_metadata_.unknown_fields()   : _internal_metadata_.default_instance()), output);
-  }
-  // @@protoc_insertion_point(serialize_end:kvdemo.PlayerSnapshot)
-}
-
-::google::protobuf::uint8* PlayerSnapshot::InternalSerializeWithCachedSizesToArray(
-    bool deterministic, ::google::protobuf::uint8* target) const {
-  (void)deterministic; // Unused
+::PROTOBUF_NAMESPACE_ID::uint8* PlayerSnapshot::_InternalSerialize(
+    ::PROTOBUF_NAMESPACE_ID::uint8* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const {
   // @@protoc_insertion_point(serialize_to_array_start:kvdemo.PlayerSnapshot)
-  ::google::protobuf::uint32 cached_has_bits = 0;
+  ::PROTOBUF_NAMESPACE_ID::uint32 cached_has_bits = 0;
   (void) cached_has_bits;
 
   // uint64 player_id = 1;
   if (this->player_id() != 0) {
-    target = ::google::protobuf::internal::WireFormatLite::WriteUInt64ToArray(1, this->player_id(), target);
+    target = stream->EnsureSpace(target);
+    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::WriteUInt64ToArray(1, this->_internal_player_id(), target);
   }
 
   // string nickname = 2;
   if (this->nickname().size() > 0) {
-    ::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
-      this->nickname().data(), static_cast<int>(this->nickname().length()),
-      ::google::protobuf::internal::WireFormatLite::SERIALIZE,
+    ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::VerifyUtf8String(
+      this->_internal_nickname().data(), static_cast<int>(this->_internal_nickname().length()),
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::SERIALIZE,
       "kvdemo.PlayerSnapshot.nickname");
-    target =
-      ::google::protobuf::internal::WireFormatLite::WriteStringToArray(
-        2, this->nickname(), target);
+    target = stream->WriteStringMaybeAliased(
+        2, this->_internal_nickname(), target);
   }
 
   // int32 level = 3;
   if (this->level() != 0) {
-    target = ::google::protobuf::internal::WireFormatLite::WriteInt32ToArray(3, this->level(), target);
+    target = stream->EnsureSpace(target);
+    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::WriteInt32ToArray(3, this->_internal_level(), target);
   }
 
   // int64 updated_at_sec = 4;
   if (this->updated_at_sec() != 0) {
-    target = ::google::protobuf::internal::WireFormatLite::WriteInt64ToArray(4, this->updated_at_sec(), target);
+    target = stream->EnsureSpace(target);
+    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::WriteInt64ToArray(4, this->_internal_updated_at_sec(), target);
   }
 
   // map<string, int32> attrs = 5;
-  if (!this->attrs().empty()) {
-    typedef ::google::protobuf::Map< ::std::string, ::google::protobuf::int32 >::const_pointer
+  if (!this->_internal_attrs().empty()) {
+    typedef ::PROTOBUF_NAMESPACE_ID::Map< std::string, ::PROTOBUF_NAMESPACE_ID::int32 >::const_pointer
         ConstPtr;
     typedef ConstPtr SortItem;
-    typedef ::google::protobuf::internal::CompareByDerefFirst<SortItem> Less;
+    typedef ::PROTOBUF_NAMESPACE_ID::internal::CompareByDerefFirst<SortItem> Less;
     struct Utf8Check {
       static void Check(ConstPtr p) {
-        ::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+        ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::VerifyUtf8String(
           p->first.data(), static_cast<int>(p->first.length()),
-          ::google::protobuf::internal::WireFormatLite::SERIALIZE,
+          ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::SERIALIZE,
           "kvdemo.PlayerSnapshot.AttrsEntry.key");
       }
     };
 
-    if (deterministic &&
-        this->attrs().size() > 1) {
-      ::google::protobuf::scoped_array<SortItem> items(
-          new SortItem[this->attrs().size()]);
-      typedef ::google::protobuf::Map< ::std::string, ::google::protobuf::int32 >::size_type size_type;
+    if (stream->IsSerializationDeterministic() &&
+        this->_internal_attrs().size() > 1) {
+      ::std::unique_ptr<SortItem[]> items(
+          new SortItem[this->_internal_attrs().size()]);
+      typedef ::PROTOBUF_NAMESPACE_ID::Map< std::string, ::PROTOBUF_NAMESPACE_ID::int32 >::size_type size_type;
       size_type n = 0;
-      for (::google::protobuf::Map< ::std::string, ::google::protobuf::int32 >::const_iterator
-          it = this->attrs().begin();
-          it != this->attrs().end(); ++it, ++n) {
+      for (::PROTOBUF_NAMESPACE_ID::Map< std::string, ::PROTOBUF_NAMESPACE_ID::int32 >::const_iterator
+          it = this->_internal_attrs().begin();
+          it != this->_internal_attrs().end(); ++it, ++n) {
         items[static_cast<ptrdiff_t>(n)] = SortItem(&*it);
       }
       ::std::sort(&items[0], &items[static_cast<ptrdiff_t>(n)], Less());
-      ::google::protobuf::scoped_ptr<PlayerSnapshot_AttrsEntry_DoNotUse> entry;
       for (size_type i = 0; i < n; i++) {
-        entry.reset(attrs_.NewEntryWrapper(
-            items[static_cast<ptrdiff_t>(i)]->first, items[static_cast<ptrdiff_t>(i)]->second));
-        target = ::google::protobuf::internal::WireFormatLite::
-                   InternalWriteMessageNoVirtualToArray(
-                       5, *entry, deterministic, target);
-;
-        Utf8Check::Check(items[static_cast<ptrdiff_t>(i)]);
+        target = PlayerSnapshot_AttrsEntry_DoNotUse::Funcs::InternalSerialize(5, items[static_cast<ptrdiff_t>(i)]->first, items[static_cast<ptrdiff_t>(i)]->second, target, stream);
+        Utf8Check::Check(&(*items[static_cast<ptrdiff_t>(i)]));
       }
     } else {
-      ::google::protobuf::scoped_ptr<PlayerSnapshot_AttrsEntry_DoNotUse> entry;
-      for (::google::protobuf::Map< ::std::string, ::google::protobuf::int32 >::const_iterator
-          it = this->attrs().begin();
-          it != this->attrs().end(); ++it) {
-        entry.reset(attrs_.NewEntryWrapper(
-            it->first, it->second));
-        target = ::google::protobuf::internal::WireFormatLite::
-                   InternalWriteMessageNoVirtualToArray(
-                       5, *entry, deterministic, target);
-;
-        Utf8Check::Check(&*it);
+      for (::PROTOBUF_NAMESPACE_ID::Map< std::string, ::PROTOBUF_NAMESPACE_ID::int32 >::const_iterator
+          it = this->_internal_attrs().begin();
+          it != this->_internal_attrs().end(); ++it) {
+        target = PlayerSnapshot_AttrsEntry_DoNotUse::Funcs::InternalSerialize(5, it->first, it->second, target, stream);
+        Utf8Check::Check(&(*it));
       }
     }
   }
 
-  if ((_internal_metadata_.have_unknown_fields() &&  ::google::protobuf::internal::GetProto3PreserveUnknownsDefault())) {
-    target = ::google::protobuf::internal::WireFormat::SerializeUnknownFieldsToArray(
-        (::google::protobuf::internal::GetProto3PreserveUnknownsDefault()   ? _internal_metadata_.unknown_fields()   : _internal_metadata_.default_instance()), target);
+  if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
+    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormat::InternalSerializeUnknownFieldsToArray(
+        _internal_metadata_.unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(::PROTOBUF_NAMESPACE_ID::UnknownFieldSet::default_instance), target, stream);
   }
   // @@protoc_insertion_point(serialize_to_array_end:kvdemo.PlayerSnapshot)
   return target;
@@ -558,69 +368,65 @@ size_t PlayerSnapshot::ByteSizeLong() const {
 // @@protoc_insertion_point(message_byte_size_start:kvdemo.PlayerSnapshot)
   size_t total_size = 0;
 
-  if ((_internal_metadata_.have_unknown_fields() &&  ::google::protobuf::internal::GetProto3PreserveUnknownsDefault())) {
-    total_size +=
-      ::google::protobuf::internal::WireFormat::ComputeUnknownFieldsSize(
-        (::google::protobuf::internal::GetProto3PreserveUnknownsDefault()   ? _internal_metadata_.unknown_fields()   : _internal_metadata_.default_instance()));
-  }
+  ::PROTOBUF_NAMESPACE_ID::uint32 cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void) cached_has_bits;
+
   // map<string, int32> attrs = 5;
   total_size += 1 *
-      ::google::protobuf::internal::FromIntSize(this->attrs_size());
-  {
-    ::google::protobuf::scoped_ptr<PlayerSnapshot_AttrsEntry_DoNotUse> entry;
-    for (::google::protobuf::Map< ::std::string, ::google::protobuf::int32 >::const_iterator
-        it = this->attrs().begin();
-        it != this->attrs().end(); ++it) {
-      entry.reset(attrs_.NewEntryWrapper(it->first, it->second));
-      total_size += ::google::protobuf::internal::WireFormatLite::
-          MessageSizeNoVirtual(*entry);
-    }
+      ::PROTOBUF_NAMESPACE_ID::internal::FromIntSize(this->_internal_attrs_size());
+  for (::PROTOBUF_NAMESPACE_ID::Map< std::string, ::PROTOBUF_NAMESPACE_ID::int32 >::const_iterator
+      it = this->_internal_attrs().begin();
+      it != this->_internal_attrs().end(); ++it) {
+    total_size += PlayerSnapshot_AttrsEntry_DoNotUse::Funcs::ByteSizeLong(it->first, it->second);
   }
 
   // string nickname = 2;
   if (this->nickname().size() > 0) {
     total_size += 1 +
-      ::google::protobuf::internal::WireFormatLite::StringSize(
-        this->nickname());
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::StringSize(
+        this->_internal_nickname());
   }
 
   // uint64 player_id = 1;
   if (this->player_id() != 0) {
     total_size += 1 +
-      ::google::protobuf::internal::WireFormatLite::UInt64Size(
-        this->player_id());
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::UInt64Size(
+        this->_internal_player_id());
   }
 
   // int64 updated_at_sec = 4;
   if (this->updated_at_sec() != 0) {
     total_size += 1 +
-      ::google::protobuf::internal::WireFormatLite::Int64Size(
-        this->updated_at_sec());
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::Int64Size(
+        this->_internal_updated_at_sec());
   }
 
   // int32 level = 3;
   if (this->level() != 0) {
     total_size += 1 +
-      ::google::protobuf::internal::WireFormatLite::Int32Size(
-        this->level());
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::Int32Size(
+        this->_internal_level());
   }
 
-  int cached_size = ::google::protobuf::internal::ToCachedSize(total_size);
-  GOOGLE_SAFE_CONCURRENT_WRITES_BEGIN();
-  _cached_size_ = cached_size;
-  GOOGLE_SAFE_CONCURRENT_WRITES_END();
+  if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
+    return ::PROTOBUF_NAMESPACE_ID::internal::ComputeUnknownFieldsSize(
+        _internal_metadata_, total_size, &_cached_size_);
+  }
+  int cached_size = ::PROTOBUF_NAMESPACE_ID::internal::ToCachedSize(total_size);
+  SetCachedSize(cached_size);
   return total_size;
 }
 
-void PlayerSnapshot::MergeFrom(const ::google::protobuf::Message& from) {
+void PlayerSnapshot::MergeFrom(const ::PROTOBUF_NAMESPACE_ID::Message& from) {
 // @@protoc_insertion_point(generalized_merge_from_start:kvdemo.PlayerSnapshot)
   GOOGLE_DCHECK_NE(&from, this);
   const PlayerSnapshot* source =
-      ::google::protobuf::internal::DynamicCastToGenerated<const PlayerSnapshot>(
+      ::PROTOBUF_NAMESPACE_ID::DynamicCastToGenerated<PlayerSnapshot>(
           &from);
-  if (source == NULL) {
+  if (source == nullptr) {
   // @@protoc_insertion_point(generalized_merge_from_cast_fail:kvdemo.PlayerSnapshot)
-    ::google::protobuf::internal::ReflectionOps::Merge(from, this);
+    ::PROTOBUF_NAMESPACE_ID::internal::ReflectionOps::Merge(from, this);
   } else {
   // @@protoc_insertion_point(generalized_merge_from_cast_success:kvdemo.PlayerSnapshot)
     MergeFrom(*source);
@@ -630,27 +436,26 @@ void PlayerSnapshot::MergeFrom(const ::google::protobuf::Message& from) {
 void PlayerSnapshot::MergeFrom(const PlayerSnapshot& from) {
 // @@protoc_insertion_point(class_specific_merge_from_start:kvdemo.PlayerSnapshot)
   GOOGLE_DCHECK_NE(&from, this);
-  _internal_metadata_.MergeFrom(from._internal_metadata_);
-  ::google::protobuf::uint32 cached_has_bits = 0;
+  _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
+  ::PROTOBUF_NAMESPACE_ID::uint32 cached_has_bits = 0;
   (void) cached_has_bits;
 
   attrs_.MergeFrom(from.attrs_);
   if (from.nickname().size() > 0) {
-
-    nickname_.AssignWithDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), from.nickname_);
+    _internal_set_nickname(from._internal_nickname());
   }
   if (from.player_id() != 0) {
-    set_player_id(from.player_id());
+    _internal_set_player_id(from._internal_player_id());
   }
   if (from.updated_at_sec() != 0) {
-    set_updated_at_sec(from.updated_at_sec());
+    _internal_set_updated_at_sec(from._internal_updated_at_sec());
   }
   if (from.level() != 0) {
-    set_level(from.level());
+    _internal_set_level(from._internal_level());
   }
 }
 
-void PlayerSnapshot::CopyFrom(const ::google::protobuf::Message& from) {
+void PlayerSnapshot::CopyFrom(const ::PROTOBUF_NAMESPACE_ID::Message& from) {
 // @@protoc_insertion_point(generalized_copy_from_start:kvdemo.PlayerSnapshot)
   if (&from == this) return;
   Clear();
@@ -668,28 +473,34 @@ bool PlayerSnapshot::IsInitialized() const {
   return true;
 }
 
-void PlayerSnapshot::Swap(PlayerSnapshot* other) {
-  if (other == this) return;
-  InternalSwap(other);
-}
 void PlayerSnapshot::InternalSwap(PlayerSnapshot* other) {
   using std::swap;
+  _internal_metadata_.Swap<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(&other->_internal_metadata_);
   attrs_.Swap(&other->attrs_);
-  nickname_.Swap(&other->nickname_);
-  swap(player_id_, other->player_id_);
-  swap(updated_at_sec_, other->updated_at_sec_);
-  swap(level_, other->level_);
-  _internal_metadata_.Swap(&other->_internal_metadata_);
-  swap(_cached_size_, other->_cached_size_);
+  nickname_.Swap(&other->nickname_, &::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
+  ::PROTOBUF_NAMESPACE_ID::internal::memswap<
+      PROTOBUF_FIELD_OFFSET(PlayerSnapshot, level_)
+      + sizeof(PlayerSnapshot::level_)
+      - PROTOBUF_FIELD_OFFSET(PlayerSnapshot, player_id_)>(
+          reinterpret_cast<char*>(&player_id_),
+          reinterpret_cast<char*>(&other->player_id_));
 }
 
-::google::protobuf::Metadata PlayerSnapshot::GetMetadata() const {
-  protobuf_kv_5fdemo_2eproto::protobuf_AssignDescriptorsOnce();
-  return ::protobuf_kv_5fdemo_2eproto::file_level_metadata[kIndexInFileMessages];
+::PROTOBUF_NAMESPACE_ID::Metadata PlayerSnapshot::GetMetadata() const {
+  return GetMetadataStatic();
 }
 
 
 // @@protoc_insertion_point(namespace_scope)
 }  // namespace kvdemo
+PROTOBUF_NAMESPACE_OPEN
+template<> PROTOBUF_NOINLINE ::kvdemo::PlayerSnapshot_AttrsEntry_DoNotUse* Arena::CreateMaybeMessage< ::kvdemo::PlayerSnapshot_AttrsEntry_DoNotUse >(Arena* arena) {
+  return Arena::CreateMessageInternal< ::kvdemo::PlayerSnapshot_AttrsEntry_DoNotUse >(arena);
+}
+template<> PROTOBUF_NOINLINE ::kvdemo::PlayerSnapshot* Arena::CreateMaybeMessage< ::kvdemo::PlayerSnapshot >(Arena* arena) {
+  return Arena::CreateMessageInternal< ::kvdemo::PlayerSnapshot >(arena);
+}
+PROTOBUF_NAMESPACE_CLOSE
 
 // @@protoc_insertion_point(global_scope)
+#include <google/protobuf/port_undef.inc>

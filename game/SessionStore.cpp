@@ -1964,6 +1964,18 @@ std::string SessionStore::OnlineSetKey() const {
     return key_prefix_ + "online:players";
 }
 
+int64_t SessionStore::OnlinePlayerCount() {
+    if (!available_)
+        return 0;
+    auto lease = RedisPool::Instance().Acquire();
+    if (!lease)
+        return 0;
+    int64_t n = 0;
+    if (!lease->SCard(OnlineSetKey(), &n) || n < 0)
+        return 0;
+    return n;
+}
+
 void SessionStore::TrackOnline(uint64_t player_id) {
     if (!available_ || player_id == 0)
         return;

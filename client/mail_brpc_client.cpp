@@ -20,6 +20,7 @@
 #include <brpc/channel.h>
 #include <gflags/gflags.h>
 
+#include <cstdint>
 #include <cstdio>
 #include <cstdlib>
 #include <ctime>
@@ -30,7 +31,7 @@
 DEFINE_string(server, "127.0.0.1:8181", "brpc server ip:port");
 DEFINE_uint64(player_id, 10001, "player id");
 DEFINE_string(device_id, "mail_brpc_client", "login device id");
-DEFINE_uint32(server_id, 1, "login server id");
+DEFINE_int32(server_id, 1, "login server id");
 DEFINE_int32(limit, 20, "mail list limit");
 DEFINE_bool(summary, false, "also call MailboxSummary");
 DEFINE_uint64(get, 0, "MailGet mail_id (0=skip)");
@@ -67,7 +68,7 @@ bool Check(brpc::Controller &cntl, const char *op) {
 }  // namespace
 
 int main(int argc, char *argv[]) {
-    google::ParseCommandLineFlags(&argc, &argv, true);
+    gflags::ParseCommandLineFlags(&argc, &argv, true);
 
     brpc::Channel channel;
     brpc::ChannelOptions options;
@@ -85,7 +86,7 @@ int main(int argc, char *argv[]) {
     game::LoginReq login_req;
     login_req.set_player_id(FLAGS_player_id);
     login_req.set_device_id(FLAGS_device_id);
-    login_req.set_server_id(FLAGS_server_id);
+    login_req.set_server_id(static_cast<uint32_t>(FLAGS_server_id));
     game::LoginRsp login_rsp;
     {
         brpc::Controller cntl;

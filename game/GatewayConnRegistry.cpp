@@ -85,6 +85,14 @@ int64_t GatewayConnRegistry::BoundPlayerCount() {
     return static_cast<int64_t>(player_to_conn_.size());
 }
 
+bool GatewayConnRegistry::HasNewerBinding(uint64_t connection_id, uint64_t player_id) {
+    std::lock_guard<std::mutex> lk(mu_);
+    if (player_id == 0)
+        return false;
+    auto pit = player_to_conn_.find(player_id);
+    return pit != player_to_conn_.end() && pit->second != connection_id;
+}
+
 bool GatewayConnRegistry::FindByConnection(uint64_t connection_id, Bind *out) {
     std::lock_guard<std::mutex> lk(mu_);
     auto it = by_conn_.find(connection_id);

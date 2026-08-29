@@ -91,6 +91,9 @@ std::string OpsMetrics::PrometheusText() const {
     }
     gauge("gamemesh_online_players", "Bound unique players on this Gateway.",
           online_players_.load(std::memory_order_relaxed));
+    gauge("gamemesh_session_online_players",
+          "Redis Session ONLINE set size (meaningful on role=session).",
+          session_online_players_.load(std::memory_order_relaxed));
     gauge("gamemesh_gateway_tcp_connections", "Current game TCP sockets (including pre-auth).",
           gateway_tcp_connections_.load(std::memory_order_relaxed));
     ctr("gamemesh_gateway_rx_bytes_total", "Game TCP bytes received (client → Gateway).",

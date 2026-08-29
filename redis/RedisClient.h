@@ -120,6 +120,7 @@ public:
 
     bool SAdd(const std::string &key, const std::string &member);
     bool SRem(const std::string &key, const std::string &member);
+    bool SCard(const std::string &key, int64_t *out);
     bool SMembers(const std::string &key, std::vector<std::string> *out);
     bool Incr(const std::string &key, int64_t *out);
 

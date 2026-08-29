@@ -364,7 +364,13 @@ void GameTcpGateway::Run() {
         }
 #ifdef WEBSERVER_ENABLE_BRPC
         GatewayConnRegistry::Bind reg;
-        const bool has_reg = GatewayConnRegistry::Instance().FindByConnection(c->id(), &reg);
+        const bool taken_over =
+            GatewayConnRegistry::Instance().HasNewerBinding(c->id(), bind.player_id);
+        const bool has_reg =
+            !taken_over && GatewayConnRegistry::Instance().FindByConnection(c->id(), &reg);
+#else
+        const bool taken_over =
+            GatewayConnRegistry::Instance().HasNewerBinding(c->id(), bind.player_id);
 #endif
         // 必须在 g_bind_mu 之外 Forget：ForgetBind 会再锁同一把非递归 mutex。
         // 未绑定连接（Register 超时后客户端断开）走旧 early-return 会把 acceptor EventLoop 卡死，
@@ -374,6 +380,13 @@ void GameTcpGateway::Run() {
         const bool logout_done = ConsumeAuthoritativeLogout(c->id());
         if (logout_done) {
             // 主动 Logout 已释放 Session；断线不得把 Session 写回 DISCONNECTED。
+            return;
+        }
+
+        if (taken_over) {
+            LOG_INFO << "Gateway disconnect stale conn#" << c->id() << " player_id="
+                     << bind.player_id << " generation=" << bind.generation
+                     << " (player moved to a newer conn; skip MarkDisconnected/Unbind)";
             return;
         }
 

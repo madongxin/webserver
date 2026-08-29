@@ -259,7 +259,8 @@ if(ENABLE_BRPC)
     runtime/discovery/IServiceRegistry.cpp
     runtime/discovery/RedisServiceRegistry.cpp
     runtime/HealthyLogicOwners.cpp)
-  set(BRPC_LINK_LIBS ${BRPC_LIB} ${GFLAGS_LIB} ${LEVELDB_LIB} ${OPENSSL_SSL_LIB} ${ZLIB_LIB} dl)
+  # pthread 必须在静态 libbrpc.a 之后（bfd ld 不会回看已处理的 -lpthread）
+  set(BRPC_LINK_LIBS ${BRPC_LIB} ${GFLAGS_LIB} ${LEVELDB_LIB} ${OPENSSL_SSL_LIB} ${ZLIB_LIB} dl ${CMAKE_THREAD_LIBS_INIT})
   message(STATUS "brpc: include=${BRPC_INCLUDE_DIR} lib=${BRPC_LIB}")
 endif()
 
@@ -297,7 +298,7 @@ function(gamemesh_apply_target_options tgt)
     target_compile_definitions(${tgt} PRIVATE WEBSERVER_ENABLE_BRPC)
     target_include_directories(${tgt} PRIVATE ${BRPC_INCLUDE_DIR} game/brpc runtime runtime/brpc
                               runtime/discovery)
-    target_link_libraries(${tgt} ${BRPC_LINK_LIBS})
+    target_link_libraries(${tgt} ${BRPC_LINK_LIBS} ${CMAKE_THREAD_LIBS_INIT})
   endif()
 endfunction()
 

@@ -261,6 +261,24 @@ bool RedisClient::SRem(const std::string &key, const std::string &member) {
     return CheckReply(r, "SREM");
 }
 
+bool RedisClient::SCard(const std::string &key, int64_t *out) {
+    if (!ctx_ || key.empty() || !out)
+        return false;
+    redisReply *r = static_cast<redisReply *>(
+        redisCommand(static_cast<redisContext *>(ctx_), "SCARD %s", key.c_str()));
+    if (!r) {
+        Disconnect();
+        return false;
+    }
+    if (r->type != REDIS_REPLY_INTEGER) {
+        freeReplyObject(r);
+        return false;
+    }
+    *out = r->integer;
+    freeReplyObject(r);
+    return true;
+}
+
 bool RedisClient::SMembers(const std::string &key, std::vector<std::string> *out) {
     if (!ctx_ || key.empty() || !out)
         return false;

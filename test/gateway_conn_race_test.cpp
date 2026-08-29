@@ -45,6 +45,9 @@ void TestConditionalForgetAfterTakeover() {
     Expect(reg.FindByPlayer(100, &found) && found.connection_id == 2, "player index -> new conn");
     Expect(reg.FindBySession("sess-1", &found) && found.connection_id == 2,
            "session index -> new conn");
+    Expect(reg.HasNewerBinding(1, 100), "old conn sees newer binding");
+    Expect(!reg.HasNewerBinding(2, 100), "live conn is current owner");
+    Expect(!reg.HasNewerBinding(1, 0), "player 0 is not taken over");
 
     reg.Forget(1);  // 旧连接关闭：不得拆掉新索引
     Expect(reg.FindByPlayer(100, &found) && found.connection_id == 2,

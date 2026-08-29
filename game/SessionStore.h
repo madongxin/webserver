@@ -231,6 +231,8 @@ public:
     bool ListOnlinePushTargets(std::vector<OnlinePushTarget> *out, size_t max_n = 256);
     /** 公网在线态：online | offline | disconnected。无会话视为 offline。 */
     bool QueryPublicOnlineState(uint64_t player_id, std::string *state);
+    /** Redis `online:players` 集合大小（Session ONLINE，含尚未 MarkDisconnected 的会话）。 */
+    int64_t OnlinePlayerCount();
     bool ConsumeChatQuota(uint64_t player_id, int limit, int window_sec);
     bool ConsumeNameQueryQuota(uint64_t player_id, int limit, int window_sec);
     uint64_t NextWorldChatMessageId();

@@ -165,13 +165,14 @@
       <div class="status-pill na" data-mod="cluster"><div class="name">集群进程</div><div class="value">—</div></div>
       <div class="status-pill na" data-mod="live"><div class="name">存活 /health/live</div><div class="value">—</div></div>
       <div class="status-pill na" data-mod="ready"><div class="name">就绪 /health/ready</div><div class="value">—</div></div>
-      <div class="status-pill na" data-mod="players"><div class="name">在线玩家</div><div class="value">—</div></div>
+      <div class="status-pill na" data-mod="players"><div class="name">Gateway 绑定玩家</div><div class="value">—</div></div>
+      <div class="status-pill na" data-mod="sessionOnline"><div class="name">Session ONLINE</div><div class="value">—</div></div>
       <div class="status-pill na" data-mod="gwtraffic"><div class="name">Gateway 流量</div><div class="value">—</div></div>
     </div>
 
     <section class="module">
       <h2>业务 · 玩家与 Gateway 流量</h2>
-      <p class="module-desc">在线玩家 = 各 Gateway 已绑定 player_id 之和。流量 = 游戏 TCP 收发字节与帧（不含 HTTP 管理口）。</p>
+      <p class="module-desc">Gateway 绑定 = 当前游戏 TCP 上已 Login/Reconnect 的不重复 player_id。Session ONLINE = Redis 会话集合（重连宽限内可能仍 ONLINE，即使 TCP 已断）。两条对不上时优先看 Gateway 绑定。</p>
       <div class="charts" id="bizCharts"></div>
     </section>
 
@@ -196,6 +197,7 @@
               <th>线程</th>
               <th>运行时间</th>
               <th>HTTP</th>
+              <th>绑定玩家</th>
               <th>游戏 TCP</th>
               <th>说明</th>
             </tr>
@@ -347,11 +349,16 @@
       return { labels, datasets };
     }
 
-    function upsertChart(canvasId, chartData) {
+    function upsertChart(canvasId, chartData, beginZero) {
       const canvas = document.getElementById(canvasId);
       if (!canvas) return;
+      const yScale = {
+        beginAtZero: !!beginZero,
+        ticks: { font: { size: 10 }, precision: beginZero ? 0 : undefined },
+      };
       if (charts[canvasId]) {
         charts[canvasId].data = chartData;
+        charts[canvasId].options.scales.y.beginAtZero = !!beginZero;
         charts[canvasId].update('none');
         return;
       }
@@ -371,7 +378,7 @@
           },
           scales: {
             x: { ticks: { maxTicksLimit: 8, font: { size: 10 } } },
-            y: { ticks: { font: { size: 10 } } },
+            y: yScale,
           },
         },
       });
@@ -395,8 +402,12 @@
     }
 
     const BIZ_PANELS = [
-      { id: 'pPlayers', title: '在线玩家', promql: () => 'gamemesh_online_players{' + jobSel() + ',role="gateway"}' },
-      { id: 'pGwConn', title: 'Gateway TCP 连接', promql: () => 'gamemesh_gateway_tcp_connections{' + jobSel() + ',role="gateway"}' },
+      { id: 'pPlayers', title: 'Gateway 绑定玩家（合计）', beginZero: true,
+        promql: () => 'sum(gamemesh_online_players{' + jobSel() + ',role="gateway"})' },
+      { id: 'pSessOnline', title: 'Session ONLINE（合计）', beginZero: true,
+        promql: () => 'sum(gamemesh_session_online_players{' + jobSel() + ',role="session"})' },
+      { id: 'pGwConn', title: 'Gateway TCP 连接', beginZero: true,
+        promql: () => 'gamemesh_gateway_tcp_connections{' + jobSel() + ',role="gateway"}' },
       { id: 'pGwRx', title: 'Gateway 入站 (B/s)', promql: () => 'rate(gamemesh_gateway_rx_bytes_total{' + jobSel() + ',role="gateway"}[1m])' },
       { id: 'pGwTx', title: 'Gateway 出站 (B/s)', promql: () => 'rate(gamemesh_gateway_tx_bytes_total{' + jobSel() + ',role="gateway"}[1m])' },
       { id: 'pGwRxF', title: 'Gateway 入站帧/s', promql: () => 'rate(gamemesh_gateway_rx_frames_total{' + jobSel() + ',role="gateway"}[1m])' },
@@ -433,7 +444,7 @@
       try {
         for (const p of BIZ_PANELS.concat(PROM_PANELS)) {
           const result = await queryRange(p.promql());
-          upsertChart(p.id, seriesToChartData(result));
+          upsertChart(p.id, seriesToChartData(result), p.beginZero);
         }
       } catch (e) {
         errEl.textContent = 'Prometheus 查询失败: ' + e.message +
@@ -443,10 +454,10 @@
     }
 
     async function loadPromSnapshots() {
-      const empty = { up: {}, cpu: {}, rss: {}, fds: {}, thr: {}, uptime: {} };
+      const empty = { up: {}, cpu: {}, rss: {}, fds: {}, thr: {}, uptime: {}, bound: {} };
       try {
         const js = jobSel();
-        const [up, cpu, rss, fds, thr, uptime, players, rx, tx] = await Promise.all([
+        const [up, cpu, rss, fds, thr, uptime, players, sessOnline, boundMap, rx, tx] = await Promise.all([
           queryInstant('up{' + js + '}'),
           queryInstant('rate(process_cpu_seconds_total{' + js + '}[1m])'),
           queryInstant('process_resident_memory_bytes{' + js + '}'),
@@ -454,6 +465,8 @@
           queryInstant('process_threads{' + js + '}'),
           queryInstant('time() - process_start_time_seconds{' + js + '}'),
           queryInstant('sum(gamemesh_online_players{' + js + ',role="gateway"})'),
+          queryInstant('sum(gamemesh_session_online_players{' + js + ',role="session"})'),
+          queryInstant('gamemesh_online_players{' + js + ',role="gateway"}'),
           queryInstant('sum(rate(gamemesh_gateway_rx_bytes_total{' + js + ',role="gateway"}[1m]))'),
           queryInstant('sum(rate(gamemesh_gateway_tx_bytes_total{' + js + ',role="gateway"}[1m]))'),
         ]);
@@ -463,7 +476,10 @@
         setStatus('targets', n ? (ok + '/' + n + ' up') : '无 target', n > 0 && ok === n);
         const playerN = instantScalar(players);
         setStatus('players', playerN == null ? '—' : String(Math.round(playerN)),
-          playerN != null);
+          playerN != null && playerN > 0);
+        const sessN = instantScalar(sessOnline);
+        setStatus('sessionOnline', sessN == null ? '—' : String(Math.round(sessN)),
+          sessN != null);
         const rxN = instantScalar(rx);
         const txN = instantScalar(tx);
         if (rxN == null && txN == null) {
@@ -479,6 +495,7 @@
           fds: instantMap(fds),
           thr: instantMap(thr),
           uptime: instantMap(uptime),
+          bound: instantMap(boundMap),
         };
       } catch {
         setStatus('targets', 'Prometheus 不可用', false);
@@ -539,6 +556,7 @@
           lookup(snap.thr, p) == null ? '—' : String(Math.round(Number(lookup(snap.thr, p)))),
           fmtDur(lookup(snap.uptime, p)),
           p.http_port || '—',
+          p.role === 'gateway' ? (lookup(snap.bound, p) == null ? '—' : String(Math.round(Number(lookup(snap.bound, p))))) : '—',
           p.game_port || '—',
           reason(p),
         ];

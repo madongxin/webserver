@@ -44,6 +44,9 @@ public:
     void IncErrorCode(const std::string &code);
 
     void SetOnlinePlayers(int64_t n) { online_players_.store(n, std::memory_order_relaxed); }
+    void SetSessionOnlinePlayers(int64_t n) {
+        session_online_players_.store(n, std::memory_order_relaxed);
+    }
     void SetGatewayTcpConnections(int64_t n) {
         gateway_tcp_connections_.store(n, std::memory_order_relaxed);
     }
@@ -122,6 +125,7 @@ private:
     std::atomic<uint64_t> idle_timeout_{0};
     std::atomic<uint64_t> conn_rate_limited_{0};
     std::atomic<int64_t> online_players_{0};
+    std::atomic<int64_t> session_online_players_{0};
     std::atomic<int64_t> gateway_tcp_connections_{0};
     std::atomic<uint64_t> gateway_rx_bytes_{0};
     std::atomic<uint64_t> gateway_tx_bytes_{0};
