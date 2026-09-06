@@ -23,7 +23,6 @@ TcpConnection::TcpConnection(EventLoop *loop, int connfd, uint64_t connid)
       force_closed_for_backpressure_(false) {
     if (loop != nullptr) {
         channel_ = std::make_unique<Channel>(connfd, loop);
-        channel_->EnableET();
         channel_->set_read_callback(std::bind(&TcpConnection::HandleMessage, this));
         channel_->set_write_callback(std::bind(&TcpConnection::HandleWrite, this));
     }
@@ -39,17 +38,23 @@ TcpConnection::~TcpConnection() {
 void TcpConnection::ConnectionEstablished() {
     state_ = ConnectionState::Connected;
     channel_->Tie(shared_from_this());
-    channel_->EnableRead();
-    if (on_connect_) {
+    // 先跑 on_connect_（限流/摘流可能立刻 HandleClose）。未通过时不要
+    // EnableRead：限流洪泛下 Channel 进 epoll 再关，会 SIGSEGV。
+    if (on_connect_)
         on_connect_(shared_from_this());
-    }
+    if (state_ != ConnectionState::Connected)
+        return;
+    channel_->EnableET();
+    channel_->EnableRead();
 }
 
 void TcpConnection::ConnectionDestructor() {
     proto_stream_.clear();
     read_buf_->RetrieveAll();
     send_buf_->RetrieveAll();
-    if (channel_ && channel_->IsWriting())
+    if (!channel_ || !channel_->IsInEpoll())
+        return;
+    if (channel_->IsWriting())
         channel_->DisableWrite();
     loop_->DeleteChannel(channel_.get());
 }

@@ -9,6 +9,13 @@
       "file": "map_1001.json",
       "sha256_file": "map_1001.json.sha256",
       "data_version": 1
+    },
+    {
+      "map_template_id": 1002,
+      "scene_name": "TerrainDemoScene",
+      "file": "1002.grid.json",
+      "sha256_file": "1002.grid.json.sha256",
+      "data_version": 1
     }
   ]
 }

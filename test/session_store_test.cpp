@@ -2,8 +2,10 @@
  * Session 状态机 / 顶号 fence / 重连 / 并发 Acquire（需 Redis）
  */
 #include "SessionStore.h"
+#include "RedisPool.h"
 #include "game.pb.h"
 
+#include <algorithm>
 #include <atomic>
 #include <cstdio>
 #include <string>
@@ -341,6 +343,37 @@ int main() {
         game::ReconnectRsp rrlo;
         if (SessionStore::Instance().Reconnect(rlo, &rrlo) && rrlo.ok())
             return Fail("Reconnect after Logout");
+    }
+
+    {
+        const char *setk = "gamemesh:dev:online:players";
+        auto lease = RedisPool::Instance().Acquire();
+        if (!lease)
+            return Fail("online-set lease");
+        if (!lease->SAdd(setk, "900099"))
+            return Fail("orphan sadd");
+        (void)SessionStore::Instance().OnlinePlayerCount();
+        std::vector<std::string> members;
+        if (!lease->SMembers(setk, &members))
+            return Fail("online-set smembers");
+        if (std::find(members.begin(), members.end(), "900099") != members.end())
+            return Fail("orphan still in online set after reconcile");
+        if (!lease->SAdd(setk, "900098"))
+            return Fail("md-orphan sadd");
+        if (SessionStore::Instance().MarkDisconnected(900098, "gone", 1))
+            return Fail("MarkDisconnected on missing session");
+        members.clear();
+        if (!lease->SMembers(setk, &members))
+            return Fail("online-set smembers after md");
+        if (std::find(members.begin(), members.end(), "900098") != members.end())
+            return Fail("MarkDisconnected NOT_FOUND left online set member");
+    }
+
+    for (uint64_t id : {pid, pid2, pid3, uint64_t{900004}, uint64_t{900088}, uint64_t{900099}}) {
+        game::LogoutReq clo;
+        clo.set_player_id(id);
+        game::LogoutRsp cr;
+        SessionStore::Instance().Logout(clo, &cr);
     }
 
     std::printf("OK session_store_test login/replace/disconnect/reconnect/route/concurrent/idem\n");

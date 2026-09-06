@@ -553,7 +553,9 @@ void GameTcpGateway::OnMessage(const std::shared_ptr<TcpConnection> &conn) {
                 OpsMetrics::Instance().IncHelloOk();
                 LOG_INFO << "ClientHello ok conn#" << conn->id()
                          << " platform=" << peek.client_hello().platform()
-                         << " client_version=" << peek.client_hello().client_version();
+                         << " client_version=" << peek.client_hello().client_version()
+                         << " maps=" << hello.maps_size()
+                         << " manifest_ver=" << hello.map_manifest_version();
             } else {
                 GatewayConnGuard::Instance().SetHelloOk(conn->id(), false);
                 OpsMetrics::Instance().IncHelloFail();

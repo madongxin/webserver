@@ -5,8 +5,8 @@
  * @brief 单条 TCP 连接：Channel + 读写 Buffer + 业务回调
  *
  * 生命周期：
- *   构造（注册 ET 读/写回调，尚未加入 epoll）
- *   -> ConnectionEstablished（Tie + EnableRead + on_connect_）
+ *   构造（创建 Channel、注册读/写回调，尚未加入 epoll）
+ *   -> 所属 EventLoop 上 ConnectionEstablished（Tie + on_connect_；仍 Connected 才 EnableET/Read）
  *   -> HandleMessage 循环读直到 EAGAIN，触发 on_message_
  *   -> Send 可能触发 EPOLLOUT
  *   -> HandleClose -> on_close_ -> 主线程删 map -> ConnectionDestructor

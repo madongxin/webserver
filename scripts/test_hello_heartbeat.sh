@@ -45,8 +45,8 @@ echo "$LAST_OUT" | grep -q 'map_manifest_version=1' || {
   echo "ERROR: client-hello missing map_manifest_version=1" >&2
   exit 1
 }
-echo "$LAST_OUT" | grep -q 'hello_maps_n=1' || {
-  echo "ERROR: client-hello missing hello_maps_n=1" >&2
+echo "$LAST_OUT" | grep -q 'hello_maps_n=2' || {
+  echo "ERROR: client-hello missing hello_maps_n=2" >&2
   exit 1
 }
 run_cmd hello-then-register register-login "$HOST" "$GW0" "e2e-s1-reg-$$" e2epass1

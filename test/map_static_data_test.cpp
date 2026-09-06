@@ -6,6 +6,7 @@
 #include "MapCatalog.h"
 #include "MapStaticData.h"
 
+#include <cmath>
 #include <cstdio>
 #include <memory>
 #include <string>
@@ -93,15 +94,49 @@ int main() {
         Expect(data->map_template_id() == 1001, "template 1001");
         Expect(data->grid_width() == 171 && data->grid_height() == 162, "171x162");
         Expect(data->walkable().size() == 171u * 162u, "rle expands to grid");
+        Expect(data->aoi_cell_size() == 12.f, "1001 aoi 12");
+        Expect(data->nav_sample_step() == 1.f, "1001 step 1");
         Expect(data->IsWalkable(-28.5f, -7.25f), "luna spawn walkable");
         Expect(data->WorldToWalkableCell(-28.5f, -7.25f, &col, &row) && col == 65 && row == 34,
                "spawn cell 65,34");
+    }
+
+    std::string hash_1002;
+    Expect(MapStaticData::ReadSha256File(dir + "/1002.grid.json.sha256", &hash_1002, &err),
+           "read 1002.sha256");
+    Expect(hash_1002 == "46d5bb506de2f0418a85fce8d8e285dfec664023122b2692cecf818a26be75d9",
+           "1002 sidecar hash");
+    Expect(FileHasher::HashFile(dir + "/1002.grid.json") == hash_1002, "1002 file hash matches sidecar");
+    std::shared_ptr<const MapStaticData> data1002;
+    Expect(MapStaticData::LoadFromFile(dir + "/1002.grid.json", hash_1002, &data1002, &err),
+           "load 1002");
+    if (data1002) {
+        Expect(data1002->map_template_id() == 1002, "template 1002");
+        Expect(data1002->data_version() == 1, "1002 data_version 1");
+        Expect(data1002->scene_name() == "TerrainDemoScene", "1002 scene");
+        Expect(data1002->grid_width() == 498 && data1002->grid_height() == 498, "498x498");
+        Expect(data1002->aoi_cell_size() == 32.f, "1002 aoi 32");
+        Expect(data1002->nav_sample_step() == 8.f, "1002 step 8");
+        Expect(data1002->default_spawn().id == "default", "1002 spawn id");
+        Expect(data1002->IsWalkable(179.3f, 324.2f), "1002 spawn walkable");
+        const MapVec3 &sp = data1002->default_spawn().position;
+        Expect(std::fabs(sp.x - 179.3f) < 0.01f && std::fabs(sp.y + 18.687f) < 0.01f &&
+                   std::fabs(sp.z - 324.2f) < 0.01f,
+               "1002 spawn xyz");
+        Expect(std::fabs(data1002->default_spawn().yaw - 180.f) < 0.01f, "1002 spawn yaw 180");
+        Expect(data1002->sha256() == hash_1002, "1002 loaded sha256");
     }
 
     MapCatalog::Instance().ClearForTest();
     Expect(MapCatalog::Instance().LoadDirectory(dir, &err), "catalog load");
     Expect(MapCatalog::Instance().Get(1001) != nullptr, "catalog has 1001");
     Expect(MapCatalog::Instance().Get(1001)->sha256() == expect_hash, "catalog hash");
+    Expect(MapCatalog::Instance().Get(1001)->aoi_cell_size() == 12.f, "catalog 1001 aoi");
+    Expect(MapCatalog::Instance().Get(1002) != nullptr, "catalog has 1002");
+    Expect(MapCatalog::Instance().Get(1002)->sha256() == hash_1002, "catalog 1002 hash");
+    Expect(MapCatalog::Instance().Get(1002)->aoi_cell_size() == 32.f, "catalog 1002 aoi");
+    Expect(MapCatalog::Instance().Get(1002)->nav_sample_step() == 8.f, "catalog 1002 step");
+    Expect(MapCatalog::Instance().ManifestEntries().size() == 2, "manifest 2 maps");
     Expect(MapCatalog::Instance().gameplay_config_version() == 1, "gameplay_config_version");
     Expect(MapCatalog::Instance().map_manifest_version() == 1, "map_manifest_version");
     Expect(!MapCatalog::Instance().ManifestEntries().empty(), "manifest entries");

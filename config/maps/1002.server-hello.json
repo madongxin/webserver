@@ -1,0 +1,4 @@
+{
+  "keep_1001": { "map_template_id": 1001, "data_version": 1, "sha256": "ceef56586c5281dca4ce45340f511d0d577fd724b14131ae5a21d01ea7f41317" },
+  "add_1002": { "map_template_id": 1002, "data_version": 1, "sha256": "46d5bb506de2f0418a85fce8d8e285dfec664023122b2692cecf818a26be75d9", "scene_name": "TerrainDemoScene", "aoi_cell_size": 32.0, "nav_sample_step": 8.0 }
+}

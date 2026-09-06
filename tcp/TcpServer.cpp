@@ -38,9 +38,10 @@ void TcpServer::HandleNewConnection(int fd) {
       std::bind(&TcpServer::HandleClose, this, std::placeholders::_1));
   conn->set_message_callback(on_message_);
 
-  connectionsMap_[fd] = conn;
+  connectionsMap_[conn_id] = conn;
 
-  conn->ConnectionEstablished();
+  // Channel 只在所属 IO 线程加入 epoll；与 HandleMessage/析构同线程串行。
+  sub_reactor->RunOneFunc([conn]() { conn->ConnectionEstablished(); });
 }
 
 void TcpServer::HandleClose(const std::shared_ptr<TcpConnection> &conn) {
@@ -53,9 +54,9 @@ void TcpServer::HandleCloseInLoop(const std::shared_ptr<TcpConnection> &conn) {
            << conn->id() << "-fd#" << conn->fd() << "]";
   if (on_disconnect_)
     on_disconnect_(conn);
-  auto it = connectionsMap_.find(conn->fd());
-  assert(it != connectionsMap_.end());
-  connectionsMap_.erase(it);
+  auto it = connectionsMap_.find(conn->id());
+  if (it != connectionsMap_.end())
+    connectionsMap_.erase(it);
 
   conn->loop()->QueueOneFunc(
       std::bind(&TcpConnection::ConnectionDestructor, conn));

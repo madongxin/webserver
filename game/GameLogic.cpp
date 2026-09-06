@@ -1522,7 +1522,15 @@ bool GameLogic::HandleEnterMap(const game::EnterMapReq &req, game::GameResponse 
 
     std::shared_ptr<const MapStaticData> static_data =
         MapCatalog::Instance().Get(place.map_template_id);
-    if (static_data) {
+    if (!static_data) {
+        rollback_enter();
+        body->set_message("ERR_MAP_UNKNOWN_TEMPLATE");
+        body->set_map_template_id(place.map_template_id);
+        rsp->set_ok(false);
+        rsp->set_message(body->message());
+        return false;
+    }
+    {
         const std::string client_hash = MapStaticData::NormalizeSha256Hex(req.map_data_sha256());
         const bool ver_bad = req.map_data_version() != 0 &&
                              req.map_data_version() != static_data->data_version();

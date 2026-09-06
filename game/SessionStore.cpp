@@ -963,7 +963,9 @@ return {'EXPIRED_AND_DELETED'}
     const std::string &code = reply[0];
     if (code == "EXPIRED_AND_DELETED") {
         rec->state = SessionState::Offline;
+        lease = RedisPool::Lease();
         PlacementStore::Instance().ReleaseByPlayer(player_id);
+        UntrackOnline(player_id);
         LOG_INFO << "SessionStore: grace elapsed player_id=" << player_id << " -> OFFLINE";
         return true;
     }
@@ -975,6 +977,8 @@ return {'EXPIRED_AND_DELETED'}
     }
     if (code == "NOT_FOUND") {
         rec->state = SessionState::Offline;
+        lease = RedisPool::Lease();
+        UntrackOnline(player_id);
         return true;
     }
     return false;
@@ -1138,6 +1142,7 @@ bool SessionStore::AcquireSessionUnlocked(const AcquireSessionInput &in, Acquire
              << " generation=" << out->generation << " logic=" << out->gamelogic_instance_id
              << " kicked=" << (out->kicked_previous ? 1 : 0)
              << " prev_gw=" << out->previous_gateway_instance_id;
+    TrackOnline(in.player_id);
     return true;
 }
 
@@ -1300,6 +1305,7 @@ bool SessionStore::ReconnectSession(const ReconnectSessionInput &in, AcquireSess
         }
         LOG_INFO << "SessionStore: Reconnect player_id=" << in.player_id
                  << " generation=" << out->generation << " logic=" << out->gamelogic_instance_id;
+        TrackOnline(in.player_id);
         return true;
     };
 
@@ -1505,6 +1511,10 @@ bool SessionStore::MarkDisconnected(uint64_t player_id, const std::string &token
     if (reply[0] != "1") {
         LOG_INFO << "SessionStore: MarkDisconnected ignored player_id=" << player_id
                  << " reason=" << reply[1];
+        const bool gone = reply[1] == "NOT_FOUND";
+        lease = RedisPool::Lease();
+        if (gone)
+            UntrackOnline(player_id);
         return false;
     }
     LOG_INFO << "SessionStore: DISCONNECTED player_id=" << player_id << " grace_sec=" << grace_sec_;
@@ -1970,10 +1980,27 @@ int64_t SessionStore::OnlinePlayerCount() {
     auto lease = RedisPool::Instance().Acquire();
     if (!lease)
         return 0;
-    int64_t n = 0;
-    if (!lease->SCard(OnlineSetKey(), &n) || n < 0)
+    // Session key 靠 Redis TTL 过期时不会 SREM；对账只保留 state=ONLINE 的成员。
+    static const char kLua[] = R"LUA(
+local setkey = KEYS[1]
+local prefix = ARGV[1]
+local members = redis.call('SMEMBERS', setkey)
+local n = 0
+for _, pid in ipairs(members) do
+  local st = redis.call('HGET', prefix .. 'session:' .. pid, 'state')
+  if st == 'ONLINE' then
+    n = n + 1
+  else
+    redis.call('SREM', setkey, pid)
+  end
+end
+return n
+)LUA";
+    std::vector<std::string> reply;
+    if (!lease->Eval(kLua, {OnlineSetKey()}, {key_prefix_}, &reply) || reply.empty())
         return 0;
-    return n;
+    const int64_t n = ParseI64(reply[0]);
+    return n < 0 ? 0 : n;
 }
 
 void SessionStore::TrackOnline(uint64_t player_id) {

@@ -286,14 +286,20 @@ std::string NormalizeHex(std::string s) {
     return s;
 }
 
-std::string LoadMapSha256() {
+std::string LoadMapSha256(uint64_t map_tpl = 1001) {
     if (const char *e = std::getenv("GAMEMESH_MAP_SHA256")) {
         const std::string v = NormalizeHex(e);
         if (!v.empty())
             return v;
     }
     const char *path = std::getenv("GAMEMESH_MAP_SHA256_FILE");
-    std::string p = path && *path ? path : "config/maps/map_1001.json.sha256";
+    std::string p;
+    if (path && *path)
+        p = path;
+    else if (map_tpl == 1002)
+        p = "config/maps/1002.grid.json.sha256";
+    else
+        p = "config/maps/map_1001.json.sha256";
     std::ifstream in(p.c_str());
     if (!in)
         return "";
@@ -548,8 +554,8 @@ bool DoEnterMap(int fd, SessionState *st, uint64_t map_tpl, uint64_t map_inst,
     e->set_realm_id(1);
     e->set_map_template_id(map_tpl);
     e->set_map_instance_id(map_inst);
-    const std::string hash = LoadMapSha256();
-    if (!hash.empty() && map_tpl == 1001) {
+    const std::string hash = LoadMapSha256(map_tpl);
+    if (!hash.empty()) {
         e->set_map_data_version(LoadMapDataVersion());
         e->set_map_data_sha256(hash);
     }
@@ -1946,6 +1952,12 @@ int CmdClientHello(int argc, char **argv) {
         PrintKv("map_manifest_version",
                 static_cast<uint64_t>(rsp.server_hello().map_manifest_version()));
         PrintKv("hello_maps_n", static_cast<uint64_t>(rsp.server_hello().maps_size()));
+        for (int i = 0; i < rsp.server_hello().maps_size(); ++i) {
+            const auto &m = rsp.server_hello().maps(i);
+            PrintKv("hello_map_template_id", m.map_template_id());
+            PrintKv("hello_map_data_version", m.data_version());
+            PrintKv("hello_map_sha256", m.sha256());
+        }
     }
     ::close(fd);
     return ok ? 0 : 12;

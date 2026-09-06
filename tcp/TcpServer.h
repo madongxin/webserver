@@ -11,7 +11,7 @@
  *   TcpServer
  *     ├── Acceptor          主 reactor 上 listen，accept 新 fd
  *     ├── EventLoopThreadPool  N 个子 reactor（IO 线程）
- *     └── connectionsMap_   fd -> TcpConnection（主线程维护表）
+ *     └── connectionsMap_   conn id -> TcpConnection（主线程维护表）
  *
  *   每个 TcpConnection
  *     ├── Channel           把 connfd 注册到所属 EventLoop 的 epoll
@@ -39,8 +39,9 @@
  *   -> HandleNewConnection(fd)
  *        -> nextloop() 轮询选一个子 reactor
  *        -> new TcpConnection(sub_loop, fd, id)
- *        -> connectionsMap_[fd]=conn, ConnectionEstablished()
- *        -> 子 reactor 上 connfd EPOLLIN（ET）
+ *        -> connectionsMap_[fd]=conn
+ *        -> 子 reactor RunOneFunc(ConnectionEstablished)（同线程才立即执行）
+ *        -> Tie + EnableET + EnableRead + on_connect_
  *
  * 【收数据】（以 GameTcpGateway 为例）
  *   connfd 可读 -> TcpConnection::HandleMessage
@@ -60,7 +61,8 @@
  * 设计要点
  * =============================================================================
  * - 主 reactor 只做 accept + 连接表管理，避免与子线程争用 map
- * - 一连接固定在一个子 EventLoop，无跨线程操作 conn（除关闭时投递）
+ * - 一连接固定在一个子 EventLoop；epoll 注册 / IO / 析构都在该线程
+ * - 关闭时 HandleClose 投递到主 loop 删 map，再投递子 loop ConnectionDestructor
  * - 非阻塞 socket + EPOLLET：读事件需循环 read 直到 EAGAIN
  * - Channel::Tie(shared_ptr) 防止回调执行中 TcpConnection 被析构
  */
@@ -115,7 +117,8 @@ private:
 
     std::unique_ptr<EventLoopThreadPool> thread_pool_;
     std::unique_ptr<Acceptor> acceptor_;
-    std::map<int, std::shared_ptr<TcpConnection>> connectionsMap_;
+    /** 按 conn id 索引，避免 accept 复用 fd 时误删新连接 */
+    std::map<uint64_t, std::shared_ptr<TcpConnection>> connectionsMap_;
 
     std::function<void(const std::shared_ptr<TcpConnection> &)> on_connect_;
     std::function<void(const std::shared_ptr<TcpConnection> &)> on_message_;
