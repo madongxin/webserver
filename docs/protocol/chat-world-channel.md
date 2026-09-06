@@ -1,20 +1,22 @@
 # 世界聊天（S3 最小闭环）
 
-范围：**仅世界频道**。不实现私聊、好友、公会。`FriendList` 仍返回 `NOT_IMPLEMENTED`。
+范围：**世界频道 + 私聊（whisper/private）**。不实现好友、公会。`FriendList` 仍返回 `NOT_IMPLEMENTED`。
 
 ## 协议
 
-- 请求：`GameRequest.chat_send = 50`（`ChatSendReq`：`player_id` 由 Gateway 覆盖）
+- 请求：`GameRequest.chat_send = 50`（`ChatSendReq`：`player_id` 由 Gateway 覆盖；`target_player_id=4` 仅 whisper）
 - 应答：`ChatSendRsp` 追加 `message_id=4`、`server_time_ms=5`、`channel=6`
-- 推送：`GameResponse.chat_notify = 73`（`ChatNotify`）
-- Push `message_type`：`chat.world.v1`
+- 推送：`GameResponse.chat_notify = 73`（`ChatNotify.target_player_id=7`）
+- Push `message_type`：`chat.world.v1` / `chat.whisper.v1`
 - **不可靠推送**（`reliable=false`）。聊天不是资产事实源；客户端按 `message_id` 去重。
+- 世界频道：World 按 ONLINE 集合 `PushBatch`（按 `gateway_instance_id` 打一台）。
+- 私聊：只推目标玩家所在 Gateway，**不经 AOI、不要求同线/同 Logic**。
 
 ## 校验与限流
 
 | 项 | 值 |
 | --- | --- |
-| 频道 | 空或 `world`；其它 → `ERR_CHANNEL_FORBIDDEN` |
+| 频道 | 空/`world`/`whisper`/`private`；其它 → `ERR_CHANNEL_FORBIDDEN` |
 | 文本 | UTF-8，1–200 码点，且 ≤800 字节；控制符拒绝（`ERR_TEXT_LENGTH` / `ERR_TEXT_CONTROL`） |
 | 每玩家 | Redis INCR，默认 5 条 / 2 秒 → `ERR_RATE_LIMITED`（`GAMEMESH_CHAT_PER_PLAYER` / `GAMEMESH_CHAT_WINDOW_SEC`） |
 | 每连接 | Gateway `CheckChatRate`：5 条 / 2 秒 |

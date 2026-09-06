@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "map_template_id": 1101,
+  "scene_name": "LineDemo",
+  "data_version": 1,
+  "bounds_min": [0, 0, 0],
+  "bounds_max": [16, 2, 16],
+  "aoi_cell_size": 8.0,
+  "nav_sample_step": 1.0,
+  "grid_width": 16,
+  "grid_height": 16,
+  "walkable_rle": [1, 256],
+  "spawn_points": [{"id":"default","position":[8.0, 0.1, 8.0],"yaw":0}]
+}

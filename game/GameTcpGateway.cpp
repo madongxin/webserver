@@ -902,6 +902,92 @@ void GameTcpGateway::OnMessage(const std::shared_ptr<TcpConnection> &conn) {
                 continue;
             }
             // EnterMap：在 PlayerSerialQueue 编排 Transfer，禁止 Reactor 同步等 brpc
+            if (peek.has_enqueue_map()) {
+                const uint64_t conn_id = conn->id();
+                auto sink = tcp_sink;
+                SessionHandle h = handle;
+                std::string payload = frame;
+                if (!gameproto::BeginOrchestrateGatewayEnqueueMap(
+                        h, payload,
+                        [conn_id, sink](bool ok, std::string out, SessionHandle) {
+                            (void)ok;
+                            (void)conn_id;
+                            if (!out.empty() && sink)
+                                sink->SendFrame(out);
+                        })) {
+                    OpsMetrics::Instance().IncQueueOverload();
+                    SendPublicErr(tcp_sink, conn->id(), peek.seq(), gameproto::kErrOverloaded,
+                                  "queue overloaded");
+                }
+                continue;
+            }
+            if (peek.has_switch_line()) {
+                if (ServiceHealth::Instance().draining()) {
+                    OpsMetrics::Instance().IncDrainReject();
+                    SendPublicErr(tcp_sink, conn->id(), peek.seq(), gameproto::kErrOverloaded,
+                                  "gateway draining");
+                    continue;
+                }
+                const uint64_t conn_id = conn->id();
+                auto sink = tcp_sink;
+                SessionHandle h = handle;
+                std::string payload = frame;
+                if (!gameproto::BeginOrchestrateGatewaySwitchLine(
+                        h, payload,
+                        [conn_id, sink](bool ok, std::string out, SessionHandle route) {
+                            if (ok || !out.empty()) {
+                                GatewayConnRegistry::Instance().ApplyRoute(
+                                    conn_id, route.gamelogic_instance_id, route.map_instance_id,
+                                    route.owner_epoch, route.route_version);
+                            }
+                            (void)ok;
+                            if (!out.empty() && sink)
+                                sink->SendFrame(out);
+                        })) {
+                    OpsMetrics::Instance().IncQueueOverload();
+                    SendPublicErr(tcp_sink, conn->id(), peek.seq(), gameproto::kErrOverloaded,
+                                  "queue overloaded");
+                }
+                continue;
+            }
+            if (peek.has_create_dungeon()) {
+                const uint64_t conn_id = conn->id();
+                auto sink = tcp_sink;
+                SessionHandle h = handle;
+                std::string payload = frame;
+                if (!gameproto::BeginOrchestrateGatewayCreateDungeon(
+                        h, payload,
+                        [conn_id, sink](bool ok, std::string out, SessionHandle) {
+                            (void)ok;
+                            (void)conn_id;
+                            if (!out.empty() && sink)
+                                sink->SendFrame(out);
+                        })) {
+                    OpsMetrics::Instance().IncQueueOverload();
+                    SendPublicErr(tcp_sink, conn->id(), peek.seq(), gameproto::kErrOverloaded,
+                                  "queue overloaded");
+                }
+                continue;
+            }
+            if (peek.has_query_map_lines()) {
+                const uint64_t conn_id = conn->id();
+                auto sink = tcp_sink;
+                SessionHandle h = handle;
+                std::string payload = frame;
+                if (!gameproto::BeginOrchestrateGatewayQueryMapLines(
+                        h, payload,
+                        [conn_id, sink](bool ok, std::string out, SessionHandle) {
+                            (void)ok;
+                            (void)conn_id;
+                            if (!out.empty() && sink)
+                                sink->SendFrame(out);
+                        })) {
+                    OpsMetrics::Instance().IncQueueOverload();
+                    SendPublicErr(tcp_sink, conn->id(), peek.seq(), gameproto::kErrOverloaded,
+                                  "queue overloaded");
+                }
+                continue;
+            }
             if (peek.has_enter_map()) {
                 if (ServiceHealth::Instance().draining()) {
                     OpsMetrics::Instance().IncDrainReject();

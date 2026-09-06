@@ -50,6 +50,9 @@ public:
     bool CellWalkable(int col, int row) const;
     bool InBounds(float x, float y, float z) const;
     void WorldToAoiCell(float x, float z, int *cell_x, int *cell_z) const;
+    /** 在 (cx,cz) 半径内找可行走落点；失败则回退原点（若可行走）。 */
+    bool FindScatteredSpawn(float cx, float cy, float cz, float radius, uint64_t seed, float *ox,
+                            float *oy, float *oz) const;
 
     /** 共享不可变 grid，实例不得拷贝整表 */
     const std::vector<uint8_t> &walkable() const { return walkable_; }

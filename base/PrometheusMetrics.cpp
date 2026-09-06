@@ -3,7 +3,13 @@
 #include "OpsMetrics.h"
 #include "ProcessMetricsSnapshot.h"
 
+#if defined(WEBSERVER_ENABLE_REDIS) && defined(WEBSERVER_ENABLE_GAME_PROTOBUF)
+#include "MapInstanceRegistry.h"
+#include "MapLineView.h"
+#endif
+
 #include <cstdlib>
+#include <cstring>
 #include <sstream>
 
 namespace {
@@ -93,5 +99,20 @@ std::string BuildPrometheusMetricsText() {
     }
 
     os << OpsMetrics::Instance().PrometheusText();
+#if defined(WEBSERVER_ENABLE_REDIS) && defined(WEBSERVER_ENABLE_GAME_PROTOBUF)
+    {
+        std::string owner_only;
+        if (const char *id = std::getenv("GAMEMESH_INSTANCE_ID")) {
+            if (std::strncmp(id, "gl-", 3) == 0)
+                owner_only = id;
+        }
+        if (owner_only.empty()) {
+            const std::string &local = MapInstanceRegistry::Instance().local_instance_id();
+            if (local.rfind("gl-", 0) == 0 && local != "gl-local")
+                owner_only = local;
+        }
+        os << MapLineView::PrometheusText(owner_only);
+    }
+#endif
     return os.str();
 }

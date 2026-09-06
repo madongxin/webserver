@@ -8,6 +8,7 @@
 #include <sys/socket.h>
 
 #include <chrono>
+#include <cstdlib>
 #include <mutex>
 #include <string>
 #include <unordered_map>
@@ -115,8 +116,14 @@ std::string GatewayConnGuard::CheckConnectRate(int fd) {
         b.connects = 0;
     }
     ++b.connects;
-    // 2s 窗口 80 次：允许容量测试 51 连，拦截明显洪泛
-    if (b.connects > 80)
+    // 2s 窗口默认 80：允许容量测试 51 连。压测设 GAMEMESH_CONNECT_RATE_MAX。
+    uint32_t max_connects = 80;
+    if (const char *e = std::getenv("GAMEMESH_CONNECT_RATE_MAX")) {
+        const int v = std::atoi(e);
+        if (v > 0 && v <= 100000)
+            max_connects = static_cast<uint32_t>(v);
+    }
+    if (b.connects > max_connects)
         return "ERR_RATE_LIMITED";
     if (g_ips.size() > 4096) {
         for (auto it = g_ips.begin(); it != g_ips.end();) {

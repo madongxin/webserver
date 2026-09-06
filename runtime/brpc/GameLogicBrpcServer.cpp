@@ -149,6 +149,7 @@ bool GameLogicBrpcServer::Start(const std::string &listen_addr, int idle_timeout
         return true;
 
     PlayerSerialQueue::Instance().Start(0);
+    PlayerSerialQueue::MapMailbox().Start(0);
 
     server_.reset(new brpc::Server());
     service_.reset(new GameLogicForwardServiceImpl());
@@ -192,9 +193,11 @@ void GameLogicBrpcServer::Stop() {
         return;
     // 先排空玩家串行队列，再停 brpc，避免 callback 在 Stop 后改状态
     PlayerSerialQueue::Instance().BeginDrain(std::chrono::milliseconds(3000));
+    PlayerSerialQueue::MapMailbox().BeginDrain(std::chrono::milliseconds(3000));
     server_->Stop(0);
     server_->Join();
     PlayerSerialQueue::Instance().Stop();
+    PlayerSerialQueue::MapMailbox().Stop();
     server_.reset();
     service_.reset();
     gl_service_.reset();

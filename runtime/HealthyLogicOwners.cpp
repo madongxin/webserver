@@ -53,6 +53,17 @@ HealthyLogicRefreshResult RefreshHealthyLogicOwners(bool update_static_addrs) {
     r.status = HealthyLogicRefreshStatus::kApplied;
     r.instance_count = ids.size();
 
+    if (!ids.empty()) {
+        auto cur_same = HealthyLogicSnapshotStore::Instance().Current();
+        if (cur_same && cur_same->state == HealthyLogicSnapshot::State::kActive &&
+            cur_same->instance_ids == ids) {
+            OpsMetrics::Instance().IncLogicDiscoverOk();
+            if (update_static_addrs)
+                StaticServiceRegistry::Get().SetStaticAddrs("gamelogic", static_addrs, static_ids);
+            return r;
+        }
+    }
+
     auto snap = std::make_shared<HealthyLogicSnapshot>();
     snap->source = HealthyLogicSnapshot::Source::kRegistry;
     auto cur = HealthyLogicSnapshotStore::Instance().Current();

@@ -97,3 +97,14 @@
 - `IServiceRegistry` + `StaticServiceRegistry` fallback；etcd 仍可选。
 - World target 逻辑名 **GlobalService**（本轮不强制改二进制名）。
 - 拓扑源：`docs/mmo-migration/topology-auth-session.md`。
+
+## D-SCENE-001（2026-09-06）场景管理施工包
+
+- 权威施工文档：`docs/mmo-migration/scene-management-construction.md`（P0–P2）。
+- 10 万评估稿 `scene-management-proposal-100k.md` 不阻塞施工。
+- 首期定额：线 soft/hard = 200/400；单 Logic 在图 800～1500。
+- 1001/1002 保持 `LEGACY_POOL`。指定线满员禁止静默换线。
+- 施工顺序：P0 Owner 打散 → P1 LINE → P1' 出生/AOI → P2 DUNGEON。
+- P1（2026-09-06）：`EnterMapReq.line_no` / `QueryMapLines`；指定线满员 `ERR_MAP_LINE_FULL`；系统选线按 soft 开新线；1001/1002 缺省 `LEGACY_POOL`。
+- P1'（2026-09-06）：`spawn_scatter_radius` / 每实例 AOI；1001 散点 4m，不改 1002 AOI 32。
+- P2（2026-09-06）：`CreateDungeon`（Session）+ `map:members`；非队员 `ERR_DUNGEON_NOT_MEMBER`；空线/空本 `CloseIdleInstances`。

@@ -61,7 +61,9 @@ public:
 
     bool Enter(uint64_t map_instance_id, std::shared_ptr<const MapStaticData> data,
                MapEntity entity, MapEntity *self_out, std::vector<MapEntity> *aoi_snapshot,
-               AoiPushBatch *pushes, std::string *err);
+               AoiPushBatch *pushes, std::string *err, int view_radius_cells = -1);
+    /** 关闭已回收实例（空线/空本 CLOSED） */
+    bool Unload(uint64_t map_instance_id);
     MapMoveReject Move(uint64_t map_instance_id, uint64_t player_id, float x, float y, float z,
                        float yaw, uint64_t client_seq, int64_t now_ms, MapEntity *confirmed,
                        AoiPushBatch *pushes, std::string *err_code, bool ignore_speed = false);
@@ -87,6 +89,7 @@ private:
         std::shared_ptr<const MapStaticData> data;
         std::unordered_map<uint64_t, MapEntity> entities;
         std::unordered_map<uint64_t, std::unordered_set<uint64_t>> cells;
+        int view_radius = -1;
     };
 
     static uint64_t CellKey(int cx, int cz);

@@ -8,14 +8,50 @@
       "scene_name": "MainScene",
       "file": "map_1001.json",
       "sha256_file": "map_1001.json.sha256",
-      "data_version": 1
+      "data_version": 1,
+      "spawn_scatter_radius": 4
     },
     {
       "map_template_id": 1002,
       "scene_name": "TerrainDemoScene",
       "file": "1002.grid.json",
       "sha256_file": "1002.grid.json.sha256",
-      "data_version": 1
+      "data_version": 1,
+      "kind": "LINE",
+      "soft_cap": 200,
+      "hard_cap": 400,
+      "max_lines": 8,
+      "min_lines": 1,
+      "empty_close_delay": 300,
+      "aoi_view_radius_cells": 1,
+      "spawn_scatter_radius": 160
+    },
+    {
+      "map_template_id": 1101,
+      "scene_name": "LineDemo",
+      "file": "map_1101.json",
+      "sha256_file": "map_1101.json.sha256",
+      "data_version": 1,
+      "kind": "LINE",
+      "soft_cap": 2,
+      "hard_cap": 3,
+      "max_lines": 4,
+      "min_lines": 1,
+      "empty_close_delay": 300,
+      "aoi_view_radius_cells": 1,
+      "spawn_scatter_radius": 3
+    },
+    {
+      "map_template_id": 2101,
+      "scene_name": "PartyDungeon",
+      "file": "map_2101.json",
+      "sha256_file": "map_2101.json.sha256",
+      "data_version": 1,
+      "kind": "DUNGEON",
+      "soft_cap": 5,
+      "hard_cap": 5,
+      "empty_close_delay": 30,
+      "aoi_view_radius_cells": 2
     }
   ]
 }

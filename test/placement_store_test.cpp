@@ -307,6 +307,57 @@ int main() {
     if (hard_b.placement.state != PlacementState::Ready)
         return Fail("hard-reclaim not READY");
 
+    // P0：反复刷新 Owner 列表不得把新建实例钉在 gl-0；无 preferred 时按 idgen % N
+    {
+        for (int i = 0; i < 8; ++i)
+            PlacementStore::Instance().SetLogicOwners({"gl-0", "gl-1"});
+        int c0 = 0;
+        int c1 = 0;
+        const uint64_t tpl_base = 770000ULL + static_cast<uint64_t>(::getpid() % 1000);
+        for (int i = 0; i < 20; ++i) {
+            ResolveOrCreateInput in;
+            in.realm_id = 1;
+            in.map_template_id = tpl_base + static_cast<uint64_t>(i);
+            in.force_new = true;
+            ResolveOrCreateResult out;
+            if (!PlacementStore::Instance().ResolveOrCreate(in, &out) || !out.ok)
+                return Fail("p0 force_new hashed owner");
+            if (out.placement.owner_logic_server_id == "gl-0")
+                ++c0;
+            else if (out.placement.owner_logic_server_id == "gl-1")
+                ++c1;
+            else
+                return Fail("p0 unexpected owner");
+        }
+        if (c0 == 0 || c1 == 0)
+            return Fail("p0 owners not distributed");
+        if (c0 > 16 || c1 > 16)
+            return Fail("p0 owner skew");
+
+        int r0 = 0;
+        int r1 = 0;
+        const uint64_t pool_tpl = 660000ULL + static_cast<uint64_t>(::getpid() % 1000);
+        for (int i = 0; i < 12; ++i) {
+            ResolveOrCreateInput in;
+            in.realm_id = 1;
+            in.map_template_id = pool_tpl;
+            in.player_id = 81000ULL + static_cast<uint64_t>(i);
+            in.capacity = 1;
+            in.operation_id = "p0-res-" + std::to_string(i);
+            ResolveOrCreateResult out;
+            if (!PlacementStore::Instance().ReservePublicSlot(in, &out) || !out.ok)
+                return Fail("p0 reserve hashed owner");
+            if (out.placement.owner_logic_server_id == "gl-0")
+                ++r0;
+            else if (out.placement.owner_logic_server_id == "gl-1")
+                ++r1;
+            else
+                return Fail("p0 reserve unexpected owner");
+        }
+        if (r0 == 0 || r1 == 0)
+            return Fail("p0 reserve owners not distributed");
+    }
+
     std::printf("OK placement_store_test concurrent/unique/lease/migrate/recover\n");
     std::printf("PASS placement_store_test\n");
     return 0;

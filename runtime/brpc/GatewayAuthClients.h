@@ -56,6 +56,10 @@ public:
                            sess::UpdatePlayerRouteResponse *rsp);
     bool ResolveOrCreateMap(const sess::ResolveOrCreateMapRequest &req,
                             sess::ResolveOrCreateMapResponse *rsp);
+    bool QueryMapLines(const sess::QueryMapLinesRequest &req, sess::QueryMapLinesResponse *rsp);
+    bool CreateDungeon(const sess::CreateDungeonRequest &req, sess::CreateDungeonResponse *rsp);
+    bool SwitchLine(const sess::SwitchLineRequest &req, sess::SwitchLineResponse *rsp);
+    bool EnqueueMap(const sess::EnqueueMapRequest &req, sess::EnqueueMapResponse *rsp);
     bool BindPlayer(const std::string &logic_instance_id, const glrpc::BindPlayerRequest &req,
                     glrpc::BindPlayerResponse *rsp);
     bool UnbindPlayer(const std::string &logic_instance_id, const glrpc::UnbindPlayerRequest &req,

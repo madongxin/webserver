@@ -1,5 +1,7 @@
 #pragma once
 
+#include "SceneKind.h"
+
 #include <cstdint>
 #include <mutex>
 #include <string>
@@ -13,6 +15,7 @@ enum class PlacementState {
     Migrating = 3,
     Recovering = 4,
     Closed = 5,
+    Draining = 6,
 };
 
 struct PlacementRecord {
@@ -25,6 +28,10 @@ struct PlacementRecord {
     PlacementState state = PlacementState::Closed;
     int64_t updated_at = 0;
     int64_t lease_until = 0;
+    std::string kind;
+    uint32_t line_no = 0;
+    uint32_t soft_cap = 0;
+    uint32_t hard_cap = 0;
 };
 
 struct ResolveOrCreateInput {
@@ -37,6 +44,35 @@ struct ResolveOrCreateInput {
     uint64_t player_id = 0;
     std::string operation_id;
     uint32_t capacity = 0;  // 0=使用 public_map_capacity_
+    uint32_t line_no = 0;
+    std::string kind;  // 空 / LEGACY_POOL / LINE / DUNGEON
+    uint32_t soft_cap = 0;
+    uint32_t hard_cap = 0;
+    uint32_t max_lines = 0;
+    uint32_t min_lines = 0;
+    uint32_t empty_close_delay = 0;
+    std::string queue_token;
+};
+
+struct CreateDungeonInput {
+    uint32_t realm_id = 0;
+    uint64_t map_template_id = 0;
+    uint64_t player_id = 0;
+    std::vector<uint64_t> member_player_ids;
+    std::string operation_id;
+    std::string preferred_owner;
+    uint32_t soft_cap = 0;
+    uint32_t hard_cap = 0;
+    uint32_t empty_close_delay = 0;
+};
+
+struct CreateDungeonResult {
+    bool ok = false;
+    std::string message;
+    std::string error_code;
+    PlacementRecord placement;
+    std::vector<uint64_t> member_player_ids;
+    bool idempotent_hit = false;
 };
 
 struct ResolveOrCreateResult {
@@ -46,6 +82,46 @@ struct ResolveOrCreateResult {
     PlacementRecord placement;
     uint32_t occupancy = 0;
     bool idempotent_hit = false;
+};
+
+struct MapLineInfo {
+    uint32_t line_no = 0;
+    uint64_t map_instance_id = 0;
+    uint32_t occupancy = 0;
+    uint32_t soft_cap = 0;
+    uint32_t hard_cap = 0;
+    std::string state;
+    std::string owner_logic_server_id;
+};
+
+struct SwitchLineInput {
+    uint32_t realm_id = 0;
+    uint64_t map_template_id = 0;
+    uint64_t player_id = 0;
+    uint32_t line_no = 0;
+    std::string operation_id;
+    uint32_t soft_cap = 0;
+    uint32_t hard_cap = 0;
+};
+
+struct EnqueueMapInput {
+    uint32_t realm_id = 0;
+    uint64_t map_template_id = 0;
+    uint64_t player_id = 0;
+    uint32_t line_no = 0;
+    std::string queue_token;
+    uint32_t hard_cap = 0;
+};
+
+struct EnqueueMapResult {
+    bool ok = false;
+    std::string message;
+    std::string error_code;
+    std::string queue_token;
+    uint32_t queue_position = 0;
+    uint32_t queue_length = 0;
+    uint32_t line_no = 0;
+    bool ready = false;
 };
 
 /**
@@ -63,8 +139,23 @@ public:
     void SetLogicOwners(std::vector<std::string> owners, bool publish_snapshot = true);
 
     bool ResolveOrCreate(const ResolveOrCreateInput &in, ResolveOrCreateResult *out);
-    /** 公共池/指定实例原子占位；与 ResolveOrCreate(player_id!=0) 相同 */
+    /** 公共池/指定实例原子占位；与 ResolveOrCreate(player_id!=0, LEGACY) 相同 */
     bool ReservePublicSlot(const ResolveOrCreateInput &in, ResolveOrCreateResult *out);
+    bool ReserveLine(const ResolveOrCreateInput &in, ResolveOrCreateResult *out);
+    bool ReserveDungeonEnter(const ResolveOrCreateInput &in, ResolveOrCreateResult *out);
+    bool CreateDungeon(const CreateDungeonInput &in, CreateDungeonResult *out);
+    bool ListLines(uint32_t realm_id, uint64_t map_template_id, std::vector<MapLineInfo> *out);
+    /** 占用/线数变化钩子（进图、切线、离图、空线关闭）。测试可不设。 */
+    using LineStatusHook = void (*)(uint32_t realm_id, uint64_t map_template_id);
+    void SetLineStatusHook(LineStatusHook hook);
+    bool SwitchLine(const SwitchLineInput &in, ResolveOrCreateResult *out);
+    bool EnqueueMap(const EnqueueMapInput &in, EnqueueMapResult *out);
+    bool Drain(uint64_t map_instance_id, const std::string &reason, PlacementRecord *out,
+               std::string *err);
+    bool ListOccupants(uint64_t map_instance_id, std::vector<uint64_t> *out);
+    bool GetPlayerPresence(uint64_t player_id, uint64_t *map_instance_id);
+    /** 空线/空本超时关闭；now_unix=0 用当前时间。返回关闭的 instance id。 */
+    bool CloseIdleInstances(int64_t now_unix, size_t limit, std::vector<uint64_t> *closed);
     bool ConfirmSlot(uint64_t player_id, uint64_t map_instance_id);
     bool ReleaseByPlayer(uint64_t player_id);
     uint32_t Occupancy(uint64_t map_instance_id);
@@ -100,15 +191,23 @@ private:
     std::string InstKey(uint64_t id) const;
     std::string TplKey(uint32_t realm, uint64_t tpl) const;
     std::string IdGenKey() const;
-    std::string PickOwner(const std::string &preferred) const;
+    /** 健康列表非空；无显式 preferred 时返回空串，交给 Lua 按 idgen 取模。 */
+    std::string CreateOwnerHint(const std::string &preferred) const;
+    bool HasHealthyOwners() const;
     std::vector<std::string> OwnersForPick() const;
     /** 当前健康 Owner 列表 CSV，供 ResolveOrCreate Lua 判断软续租 */
     std::string HealthyOwnersCsv() const;
 
+    std::string LinesKey(uint32_t realm, uint64_t tpl) const;
+    std::string LineKey(uint32_t realm, uint64_t tpl, uint32_t line_no) const;
     std::string PoolKey(uint32_t realm, uint64_t tpl) const;
     std::string OccKey(uint64_t map_instance_id) const;
     std::string PresKey(uint64_t player_id) const;
     std::string OpKey(uint64_t player_id, const std::string &operation_id) const;
+    std::string MembersKey(uint64_t map_instance_id) const;
+    std::string IdleKey() const;
+    std::string QueueKey(uint32_t realm, uint64_t tpl, uint32_t line_no) const;
+    void FireLineStatus(uint32_t realm_id, uint64_t map_template_id);
 
     bool available_ = false;
     int default_lease_sec_ = 30;
@@ -117,4 +216,5 @@ private:
     mutable std::mutex cfg_mu_;
     std::vector<std::string> owners_{"gl-0"};
     mutable size_t rr_ = 0;
+    LineStatusHook line_status_hook_ = nullptr;
 };

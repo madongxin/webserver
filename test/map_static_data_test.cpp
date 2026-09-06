@@ -136,7 +136,37 @@ int main() {
     Expect(MapCatalog::Instance().Get(1002)->sha256() == hash_1002, "catalog 1002 hash");
     Expect(MapCatalog::Instance().Get(1002)->aoi_cell_size() == 32.f, "catalog 1002 aoi");
     Expect(MapCatalog::Instance().Get(1002)->nav_sample_step() == 8.f, "catalog 1002 step");
-    Expect(MapCatalog::Instance().ManifestEntries().size() == 2, "manifest 2 maps");
+    Expect(MapCatalog::Instance().ManifestEntries().size() == 4, "manifest 4 maps");
+    {
+        MapScenePolicy pol;
+        Expect(MapCatalog::Instance().GetScenePolicy(1001, &pol) &&
+                   pol.kind == SceneKind::LegacyPool,
+               "1001 legacy kind");
+        Expect(MapCatalog::Instance().GetScenePolicy(1002, &pol) &&
+                   pol.kind == SceneKind::Line && pol.soft_cap == 200 &&
+                   pol.hard_cap == 400 && pol.aoi_view_radius_cells == 1 &&
+                   pol.spawn_scatter_radius == 160.f,
+               "1002 LINE 200/400");
+        Expect(MapCatalog::Instance().GetScenePolicy(1001, &pol) &&
+                   pol.spawn_scatter_radius == 4.f,
+               "1001 scatter 4");
+        Expect(MapCatalog::Instance().Get(1101) != nullptr, "catalog has 1101");
+        Expect(MapCatalog::Instance().GetScenePolicy(1101, &pol) && pol.kind == SceneKind::Line &&
+                   pol.soft_cap == 2 && pol.hard_cap == 3 && pol.max_lines == 4 &&
+                   pol.min_lines == 1 && pol.aoi_view_radius_cells == 1 &&
+                   pol.spawn_scatter_radius == 3.f,
+               "1101 LINE policy");
+        Expect(MapCatalog::Instance().Get(2101) != nullptr, "catalog has 2101");
+        Expect(MapCatalog::Instance().GetScenePolicy(2101, &pol) && pol.kind == SceneKind::Dungeon &&
+                   pol.hard_cap == 5 && pol.empty_close_delay == 30,
+               "2101 DUNGEON policy");
+    }
+    {
+        float x = 0, y = 0, z = 0;
+        Expect(data->FindScatteredSpawn(-28.5f, 0.f, -7.25f, 4.f, 42, &x, &y, &z),
+               "scatter walkable");
+        Expect(data->IsWalkable(x, z), "scattered cell walkable");
+    }
     Expect(MapCatalog::Instance().gameplay_config_version() == 1, "gameplay_config_version");
     Expect(MapCatalog::Instance().map_manifest_version() == 1, "map_manifest_version");
     Expect(!MapCatalog::Instance().ManifestEntries().empty(), "manifest entries");

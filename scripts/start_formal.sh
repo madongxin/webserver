@@ -1,11 +1,16 @@
 #!/usr/bin/env bash
 # 正式一键启动（多开常驻）：
-#   2×gateway + 2×gamelogic + 2×gamedb + 1×world + 1×session
+#   2×gateway + 2×gamelogic + 2×gamedb + 1×world + 2×session
 # 启动结束后打印客户端可连接的 Gateway 端口。
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
+
+ulimit -n 65535 || true
+# 苏州 3000 压测：单 IP 连入 + 长连接保活（默认 45s idle 撑不到进完）
+export GAMEMESH_CONNECT_RATE_MAX="${GAMEMESH_CONNECT_RATE_MAX:-5000}"
+export GAMEMESH_IDLE_TIMEOUT_MS="${GAMEMESH_IDLE_TIMEOUT_MS:-3600000}"
 
 RUN_DIR="${GAMEMESH_RUN_DIR:-$ROOT/run/formal}"
 mkdir -p "$RUN_DIR/logs"
@@ -23,11 +28,14 @@ LOGIC0="${GAMEMESH_LOGIC0:-8201}"
 HTTP_L1="${GAMEMESH_HTTP_L1:-8091}"
 LOGIC1="${GAMEMESH_LOGIC1:-8202}"
 
-# World ×1 / Session ×1
+# World ×1 / Session ×2（Redis 权威；Placement 无状态）
 HTTP_W="${GAMEMESH_HTTP_W:-8092}"
 WORLD="${GAMEMESH_WORLD:-8301}"
 HTTP_S="${GAMEMESH_HTTP_S:-8093}"
 SESSION="${GAMEMESH_SESSION:-8401}"
+HTTP_S2="${GAMEMESH_HTTP_S2:-8096}"
+: "${GAMEMESH_SESSION2:=8402}"
+SESSION2="${GAMEMESH_SESSION2}"
 PUSH_G0=$((GAME_G0 + 100))
 PUSH_G1=$((GAME_G1 + 100))
 
@@ -191,15 +199,23 @@ wait_log() {
   return 1
 }
 
-echo "== GameMesh formal start (2×gw + 2×logic + 2×gamedb + world + session) =="
+echo "== GameMesh formal start (2×gw + 2×logic + 2×gamedb + world + session×2) =="
 GAMEMESH_INSTANCE_ID=sess-0 start_proc "$SESSION_BIN" session "$RUN_DIR/logs/session.log" \
   sess-0 "127.0.0.1:${SESSION}" "$HTTP_S" - "$HTTP_S" "$SESSION"
+if [[ -n "${SESSION2}" ]]; then
+  GAMEMESH_INSTANCE_ID=sess-1 start_proc "$SESSION_BIN" session "$RUN_DIR/logs/session1.log" \
+    sess-1 "127.0.0.1:${SESSION2}" "$HTTP_S2" - "$HTTP_S2" "$SESSION2"
+fi
 GAMEMESH_INSTANCE_ID=gamedb-0 start_proc "$GAMEDB_BIN" gamedb "$RUN_DIR/logs/gamedb0.log" \
   gamedb-0 "127.0.0.1:${GAMEDB0}" "$HTTP_D0" - "$HTTP_D0" "$GAMEDB0"
 GAMEMESH_INSTANCE_ID=gamedb-1 start_proc "$GAMEDB_BIN" gamedb "$RUN_DIR/logs/gamedb1.log" \
   gamedb-1 "127.0.0.1:${GAMEDB1}" "$HTTP_D1" - "$HTTP_D1" "$GAMEDB1"
 wait_log session "$RUN_DIR/logs/session.log" \
   'SessionBrpcServer\(\+Auth\) listening|SessionBrpcServer listening|role=session'
+if [[ -n "${SESSION2}" ]]; then
+  wait_log session1 "$RUN_DIR/logs/session1.log" \
+    'SessionBrpcServer\(\+Auth\) listening|SessionBrpcServer listening|role=session'
+fi
 wait_log gamedb0 "$RUN_DIR/logs/gamedb0.log" 'GameDbBrpcServer listening|role=gamedb'
 wait_log gamedb1 "$RUN_DIR/logs/gamedb1.log" 'GameDbBrpcServer listening|role=gamedb'
 
@@ -253,7 +269,7 @@ echo "  观察页: http://127.0.0.1:${HTTP_D0}/monitor  （Prometheus job=gameme
 echo "  采集  : /etc/prometheus/file_sd/gamemesh.json  ← scripts/sync_prometheus_sd.sh"
 echo "=============================================="
 echo
-echo "拓扑: 2×gateway + 2×gamelogic + 2×gamedb + world(GlobalService) + session(+Auth)"
+echo "拓扑: 2×gateway + 2×gamelogic + 2×gamedb + world(GlobalService) + session×2(+Auth)"
 echo "连接信息: $RUN_DIR/CLIENT.txt"
 echo "日志目录: $RUN_DIR/logs/"
 echo "停止命令: ./scripts/stop_formal.sh  或  ./scripts/stop_local.sh"

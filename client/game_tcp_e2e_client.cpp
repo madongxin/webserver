@@ -3,7 +3,11 @@
  *
  * 用法摘要:
  *   game_tcp_e2e_client register-login <host> <port> [device] [password]
- *   game_tcp_e2e_client enter-map <host> <port> <player> <token> <map_tpl> [map_inst]
+ *   game_tcp_e2e_client enter-map <host> <port> <player> <token> <map_tpl> [map_inst] [password] [line_no]
+ *   game_tcp_e2e_client query-map-lines <host> <port> [device] [password] [map_tpl]
+ *   game_tcp_e2e_client create-dungeon <host> <port> [device] [password] [map_tpl] [member_ids]
+ *   game_tcp_e2e_client scene-line-dungeon <host> <port> [password]
+ *   game_tcp_e2e_client line-press <host> <port> [map_tpl=1002] [n=1000] [line_no=0]
  *   game_tcp_e2e_client map-ping <host> <port> <player> <token> <map_inst>
  *   game_tcp_e2e_client reconnect <host> <port> <player> <session_id> <ticket> [last_seq]
  *   game_tcp_e2e_client dual-gw <gw0_host> <gw0_port> <gw1_host> <gw1_port> [map_tpl] [map_inst]
@@ -287,20 +291,31 @@ std::string NormalizeHex(std::string s) {
 }
 
 std::string LoadMapSha256(uint64_t map_tpl = 1001) {
-    if (const char *e = std::getenv("GAMEMESH_MAP_SHA256")) {
-        const std::string v = NormalizeHex(e);
-        if (!v.empty())
-            return v;
+    if (map_tpl == 1001) {
+        if (const char *e = std::getenv("GAMEMESH_MAP_SHA256")) {
+            const std::string v = NormalizeHex(e);
+            if (!v.empty())
+                return v;
+        }
+        if (const char *path = std::getenv("GAMEMESH_MAP_SHA256_FILE")) {
+            if (path && *path) {
+                std::ifstream in(path);
+                if (in) {
+                    std::string line;
+                    std::getline(in, line);
+                    return NormalizeHex(line);
+                }
+            }
+        }
     }
-    const char *path = std::getenv("GAMEMESH_MAP_SHA256_FILE");
-    std::string p;
-    if (path && *path)
-        p = path;
-    else if (map_tpl == 1002)
+    const char *p = "config/maps/map_1001.json.sha256";
+    if (map_tpl == 1002)
         p = "config/maps/1002.grid.json.sha256";
-    else
-        p = "config/maps/map_1001.json.sha256";
-    std::ifstream in(p.c_str());
+    else if (map_tpl == 1101)
+        p = "config/maps/map_1101.json.sha256";
+    else if (map_tpl == 2101)
+        p = "config/maps/map_2101.json.sha256";
+    std::ifstream in(p);
     if (!in)
         return "";
     std::string line;
@@ -545,7 +560,7 @@ bool DoRegisterLogin(int fd, const std::string &device, const std::string &passw
 }
 
 bool DoEnterMap(int fd, SessionState *st, uint64_t map_tpl, uint64_t map_inst,
-                std::vector<game::GameResponse> *inbox = nullptr) {
+                std::vector<game::GameResponse> *inbox = nullptr, uint32_t line_no = 0) {
     game::GameRequest req;
     req.set_seq(st->next_seq++);
     req.set_session_token(st->token);
@@ -554,6 +569,8 @@ bool DoEnterMap(int fd, SessionState *st, uint64_t map_tpl, uint64_t map_inst,
     e->set_realm_id(1);
     e->set_map_template_id(map_tpl);
     e->set_map_instance_id(map_inst);
+    if (line_no != 0)
+        e->set_line_no(line_no);
     const std::string hash = LoadMapSha256(map_tpl);
     if (!hash.empty()) {
         e->set_map_data_version(LoadMapDataVersion());
@@ -565,8 +582,12 @@ bool DoEnterMap(int fd, SessionState *st, uint64_t map_tpl, uint64_t map_inst,
     if (!Exchange(fd, req, &rsp, 15000, st, inbox) || !rsp.ok() || !rsp.has_enter_map() ||
         !rsp.enter_map().ok()) {
         std::printf("error=enter_map msg=%s\n", rsp.message().c_str());
+        if (!rsp.error_code().empty())
+            PrintKv("enter_map_error_code", rsp.error_code());
         if (rsp.has_enter_map()) {
             PrintKv("enter_map_error", rsp.enter_map().message());
+            if (!rsp.enter_map().error_code().empty())
+                PrintKv("enter_map_error_code", rsp.enter_map().error_code());
             if (!rsp.enter_map().map_data_sha256().empty())
                 PrintKv("server_map_sha256", rsp.enter_map().map_data_sha256());
             PrintKv("server_map_data_version", rsp.enter_map().map_data_version());
@@ -604,6 +625,19 @@ bool DoEnterMap(int fd, SessionState *st, uint64_t map_tpl, uint64_t map_inst,
     PrintKv("owner_epoch", st->owner_epoch);
     PrintKv("route_version", rsp.enter_map().route_version());
     PrintKv("map_data_sha256", rsp.enter_map().map_data_sha256());
+    if (!rsp.enter_map().kind().empty())
+        PrintKv("map_kind", rsp.enter_map().kind());
+    PrintKv("line_no", static_cast<uint64_t>(rsp.enter_map().line_no()));
+    PrintKv("occupancy", static_cast<uint64_t>(rsp.enter_map().occupancy()));
+    PrintKv("soft_cap", static_cast<uint64_t>(rsp.enter_map().soft_cap()));
+    PrintKv("hard_cap", static_cast<uint64_t>(rsp.enter_map().hard_cap()));
+    PrintKv("enter_map_lines_n", static_cast<uint64_t>(rsp.enter_map().lines_size()));
+    for (int i = 0; i < rsp.enter_map().lines_size(); ++i) {
+        const auto &ln = rsp.enter_map().lines(i);
+        PrintKv("line_no", static_cast<uint64_t>(ln.line_no()));
+        PrintKv("line_occupancy", static_cast<uint64_t>(ln.occupancy()));
+        PrintKv("line_owner", ln.owner_logic_server_id());
+    }
     PrintKv("enter_map_ok", true);
 
     // 可能紧随可靠 Push（enter_map_notify）；短超时避免压测把空等算进失败
@@ -630,8 +664,160 @@ bool DoEnterMap(int fd, SessionState *st, uint64_t map_tpl, uint64_t map_inst,
     return true;
 }
 
-bool DoEnterMap(TcpSession *c, uint64_t map_tpl, uint64_t map_inst) {
-    return DoEnterMap(c->fd, &c->st, map_tpl, map_inst, &c->inbox);
+bool DoEnterMap(TcpSession *c, uint64_t map_tpl, uint64_t map_inst, uint32_t line_no = 0) {
+    return DoEnterMap(c->fd, &c->st, map_tpl, map_inst, &c->inbox, line_no);
+}
+
+bool DoLeaveMap(TcpSession *c) {
+    if (!c || c->fd < 0)
+        return false;
+    game::GameRequest req;
+    req.set_seq(c->st.next_seq++);
+    req.set_session_token(c->st.token);
+    auto *lv = req.mutable_leave_map();
+    lv->set_player_id(c->st.player_id);
+    lv->set_map_instance_id(c->st.map_instance_id);
+    game::GameResponse rsp;
+    if (!Exchange(c->fd, req, &rsp, 8000, &c->st, &c->inbox) || !rsp.ok() || !rsp.has_leave_map() ||
+        !rsp.leave_map().ok()) {
+        PrintKv("leave_map_ok", false);
+        PrintKv("leave_map_error", rsp.message());
+        return false;
+    }
+    PrintKv("leave_map_ok", true);
+    c->st.map_instance_id = 0;
+    return true;
+}
+
+bool DoQueryMapLines(TcpSession *c, uint64_t map_tpl, game::QueryMapLinesRsp *out = nullptr) {
+    game::GameRequest req;
+    req.set_seq(c->st.next_seq++);
+    req.set_session_token(c->st.token);
+    auto *q = req.mutable_query_map_lines();
+    q->set_player_id(c->st.player_id);
+    q->set_realm_id(1);
+    q->set_map_template_id(map_tpl);
+    game::GameResponse rsp;
+    if (!Exchange(c->fd, req, &rsp, 8000, &c->st, &c->inbox) || !rsp.ok() ||
+        !rsp.has_query_map_lines() || !rsp.query_map_lines().ok()) {
+        PrintKv("query_map_lines_ok", false);
+        PrintKv("query_map_lines_error", rsp.message());
+        if (rsp.has_query_map_lines() && !rsp.query_map_lines().error_code().empty())
+            PrintKv("query_map_lines_error_code", rsp.query_map_lines().error_code());
+        return false;
+    }
+    const auto &body = rsp.query_map_lines();
+    PrintKv("query_map_lines_ok", true);
+    PrintKv("query_map_kind", body.kind());
+    PrintKv("query_map_lines_n", static_cast<uint64_t>(body.lines_size()));
+    for (int i = 0; i < body.lines_size(); ++i) {
+        const auto &ln = body.lines(i);
+        PrintKv("line_no", static_cast<uint64_t>(ln.line_no()));
+        PrintKv("line_instance", ln.map_instance_id());
+        PrintKv("line_occupancy", static_cast<uint64_t>(ln.occupancy()));
+        PrintKv("line_soft_cap", static_cast<uint64_t>(ln.soft_cap()));
+        PrintKv("line_hard_cap", static_cast<uint64_t>(ln.hard_cap()));
+        PrintKv("line_state", ln.state());
+        PrintKv("line_owner", ln.owner_logic_server_id());
+    }
+    if (out)
+        *out = body;
+    return true;
+}
+
+bool DoSwitchLine(TcpSession *c, uint64_t map_tpl, uint32_t line_no) {
+    game::GameRequest req;
+    req.set_seq(c->st.next_seq++);
+    req.set_session_token(c->st.token);
+    auto *q = req.mutable_switch_line();
+    q->set_player_id(c->st.player_id);
+    q->set_realm_id(1);
+    q->set_map_template_id(map_tpl);
+    q->set_line_no(line_no);
+    game::GameResponse rsp;
+    if (!Exchange(c->fd, req, &rsp, 8000, &c->st, &c->inbox) || !rsp.ok() ||
+        !rsp.has_switch_line() || !rsp.switch_line().ok()) {
+        PrintKv("switch_line_ok", false);
+        PrintKv("switch_line_error", rsp.message());
+        if (rsp.has_switch_line() && !rsp.switch_line().error_code().empty())
+            PrintKv("switch_line_error_code", rsp.switch_line().error_code());
+        return false;
+    }
+    const auto &body = rsp.switch_line();
+    c->st.map_instance_id = body.map_instance_id();
+    c->st.logic_id = body.gamelogic_instance_id();
+    c->st.owner_epoch = body.owner_epoch();
+    PrintKv("switch_line_ok", true);
+    PrintKv("switch_line_instance", body.map_instance_id());
+    PrintKv("switch_line_no", static_cast<uint64_t>(body.line_no()));
+    PrintKv("switch_line_owner", body.gamelogic_instance_id());
+    PrintKv("switch_line_lines_n", static_cast<uint64_t>(body.lines_size()));
+    return true;
+}
+
+bool DoEnqueueMap(TcpSession *c, uint64_t map_tpl, uint32_t line_no,
+                  const std::string &token = {}) {
+    game::GameRequest req;
+    req.set_seq(c->st.next_seq++);
+    req.set_session_token(c->st.token);
+    auto *q = req.mutable_enqueue_map();
+    q->set_player_id(c->st.player_id);
+    q->set_realm_id(1);
+    q->set_map_template_id(map_tpl);
+    q->set_line_no(line_no);
+    q->set_queue_token(token);
+    game::GameResponse rsp;
+    if (!Exchange(c->fd, req, &rsp, 8000, &c->st, &c->inbox) || !rsp.ok() ||
+        !rsp.has_enqueue_map() || !rsp.enqueue_map().ok()) {
+        PrintKv("enqueue_map_ok", false);
+        PrintKv("enqueue_map_error", rsp.message());
+        if (rsp.has_enqueue_map() && !rsp.enqueue_map().error_code().empty())
+            PrintKv("enqueue_map_error_code", rsp.enqueue_map().error_code());
+        return false;
+    }
+    const auto &body = rsp.enqueue_map();
+    PrintKv("enqueue_map_ok", true);
+    PrintKv("queue_token", body.queue_token());
+    PrintKv("queue_position", static_cast<uint64_t>(body.queue_position()));
+    PrintKv("queue_length", static_cast<uint64_t>(body.queue_length()));
+    PrintKv("queue_ready", body.ready());
+    return true;
+}
+
+bool DoCreateDungeon(TcpSession *c, uint64_t map_tpl, const std::vector<uint64_t> &members,
+                     game::CreateDungeonRsp *out = nullptr) {
+    game::GameRequest req;
+    req.set_seq(c->st.next_seq++);
+    req.set_session_token(c->st.token);
+    auto *q = req.mutable_create_dungeon();
+    q->set_player_id(c->st.player_id);
+    q->set_realm_id(1);
+    q->set_map_template_id(map_tpl);
+    q->set_operation_id(std::string("dungeon:") + std::to_string(c->st.player_id) + ":" +
+                        std::to_string(map_tpl));
+    q->set_preferred_keep_logic(true);
+    for (uint64_t pid : members)
+        q->add_member_player_ids(pid);
+    game::GameResponse rsp;
+    if (!Exchange(c->fd, req, &rsp, 8000, &c->st, &c->inbox) || !rsp.ok() ||
+        !rsp.has_create_dungeon() || !rsp.create_dungeon().ok()) {
+        PrintKv("create_dungeon_ok", false);
+        PrintKv("create_dungeon_error", rsp.message());
+        if (rsp.has_create_dungeon() && !rsp.create_dungeon().error_code().empty())
+            PrintKv("create_dungeon_error_code", rsp.create_dungeon().error_code());
+        else if (!rsp.error_code().empty())
+            PrintKv("create_dungeon_error_code", rsp.error_code());
+        return false;
+    }
+    const auto &body = rsp.create_dungeon();
+    PrintKv("create_dungeon_ok", true);
+    PrintKv("dungeon_map_instance_id", body.map_instance_id());
+    PrintKv("dungeon_owner", body.gamelogic_instance_id());
+    PrintKv("dungeon_epoch", body.owner_epoch());
+    PrintKv("dungeon_members_n", static_cast<uint64_t>(body.member_player_ids_size()));
+    if (out)
+        *out = body;
+    return true;
 }
 
 bool SnapshotHas(const SessionState &st, uint64_t player_id, game::EntitySnapshot *out = nullptr) {
@@ -1013,9 +1199,179 @@ int CmdEnterMap(int argc, char **argv) {
     }
     st.token = lr.login().token();
     st.session_id = lr.login().session_id();
-    const bool ok = DoEnterMap(fd, &st, tpl, inst);
+    const uint32_t line_no = argc >= 10 ? static_cast<uint32_t>(std::strtoul(argv[9], nullptr, 10)) : 0;
+    const bool ok = DoEnterMap(fd, &st, tpl, inst, nullptr, line_no);
     ::close(fd);
     return ok ? 0 : 12;
+}
+
+int CmdQueryMapLines(int argc, char **argv) {
+    if (argc < 4)
+        return 2;
+    TcpSession c;
+    const std::string device = argc >= 5 ? argv[4] : ("e2e-ql-" + std::to_string(::getpid()));
+    const std::string password = argc >= 6 ? argv[5] : "e2epass1";
+    const uint64_t tpl = argc >= 7 ? std::strtoull(argv[6], nullptr, 10) : 1101;
+    if (!OpenRegister(&c, argv[2], std::atoi(argv[3]), device, password)) {
+        if (c.fd >= 0)
+            ::close(c.fd);
+        return 12;
+    }
+    const bool ok = DoQueryMapLines(&c, tpl);
+    ::close(c.fd);
+    return ok ? 0 : 13;
+}
+
+int CmdSwitchLine(int argc, char **argv) {
+    if (argc < 4)
+        return 2;
+    TcpSession c;
+    const std::string device = argc >= 5 ? argv[4] : ("e2e-sw-" + std::to_string(::getpid()));
+    const std::string password = argc >= 6 ? argv[5] : "e2epass1";
+    const uint64_t tpl = argc >= 7 ? std::strtoull(argv[6], nullptr, 10) : 1101;
+    const uint32_t line = argc >= 8 ? static_cast<uint32_t>(std::atoi(argv[7])) : 1;
+    if (!OpenRegister(&c, argv[2], std::atoi(argv[3]), device, password)) {
+        if (c.fd >= 0)
+            ::close(c.fd);
+        return 12;
+    }
+    if (!DoEnterMap(&c, tpl, 0, 0)) {
+        ::close(c.fd);
+        return 13;
+    }
+    const bool ok = DoSwitchLine(&c, tpl, line);
+    ::close(c.fd);
+    return ok ? 0 : 14;
+}
+
+int CmdEnqueueMap(int argc, char **argv) {
+    if (argc < 4)
+        return 2;
+    TcpSession c;
+    const std::string device = argc >= 5 ? argv[4] : ("e2e-eq-" + std::to_string(::getpid()));
+    const std::string password = argc >= 6 ? argv[5] : "e2epass1";
+    const uint64_t tpl = argc >= 7 ? std::strtoull(argv[6], nullptr, 10) : 1101;
+    const uint32_t line = argc >= 8 ? static_cast<uint32_t>(std::atoi(argv[7])) : 1;
+    if (!OpenRegister(&c, argv[2], std::atoi(argv[3]), device, password)) {
+        if (c.fd >= 0)
+            ::close(c.fd);
+        return 12;
+    }
+    const bool ok = DoEnqueueMap(&c, tpl, line);
+    ::close(c.fd);
+    return ok ? 0 : 13;
+}
+
+int CmdCreateDungeon(int argc, char **argv) {
+    if (argc < 4)
+        return 2;
+    TcpSession c;
+    const std::string device = argc >= 5 ? argv[4] : ("e2e-cd-" + std::to_string(::getpid()));
+    const std::string password = argc >= 6 ? argv[5] : "e2epass1";
+    const uint64_t tpl = argc >= 7 ? std::strtoull(argv[6], nullptr, 10) : 2101;
+    if (!OpenRegister(&c, argv[2], std::atoi(argv[3]), device, password)) {
+        if (c.fd >= 0)
+            ::close(c.fd);
+        return 12;
+    }
+    std::vector<uint64_t> members;
+    members.push_back(c.st.player_id);
+    if (argc >= 8) {
+        std::string csv = argv[7];
+        std::stringstream ss(csv);
+        std::string tok;
+        while (std::getline(ss, tok, ',')) {
+            if (tok.empty())
+                continue;
+            members.push_back(std::strtoull(tok.c_str(), nullptr, 10));
+        }
+    }
+    const bool ok = DoCreateDungeon(&c, tpl, members);
+    ::close(c.fd);
+    return ok ? 0 : 13;
+}
+
+int CmdSceneLineDungeon(int argc, char **argv) {
+    if (argc < 4)
+        return 2;
+    const char *host = argv[2];
+    const int port = std::atoi(argv[3]);
+    const std::string pass = argc >= 5 ? argv[4] : "e2epass1";
+    const uint64_t uniq = static_cast<uint64_t>(::getpid());
+    TcpSession a, b, c;
+    if (!OpenRegister(&a, host, port, "e2e-sc-a-" + std::to_string(uniq), pass, "sca") ||
+        !OpenRegister(&b, host, port, "e2e-sc-b-" + std::to_string(uniq), pass, "scb") ||
+        !OpenRegister(&c, host, port, "e2e-sc-c-" + std::to_string(uniq), pass, "scc")) {
+        if (a.fd >= 0)
+            ::close(a.fd);
+        if (b.fd >= 0)
+            ::close(b.fd);
+        if (c.fd >= 0)
+            ::close(c.fd);
+        return 12;
+    }
+    bool pass_all = true;
+    if (!DoEnterMap(&a, 1101, 0, 0))
+        pass_all = false;
+    const uint64_t line_a = a.st.map_instance_id;
+    if (!DoEnterMap(&b, 1101, 0, 0))
+        pass_all = false;
+    if (!DoEnterMap(&c, 1101, 0, 0))
+        pass_all = false;
+    PrintKv("line_ab_same", line_a != 0 && line_a == b.st.map_instance_id);
+    PrintKv("line_c_split", c.st.map_instance_id != 0 && c.st.map_instance_id != line_a);
+    if (line_a == 0 || line_a != b.st.map_instance_id || c.st.map_instance_id == line_a)
+        pass_all = false;
+    game::QueryMapLinesRsp lines;
+    if (!DoQueryMapLines(&a, 1101, &lines) || lines.lines_size() < 2)
+        pass_all = false;
+    if (!DoLeaveMap(&a) || !DoLeaveMap(&b))
+        pass_all = false;
+    std::vector<uint64_t> members;
+    members.push_back(a.st.player_id);
+    members.push_back(b.st.player_id);
+    game::CreateDungeonRsp created;
+    if (!DoCreateDungeon(&a, 2101, members, &created) || created.map_instance_id() == 0)
+        pass_all = false;
+    const uint64_t dungeon_id = created.map_instance_id();
+    if (!DoEnterMap(&a, 2101, dungeon_id) || !DoEnterMap(&b, 2101, dungeon_id))
+        pass_all = false;
+    game::GameRequest bad;
+    bad.set_seq(c.st.next_seq++);
+    bad.set_session_token(c.st.token);
+    auto *e = bad.mutable_enter_map();
+    e->set_player_id(c.st.player_id);
+    e->set_realm_id(1);
+    e->set_map_template_id(2101);
+    e->set_map_instance_id(dungeon_id);
+    const std::string hash = LoadMapSha256(2101);
+    if (!hash.empty()) {
+        e->set_map_data_version(LoadMapDataVersion());
+        e->set_map_data_sha256(hash);
+    }
+    e->set_operation_id(std::string("enter:") + std::to_string(c.st.player_id) + ":2101");
+    game::GameResponse br;
+    const bool exchanged = Exchange(c.fd, bad, &br, 15000, &c.st, &c.inbox);
+    std::string err;
+    if (exchanged) {
+        if (!br.error_code().empty())
+            err = br.error_code();
+        if (br.has_enter_map() && !br.enter_map().error_code().empty())
+            err = br.enter_map().error_code();
+    }
+    PrintKv("non_member_error", err);
+    const bool not_member = err == "ERR_DUNGEON_NOT_MEMBER";
+    PrintKv("non_member_rejected", not_member);
+    if (!not_member)
+        pass_all = false;
+    PrintKv("scene_line_dungeon_ok", pass_all);
+    if (a.fd >= 0)
+        ::close(a.fd);
+    if (b.fd >= 0)
+        ::close(b.fd);
+    if (c.fd >= 0)
+        ::close(c.fd);
+    return pass_all ? 0 : 12;
 }
 
 int CmdReconnect(int argc, char **argv) {
@@ -1930,6 +2286,93 @@ int CmdMapCapacity51(int argc, char **argv) {
     return 0;
 }
 
+int CmdLinePress(int argc, char **argv) {
+    if (argc < 4)
+        return 2;
+    const char *host = argv[2];
+    const int port = std::atoi(argv[3]);
+    const uint64_t tpl = argc >= 5 ? std::strtoull(argv[4], nullptr, 10) : 1002ULL;
+    const int n = argc >= 6 ? std::atoi(argv[5]) : 3000;
+    const uint32_t line_no = argc >= 7 ? static_cast<uint32_t>(std::strtoul(argv[6], nullptr, 10)) : 0;
+    if (n < 1 || n > 4000)
+        return 2;
+    std::vector<TcpSession> ss(static_cast<size_t>(n));
+    std::unordered_map<uint64_t, int> counts;
+    std::unordered_map<uint64_t, std::string> owners;
+    std::vector<uint32_t> aoi_ns;
+    aoi_ns.reserve(static_cast<size_t>(n));
+    int opened = 0;
+    for (int i = 0; i < n; ++i) {
+        auto &c = ss[static_cast<size_t>(i)];
+        const std::string device =
+            "press-" + std::to_string(::getpid()) + "-" + std::to_string(i);
+        if (!OpenRegister(&c, host, port, device, "e2epass1", "p" + std::to_string(i))) {
+            std::printf("error=press_register i=%d\n", i);
+            std::fflush(stdout);
+            break;
+        }
+        if (!DoEnterMap(&c, tpl, 0, line_no)) {
+            std::printf("error=press_enter i=%d\n", i);
+            std::fflush(stdout);
+            break;
+        }
+        ++opened;
+        counts[c.st.map_instance_id] += 1;
+        owners[c.st.map_instance_id] = c.st.logic_id;
+        aoi_ns.push_back(static_cast<uint32_t>(c.st.aoi_snapshot_ids.size()));
+        if ((i + 1) % 80 == 0) {
+            for (int j = 0; j <= i; ++j) {
+                auto &h = ss[static_cast<size_t>(j)];
+                if (h.fd < 0)
+                    continue;
+                game::GameRequest hb;
+                hb.set_seq(h.st.next_seq++);
+                hb.set_session_token(h.st.token);
+                hb.mutable_heartbeat()->set_echo_ms(1);
+                game::GameResponse hbr;
+                (void)Exchange(h.fd, hb, &hbr, 2000, &h.st, &h.inbox);
+            }
+        }
+        if ((i + 1) % 50 == 0 || i + 1 == n) {
+            PrintKv("press_opened", static_cast<uint64_t>(opened));
+        }
+    }
+    uint32_t aoi_max = 0, aoi_p95 = 0;
+    if (!aoi_ns.empty()) {
+        std::vector<uint32_t> sorted = aoi_ns;
+        std::sort(sorted.begin(), sorted.end());
+        aoi_max = sorted.back();
+        const size_t p95i = (sorted.size() * 95) / 100;
+        aoi_p95 = sorted[p95i < sorted.size() ? p95i : sorted.size() - 1];
+        uint64_t sum = 0;
+        for (uint32_t v : sorted)
+            sum += v;
+        PrintKv("aoi_avg", sum / static_cast<uint64_t>(sorted.size()));
+    }
+    PrintKv("aoi_p95", static_cast<uint64_t>(aoi_p95));
+    PrintKv("aoi_max", static_cast<uint64_t>(aoi_max));
+    int max_n = 0;
+    for (const auto &kv : counts) {
+        if (kv.second > max_n)
+            max_n = kv.second;
+        PrintKv(("occ_" + std::to_string(kv.first)).c_str(), static_cast<uint64_t>(kv.second));
+        PrintKv(("owner_" + std::to_string(kv.first)).c_str(), owners[kv.first]);
+    }
+    PrintKv("press_players", static_cast<uint64_t>(opened));
+    PrintKv("press_instances", static_cast<uint64_t>(counts.size()));
+    PrintKv("press_max_line_n", static_cast<uint64_t>(max_n));
+    const bool ok = opened == n && !counts.empty() && max_n <= 400;
+    PrintKv("line_press_ok", ok);
+    const int hold_ms = std::getenv("PRESS_HOLD_MS") ? std::atoi(std::getenv("PRESS_HOLD_MS")) : 0;
+    if (hold_ms > 0)
+        std::this_thread::sleep_for(std::chrono::milliseconds(hold_ms));
+    for (auto &c : ss) {
+        if (c.fd >= 0)
+            ::close(c.fd);
+    }
+    return ok ? 0 : 28;
+}
+
 int CmdClientHello(int argc, char **argv) {
     if (argc < 4)
         return 2;
@@ -2678,7 +3121,8 @@ int CmdDuplicateLogin(int argc, char **argv) {
 int main(int argc, char **argv) {
     if (argc < 2) {
         std::fprintf(stderr,
-                     "usage: %s <register-login|enter-map|reconnect|dual-gw|drain-login|"
+                     "usage: %s <register-login|enter-map|query-map-lines|switch-line|enqueue-map|create-dungeon|"
+                     "scene-line-dungeon|line-press|reconnect|dual-gw|drain-login|"
                      "hold-kill-reconnect|register-login-profile|enter-public-map|move|"
                      "unity-heartbeat-move|"
                      "send-player-mail|mail-list|two-player-aoi|map-capacity-51|"
@@ -2693,6 +3137,18 @@ int main(int argc, char **argv) {
         return CmdRegisterLogin(argc, argv);
     if (cmd == "enter-map")
         return CmdEnterMap(argc, argv);
+    if (cmd == "query-map-lines")
+        return CmdQueryMapLines(argc, argv);
+    if (cmd == "switch-line")
+        return CmdSwitchLine(argc, argv);
+    if (cmd == "enqueue-map")
+        return CmdEnqueueMap(argc, argv);
+    if (cmd == "create-dungeon")
+        return CmdCreateDungeon(argc, argv);
+    if (cmd == "scene-line-dungeon")
+        return CmdSceneLineDungeon(argc, argv);
+    if (cmd == "line-press")
+        return CmdLinePress(argc, argv);
     if (cmd == "reconnect")
         return CmdReconnect(argc, argv);
     if (cmd == "dual-gw")

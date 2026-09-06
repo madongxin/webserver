@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "map_template_id": 2101,
+  "scene_name": "PartyDungeon",
+  "data_version": 1,
+  "bounds_min": [0, 0, 0],
+  "bounds_max": [12, 2, 12],
+  "aoi_cell_size": 4.0,
+  "nav_sample_step": 1.0,
+  "grid_width": 12,
+  "grid_height": 12,
+  "walkable_rle": [1, 144],
+  "spawn_points": [{"id":"default","position":[6.0, 0.1, 6.0],"yaw":0}]
+}

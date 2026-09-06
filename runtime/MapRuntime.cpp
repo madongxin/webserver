@@ -59,7 +59,7 @@ std::unordered_set<uint64_t> MapRuntime::VisibleIds(const InstanceState &st,
         return out;
     int cx = 0, cz = 0;
     st.data->WorldToAoiCell(e.x, e.z, &cx, &cz);
-    const int r = view_radius_;
+    const int r = st.view_radius >= 0 ? st.view_radius : view_radius_;
     for (int dx = -r; dx <= r; ++dx) {
         for (int dz = -r; dz <= r; ++dz) {
             auto it = st.cells.find(CellKey(cx + dx, cz + dz));
@@ -93,7 +93,7 @@ void MapRuntime::EmitTo(AoiPushBatch *pushes, uint64_t map_id, const MapEntity &
 
 bool MapRuntime::Enter(uint64_t map_instance_id, std::shared_ptr<const MapStaticData> data,
                        MapEntity entity, MapEntity *self_out, std::vector<MapEntity> *aoi_snapshot,
-                       AoiPushBatch *pushes, std::string *err) {
+                       AoiPushBatch *pushes, std::string *err, int view_radius_cells) {
     if (map_instance_id == 0 || entity.player_id == 0 || !data) {
         if (err)
             *err = "invalid enter";
@@ -109,8 +109,11 @@ bool MapRuntime::Enter(uint64_t map_instance_id, std::shared_ptr<const MapStatic
     if (!slot) {
         slot.reset(new InstanceState());
         slot->data = std::move(data);
+        slot->view_radius = view_radius_cells >= 0 ? view_radius_cells : view_radius_;
     } else if (!slot->data) {
         slot->data = std::move(data);
+        if (slot->view_radius < 0)
+            slot->view_radius = view_radius_cells >= 0 ? view_radius_cells : view_radius_;
     }
     InstanceState &st = *slot;
     const auto old_map = player_map_.find(entity.player_id);
@@ -431,4 +434,17 @@ void MapRuntime::ClearForTest() {
     std::lock_guard<std::mutex> lk(mu_);
     maps_.clear();
     player_map_.clear();
+}
+
+bool MapRuntime::Unload(uint64_t map_instance_id) {
+    if (map_instance_id == 0)
+        return false;
+    std::lock_guard<std::mutex> lk(mu_);
+    auto it = maps_.find(map_instance_id);
+    if (it == maps_.end() || !it->second)
+        return false;
+    for (const auto &kv : it->second->entities)
+        player_map_.erase(kv.first);
+    maps_.erase(it);
+    return true;
 }

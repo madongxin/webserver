@@ -75,6 +75,17 @@ int main() {
         req.mutable_login()->set_player_id(1);
         EXPECT_TRUE(gameproto::IsLogicBoundRequest(req));
     }
+    {
+        game::GameRequest req;
+        req.mutable_switch_line()->set_player_id(1);
+        EXPECT_TRUE(gameproto::IsLogicBoundRequest(req));
+        EXPECT_TRUE(!gameproto::IsWorldBoundRequest(req));
+    }
+    {
+        game::GameRequest req;
+        req.mutable_enqueue_map()->set_player_id(1);
+        EXPECT_TRUE(gameproto::IsLogicBoundRequest(req));
+    }
 
     if (g_fail) {
         std::fprintf(stderr, "FAILED %d\n", g_fail);

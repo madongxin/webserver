@@ -35,6 +35,8 @@ Push 外层永远是 `GameResponse.server_push`。`payload` 是**内层** `GameR
 | `aoi.delta.v1` | `AoiDelta` |
 | `mailbox.changed.v1` | `MailboxChangedNotify` |
 | `player.state.v1` | 预留（属性/HP 变化） |
+| `map.lines.v1` | `QueryMapLinesRsp`（同模板线数/人数；可合并） |
+| `chat.world.v1` / `chat.whisper.v1` | `ChatNotify` |
 
 ## 登录快照
 

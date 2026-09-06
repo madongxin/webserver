@@ -77,6 +77,22 @@ int main() {
                                  CommandTrustLevel::AuthenticatedClient, true, &code) ==
                CommandDecision::Allow,
            "query_online_state allowlisted");
+    Expect(ValidateCommandPolicy(game::GameRequest::kQueryMapLines,
+                                 CommandTrustLevel::AuthenticatedClient, true, &code) ==
+               CommandDecision::Allow,
+           "query_map_lines allowlisted");
+    Expect(ValidateCommandPolicy(game::GameRequest::kCreateDungeon,
+                                 CommandTrustLevel::AuthenticatedClient, true, &code) ==
+               CommandDecision::Allow,
+           "create_dungeon allowlisted");
+    Expect(ValidateCommandPolicy(game::GameRequest::kSwitchLine,
+                                 CommandTrustLevel::AuthenticatedClient, true, &code) ==
+               CommandDecision::Allow,
+           "switch_line allowlisted");
+    Expect(ValidateCommandPolicy(game::GameRequest::kEnqueueMap,
+                                 CommandTrustLevel::AuthenticatedClient, true, &code) ==
+               CommandDecision::Allow,
+           "enqueue_map allowlisted");
     Expect(ValidateCommandPolicy(game::GameRequest::kChatSend,
                                  CommandTrustLevel::AuthenticatedClient, true, &code) ==
                CommandDecision::Allow,

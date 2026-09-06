@@ -22,6 +22,7 @@ required_msgs=(
   WorldSnapshotReq FullStateSnapshotRsp RespawnReq RespawnRsp
   ChatSendReq ChatNotify GetPlayerBriefReq QueryOnlineStateReq PlayerBrief
   SessionReplacedNotify MapManifestEntry
+  SwitchLineReq EnqueueMapReq
 )
 for m in "${required_msgs[@]}"; do
   grep -q "message $m " proto/game.proto || die "missing message $m"
@@ -55,6 +56,12 @@ field("GameRequest", "world_snapshot", 72)
 field("GameRequest", "respawn", 73)
 field("GameRequest", "get_player_brief", 74)
 field("GameRequest", "query_online_state", 75)
+field("GameRequest", "query_map_lines", 76)
+field("GameRequest", "create_dungeon", 77)
+field("GameRequest", "switch_line", 78)
+field("GameRequest", "enqueue_map", 79)
+field("EnterMapReq", "queue_token", 9)
+field("EnterMapReq", "line_no", 8)
 field("GameResponse", "login", 20)
 field("GameResponse", "error_code", 4)
 field("GameResponse", "retryable", 5)
@@ -69,6 +76,15 @@ field("GameResponse", "chat_notify", 73)
 field("GameResponse", "get_player_brief", 74)
 field("GameResponse", "query_online_state", 75)
 field("GameResponse", "session_replaced", 76)
+field("GameResponse", "query_map_lines", 77)
+field("GameResponse", "create_dungeon", 78)
+field("GameResponse", "switch_line", 79)
+field("GameResponse", "enqueue_map", 80)
+field("EnterMapRsp", "kind", 14)
+field("EnterMapRsp", "line_no", 15)
+field("EnterMapRsp", "lines", 22)
+field("SwitchLineRsp", "lines", 18)
+field("MapLineInfo", "owner_logic_server_id", 7)
 field("ServerHelloRsp", "gameplay_config_version", 12)
 field("ServerHelloRsp", "map_manifest_version", 13)
 field("ServerHelloRsp", "maps", 14)

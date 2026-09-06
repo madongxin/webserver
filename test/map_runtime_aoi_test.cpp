@@ -143,6 +143,18 @@ int main() {
     Expect(rt.Move(3, 8, 9, 0, 1, 0, 2, 2100, &conf, &pushes, &err) == MapMoveReject::TooFast,
            "too fast rejected");
 
+    // 每实例 AOI 半径 + Unload
+    rt.ClearForTest();
+    rt.SetViewRadiusCells(8);
+    pushes = {};
+    Expect(rt.Enter(11, data, Ent(21, 1, 1), &self, &snap, &pushes, &err, 0),
+           "enter tight aoi");
+    Expect(rt.Enter(11, data, Ent(22, 15, 1), &self, &snap, &pushes, &err, 0),
+           "enter p22 same tight instance");
+    Expect(snap.empty(), "radius 0 cannot see other cell");
+    Expect(rt.Unload(11), "unload instance");
+    Expect(!rt.HasPlayer(11, 21) && !rt.HasPlayer(11, 22), "unloaded players gone");
+
     if (fails) {
         std::printf("map_runtime_aoi_test FAIL count=%d\n", fails);
         return 1;

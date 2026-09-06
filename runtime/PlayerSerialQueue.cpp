@@ -9,6 +9,11 @@ PlayerSerialQueue &PlayerSerialQueue::Instance() {
     return g;
 }
 
+PlayerSerialQueue &PlayerSerialQueue::MapMailbox() {
+    static PlayerSerialQueue g;
+    return g;
+}
+
 PlayerSerialQueue::~PlayerSerialQueue() {
     Stop(std::chrono::milliseconds(3000));
 }

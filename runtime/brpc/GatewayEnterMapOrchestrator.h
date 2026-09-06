@@ -21,4 +21,28 @@ using GatewayEnterMapDone =
 bool BeginOrchestrateGatewayEnterMap(const SessionHandle &sticky, const std::string &request_payload,
                                      GatewayEnterMapDone done);
 
+bool OrchestrateGatewayQueryMapLines(const SessionHandle &sticky, const std::string &request_payload,
+                                     std::string *response_frame);
+bool BeginOrchestrateGatewayQueryMapLines(const SessionHandle &sticky,
+                                          const std::string &request_payload,
+                                          GatewayEnterMapDone done);
+
+bool OrchestrateGatewayCreateDungeon(const SessionHandle &sticky, const std::string &request_payload,
+                                     std::string *response_frame);
+bool BeginOrchestrateGatewayCreateDungeon(const SessionHandle &sticky,
+                                          const std::string &request_payload,
+                                          GatewayEnterMapDone done);
+
+bool OrchestrateGatewaySwitchLine(const SessionHandle &sticky, const std::string &request_payload,
+                                  std::string *response_frame, SessionHandle *route_out);
+bool BeginOrchestrateGatewaySwitchLine(const SessionHandle &sticky,
+                                       const std::string &request_payload,
+                                       GatewayEnterMapDone done);
+
+bool OrchestrateGatewayEnqueueMap(const SessionHandle &sticky, const std::string &request_payload,
+                                  std::string *response_frame);
+bool BeginOrchestrateGatewayEnqueueMap(const SessionHandle &sticky,
+                                       const std::string &request_payload,
+                                       GatewayEnterMapDone done);
+
 }  // namespace gameproto

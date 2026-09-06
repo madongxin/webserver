@@ -39,6 +39,14 @@ bool FillFromReply(const std::vector<std::string> &r, PlacementRecord *out) {
     out->state = PlacementStore::StateFromString(r[8]);
     out->updated_at = ParseI64(r[9]);
     out->lease_until = ParseI64(r[10]);
+    if (r.size() > 13)
+        out->kind = r[13];
+    if (r.size() > 14)
+        out->line_no = static_cast<uint32_t>(ParseU64(r[14]));
+    if (r.size() > 15)
+        out->soft_cap = static_cast<uint32_t>(ParseU64(r[15]));
+    if (r.size() > 16)
+        out->hard_cap = static_cast<uint32_t>(ParseU64(r[16]));
     return true;
 }
 
@@ -80,6 +88,26 @@ local function owner_alive(id)
   return false
 end
 
+-- 显式 preferred（ARGV owner）仍健康则用；否则 idgen % |healthy|
+local function pick_new_owner(new_id)
+  local healthy = {}
+  for token in string.gmatch(healthy_csv, '[^,]+') do
+    healthy[#healthy + 1] = token
+  end
+  if owner ~= '' then
+    for i = 1, #healthy do
+      if healthy[i] == owner then
+        return owner
+      end
+    end
+  end
+  if #healthy == 0 then
+    return owner
+  end
+  local n = tonumber(new_id) or 0
+  return healthy[(n % #healthy) + 1]
+end
+
 local function usable(L)
   local state = L[7] or ''
   local lease_until = tonumber(L[9]) or 0
@@ -94,18 +122,19 @@ local function reclaim(id, L)
   local lease_until = now + lease
   local realm_v = L[2] or realm
   local tpl_v = L[3] or tpl
+  local chosen = pick_new_owner(id)
   redis.call('HMSET', key,
     'mapInstanceId', tostring(id),
     'realmId', tostring(realm_v),
     'mapTemplateId', tostring(tpl_v),
-    'ownerLogicServerId', owner,
+    'ownerLogicServerId', chosen,
     'ownerEpoch', tostring(new_epoch),
     'routeVersion', tostring(rv),
     'state', 'READY',
     'updatedAt', tostring(now),
     'leaseUntil', tostring(lease_until))
   redis.call('EXPIRE', key, 86400)
-  return {'1', 'OK', tostring(id), tostring(realm_v), tostring(tpl_v), owner,
+  return {'1', 'OK', tostring(id), tostring(realm_v), tostring(tpl_v), chosen,
           tostring(new_epoch), tostring(rv), 'READY', tostring(now), tostring(lease_until)}
 end
 
@@ -169,6 +198,7 @@ if force_new == 0 and tpl_key ~= '' then
 end
 
 local id = redis.call('INCR', idgen_key)
+local chosen = pick_new_owner(id)
 local ikey = prefix .. 'map:inst:' .. tostring(id)
 local lease_until = now + lease
 local function write_new_inst()
@@ -176,7 +206,7 @@ local function write_new_inst()
     'mapInstanceId', tostring(id),
     'realmId', realm,
     'mapTemplateId', tpl,
-    'ownerLogicServerId', owner,
+    'ownerLogicServerId', chosen,
     'ownerEpoch', '1',
     'routeVersion', '1',
     'state', 'READY',
@@ -207,7 +237,7 @@ if force_new == 0 and tpl_key ~= '' then
     end
   end
 end
-return {'1', 'OK', tostring(id), realm, tpl, owner, '1', '1', 'READY', tostring(now), tostring(lease_until)}
+return {'1', 'OK', tostring(id), realm, tpl, chosen, '1', '1', 'READY', tostring(now), tostring(lease_until)}
 )LUA";
 
 const char kLuaMigrate[] = R"LUA(
@@ -229,7 +259,7 @@ end
 local state = f['state'] or 'READY'
 if state == 'CLOSED' then return {'0', 'CLOSED', 'closed'} end
 local lease_until_cur = tonumber(f['leaseUntil'] or '0') or 0
--- 仅当 lease 已过期、RECOVERING/FROZEN，或显式允许时才 Claim 更高 epoch
+-- READY 且 lease 仍有效禁止热迁；DRAINING/RECOVERING/FROZEN 允许换 Owner
 if state == 'READY' and lease_until_cur > now then
   return {'0', 'LEASE_ACTIVE', 'owner lease still active'}
 end
@@ -329,6 +359,25 @@ local now = tonumber(ARGV[9])
 local lease = tonumber(ARGV[10])
 local healthy_csv = ARGV[11] or ''
 
+local function pick_new_owner(new_id)
+  local healthy = {}
+  for token in string.gmatch(healthy_csv, '[^,]+') do
+    healthy[#healthy + 1] = token
+  end
+  if owner ~= '' then
+    for i = 1, #healthy do
+      if healthy[i] == owner then
+        return owner
+      end
+    end
+  end
+  if #healthy == 0 then
+    return owner
+  end
+  local n = tonumber(new_id) or 0
+  return healthy[(n % #healthy) + 1]
+end
+
 local function load_inst(id)
   local key = prefix .. 'map:inst:' .. tostring(id)
   local raw = redis.call('HGETALL', key)
@@ -397,6 +446,7 @@ local function try_join(id)
   if n >= capacity then return nil, 'FULL' end
   redis.call('SADD', ok, player)
   redis.call('EXPIRE', ok, 86400)
+  redis.call('ZREM', prefix .. 'map:idle', tostring(id))
   return L, n + 1
 end
 
@@ -455,13 +505,14 @@ for _, id in ipairs(members) do
 end
 
 local id = redis.call('INCR', idgen_key)
+local chosen = pick_new_owner(id)
 local ikey = prefix .. 'map:inst:' .. tostring(id)
 local lease_until = now + lease
 redis.call('HMSET', ikey,
   'mapInstanceId', tostring(id),
   'realmId', realm,
   'mapTemplateId', tpl,
-  'ownerLogicServerId', owner,
+  'ownerLogicServerId', chosen,
   'ownerEpoch', '1',
   'routeVersion', '1',
   'state', 'READY',
@@ -473,16 +524,579 @@ redis.call('EXPIRE', pool_key, 86400)
 redis.call('SADD', occ_key(id), player)
 redis.call('EXPIRE', occ_key(id), 86400)
 save_pres(id)
-local L = {tostring(id), realm, tpl, owner, '1', '1', 'READY', tostring(now), tostring(lease_until)}
+local L = {tostring(id), realm, tpl, chosen, '1', '1', 'READY', tostring(now), tostring(lease_until)}
 local R = pack(L, 1, '0')
 cache_op(R)
 return R
+)LUA";
+
+const char kLuaReserveLine[] = R"LUA(
+local lines_key = KEYS[1]
+local idgen_key = KEYS[2]
+local pres_key = KEYS[3]
+local op_key = KEYS[4]
+local prefix = ARGV[1]
+local realm = ARGV[2]
+local tpl = ARGV[3]
+local player = ARGV[4]
+local op = ARGV[5]
+local soft = tonumber(ARGV[6]) or 200
+local hard = tonumber(ARGV[7]) or 400
+local max_lines = tonumber(ARGV[8]) or 8
+local want_id = ARGV[9]
+local want_line = tonumber(ARGV[10]) or 0
+local owner = ARGV[11]
+local now = tonumber(ARGV[12])
+local lease = tonumber(ARGV[13])
+local healthy_csv = ARGV[14] or ''
+local empty_delay = tonumber(ARGV[15]) or 300
+local min_lines = tonumber(ARGV[16]) or 1
+local qtok = ARGV[17] or ''
+if soft < 1 then soft = 1 end
+if hard < soft then hard = soft end
+if max_lines < 1 then max_lines = 1 end
+
+local function pick_new_owner(new_id)
+  local healthy = {}
+  for token in string.gmatch(healthy_csv, '[^,]+') do
+    healthy[#healthy + 1] = token
+  end
+  if owner ~= '' then
+    for i = 1, #healthy do
+      if healthy[i] == owner then
+        return owner
+      end
+    end
+  end
+  if #healthy == 0 then
+    return owner
+  end
+  local n = tonumber(new_id) or 0
+  return healthy[(n % #healthy) + 1]
+end
+
+local function load_inst(id)
+  local key = prefix .. 'map:inst:' .. tostring(id)
+  local raw = redis.call('HGETALL', key)
+  if #raw == 0 then return nil end
+  local f = {}
+  for i = 1, #raw, 2 do f[raw[i]] = raw[i + 1] end
+  return {
+    tostring(id), f['realmId'] or realm, f['mapTemplateId'] or tpl,
+    f['ownerLogicServerId'] or '', f['ownerEpoch'] or '0',
+    f['routeVersion'] or '0', f['state'] or 'CLOSED',
+    f['updatedAt'] or '0', f['leaseUntil'] or '0',
+    f['kind'] or 'LINE', tonumber(f['lineNo'] or '0') or 0,
+    tonumber(f['softCap'] or tostring(soft)) or soft,
+    tonumber(f['hardCap'] or tostring(hard)) or hard
+  }
+end
+
+local function usable(L)
+  return (L[7] or '') == 'READY' and (tonumber(L[9]) or 0) > now
+end
+
+local function occ_key(id)
+  return prefix .. 'map:occ:' .. tostring(id)
+end
+
+local function line_key(n)
+  return prefix .. 'map:line:' .. realm .. ':' .. tpl .. ':' .. tostring(n)
+end
+
+local function pack(L, occ, idem)
+  return {'1', 'OK', L[1], L[2], L[3], L[4], L[5], L[6], L[7], L[8], L[9],
+          tostring(occ or 0), idem or '0', L[10] or 'LINE',
+          tostring(L[11] or 0), tostring(L[12] or soft), tostring(L[13] or hard)}
+end
+
+local function save_pres(id)
+  redis.call('HMSET', pres_key,
+    'mapInstanceId', tostring(id),
+    'realmId', realm,
+    'mapTemplateId', tpl,
+    'state', 'reserved',
+    'operationId', op,
+    'kind', 'LINE')
+  redis.call('EXPIRE', pres_key, 86400)
+end
+
+local function cache_op(reply)
+  if op == nil or op == '' then return end
+  local enc = table.concat(reply, '\t')
+  redis.call('SET', op_key, enc, 'EX', 600)
+end
+
+if op ~= '' then
+  local cached = redis.call('GET', op_key)
+  if cached then
+    local R = {}
+    for token in string.gmatch(cached, '[^\t]+') do
+      R[#R + 1] = token
+    end
+    if #R >= 3 then
+      R[13] = '1'
+      return R
+    end
+  end
+end
+
+local function try_join(id, cap)
+  local L = load_inst(id)
+  if not L or not usable(L) then return nil, 'NOT_READY' end
+  local ok = occ_key(id)
+  if redis.call('SISMEMBER', ok, player) == 1 then
+    return L, tonumber(redis.call('SCARD', ok))
+  end
+  local n = tonumber(redis.call('SCARD', ok)) or 0
+  if n >= cap then return nil, 'FULL' end
+  redis.call('SADD', ok, player)
+  redis.call('EXPIRE', ok, 86400)
+  redis.call('ZREM', prefix .. 'map:idle', tostring(id))
+  return L, n + 1
+end
+
+if qtok ~= '' then
+  local tkey = prefix .. 'map:qtok:' .. qtok
+  local traw = redis.call('HGETALL', tkey)
+  if #traw == 0 then return {'0', 'ERR_QUEUE_INVALID', 'queue token invalid'} end
+  local tf = {}
+  for i = 1, #traw, 2 do tf[traw[i]] = traw[i + 1] end
+  if (tf['player'] or '') ~= player then
+    return {'0', 'ERR_QUEUE_INVALID', 'queue token player mismatch'}
+  end
+  local qline = tonumber(tf['lineNo'] or '0') or 0
+  if qline < 1 then return {'0', 'ERR_QUEUE_INVALID', 'queue token line'} end
+  local qkey = prefix .. 'map:queue:' .. realm .. ':' .. tpl .. ':' .. tostring(qline)
+  local rank = redis.call('ZRANK', qkey, player)
+  if rank == false then return {'0', 'ERR_QUEUE_INVALID', 'not in queue'} end
+  if tonumber(rank) ~= 0 then
+    return {'0', 'ERR_QUEUE_NOT_READY', 'queue not head'}
+  end
+  local qid = redis.call('GET', line_key(qline))
+  if not qid or qid == '' then return {'0', 'ERR_MAP_NO_LINE', 'queue line gone'} end
+  local L, n = try_join(qid, hard)
+  if not L then
+    if n == 'FULL' then return {'0', 'ERR_MAP_LINE_FULL', 'map line full'} end
+    return {'0', 'ERR_MAP_NOT_READY', 'map line not joinable'}
+  end
+  redis.call('ZREM', qkey, player)
+  redis.call('DEL', tkey)
+  redis.call('DEL', prefix .. 'map:qplayer:' .. player)
+  save_pres(qid)
+  local R = pack(L, n, '0')
+  cache_op(R)
+  return R
+end
+
+local existing = redis.call('HGET', pres_key, 'mapInstanceId')
+if existing and existing ~= '' then
+  local L, n = try_join(existing, hard)
+  if L then
+    save_pres(existing)
+    local R = pack(L, n, '1')
+    cache_op(R)
+    return R
+  end
+  redis.call('DEL', pres_key)
+end
+
+if want_id ~= '0' and want_id ~= '' then
+  local L, n = try_join(want_id, hard)
+  if not L then
+    if n == 'FULL' then return {'0', 'ERR_MAP_FULL', 'map instance full'} end
+    return {'0', 'NOT_READY', 'map instance not joinable'}
+  end
+  save_pres(want_id)
+  local R = pack(L, n, '0')
+  cache_op(R)
+  return R
+end
+
+if want_line > 0 then
+  local id = redis.call('GET', line_key(want_line))
+  if not id or id == '' then
+    return {'0', 'ERR_MAP_NO_LINE', 'map line not found'}
+  end
+  local L, n = try_join(id, hard)
+  if not L then
+    if n == 'FULL' then return {'0', 'ERR_MAP_LINE_FULL', 'map line full'} end
+    return {'0', 'NOT_READY', 'map line not joinable'}
+  end
+  save_pres(id)
+  local R = pack(L, n, '0')
+  cache_op(R)
+  return R
+end
+
+local function line_ids()
+  return redis.call('ZRANGE', lines_key, 0, -1)
+end
+
+local members = line_ids()
+local best_id, best_n, best_line = nil, nil, nil
+local under_hard_id, under_hard_n, under_hard_line = nil, nil, nil
+for _, id in ipairs(members) do
+  local L = load_inst(id)
+  if L and usable(L) then
+    local n = tonumber(redis.call('SCARD', occ_key(id))) or 0
+    local ln = tonumber(L[11]) or 0
+    if n < soft then
+      if best_id == nil or n < best_n or (n == best_n and ln < best_line) then
+        best_id, best_n, best_line = id, n, ln
+      end
+    end
+    if n < hard then
+      if under_hard_id == nil or n < under_hard_n or (n == under_hard_n and ln < under_hard_line) then
+        under_hard_id, under_hard_n, under_hard_line = id, n, ln
+      end
+    end
+  end
+end
+
+if best_id then
+  local L, n = try_join(best_id, soft)
+  if L then
+    save_pres(best_id)
+    local R = pack(L, n, '0')
+    cache_op(R)
+    return R
+  end
+end
+
+local live = 0
+for _, id in ipairs(members) do
+  local L = load_inst(id)
+  if L and usable(L) then live = live + 1 end
+end
+
+if live >= max_lines then
+  if under_hard_id then
+    local L, n = try_join(under_hard_id, hard)
+    if L then
+      save_pres(under_hard_id)
+      local R = pack(L, n, '0')
+      cache_op(R)
+      return R
+    end
+  end
+  return {'0', 'ERR_MAP_LINE_LIMIT', 'map line limit'}
+end
+
+local maxn = 0
+for _, id in ipairs(members) do
+  local L = load_inst(id)
+  if L then
+    local ln = tonumber(L[11]) or 0
+    if ln > maxn then maxn = ln end
+  end
+end
+local new_line = maxn + 1
+local id = redis.call('INCR', idgen_key)
+local chosen = pick_new_owner(id)
+local lkey = line_key(new_line)
+local nx = redis.call('SET', lkey, tostring(id), 'NX')
+if not nx then
+  local win = redis.call('GET', lkey)
+  if win and win ~= '' then
+    local L, n = try_join(win, soft)
+    if not L then L, n = try_join(win, hard) end
+    if L then
+      save_pres(win)
+      local R = pack(L, n, '0')
+      cache_op(R)
+      return R
+    end
+  end
+  return {'0', 'ERR_MAP_LINE_LIMIT', 'map line create race'}
+end
+redis.call('EXPIRE', lkey, 86400)
+local ikey = prefix .. 'map:inst:' .. tostring(id)
+local lease_until = now + lease
+redis.call('HMSET', ikey,
+  'mapInstanceId', tostring(id),
+  'realmId', realm,
+  'mapTemplateId', tpl,
+  'ownerLogicServerId', chosen,
+  'ownerEpoch', '1',
+  'routeVersion', '1',
+  'state', 'READY',
+  'updatedAt', tostring(now),
+  'leaseUntil', tostring(lease_until),
+  'kind', 'LINE',
+  'lineNo', tostring(new_line),
+  'softCap', tostring(soft),
+  'hardCap', tostring(hard),
+  'emptyCloseDelay', tostring(empty_delay),
+  'minLines', tostring(min_lines))
+redis.call('EXPIRE', ikey, 86400)
+redis.call('ZADD', lines_key, new_line, tostring(id))
+redis.call('EXPIRE', lines_key, 86400)
+redis.call('SADD', occ_key(id), player)
+redis.call('EXPIRE', occ_key(id), 86400)
+save_pres(id)
+local L = {tostring(id), realm, tpl, chosen, '1', '1', 'READY', tostring(now),
+           tostring(lease_until), 'LINE', new_line, soft, hard}
+local R = pack(L, 1, '0')
+cache_op(R)
+return R
+)LUA";
+
+const char kLuaSwitchLine[] = R"LUA(
+local pres_key = KEYS[1]
+local op_key = KEYS[2]
+local prefix = ARGV[1]
+local realm = ARGV[2]
+local tpl = ARGV[3]
+local player = ARGV[4]
+local op = ARGV[5]
+local want_line = tonumber(ARGV[6]) or 0
+local soft = tonumber(ARGV[7]) or 200
+local hard = tonumber(ARGV[8]) or 400
+local now = tonumber(ARGV[9])
+if soft < 1 then soft = 1 end
+if hard < soft then hard = soft end
+if want_line < 1 then return {'0', 'ERR_INVALID_ARGUMENT', 'line_no required'} end
+
+local function load_inst(id)
+  local key = prefix .. 'map:inst:' .. tostring(id)
+  local raw = redis.call('HGETALL', key)
+  if #raw == 0 then return nil end
+  local f = {}
+  for i = 1, #raw, 2 do f[raw[i]] = raw[i + 1] end
+  return {
+    tostring(id), f['realmId'] or realm, f['mapTemplateId'] or tpl,
+    f['ownerLogicServerId'] or '', f['ownerEpoch'] or '0',
+    f['routeVersion'] or '0', f['state'] or 'CLOSED',
+    f['updatedAt'] or '0', f['leaseUntil'] or '0',
+    f['kind'] or 'LINE', tonumber(f['lineNo'] or '0') or 0,
+    tonumber(f['softCap'] or tostring(soft)) or soft,
+    tonumber(f['hardCap'] or tostring(hard)) or hard
+  }
+end
+
+local function usable(L)
+  return (L[7] or '') == 'READY' and (tonumber(L[9]) or 0) > now
+end
+
+local function occ_key(id)
+  return prefix .. 'map:occ:' .. tostring(id)
+end
+
+local function pack(L, occ, idem)
+  return {'1', 'OK', L[1], L[2], L[3], L[4], L[5], L[6], L[7], L[8], L[9],
+          tostring(occ or 0), idem or '0', L[10] or 'LINE',
+          tostring(L[11] or 0), tostring(L[12] or soft), tostring(L[13] or hard)}
+end
+
+local function save_pres(id)
+  redis.call('HMSET', pres_key,
+    'mapInstanceId', tostring(id),
+    'realmId', realm,
+    'mapTemplateId', tpl,
+    'state', 'reserved',
+    'operationId', op,
+    'kind', 'LINE')
+  redis.call('EXPIRE', pres_key, 86400)
+end
+
+local function cache_op(reply)
+  if op == nil or op == '' then return end
+  local enc = table.concat(reply, '\t')
+  redis.call('SET', op_key, enc, 'EX', 600)
+end
+
+if op ~= '' then
+  local cached = redis.call('GET', op_key)
+  if cached then
+    local R = {}
+    for token in string.gmatch(cached, '[^\t]+') do
+      R[#R + 1] = token
+    end
+    if #R >= 3 then
+      R[13] = '1'
+      return R
+    end
+  end
+end
+
+local old_id = redis.call('HGET', pres_key, 'mapInstanceId')
+if not old_id or old_id == '' then
+  return {'0', 'ERR_NOT_ON_MAP', 'not on a line'}
+end
+local old = load_inst(old_id)
+if not old or (old[10] or '') ~= 'LINE' then
+  return {'0', 'ERR_NOT_ON_MAP', 'not on a line instance'}
+end
+if (old[3] or '') ~= tpl then
+  return {'0', 'ERR_INVALID_ARGUMENT', 'template mismatch'}
+end
+if tonumber(old[11]) == want_line then
+  local n = tonumber(redis.call('SCARD', occ_key(old_id))) or 0
+  local R = pack(old, n, '1')
+  cache_op(R)
+  return R
+end
+
+local lkey = prefix .. 'map:line:' .. realm .. ':' .. tpl .. ':' .. tostring(want_line)
+local target = redis.call('GET', lkey)
+if not target or target == '' then
+  return {'0', 'ERR_MAP_NO_LINE', 'map line not found'}
+end
+local L = load_inst(target)
+if not L or not usable(L) then
+  if L and (L[7] or '') == 'DRAINING' then
+    return {'0', 'ERR_MAP_DRAINING', 'map line draining'}
+  end
+  return {'0', 'ERR_MAP_NOT_READY', 'map line not joinable'}
+end
+local ok = occ_key(target)
+if redis.call('SISMEMBER', ok, player) == 0 then
+  local n = tonumber(redis.call('SCARD', ok)) or 0
+  if n >= hard then return {'0', 'ERR_MAP_LINE_FULL', 'map line full'} end
+  redis.call('SADD', ok, player)
+  redis.call('EXPIRE', ok, 86400)
+  redis.call('ZREM', prefix .. 'map:idle', tostring(target))
+end
+redis.call('SREM', occ_key(old_id), player)
+local left = tonumber(redis.call('SCARD', occ_key(old_id))) or 0
+if left == 0 then
+  redis.call('HSET', prefix .. 'map:inst:' .. old_id, 'lastOccupiedAt', tostring(now))
+  redis.call('ZADD', prefix .. 'map:idle', now, old_id)
+end
+save_pres(target)
+local occ = tonumber(redis.call('SCARD', ok)) or 0
+local R = pack(L, occ, '0')
+cache_op(R)
+return R
+)LUA";
+
+const char kLuaEnqueueMap[] = R"LUA(
+local prefix = ARGV[1]
+local realm = ARGV[2]
+local tpl = ARGV[3]
+local player = ARGV[4]
+local line = tonumber(ARGV[5]) or 0
+local token = ARGV[6] or ''
+local now = tonumber(ARGV[7]) or 0
+local hard = tonumber(ARGV[8]) or 400
+if line < 1 then return {'0', 'ERR_INVALID_ARGUMENT', 'line_no required'} end
+if hard < 1 then hard = 1 end
+
+local qkey = prefix .. 'map:queue:' .. realm .. ':' .. tpl .. ':' .. tostring(line)
+local pkey = prefix .. 'map:qplayer:' .. player
+local lkey = prefix .. 'map:line:' .. realm .. ':' .. tpl .. ':' .. tostring(line)
+
+local function rank_of()
+  local r = redis.call('ZRANK', qkey, player)
+  if r == false then return nil end
+  return tonumber(r)
+end
+
+local function ready_of(pos)
+  local id = redis.call('GET', lkey)
+  if not id or id == '' then return 0 end
+  local n = tonumber(redis.call('SCARD', prefix .. 'map:occ:' .. id)) or 0
+  if pos == 1 and n < hard then return 1 end
+  return 0
+end
+
+if token ~= '' then
+  local tkey = prefix .. 'map:qtok:' .. token
+  local raw = redis.call('HGETALL', tkey)
+  if #raw == 0 then return {'0', 'ERR_QUEUE_INVALID', 'queue token invalid'} end
+  local f = {}
+  for i = 1, #raw, 2 do f[raw[i]] = raw[i + 1] end
+  if (f['player'] or '') ~= player then
+    return {'0', 'ERR_QUEUE_INVALID', 'queue token player mismatch'}
+  end
+  local rk = rank_of()
+  if rk == nil then return {'0', 'ERR_QUEUE_INVALID', 'not in queue'} end
+  local pos = rk + 1
+  local len = tonumber(redis.call('ZCARD', qkey)) or 0
+  return {'1', 'OK', token, tostring(pos), tostring(len), tostring(line),
+          tostring(ready_of(pos))}
+end
+
+local existing = redis.call('GET', pkey)
+if existing and existing ~= '' then
+  token = existing
+  local rk = rank_of()
+  if rk ~= nil then
+    local pos = rk + 1
+    local len = tonumber(redis.call('ZCARD', qkey)) or 0
+    return {'1', 'OK', token, tostring(pos), tostring(len), tostring(line),
+            tostring(ready_of(pos))}
+  end
+end
+
+token = player .. '-' .. realm .. '-' .. tpl .. '-' .. tostring(line) .. '-' .. tostring(now)
+redis.call('ZADD', qkey, now, player)
+redis.call('EXPIRE', qkey, 3600)
+local tkey = prefix .. 'map:qtok:' .. token
+redis.call('HMSET', tkey, 'player', player, 'realmId', realm, 'mapTemplateId', tpl,
+           'lineNo', tostring(line), 'issuedAt', tostring(now))
+redis.call('EXPIRE', tkey, 3600)
+redis.call('SET', pkey, token, 'EX', 3600)
+local rk = rank_of() or 0
+local pos = rk + 1
+local len = tonumber(redis.call('ZCARD', qkey)) or 0
+return {'1', 'OK', token, tostring(pos), tostring(len), tostring(line),
+        tostring(ready_of(pos))}
+)LUA";
+
+const char kLuaDrainMap[] = R"LUA(
+local key = KEYS[1]
+local now = tonumber(ARGV[1])
+local raw = redis.call('HGETALL', key)
+if #raw == 0 then return {'0', 'NOT_FOUND', 'not found'} end
+local f = {}
+for i = 1, #raw, 2 do f[raw[i]] = raw[i + 1] end
+local state = f['state'] or ''
+if state == 'CLOSED' then return {'0', 'CLOSED', 'closed'} end
+if state ~= 'READY' and state ~= 'DRAINING' then
+  return {'0', 'BAD_STATE', 'cannot drain'}
+end
+redis.call('HMSET', key, 'state', 'DRAINING', 'updatedAt', tostring(now),
+           'leaseUntil', tostring(now))
+redis.call('EXPIRE', key, 86400)
+return {'1', 'OK', f['mapInstanceId'] or '0', f['realmId'] or '0',
+        f['mapTemplateId'] or '0', f['ownerLogicServerId'] or '',
+        f['ownerEpoch'] or '0', f['routeVersion'] or '0', 'DRAINING',
+        tostring(now), tostring(now), '0', '0',
+        f['kind'] or '', f['lineNo'] or '0', f['softCap'] or '0', f['hardCap'] or '0'}
+)LUA";
+
+const char kLuaListLines[] = R"LUA(
+local lines_key = KEYS[1]
+local prefix = ARGV[1]
+local now = tonumber(ARGV[2]) or 0
+local ids = redis.call('ZRANGE', lines_key, 0, -1)
+local out = {}
+for _, id in ipairs(ids) do
+  local key = prefix .. 'map:inst:' .. tostring(id)
+  local raw = redis.call('HGETALL', key)
+  if #raw > 0 then
+    local f = {}
+    for i = 1, #raw, 2 do f[raw[i]] = raw[i + 1] end
+    local occ = tonumber(redis.call('SCARD', prefix .. 'map:occ:' .. tostring(id))) or 0
+    out[#out + 1] = tostring(id)
+    out[#out + 1] = f['lineNo'] or '0'
+    out[#out + 1] = tostring(occ)
+    out[#out + 1] = f['softCap'] or '0'
+    out[#out + 1] = f['hardCap'] or '0'
+    out[#out + 1] = f['state'] or 'CLOSED'
+    out[#out + 1] = f['ownerLogicServerId'] or ''
+  end
+end
+return out
 )LUA";
 
 const char kLuaReleaseSlot[] = R"LUA(
 local pres_key = KEYS[1]
 local prefix = ARGV[1]
 local player = ARGV[2]
+local now = tonumber(ARGV[3]) or 0
 local f = {}
 local raw = redis.call('HGETALL', pres_key)
 if #raw == 0 then return {'1', 'OK', '0'} end
@@ -491,12 +1105,301 @@ local inst = f['mapInstanceId'] or '0'
 local op = f['operationId'] or ''
 if inst ~= '0' and inst ~= '' then
   redis.call('SREM', prefix .. 'map:occ:' .. inst, player)
+  local n = tonumber(redis.call('SCARD', prefix .. 'map:occ:' .. inst)) or 0
+  if n == 0 then
+    local ikey = prefix .. 'map:inst:' .. inst
+    redis.call('HSET', ikey, 'lastOccupiedAt', tostring(now))
+    redis.call('ZADD', prefix .. 'map:idle', now, inst)
+  end
 end
 redis.call('DEL', pres_key)
 if op ~= '' then
   redis.call('DEL', prefix .. 'map:op:' .. player .. ':' .. op)
 end
 return {'1', 'OK', inst}
+)LUA";
+
+const char kLuaCreateDungeon[] = R"LUA(
+local idgen_key = KEYS[1]
+local op_key = KEYS[2]
+local prefix = ARGV[1]
+local realm = ARGV[2]
+local tpl = ARGV[3]
+local leader = ARGV[4]
+local op = ARGV[5]
+local members_csv = ARGV[6] or ''
+local owner = ARGV[7]
+local now = tonumber(ARGV[8])
+local lease = tonumber(ARGV[9])
+local healthy_csv = ARGV[10] or ''
+local soft = tonumber(ARGV[11]) or 5
+local hard = tonumber(ARGV[12]) or 5
+local empty_delay = tonumber(ARGV[13]) or 30
+if soft < 1 then soft = 1 end
+if hard < soft then hard = soft end
+if empty_delay < 1 then empty_delay = 30 end
+
+local function pick_new_owner(new_id)
+  local healthy = {}
+  for token in string.gmatch(healthy_csv, '[^,]+') do
+    healthy[#healthy + 1] = token
+  end
+  if owner ~= '' then
+    for i = 1, #healthy do
+      if healthy[i] == owner then
+        return owner
+      end
+    end
+  end
+  if #healthy == 0 then
+    return owner
+  end
+  local n = tonumber(new_id) or 0
+  return healthy[(n % #healthy) + 1]
+end
+
+local function pack(L, occ, idem)
+  return {'1', 'OK', L[1], L[2], L[3], L[4], L[5], L[6], L[7], L[8], L[9],
+          tostring(occ or 0), idem or '0', 'DUNGEON', '0',
+          tostring(soft), tostring(hard)}
+end
+
+local function cache_op(reply)
+  if op == nil or op == '' then return end
+  local enc = table.concat(reply, '\t')
+  redis.call('SET', op_key, enc, 'EX', 600)
+end
+
+if op ~= '' then
+  local cached = redis.call('GET', op_key)
+  if cached then
+    local R = {}
+    for token in string.gmatch(cached, '[^\t]+') do
+      R[#R + 1] = token
+    end
+    if #R >= 3 then
+      R[13] = '1'
+      return R
+    end
+  end
+end
+
+local seen = {}
+local members = {}
+if leader ~= '' and leader ~= '0' then
+  members[#members + 1] = leader
+  seen[leader] = true
+end
+for token in string.gmatch(members_csv, '[^,]+') do
+  if token ~= '' and token ~= '0' and not seen[token] then
+    members[#members + 1] = token
+    seen[token] = true
+  end
+end
+if #members == 0 then
+  return {'0', 'INVALID_ARG', 'leader required'}
+end
+if #members > hard then
+  return {'0', 'ERR_DUNGEON_CREATE_FORBIDDEN', 'too many members'}
+end
+
+local id = redis.call('INCR', idgen_key)
+local chosen = pick_new_owner(id)
+local ikey = prefix .. 'map:inst:' .. tostring(id)
+local mkey = prefix .. 'map:members:' .. tostring(id)
+local lease_until = now + lease
+redis.call('HMSET', ikey,
+  'mapInstanceId', tostring(id),
+  'realmId', realm,
+  'mapTemplateId', tpl,
+  'ownerLogicServerId', chosen,
+  'ownerEpoch', '1',
+  'routeVersion', '1',
+  'state', 'READY',
+  'updatedAt', tostring(now),
+  'leaseUntil', tostring(lease_until),
+  'kind', 'DUNGEON',
+  'lineNo', '0',
+  'softCap', tostring(soft),
+  'hardCap', tostring(hard),
+  'emptyCloseDelay', tostring(empty_delay),
+  'lastOccupiedAt', tostring(now))
+redis.call('EXPIRE', ikey, 86400)
+for _, pid in ipairs(members) do
+  redis.call('SADD', mkey, pid)
+end
+redis.call('EXPIRE', mkey, 86400)
+redis.call('ZADD', prefix .. 'map:idle', now, tostring(id))
+local L = {tostring(id), realm, tpl, chosen, '1', '1', 'READY', tostring(now),
+           tostring(lease_until)}
+local R = pack(L, 0, '0')
+cache_op(R)
+return R
+)LUA";
+
+const char kLuaReserveDungeon[] = R"LUA(
+local pres_key = KEYS[1]
+local op_key = KEYS[2]
+local prefix = ARGV[1]
+local player = ARGV[2]
+local op = ARGV[3]
+local want_id = ARGV[4]
+local now = tonumber(ARGV[5]) or 0
+
+local function load_inst(id)
+  local key = prefix .. 'map:inst:' .. tostring(id)
+  local raw = redis.call('HGETALL', key)
+  if #raw == 0 then return nil end
+  local f = {}
+  for i = 1, #raw, 2 do f[raw[i]] = raw[i + 1] end
+  return {
+    tostring(id), f['realmId'] or '0', f['mapTemplateId'] or '0',
+    f['ownerLogicServerId'] or '', f['ownerEpoch'] or '0',
+    f['routeVersion'] or '0', f['state'] or 'CLOSED',
+    f['updatedAt'] or '0', f['leaseUntil'] or '0',
+    f['kind'] or 'DUNGEON',
+    tonumber(f['softCap'] or '5') or 5,
+    tonumber(f['hardCap'] or '5') or 5
+  }
+end
+
+local function pack(L, occ, idem)
+  return {'1', 'OK', L[1], L[2], L[3], L[4], L[5], L[6], L[7], L[8], L[9],
+          tostring(occ or 0), idem or '0', L[10] or 'DUNGEON', '0',
+          tostring(L[11] or 5), tostring(L[12] or 5)}
+end
+
+local function save_pres(id)
+  redis.call('HMSET', pres_key,
+    'mapInstanceId', tostring(id),
+    'state', 'reserved',
+    'operationId', op,
+    'kind', 'DUNGEON')
+  redis.call('EXPIRE', pres_key, 86400)
+end
+
+local function cache_op(reply)
+  if op == nil or op == '' then return end
+  local enc = table.concat(reply, '\t')
+  redis.call('SET', op_key, enc, 'EX', 600)
+end
+
+if op ~= '' then
+  local cached = redis.call('GET', op_key)
+  if cached then
+    local R = {}
+    for token in string.gmatch(cached, '[^\t]+') do
+      R[#R + 1] = token
+    end
+    if #R >= 3 then
+      R[13] = '1'
+      return R
+    end
+  end
+end
+
+if want_id == '0' or want_id == '' then
+  return {'0', 'ERR_DUNGEON_CREATE_FORBIDDEN', 'create dungeon first'}
+end
+
+local L = load_inst(want_id)
+if not L then
+  return {'0', 'ERR_DUNGEON_NOT_FOUND', 'dungeon not found'}
+end
+if (L[7] or '') == 'CLOSED' then
+  return {'0', 'ERR_DUNGEON_NOT_FOUND', 'dungeon closed'}
+end
+if (L[10] or '') ~= 'DUNGEON' then
+  return {'0', 'ERR_DUNGEON_NOT_FOUND', 'not a dungeon'}
+end
+if (L[7] or '') ~= 'READY' or (tonumber(L[9]) or 0) <= now then
+  return {'0', 'NOT_READY', 'dungeon not joinable'}
+end
+local mkey = prefix .. 'map:members:' .. tostring(want_id)
+if redis.call('SISMEMBER', mkey, player) ~= 1 then
+  return {'0', 'ERR_DUNGEON_NOT_MEMBER', 'not a dungeon member'}
+end
+local occ = prefix .. 'map:occ:' .. tostring(want_id)
+if redis.call('SISMEMBER', occ, player) ~= 1 then
+  local n = tonumber(redis.call('SCARD', occ)) or 0
+  local hard = tonumber(L[12]) or 5
+  if n >= hard then
+    return {'0', 'ERR_MAP_FULL', 'dungeon full'}
+  end
+  redis.call('SADD', occ, player)
+  redis.call('EXPIRE', occ, 86400)
+end
+redis.call('ZREM', prefix .. 'map:idle', tostring(want_id))
+save_pres(want_id)
+local n = tonumber(redis.call('SCARD', occ)) or 0
+local R = pack(L, n, '0')
+cache_op(R)
+return R
+)LUA";
+
+const char kLuaCloseIdle[] = R"LUA(
+local idle_key = KEYS[1]
+local prefix = ARGV[1]
+local now = tonumber(ARGV[2]) or 0
+local limit = tonumber(ARGV[3]) or 32
+if limit < 1 then limit = 1 end
+local rows = redis.call('ZRANGE', idle_key, 0, -1, 'WITHSCORES')
+local closed = {}
+local n = 0
+for i = 1, #rows, 2 do
+  if n >= limit then break end
+  local id = rows[i]
+  local last = tonumber(rows[i + 1]) or 0
+  local ikey = prefix .. 'map:inst:' .. tostring(id)
+  local raw = redis.call('HGETALL', ikey)
+  if #raw == 0 then
+    redis.call('ZREM', idle_key, id)
+  else
+    local f = {}
+    for j = 1, #raw, 2 do f[raw[j]] = raw[j + 1] end
+    local kind = f['kind'] or ''
+    local delay = tonumber(f['emptyCloseDelay'] or '0') or 0
+    if delay < 1 then
+      if kind == 'DUNGEON' then delay = 30 else delay = 300 end
+    end
+    local occ = tonumber(redis.call('SCARD', prefix .. 'map:occ:' .. tostring(id))) or 0
+    if occ > 0 then
+      redis.call('ZREM', idle_key, id)
+    elseif (f['state'] or '') == 'CLOSED' then
+      redis.call('ZREM', idle_key, id)
+    elseif now - last >= delay then
+      local can_close = true
+      if kind == 'LINE' then
+        local min_lines = tonumber(f['minLines'] or '1') or 1
+        local realm = f['realmId'] or '0'
+        local tpl = f['mapTemplateId'] or '0'
+        local lines_key = prefix .. 'map:lines:' .. realm .. ':' .. tpl
+        local ids = redis.call('ZRANGE', lines_key, 0, -1)
+        local live = 0
+        for _, lid in ipairs(ids) do
+          local st = redis.call('HGET', prefix .. 'map:inst:' .. tostring(lid), 'state')
+          if st == 'READY' then live = live + 1 end
+        end
+        if live <= min_lines then can_close = false end
+      end
+      if can_close and (kind == 'LINE' or kind == 'DUNGEON') then
+        redis.call('HSET', ikey, 'state', 'CLOSED', 'updatedAt', tostring(now))
+        if kind == 'LINE' then
+          local realm = f['realmId'] or '0'
+          local tpl = f['mapTemplateId'] or '0'
+          local ln = f['lineNo'] or '0'
+          redis.call('DEL', prefix .. 'map:line:' .. realm .. ':' .. tpl .. ':' .. ln)
+          redis.call('ZREM', prefix .. 'map:lines:' .. realm .. ':' .. tpl, id)
+        end
+        redis.call('DEL', prefix .. 'map:members:' .. tostring(id))
+        redis.call('ZREM', idle_key, id)
+        closed[#closed + 1] = tostring(id)
+        n = n + 1
+      end
+    end
+  end
+end
+return closed
 )LUA";
 
 const char kLuaConfirmSlot[] = R"LUA(
@@ -530,6 +1433,8 @@ std::string PlacementStore::StateToString(PlacementState s) {
         return "MIGRATING";
     case PlacementState::Recovering:
         return "RECOVERING";
+    case PlacementState::Draining:
+        return "DRAINING";
     default:
         return "CLOSED";
     }
@@ -546,6 +1451,8 @@ PlacementState PlacementStore::StateFromString(const std::string &s) {
         return PlacementState::Migrating;
     if (s == "RECOVERING")
         return PlacementState::Recovering;
+    if (s == "DRAINING")
+        return PlacementState::Draining;
     return PlacementState::Closed;
 }
 
@@ -561,11 +1468,28 @@ bool PlacementStore::InitFromSessionPrefix(const std::string &key_prefix, int de
     return available_;
 }
 
+void PlacementStore::SetLineStatusHook(LineStatusHook hook) {
+    std::lock_guard<std::mutex> lk(cfg_mu_);
+    line_status_hook_ = hook;
+}
+
+void PlacementStore::FireLineStatus(uint32_t realm_id, uint64_t map_template_id) {
+    LineStatusHook hook = nullptr;
+    {
+        std::lock_guard<std::mutex> lk(cfg_mu_);
+        hook = line_status_hook_;
+    }
+    if (!hook || map_template_id == 0)
+        return;
+    hook(realm_id == 0 ? 1 : realm_id, map_template_id);
+}
+
 void PlacementStore::SetLogicOwners(std::vector<std::string> owners, bool publish_snapshot) {
     {
         std::lock_guard<std::mutex> lk(cfg_mu_);
-        owners_ = std::move(owners);
-        rr_ = 0;
+        if (owners_ != owners)
+            owners_ = std::move(owners);
+        // 不重置 rr_：每次 Discover 清零会把 PickOwner / PickHealthyOwner 钉在 owners[0]
     }
     if (publish_snapshot) {
         auto snap = std::make_shared<HealthyLogicSnapshot>();
@@ -606,20 +1530,21 @@ std::string PlacementStore::IdGenKey() const {
     return key_prefix_ + "map:idgen";
 }
 
-std::string PlacementStore::PickOwner(const std::string &preferred) const {
-    const auto owners = OwnersForPick();
-    if (owners.empty())
+bool PlacementStore::HasHealthyOwners() const {
+    return !OwnersForPick().empty();
+}
+
+std::string PlacementStore::CreateOwnerHint(const std::string &preferred) const {
+    if (!HasHealthyOwners())
         return {};
-    if (!preferred.empty()) {
-        for (const auto &o : owners) {
-            if (o == preferred)
-                return preferred;
-        }
+    if (preferred.empty())
+        return {};
+    const auto owners = OwnersForPick();
+    for (const auto &o : owners) {
+        if (o == preferred)
+            return preferred;
     }
-    std::lock_guard<std::mutex> lk(cfg_mu_);
-    const size_t idx = rr_ % owners.size();
-    ++rr_;
-    return owners[idx];
+    return {};
 }
 
 std::string PlacementStore::HealthyOwnersCsv() const {
@@ -660,6 +1585,17 @@ std::string PlacementStore::OpKey(uint64_t player_id, const std::string &operati
     return key_prefix_ + "map:op:" + std::to_string(player_id) + ":" + operation_id;
 }
 
+std::string PlacementStore::MembersKey(uint64_t map_instance_id) const {
+    char buf[96];
+    std::snprintf(buf, sizeof(buf), "%smap:members:%llu", key_prefix_.c_str(),
+                  static_cast<unsigned long long>(map_instance_id));
+    return buf;
+}
+
+std::string PlacementStore::IdleKey() const {
+    return key_prefix_ + "map:idle";
+}
+
 void PlacementStore::SetPublicMapCapacity(uint32_t n) {
     if (n > 0)
         public_capacity_ = n;
@@ -679,12 +1615,12 @@ bool PlacementStore::ReservePublicSlot(const ResolveOrCreateInput &in, ResolveOr
         out->error_code = "INVALID_ARG";
         return false;
     }
-    const std::string owner = PickOwner(in.preferred_owner);
-    if (owner.empty()) {
+    if (!HasHealthyOwners()) {
         out->message = "no healthy gamelogic";
         out->error_code = "NO_HEALTHY_GAMELOGIC";
         return false;
     }
+    const std::string owner = CreateOwnerHint(in.preferred_owner);
     auto lease = RedisPool::Instance().Acquire();
     if (!lease) {
         out->message = "redis pool exhausted";
@@ -757,11 +1693,228 @@ bool PlacementStore::ReleaseByPlayer(uint64_t player_id) {
     if (!lease)
         return false;
     std::vector<std::string> keys{PresKey(player_id)};
-    std::vector<std::string> args{key_prefix_, std::to_string(player_id)};
+    std::vector<std::string> args{key_prefix_, std::to_string(player_id),
+                                  std::to_string(NowUnixSec())};
     std::vector<std::string> reply;
     if (!lease->Eval(kLuaReleaseSlot, keys, args, &reply) || reply.empty())
         return false;
-    return reply[0] == "1";
+    const bool ok = reply[0] == "1";
+    if (ok && reply.size() > 2) {
+        const uint64_t inst = ParseU64(reply[2]);
+        PlacementRecord rec;
+        if (inst != 0 && Get(inst, &rec) && rec.map_template_id != 0)
+            FireLineStatus(rec.realm_id, rec.map_template_id);
+    }
+    return ok;
+}
+
+std::string PlacementStore::QueueKey(uint32_t realm, uint64_t tpl, uint32_t line_no) const {
+    char buf[160];
+    std::snprintf(buf, sizeof(buf), "%smap:queue:%u:%llu:%u", key_prefix_.c_str(), realm,
+                  static_cast<unsigned long long>(tpl), line_no);
+    return buf;
+}
+
+bool PlacementStore::SwitchLine(const SwitchLineInput &in, ResolveOrCreateResult *out) {
+    if (!out)
+        return false;
+    *out = ResolveOrCreateResult{};
+    if (!available_) {
+        out->message = "placement store unavailable";
+        out->error_code = "UNAVAILABLE";
+        return false;
+    }
+    if (in.player_id == 0 || in.map_template_id == 0 || in.line_no == 0) {
+        out->message = "player_id, map_template_id and line_no required";
+        out->error_code = "ERR_INVALID_ARGUMENT";
+        return false;
+    }
+    auto lease = RedisPool::Instance().Acquire();
+    if (!lease) {
+        out->message = "redis pool exhausted";
+        out->error_code = "POOL_EXHAUSTED";
+        return false;
+    }
+    const uint32_t soft = in.soft_cap > 0 ? in.soft_cap : 200;
+    const uint32_t hard = in.hard_cap > 0 ? in.hard_cap : 400;
+    const std::string op = in.operation_id.empty()
+                               ? ("switch:" + std::to_string(in.player_id) + ":" +
+                                  std::to_string(in.map_template_id) + ":L" +
+                                  std::to_string(in.line_no))
+                               : in.operation_id;
+    std::vector<std::string> keys{PresKey(in.player_id), OpKey(in.player_id, op)};
+    std::vector<std::string> args{
+        key_prefix_,
+        std::to_string(in.realm_id),
+        std::to_string(in.map_template_id),
+        std::to_string(in.player_id),
+        op,
+        std::to_string(in.line_no),
+        std::to_string(soft),
+        std::to_string(hard),
+        std::to_string(NowUnixSec()),
+    };
+    std::vector<std::string> reply;
+    if (!lease->Eval(kLuaSwitchLine, keys, args, &reply) || reply.size() < 3) {
+        out->message = "switch line lua failed";
+        out->error_code = "LUA_FAILED";
+        return false;
+    }
+    if (reply[0] != "1") {
+        out->message = reply.size() > 2 ? reply[2] : "rejected";
+        out->error_code = reply.size() > 1 ? reply[1] : "REJECTED";
+        return false;
+    }
+    if (!FillFromReply(reply, &out->placement)) {
+        out->message = "bad placement reply";
+        out->error_code = "BAD_REPLY";
+        return false;
+    }
+    if (reply.size() > 11)
+        out->occupancy = static_cast<uint32_t>(ParseU64(reply[11]));
+    if (reply.size() > 12)
+        out->idempotent_hit = (reply[12] == "1");
+    if (out->placement.kind.empty())
+        out->placement.kind = "LINE";
+    out->ok = true;
+    out->message = "ok";
+    FireLineStatus(out->placement.realm_id, out->placement.map_template_id);
+    return true;
+}
+
+bool PlacementStore::EnqueueMap(const EnqueueMapInput &in, EnqueueMapResult *out) {
+    if (!out)
+        return false;
+    *out = EnqueueMapResult{};
+    if (!available_) {
+        out->message = "placement store unavailable";
+        out->error_code = "UNAVAILABLE";
+        return false;
+    }
+    if (in.player_id == 0 || in.map_template_id == 0 || in.line_no == 0) {
+        out->message = "player_id, map_template_id and line_no required";
+        out->error_code = "ERR_INVALID_ARGUMENT";
+        return false;
+    }
+    auto lease = RedisPool::Instance().Acquire();
+    if (!lease) {
+        out->message = "redis pool exhausted";
+        out->error_code = "POOL_EXHAUSTED";
+        return false;
+    }
+    const uint32_t hard = in.hard_cap > 0 ? in.hard_cap : 400;
+    std::vector<std::string> keys;
+    std::vector<std::string> args{
+        key_prefix_,
+        std::to_string(in.realm_id),
+        std::to_string(in.map_template_id),
+        std::to_string(in.player_id),
+        std::to_string(in.line_no),
+        in.queue_token,
+        std::to_string(NowUnixSec()),
+        std::to_string(hard),
+    };
+    std::vector<std::string> reply;
+    if (!lease->Eval(kLuaEnqueueMap, keys, args, &reply) || reply.size() < 3) {
+        out->message = "enqueue lua failed";
+        out->error_code = "LUA_FAILED";
+        return false;
+    }
+    if (reply[0] != "1") {
+        out->message = reply.size() > 2 ? reply[2] : "rejected";
+        out->error_code = reply.size() > 1 ? reply[1] : "REJECTED";
+        return false;
+    }
+    out->ok = true;
+    out->message = "ok";
+    if (reply.size() > 2)
+        out->queue_token = reply[2];
+    if (reply.size() > 3)
+        out->queue_position = static_cast<uint32_t>(ParseU64(reply[3]));
+    if (reply.size() > 4)
+        out->queue_length = static_cast<uint32_t>(ParseU64(reply[4]));
+    if (reply.size() > 5)
+        out->line_no = static_cast<uint32_t>(ParseU64(reply[5]));
+    if (reply.size() > 6)
+        out->ready = (reply[6] == "1");
+    return true;
+}
+
+bool PlacementStore::Drain(uint64_t map_instance_id, const std::string &reason,
+                           PlacementRecord *out, std::string *err) {
+    (void)reason;
+    if (!available_ || map_instance_id == 0) {
+        if (err)
+            *err = "invalid arg";
+        return false;
+    }
+    auto lease = RedisPool::Instance().Acquire();
+    if (!lease) {
+        if (err)
+            *err = "pool exhausted";
+        return false;
+    }
+    std::vector<std::string> keys{InstKey(map_instance_id)};
+    std::vector<std::string> args{std::to_string(NowUnixSec())};
+    std::vector<std::string> reply;
+    if (!lease->Eval(kLuaDrainMap, keys, args, &reply) || reply.size() < 3) {
+        if (err)
+            *err = "lua failed";
+        return false;
+    }
+    if (reply[0] != "1") {
+        if (err)
+            *err = reply.size() > 2 ? reply[2] : reply[1];
+        return false;
+    }
+    PlacementRecord rec;
+    if (!FillFromReply(reply, &rec)) {
+        if (err)
+            *err = "bad reply";
+        return false;
+    }
+    rec.map_instance_id = map_instance_id;
+    if (out)
+        *out = rec;
+    return true;
+}
+
+bool PlacementStore::ListOccupants(uint64_t map_instance_id, std::vector<uint64_t> *out) {
+    if (!out)
+        return false;
+    out->clear();
+    if (!available_ || map_instance_id == 0)
+        return false;
+    auto lease = RedisPool::Instance().Acquire();
+    if (!lease)
+        return false;
+    std::vector<std::string> members;
+    if (!lease->SMembers(OccKey(map_instance_id), &members))
+        return false;
+    for (const auto &m : members) {
+        const uint64_t pid = ParseU64(m);
+        if (pid != 0)
+            out->push_back(pid);
+    }
+    return true;
+}
+
+bool PlacementStore::GetPlayerPresence(uint64_t player_id, uint64_t *map_instance_id) {
+    if (!map_instance_id)
+        return false;
+    *map_instance_id = 0;
+    if (!available_ || player_id == 0)
+        return false;
+    auto lease = RedisPool::Instance().Acquire();
+    if (!lease)
+        return false;
+    std::map<std::string, std::string> fields;
+    if (!lease->HGetAll(PresKey(player_id), &fields))
+        return false;
+    auto it = fields.find("mapInstanceId");
+    if (it != fields.end())
+        *map_instance_id = ParseU64(it->second);
+    return true;
 }
 
 uint32_t PlacementStore::Occupancy(uint64_t map_instance_id) {
@@ -778,9 +1931,326 @@ uint32_t PlacementStore::Occupancy(uint64_t map_instance_id) {
     return static_cast<uint32_t>(ParseU64(reply[0]));
 }
 
+std::string PlacementStore::LinesKey(uint32_t realm, uint64_t tpl) const {
+    char buf[128];
+    std::snprintf(buf, sizeof(buf), "%smap:lines:%u:%llu", key_prefix_.c_str(), realm,
+                  static_cast<unsigned long long>(tpl));
+    return buf;
+}
+
+std::string PlacementStore::LineKey(uint32_t realm, uint64_t tpl, uint32_t line_no) const {
+    char buf[160];
+    std::snprintf(buf, sizeof(buf), "%smap:line:%u:%llu:%u", key_prefix_.c_str(), realm,
+                  static_cast<unsigned long long>(tpl), line_no);
+    return buf;
+}
+
+bool PlacementStore::ReserveLine(const ResolveOrCreateInput &in, ResolveOrCreateResult *out) {
+    if (!out)
+        return false;
+    *out = ResolveOrCreateResult{};
+    if (!available_) {
+        out->message = "placement store unavailable";
+        out->error_code = "UNAVAILABLE";
+        return false;
+    }
+    if (in.player_id == 0 || in.map_template_id == 0) {
+        out->message = "player_id and map_template_id required";
+        out->error_code = "INVALID_ARG";
+        return false;
+    }
+    if (!HasHealthyOwners()) {
+        out->message = "no healthy gamelogic";
+        out->error_code = "NO_HEALTHY_GAMELOGIC";
+        return false;
+    }
+    const std::string owner = CreateOwnerHint(in.preferred_owner);
+    auto lease = RedisPool::Instance().Acquire();
+    if (!lease) {
+        out->message = "redis pool exhausted";
+        out->error_code = "POOL_EXHAUSTED";
+        return false;
+    }
+    const uint32_t soft = in.soft_cap > 0 ? in.soft_cap : 200;
+    const uint32_t hard = in.hard_cap > 0 ? in.hard_cap : 400;
+    const uint32_t max_lines = in.max_lines > 0 ? in.max_lines : 8;
+    const std::string op = in.operation_id.empty()
+                               ? ("enter:" + std::to_string(in.player_id) + ":" +
+                                  std::to_string(in.map_template_id) + ":L" +
+                                  std::to_string(in.line_no))
+                               : in.operation_id;
+    std::vector<std::string> keys{LinesKey(in.realm_id, in.map_template_id), IdGenKey(),
+                                  PresKey(in.player_id), OpKey(in.player_id, op)};
+    std::vector<std::string> args{
+        key_prefix_,
+        std::to_string(in.realm_id),
+        std::to_string(in.map_template_id),
+        std::to_string(in.player_id),
+        op,
+        std::to_string(soft),
+        std::to_string(hard),
+        std::to_string(max_lines),
+        std::to_string(in.map_instance_id),
+        std::to_string(in.line_no),
+        owner,
+        std::to_string(NowUnixSec()),
+        std::to_string(default_lease_sec_),
+        HealthyOwnersCsv(),
+        std::to_string(in.empty_close_delay > 0 ? in.empty_close_delay : 300),
+        std::to_string(in.min_lines > 0 ? in.min_lines : 1),
+        in.queue_token,
+    };
+    std::vector<std::string> reply;
+    if (!lease->Eval(kLuaReserveLine, keys, args, &reply) || reply.size() < 3) {
+        out->message = "reserve line lua failed";
+        out->error_code = "LUA_FAILED";
+        return false;
+    }
+    if (reply[0] != "1") {
+        out->message = reply.size() > 2 ? reply[2] : "rejected";
+        out->error_code = reply.size() > 1 ? reply[1] : "REJECTED";
+        return false;
+    }
+    if (!FillFromReply(reply, &out->placement)) {
+        out->message = "bad placement reply";
+        out->error_code = "BAD_REPLY";
+        return false;
+    }
+    if (reply.size() > 11)
+        out->occupancy = static_cast<uint32_t>(ParseU64(reply[11]));
+    if (reply.size() > 12)
+        out->idempotent_hit = (reply[12] == "1");
+    if (out->placement.kind.empty())
+        out->placement.kind = "LINE";
+    out->ok = true;
+    out->message = "ok";
+    FireLineStatus(out->placement.realm_id, out->placement.map_template_id);
+    return true;
+}
+
+bool PlacementStore::ListLines(uint32_t realm_id, uint64_t map_template_id,
+                               std::vector<MapLineInfo> *out) {
+    if (!out || !available_ || map_template_id == 0)
+        return false;
+    out->clear();
+    auto lease = RedisPool::Instance().Acquire();
+    if (!lease)
+        return false;
+    std::vector<std::string> keys{LinesKey(realm_id, map_template_id)};
+    std::vector<std::string> args{key_prefix_, std::to_string(NowUnixSec())};
+    std::vector<std::string> reply;
+    if (!lease->Eval(kLuaListLines, keys, args, &reply))
+        return false;
+    for (size_t i = 0; i + 5 < reply.size(); i += 7) {
+        MapLineInfo row;
+        row.map_instance_id = ParseU64(reply[i]);
+        row.line_no = static_cast<uint32_t>(ParseU64(reply[i + 1]));
+        row.occupancy = static_cast<uint32_t>(ParseU64(reply[i + 2]));
+        row.soft_cap = static_cast<uint32_t>(ParseU64(reply[i + 3]));
+        row.hard_cap = static_cast<uint32_t>(ParseU64(reply[i + 4]));
+        row.state = reply[i + 5];
+        if (i + 6 < reply.size())
+            row.owner_logic_server_id = reply[i + 6];
+        out->push_back(row);
+    }
+    return true;
+}
+
+bool PlacementStore::CreateDungeon(const CreateDungeonInput &in, CreateDungeonResult *out) {
+    if (!out)
+        return false;
+    *out = CreateDungeonResult{};
+    if (!available_) {
+        out->message = "placement store unavailable";
+        out->error_code = "UNAVAILABLE";
+        return false;
+    }
+    if (in.player_id == 0 || in.map_template_id == 0) {
+        out->message = "player_id and map_template_id required";
+        out->error_code = "INVALID_ARG";
+        return false;
+    }
+    if (!HasHealthyOwners()) {
+        out->message = "no healthy gamelogic";
+        out->error_code = "NO_HEALTHY_GAMELOGIC";
+        return false;
+    }
+    const std::string owner = CreateOwnerHint(in.preferred_owner);
+    auto lease = RedisPool::Instance().Acquire();
+    if (!lease) {
+        out->message = "redis pool exhausted";
+        out->error_code = "POOL_EXHAUSTED";
+        return false;
+    }
+    const uint32_t soft = in.soft_cap > 0 ? in.soft_cap : 5;
+    const uint32_t hard = in.hard_cap > 0 ? in.hard_cap : 5;
+    const uint32_t delay = in.empty_close_delay > 0 ? in.empty_close_delay : 30;
+    const std::string op = in.operation_id.empty()
+                               ? ("dungeon:" + std::to_string(in.player_id) + ":" +
+                                  std::to_string(in.map_template_id))
+                               : in.operation_id;
+    std::ostringstream mem;
+    bool first = true;
+    for (uint64_t pid : in.member_player_ids) {
+        if (pid == 0)
+            continue;
+        if (!first)
+            mem << ',';
+        mem << pid;
+        first = false;
+    }
+    std::vector<std::string> keys{IdGenKey(), OpKey(in.player_id, op)};
+    std::vector<std::string> args{
+        key_prefix_,
+        std::to_string(in.realm_id),
+        std::to_string(in.map_template_id),
+        std::to_string(in.player_id),
+        op,
+        mem.str(),
+        owner,
+        std::to_string(NowUnixSec()),
+        std::to_string(default_lease_sec_),
+        HealthyOwnersCsv(),
+        std::to_string(soft),
+        std::to_string(hard),
+        std::to_string(delay),
+    };
+    std::vector<std::string> reply;
+    if (!lease->Eval(kLuaCreateDungeon, keys, args, &reply) || reply.size() < 3) {
+        out->message = "create dungeon lua failed";
+        out->error_code = "LUA_FAILED";
+        return false;
+    }
+    if (reply[0] != "1") {
+        out->message = reply.size() > 2 ? reply[2] : "rejected";
+        out->error_code = reply.size() > 1 ? reply[1] : "REJECTED";
+        return false;
+    }
+    if (!FillFromReply(reply, &out->placement)) {
+        out->message = "bad placement reply";
+        out->error_code = "BAD_REPLY";
+        return false;
+    }
+    if (reply.size() > 12)
+        out->idempotent_hit = (reply[12] == "1");
+    if (out->placement.kind.empty())
+        out->placement.kind = "DUNGEON";
+    std::vector<std::string> members;
+    if (lease->SMembers(MembersKey(out->placement.map_instance_id), &members)) {
+        for (const auto &s : members)
+            out->member_player_ids.push_back(ParseU64(s));
+    }
+    out->ok = true;
+    out->message = "ok";
+    return true;
+}
+
+bool PlacementStore::ReserveDungeonEnter(const ResolveOrCreateInput &in,
+                                         ResolveOrCreateResult *out) {
+    if (!out)
+        return false;
+    *out = ResolveOrCreateResult{};
+    if (!available_) {
+        out->message = "placement store unavailable";
+        out->error_code = "UNAVAILABLE";
+        return false;
+    }
+    if (in.player_id == 0 || in.map_instance_id == 0) {
+        out->message = "player_id and map_instance_id required";
+        out->error_code = "ERR_DUNGEON_CREATE_FORBIDDEN";
+        return false;
+    }
+    auto lease = RedisPool::Instance().Acquire();
+    if (!lease) {
+        out->message = "redis pool exhausted";
+        out->error_code = "POOL_EXHAUSTED";
+        return false;
+    }
+    const std::string op = in.operation_id.empty()
+                               ? ("dungeon-enter:" + std::to_string(in.player_id) + ":" +
+                                  std::to_string(in.map_instance_id))
+                               : in.operation_id;
+    std::vector<std::string> keys{PresKey(in.player_id), OpKey(in.player_id, op)};
+    std::vector<std::string> args{
+        key_prefix_,
+        std::to_string(in.player_id),
+        op,
+        std::to_string(in.map_instance_id),
+        std::to_string(NowUnixSec()),
+    };
+    std::vector<std::string> reply;
+    if (!lease->Eval(kLuaReserveDungeon, keys, args, &reply) || reply.size() < 3) {
+        out->message = "reserve dungeon lua failed";
+        out->error_code = "LUA_FAILED";
+        return false;
+    }
+    if (reply[0] != "1") {
+        out->message = reply.size() > 2 ? reply[2] : "rejected";
+        out->error_code = reply.size() > 1 ? reply[1] : "REJECTED";
+        return false;
+    }
+    if (!FillFromReply(reply, &out->placement)) {
+        out->message = "bad placement reply";
+        out->error_code = "BAD_REPLY";
+        return false;
+    }
+    if (reply.size() > 11)
+        out->occupancy = static_cast<uint32_t>(ParseU64(reply[11]));
+    if (reply.size() > 12)
+        out->idempotent_hit = (reply[12] == "1");
+    if (out->placement.kind.empty())
+        out->placement.kind = "DUNGEON";
+    out->ok = true;
+    out->message = "ok";
+    return true;
+}
+
+bool PlacementStore::CloseIdleInstances(int64_t now_unix, size_t limit,
+                                        std::vector<uint64_t> *closed) {
+    if (!available_)
+        return false;
+    auto lease = RedisPool::Instance().Acquire();
+    if (!lease)
+        return false;
+    const int64_t now = now_unix > 0 ? now_unix : NowUnixSec();
+    const size_t n = limit > 0 ? limit : 32;
+    std::vector<std::string> keys{IdleKey()};
+    std::vector<std::string> args{key_prefix_, std::to_string(now), std::to_string(n)};
+    std::vector<std::string> reply;
+    if (!lease->Eval(kLuaCloseIdle, keys, args, &reply))
+        return false;
+    if (closed)
+        closed->clear();
+    for (const auto &s : reply) {
+        const uint64_t id = ParseU64(s);
+        if (id == 0)
+            continue;
+        if (closed)
+            closed->push_back(id);
+        PlacementRecord rec;
+        if (Get(id, &rec) && rec.map_template_id != 0)
+            FireLineStatus(rec.realm_id, rec.map_template_id);
+    }
+    return true;
+}
+
 bool PlacementStore::ResolveOrCreate(const ResolveOrCreateInput &in, ResolveOrCreateResult *out) {
-    if (in.player_id != 0)
+    if (in.player_id != 0) {
+        if (IsDungeonKind(in.kind)) {
+            if (in.map_instance_id == 0) {
+                if (!out)
+                    return false;
+                *out = ResolveOrCreateResult{};
+                out->message = "create dungeon first";
+                out->error_code = "ERR_DUNGEON_CREATE_FORBIDDEN";
+                return false;
+            }
+            return ReserveDungeonEnter(in, out);
+        }
+        if (IsLineKind(in.kind))
+            return ReserveLine(in, out);
         return ReservePublicSlot(in, out);
+    }
     if (!out)
         return false;
     *out = ResolveOrCreateResult{};
@@ -794,12 +2264,12 @@ bool PlacementStore::ResolveOrCreate(const ResolveOrCreateInput &in, ResolveOrCr
         out->error_code = "INVALID_ARG";
         return false;
     }
-    const std::string owner = PickOwner(in.preferred_owner);
-    if (owner.empty()) {
+    if (!HasHealthyOwners()) {
         out->message = "no healthy gamelogic";
         out->error_code = "NO_HEALTHY_GAMELOGIC";
         return false;
     }
+    const std::string owner = CreateOwnerHint(in.preferred_owner);
     const std::string healthy_csv = HealthyOwnersCsv();
     auto lease = RedisPool::Instance().Acquire();
     if (!lease) {
@@ -865,6 +2335,10 @@ bool PlacementStore::Get(uint64_t map_instance_id, PlacementRecord *out) {
     out->state = StateFromString(fields["state"]);
     out->updated_at = ParseI64(fields["updatedAt"]);
     out->lease_until = ParseI64(fields["leaseUntil"]);
+    out->kind = fields["kind"];
+    out->line_no = static_cast<uint32_t>(ParseU64(fields["lineNo"]));
+    out->soft_cap = static_cast<uint32_t>(ParseU64(fields["softCap"]));
+    out->hard_cap = static_cast<uint32_t>(ParseU64(fields["hardCap"]));
     return true;
 }
 

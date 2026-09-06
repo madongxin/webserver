@@ -118,6 +118,35 @@ bool MapCatalog::LoadDirectory(const std::string &dir, std::string *err) {
         if (ent.data_version == 0)
             ent.data_version = data->data_version();
         ent.sha256 = data->sha256();
+        ent.policy.kind = SceneKindFromString(m.get("kind", "").asString());
+        ent.policy.soft_cap = m.get("soft_cap", 0).asUInt();
+        ent.policy.hard_cap = m.get("hard_cap", 0).asUInt();
+        ent.policy.max_lines = m.get("max_lines", 0).asUInt();
+        ent.policy.min_lines = m.get("min_lines", 0).asUInt();
+        ent.policy.empty_close_delay = m.get("empty_close_delay", 0).asUInt();
+        ent.policy.aoi_view_radius_cells = m.get("aoi_view_radius_cells", -1).asInt();
+        ent.policy.spawn_scatter_radius = m.get("spawn_scatter_radius", 0).asFloat();
+        if (ent.policy.kind == SceneKind::Line) {
+            if (ent.policy.soft_cap == 0)
+                ent.policy.soft_cap = 200;
+            if (ent.policy.hard_cap == 0)
+                ent.policy.hard_cap = 400;
+            if (ent.policy.max_lines == 0)
+                ent.policy.max_lines = 8;
+            if (ent.policy.min_lines == 0)
+                ent.policy.min_lines = 1;
+            if (ent.policy.empty_close_delay == 0)
+                ent.policy.empty_close_delay = 300;
+            if (ent.policy.hard_cap < ent.policy.soft_cap)
+                ent.policy.hard_cap = ent.policy.soft_cap;
+        } else if (ent.policy.kind == SceneKind::Dungeon) {
+            if (ent.policy.hard_cap == 0)
+                ent.policy.hard_cap = 5;
+            if (ent.policy.soft_cap == 0)
+                ent.policy.soft_cap = ent.policy.hard_cap;
+            if (ent.policy.empty_close_delay == 0)
+                ent.policy.empty_close_delay = 30;
+        }
         loaded[tid] = std::move(data);
         entries.push_back(std::move(ent));
     }
@@ -194,4 +223,17 @@ uint32_t MapCatalog::map_manifest_version() const {
 std::vector<MapCatalog::ManifestEntry> MapCatalog::ManifestEntries() const {
     std::lock_guard<std::mutex> lk(mu_);
     return manifest_entries_;
+}
+
+bool MapCatalog::GetScenePolicy(uint64_t map_template_id, MapScenePolicy *out) const {
+    if (!out || map_template_id == 0)
+        return false;
+    std::lock_guard<std::mutex> lk(mu_);
+    for (const auto &e : manifest_entries_) {
+        if (e.map_template_id == map_template_id) {
+            *out = e.policy;
+            return true;
+        }
+    }
+    return false;
 }

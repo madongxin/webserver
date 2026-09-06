@@ -1,8 +1,9 @@
 # STATUS — GameMesh 迁移进度
 
-> 更新：2026-08-08
+> 更新：2026-09-06
 > 正式基线：`docs/mmo-distributed-architecture.md`
 > 全阶段路线图：`docs/GameMesh_Cursor_All_Phases.md`
+> 场景施工：`docs/mmo-migration/scene-management-construction.md`（P0 + P1 LINE 已落地）
 > 工程名：**GameMesh**（原 CppWebServer）
 
 ## 当前阶段

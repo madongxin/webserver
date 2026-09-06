@@ -146,6 +146,7 @@ if(ENABLE_GAME_PROTOBUF AND ENABLE_REDIS)
   endif()
   list(APPEND SRC_REDIS redis/RedisClient.cpp redis/RedisPool.cpp game/SessionStore.cpp
                 game/PlacementStore.cpp game/PushReplayStore.cpp
+                runtime/MapLineView.cpp
                 runtime/SecureRandom.cpp runtime/HealthyLogicSnapshot.cpp)
   message(STATUS "Redis: include=${HIREDIS_INCLUDE_DIR} lib=${HIREDIS_LIB}")
 endif()
@@ -250,6 +251,7 @@ if(ENABLE_BRPC)
     runtime/brpc/GatewayPushServer.cpp
     runtime/brpc/GatewayPushClient.cpp
     runtime/brpc/GameLogicPush.cpp
+    runtime/MapLineSync.cpp
     runtime/PushReplayCache.cpp
     runtime/brpc/gamedb.pb.cc
     runtime/brpc/GameDbServiceImpl.cpp
@@ -336,6 +338,7 @@ if(ENABLE_BRPC)
     runtime/brpc/GatewayPushServer.cpp
     runtime/brpc/GatewayPushClient.cpp
     runtime/brpc/GameLogicPush.cpp
+    runtime/MapLineSync.cpp
     runtime/brpc/GameDbBrpcServer.cpp runtime/brpc/GameDbServiceImpl.cpp
     db/BrpcGameDbRepository.cpp
     apps/ServerBootstrap.cpp
@@ -877,6 +880,57 @@ if(ENABLE_GAME_PROTOBUF AND ENABLE_REDIS)
   target_link_libraries(placement_store_test
     ${CMAKE_THREAD_LIBS_INIT} ${HIREDIS_LIB})
 
+  add_executable(map_line_test
+    test/map_line_test.cpp
+    game/PlacementStore.cpp
+    redis/RedisClient.cpp
+    redis/RedisPool.cpp
+    runtime/HealthyLogicSnapshot.cpp
+    base/CurrentThread.cpp
+    log/Logging.cpp
+    log/LogStream.cpp
+    log/LogFile.cpp
+    log/AsyncLogging.cpp)
+  target_compile_definitions(map_line_test PRIVATE WEBSERVER_ENABLE_REDIS)
+  target_include_directories(map_line_test PRIVATE
+    game redis base log timer runtime ${HIREDIS_INCLUDE_DIR})
+  target_link_libraries(map_line_test
+    ${CMAKE_THREAD_LIBS_INIT} ${HIREDIS_LIB})
+
+  add_executable(map_dungeon_test
+    test/map_dungeon_test.cpp
+    game/PlacementStore.cpp
+    redis/RedisClient.cpp
+    redis/RedisPool.cpp
+    runtime/HealthyLogicSnapshot.cpp
+    base/CurrentThread.cpp
+    log/Logging.cpp
+    log/LogStream.cpp
+    log/LogFile.cpp
+    log/AsyncLogging.cpp)
+  target_compile_definitions(map_dungeon_test PRIVATE WEBSERVER_ENABLE_REDIS)
+  target_include_directories(map_dungeon_test PRIVATE
+    game redis base log timer runtime ${HIREDIS_INCLUDE_DIR})
+  target_link_libraries(map_dungeon_test
+    ${CMAKE_THREAD_LIBS_INIT} ${HIREDIS_LIB})
+
+  add_executable(map_p3_test
+    test/map_p3_test.cpp
+    game/PlacementStore.cpp
+    redis/RedisClient.cpp
+    redis/RedisPool.cpp
+    runtime/HealthyLogicSnapshot.cpp
+    base/CurrentThread.cpp
+    log/Logging.cpp
+    log/LogStream.cpp
+    log/LogFile.cpp
+    log/AsyncLogging.cpp)
+  target_compile_definitions(map_p3_test PRIVATE WEBSERVER_ENABLE_REDIS)
+  target_include_directories(map_p3_test PRIVATE
+    game redis base log timer runtime ${HIREDIS_INCLUDE_DIR})
+  target_link_libraries(map_p3_test
+    ${CMAKE_THREAD_LIBS_INIT} ${HIREDIS_LIB})
+
   add_executable(map_occupancy_test
     test/map_occupancy_test.cpp
     game/PlacementStore.cpp
@@ -1325,7 +1379,8 @@ if(ENABLE_MYSQL AND ENABLE_GAME_PROTOBUF)
     ${SRC_GAMEDB_MAIL_TEST})
   if(ENABLE_REDIS)
     target_sources(mail_claim_integration_test PRIVATE redis/RedisClient.cpp redis/RedisPool.cpp
-                    game/SessionStore.cpp game/PlacementStore.cpp game/PushReplayStore.cpp
+                    game/SessionStore.cpp game/PlacementStore.cpp runtime/MapLineView.cpp
+                    game/PushReplayStore.cpp
                     runtime/SecureRandom.cpp runtime/HealthyLogicSnapshot.cpp)
     target_compile_definitions(mail_claim_integration_test PRIVATE WEBSERVER_ENABLE_REDIS)
     target_include_directories(mail_claim_integration_test PRIVATE ${HIREDIS_INCLUDE_DIR})
@@ -1346,7 +1401,8 @@ if(ENABLE_MYSQL AND ENABLE_GAME_PROTOBUF)
     ${SRC_GAMEDB_MAIL_TEST})
   if(ENABLE_REDIS)
     target_sources(gamedb_mail_claim_test PRIVATE redis/RedisClient.cpp redis/RedisPool.cpp
-                    game/SessionStore.cpp game/PlacementStore.cpp game/PushReplayStore.cpp
+                    game/SessionStore.cpp game/PlacementStore.cpp runtime/MapLineView.cpp
+                    game/PushReplayStore.cpp
                     runtime/SecureRandom.cpp runtime/HealthyLogicSnapshot.cpp)
     target_compile_definitions(gamedb_mail_claim_test PRIVATE WEBSERVER_ENABLE_REDIS)
     target_include_directories(gamedb_mail_claim_test PRIVATE ${HIREDIS_INCLUDE_DIR})
@@ -1401,7 +1457,8 @@ if(ENABLE_MYSQL AND ENABLE_GAME_PROTOBUF)
     ${SRC_GAMEDB_MAIL_TEST})
   if(ENABLE_REDIS)
     target_sources(player_mail_send_test PRIVATE redis/RedisClient.cpp redis/RedisPool.cpp
-                    game/SessionStore.cpp game/PlacementStore.cpp game/PushReplayStore.cpp
+                    game/SessionStore.cpp game/PlacementStore.cpp runtime/MapLineView.cpp
+                    game/PushReplayStore.cpp
                     runtime/SecureRandom.cpp runtime/HealthyLogicSnapshot.cpp)
     target_compile_definitions(player_mail_send_test PRIVATE WEBSERVER_ENABLE_REDIS)
     target_include_directories(player_mail_send_test PRIVATE ${HIREDIS_INCLUDE_DIR})

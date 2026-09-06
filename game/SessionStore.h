@@ -231,6 +231,17 @@ public:
     bool ListOnlinePushTargets(std::vector<OnlinePushTarget> *out, size_t max_n = 256);
     /** 公网在线态：online | offline | disconnected。无会话视为 offline。 */
     bool QueryPublicOnlineState(uint64_t player_id, std::string *state);
+
+    struct PublicPresence {
+        std::string state = "offline";
+        uint64_t map_instance_id = 0;
+        std::string gamelogic_instance_id;
+        uint64_t map_owner_epoch = 0;
+    };
+    bool QueryPublicPresence(uint64_t player_id, PublicPresence *out);
+    /** 内部读会话（含 fence）；不校验 fence。 */
+    bool PeekSession(uint64_t player_id, SessionRecord *out);
+    bool GetOnlinePushTarget(uint64_t player_id, OnlinePushTarget *out);
     /** Redis `online:players` 对账后的 ONLINE 人数（TTL/幽灵成员会被 SREM）。 */
     int64_t OnlinePlayerCount();
     bool ConsumeChatQuota(uint64_t player_id, int limit, int window_sec);

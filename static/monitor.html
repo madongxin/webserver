@@ -168,6 +168,7 @@
       <div class="status-pill na" data-mod="players"><div class="name">Gateway 绑定玩家</div><div class="value">—</div></div>
       <div class="status-pill na" data-mod="sessionOnline"><div class="name">Session ONLINE</div><div class="value">—</div></div>
       <div class="status-pill na" data-mod="gwtraffic"><div class="name">Gateway 流量</div><div class="value">—</div></div>
+      <div class="status-pill na" data-mod="lines"><div class="name">分线（LINE）</div><div class="value">—</div></div>
     </div>
 
     <section class="module">
@@ -200,6 +201,26 @@
               <th>绑定玩家</th>
               <th>游戏 TCP</th>
               <th>说明</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="module">
+      <h2>分线 · 每 GameLogic</h2>
+      <p class="module-desc">Redis 占位权威。Session 导出全量，GameLogic 只导出本机 Owner 的线。表用 <code>max by (owner, map_template_id, line_no)</code> 去重。</p>
+      <div class="charts" id="lineCharts"></div>
+      <div class="table-wrap">
+        <table class="data" id="lineTable">
+          <thead>
+            <tr>
+              <th>GameLogic</th>
+              <th>模板</th>
+              <th>线号</th>
+              <th>人数</th>
+              <th>状态</th>
             </tr>
           </thead>
           <tbody></tbody>
@@ -414,6 +435,13 @@
       { id: 'pGwTxF', title: 'Gateway 出站帧/s', promql: () => 'rate(gamemesh_gateway_tx_frames_total{' + jobSel() + ',role="gateway"}[1m])' },
     ];
 
+    const LINE_PANELS = [
+      { id: 'pLineOcc', title: '分线人数', beginZero: true,
+        promql: () => 'max by (owner, map_template_id, line_no) (gamemesh_map_line_occupancy{' + jobSel() + '})' },
+      { id: 'pLineCnt', title: '每 Logic 线数', beginZero: true,
+        promql: () => 'max by (owner, map_template_id) (gamemesh_map_line_count{' + jobSel() + '})' },
+    ];
+
     const PROM_PANELS = [
       { id: 'pCpu', title: 'CPU（核）', promql: () => 'rate(process_cpu_seconds_total{' + jobSel() + '}[1m])' },
       { id: 'pRss', title: '内存 RSS', promql: () => 'process_resident_memory_bytes{' + jobSel() + '}' },
@@ -440,9 +468,10 @@
       const errEl = document.getElementById('promErr');
       errEl.style.display = 'none';
       ensureChartBoxes('bizCharts', BIZ_PANELS);
+      ensureChartBoxes('lineCharts', LINE_PANELS);
       ensureChartBoxes('promCharts', PROM_PANELS);
       try {
-        for (const p of BIZ_PANELS.concat(PROM_PANELS)) {
+        for (const p of BIZ_PANELS.concat(LINE_PANELS).concat(PROM_PANELS)) {
           const result = await queryRange(p.promql());
           upsertChart(p.id, seriesToChartData(result), p.beginZero);
         }
@@ -457,7 +486,7 @@
       const empty = { up: {}, cpu: {}, rss: {}, fds: {}, thr: {}, uptime: {}, bound: {} };
       try {
         const js = jobSel();
-        const [up, cpu, rss, fds, thr, uptime, players, sessOnline, boundMap, rx, tx] = await Promise.all([
+        const [up, cpu, rss, fds, thr, uptime, players, sessOnline, boundMap, rx, tx, lineOcc] = await Promise.all([
           queryInstant('up{' + js + '}'),
           queryInstant('rate(process_cpu_seconds_total{' + js + '}[1m])'),
           queryInstant('process_resident_memory_bytes{' + js + '}'),
@@ -469,6 +498,7 @@
           queryInstant('gamemesh_online_players{' + js + ',role="gateway"}'),
           queryInstant('sum(rate(gamemesh_gateway_rx_bytes_total{' + js + ',role="gateway"}[1m]))'),
           queryInstant('sum(rate(gamemesh_gateway_tx_bytes_total{' + js + ',role="gateway"}[1m]))'),
+          queryInstant('max by (owner, map_template_id, line_no, state) (gamemesh_map_line_occupancy{' + js + '})'),
         ]);
         const upMap = instantMap(up);
         const n = Object.keys(upMap).length;
@@ -488,6 +518,35 @@
           setStatus('gwtraffic',
             '↓' + fmtBps(rxN || 0) + '  ↑' + fmtBps(txN || 0), true);
         }
+        const lineTbody = document.querySelector('#lineTable tbody');
+        if (lineTbody)
+          lineTbody.innerHTML = '';
+        let lineN = 0;
+        let linePlayers = 0;
+        const owners = {};
+        (lineOcc || []).forEach(s => {
+          const m = s.metric || {};
+          const occ = s.value ? parseFloat(s.value[1]) : 0;
+          lineN += 1;
+          linePlayers += isFinite(occ) ? occ : 0;
+          if (m.owner)
+            owners[m.owner] = (owners[m.owner] || 0) + 1;
+          if (!lineTbody)
+            return;
+          const tr = document.createElement('tr');
+          [m.owner || '—', m.map_template_id || '—', m.line_no || '—',
+           isFinite(occ) ? String(Math.round(occ)) : '—', m.state || '—']
+            .forEach(v => {
+              const td = document.createElement('td');
+              td.textContent = v;
+              tr.appendChild(td);
+            });
+          lineTbody.appendChild(tr);
+        });
+        setStatus('lines',
+          lineN ? (lineN + ' 线 / ' + Math.round(linePlayers) + ' 人 / ' +
+            Object.keys(owners).length + ' Logic') : '无分线',
+          lineN > 0);
         return {
           up: upMap,
           cpu: instantMap(cpu),

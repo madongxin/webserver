@@ -1,6 +1,7 @@
 #pragma once
 
 #include "MapStaticData.h"
+#include "SceneKind.h"
 
 #include <cstdint>
 #include <memory>
@@ -36,8 +37,10 @@ public:
         uint64_t map_template_id = 0;
         uint64_t data_version = 0;
         std::string sha256;
+        MapScenePolicy policy;
     };
     std::vector<ManifestEntry> ManifestEntries() const;
+    bool GetScenePolicy(uint64_t map_template_id, MapScenePolicy *out) const;
 
     void ClearForTest();
     /** 测试注入（不经过目录/哈希文件） */

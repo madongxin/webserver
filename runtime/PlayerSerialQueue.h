@@ -37,6 +37,8 @@ public:
     };
 
     static PlayerSerialQueue &Instance();
+    /** 按 map_instance_id 分片的独立邮箱（与玩家队列隔离） */
+    static PlayerSerialQueue &MapMailbox();
 
     /** shard_count<=0 时按硬件并发估算 */
     void Start(int shard_count = 0);

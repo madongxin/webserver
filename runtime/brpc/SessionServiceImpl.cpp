@@ -3,8 +3,10 @@
 #include "GatewayPushClient.h"
 #include "HealthyLogicOwners.h"
 #include "Logging.h"
+#include "MapCatalog.h"
 #include "OpsMetrics.h"
 #include "PlacementStore.h"
+#include "SceneKind.h"
 #include "SessionStore.h"
 
 #include <brpc/controller.h>
@@ -25,6 +27,14 @@ void FillPlacementPb(const PlacementRecord &r, sess::PlacementRecord *pb) {
     pb->set_state(PlacementStore::StateToString(r.state));
     pb->set_updated_at(r.updated_at);
     pb->set_lease_until(r.lease_until);
+    if (!r.kind.empty())
+        pb->set_kind(r.kind);
+    if (r.line_no != 0)
+        pb->set_line_no(r.line_no);
+    if (r.soft_cap != 0)
+        pb->set_soft_cap(r.soft_cap);
+    if (r.hard_cap != 0)
+        pb->set_hard_cap(r.hard_cap);
 }
 
 void FillAcquirePb(const AcquireSessionResult &out, sess::AcquireSessionResponse *response) {
@@ -339,13 +349,305 @@ void SessionServiceImpl::ResolveOrCreateMap(::google::protobuf::RpcController *c
     in.player_id = request->player_id();
     in.operation_id = request->operation_id();
     in.capacity = request->public_map_capacity();
+    in.line_no = request->line_no();
+    in.kind = request->kind();
+    in.soft_cap = request->soft_cap();
+    in.hard_cap = request->hard_cap();
+    in.max_lines = request->max_lines();
+    in.queue_token = request->queue_token();
+    MapScenePolicy pol;
+    if (MapCatalog::Instance().GetScenePolicy(in.map_template_id, &pol)) {
+        if (in.kind.empty())
+            in.kind = SceneKindToString(pol.kind);
+        if (in.soft_cap == 0)
+            in.soft_cap = pol.soft_cap;
+        if (in.hard_cap == 0)
+            in.hard_cap = pol.hard_cap;
+        if (in.max_lines == 0)
+            in.max_lines = pol.max_lines;
+        if (in.min_lines == 0)
+            in.min_lines = pol.min_lines;
+        if (in.empty_close_delay == 0)
+            in.empty_close_delay = pol.empty_close_delay;
+    }
     ResolveOrCreateResult out;
     PlacementStore::Instance().ResolveOrCreate(in, &out);
     response->set_ok(out.ok);
     response->set_message(out.message);
     response->set_error_code(out.error_code);
-    if (out.ok)
+    if (out.ok) {
         FillPlacementPb(out.placement, response->mutable_placement());
+        response->mutable_placement()->set_occupancy(out.occupancy);
+    }
+}
+
+void SessionServiceImpl::QueryMapLines(::google::protobuf::RpcController *controller,
+                                       const ::sess::QueryMapLinesRequest *request,
+                                       ::sess::QueryMapLinesResponse *response,
+                                       ::google::protobuf::Closure *done) {
+    (void)controller;
+    brpc::ClosureGuard done_guard(done);
+    response->Clear();
+    if (!request || request->map_template_id() == 0) {
+        response->set_ok(false);
+        response->set_message("map_template_id required");
+        response->set_error_code("INVALID_ARG");
+        return;
+    }
+    MapScenePolicy pol;
+    std::string kind = "LEGACY_POOL";
+    if (MapCatalog::Instance().GetScenePolicy(request->map_template_id(), &pol))
+        kind = SceneKindToString(pol.kind);
+    response->set_kind(kind);
+    std::vector<MapLineInfo> rows;
+    const uint32_t realm = request->realm_id() == 0 ? 1 : request->realm_id();
+    if (!PlacementStore::Instance().ListLines(realm, request->map_template_id(),
+                                              &rows)) {
+        response->set_ok(false);
+        response->set_message("list lines failed");
+        response->set_error_code("UNAVAILABLE");
+        return;
+    }
+    for (const auto &r : rows) {
+        auto *line = response->add_lines();
+        line->set_line_no(r.line_no);
+        line->set_map_instance_id(r.map_instance_id);
+        line->set_occupancy(r.occupancy);
+        line->set_soft_cap(r.soft_cap);
+        line->set_hard_cap(r.hard_cap);
+        line->set_state(r.state);
+        line->set_owner_logic_server_id(r.owner_logic_server_id);
+    }
+    response->set_ok(true);
+    response->set_message("ok");
+}
+
+void SessionServiceImpl::CreateDungeon(::google::protobuf::RpcController *controller,
+                                       const ::sess::CreateDungeonRequest *request,
+                                       ::sess::CreateDungeonResponse *response,
+                                       ::google::protobuf::Closure *done) {
+    (void)controller;
+    brpc::ClosureGuard done_guard(done);
+    response->Clear();
+    if (!request || request->player_id() == 0 || request->map_template_id() == 0) {
+        response->set_ok(false);
+        response->set_message("player_id and map_template_id required");
+        response->set_error_code("INVALID_ARG");
+        return;
+    }
+    RefreshHealthyLogicOwners();
+    CreateDungeonInput in;
+    in.realm_id = request->realm_id();
+    in.map_template_id = request->map_template_id();
+    in.player_id = request->player_id();
+    in.operation_id = request->operation_id();
+    in.preferred_owner = request->preferred_owner();
+    in.soft_cap = request->soft_cap();
+    in.hard_cap = request->hard_cap();
+    in.empty_close_delay = request->empty_close_delay();
+    for (int i = 0; i < request->member_player_ids_size(); ++i)
+        in.member_player_ids.push_back(request->member_player_ids(i));
+    MapScenePolicy pol;
+    if (MapCatalog::Instance().GetScenePolicy(in.map_template_id, &pol)) {
+        if (pol.kind != SceneKind::Dungeon) {
+            response->set_ok(false);
+            response->set_message("template is not a dungeon");
+            response->set_error_code("ERR_DUNGEON_CREATE_FORBIDDEN");
+            return;
+        }
+        if (in.soft_cap == 0)
+            in.soft_cap = pol.soft_cap;
+        if (in.hard_cap == 0)
+            in.hard_cap = pol.hard_cap;
+        if (in.empty_close_delay == 0)
+            in.empty_close_delay = pol.empty_close_delay;
+    }
+    CreateDungeonResult out;
+    PlacementStore::Instance().CreateDungeon(in, &out);
+    response->set_ok(out.ok);
+    response->set_message(out.message);
+    response->set_error_code(out.error_code);
+    if (out.ok) {
+        FillPlacementPb(out.placement, response->mutable_placement());
+        for (uint64_t pid : out.member_player_ids)
+            response->add_member_player_ids(pid);
+    }
+}
+
+void SessionServiceImpl::SwitchLine(::google::protobuf::RpcController *controller,
+                                    const ::sess::SwitchLineRequest *request,
+                                    ::sess::SwitchLineResponse *response,
+                                    ::google::protobuf::Closure *done) {
+    (void)controller;
+    brpc::ClosureGuard done_guard(done);
+    response->Clear();
+    if (!request || request->player_id() == 0 || request->map_template_id() == 0 ||
+        request->line_no() == 0) {
+        response->set_ok(false);
+        response->set_message("player_id, map_template_id and line_no required");
+        response->set_error_code("ERR_INVALID_ARGUMENT");
+        return;
+    }
+    SwitchLineInput in;
+    in.realm_id = request->realm_id();
+    in.map_template_id = request->map_template_id();
+    in.player_id = request->player_id();
+    in.line_no = request->line_no();
+    in.operation_id = request->operation_id();
+    in.soft_cap = request->soft_cap();
+    in.hard_cap = request->hard_cap();
+    MapScenePolicy pol;
+    if (MapCatalog::Instance().GetScenePolicy(in.map_template_id, &pol)) {
+        if (pol.kind != SceneKind::Line) {
+            response->set_ok(false);
+            response->set_message("template is not LINE");
+            response->set_error_code("ERR_INVALID_ARGUMENT");
+            return;
+        }
+        if (in.soft_cap == 0)
+            in.soft_cap = pol.soft_cap;
+        if (in.hard_cap == 0)
+            in.hard_cap = pol.hard_cap;
+    }
+    ResolveOrCreateResult out;
+    PlacementStore::Instance().SwitchLine(in, &out);
+    response->set_ok(out.ok);
+    response->set_message(out.message);
+    response->set_error_code(out.error_code);
+    if (out.ok) {
+        FillPlacementPb(out.placement, response->mutable_placement());
+        response->set_occupancy(out.occupancy);
+        response->mutable_placement()->set_occupancy(out.occupancy);
+    }
+}
+
+void SessionServiceImpl::EnqueueMap(::google::protobuf::RpcController *controller,
+                                    const ::sess::EnqueueMapRequest *request,
+                                    ::sess::EnqueueMapResponse *response,
+                                    ::google::protobuf::Closure *done) {
+    (void)controller;
+    brpc::ClosureGuard done_guard(done);
+    response->Clear();
+    if (!request || request->player_id() == 0 || request->map_template_id() == 0 ||
+        request->line_no() == 0) {
+        response->set_ok(false);
+        response->set_message("player_id, map_template_id and line_no required");
+        response->set_error_code("ERR_INVALID_ARGUMENT");
+        return;
+    }
+    EnqueueMapInput in;
+    in.realm_id = request->realm_id();
+    in.map_template_id = request->map_template_id();
+    in.player_id = request->player_id();
+    in.line_no = request->line_no();
+    in.queue_token = request->queue_token();
+    in.hard_cap = request->hard_cap();
+    MapScenePolicy pol;
+    if (MapCatalog::Instance().GetScenePolicy(in.map_template_id, &pol)) {
+        if (in.hard_cap == 0)
+            in.hard_cap = pol.hard_cap;
+    }
+    EnqueueMapResult out;
+    PlacementStore::Instance().EnqueueMap(in, &out);
+    response->set_ok(out.ok);
+    response->set_message(out.message);
+    response->set_error_code(out.error_code);
+    response->set_queue_token(out.queue_token);
+    response->set_queue_position(out.queue_position);
+    response->set_queue_length(out.queue_length);
+    response->set_line_no(out.line_no);
+    response->set_ready(out.ready);
+}
+
+void SessionServiceImpl::DrainMap(::google::protobuf::RpcController *controller,
+                                  const ::sess::DrainMapRequest *request,
+                                  ::sess::DrainMapResponse *response,
+                                  ::google::protobuf::Closure *done) {
+    (void)controller;
+    brpc::ClosureGuard done_guard(done);
+    response->Clear();
+    if (!request || request->map_instance_id() == 0) {
+        response->set_ok(false);
+        response->set_message("map_instance_id required");
+        response->set_error_code("ERR_INVALID_ARGUMENT");
+        return;
+    }
+    PlacementRecord rec;
+    std::string err;
+    const bool ok = PlacementStore::Instance().Drain(request->map_instance_id(), request->reason(),
+                                                     &rec, &err);
+    response->set_ok(ok);
+    response->set_message(ok ? "ok" : err);
+    response->set_error_code(ok ? "" : "DRAIN_FAILED");
+    if (ok)
+        FillPlacementPb(rec, response->mutable_placement());
+}
+
+void SessionServiceImpl::LiveMigrateMap(::google::protobuf::RpcController *controller,
+                                        const ::sess::LiveMigrateMapRequest *request,
+                                        ::sess::LiveMigrateMapResponse *response,
+                                        ::google::protobuf::Closure *done) {
+    (void)controller;
+    brpc::ClosureGuard done_guard(done);
+    response->Clear();
+    if (!request || request->map_instance_id() == 0) {
+        response->set_ok(false);
+        response->set_message("map_instance_id required");
+        response->set_error_code("ERR_INVALID_ARGUMENT");
+        return;
+    }
+    RefreshHealthyLogicOwners();
+    PlacementRecord cur;
+    if (!PlacementStore::Instance().Get(request->map_instance_id(), &cur)) {
+        response->set_ok(false);
+        response->set_message("placement not found");
+        response->set_error_code("NOT_FOUND");
+        return;
+    }
+    std::string err;
+    if (cur.state != PlacementState::Draining) {
+        if (!PlacementStore::Instance().Drain(request->map_instance_id(), "live_migrate", &cur,
+                                              &err)) {
+            response->set_ok(false);
+            response->set_message(err.empty() ? "drain failed" : err);
+            response->set_error_code("DRAIN_FAILED");
+            return;
+        }
+    }
+    std::string new_owner = request->new_owner_logic_server_id();
+    if (new_owner.empty())
+        new_owner = PlacementStore::Instance().PickHealthyOwner(cur.owner_logic_server_id);
+    if (new_owner.empty()) {
+        response->set_ok(false);
+        response->set_message("no healthy gamelogic");
+        response->set_error_code("NO_HEALTHY_GAMELOGIC");
+        return;
+    }
+    PlacementRecord rec;
+    if (!PlacementStore::Instance().Migrate(request->map_instance_id(), new_owner,
+                                            request->expect_epoch(), request->idempotency_key(),
+                                            &rec, &err)) {
+        response->set_ok(false);
+        response->set_message(err.empty() ? "migrate failed" : err);
+        response->set_error_code("MIGRATE_FAILED");
+        return;
+    }
+    std::vector<uint64_t> players;
+    PlacementStore::Instance().ListOccupants(request->map_instance_id(), &players);
+    for (uint64_t pid : players) {
+        SessionRecord sess;
+        if (!SessionStore::Instance().PeekSession(pid, &sess) || sess.token.empty())
+            continue;
+        uint64_t rv = 0;
+        std::string uerr;
+        SessionStore::Instance().UpdatePlayerRoute(pid, sess.token, rec.owner_logic_server_id,
+                                                   rec.map_instance_id, rec.owner_epoch, 0,
+                                                   sess.gateway_id, "", &rv, &uerr);
+        response->add_player_ids(pid);
+    }
+    response->set_ok(true);
+    response->set_message("ok");
+    FillPlacementPb(rec, response->mutable_placement());
 }
 
 void SessionServiceImpl::GetPlacement(::google::protobuf::RpcController *controller,

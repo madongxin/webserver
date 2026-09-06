@@ -31,7 +31,11 @@ inline bool NormalizePlayerName(const std::string &raw, std::string *out, std::s
 }
 
 inline bool ValidWorldChannel(const std::string &channel) {
-    return channel.empty() || channel == "world";
+    return channel.empty() || channel == "world" || channel == "whisper" || channel == "private";
+}
+
+inline bool IsWhisperChannel(const std::string &channel) {
+    return channel == "whisper" || channel == "private";
 }
 
 /** 世界聊天：1–max_cp 码点，且 UTF-8 字节 ≤ max_bytes；不允许控制符。 */

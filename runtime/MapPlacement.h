@@ -22,6 +22,10 @@ struct MapPlacementRecord {
     uint64_t route_version = 0;
     int64_t lease_until_unix = 0;
     bool frozen = false;
+    std::string kind;
+    uint32_t line_no = 0;
+    uint32_t soft_cap = 0;
+    uint32_t hard_cap = 0;
 };
 
 class MapPlacement {

@@ -425,6 +425,54 @@ bool GatewayAuthClients::ResolveOrCreateMap(const sess::ResolveOrCreateMapReques
     return !cntl.Failed();
 }
 
+bool GatewayAuthClients::QueryMapLines(const sess::QueryMapLinesRequest &req,
+                                       sess::QueryMapLinesResponse *rsp) {
+    auto s = CurrentSnapshot();
+    if (!s || !s->session || !rsp)
+        return false;
+    sess::SessionService_Stub stub(s->session.get());
+    brpc::Controller cntl;
+    cntl.set_timeout_ms(timeout_ms_);
+    stub.QueryMapLines(&cntl, &req, rsp, nullptr);
+    return !cntl.Failed();
+}
+
+bool GatewayAuthClients::CreateDungeon(const sess::CreateDungeonRequest &req,
+                                       sess::CreateDungeonResponse *rsp) {
+    auto s = CurrentSnapshot();
+    if (!s || !s->session || !rsp)
+        return false;
+    sess::SessionService_Stub stub(s->session.get());
+    brpc::Controller cntl;
+    cntl.set_timeout_ms(timeout_ms_);
+    stub.CreateDungeon(&cntl, &req, rsp, nullptr);
+    return !cntl.Failed();
+}
+
+bool GatewayAuthClients::SwitchLine(const sess::SwitchLineRequest &req,
+                                    sess::SwitchLineResponse *rsp) {
+    auto s = CurrentSnapshot();
+    if (!s || !s->session || !rsp)
+        return false;
+    sess::SessionService_Stub stub(s->session.get());
+    brpc::Controller cntl;
+    cntl.set_timeout_ms(timeout_ms_);
+    stub.SwitchLine(&cntl, &req, rsp, nullptr);
+    return !cntl.Failed();
+}
+
+bool GatewayAuthClients::EnqueueMap(const sess::EnqueueMapRequest &req,
+                                    sess::EnqueueMapResponse *rsp) {
+    auto s = CurrentSnapshot();
+    if (!s || !s->session || !rsp)
+        return false;
+    sess::SessionService_Stub stub(s->session.get());
+    brpc::Controller cntl;
+    cntl.set_timeout_ms(timeout_ms_);
+    stub.EnqueueMap(&cntl, &req, rsp, nullptr);
+    return !cntl.Failed();
+}
+
 bool GatewayAuthClients::BindPlayer(const std::string &logic_instance_id,
                                     const glrpc::BindPlayerRequest &req,
                                     glrpc::BindPlayerResponse *rsp) {

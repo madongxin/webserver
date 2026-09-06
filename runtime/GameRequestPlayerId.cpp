@@ -75,6 +75,14 @@ uint64_t ExtractPlayerIdFromRequestPayload(const std::string &request_payload) {
         return req.get_player_brief().player_id();
     case game::GameRequest::kQueryOnlineState:
         return req.query_online_state().player_id();
+    case game::GameRequest::kQueryMapLines:
+        return req.query_map_lines().player_id();
+    case game::GameRequest::kCreateDungeon:
+        return req.create_dungeon().player_id();
+    case game::GameRequest::kSwitchLine:
+        return req.switch_line().player_id();
+    case game::GameRequest::kEnqueueMap:
+        return req.enqueue_map().player_id();
     default:
         return 0;
     }

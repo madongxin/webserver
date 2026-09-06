@@ -50,6 +50,27 @@ public:
                             const ::sess::ResolveOrCreateMapRequest *request,
                             ::sess::ResolveOrCreateMapResponse *response,
                             ::google::protobuf::Closure *done) override;
+    void QueryMapLines(::google::protobuf::RpcController *controller,
+                       const ::sess::QueryMapLinesRequest *request,
+                       ::sess::QueryMapLinesResponse *response,
+                       ::google::protobuf::Closure *done) override;
+    void CreateDungeon(::google::protobuf::RpcController *controller,
+                       const ::sess::CreateDungeonRequest *request,
+                       ::sess::CreateDungeonResponse *response,
+                       ::google::protobuf::Closure *done) override;
+    void SwitchLine(::google::protobuf::RpcController *controller,
+                    const ::sess::SwitchLineRequest *request, ::sess::SwitchLineResponse *response,
+                    ::google::protobuf::Closure *done) override;
+    void EnqueueMap(::google::protobuf::RpcController *controller,
+                    const ::sess::EnqueueMapRequest *request, ::sess::EnqueueMapResponse *response,
+                    ::google::protobuf::Closure *done) override;
+    void DrainMap(::google::protobuf::RpcController *controller,
+                  const ::sess::DrainMapRequest *request, ::sess::DrainMapResponse *response,
+                  ::google::protobuf::Closure *done) override;
+    void LiveMigrateMap(::google::protobuf::RpcController *controller,
+                        const ::sess::LiveMigrateMapRequest *request,
+                        ::sess::LiveMigrateMapResponse *response,
+                        ::google::protobuf::Closure *done) override;
     void GetPlacement(::google::protobuf::RpcController *controller,
                       const ::sess::GetPlacementRequest *request,
                       ::sess::GetPlacementResponse *response,

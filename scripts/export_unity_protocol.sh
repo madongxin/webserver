@@ -79,6 +79,9 @@ required = [
     "FullStateSnapshotRsp", "WorldSnapshotReq", "RespawnReq", "RespawnRsp",
     "PlayerMailSendReq", "MailboxChangedNotify", "ServerPushEnvelope",
     "SessionReplacedNotify", "MapManifestEntry",
+    "CreateDungeonReq", "CreateDungeonRsp",
+    "QueryMapLinesReq", "QueryMapLinesRsp", "SwitchLineReq", "SwitchLineRsp",
+    "MapLineInfo",
 ]
 missing = [t for t in required if not re.search(rf"message\s+{t}\b", proto_text)]
 if missing:
@@ -108,7 +111,8 @@ manifest = {
     "csharp_namespace": "GameMesh.Protocol",
     "generated_at_utc": os.environ["TS"],
     "required_types": required,
-    "push_message_types": ["aoi.delta.v1", "mailbox.changed.v1", "player.state.v1"],
+    "push_message_types": ["aoi.delta.v1", "mailbox.changed.v1", "player.state.v1",
+                           "chat.world.v1", "chat.whisper.v1", "map.lines.v1"],
 }
 (out / "protocol_manifest.json").write_text(
     json.dumps(manifest, indent=2, ensure_ascii=False) + "\n", encoding="utf-8"

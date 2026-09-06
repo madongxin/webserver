@@ -7,6 +7,7 @@
 #include "SessionRpcClient.h"
 #endif
 #ifdef WEBSERVER_ENABLE_REDIS
+#include "MapRuntime.h"
 #include "PlacementStore.h"
 #endif
 
@@ -38,11 +39,25 @@ void MapLeaseKeeper::Tick() {
                 MapInstanceRegistry::Instance().Release(p.first);
                 continue;
             }
+#ifdef WEBSERVER_ENABLE_REDIS
+            PlacementRecord rec;
+            if (PlacementStore::Instance().Available() &&
+                PlacementStore::Instance().Get(p.first, &rec) &&
+                (rec.state == PlacementState::Closed ||
+                 (!rec.owner_logic_server_id.empty() && rec.owner_logic_server_id != owner))) {
+                MapRuntime::Instance().Unload(p.first);
+                MapInstanceRegistry::Instance().Release(p.first);
+                continue;
+            }
+#endif
             int64_t until = 0;
             if (!SessionRpcClient::Instance().HeartbeatOwner(p.first, owner, p.second, lease_sec_,
                                                             &until)) {
                 LOG_WARN << "MapLeaseKeeper: heartbeat failed map=" << p.first
                          << " epoch=" << p.second << " -> Release";
+#ifdef WEBSERVER_ENABLE_REDIS
+                MapRuntime::Instance().Unload(p.first);
+#endif
                 MapInstanceRegistry::Instance().Release(p.first);
                 continue;
             }
@@ -59,10 +74,19 @@ void MapLeaseKeeper::Tick() {
                 MapInstanceRegistry::Instance().Release(p.first);
                 continue;
             }
+            PlacementRecord rec;
+            if (PlacementStore::Instance().Get(p.first, &rec) &&
+                (rec.state == PlacementState::Closed ||
+                 (!rec.owner_logic_server_id.empty() && rec.owner_logic_server_id != owner))) {
+                MapRuntime::Instance().Unload(p.first);
+                MapInstanceRegistry::Instance().Release(p.first);
+                continue;
+            }
             int64_t until = 0;
             if (!PlacementStore::Instance().Heartbeat(p.first, owner, p.second, lease_sec_, &until)) {
                 LOG_WARN << "MapLeaseKeeper: local Placement heartbeat failed map=" << p.first
                          << " -> Release";
+                MapRuntime::Instance().Unload(p.first);
                 MapInstanceRegistry::Instance().Release(p.first);
                 continue;
             }

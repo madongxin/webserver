@@ -24,6 +24,7 @@
 
 #include <csignal>
 #include <memory>
+#include <vector>
 
 #ifdef WEBSERVER_ENABLE_MYSQL
 #include "ConnectionPool.h"
@@ -45,6 +46,9 @@
 #include "PlacementStore.h"
 #include "PushReplayStore.h"
 #include "SessionStore.h"
+#ifdef WEBSERVER_ENABLE_BRPC
+#include "MapLineSync.h"
+#endif
 #endif
 #ifdef WEBSERVER_ENABLE_ROCKSDB
 #include "DemoKvStore.h"
@@ -1270,7 +1274,7 @@ int RunServer(const LaunchOpts &launch) {
             LOG_WARN << "Redis session disabled (config/redis.cnf)";
         else {
             // Session 权威 Placement；Logic 也需可读 Redis Placement（EnterMap/lease）
-            if (role == "all" || role == "session" || role == "gamelogic") {
+            if (role == "all" || role == "session" || role == "gamelogic" || role == "world") {
                 PlacementStore::Instance().InitFromSessionPrefix(
                     SessionStore::Instance().key_prefix());
             }
@@ -1867,6 +1871,35 @@ int RunServer(const LaunchOpts &launch) {
         LOG_INFO << "MapLeaseKeeper interval_sec=" << hb << " lease_sec=" << lease_sec;
     }
 #ifdef WEBSERVER_ENABLE_REDIS
+    // Session：空线/空本回收（正式常开；与实验热迁恢复解耦）
+    if (role == "session" || role == "all") {
+#ifdef WEBSERVER_ENABLE_GAME_PROTOBUF
+        std::string map_err;
+        if (!MapCatalog::Instance().EnsureDefault(&map_err))
+            LOG_WARN << "MapCatalog load on session: " << map_err;
+#ifdef WEBSERVER_ENABLE_BRPC
+        MapLineSync::Install();
+#endif
+#endif
+        if (const char *pfx = std::getenv("GAMEMESH_REDIS_PREFIX"))
+            PlacementRecoveryScheduler::Instance().SetKeyPrefix(pfx);
+        const double idle_iv =
+            (std::getenv("GAMEMESH_PLACEMENT_IDLE_IV") != nullptr)
+                ? std::atof(std::getenv("GAMEMESH_PLACEMENT_IDLE_IV"))
+                : 5.0;
+        const double iv = idle_iv > 0.5 ? idle_iv : 5.0;
+        loop.RunEvery(iv, []() {
+            std::vector<uint64_t> closed;
+            if (PlacementStore::Instance().CloseIdleInstances(0, 64, &closed) && !closed.empty())
+                LOG_INFO << "PlacementIdleCloser: closed idle maps n=" << closed.size();
+        });
+        LOG_INFO << "PlacementIdleCloser interval_sec=" << iv;
+    }
+    if (role == "gamelogic" || role == "all") {
+#if defined(WEBSERVER_ENABLE_GAME_PROTOBUF) && defined(WEBSERVER_ENABLE_BRPC)
+        MapLineSync::Install();
+#endif
+    }
     // Session：Placement 自动恢复（experimental；正式稳定版默认关闭）
     if ((role == "session" || role == "all") &&
         ExperimentalFeatureEnabled("GAMEMESH_EXPERIMENTAL_PLACEMENT_RECOVERY")) {

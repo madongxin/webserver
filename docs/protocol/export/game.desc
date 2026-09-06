@@ -1,0 +1,839 @@
+
+Ýµ
+
+game.protogame"Æ
+LoginReq
+	player_id (RplayerId
+	device_id (	RdeviceId
+	server_id (RserverId
+ttl_sec (RttlSec*
+kick_other_device (RkickOtherDevice
+
+credential (	R
+credential"§
+LoginRsp
+ok (Rok
+message (	Rmessage
+token (	Rtoken
+	server_id (RserverId$
+login_time_sec (RloginTimeSec'
+kicked_previous (RkickedPrevious
+
+session_id (	R	sessionId
+
+generation (R
+generation0
+profile	 (2.game.PlayerAttributesRprofile"
+ReconnectReq
+	player_id (RplayerId
+
+session_id (	R	sessionId)
+reconnect_ticket (	RreconnectTicket&
+last_server_seq (RlastServerSeq"ã
+ReconnectRsp
+ok (Rok
+message (	Rmessage
+token (	Rtoken
+
+session_id (	R	sessionId
+
+generation (R
+generation,
+need_full_snapshot (RneedFullSnapshot&
+replay_from_seq (RreplayFromSeq"¯
+
+PushAckReq
+	player_id (RplayerId$
+ack_server_seq (RackServerSeq
+
+session_id (	R	sessionId
+fence_token (	R
+fenceToken
+
+generation (R
+generation"\
+
+PushAckRsp
+ok (Rok
+message (	Rmessage$
+trimmed_to_seq (RtrimmedToSeq"®
+ServerPushEnvelope
+
+server_seq (R	serverSeq!
+message_type (	RmessageType
+payload (Rpayload
+reliable (Rreliable 
+coalescable (Rcoalescable"ú
+FullStateSnapshotRsp
+ok (Rok
+message (	Rmessage
+	player_id (RplayerId#
+asset_version (RassetVersion
+item_ids (RitemIds
+item_counts (R
+itemCounts.
+baseline_server_seq (RbaselineServerSeq0
+profile (2.game.PlayerAttributesRprofile
+realm_id	 (RrealmId&
+map_template_id
+ (RmapTemplateId&
+map_instance_id (RmapInstanceId2
+gamelogic_instance_id (	RgamelogicInstanceId
+owner_epoch (R
+ownerEpoch#
+route_version (RrouteVersion(
+self (2.game.EntitySnapshotRself7
+aoi_entities (2.game.EntitySnapshotRaoiEntities)
+snapshot_version (RsnapshotVersion'
+recovery_reason (	RrecoveryReason
+
+life_state (	R	lifeState
+
+error_code (	R	errorCode"f
+WorldSnapshotReq
+	player_id (RplayerId5
+last_applied_server_seq (RlastAppliedServerSeq"t
+
+RespawnReq
+	player_id (RplayerId&
+map_instance_id (RmapInstanceId!
+operation_id (	RoperationId"ž
+
+RespawnRsp
+ok (Rok
+message (	Rmessage
+
+error_code (	R	errorCode(
+self (2.game.EntitySnapshotRself
+
+life_state (	R	lifeState"G
+ValidateSessionReq
+	player_id (RplayerId
+token (	Rtoken"Ì
+ValidateSessionRsp
+ok (Rok
+message (	Rmessage
+valid (Rvalid
+online (Ronline
+	server_id (RserverId
+	device_id (	RdeviceId$
+login_time_sec (RloginTimeSec"-
+CheckOnlineReq
+	player_id (RplayerId"R
+CheckOnlineRsp
+ok (Rok
+message (	Rmessage
+online (Ronline">
+	LogoutReq
+	player_id (RplayerId
+token (	Rtoken"5
+	LogoutRsp
+ok (Rok
+message (	Rmessage"i
+RegisterReq
+	device_id (	RdeviceId!
+display_name (	RdisplayName
+password (	Rpassword"T
+RegisterRsp
+ok (Rok
+message (	Rmessage
+	player_id (RplayerId"B
+FlushBagReq
+	player_id (RplayerId
+reason (	Rreason"7
+FlushBagRsp
+ok (Rok
+message (	Rmessage"\
+ConsumeItemReq
+	player_id (RplayerId
+item_id (RitemId
+count (Rcount"]
+ConsumeItemRsp
+ok (Rok
+message (	Rmessage!
+remain_count (RremainCount"
+ReleaseSkillReq
+	player_id (RplayerId
+skill_id (RskillId
+target_x (RtargetX
+target_y (RtargetY"\
+ReleaseSkillRsp
+ok (Rok
+message (	Rmessage
+cooldown_ms (R
+cooldownMs"¡
+GrantItemReq
+	player_id (RplayerId
+item_id (RitemId
+count (Rcount
+
+extra_data (	R	extraData&
+expire_time_sec (RexpireTimeSec"v
+GrantItemRsp
+ok (Rok
+message (	Rmessage
+instance_id (R
+instanceId
+	bag_total (RbagTotal"Ú
+MailAttachmentDto
+
+slot_index (R	slotIndex
+
+asset_type (	R	assetType
+asset_id (RassetId
+count (Rcount
+	bind_type (	RbindType
+payload (	Rpayload
+claim_state (	R
+claimState"¡
+	MailBrief
+mail_id (RmailId
+category (	Rcategory
+priority (Rpriority
+title (	Rtitle
+sender_name (	R
+senderName
+
+read_state (	R	readState#
+visible_state (	RvisibleState)
+attachment_state (	RattachmentState%
+has_attachment	 (RhasAttachment
+is_favorite
+ (R
+isFavorite
+sent_at (RsentAt
+	expire_at (RexpireAt
+row_version (R
+rowVersion"«
+
+MailDetail%
+brief (2.game.MailBriefRbrief
+body (	Rbody9
+attachments (2.game.MailAttachmentDtoRattachments'
+allowed_actions (	RallowedActions"0
+MailboxSummaryReq
+	player_id (RplayerId"ã
+MailboxSummaryRsp
+ok (Rok
+message (	Rmessage
+
+error_code (	R	errorCode#
+unread_system (RunreadSystem'
+unread_activity (RunreadActivity#
+unread_social (RunreadSocial!
+unread_trade (RunreadTrade1
+unclaimed_attachment (RunclaimedAttachment#
+expiring_soon	 (RexpiringSoon#
+current_count
+ (RcurrentCount!
+max_capacity (RmaxCapacity'
+mailbox_version (RmailboxVersion&
+server_time_utc (RserverTimeUtc"¬
+MailListReq
+	player_id (RplayerId
+category (	Rcategory
+unread (Runread%
+has_attachment (RhasAttachment
+	unclaimed (R	unclaimed#
+expiring_soon (RexpiringSoon
+favorite (Rfavorite
+keyword (	Rkeyword
+cursor	 (	Rcursor
+limit
+ (Rlimit"ï
+MailListRsp
+ok (Rok
+message (	Rmessage
+
+error_code (	R	errorCode%
+mails (2.game.MailBriefRmails
+next_cursor (	R
+nextCursor'
+mailbox_version (RmailboxVersion&
+server_time_utc (RserverTimeUtc"B
+
+MailGetReq
+	player_id (RplayerId
+mail_id (RmailId"Ì
+
+MailGetRsp
+ok (Rok
+message (	Rmessage
+
+error_code (	R	errorCode$
+mail (2.game.MailDetailRmail'
+mailbox_version (RmailboxVersion&
+server_time_utc (RserverTimeUtc"l
+MailReadReq
+	player_id (RplayerId
+mail_id (RmailId'
+idempotency_key (	RidempotencyKey"À
+MailReadRsp
+ok (Rok
+message (	Rmessage
+
+error_code (	R	errorCode
+read_at (RreadAt'
+mailbox_version (RmailboxVersion&
+server_time_utc (RserverTimeUtc"ˆ
+MailClaimReq
+	player_id (RplayerId
+mail_id (RmailId'
+idempotency_key (	RidempotencyKey
+trace_id (	RtraceId"ž
+MailClaimResult
+mail_id (RmailId
+ok (Rok
+
+error_code (	R	errorCode
+message (	Rmessage)
+attachment_state (	RattachmentState"×
+MailClaimRsp
+ok (Rok
+message (	Rmessage
+
+error_code (	R	errorCode-
+result (2.game.MailClaimResultRresult'
+mailbox_version (RmailboxVersion&
+server_time_utc (RserverTimeUtc"œ
+MailBatchClaimReq
+	player_id (RplayerId
+mail_ids (RmailIds4
+idempotency_key_prefix (	RidempotencyKeyPrefix
+trace_id (	RtraceId"Þ
+MailBatchClaimRsp
+ok (Rok
+message (	Rmessage
+
+error_code (	R	errorCode/
+results (2.game.MailClaimResultRresults'
+mailbox_version (RmailboxVersion&
+server_time_utc (RserverTimeUtc"Œ
+MailFavoriteReq
+	player_id (RplayerId
+mail_id (RmailId
+favorite (Rfavorite'
+idempotency_key (	RidempotencyKey"Ì
+MailFavoriteRsp
+ok (Rok
+message (	Rmessage
+
+error_code (	R	errorCode
+is_favorite (R
+isFavorite'
+mailbox_version (RmailboxVersion&
+server_time_utc (RserverTimeUtc"s
+MailBatchReadReq
+	player_id (RplayerId
+mail_ids (RmailIds'
+idempotency_key (	RidempotencyKey"Ñ
+MailBatchReadRsp
+ok (Rok
+message (	Rmessage
+
+error_code (	R	errorCode#
+success_count (RsuccessCount'
+mailbox_version (RmailboxVersion&
+server_time_utc (RserverTimeUtc"u
+MailBatchDeleteReq
+	player_id (RplayerId
+mail_ids (RmailIds'
+idempotency_key (	RidempotencyKey"û
+MailBatchDeleteRsp
+ok (Rok
+message (	Rmessage
+
+error_code (	R	errorCode#
+success_count (RsuccessCount&
+failed_mail_ids (RfailedMailIds'
+mailbox_version (RmailboxVersion&
+server_time_utc (RserverTimeUtc"ž
+MailDeliverAttachment
+
+asset_type (	R	assetType
+asset_id (RassetId
+count (Rcount
+	bind_type (	RbindType
+payload (	Rpayload"³
+MailDeliverReq#
+source_system (	RsourceSystem!
+business_key (	RbusinessKey#
+receiver_type (	RreceiverType
+receiver_id (R
+receiverId
+template_id (	R
+templateId)
+template_version (RtemplateVersion
+category (	Rcategory
+priority (Rpriority
+sender_name	 (	R
+senderName
+title
+ (	Rtitle
+body (	Rbody=
+attachments (2.game.MailDeliverAttachmentRattachments
+send_at (RsendAt
+	expire_at (RexpireAt
+trace_id (	RtraceId4
+session_token_override (	RsessionTokenOverride"Á
+MailDeliverRsp
+ok (Rok
+message (	Rmessage
+
+error_code (	R	errorCode
+mail_id (RmailId%
+idempotent_hit (RidempotentHit&
+server_time_utc (RserverTimeUtc"Ä
+EnterMapReq
+	player_id (RplayerId
+realm_id (RrealmId&
+map_template_id (RmapTemplateId&
+map_instance_id (RmapInstanceId(
+map_data_version (RmapDataVersion&
+map_data_sha256 (	RmapDataSha256!
+operation_id (	RoperationId
+line_no (RlineNo
+queue_token	 (	R
+queueToken"—
+EnterMapRsp
+ok (Rok
+message (	Rmessage&
+map_template_id (RmapTemplateId&
+map_instance_id (RmapInstanceId2
+gamelogic_instance_id (	RgamelogicInstanceId
+owner_epoch (R
+ownerEpoch#
+route_version (RrouteVersion1
+spawn_position (2
+.game.Vec3RspawnPosition
+	spawn_yaw	 (RspawnYaw(
+map_data_version
+ (RmapDataVersion&
+map_data_sha256 (	RmapDataSha256(
+self (2.game.EntitySnapshotRself7
+aoi_snapshot (2.game.EntitySnapshotRaoiSnapshot
+kind (	Rkind
+line_no (RlineNo
+	occupancy (R	occupancy
+soft_cap (RsoftCap
+hard_cap (RhardCap
+
+error_code (	R	errorCode
+queue_token (	R
+queueToken%
+queue_position (RqueuePosition'
+lines (2.game.MapLineInfoRlines"ë
+MapLineInfo
+line_no (RlineNo&
+map_instance_id (RmapInstanceId
+	occupancy (R	occupancy
+soft_cap (RsoftCap
+hard_cap (RhardCap
+state (	Rstate1
+owner_logic_server_id (	RownerLogicServerId"r
+QueryMapLinesReq
+	player_id (RplayerId
+realm_id (RrealmId&
+map_template_id (RmapTemplateId"À
+QueryMapLinesRsp
+ok (Rok
+message (	Rmessage
+
+error_code (	R	errorCode&
+map_template_id (RmapTemplateId
+kind (	Rkind'
+lines (2.game.MapLineInfoRlines"“
+CreateDungeonReq
+	player_id (RplayerId
+realm_id (RrealmId&
+map_template_id (RmapTemplateId*
+member_player_ids (RmemberPlayerIds!
+operation_id (	RoperationId0
+preferred_keep_logic (RpreferredKeepLogic
+
+difficulty (R
+difficulty"Ñ
+CreateDungeonRsp
+ok (Rok
+message (	Rmessage
+
+error_code (	R	errorCode&
+map_template_id (RmapTemplateId&
+map_instance_id (RmapInstanceId2
+gamelogic_instance_id (	RgamelogicInstanceId
+owner_epoch (R
+ownerEpoch#
+route_version (RrouteVersion*
+member_player_ids	 (RmemberPlayerIds"«
+SwitchLineReq
+	player_id (RplayerId
+realm_id (RrealmId&
+map_template_id (RmapTemplateId
+line_no (RlineNo!
+operation_id (	RoperationId"ÿ
+SwitchLineRsp
+ok (Rok
+message (	Rmessage
+
+error_code (	R	errorCode&
+map_template_id (RmapTemplateId&
+map_instance_id (RmapInstanceId2
+gamelogic_instance_id (	RgamelogicInstanceId
+owner_epoch (R
+ownerEpoch#
+route_version (RrouteVersion
+kind	 (	Rkind
+line_no
+ (RlineNo
+	occupancy (R	occupancy
+soft_cap (RsoftCap
+hard_cap (RhardCap1
+spawn_position (2
+.game.Vec3RspawnPosition
+	spawn_yaw (RspawnYaw(
+self (2.game.EntitySnapshotRself7
+aoi_snapshot (2.game.EntitySnapshotRaoiSnapshot'
+lines (2.game.MapLineInfoRlines"©
+EnqueueMapReq
+	player_id (RplayerId
+realm_id (RrealmId&
+map_template_id (RmapTemplateId
+line_no (RlineNo
+queue_token (	R
+queueToken"ò
+EnqueueMapRsp
+ok (Rok
+message (	Rmessage
+
+error_code (	R	errorCode
+queue_token (	R
+queueToken%
+queue_position (RqueuePosition!
+queue_length (RqueueLength
+line_no (RlineNo
+ready (Rready"R
+LeaveMapReq
+	player_id (RplayerId&
+map_instance_id (RmapInstanceId"7
+LeaveMapRsp
+ok (Rok
+message (	Rmessage"Q
+
+MapPingReq
+	player_id (RplayerId&
+map_instance_id (RmapInstanceId"®
+
+MapPingRsp
+ok (Rok
+message (	Rmessage
+owner_epoch (R
+ownerEpoch!
+player_count (RplayerCount2
+gamelogic_instance_id (	RgamelogicInstanceId"‚
+ChatSendReq
+	player_id (RplayerId
+channel (	Rchannel
+text (	Rtext(
+target_player_id (RtargetPlayerId"µ
+ChatSendRsp
+ok (Rok
+message (	Rmessage
+
+error_code (	R	errorCode
+
+message_id (R	messageId$
+server_time_ms (RserverTimeMs
+channel (	Rchannel"ô
+
+ChatNotify
+
+message_id (R	messageId(
+sender_player_id (RsenderPlayerId
+sender_name (	R
+senderName
+channel (	Rchannel
+text (	Rtext$
+server_time_ms (RserverTimeMs(
+target_player_id (RtargetPlayerId",
+FriendListReq
+	player_id (RplayerId"X
+FriendListRsp
+ok (Rok
+message (	Rmessage
+
+error_code (	R	errorCode"0
+Vec3
+x (Rx
+y (Ry
+z (Rz"ä
+PlayerAttributes
+	player_id (RplayerId
+player_name (	R
+playerName
+hp (Rhp
+max_hp (RmaxHp
+mp (Rmp
+max_mp (RmaxMp
+attack (Rattack
+spell_power (R
+spellPower
+defense	 (Rdefense)
+magic_resistance
+ (RmagicResistance
+crit_chance (R
+critChance
+crit_damage (R
+critDamage
+
+move_speed (R	moveSpeed!
+attack_speed (RattackSpeed#
+stats_version (RstatsVersion
+
+life_state (	R	lifeState"Ì
+EntitySnapshot
+	player_id (RplayerId
+player_name (	R
+playerName&
+position (2
+.game.Vec3Rposition
+yaw (Ryaw
+hp (Rhp
+max_hp (RmaxHp
+	state_seq (RstateSeq"0
+GetSelfProfileReq
+	player_id (RplayerId"Ž
+GetSelfProfileRsp
+ok (Rok
+message (	Rmessage
+
+error_code (	R	errorCode0
+profile (2.game.PlayerAttributesRprofile"y
+PlayerBrief
+	player_id (RplayerId
+player_name (	R
+playerName
+max_hp (RmaxHp
+max_mp (RmaxMp"{
+GetPlayerBriefReq
+	player_id (RplayerId(
+target_player_id (RtargetPlayerId
+player_name (	R
+playerName"…
+GetPlayerBriefRsp
+ok (Rok
+message (	Rmessage
+
+error_code (	R	errorCode'
+brief (2.game.PlayerBriefRbrief"\
+QueryOnlineStateReq
+	player_id (RplayerId(
+target_player_id (RtargetPlayerId"Â
+QueryOnlineStateRsp
+ok (Rok
+message (	Rmessage
+
+error_code (	R	errorCode
+	player_id (RplayerId
+state (	Rstate&
+map_instance_id (RmapInstanceId
+line_no (RlineNo&
+map_template_id (RmapTemplateId
+kind	 (	Rkind2
+gamelogic_instance_id
+ (	RgamelogicInstanceId"®
+MoveReq
+	player_id (RplayerId&
+map_instance_id (RmapInstanceId&
+position (2
+.game.Vec3Rposition
+yaw (Ryaw$
+client_time_ms (RclientTimeMs"Ï
+MoveRsp
+ok (Rok
+message (	Rmessage
+
+error_code (	R	errorCode&
+position (2
+.game.Vec3Rposition
+yaw (Ryaw
+	state_seq (RstateSeq$
+server_time_ms (RserverTimeMs"H
+AoiEvent
+op (Rop,
+entity (2.game.EntitySnapshotRentity"Z
+AoiDelta&
+map_instance_id (RmapInstanceId&
+events (2.game.AoiEventRevents"¸
+PlayerMailSendReq(
+sender_player_id (RsenderPlayerId,
+receiver_player_id (RreceiverPlayerId
+title (	Rtitle
+body (	Rbody!
+operation_id (	RoperationId"œ
+PlayerMailSendRsp
+ok (Rok
+message (	Rmessage
+
+error_code (	R	errorCode
+mail_id (RmailId%
+idempotent_hit (RidempotentHit"
+MailboxChangedNotify
+	player_id (RplayerId'
+mailbox_version (RmailboxVersion!
+unread_count (RunreadCount"ì
+ClientHelloReq)
+protocol_version (RprotocolVersion#
+schema_sha256 (	RschemaSha256%
+client_version (	RclientVersion
+platform (	Rplatform#
+build_channel (	RbuildChannel"
+capabilities (	Rcapabilities"u
+MapManifestEntry&
+map_template_id (RmapTemplateId!
+data_version (RdataVersion
+sha256 (	Rsha256"Í
+ServerHelloRsp
+ok (Rok
+
+error_code (	R	errorCode
+message (	Rmessage)
+protocol_version (RprotocolVersionC
+min_supported_protocol_version (RminSupportedProtocolVersion#
+schema_sha256 (	RschemaSha256!
+server_build (	RserverBuild$
+server_time_ms (RserverTimeMs2
+heartbeat_interval_ms	 (RheartbeatIntervalMs&
+idle_timeout_ms
+ (RidleTimeoutMs"
+capabilities (	Rcapabilities6
+gameplay_config_version (RgameplayConfigVersion0
+map_manifest_version (RmapManifestVersion*
+maps (2.game.MapManifestEntryRmaps"x
+SessionReplacedNotify
+reason_code (	R
+reasonCode$
+server_time_ms (RserverTimeMs
+message (	Rmessage"
+HeartbeatReq.
+client_monotonic_ms (RclientMonotonicMs&
+last_server_seq (RlastServerSeq
+echo_ms (RechoMs"È
+HeartbeatRsp
+ok (Rok
+
+error_code (	R	errorCode$
+server_time_ms (RserverTimeMs
+echo_ms (RechoMs$
+server_recv_ms (RserverRecvMs$
+jitter_hint_ms (RjitterHintMs"ö
+GameRequest
+seq (Rseq#
+session_token (	RsessionToken9
+consume_item
+ (2.game.ConsumeItemReqH RconsumeItem<
+release_skill (2.game.ReleaseSkillReqH RreleaseSkill3
+
+grant_item (2.game.GrantItemReqH R	grantItem&
+login (2.game.LoginReqH RloginE
+validate_session (2.game.ValidateSessionReqH RvalidateSession9
+check_online (2.game.CheckOnlineReqH RcheckOnline)
+logout (2.game.LogoutReqH Rlogout2
+	reconnect (2.game.ReconnectReqH R	reconnect/
+register (2.game.RegisterReqH Rregister0
+	flush_bag (2.game.FlushBagReqH RflushBagB
+mailbox_summary (2.game.MailboxSummaryReqH RmailboxSummary0
+	mail_list (2.game.MailListReqH RmailList-
+mail_get  (2.game.MailGetReqH RmailGet0
+	mail_read! (2.game.MailReadReqH RmailRead3
+
+mail_claim" (2.game.MailClaimReqH R	mailClaimC
+mail_batch_claim# (2.game.MailBatchClaimReqH RmailBatchClaim<
+mail_favorite$ (2.game.MailFavoriteReqH RmailFavorite@
+mail_batch_read% (2.game.MailBatchReadReqH RmailBatchReadF
+mail_batch_delete& (2.game.MailBatchDeleteReqH RmailBatchDelete9
+mail_deliver' (2.game.MailDeliverReqH RmailDeliver0
+	enter_map( (2.game.EnterMapReqH RenterMap0
+	leave_map) (2.game.LeaveMapReqH RleaveMap-
+map_ping* (2.game.MapPingReqH RmapPing0
+	chat_send2 (2.game.ChatSendReqH RchatSend6
+friend_list3 (2.game.FriendListReqH R
+friendList-
+push_ack4 (2.game.PushAckReqH RpushAckC
+get_self_profile< (2.game.GetSelfProfileReqH RgetSelfProfile#
+move= (2.game.MoveReqH RmoveC
+player_mail_send? (2.game.PlayerMailSendReqH RplayerMailSend9
+client_helloF (2.game.ClientHelloReqH RclientHello2
+	heartbeatG (2.game.HeartbeatReqH R	heartbeat?
+world_snapshotH (2.game.WorldSnapshotReqH RworldSnapshot,
+respawnI (2.game.RespawnReqH RrespawnC
+get_player_briefJ (2.game.GetPlayerBriefReqH RgetPlayerBriefI
+query_online_stateK (2.game.QueryOnlineStateReqH RqueryOnlineState@
+query_map_linesL (2.game.QueryMapLinesReqH RqueryMapLines?
+create_dungeonM (2.game.CreateDungeonReqH RcreateDungeon6
+switch_lineN (2.game.SwitchLineReqH R
+switchLine6
+enqueue_mapO (2.game.EnqueueMapReqH R
+enqueueMapB
+body"®
+GameResponse
+seq (Rseq
+ok (Rok
+message (	Rmessage
+
+error_code (	R	errorCode
+	retryable (R	retryable$
+server_time_ms (RserverTimeMs
+trace_id (	RtraceId9
+consume_item
+ (2.game.ConsumeItemRspH RconsumeItem<
+release_skill (2.game.ReleaseSkillRspH RreleaseSkill3
+
+grant_item (2.game.GrantItemRspH R	grantItem&
+login (2.game.LoginRspH RloginE
+validate_session (2.game.ValidateSessionRspH RvalidateSession9
+check_online (2.game.CheckOnlineRspH RcheckOnline)
+logout (2.game.LogoutRspH Rlogout2
+	reconnect (2.game.ReconnectRspH R	reconnect/
+register (2.game.RegisterRspH Rregister0
+	flush_bag (2.game.FlushBagRspH RflushBagB
+mailbox_summary (2.game.MailboxSummaryRspH RmailboxSummary0
+	mail_list (2.game.MailListRspH RmailList-
+mail_get  (2.game.MailGetRspH RmailGet0
+	mail_read! (2.game.MailReadRspH RmailRead3
+
+mail_claim" (2.game.MailClaimRspH R	mailClaimC
+mail_batch_claim# (2.game.MailBatchClaimRspH RmailBatchClaim<
+mail_favorite$ (2.game.MailFavoriteRspH RmailFavorite@
+mail_batch_read% (2.game.MailBatchReadRspH RmailBatchReadF
+mail_batch_delete& (2.game.MailBatchDeleteRspH RmailBatchDelete9
+mail_deliver' (2.game.MailDeliverRspH RmailDeliver0
+	enter_map( (2.game.EnterMapRspH RenterMap0
+	leave_map) (2.game.LeaveMapRspH RleaveMap-
+map_ping* (2.game.MapPingRspH RmapPing0
+	chat_send2 (2.game.ChatSendRspH RchatSend6
+friend_list3 (2.game.FriendListRspH R
+friendList-
+push_ack4 (2.game.PushAckRspH RpushAck;
+server_push5 (2.game.ServerPushEnvelopeH R
+serverPushA
+full_snapshot6 (2.game.FullStateSnapshotRspH RfullSnapshotC
+get_self_profile< (2.game.GetSelfProfileRspH RgetSelfProfile#
+move= (2.game.MoveRspH Rmove-
+	aoi_delta> (2.game.AoiDeltaH RaoiDeltaC
+player_mail_send? (2.game.PlayerMailSendRspH RplayerMailSendE
+mailbox_changed@ (2.game.MailboxChangedNotifyH RmailboxChanged9
+server_helloF (2.game.ServerHelloRspH RserverHello2
+	heartbeatG (2.game.HeartbeatRspH R	heartbeat,
+respawnH (2.game.RespawnRspH Rrespawn3
+chat_notifyI (2.game.ChatNotifyH R
+chatNotifyC
+get_player_briefJ (2.game.GetPlayerBriefRspH RgetPlayerBriefI
+query_online_stateK (2.game.QueryOnlineStateRspH RqueryOnlineStateH
+session_replacedL (2.game.SessionReplacedNotifyH RsessionReplaced@
+query_map_linesM (2.game.QueryMapLinesRspH RqueryMapLines?
+create_dungeonN (2.game.CreateDungeonRspH RcreateDungeon6
+switch_lineO (2.game.SwitchLineRspH R
+switchLine6
+enqueue_mapP (2.game.EnqueueMapRspH R
+enqueueMapB
+bodyBªGameMesh.Protocolbproto3

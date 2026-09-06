@@ -18,6 +18,7 @@
 
 #include <brpc/controller.h>
 
+#include <condition_variable>
 #include <cstdio>
 #include <map>
 #include <memory>
@@ -240,11 +241,33 @@ void ExecuteDispatch(const glrpc::ClientCommand &request, glrpc::CommandResult *
     meta.session_id = request.session_id();
     meta.fence_token = request.fence_token();
     meta.generation = request.generation();
-    ForwardMetaContext::Set(meta);
-
     std::string out_frame;
-    const bool ok = gameproto::HandleFrame(request.payload(), &out_frame);
-    ForwardMetaContext::Clear();
+    bool ok = false;
+    const uint64_t map_key = request.map_instance_id();
+    if (map_key != 0 && PlayerSerialQueue::MapMailbox().started()) {
+        std::mutex wait_mu;
+        std::condition_variable wait_cv;
+        bool done = false;
+        if (!PlayerSerialQueue::MapMailbox().TryPost(map_key, [&]() {
+                ForwardMetaContext::Set(meta);
+                ok = gameproto::HandleFrame(request.payload(), &out_frame);
+                ForwardMetaContext::Clear();
+                std::lock_guard<std::mutex> lk(wait_mu);
+                done = true;
+                wait_cv.notify_one();
+            })) {
+            response->set_ok(false);
+            response->set_error_code("ERR_OVERLOADED");
+            response->set_message("map mailbox overloaded");
+            return;
+        }
+        std::unique_lock<std::mutex> lk(wait_mu);
+        wait_cv.wait(lk, [&] { return done; });
+    } else {
+        ForwardMetaContext::Set(meta);
+        ok = gameproto::HandleFrame(request.payload(), &out_frame);
+        ForwardMetaContext::Clear();
+    }
     response->set_ok(ok);
     response->set_message(ok ? "ok" : "handle_frame_failed");
     if (!out_frame.empty())

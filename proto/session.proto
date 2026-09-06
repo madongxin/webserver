@@ -269,9 +269,14 @@ message PlacementRecord {
   string owner_logic_server_id = 4;
   uint64 owner_epoch = 5;
   uint64 route_version = 6;
-  string state = 7;  // CREATING/READY/FROZEN/MIGRATING/RECOVERING/CLOSED
+  string state = 7;  // CREATING/READY/FROZEN/MIGRATING/RECOVERING/DRAINING/CLOSED
   int64 updated_at = 8;
   int64 lease_until = 9;
+  string kind = 10;
+  uint32 line_no = 11;
+  uint32 occupancy = 12;
+  uint32 soft_cap = 13;
+  uint32 hard_cap = 14;
 }
 
 message ResolveOrCreateMapRequest {
@@ -283,6 +288,12 @@ message ResolveOrCreateMapRequest {
   uint64 player_id = 6;        // 非 0：原子占位（公共池 50 人）
   string operation_id = 7;
   uint32 public_map_capacity = 8;  // 0=默认 50
+  uint32 line_no = 9;
+  string kind = 10;          // LEGACY_POOL | LINE | DUNGEON；空=LEGACY_POOL
+  uint32 soft_cap = 11;
+  uint32 hard_cap = 12;
+  uint32 max_lines = 13;
+  string queue_token = 14;
 }
 
 message ResolveOrCreateMapResponse {
@@ -290,6 +301,104 @@ message ResolveOrCreateMapResponse {
   string message = 2;
   string error_code = 3;
   PlacementRecord placement = 4;
+}
+
+message QueryMapLinesRequest {
+  uint32 realm_id = 1;
+  uint64 map_template_id = 2;
+}
+
+message QueryMapLinesResponse {
+  bool ok = 1;
+  string message = 2;
+  string error_code = 3;
+  string kind = 4;
+  repeated game.MapLineInfo lines = 5;
+}
+
+message CreateDungeonRequest {
+  uint32 realm_id = 1;
+  uint64 map_template_id = 2;
+  uint64 player_id = 3;
+  repeated uint64 member_player_ids = 4;
+  string operation_id = 5;
+  string preferred_owner = 6;
+  uint32 soft_cap = 7;
+  uint32 hard_cap = 8;
+  uint32 empty_close_delay = 9;
+}
+
+message CreateDungeonResponse {
+  bool ok = 1;
+  string message = 2;
+  string error_code = 3;
+  PlacementRecord placement = 4;
+  repeated uint64 member_player_ids = 5;
+}
+
+message SwitchLineRequest {
+  uint32 realm_id = 1;
+  uint64 map_template_id = 2;
+  uint64 player_id = 3;
+  uint32 line_no = 4;
+  string operation_id = 5;
+  uint32 soft_cap = 6;
+  uint32 hard_cap = 7;
+}
+
+message SwitchLineResponse {
+  bool ok = 1;
+  string message = 2;
+  string error_code = 3;
+  PlacementRecord placement = 4;
+  uint32 occupancy = 5;
+}
+
+message EnqueueMapRequest {
+  uint32 realm_id = 1;
+  uint64 map_template_id = 2;
+  uint64 player_id = 3;
+  uint32 line_no = 4;
+  string queue_token = 5;
+  uint32 hard_cap = 6;
+}
+
+message EnqueueMapResponse {
+  bool ok = 1;
+  string message = 2;
+  string error_code = 3;
+  string queue_token = 4;
+  uint32 queue_position = 5;
+  uint32 queue_length = 6;
+  uint32 line_no = 7;
+  bool ready = 8;
+}
+
+message DrainMapRequest {
+  uint64 map_instance_id = 1;
+  string reason = 2;
+}
+
+message DrainMapResponse {
+  bool ok = 1;
+  string message = 2;
+  string error_code = 3;
+  PlacementRecord placement = 4;
+}
+
+message LiveMigrateMapRequest {
+  uint64 map_instance_id = 1;
+  string new_owner_logic_server_id = 2;  // 空=排除当前后选健康 Owner
+  string idempotency_key = 3;
+  uint64 expect_epoch = 4;
+}
+
+message LiveMigrateMapResponse {
+  bool ok = 1;
+  string message = 2;
+  string error_code = 3;
+  PlacementRecord placement = 4;
+  repeated uint64 player_ids = 5;
 }
 
 message GetPlacementRequest {
@@ -451,6 +560,12 @@ service SessionService {
 
   // --- Placement ---
   rpc ResolveOrCreateMap(ResolveOrCreateMapRequest) returns (ResolveOrCreateMapResponse);
+  rpc QueryMapLines(QueryMapLinesRequest) returns (QueryMapLinesResponse);
+  rpc CreateDungeon(CreateDungeonRequest) returns (CreateDungeonResponse);
+  rpc SwitchLine(SwitchLineRequest) returns (SwitchLineResponse);
+  rpc EnqueueMap(EnqueueMapRequest) returns (EnqueueMapResponse);
+  rpc DrainMap(DrainMapRequest) returns (DrainMapResponse);
+  rpc LiveMigrateMap(LiveMigrateMapRequest) returns (LiveMigrateMapResponse);
   rpc GetPlacement(GetPlacementRequest) returns (GetPlacementResponse);
   rpc MigrateMap(MigrateMapRequest) returns (MigrateMapResponse);
   rpc MarkRecovering(MarkRecoveringRequest) returns (MarkRecoveringResponse);

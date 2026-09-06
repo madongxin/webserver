@@ -7,8 +7,10 @@
 #include "MapInstanceRegistry.h"
 #include "MapPlacement.h"
 #include "MapRuntime.h"
+#include "SceneKind.h"
 
 #ifdef WEBSERVER_ENABLE_REDIS
+#include "MapLineView.h"
 #include "PlacementAuthority.h"
 #include "PlacementStore.h"
 #include "PushReplayStore.h"
@@ -74,8 +76,15 @@ bool FetchAuthorityPlacement(uint64_t map_instance_id, PlacementRecord *out, std
         return false;
     }
     if (PlacementStore::Instance().Available() &&
-        PlacementStore::Instance().Get(map_instance_id, out))
+        PlacementStore::Instance().Get(map_instance_id, out)) {
+        if (out->state == PlacementState::Closed) {
+            MapRuntime::Instance().Unload(map_instance_id);
+            if (err)
+                *err = IsDungeonKind(out->kind) ? "ERR_DUNGEON_NOT_FOUND" : "ERR_MAP_NOT_READY";
+            return false;
+        }
         return true;
+    }
 #ifdef WEBSERVER_ENABLE_BRPC
     if (SessionRpcClient::Instance().ready()) {
         sess::GetPlacementResponse grsp;
@@ -91,6 +100,13 @@ bool FetchAuthorityPlacement(uint64_t map_instance_id, PlacementRecord *out, std
             out->state = PlacementStore::StateFromString(p.state());
             out->updated_at = p.updated_at();
             out->lease_until = p.lease_until();
+            out->kind = p.kind();
+            if (out->state == PlacementState::Closed) {
+                MapRuntime::Instance().Unload(map_instance_id);
+                if (err)
+                    *err = IsDungeonKind(out->kind) ? "ERR_DUNGEON_NOT_FOUND" : "ERR_MAP_NOT_READY";
+                return false;
+            }
             return true;
         }
     }
@@ -1388,6 +1404,10 @@ bool GameLogic::HandleEnterMap(const game::EnterMapReq &req, game::GameResponse 
                 auth.map_template_id != 0 ? auth.map_template_id : req.map_template_id();
             place.realm_id = auth.realm_id != 0 ? auth.realm_id : req.realm_id();
             place.lease_until_unix = auth.lease_until;
+            place.kind = auth.kind;
+            place.line_no = auth.line_no;
+            place.soft_cap = auth.soft_cap;
+            place.hard_cap = auth.hard_cap;
 #else
             body->set_message("ERR_PLACEMENT_UNAVAILABLE");
             rsp->set_ok(false);
@@ -1412,8 +1432,13 @@ bool GameLogic::HandleEnterMap(const game::EnterMapReq &req, game::GameResponse 
 #ifdef WEBSERVER_ENABLE_REDIS
             PlacementRecord prec;
             std::string ignore;
-            if (FetchAuthorityPlacement(place.map_instance_id, &prec, &ignore))
+            if (FetchAuthorityPlacement(place.map_instance_id, &prec, &ignore)) {
                 place.lease_until_unix = prec.lease_until;
+                place.kind = prec.kind;
+                place.line_no = prec.line_no;
+                place.soft_cap = prec.soft_cap;
+                place.hard_cap = prec.hard_cap;
+            }
 #endif
         }
     } else if (formalish) {
@@ -1448,6 +1473,10 @@ bool GameLogic::HandleEnterMap(const game::EnterMapReq &req, game::GameResponse 
             auth.map_template_id != 0 ? auth.map_template_id : req.map_template_id();
         place.realm_id = auth.realm_id != 0 ? auth.realm_id : req.realm_id();
         place.lease_until_unix = auth.lease_until;
+        place.kind = auth.kind;
+        place.line_no = auth.line_no;
+        place.soft_cap = auth.soft_cap;
+        place.hard_cap = auth.hard_cap;
 #else
         body->set_message("ERR_PLACEMENT_UNAVAILABLE");
         rsp->set_ok(false);
@@ -1475,6 +1504,10 @@ bool GameLogic::HandleEnterMap(const game::EnterMapReq &req, game::GameResponse 
             place.map_template_id = pout.placement.map_template_id;
             place.realm_id = pout.placement.realm_id;
             place.lease_until_unix = pout.placement.lease_until;
+            place.kind = pout.placement.kind;
+            place.line_no = pout.placement.line_no;
+            place.soft_cap = pout.placement.soft_cap;
+            place.hard_cap = pout.placement.hard_cap;
         } else
 #endif
         {
@@ -1604,6 +1637,15 @@ bool GameLogic::HandleEnterMap(const game::EnterMapReq &req, game::GameResponse 
     body->set_gamelogic_instance_id(MapInstanceRegistry::Instance().local_instance_id());
     body->set_owner_epoch(place.owner_epoch);
     body->set_route_version(route_ver);
+    body->set_kind(place.kind.empty() ? "LEGACY_POOL" : place.kind);
+    body->set_line_no(place.line_no);
+    body->set_soft_cap(place.soft_cap);
+    body->set_hard_cap(place.hard_cap);
+#ifdef WEBSERVER_ENABLE_REDIS
+    body->set_occupancy(PlacementStore::Instance().Occupancy(place.map_instance_id));
+    if (body->kind() == "LINE")
+        MapLineView::FillLines(req.realm_id(), place.map_template_id, body->mutable_lines());
+#endif
 
     if (static_data) {
         body->set_map_data_version(static_data->data_version());
@@ -1627,6 +1669,16 @@ bool GameLogic::HandleEnterMap(const game::EnterMapReq &req, game::GameResponse 
                 body->set_gamelogic_instance_id(MapInstanceRegistry::Instance().local_instance_id());
                 body->set_owner_epoch(place.owner_epoch);
                 body->set_route_version(route_ver);
+                body->set_kind(place.kind.empty() ? "LEGACY_POOL" : place.kind);
+                body->set_line_no(place.line_no);
+                body->set_soft_cap(place.soft_cap);
+                body->set_hard_cap(place.hard_cap);
+#ifdef WEBSERVER_ENABLE_REDIS
+                body->set_occupancy(PlacementStore::Instance().Occupancy(place.map_instance_id));
+                if (body->kind() == "LINE")
+                    MapLineView::FillLines(req.realm_id(), place.map_template_id,
+                                          body->mutable_lines());
+#endif
                 body->mutable_spawn_position()->set_x(self_now.x);
                 body->mutable_spawn_position()->set_y(self_now.y);
                 body->mutable_spawn_position()->set_z(self_now.z);
@@ -1681,6 +1733,19 @@ bool GameLogic::HandleEnterMap(const game::EnterMapReq &req, game::GameResponse 
         } else if (have_cached) {
             recovery = "SPAWN_FALLBACK";
         }
+        MapScenePolicy pol;
+        const bool have_pol = MapCatalog::Instance().GetScenePolicy(place.map_template_id, &pol);
+        if (recovery == "SPAWN_FALLBACK" && have_pol && pol.spawn_scatter_radius > 0.f) {
+            float nx = sx, ny = sy, nz = sz;
+            if (static_data->FindScatteredSpawn(sx, sy, sz, pol.spawn_scatter_radius,
+                                                req.player_id(), &nx, &ny, &nz)) {
+                sx = nx;
+                sy = ny;
+                sz = nz;
+            }
+        }
+        const int view_r = (have_pol && pol.aoi_view_radius_cells >= 0) ? pol.aoi_view_radius_cells
+                                                                       : -1;
         MapEntity me;
         me.player_id = req.player_id();
         me.player_name = attrs.player_name();
@@ -1702,7 +1767,7 @@ bool GameLogic::HandleEnterMap(const game::EnterMapReq &req, game::GameResponse 
         AoiPushBatch pushes;
         std::string rerr;
         if (!MapRuntime::Instance().Enter(place.map_instance_id, static_data, me, &self, &snap,
-                                          &pushes, &rerr)) {
+                                          &pushes, &rerr, view_r)) {
             rollback_enter();
             body->set_ok(false);
             body->set_message(rerr.empty() ? "map runtime enter failed" : rerr);
@@ -1863,7 +1928,12 @@ bool GameLogic::HandleChatSend(const game::ChatSendReq &req, game::GameResponse 
     if (req.player_id() == 0)
         return fail("ERR_INVALID_ARGUMENT", "player_id required");
     if (!social::ValidWorldChannel(req.channel()))
-        return fail("ERR_CHANNEL_FORBIDDEN", "world channel only");
+        return fail("ERR_CHANNEL_FORBIDDEN", "channel not allowed");
+    const bool whisper = social::IsWhisperChannel(req.channel());
+    if (whisper && req.target_player_id() == 0)
+        return fail("ERR_INVALID_ARGUMENT", "whisper requires target_player_id");
+    if (whisper && req.target_player_id() == req.player_id())
+        return fail("ERR_INVALID_ARGUMENT", "cannot whisper self");
     const size_t max_cp = static_cast<size_t>(EnvBoundedInt("GAMEMESH_CHAT_MAX_CP", 200, 8, 2000));
     const size_t max_bytes =
         static_cast<size_t>(EnvBoundedInt("GAMEMESH_CHAT_MAX_BYTES", 800, 16, 4096));
@@ -1893,7 +1963,8 @@ bool GameLogic::HandleChatSend(const game::ChatSendReq &req, game::GameResponse 
     }
     if (sender_name.empty())
         sender_name = "player";
-    const std::string channel = req.channel().empty() ? "world" : req.channel();
+    const std::string channel =
+        req.channel().empty() ? (whisper ? "whisper" : "world") : req.channel();
     const int64_t now = NowMs();
 #ifdef WEBSERVER_ENABLE_BRPC
     game::GameResponse inner;
@@ -1906,10 +1977,18 @@ bool GameLogic::HandleChatSend(const game::ChatSendReq &req, game::GameResponse 
     n->set_channel(channel);
     n->set_text(req.text());
     n->set_server_time_ms(now);
+    if (whisper)
+        n->set_target_player_id(req.target_player_id());
     std::string payload;
     if (inner.SerializeToString(&payload)) {
         std::vector<SessionStore::OnlinePushTarget> targets;
-        SessionStore::Instance().ListOnlinePushTargets(&targets, 256);
+        if (whisper) {
+            SessionStore::OnlinePushTarget one;
+            if (SessionStore::Instance().GetOnlinePushTarget(req.target_player_id(), &one))
+                targets.push_back(std::move(one));
+        } else {
+            SessionStore::Instance().ListOnlinePushTargets(&targets, 256);
+        }
         std::map<std::string, gwpush::PushBatchRequest> batches;
         for (const auto &t : targets) {
             if (t.gateway_id.empty() || t.session_id.empty())
@@ -1920,7 +1999,7 @@ bool GameLogic::HandleChatSend(const game::ChatSendReq &req, game::GameResponse 
             m->set_player_id(t.player_id);
             m->set_session_id(t.session_id);
             m->set_server_seq(0);
-            m->set_message_type("chat.world.v1");
+            m->set_message_type(whisper ? "chat.whisper.v1" : "chat.world.v1");
             m->set_payload(payload);
             m->set_reliable(false);
             m->set_coalescable(false);
@@ -2086,8 +2165,22 @@ bool GameLogic::HandleQueryOnlineState(const game::QueryOnlineStateReq &req,
     const uint64_t target = req.target_player_id() != 0 ? req.target_player_id() : req.player_id();
     std::string state = "offline";
 #ifdef WEBSERVER_ENABLE_REDIS
-    if (!SessionStore::Instance().QueryPublicOnlineState(target, &state))
+    SessionStore::PublicPresence pres;
+    if (!SessionStore::Instance().QueryPublicPresence(target, &pres))
         return fail("ERR_DEPENDENCY_UNAVAILABLE", "session unavailable");
+    state = pres.state;
+    body->set_map_instance_id(pres.map_instance_id);
+    body->set_gamelogic_instance_id(pres.gamelogic_instance_id);
+    if (pres.map_instance_id != 0 && PlacementStore::Instance().Available()) {
+        PlacementRecord rec;
+        if (PlacementStore::Instance().Get(pres.map_instance_id, &rec)) {
+            body->set_line_no(rec.line_no);
+            body->set_map_template_id(rec.map_template_id);
+            body->set_kind(rec.kind);
+            if (body->gamelogic_instance_id().empty())
+                body->set_gamelogic_instance_id(rec.owner_logic_server_id);
+        }
+    }
 #else
     (void)target;
     return fail("ERR_DEPENDENCY_UNAVAILABLE", "session unavailable");

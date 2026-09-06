@@ -282,3 +282,37 @@ void MapStaticData::WorldToAoiCell(float x, float z, int *cell_x, int *cell_z) c
     if (cell_z)
         *cell_z = static_cast<int>(std::floor((z - bounds_min_.z) / step));
 }
+
+bool MapStaticData::FindScatteredSpawn(float cx, float cy, float cz, float radius, uint64_t seed,
+                                       float *ox, float *oy, float *oz) const {
+    if (ox)
+        *ox = cx;
+    if (oy)
+        *oy = cy;
+    if (oz)
+        *oz = cz;
+    if (!(radius > 0.f) || !(nav_sample_step_ > 0.f))
+        return IsWalkable(cx, cz);
+    uint64_t s = seed != 0 ? seed : 1;
+    const int tries = 24;
+    for (int i = 0; i < tries; ++i) {
+        s = s * 6364136223846793005ULL + 1;
+        const float ang =
+            static_cast<float>((s >> 11) % 360) * 3.14159265f / 180.f;
+        s = s * 6364136223846793005ULL + 1;
+        const float t = static_cast<float>((s >> 11) % 1000) / 1000.f;
+        const float r = radius * std::sqrt(t);
+        const float x = cx + std::cos(ang) * r;
+        const float z = cz + std::sin(ang) * r;
+        if (IsWalkable(x, z) && InBounds(x, cy, z)) {
+            if (ox)
+                *ox = x;
+            if (oy)
+                *oy = cy;
+            if (oz)
+                *oz = z;
+            return true;
+        }
+    }
+    return IsWalkable(cx, cz);
+}

@@ -11,6 +11,8 @@
 
 Details: `docs/mmo-migration/topology-auth-session.md`
 
+Scene construction (LINE / DUNGEON): `docs/mmo-migration/scene-management-construction.md`. Do P0 first. Do not treat 100k hardware as this sprint.
+
 ## Do not
 
 - Do not introduce gRPC or a separate login process.

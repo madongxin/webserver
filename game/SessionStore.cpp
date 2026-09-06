@@ -2083,6 +2083,57 @@ bool SessionStore::QueryPublicOnlineState(uint64_t player_id, std::string *state
     return true;
 }
 
+bool SessionStore::PeekSession(uint64_t player_id, SessionRecord *out) {
+    if (!out || !available_ || player_id == 0)
+        return false;
+    if (!LoadSession(player_id, out))
+        return false;
+    ExpireIfGraceElapsed(player_id, out);
+    return true;
+}
+
+bool SessionStore::QueryPublicPresence(uint64_t player_id, PublicPresence *out) {
+    if (!out)
+        return false;
+    *out = PublicPresence{};
+    out->state = "offline";
+    if (!available_ || player_id == 0)
+        return true;
+    SessionRecord rec;
+    if (!LoadSession(player_id, &rec))
+        return true;
+    if (ExpireIfGraceElapsed(player_id, &rec))
+        return true;
+    if (rec.state == SessionState::Online)
+        out->state = "online";
+    else if (rec.state == SessionState::Disconnected)
+        out->state = "disconnected";
+    else
+        return true;
+    out->map_instance_id = rec.map_instance_id;
+    out->gamelogic_instance_id = rec.gamelogic_instance_id;
+    out->map_owner_epoch = rec.map_owner_epoch;
+    return true;
+}
+
+bool SessionStore::GetOnlinePushTarget(uint64_t player_id, OnlinePushTarget *out) {
+    if (!out || !available_ || player_id == 0)
+        return false;
+    SessionRecord rec;
+    if (!LoadSession(player_id, &rec))
+        return false;
+    if (ExpireIfGraceElapsed(player_id, &rec) || rec.state != SessionState::Online)
+        return false;
+    if (rec.gateway_id.empty() || rec.session_id.empty())
+        return false;
+    out->player_id = player_id;
+    out->gateway_id = rec.gateway_id;
+    out->session_id = rec.session_id;
+    out->fence_token = rec.token;
+    out->generation = rec.generation;
+    return true;
+}
+
 bool SessionStore::ListOnlinePushTargets(std::vector<OnlinePushTarget> *out, size_t max_n) {
     if (!out)
         return false;

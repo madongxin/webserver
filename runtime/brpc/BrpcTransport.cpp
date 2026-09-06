@@ -213,6 +213,8 @@ bool FillMapRouteFromRequest(const game::GameRequest &req, SessionHandle *handle
         mid = req.leave_map().map_instance_id();
     else if (req.body_case() == game::GameRequest::kMapPing)
         mid = req.map_ping().map_instance_id();
+    else if (req.body_case() == game::GameRequest::kMove)
+        mid = req.move().map_instance_id();
     if (mid == 0)
         return false;
     if (ResolvePlacementAuthority(0, 0, mid, placement)) {
@@ -289,7 +291,9 @@ void BrpcTransport::PostPlayerRequest(const SessionHandle &handle, std::string r
 
     // EnterMap 由 GatewayEnterMapOrchestrator 在 worker 编排；此处禁止 Placement 直改 sticky 后裸 Dispatch
     if (parsed_ok && !to_world) {
-        if (parsed.body_case() == game::GameRequest::kEnterMap) {
+        if (parsed.body_case() == game::GameRequest::kEnterMap ||
+            parsed.body_case() == game::GameRequest::kSwitchLine ||
+            parsed.body_case() == game::GameRequest::kEnqueueMap) {
             if (sink) {
                 const std::string err =
                     BuildErrorFrame(request_payload, "enter_map_must_use_gateway_orchestrator");
@@ -299,7 +303,8 @@ void BrpcTransport::PostPlayerRequest(const SessionHandle &handle, std::string r
             return;
         }
         if (parsed.body_case() == game::GameRequest::kLeaveMap ||
-            parsed.body_case() == game::GameRequest::kMapPing) {
+            parsed.body_case() == game::GameRequest::kMapPing ||
+            parsed.body_case() == game::GameRequest::kMove) {
             if (!FillMapRouteFromRequest(parsed, &route, &placement)) {
                 if (sink) {
                     const std::string err = BuildErrorFrame(request_payload, "map_placement_failed");

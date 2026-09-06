@@ -16,6 +16,17 @@
 | `ERR_OVERLOADED` | 队列过载或摘流 | 是 | 退避后重试；摘流则换入口 |
 | `ERR_DEPENDENCY_UNAVAILABLE` | Redis/MySQL/brpc 不可用 | 是 | 短暂退避后重试 |
 | `ERR_MAP_FULL` | 指定地图实例已满 | 否 | 不要换图；换模板或稍后 |
+| `ERR_MAP_LINE_FULL` | 指定分线已满 | 否 | 换线或排队，禁止静默换线 |
+| `ERR_MAP_NO_LINE` | 指定线号不存在 | 否 | 刷新线列表 |
+| `ERR_MAP_LINE_LIMIT` | 已达最大线数且硬顶已满 | 否 | 换图或稍后 |
+| `ERR_MAP_NOT_READY` | 线/实例 FROZEN/RECOVERING/CLOSED | 是 | 退避后重试或快照 |
+| `ERR_MAP_DRAINING` | 线正在排空 | 否 | 换线或排队 |
+| `ERR_QUEUE_NEEDED` | 需要先取排队票 | 否 | `EnqueueMap` |
+| `ERR_QUEUE_INVALID` | 排队票无效或过期 | 否 | 重新 `EnqueueMap` |
+| `ERR_QUEUE_NOT_READY` | 未到队首或线仍满 | 是 | 持票轮询后再 `EnterMap(queue_token)` |
+| `ERR_DUNGEON_CREATE_FORBIDDEN` | 副本须先 CreateDungeon | 否 | 组队开本 |
+| `ERR_DUNGEON_NOT_FOUND` | 副本不存在或已关闭 | 否 | 重新开本 |
+| `ERR_DUNGEON_NOT_MEMBER` | 非该副本队员 | 否 | — |
 | `ERR_MAP_DATA_MISMATCH` | 地图静态数据 hash 不符 | 否 | 更新地图资源 |
 | `ERR_NOT_ON_MAP` | 未进图 | 否 | EnterMap |
 | `ERR_STALE_SEQ` | 客户端序号过旧 | 否 | 以服务器 seq 为准 |

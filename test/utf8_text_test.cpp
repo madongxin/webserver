@@ -34,6 +34,7 @@ int main() {
     Expect(social::NormalizePlayerName("  玩家甲  ", &nm, &tec) && nm == "玩家甲", "trim name");
     Expect(!social::NormalizePlayerName("   ", &nm, &tec), "blank name");
     Expect(social::ValidWorldChannel("") && social::ValidWorldChannel("world"), "world ch");
+    Expect(social::ValidWorldChannel("whisper") && social::IsWhisperChannel("private"), "whisper ch");
     Expect(!social::ValidWorldChannel("guild"), "no guild");
     Expect(social::ValidWorldChatText("hi", 200, 800, &tec), "chat ok");
     Expect(!social::ValidWorldChatText(std::string(801, 'x'), 2000, 800, &tec), "chat bytes");

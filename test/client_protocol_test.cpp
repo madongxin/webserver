@@ -33,6 +33,12 @@ int main() {
     Expect(game::GameRequest::kRespawnFieldNumber == 73, "req respawn=73");
     Expect(game::GameRequest::kGetPlayerBriefFieldNumber == 74, "req get_player_brief=74");
     Expect(game::GameRequest::kQueryOnlineStateFieldNumber == 75, "req query_online_state=75");
+    Expect(game::GameRequest::kQueryMapLinesFieldNumber == 76, "req query_map_lines=76");
+    Expect(game::GameRequest::kCreateDungeonFieldNumber == 77, "req create_dungeon=77");
+    Expect(game::GameRequest::kSwitchLineFieldNumber == 78, "req switch_line=78");
+    Expect(game::GameRequest::kEnqueueMapFieldNumber == 79, "req enqueue_map=79");
+    Expect(game::EnterMapReq::kQueueTokenFieldNumber == 9, "enter_map.queue_token=9");
+    Expect(game::EnterMapReq::kLineNoFieldNumber == 8, "enter_map.line_no=8");
     Expect(game::GameResponse::kErrorCodeFieldNumber == 4, "rsp error_code=4");
     Expect(game::GameResponse::kRetryableFieldNumber == 5, "rsp retryable=5");
     Expect(game::GameResponse::kServerTimeMsFieldNumber == 6, "rsp server_time_ms=6");
@@ -48,6 +54,15 @@ int main() {
     Expect(game::GameResponse::kChatNotifyFieldNumber == 73, "rsp chat_notify=73");
     Expect(game::GameResponse::kGetPlayerBriefFieldNumber == 74, "rsp get_player_brief=74");
     Expect(game::GameResponse::kQueryOnlineStateFieldNumber == 75, "rsp query_online_state=75");
+    Expect(game::GameResponse::kQueryMapLinesFieldNumber == 77, "rsp query_map_lines=77");
+    Expect(game::GameResponse::kCreateDungeonFieldNumber == 78, "rsp create_dungeon=78");
+    Expect(game::GameResponse::kSwitchLineFieldNumber == 79, "rsp switch_line=79");
+    Expect(game::GameResponse::kEnqueueMapFieldNumber == 80, "rsp enqueue_map=80");
+    Expect(game::EnterMapRsp::kKindFieldNumber == 14, "enter_map.kind=14");
+    Expect(game::EnterMapRsp::kLineNoFieldNumber == 15, "enter_map.rsp.line_no=15");
+    Expect(game::EnterMapRsp::kLinesFieldNumber == 22, "enter_map.rsp.lines=22");
+    Expect(game::SwitchLineRsp::kLinesFieldNumber == 18, "switch_line.rsp.lines=18");
+    Expect(game::MapLineInfo::kOwnerLogicServerIdFieldNumber == 7, "MapLineInfo.owner=7");
     Expect(game::FullStateSnapshotRsp::kProfileFieldNumber == 8, "snapshot profile=8");
     Expect(game::FullStateSnapshotRsp::kAoiEntitiesFieldNumber == 16, "snapshot aoi=16");
     Expect(game::FullStateSnapshotRsp::kBaselineServerSeqFieldNumber == 7, "snapshot baseline=7");
