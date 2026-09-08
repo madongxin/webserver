@@ -131,6 +131,44 @@ int main() {
             return Fail("auto list 2 lines");
     }
 
+    // 2b. 系统选线但回传已满软顶的 instance：仍开新线（1000 人 / soft200 = 5 线）
+    {
+        const uint64_t tpl2b = tpl + 2;
+        ResolveOrCreateResult a, b, c;
+        if (!PlacementStore::Instance().ResolveOrCreate(LineIn(tpl2b, 92101), &a) || !a.ok)
+            return Fail("echo p1");
+        if (!PlacementStore::Instance().ResolveOrCreate(LineIn(tpl2b, 92102, 0, a.placement.map_instance_id),
+                                                        &b) ||
+            !b.ok)
+            return Fail("echo p2");
+        if (b.placement.line_no != a.placement.line_no)
+            return Fail("echo p2 same line");
+        if (!PlacementStore::Instance().ResolveOrCreate(LineIn(tpl2b, 92103, 0, a.placement.map_instance_id),
+                                                        &c) ||
+            !c.ok)
+            return Fail("echo p3");
+        if (c.placement.line_no == a.placement.line_no)
+            return Fail("echo p3 must new line");
+        std::vector<MapLineInfo> lines;
+        if (!PlacementStore::Instance().ListLines(1, tpl2b, &lines) || lines.size() != 2)
+            return Fail("echo list 2 lines");
+        // 10 人 soft=2 且每人都回传第一条线 instance → 5 条线
+        const uint64_t tpl5 = tpl + 21;
+        std::set<uint32_t> five;
+        uint64_t echo_inst = 0;
+        for (int i = 0; i < 10; ++i) {
+            ResolveOrCreateResult out;
+            auto in = LineIn(tpl5, 92200ULL + static_cast<uint64_t>(i), 0, echo_inst);
+            if (!PlacementStore::Instance().ResolveOrCreate(in, &out) || !out.ok)
+                return Fail("five join");
+            if (echo_inst == 0)
+                echo_inst = out.placement.map_instance_id;
+            five.insert(out.placement.line_no);
+        }
+        if (five.size() != 5)
+            return Fail("ten players soft=2 must be 5 lines");
+    }
+
     // 3. 指定不存在的线
     {
         ResolveOrCreateResult out;
@@ -225,7 +263,33 @@ int main() {
             return Fail("dungeon 0 code");
     }
 
-    std::printf("OK map_line_test specified/auto/concurrent/legacy\n");
+    // 7. 空线 lease 过期后系统选线仍进 1 线（不新开 2 线）
+    {
+        const uint64_t tpl7 = tpl + 7;
+        ResolveOrCreateResult a, b;
+        if (!PlacementStore::Instance().ResolveOrCreate(LineIn(tpl7, 97001), &a) || !a.ok)
+            return Fail("lease p1");
+        if (a.placement.line_no != 1)
+            return Fail("lease p1 line");
+        PlacementStore::Instance().ReleaseByPlayer(97001);
+        auto rlease = RedisPool::Instance().Acquire();
+        if (!rlease)
+            return Fail("lease redis");
+        const std::string key =
+            prefix + "map:inst:" + std::to_string(a.placement.map_instance_id);
+        std::vector<std::string> reply;
+        if (!rlease->Eval("redis.call('HSET', KEYS[1], 'leaseUntil', '1') return 1", {key}, {},
+                          &reply))
+            return Fail("lease expire hset");
+        if (!PlacementStore::Instance().ResolveOrCreate(LineIn(tpl7, 97002), &b) || !b.ok)
+            return Fail("lease p2");
+        if (b.placement.line_no != 1)
+            return Fail("expired line must stay line 1");
+        if (b.placement.map_instance_id != a.placement.map_instance_id)
+            return Fail("expired line must reuse instance");
+    }
+
+    std::printf("OK map_line_test specified/auto/concurrent/legacy/lease-reuse\n");
     std::printf("PASS map_line_test\n");
     return 0;
 }

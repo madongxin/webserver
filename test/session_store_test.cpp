@@ -2,6 +2,7 @@
  * Session 状态机 / 顶号 fence / 重连 / 并发 Acquire（需 Redis）
  */
 #include "SessionStore.h"
+#include "PlacementStore.h"
 #include "RedisPool.h"
 #include "game.pb.h"
 
@@ -369,7 +370,64 @@ int main() {
             return Fail("MarkDisconnected NOT_FOUND left online set member");
     }
 
-    for (uint64_t id : {pid, pid2, pid3, uint64_t{900004}, uint64_t{900088}, uint64_t{900099}}) {
+    // 断线后宽限到期扫描：释放分线占位（集体下线只关 TCP 时不会走 Logout）
+    {
+        const uint64_t spid = 900077;
+        game::LogoutReq slo;
+        slo.set_player_id(spid);
+        game::LogoutRsp slor;
+        SessionStore::Instance().Logout(slo, &slor);
+        if (!PlacementStore::Instance().Available() &&
+            !PlacementStore::Instance().InitFromSessionPrefix(SessionStore::Instance().key_prefix()))
+            return Fail("sweep placement init");
+        PlacementStore::Instance().SetLogicOwners({"gl-0", "gl-1"});
+        game::LoginReq sl;
+        sl.set_player_id(spid);
+        sl.set_device_id("sweep-dev");
+        sl.set_server_id(1);
+        sl.set_kick_other_device(true);
+        game::LoginRsp slr;
+        if (!SessionStore::Instance().Login(sl, &slr) || !slr.ok())
+            return Fail("sweep login");
+        ResolveOrCreateInput pin;
+        pin.realm_id = 1;
+        pin.map_template_id = 10020077;
+        pin.player_id = spid;
+        pin.kind = "LINE";
+        pin.soft_cap = 200;
+        pin.hard_cap = 400;
+        pin.max_lines = 8;
+        pin.operation_id = "sweep-enter";
+        ResolveOrCreateResult pout;
+        if (!PlacementStore::Instance().ResolveOrCreate(pin, &pout) || !pout.ok)
+            return Fail("sweep reserve");
+        if (PlacementStore::Instance().Occupancy(pout.placement.map_instance_id) < 1)
+            return Fail("sweep occ");
+        if (!SessionStore::Instance().MarkDisconnected(spid, slr.token(), slr.generation()))
+            return Fail("sweep mark");
+        auto rlease = RedisPool::Instance().Acquire();
+        if (!rlease)
+            return Fail("sweep redis");
+        const std::string skey =
+            SessionStore::Instance().key_prefix() + "session:" + std::to_string(spid);
+        std::vector<std::string> er;
+        if (!rlease->Eval("redis.call('HSET', KEYS[1], 'disconnectDeadline', '1') return {'1'}", {skey},
+                          {}, &er))
+            return Fail("sweep deadline");
+        const std::string gkey = SessionStore::Instance().key_prefix() + "session:grace";
+        if (!rlease->Eval("redis.call('ZADD', KEYS[1], '1', ARGV[1]) return {'1'}", {gkey},
+                          {std::to_string(spid)}, &er))
+            return Fail("sweep zadd");
+        rlease = RedisPool::Lease();
+        if (SessionStore::Instance().ExpireDueDisconnected(16) < 1)
+            return Fail("sweep expire count");
+        if (PlacementStore::Instance().Occupancy(pout.placement.map_instance_id) != 0)
+            return Fail("sweep occ not released");
+        SessionStore::Instance().Logout(slo, &slor);
+    }
+
+    for (uint64_t id : {pid, pid2, pid3, uint64_t{900004}, uint64_t{900088}, uint64_t{900099},
+                        uint64_t{900077}}) {
         game::LogoutReq clo;
         clo.set_player_id(id);
         game::LogoutRsp cr;

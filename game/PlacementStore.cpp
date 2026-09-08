@@ -22,6 +22,10 @@ uint64_t ParseU64(const std::string &s) {
     return static_cast<uint64_t>(std::strtoull(s.c_str(), nullptr, 10));
 }
 
+uint32_t EffectiveRealmId(uint32_t realm_id) {
+    return realm_id == 0 ? 1u : realm_id;
+}
+
 int64_t ParseI64(const std::string &s) {
     return static_cast<int64_t>(std::strtoll(s.c_str(), nullptr, 10));
 }
@@ -592,8 +596,46 @@ local function load_inst(id)
   }
 end
 
-local function usable(L)
-  return (L[7] or '') == 'READY' and (tonumber(L[9]) or 0) > now
+local function owner_alive(oid)
+  if oid == nil or oid == '' then return false end
+  for token in string.gmatch(healthy_csv, '[^,]+') do
+    if token == oid then return true end
+  end
+  return false
+end
+
+-- 空线 Logic 不续租，30s 后 lease 过期。进线仍应进 READY 线并软续租，
+-- 否则系统选线会跳过 1 线再开 2/3/4…（分线列表出现空的前线）。
+local function ensure_ready(L)
+  if not L or (L[7] or '') ~= 'READY' then return nil end
+  if (tonumber(L[9]) or 0) > now then return L end
+  local key = prefix .. 'map:inst:' .. tostring(L[1])
+  local lease_until = now + lease
+  if owner_alive(L[4]) then
+    redis.call('HMSET', key, 'leaseUntil', tostring(lease_until), 'updatedAt', tostring(now),
+               'state', 'READY')
+    redis.call('EXPIRE', key, 86400)
+    L[8] = tostring(now)
+    L[9] = tostring(lease_until)
+    return L
+  end
+  local epoch = (tonumber(L[5]) or 0) + 1
+  local rv = (tonumber(L[6]) or 0) + 1
+  local chosen = pick_new_owner(L[1])
+  redis.call('HMSET', key,
+    'ownerLogicServerId', chosen,
+    'ownerEpoch', tostring(epoch),
+    'routeVersion', tostring(rv),
+    'state', 'READY',
+    'updatedAt', tostring(now),
+    'leaseUntil', tostring(lease_until))
+  redis.call('EXPIRE', key, 86400)
+  L[4] = chosen
+  L[5] = tostring(epoch)
+  L[6] = tostring(rv)
+  L[8] = tostring(now)
+  L[9] = tostring(lease_until)
+  return L
 end
 
 local function occ_key(id)
@@ -642,8 +684,8 @@ if op ~= '' then
 end
 
 local function try_join(id, cap)
-  local L = load_inst(id)
-  if not L or not usable(L) then return nil, 'NOT_READY' end
+  local L = ensure_ready(load_inst(id))
+  if not L then return nil, 'NOT_READY' end
   local ok = occ_key(id)
   if redis.call('SISMEMBER', ok, player) == 1 then
     return L, tonumber(redis.call('SCARD', ok))
@@ -702,15 +744,26 @@ if existing and existing ~= '' then
 end
 
 if want_id ~= '0' and want_id ~= '' then
-  local L, n = try_join(want_id, hard)
-  if not L then
-    if n == 'FULL' then return {'0', 'ERR_MAP_FULL', 'map instance full'} end
-    return {'0', 'NOT_READY', 'map instance not joinable'}
+  -- 指定线/指定实例：钉死该房，满硬顶才拒绝（禁止静默换线）
+  if want_line > 0 then
+    local L, n = try_join(want_id, hard)
+    if not L then
+      if n == 'FULL' then return {'0', 'ERR_MAP_FULL', 'map instance full'} end
+      return {'0', 'NOT_READY', 'map instance not joinable'}
+    end
+    save_pres(want_id)
+    local R = pack(L, n, '0')
+    cache_op(R)
+    return R
   end
-  save_pres(want_id)
-  local R = pack(L, n, '0')
-  cache_op(R)
-  return R
+  -- 系统选线（line_no=0）：客户端回传的 instance 只当提示，满软顶则继续开新线
+  local L, n = try_join(want_id, soft)
+  if L then
+    save_pres(want_id)
+    local R = pack(L, n, '0')
+    cache_op(R)
+    return R
+  end
 end
 
 if want_line > 0 then
@@ -734,40 +787,42 @@ local function line_ids()
 end
 
 local members = line_ids()
-local best_id, best_n, best_line = nil, nil, nil
+local cand = {}
 local under_hard_id, under_hard_n, under_hard_line = nil, nil, nil
+local used = {}
+local live = 0
 for _, id in ipairs(members) do
   local L = load_inst(id)
-  if L and usable(L) then
+  if L and (L[7] or '') == 'READY' then
+    live = live + 1
     local n = tonumber(redis.call('SCARD', occ_key(id))) or 0
     local ln = tonumber(L[11]) or 0
+    if ln > 0 then used[ln] = true end
     if n < soft then
-      if best_id == nil or n < best_n or (n == best_n and ln < best_line) then
-        best_id, best_n, best_line = id, n, ln
-      end
+      cand[#cand + 1] = {id, n, ln}
     end
     if n < hard then
       if under_hard_id == nil or n < under_hard_n or (n == under_hard_n and ln < under_hard_line) then
         under_hard_id, under_hard_n, under_hard_line = id, n, ln
       end
     end
+  elseif L then
+    local ln = tonumber(L[11]) or 0
+    if ln > 0 then used[ln] = true end
   end
 end
-
-if best_id then
-  local L, n = try_join(best_id, soft)
+table.sort(cand, function(a, b)
+  if a[2] ~= b[2] then return a[2] < b[2] end
+  return a[3] < b[3]
+end)
+for i = 1, #cand do
+  local L, n = try_join(cand[i][1], soft)
   if L then
-    save_pres(best_id)
+    save_pres(cand[i][1])
     local R = pack(L, n, '0')
     cache_op(R)
     return R
   end
-end
-
-local live = 0
-for _, id in ipairs(members) do
-  local L = load_inst(id)
-  if L and usable(L) then live = live + 1 end
 end
 
 if live >= max_lines then
@@ -783,24 +838,32 @@ if live >= max_lines then
   return {'0', 'ERR_MAP_LINE_LIMIT', 'map line limit'}
 end
 
-local maxn = 0
-for _, id in ipairs(members) do
-  local L = load_inst(id)
-  if L then
-    local ln = tonumber(L[11]) or 0
-    if ln > maxn then maxn = ln end
-  end
+local new_line = 0
+for i = 1, max_lines do
+  if not used[i] then new_line = i break end
 end
-local new_line = maxn + 1
-local id = redis.call('INCR', idgen_key)
-local chosen = pick_new_owner(id)
-local lkey = line_key(new_line)
-local nx = redis.call('SET', lkey, tostring(id), 'NX')
-if not nx then
+if new_line == 0 then
+  if under_hard_id then
+    local L, n = try_join(under_hard_id, hard)
+    if L then
+      save_pres(under_hard_id)
+      local R = pack(L, n, '0')
+      cache_op(R)
+      return R
+    end
+  end
+  return {'0', 'ERR_MAP_LINE_LIMIT', 'map line limit'}
+end
+
+local id, lkey, nx
+for _ = 1, max_lines do
+  id = redis.call('INCR', idgen_key)
+  lkey = line_key(new_line)
+  nx = redis.call('SET', lkey, tostring(id), 'NX')
+  if nx then break end
   local win = redis.call('GET', lkey)
   if win and win ~= '' then
     local L, n = try_join(win, soft)
-    if not L then L, n = try_join(win, hard) end
     if L then
       save_pres(win)
       local R = pack(L, n, '0')
@@ -808,8 +871,28 @@ if not nx then
       return R
     end
   end
+  used[new_line] = true
+  new_line = 0
+  for i = 1, max_lines do
+    if not used[i] then new_line = i break end
+  end
+  if new_line == 0 then
+    if under_hard_id then
+      local L, n = try_join(under_hard_id, hard)
+      if L then
+        save_pres(under_hard_id)
+        local R = pack(L, n, '0')
+        cache_op(R)
+        return R
+      end
+    end
+    return {'0', 'ERR_MAP_LINE_LIMIT', 'map line create race'}
+  end
+end
+if not nx then
   return {'0', 'ERR_MAP_LINE_LIMIT', 'map line create race'}
 end
+local chosen = pick_new_owner(id)
 redis.call('EXPIRE', lkey, 86400)
 local ikey = prefix .. 'map:inst:' .. tostring(id)
 local lease_until = now + lease
@@ -854,6 +937,9 @@ local want_line = tonumber(ARGV[6]) or 0
 local soft = tonumber(ARGV[7]) or 200
 local hard = tonumber(ARGV[8]) or 400
 local now = tonumber(ARGV[9])
+local lease = tonumber(ARGV[10]) or 30
+local healthy_csv = ARGV[11] or ''
+if realm == '' or realm == '0' then realm = '1' end
 if soft < 1 then soft = 1 end
 if hard < soft then hard = soft end
 if want_line < 1 then return {'0', 'ERR_INVALID_ARGUMENT', 'line_no required'} end
@@ -875,8 +961,56 @@ local function load_inst(id)
   }
 end
 
-local function usable(L)
-  return (L[7] or '') == 'READY' and (tonumber(L[9]) or 0) > now
+local function owner_alive(oid)
+  if oid == nil or oid == '' then return false end
+  for token in string.gmatch(healthy_csv, '[^,]+') do
+    if token == oid then return true end
+  end
+  return false
+end
+
+local function pick_new_owner(new_id)
+  local healthy = {}
+  for token in string.gmatch(healthy_csv, '[^,]+') do
+    healthy[#healthy + 1] = token
+  end
+  if #healthy == 0 then return '' end
+  local n = tonumber(new_id) or 0
+  return healthy[(n % #healthy) + 1]
+end
+
+-- 与 ReserveLine 一致：空线不续租，切线仍应进 READY 线并软续租。
+local function ensure_ready(L)
+  if not L or (L[7] or '') ~= 'READY' then return nil end
+  if (tonumber(L[9]) or 0) > now then return L end
+  local key = prefix .. 'map:inst:' .. tostring(L[1])
+  local lease_until = now + lease
+  if owner_alive(L[4]) then
+    redis.call('HMSET', key, 'leaseUntil', tostring(lease_until), 'updatedAt', tostring(now),
+               'state', 'READY')
+    redis.call('EXPIRE', key, 86400)
+    L[8] = tostring(now)
+    L[9] = tostring(lease_until)
+    return L
+  end
+  local epoch = (tonumber(L[5]) or 0) + 1
+  local rv = (tonumber(L[6]) or 0) + 1
+  local chosen = pick_new_owner(L[1])
+  if chosen == '' then return nil end
+  redis.call('HMSET', key,
+    'ownerLogicServerId', chosen,
+    'ownerEpoch', tostring(epoch),
+    'routeVersion', tostring(rv),
+    'state', 'READY',
+    'updatedAt', tostring(now),
+    'leaseUntil', tostring(lease_until))
+  redis.call('EXPIRE', key, 86400)
+  L[4] = chosen
+  L[5] = tostring(epoch)
+  L[6] = tostring(rv)
+  L[8] = tostring(now)
+  L[9] = tostring(lease_until)
+  return L
 end
 
 local function occ_key(id)
@@ -932,20 +1066,24 @@ if (old[3] or '') ~= tpl then
   return {'0', 'ERR_INVALID_ARGUMENT', 'template mismatch'}
 end
 if tonumber(old[11]) == want_line then
+  local cur = ensure_ready(old) or old
   local n = tonumber(redis.call('SCARD', occ_key(old_id))) or 0
-  local R = pack(old, n, '1')
+  local R = pack(cur, n, '1')
   cache_op(R)
   return R
 end
 
-local lkey = prefix .. 'map:line:' .. realm .. ':' .. tpl .. ':' .. tostring(want_line)
+local line_realm = tostring(old[2] or realm)
+if line_realm == '' or line_realm == '0' then line_realm = realm end
+local lkey = prefix .. 'map:line:' .. line_realm .. ':' .. tpl .. ':' .. tostring(want_line)
 local target = redis.call('GET', lkey)
 if not target or target == '' then
   return {'0', 'ERR_MAP_NO_LINE', 'map line not found'}
 end
-local L = load_inst(target)
-if not L or not usable(L) then
-  if L and (L[7] or '') == 'DRAINING' then
+local rawL = load_inst(target)
+local L = ensure_ready(rawL)
+if not L then
+  if rawL and (rawL[7] or '') == 'DRAINING' then
     return {'0', 'ERR_MAP_DRAINING', 'map line draining'}
   end
   return {'0', 'ERR_MAP_NOT_READY', 'map line not joinable'}
@@ -1632,11 +1770,12 @@ bool PlacementStore::ReservePublicSlot(const ResolveOrCreateInput &in, ResolveOr
                                ? ("enter:" + std::to_string(in.player_id) + ":" +
                                   std::to_string(in.map_template_id))
                                : in.operation_id;
-    std::vector<std::string> keys{PoolKey(in.realm_id, in.map_template_id), IdGenKey(),
+    const uint32_t realm = EffectiveRealmId(in.realm_id);
+    std::vector<std::string> keys{PoolKey(realm, in.map_template_id), IdGenKey(),
                                   PresKey(in.player_id), OpKey(in.player_id, op)};
     std::vector<std::string> args{
         key_prefix_,
-        std::to_string(in.realm_id),
+        std::to_string(realm),
         std::to_string(in.map_template_id),
         std::to_string(in.player_id),
         op,
@@ -1735,6 +1874,7 @@ bool PlacementStore::SwitchLine(const SwitchLineInput &in, ResolveOrCreateResult
         out->error_code = "POOL_EXHAUSTED";
         return false;
     }
+    const uint32_t realm = EffectiveRealmId(in.realm_id);
     const uint32_t soft = in.soft_cap > 0 ? in.soft_cap : 200;
     const uint32_t hard = in.hard_cap > 0 ? in.hard_cap : 400;
     const std::string op = in.operation_id.empty()
@@ -1745,7 +1885,7 @@ bool PlacementStore::SwitchLine(const SwitchLineInput &in, ResolveOrCreateResult
     std::vector<std::string> keys{PresKey(in.player_id), OpKey(in.player_id, op)};
     std::vector<std::string> args{
         key_prefix_,
-        std::to_string(in.realm_id),
+        std::to_string(realm),
         std::to_string(in.map_template_id),
         std::to_string(in.player_id),
         op,
@@ -1753,6 +1893,8 @@ bool PlacementStore::SwitchLine(const SwitchLineInput &in, ResolveOrCreateResult
         std::to_string(soft),
         std::to_string(hard),
         std::to_string(NowUnixSec()),
+        std::to_string(default_lease_sec_),
+        HealthyOwnersCsv(),
     };
     std::vector<std::string> reply;
     if (!lease->Eval(kLuaSwitchLine, keys, args, &reply) || reply.size() < 3) {
@@ -1802,11 +1944,12 @@ bool PlacementStore::EnqueueMap(const EnqueueMapInput &in, EnqueueMapResult *out
         out->error_code = "POOL_EXHAUSTED";
         return false;
     }
+    const uint32_t realm = EffectiveRealmId(in.realm_id);
     const uint32_t hard = in.hard_cap > 0 ? in.hard_cap : 400;
     std::vector<std::string> keys;
     std::vector<std::string> args{
         key_prefix_,
-        std::to_string(in.realm_id),
+        std::to_string(realm),
         std::to_string(in.map_template_id),
         std::to_string(in.player_id),
         std::to_string(in.line_no),
@@ -1971,6 +2114,7 @@ bool PlacementStore::ReserveLine(const ResolveOrCreateInput &in, ResolveOrCreate
         out->error_code = "POOL_EXHAUSTED";
         return false;
     }
+    const uint32_t realm = EffectiveRealmId(in.realm_id);
     const uint32_t soft = in.soft_cap > 0 ? in.soft_cap : 200;
     const uint32_t hard = in.hard_cap > 0 ? in.hard_cap : 400;
     const uint32_t max_lines = in.max_lines > 0 ? in.max_lines : 8;
@@ -1979,11 +2123,11 @@ bool PlacementStore::ReserveLine(const ResolveOrCreateInput &in, ResolveOrCreate
                                   std::to_string(in.map_template_id) + ":L" +
                                   std::to_string(in.line_no))
                                : in.operation_id;
-    std::vector<std::string> keys{LinesKey(in.realm_id, in.map_template_id), IdGenKey(),
+    std::vector<std::string> keys{LinesKey(realm, in.map_template_id), IdGenKey(),
                                   PresKey(in.player_id), OpKey(in.player_id, op)};
     std::vector<std::string> args{
         key_prefix_,
-        std::to_string(in.realm_id),
+        std::to_string(realm),
         std::to_string(in.map_template_id),
         std::to_string(in.player_id),
         op,
@@ -2036,7 +2180,7 @@ bool PlacementStore::ListLines(uint32_t realm_id, uint64_t map_template_id,
     auto lease = RedisPool::Instance().Acquire();
     if (!lease)
         return false;
-    std::vector<std::string> keys{LinesKey(realm_id, map_template_id)};
+    std::vector<std::string> keys{LinesKey(EffectiveRealmId(realm_id), map_template_id)};
     std::vector<std::string> args{key_prefix_, std::to_string(NowUnixSec())};
     std::vector<std::string> reply;
     if (!lease->Eval(kLuaListLines, keys, args, &reply))

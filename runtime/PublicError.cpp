@@ -85,6 +85,12 @@ std::string GuessFromMessage(const std::string &msg) {
         return kErrRateLimited;
     if (ContainsFold(msg, "fence"))
         return kErrFenceStale;
+    if (ContainsFold(msg, "not bound") || ContainsFold(msg, "not on a line"))
+        return kErrNotOnMap;
+    if (ContainsFold(msg, "lease_expired") || ContainsFold(msg, "lease_missing") ||
+        ContainsFold(msg, "lease expired") || ContainsFold(msg, "lease missing") ||
+        ContainsFold(msg, "placement not ready"))
+        return kErrMapNotReady;
     if (msg.empty())
         return kErrInternal;
     return kErrInternal;
@@ -105,6 +111,14 @@ std::string NormalizePublicErrorCode(const std::string &code) {
         return kErrDependencyUnavailable;
     if (code == "ERR_OVERLOAD")
         return kErrOverloaded;
+    if (code == "ERR_LEASE_EXPIRED" || code == "ERR_LEASE_MISSING" ||
+        code == "ERR_PLACEMENT_NOT_READY" || code == "ERR_PLACEMENT_UNAVAILABLE" ||
+        code == "ERR_PLACEMENT_REQUIRED")
+        return kErrMapNotReady;
+    if (code == "NOT_BOUND")
+        return kErrNotOnMap;
+    if (code == "FENCE_REJECT")
+        return kErrFenceStale;
     return code;
 }
 

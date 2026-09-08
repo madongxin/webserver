@@ -210,7 +210,7 @@
 
     <section class="module">
       <h2>分线 · 每 GameLogic</h2>
-      <p class="module-desc">Redis 占位权威。Session 导出全量，GameLogic 只导出本机 Owner 的线。表用 <code>max by (owner, map_template_id, line_no)</code> 去重。</p>
+      <p class="module-desc">曲线是<strong>所选时间范围内的历史</strong>，压测结束后图上仍会留下当时的人数/线数。此刻人数看本页顶部状态条和下面表格。Redis 占位权威；Session 导出全量，GameLogic 只导出本机 Owner 的线。</p>
       <div class="charts" id="lineCharts"></div>
       <div class="table-wrap">
         <table class="data" id="lineTable">

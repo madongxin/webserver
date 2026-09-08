@@ -80,7 +80,7 @@ bool ResolveTarget(const game::EnterMapReq &e, uint64_t player_id, std::string *
                    std::string *err_code) {
     if (GatewayAuthClients::Instance().ready()) {
         sess::ResolveOrCreateMapRequest req;
-        req.set_realm_id(e.realm_id());
+        req.set_realm_id(MapLineView::EffectiveRealm(e.realm_id()));
         req.set_map_template_id(e.map_template_id());
         req.set_map_instance_id(e.map_instance_id());
         req.set_player_id(player_id != 0 ? player_id : e.player_id());
@@ -111,7 +111,7 @@ bool ResolveTarget(const game::EnterMapReq &e, uint64_t player_id, std::string *
     }
     if (PlacementStore::Instance().Available()) {
         ResolveOrCreateInput in;
-        in.realm_id = e.realm_id();
+        in.realm_id = MapLineView::EffectiveRealm(e.realm_id());
         in.map_template_id = e.map_template_id();
         in.map_instance_id = e.map_instance_id();
         in.player_id = player_id != 0 ? player_id : e.player_id();
@@ -179,9 +179,18 @@ bool OrchestrateGatewayEnterMap(const SessionHandle &sticky, const std::string &
     uint64_t map_id = 0, epoch = 0, placement_rv = 0;
     std::string err;
     std::string err_code;
-    if (!ResolveTarget(req.enter_map(), sticky.player_id, &target_logic, &map_id, &epoch,
-                       &placement_rv, &err, &err_code))
+    const auto &enter = req.enter_map();
+    if (!ResolveTarget(enter, sticky.player_id, &target_logic, &map_id, &epoch, &placement_rv, &err,
+                       &err_code)) {
+        LOG_WARN << "EnterMap resolve fail player=" << sticky.player_id
+                 << " tpl=" << enter.map_template_id() << " req_line=" << enter.line_no()
+                 << " req_inst=" << enter.map_instance_id() << " code=" << err_code
+                 << " msg=" << err;
         return EncodeErr(req, err, response_frame, err_code);
+    }
+    LOG_INFO << "EnterMap resolve player=" << sticky.player_id << " tpl=" << enter.map_template_id()
+             << " req_line=" << enter.line_no() << " req_inst=" << enter.map_instance_id()
+             << " -> inst=" << map_id << " logic=" << target_logic;
 
     const std::string &from_logic = sticky.gamelogic_instance_id;
     const bool cross = (target_logic != from_logic);
@@ -209,7 +218,7 @@ bool OrchestrateGatewayEnterMap(const SessionHandle &sticky, const std::string &
             if (!GatewayAuthClients::Instance().BeginPlayerTransfer(breq, &brsp) || !brsp.ok()) {
                 return EncodeErr(req,
                                  brsp.message().empty() ? "begin transfer failed" : brsp.message(),
-                                 response_frame);
+                                 response_frame, brsp.error_code());
             }
             transfer_id = brsp.transfer_id();
         } else {
@@ -240,7 +249,7 @@ bool OrchestrateGatewayEnterMap(const SessionHandle &sticky, const std::string &
         if (!GatewayAuthClients::Instance().FreezePlayer(from_logic, freq, &frsp) || !frsp.ok()) {
             AbortTransfer(sticky.player_id, sticky.fence_token, transfer_id, from_logic);
             return EncodeErr(req, frsp.message().empty() ? "freeze failed" : frsp.message(),
-                             response_frame);
+                             response_frame, frsp.error_code());
         }
 
         // EXPORT_SNAPSHOT（Source 已 Freeze）
@@ -258,7 +267,7 @@ bool OrchestrateGatewayEnterMap(const SessionHandle &sticky, const std::string &
             !xrsp.ok() || !xrsp.has_snapshot()) {
             AbortTransfer(sticky.player_id, sticky.fence_token, transfer_id, from_logic);
             return EncodeErr(req, xrsp.message().empty() ? "export snapshot failed" : xrsp.message(),
-                             response_frame);
+                             response_frame, xrsp.error_code());
         }
 
         glrpc::BindPlayerRequest prep;
@@ -286,7 +295,7 @@ bool OrchestrateGatewayEnterMap(const SessionHandle &sticky, const std::string &
             glrpc::BindPlayerResponse tr;
             GatewayAuthClients::Instance().BindPlayer(from_logic, thaw, &tr);
             return EncodeErr(req, prsp.message().empty() ? "prepare/bind failed" : prsp.message(),
-                             response_frame);
+                             response_frame, prsp.error_code());
         }
 
         // IMPORT_TARGET → TARGET_READY（路由切换前必须成功）
@@ -312,7 +321,7 @@ bool OrchestrateGatewayEnterMap(const SessionHandle &sticky, const std::string &
             glrpc::BindPlayerResponse tr;
             GatewayAuthClients::Instance().BindPlayer(from_logic, thaw, &tr);
             return EncodeErr(req, irsp.message().empty() ? "import snapshot failed" : irsp.message(),
-                             response_frame);
+                             response_frame, irsp.error_code());
         }
         LOG_INFO << "EnterMap snapshot imported player=" << sticky.player_id
                  << " transfer=" << transfer_id << " idempotent=" << irsp.already_applied();
@@ -656,7 +665,7 @@ bool OrchestrateGatewayCreateDungeon(const SessionHandle &sticky, const std::str
     auto *body = rsp.mutable_create_dungeon();
     body->set_map_template_id(q.map_template_id());
     sess::CreateDungeonRequest sreq;
-    sreq.set_realm_id(q.realm_id());
+    sreq.set_realm_id(MapLineView::EffectiveRealm(q.realm_id()));
     sreq.set_map_template_id(q.map_template_id());
     sreq.set_player_id(q.player_id() != 0 ? q.player_id() : sticky.player_id);
     sreq.set_operation_id(q.operation_id());
@@ -802,8 +811,9 @@ bool OrchestrateGatewaySwitchLine(const SessionHandle &sticky, const std::string
     if (sw.line_no() == 0 || sw.map_template_id() == 0)
         return fail("line_no and map_template_id required", gameproto::kErrInvalidArgument);
 
+    const uint32_t realm = MapLineView::EffectiveRealm(sw.realm_id());
     sess::SwitchLineRequest sreq;
-    sreq.set_realm_id(sw.realm_id());
+    sreq.set_realm_id(realm);
     sreq.set_map_template_id(sw.map_template_id());
     sreq.set_player_id(sw.player_id() != 0 ? sw.player_id() : sticky.player_id);
     sreq.set_line_no(sw.line_no());
@@ -847,20 +857,34 @@ bool OrchestrateGatewaySwitchLine(const SessionHandle &sticky, const std::string
             srsp.set_occupancy(result.occupancy);
         }
     }
-    if (!ok)
+    if (!ok) {
+        LOG_WARN << "SwitchLine placement fail player=" << sreq.player_id()
+                 << " tpl=" << sreq.map_template_id() << " req_line=" << sw.line_no()
+                 << " realm=" << realm << " req_realm=" << sw.realm_id()
+                 << " code=" << srsp.error_code() << " msg=" << srsp.message();
         return fail(srsp.message().empty() ? "switch line failed" : srsp.message(),
                     srsp.error_code().empty() ? gameproto::kErrDependencyUnavailable
                                               : srsp.error_code());
+    }
+    LOG_INFO << "SwitchLine placement ok player=" << sreq.player_id()
+             << " tpl=" << sreq.map_template_id() << " req_line=" << sw.line_no()
+             << " -> inst=" << srsp.placement().map_instance_id()
+             << " owner=" << srsp.placement().owner_logic_server_id();
 
     game::GameRequest enter;
     enter.set_seq(req.seq());
     enter.set_session_token(req.session_token());
     auto *e = enter.mutable_enter_map();
     e->set_player_id(sreq.player_id());
-    e->set_realm_id(sreq.realm_id());
+    e->set_realm_id(realm);
     e->set_map_template_id(sreq.map_template_id());
     e->set_map_instance_id(srsp.placement().map_instance_id());
-    e->set_operation_id(sw.operation_id());
+    const std::string enter_op =
+        sw.operation_id().empty()
+            ? ("switch-enter:" + std::to_string(sreq.player_id()) + ":" +
+               std::to_string(sreq.map_template_id()) + ":L" + std::to_string(sw.line_no()))
+            : (sw.operation_id() + ":enter");
+    e->set_operation_id(enter_op);
     e->set_line_no(sw.line_no());
     std::string enter_payload;
     if (!enter.SerializeToString(&enter_payload))
@@ -903,22 +927,26 @@ bool OrchestrateGatewaySwitchLine(const SessionHandle &sticky, const std::string
             for (int i = 0; i < em.lines_size(); ++i)
                 *body->add_lines() = em.lines(i);
             if (body->lines_size() == 0 && body->kind() == "LINE")
-                MapLineView::FillLines(sw.realm_id(), sw.map_template_id(), body->mutable_lines());
+                MapLineView::FillLines(realm, sw.map_template_id(), body->mutable_lines());
         } else {
             body->set_ok(false);
             body->set_message(gr.message());
             body->set_error_code(gr.error_code());
         }
+        if (!entered || !gr.ok())
+            LOG_WARN << "SwitchLine enter fail player=" << sreq.player_id()
+                     << " line=" << sw.line_no() << " entered=" << entered
+                     << " code=" << out.error_code() << " msg=" << out.message();
         gameproto::PromotePublicError(&out, 0);
         std::string raw;
         return out.SerializeToString(&raw) && EncodeFrame(raw, response_frame) && entered &&
                gr.ok();
     }
-    if (!enter_frame.empty()) {
-        *response_frame = enter_frame;
-        return entered;
-    }
-    return fail("switch_line enter failed", gameproto::kErrInternal);
+    LOG_WARN << "SwitchLine enter undecodable player=" << sreq.player_id()
+             << " line=" << sw.line_no() << " entered=" << entered
+             << " frame_len=" << enter_frame.size();
+    return fail("switch_line enter failed",
+                entered ? gameproto::kErrInternal : gameproto::kErrDependencyUnavailable);
 }
 
 bool BeginOrchestrateGatewaySwitchLine(const SessionHandle &sticky,
@@ -973,7 +1001,7 @@ bool OrchestrateGatewayEnqueueMap(const SessionHandle &sticky, const std::string
     rsp.set_seq(req.seq());
     auto *body = rsp.mutable_enqueue_map();
     sess::EnqueueMapRequest sreq;
-    sreq.set_realm_id(q.realm_id());
+    sreq.set_realm_id(MapLineView::EffectiveRealm(q.realm_id()));
     sreq.set_map_template_id(q.map_template_id());
     sreq.set_player_id(q.player_id() != 0 ? q.player_id() : sticky.player_id);
     sreq.set_line_no(q.line_no());

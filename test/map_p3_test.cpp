@@ -188,6 +188,74 @@ int main() {
     if (occ.empty())
         return Fail("occupants after migrate");
 
+    // realm_id=0 与 QueryMapLines 一样落到默认服；空线过期租约仍可切过去并软续租
+    {
+        const uint64_t tpl_sw = tpl + 80;
+        ResolveOrCreateResult p1, p2;
+        auto in1 = LineIn(tpl_sw, 88001);
+        in1.soft_cap = 1;
+        in1.hard_cap = 2;
+        auto in2 = LineIn(tpl_sw, 88002);
+        in2.soft_cap = 1;
+        in2.hard_cap = 2;
+        if (!PlacementStore::Instance().ResolveOrCreate(in1, &p1) || !p1.ok)
+            return Fail("sw realm p1");
+        if (!PlacementStore::Instance().ResolveOrCreate(in2, &p2) || !p2.ok)
+            return Fail("sw realm p2");
+        if (p2.placement.line_no == p1.placement.line_no)
+            return Fail("sw realm need two lines");
+        SwitchLineInput sw0;
+        sw0.realm_id = 0;
+        sw0.map_template_id = tpl_sw;
+        sw0.player_id = 88002;
+        sw0.line_no = p1.placement.line_no;
+        sw0.soft_cap = 2;
+        sw0.hard_cap = 2;
+        sw0.operation_id = "switch-realm0";
+        ResolveOrCreateResult sw0o;
+        if (!PlacementStore::Instance().SwitchLine(sw0, &sw0o) || !sw0o.ok)
+            return Fail("switch realm_id=0");
+        if (sw0o.placement.line_no != p1.placement.line_no)
+            return Fail("switch realm0 target");
+
+        const uint64_t tpl_lease = tpl + 81;
+        ResolveOrCreateResult a, b;
+        auto la = LineIn(tpl_lease, 88101);
+        la.soft_cap = 1;
+        la.hard_cap = 2;
+        auto lb = LineIn(tpl_lease, 88102);
+        lb.soft_cap = 1;
+        lb.hard_cap = 2;
+        if (!PlacementStore::Instance().ResolveOrCreate(la, &a) || !a.ok)
+            return Fail("sw lease p1");
+        if (!PlacementStore::Instance().ResolveOrCreate(lb, &b) || !b.ok)
+            return Fail("sw lease p2");
+        PlacementStore::Instance().ReleaseByPlayer(88101);
+        auto rlease = RedisPool::Instance().Acquire();
+        if (!rlease)
+            return Fail("sw lease redis");
+        const std::string key = prefix + "map:inst:" + std::to_string(a.placement.map_instance_id);
+        std::vector<std::string> reply;
+        if (!rlease->Eval("redis.call('HSET', KEYS[1], 'leaseUntil', '1') return 1", {key}, {},
+                          &reply))
+            return Fail("sw lease expire");
+        SwitchLineInput swl;
+        swl.realm_id = 1;
+        swl.map_template_id = tpl_lease;
+        swl.player_id = 88102;
+        swl.line_no = a.placement.line_no;
+        swl.soft_cap = 2;
+        swl.hard_cap = 2;
+        swl.operation_id = "switch-expired-lease";
+        ResolveOrCreateResult swo;
+        if (!PlacementStore::Instance().SwitchLine(swl, &swo) || !swo.ok)
+            return Fail("switch onto expired lease line");
+        if (swo.placement.line_no != a.placement.line_no)
+            return Fail("switch expired target line");
+        if (swo.placement.lease_until <= 1)
+            return Fail("switch must soft-renew lease");
+    }
+
     std::printf("OK map_p3_test switch/queue/drain/migrate\n");
     std::printf("PASS map_p3_test\n");
     return 0;

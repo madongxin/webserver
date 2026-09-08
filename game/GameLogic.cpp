@@ -2473,7 +2473,15 @@ bool GameLogic::Handle(const game::GameRequest &req, game::GameResponse *rsp) {
         case game::GameRequest::kEnterMap:
             if (!RequireSessionToken(req, req.enter_map().player_id(), rsp))
                 return false;
-            return HandleEnterMap(req.enter_map(), rsp);
+            {
+                const bool ok = HandleEnterMap(req.enter_map(), rsp);
+                if (!ok && rsp->has_enter_map() && rsp->enter_map().error_code().empty()) {
+                    const std::string &m = rsp->enter_map().message();
+                    if (m.size() >= 4 && m.compare(0, 4, "ERR_") == 0)
+                        rsp->mutable_enter_map()->set_error_code(m);
+                }
+                return ok;
+            }
         case game::GameRequest::kLeaveMap:
             if (!RequireSessionToken(req, req.leave_map().player_id(), rsp))
                 return false;

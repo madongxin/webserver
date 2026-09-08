@@ -74,6 +74,10 @@ int main() {
         std::printf("FAIL old fence still valid\n");
         return 1;
     }
+    game::LogoutReq clo;
+    clo.set_player_id(pid);
+    game::LogoutRsp cr;
+    SessionStore::Instance().Logout(clo, &cr);
     std::printf("OK session_grace_cas_test\n");
     return 0;
 }

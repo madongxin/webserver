@@ -966,6 +966,7 @@ return {'EXPIRED_AND_DELETED'}
         lease = RedisPool::Lease();
         PlacementStore::Instance().ReleaseByPlayer(player_id);
         UntrackOnline(player_id);
+        ClearGraceIndex(player_id);
         LOG_INFO << "SessionStore: grace elapsed player_id=" << player_id << " -> OFFLINE";
         return true;
     }
@@ -1520,6 +1521,10 @@ bool SessionStore::MarkDisconnected(uint64_t player_id, const std::string &token
     LOG_INFO << "SessionStore: DISCONNECTED player_id=" << player_id << " grace_sec=" << grace_sec_;
     lease = RedisPool::Lease();
     UntrackOnline(player_id);
+    int64_t deadline = NowUnixSec() + grace_sec_;
+    if (reply.size() > 2)
+        deadline = ParseI64(reply[2]);
+    IndexGraceDeadline(player_id, deadline);
     return true;
 }
 
@@ -1739,6 +1744,7 @@ bool SessionStore::Logout(const game::LogoutReq &req, game::LogoutRsp *rsp) {
     lease = RedisPool::Lease();
     PlacementStore::Instance().ReleaseByPlayer(req.player_id());
     UntrackOnline(req.player_id());
+    ClearGraceIndex(req.player_id());
     return true;
 }
 
@@ -2010,6 +2016,68 @@ void SessionStore::TrackOnline(uint64_t player_id) {
     if (!lease)
         return;
     (void)lease->SAdd(OnlineSetKey(), std::to_string(player_id));
+    lease = RedisPool::Lease();
+    ClearGraceIndex(player_id);
+}
+
+std::string SessionStore::GraceIndexKey() const {
+    return key_prefix_ + "session:grace";
+}
+
+void SessionStore::IndexGraceDeadline(uint64_t player_id, int64_t deadline_unix) {
+    if (!available_ || player_id == 0)
+        return;
+    auto lease = RedisPool::Instance().Acquire();
+    if (!lease)
+        return;
+    std::vector<std::string> out;
+    (void)lease->Eval("redis.call('ZADD', KEYS[1], ARGV[1], ARGV[2]) return {'1'}", {GraceIndexKey()},
+                      {std::to_string(deadline_unix), std::to_string(player_id)}, &out);
+}
+
+void SessionStore::ClearGraceIndex(uint64_t player_id) {
+    if (!available_ || player_id == 0)
+        return;
+    auto lease = RedisPool::Instance().Acquire();
+    if (!lease)
+        return;
+    std::vector<std::string> out;
+    (void)lease->Eval("redis.call('ZREM', KEYS[1], ARGV[1]) return {'1'}", {GraceIndexKey()},
+                      {std::to_string(player_id)}, &out);
+}
+
+size_t SessionStore::ExpireDueDisconnected(size_t limit) {
+    if (!available_)
+        return 0;
+    const size_t n = limit > 0 ? limit : 64;
+    auto lease = RedisPool::Instance().Acquire();
+    if (!lease)
+        return 0;
+    std::vector<std::string> ids;
+    if (!lease->Eval("return redis.call('ZRANGEBYSCORE', KEYS[1], '-inf', ARGV[1], 'LIMIT', 0, ARGV[2])",
+                     {GraceIndexKey()}, {std::to_string(NowUnixSec()), std::to_string(n)}, &ids))
+        return 0;
+    lease = RedisPool::Lease();
+    size_t expired = 0;
+    for (const auto &s : ids) {
+        const uint64_t pid = ParseU64(s);
+        if (pid == 0)
+            continue;
+        SessionRecord rec;
+        if (!LoadSession(pid, &rec)) {
+            PlacementStore::Instance().ReleaseByPlayer(pid);
+            ClearGraceIndex(pid);
+            ++expired;
+            continue;
+        }
+        if (ExpireIfGraceElapsed(pid, &rec)) {
+            ++expired;
+            continue;
+        }
+        if (rec.state == SessionState::Online)
+            ClearGraceIndex(pid);
+    }
+    return expired;
 }
 
 void SessionStore::UntrackOnline(uint64_t player_id) {

@@ -136,6 +136,11 @@ public:
      * 不等于 Logout。
      */
     bool MarkDisconnected(uint64_t player_id, const std::string &token, uint64_t generation);
+    /**
+     * 扫描宽限已到期的 DISCONNECTED 会话：删 Session、ReleaseByPlayer、从分线占位摘除。
+     * 不等于 Logout；只处理 deadline 已过的断线号。Session 进程定时调用。
+     */
+    size_t ExpireDueDisconnected(size_t limit = 64);
     struct KickResult {
         bool ok = false;
         std::string message;
@@ -258,6 +263,9 @@ private:
     static std::string StateToString(SessionState s);
     static SessionState StateFromString(const std::string &s);
     std::string OnlineSetKey() const;
+    std::string GraceIndexKey() const;
+    void IndexGraceDeadline(uint64_t player_id, int64_t deadline_unix);
+    void ClearGraceIndex(uint64_t player_id);
     void TrackOnline(uint64_t player_id);
     void UntrackOnline(uint64_t player_id);
     bool ConsumeKeyedQuota(const std::string &key, int limit, int window_sec);

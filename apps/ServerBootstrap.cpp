@@ -1892,6 +1892,9 @@ int RunServer(const LaunchOpts &launch) {
             std::vector<uint64_t> closed;
             if (PlacementStore::Instance().CloseIdleInstances(0, 64, &closed) && !closed.empty())
                 LOG_INFO << "PlacementIdleCloser: closed idle maps n=" << closed.size();
+            const size_t expired = SessionStore::Instance().ExpireDueDisconnected(64);
+            if (expired > 0)
+                LOG_INFO << "SessionGraceSweeper: expired n=" << expired;
         });
         LOG_INFO << "PlacementIdleCloser interval_sec=" << iv;
     }
