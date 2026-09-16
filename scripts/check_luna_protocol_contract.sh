@@ -61,12 +61,14 @@ fi
 LUNA="$(cd "$LUNA" && pwd)"
 
 SERVER_COMMIT="unknown"
-if git -C "$ROOT" rev-parse HEAD >/dev/null 2>&1; then
-  SERVER_COMMIT="$(git -C "$ROOT" rev-parse HEAD)"
+if [[ -d "$ROOT/.git" ]] &&
+   git --git-dir="$ROOT/.git" --work-tree="$ROOT" rev-parse HEAD >/dev/null 2>&1; then
+  SERVER_COMMIT="$(git --git-dir="$ROOT/.git" --work-tree="$ROOT" rev-parse HEAD)"
 fi
 LUNA_COMMIT="unknown"
-if git -C "$LUNA" rev-parse HEAD >/dev/null 2>&1; then
-  LUNA_COMMIT="$(git -C "$LUNA" rev-parse HEAD)"
+if [[ -d "$LUNA/.git" ]] &&
+   git --git-dir="$LUNA/.git" --work-tree="$LUNA" rev-parse HEAD >/dev/null 2>&1; then
+  LUNA_COMMIT="$(git --git-dir="$LUNA/.git" --work-tree="$LUNA" rev-parse HEAD)"
 fi
 
 SERVER_PROTO="$ROOT/proto/game.proto"

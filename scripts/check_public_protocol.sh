@@ -136,7 +136,7 @@ missing = [k for k in need if k not in m]
 if missing:
     print("ERROR: manifest missing", missing); sys.exit(1)
 try:
-    head = subprocess.check_output(["git", "-C", root, "rev-parse", "HEAD"]).decode().strip()
+    head = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=root).decode().strip()
     if m["server_commit"] != head:
         print("ERROR: server_commit", m["server_commit"], "!= HEAD", head); sys.exit(1)
 except Exception as e:

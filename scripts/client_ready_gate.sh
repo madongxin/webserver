@@ -82,13 +82,11 @@ set -e
 echo "$luna_out"
 STEPS+=("{\"name\":\"luna_protocol_contract\",\"exit_code\":${luna_rc}}")
 if [[ "$CI_TCP_ONLY" == "1" ]]; then
-  if [[ "$luna_rc" -ne 0 ]]; then
-    die "luna protocol contract failed rc=$luna_rc"
-  fi
-  if echo "$luna_out" | grep -q "luna_protocol_contract=NOT_RUN"; then
-    echo "INFO: luna contract NOT RUN (GAMEMESH_CI_TCP_ONLY=1); not CLIENT READY"
-  elif ! echo "$luna_out" | grep -q "luna_protocol_contract=PASS"; then
-    die "luna protocol contract missing PASS/NOT_RUN token"
+  # TCP-only job must not require Luna; mismatch/missing is not CLIENT READY, not a TCP fail.
+  if echo "$luna_out" | grep -q "luna_protocol_contract=PASS"; then
+    echo "INFO: luna contract PASS (GAMEMESH_CI_TCP_ONLY=1 still not CLIENT READY)"
+  else
+    echo "INFO: luna contract not PASS (GAMEMESH_CI_TCP_ONLY=1); not CLIENT READY"
   fi
 else
   [[ "$luna_rc" -eq 0 ]] || die "luna protocol contract failed rc=$luna_rc"

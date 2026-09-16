@@ -52,9 +52,11 @@ DESC_HASH="$(sha256_file "$OUT/game.desc")"
 
 GIT="unknown"
 DIRTY="false"
-if command -v git >/dev/null 2>&1 && git -C "$ROOT" rev-parse HEAD >/dev/null 2>&1; then
-  GIT="$(git -C "$ROOT" rev-parse HEAD)"
-  if [[ -n "$(git -C "$ROOT" status --porcelain 2>/dev/null || true)" ]]; then
+# CentOS 7 git 1.8 无 `git -C`
+if command -v git >/dev/null 2>&1 && [[ -d "$ROOT/.git" ]] &&
+   git --git-dir="$ROOT/.git" --work-tree="$ROOT" rev-parse HEAD >/dev/null 2>&1; then
+  GIT="$(git --git-dir="$ROOT/.git" --work-tree="$ROOT" rev-parse HEAD)"
+  if [[ -n "$(git --git-dir="$ROOT/.git" --work-tree="$ROOT" status --porcelain 2>/dev/null || true)" ]]; then
     DIRTY="true"
   fi
 fi

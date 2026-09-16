@@ -43,38 +43,8 @@ if [[ -f "$GAMEMESH_RUN_DIR/pids" ]]; then
   exit 1
 fi
 
-# 复用 formal 启动器端口变量
+# 复用 formal 启动器（已含 session×2：sess-0 + sess-1）
 ./scripts/start_formal.sh
-# 追加第二 Session（与 run_cluster_local 一致）
-SESSION_BIN=""
-if [[ -x "$ROOT/build/test/session" ]]; then
-  SESSION_BIN="$ROOT/build/test/session"
-elif [[ -x "$ROOT/build/test/server" ]]; then
-  SESSION_BIN="$ROOT/build/test/server"
-fi
-mkdir -p "$GAMEMESH_RUN_DIR/logs"
-if [[ -n "$SESSION_BIN" ]]; then
-  # shellcheck disable=SC1090
-  source "$ROOT/scripts/e2e_inventory.sh"
-  if [[ "$(basename "$SESSION_BIN")" == "server" ]]; then
-    GAMEMESH_INSTANCE_ID=sess-1 nohup "$SESSION_BIN" session "$GAMEMESH_HTTP_S2" "$GAMEMESH_SESSION2" \
-      >"$GAMEMESH_RUN_DIR/logs/session2.log" 2>&1 &
-  else
-    GAMEMESH_INSTANCE_ID=sess-1 nohup "$SESSION_BIN" "$GAMEMESH_HTTP_S2" "$GAMEMESH_SESSION2" \
-      >"$GAMEMESH_RUN_DIR/logs/session2.log" 2>&1 &
-  fi
-  pid=$!
-  echo "$pid" >>"$GAMEMESH_RUN_DIR/pids"
-  e2e_inv_append session sess-1 "$pid" "127.0.0.1:${GAMEMESH_SESSION2}" "$GAMEMESH_HTTP_S2" -
-  # Gateway Auth RR 含 sess-1：须等端口就绪，否则首批 Register 会 Connection refused
-  for _ in $(seq 1 50); do
-    if (echo >/dev/tcp/127.0.0.1/"${GAMEMESH_SESSION2}") >/dev/null 2>&1; then
-      break
-    fi
-    sleep 0.2
-  done
-  sleep 0.5
-fi
 
 # 写出客户端端口约定
 cat >"$GAMEMESH_RUN_DIR/E2E_PORTS.env" <<EOF

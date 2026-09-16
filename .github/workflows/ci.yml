@@ -181,6 +181,7 @@ jobs:
           GAMEMESH_JOBS: "2"
           GAMEMESH_CI_TCP_ONLY: "1"
         run: ./scripts/client_ready_gate.sh
+        # Luna/Unity 双端门禁在 unity-contract.yml（需显式 checkout + 客户端 artifact）；本 job 不宣称 CLIENT READY。
       - name: export unity protocol artifact
         run: |
           SHA="$(git rev-parse HEAD)"

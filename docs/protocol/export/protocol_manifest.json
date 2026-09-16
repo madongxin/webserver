@@ -2,10 +2,10 @@
   "protocol_name": "gamemesh.game",
   "protocol_version": 1,
   "min_supported_protocol_version": 1,
-  "server_commit": "unknown",
-  "server_git_sha": "unknown",
-  "git_sha": "unknown",
-  "dirty": false,
+  "server_commit": "c8550639c75b97abce6ed137a6354a7e151a8a45",
+  "server_git_sha": "c8550639c75b97abce6ed137a6354a7e151a8a45",
+  "git_sha": "c8550639c75b97abce6ed137a6354a7e151a8a45",
+  "dirty": true,
   "schema_file": "game.proto",
   "schema_files": [
     "game.proto"
@@ -21,7 +21,7 @@
   "protoc_version": "3.12.4",
   "package": "game",
   "csharp_namespace": "GameMesh.Protocol",
-  "generated_at_utc": "2026-09-06T08:50:03Z",
+  "generated_at_utc": "2026-09-16T06:01:59Z",
   "required_types": [
     "ClientHelloReq",
     "ServerHelloRsp",
