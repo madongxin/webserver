@@ -935,7 +935,7 @@ void GameTcpGateway::OnMessage(const std::shared_ptr<TcpConnection> &conn) {
                 if (!gameproto::BeginOrchestrateGatewaySwitchLine(
                         h, payload,
                         [conn_id, sink](bool ok, std::string out, SessionHandle route) {
-                            if (ok || !out.empty()) {
+                            if (ok) {
                                 GatewayConnRegistry::Instance().ApplyRoute(
                                     conn_id, route.gamelogic_instance_id, route.map_instance_id,
                                     route.owner_epoch, route.route_version);
@@ -1002,7 +1002,7 @@ void GameTcpGateway::OnMessage(const std::shared_ptr<TcpConnection> &conn) {
                 if (!gameproto::BeginOrchestrateGatewayEnterMap(
                         h, payload,
                         [conn_id, sink](bool ok, std::string out, SessionHandle route) {
-                            if (ok || !out.empty()) {
+                            if (ok) {
                                 GatewayConnRegistry::Instance().ApplyRoute(
                                     conn_id, route.gamelogic_instance_id, route.map_instance_id,
                                     route.owner_epoch, route.route_version);

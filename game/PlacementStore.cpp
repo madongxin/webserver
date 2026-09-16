@@ -560,25 +560,6 @@ if soft < 1 then soft = 1 end
 if hard < soft then hard = soft end
 if max_lines < 1 then max_lines = 1 end
 
-local function pick_new_owner(new_id)
-  local healthy = {}
-  for token in string.gmatch(healthy_csv, '[^,]+') do
-    healthy[#healthy + 1] = token
-  end
-  if owner ~= '' then
-    for i = 1, #healthy do
-      if healthy[i] == owner then
-        return owner
-      end
-    end
-  end
-  if #healthy == 0 then
-    return owner
-  end
-  local n = tonumber(new_id) or 0
-  return healthy[(n % #healthy) + 1]
-end
-
 local function load_inst(id)
   local key = prefix .. 'map:inst:' .. tostring(id)
   local raw = redis.call('HGETALL', key)
@@ -594,6 +575,43 @@ local function load_inst(id)
     tonumber(f['softCap'] or tostring(soft)) or soft,
     tonumber(f['hardCap'] or tostring(hard)) or hard
   }
+end
+
+-- 新线/回收：选占用最少的健康 Logic，避免 instance_id 取模把 1/3 线都堆到 gl-0。
+local function pick_new_owner()
+  local healthy = {}
+  for token in string.gmatch(healthy_csv, '[^,]+') do
+    healthy[#healthy + 1] = token
+  end
+  if #healthy == 0 then return owner end
+  if #healthy == 1 then return healthy[1] end
+  local load, nlines = {}, {}
+  for i = 1, #healthy do
+    load[healthy[i]] = 0
+    nlines[healthy[i]] = 0
+  end
+  local members = redis.call('ZRANGE', lines_key, 0, -1)
+  for _, id in ipairs(members) do
+    local L = load_inst(id)
+    if L and (L[7] or '') == 'READY' then
+      local oid = L[4] or ''
+      if load[oid] ~= nil then
+        local n = tonumber(redis.call('SCARD', prefix .. 'map:occ:' .. tostring(id))) or 0
+        load[oid] = load[oid] + n
+        nlines[oid] = nlines[oid] + 1
+      end
+    end
+  end
+  local best = healthy[1]
+  for i = 2, #healthy do
+    local a = healthy[i]
+    local la, lb = load[a] or 0, load[best] or 0
+    local na, nb = nlines[a] or 0, nlines[best] or 0
+    if la < lb or (la == lb and na < nb) then
+      best = a
+    end
+  end
+  return best
 end
 
 local function owner_alive(oid)
@@ -807,8 +825,15 @@ for _, id in ipairs(members) do
       end
     end
   elseif L then
+    local st = L[7] or ''
     local ln = tonumber(L[11]) or 0
-    if ln > 0 then used[ln] = true end
+    -- CLOSED 不得占线号，否则系统选线会跳过 1 线直接开 2 线
+    if st == 'CLOSED' then
+      redis.call('ZREM', lines_key, id)
+      if ln > 0 then redis.call('DEL', line_key(ln)) end
+    elseif ln > 0 then
+      used[ln] = true
+    end
   end
 end
 table.sort(cand, function(a, b)
@@ -870,11 +895,22 @@ for _ = 1, max_lines do
       cache_op(R)
       return R
     end
-  end
-  used[new_line] = true
-  new_line = 0
-  for i = 1, max_lines do
-    if not used[i] then new_line = i break end
+    local wst = redis.call('HGET', prefix .. 'map:inst:' .. tostring(win), 'state')
+    if not wst or wst == '' or wst == 'CLOSED' then
+      redis.call('DEL', lkey)
+    else
+      used[new_line] = true
+      new_line = 0
+      for i = 1, max_lines do
+        if not used[i] then new_line = i break end
+      end
+    end
+  else
+    used[new_line] = true
+    new_line = 0
+    for i = 1, max_lines do
+      if not used[i] then new_line = i break end
+    end
   end
   if new_line == 0 then
     if under_hard_id then
@@ -1505,8 +1541,9 @@ for i = 1, #rows, 2 do
       redis.call('ZREM', idle_key, id)
     elseif (f['state'] or '') == 'CLOSED' then
       redis.call('ZREM', idle_key, id)
-    elseif now - last >= delay then
+    else
       local can_close = true
+      local skip_delay = false
       if kind == 'LINE' then
         local min_lines = tonumber(f['minLines'] or '1') or 1
         local realm = f['realmId'] or '0'
@@ -1514,13 +1551,27 @@ for i = 1, #rows, 2 do
         local lines_key = prefix .. 'map:lines:' .. realm .. ':' .. tpl
         local ids = redis.call('ZRANGE', lines_key, 0, -1)
         local live = 0
+        local total_occ = 0
+        local lowest_ready = 0
         for _, lid in ipairs(ids) do
           local st = redis.call('HGET', prefix .. 'map:inst:' .. tostring(lid), 'state')
-          if st == 'READY' then live = live + 1 end
+          if st == 'READY' then
+            live = live + 1
+            local rln = tonumber(redis.call('HGET', prefix .. 'map:inst:' .. tostring(lid), 'lineNo') or '0') or 0
+            if rln > 0 and (lowest_ready == 0 or rln < lowest_ready) then lowest_ready = rln end
+          end
+          total_occ = total_occ + (tonumber(redis.call('SCARD', prefix .. 'map:occ:' .. tostring(lid))) or 0)
         end
-        if live <= min_lines then can_close = false end
+        local ln = tonumber(f['lineNo'] or '0') or 0
+        if live <= min_lines then
+          -- 只留 1 线做暖线；空着的 2/3 线关掉，避免一个人出现在二线
+          if ln <= 1 or total_occ > 0 then can_close = false end
+        elseif ln > 0 and lowest_ready > 0 and ln == lowest_ready then
+          can_close = false
+        end
+        if total_occ == 0 then skip_delay = true end
       end
-      if can_close and (kind == 'LINE' or kind == 'DUNGEON') then
+      if can_close and (skip_delay or now - last >= delay) and (kind == 'LINE' or kind == 'DUNGEON') then
         redis.call('HSET', ikey, 'state', 'CLOSED', 'updatedAt', tostring(now))
         if kind == 'LINE' then
           local realm = f['realmId'] or '0'
@@ -1845,6 +1896,55 @@ bool PlacementStore::ReleaseByPlayer(uint64_t player_id) {
             FireLineStatus(rec.realm_id, rec.map_template_id);
     }
     return ok;
+}
+
+size_t PlacementStore::ReclaimStaleReservations(
+    const std::function<bool(uint64_t player_id)> &keep_reservation, size_t limit) {
+    if (!available_)
+        return 0;
+    const size_t cap = limit > 0 ? limit : 64;
+    size_t n = 0;
+    std::string cursor = "0";
+    const std::string match = key_prefix_ + "map:pres:*";
+    static const char kScanPres[] = R"LUA(
+local cursor = ARGV[1]
+local match = ARGV[2]
+local cnt = tonumber(ARGV[3]) or 32
+local r = redis.call('SCAN', cursor, 'MATCH', match, 'COUNT', cnt)
+local nextc = r[1]
+local keys = r[2]
+local out = {tostring(nextc)}
+for _, k in ipairs(keys) do
+  local pid = string.match(k, '(%d+)$')
+  if pid then out[#out + 1] = pid end
+end
+return out
+)LUA";
+    int rounds = 0;
+    do {
+        auto lease = RedisPool::Instance().Acquire();
+        if (!lease)
+            break;
+        std::vector<std::string> reply;
+        if (!lease->Eval(kScanPres, {}, {cursor, match, "32"}, &reply) || reply.empty())
+            break;
+        cursor = reply[0];
+        lease = RedisPool::Lease();
+        for (size_t i = 1; i < reply.size(); ++i) {
+            const uint64_t pid = ParseU64(reply[i]);
+            if (pid == 0)
+                continue;
+            if (keep_reservation && keep_reservation(pid))
+                continue;
+            if (ReleaseByPlayer(pid))
+                ++n;
+            if (n >= cap)
+                return n;
+        }
+        if (++rounds > 256)
+            break;
+    } while (cursor != "0");
+    return n;
 }
 
 std::string PlacementStore::QueueKey(uint32_t realm, uint64_t tpl, uint32_t line_no) const {

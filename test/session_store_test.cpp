@@ -229,6 +229,26 @@ int main() {
         st != SessionOpStatus::Done || kind != "acquire" || ig.session_id != i1.session_id)
         return Fail("GetSessionOperation acquire");
 
+    // 幂等 DONE 但 Session 已被删：必须重建，不能把幽灵 fence 当成登录成功
+    {
+        auto rlease = RedisPool::Instance().Acquire();
+        if (!rlease)
+            return Fail("stale-op redis");
+        const std::string skey = SessionStore::Instance().key_prefix() + "session:" +
+                                 std::to_string(pid3);
+        if (!rlease->Del(skey))
+            return Fail("stale-op del session");
+        rlease = RedisPool::Lease();
+        AcquireSessionResult i3;
+        if (!SessionStore::Instance().AcquireSession(idem, &i3) || !i3.ok)
+            return Fail("stale-op reacquire");
+        if (i3.fence_token.empty() || i3.fence_token == i1.fence_token)
+            return Fail("stale-op must mint new fence");
+        SessionRecord live;
+        if (!SessionStore::Instance().PeekSession(pid3, &live) || live.token != i3.fence_token)
+            return Fail("stale-op session missing after login");
+    }
+
     // 零健康 GameLogic：AcquireSession fail-closed，不创建半完成 Session
     {
         const uint64_t pid4 = 900004;

@@ -106,6 +106,42 @@ int main() {
     gameproto::PromotePublicError(&mapped, 1);
     Expect(mapped.error_code() == std::string(gameproto::kErrBadCredential), "normalize BAD_CREDENTIAL");
 
+    game::GameResponse sess_miss;
+    sess_miss.set_ok(false);
+    sess_miss.set_error_code("NOT_FOUND");
+    sess_miss.set_message("session not found");
+    gameproto::PromotePublicError(&sess_miss, 1);
+    Expect(sess_miss.error_code() == std::string(gameproto::kErrSessionExpired),
+           "NOT_FOUND session must not look like missing line");
+    Expect(sess_miss.error_code() != std::string(gameproto::kErrMapNoLine), "not map no line");
+
+    game::GameResponse sess_nf;
+    sess_nf.set_ok(false);
+    sess_nf.set_error_code("NOT_FOUND");
+    gameproto::PromotePublicError(&sess_nf, 1);
+    Expect(sess_nf.error_code() == std::string(gameproto::kErrSessionExpired),
+           "bare NOT_FOUND is session expired not missing line");
+
+    game::GameResponse inner_sess;
+    inner_sess.set_ok(false);
+    inner_sess.mutable_enter_map()->set_ok(false);
+    inner_sess.mutable_enter_map()->set_error_code("NOT_FOUND");
+    inner_sess.mutable_enter_map()->set_message("session not found");
+    gameproto::PromotePublicError(&inner_sess, 1);
+    Expect(inner_sess.error_code() == std::string(gameproto::kErrSessionExpired),
+           "inner enter_map NOT_FOUND session");
+    Expect(inner_sess.enter_map().error_code() == std::string(gameproto::kErrSessionExpired),
+           "inner body code must match envelope");
+    Expect(inner_sess.error_code() != std::string(gameproto::kErrMapNoLine),
+           "inner enter_map session is not no-line");
+
+    game::GameResponse no_line;
+    no_line.set_ok(false);
+    no_line.set_error_code("ERR_MAP_NO_LINE");
+    no_line.set_message("map line not found");
+    gameproto::PromotePublicError(&no_line, 1);
+    Expect(no_line.error_code() == std::string(gameproto::kErrMapNoLine), "keep map no line");
+
     if (fails) {
         std::printf("protocol_handshake_test FAIL count=%d\n", fails);
         return 1;

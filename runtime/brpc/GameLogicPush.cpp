@@ -76,8 +76,8 @@ bool PushToBoundGateway(const std::string &gateway_instance_id, uint64_t player_
     }
     if (rsp.rejected() > 0) {
         OpsMetrics::Instance().IncPushRejected();
-        LOG_WARN << "PushBatch rejected=" << rsp.rejected() << " accepted=" << rsp.accepted()
-                 << " (stale session/fence?)";
+        LOG_INFO << "PushBatch rejected=" << rsp.rejected() << " accepted=" << rsp.accepted()
+                 << " (stale session/fence)";
     }
     if (rsp.accepted() > 0)
         OpsMetrics::Instance().IncPushAccepted();

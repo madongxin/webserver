@@ -234,7 +234,7 @@ bool OrchestrateGatewayEnterMap(const SessionHandle &sticky, const std::string &
             SessionStore::TransferBeginOut out;
             if (!SessionStore::Instance().BeginPlayerTransfer(in, &out) || !out.ok)
                 return EncodeErr(req, out.message.empty() ? "begin transfer failed" : out.message,
-                                 response_frame);
+                                 response_frame, out.error_code);
             transfer_id = out.transfer_id;
         }
 
@@ -494,7 +494,8 @@ bool OrchestrateGatewayEnterMap(const SessionHandle &sticky, const std::string &
                     route_out->map_instance_id = gr.enter_map().map_instance_id();
                 if (gr.enter_map().owner_epoch() != 0)
                     route_out->owner_epoch = gr.enter_map().owner_epoch();
-                if (gr.enter_map().route_version() != 0)
+                // Session routeVersion 才是 Transfer 的 fence；不要被 Placement 实例 rv 覆盖。
+                if (route_out->route_version == 0 && gr.enter_map().route_version() != 0)
                     route_out->route_version = gr.enter_map().route_version();
             }
         }
@@ -890,8 +891,13 @@ bool OrchestrateGatewaySwitchLine(const SessionHandle &sticky, const std::string
     if (!enter.SerializeToString(&enter_payload))
         return fail("serialize enter_map failed", gameproto::kErrInternal);
     std::string enter_frame;
-    SessionHandle route = sticky;
-    const bool entered = OrchestrateGatewayEnterMap(sticky, enter_payload, &enter_frame, &route);
+    SessionHandle enter_sticky = sticky;
+    // Gateway 上缓存的 route_version 常是 Placement 实例 rv，与 Session Redis 不一致，
+    // 跨 Logic 切线 BeginTransfer 会 STALE_ROUTE。切线已持 fence，让 Session 以当前 rv 为准。
+    enter_sticky.route_version = 0;
+    SessionHandle route = enter_sticky;
+    const bool entered =
+        OrchestrateGatewayEnterMap(enter_sticky, enter_payload, &enter_frame, &route);
     if (route_out)
         *route_out = route;
     std::string buf = enter_frame;
@@ -933,10 +939,13 @@ bool OrchestrateGatewaySwitchLine(const SessionHandle &sticky, const std::string
             body->set_message(gr.message());
             body->set_error_code(gr.error_code());
         }
-        if (!entered || !gr.ok())
+        if (!entered || !gr.ok()) {
             LOG_WARN << "SwitchLine enter fail player=" << sreq.player_id()
                      << " line=" << sw.line_no() << " entered=" << entered
                      << " code=" << out.error_code() << " msg=" << out.message();
+            if (PlacementStore::Instance().Available())
+                PlacementStore::Instance().ReleaseByPlayer(sreq.player_id());
+        }
         gameproto::PromotePublicError(&out, 0);
         std::string raw;
         return out.SerializeToString(&raw) && EncodeFrame(raw, response_frame) && entered &&
@@ -945,6 +954,8 @@ bool OrchestrateGatewaySwitchLine(const SessionHandle &sticky, const std::string
     LOG_WARN << "SwitchLine enter undecodable player=" << sreq.player_id()
              << " line=" << sw.line_no() << " entered=" << entered
              << " frame_len=" << enter_frame.size();
+    if (PlacementStore::Instance().Available())
+        PlacementStore::Instance().ReleaseByPlayer(sreq.player_id());
     return fail("switch_line enter failed",
                 entered ? gameproto::kErrInternal : gameproto::kErrDependencyUnavailable);
 }

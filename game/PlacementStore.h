@@ -3,6 +3,7 @@
 #include "SceneKind.h"
 
 #include <cstdint>
+#include <functional>
 #include <mutex>
 #include <string>
 #include <vector>
@@ -158,6 +159,12 @@ public:
     bool CloseIdleInstances(int64_t now_unix, size_t limit, std::vector<uint64_t> *closed);
     bool ConfirmSlot(uint64_t player_id, uint64_t map_instance_id);
     bool ReleaseByPlayer(uint64_t player_id);
+    /**
+     * 扫 map:pres:*：keep_reservation(pid)==false 则 ReleaseByPlayer。
+     * 用于下线/重启后 Session 已没、占位还在的幽灵 occupancy。
+     */
+    size_t ReclaimStaleReservations(const std::function<bool(uint64_t player_id)> &keep_reservation,
+                                    size_t limit = 64);
     uint32_t Occupancy(uint64_t map_instance_id);
     void SetPublicMapCapacity(uint32_t n);
     uint32_t public_map_capacity() const { return public_capacity_; }

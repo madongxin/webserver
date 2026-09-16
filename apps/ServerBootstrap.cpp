@@ -332,7 +332,7 @@ Json::Value BuildClusterStatusJson() {
     out["alive_n"] = alive_n;
     out["live_n"] = live_n;
     out["ready_n"] = ready_n;
-    out["expected_n"] = 8;
+    out["expected_n"] = 9;
     out["all_alive"] = (n > 0 && alive_n == n);
     out["all_ready"] = (n > 0 && ready_n == n);
     out["processes"] = procs;
@@ -1274,7 +1274,8 @@ int RunServer(const LaunchOpts &launch) {
             LOG_WARN << "Redis session disabled (config/redis.cnf)";
         else {
             // Session 权威 Placement；Logic 也需可读 Redis Placement（EnterMap/lease）
-            if (role == "all" || role == "session" || role == "gamelogic" || role == "world") {
+            if (role == "all" || role == "session" || role == "gamelogic" || role == "world" ||
+                role == "gateway") {
                 PlacementStore::Instance().InitFromSessionPrefix(
                     SessionStore::Instance().key_prefix());
             }
@@ -1895,6 +1896,9 @@ int RunServer(const LaunchOpts &launch) {
             const size_t expired = SessionStore::Instance().ExpireDueDisconnected(64);
             if (expired > 0)
                 LOG_INFO << "SessionGraceSweeper: expired n=" << expired;
+            const size_t orphans = SessionStore::Instance().ReclaimOrphanMapReservations(64);
+            if (orphans > 0)
+                LOG_INFO << "PlacementOrphanReclaim: released n=" << orphans;
         });
         LOG_INFO << "PlacementIdleCloser interval_sec=" << iv;
     }

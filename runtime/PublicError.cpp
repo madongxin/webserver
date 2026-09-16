@@ -40,20 +40,58 @@ bool ContainsFold(const std::string &hay, const char *needle) {
     return false;
 }
 
-std::string InnerErrorCode(const game::GameResponse &rsp) {
+const google::protobuf::Message *InnerBody(const game::GameResponse &rsp) {
     const auto *refl = rsp.GetReflection();
     const auto *desc = rsp.GetDescriptor();
     const auto *oneof = desc->FindOneofByName("body");
     if (!oneof)
-        return {};
+        return nullptr;
     const auto *field = refl->GetOneofFieldDescriptor(rsp, oneof);
     if (!field || field->cpp_type() != google::protobuf::FieldDescriptor::CPPTYPE_MESSAGE)
+        return nullptr;
+    return &refl->GetMessage(rsp, field);
+}
+
+google::protobuf::Message *MutableInnerBody(game::GameResponse *rsp) {
+    if (!rsp)
+        return nullptr;
+    const auto *refl = rsp->GetReflection();
+    const auto *desc = rsp->GetDescriptor();
+    const auto *oneof = desc->FindOneofByName("body");
+    if (!oneof)
+        return nullptr;
+    const auto *field = refl->GetOneofFieldDescriptor(*rsp, oneof);
+    if (!field || field->cpp_type() != google::protobuf::FieldDescriptor::CPPTYPE_MESSAGE)
+        return nullptr;
+    return refl->MutableMessage(rsp, field);
+}
+
+std::string InnerStringField(const game::GameResponse &rsp, const char *name) {
+    const auto *inner = InnerBody(rsp);
+    if (!inner || !name)
         return {};
-    const auto &inner = refl->GetMessage(rsp, field);
-    const auto *ecode = inner.GetDescriptor()->FindFieldByName("error_code");
-    if (!ecode || ecode->type() != google::protobuf::FieldDescriptor::TYPE_STRING)
+    const auto *f = inner->GetDescriptor()->FindFieldByName(name);
+    if (!f || f->type() != google::protobuf::FieldDescriptor::TYPE_STRING)
         return {};
-    return inner.GetReflection()->GetString(inner, ecode);
+    return inner->GetReflection()->GetString(*inner, f);
+}
+
+void SetInnerStringField(game::GameResponse *rsp, const char *name, const std::string &value) {
+    auto *inner = MutableInnerBody(rsp);
+    if (!inner || !name)
+        return;
+    const auto *f = inner->GetDescriptor()->FindFieldByName(name);
+    if (!f || f->type() != google::protobuf::FieldDescriptor::TYPE_STRING)
+        return;
+    inner->GetReflection()->SetString(inner, f, value);
+}
+
+std::string InnerErrorCode(const game::GameResponse &rsp) {
+    return InnerStringField(rsp, "error_code");
+}
+
+std::string InnerErrorMessage(const game::GameResponse &rsp) {
+    return InnerStringField(rsp, "message");
 }
 
 std::string GuessFromMessage(const std::string &msg) {
@@ -75,6 +113,12 @@ std::string GuessFromMessage(const std::string &msg) {
         return kErrInvalidArgument;
     if (ContainsFold(msg, "unauthenticated") || ContainsFold(msg, "hello required"))
         return kErrUnauthenticated;
+    if (ContainsFold(msg, "session not found"))
+        return kErrSessionExpired;
+    if (ContainsFold(msg, "map line not found"))
+        return kErrMapNoLine;
+    if (ContainsFold(msg, "map instance not found"))
+        return kErrMapNotReady;
     if (ContainsFold(msg, "not ready") || ContainsFold(msg, "no logic assigned") ||
         ContainsFold(msg, "mysql") || ContainsFold(msg, "redis") || ContainsFold(msg, "brpc") ||
         ContainsFold(msg, "hiredis") || ContainsFold(msg, "innodb"))
@@ -92,7 +136,7 @@ std::string GuessFromMessage(const std::string &msg) {
         ContainsFold(msg, "placement not ready"))
         return kErrMapNotReady;
     if (msg.empty())
-        return kErrInternal;
+        return {};
     return kErrInternal;
 }
 
@@ -117,8 +161,12 @@ std::string NormalizePublicErrorCode(const std::string &code) {
         return kErrMapNotReady;
     if (code == "NOT_BOUND")
         return kErrNotOnMap;
+    if (code == "NOT_FOUND")
+        return {};  // 交给 Promote 按 message 区分 session / map，禁止裸 NOT_FOUND 出公网
     if (code == "FENCE_REJECT")
         return kErrFenceStale;
+    if (code == "STALE_ROUTE")
+        return kErrAoiResyncRequired;
     return code;
 }
 
@@ -181,22 +229,40 @@ void PromotePublicError(game::GameResponse *rsp, uint64_t conn_id) {
         rsp->set_message(SanitizePublicMessage(rsp->message()));
         return;
     }
-    std::string code = rsp->error_code();
+    const std::string orig_code = rsp->error_code();
+    const std::string inner_code = InnerErrorCode(*rsp);
+    const std::string inner_msg = InnerErrorMessage(*rsp);
+    std::string code = orig_code;
     if (code == "ERR_CLIENT_SEQ_OUT_OF_ORDER")
         code = kErrStaleSeq;
     if (code.empty())
-        code = InnerErrorCode(*rsp);
+        code = inner_code;
     code = NormalizePublicErrorCode(code);
-    if (code.empty())
+    if (code.empty()) {
         code = GuessFromMessage(rsp->message());
+        if (code.empty())
+            code = GuessFromMessage(inner_msg);
+    }
     if (code == "ERR_CLIENT_SEQ_OUT_OF_ORDER")
         code = kErrStaleSeq;
-    if (code.empty())
-        code = kErrInternal;
+    if (code.empty()) {
+        // 会话 Lua 的 NOT_FOUND 常无稳定公网码；缺线是 ERR_MAP_NO_LINE，不要把会话缺失当成缺线。
+        if (ContainsFold(rsp->message(), "session not found") ||
+            ContainsFold(inner_msg, "session not found") || orig_code == "NOT_FOUND" ||
+            inner_code == "NOT_FOUND")
+            code = kErrSessionExpired;
+        else
+            code = kErrInternal;
+    }
     code = NormalizePublicErrorCode(code);
     rsp->set_error_code(code);
     rsp->set_retryable(ErrorCodeRetryable(code));
-    rsp->set_message(SanitizePublicMessage(rsp->message().empty() ? code : rsp->message()));
+    if (rsp->message().empty() && !inner_msg.empty())
+        rsp->set_message(SanitizePublicMessage(inner_msg));
+    else
+        rsp->set_message(SanitizePublicMessage(rsp->message().empty() ? code : rsp->message()));
+    // Unity 读 EnterMapRsp.error_code；必须和信封一致，否则仍会把 NOT_FOUND 当缺线重试。
+    SetInnerStringField(rsp, "error_code", code);
     OpsMetrics::Instance().IncErrorCode(code);
 }
 

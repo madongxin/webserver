@@ -18,7 +18,7 @@
       "sha256_file": "1002.grid.json.sha256",
       "data_version": 1,
       "kind": "LINE",
-      "soft_cap": 200,
+      "soft_cap": 100,
       "hard_cap": 400,
       "max_lines": 8,
       "min_lines": 1,

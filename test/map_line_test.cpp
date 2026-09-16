@@ -289,7 +289,35 @@ int main() {
             return Fail("expired line must reuse instance");
     }
 
-    std::printf("OK map_line_test specified/auto/concurrent/legacy/lease-reuse\n");
+    // 8. 新线 Owner 按占用均分：1 线堆人后，2/3 线应落到另一台 Logic
+    {
+        const uint64_t tpl8 = tpl + 8;
+        auto join = [&](uint64_t player, uint32_t line_no, ResolveOrCreateResult *out) -> bool {
+            auto in = LineIn(tpl8, player, line_no);
+            in.soft_cap = 2;
+            in.hard_cap = 4;
+            return PlacementStore::Instance().ResolveOrCreate(in, out) && out->ok;
+        };
+        ResolveOrCreateResult p1, p2, p3, p4, p5, p6;
+        if (!join(98001, 0, &p1) || p1.placement.line_no != 1)
+            return Fail("owner p1");
+        if (!join(98002, 1, &p2) || p2.placement.line_no != 1)
+            return Fail("owner p2");
+        if (!join(98003, 1, &p3) || p3.placement.line_no != 1)
+            return Fail("owner p3");
+        if (!join(98004, 0, &p4) || p4.placement.line_no != 2)
+            return Fail("owner p4 new line");
+        if (p4.placement.owner_logic_server_id == p1.placement.owner_logic_server_id)
+            return Fail("line 2 must be other logic");
+        if (!join(98005, 0, &p5) || p5.placement.line_no != 2)
+            return Fail("owner p5 join line 2");
+        if (!join(98006, 0, &p6) || p6.placement.line_no != 3)
+            return Fail("owner p6 new line 3");
+        if (p6.placement.owner_logic_server_id != p4.placement.owner_logic_server_id)
+            return Fail("line 3 must follow lighter logic");
+    }
+
+    std::printf("OK map_line_test specified/auto/concurrent/legacy/lease-reuse/owner-balance\n");
     std::printf("PASS map_line_test\n");
     return 0;
 }

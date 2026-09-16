@@ -210,6 +210,127 @@ int main() {
         }
     }
 
+    // 整图无人时立刻关掉多余空线（不等 empty_close_delay）；幽灵占位可 reclaim。
+    {
+        const uint64_t etpl = tpl + 11;
+        auto ein = [&](uint64_t player, uint32_t line_no = 0) {
+            ResolveOrCreateInput in;
+            in.realm_id = 1;
+            in.map_template_id = etpl;
+            in.player_id = player;
+            in.kind = "LINE";
+            in.line_no = line_no;
+            in.soft_cap = 1;
+            in.hard_cap = 1;
+            in.max_lines = 8;
+            in.min_lines = 1;
+            in.empty_close_delay = 300;
+            in.operation_id = "line-empty-all-" + std::to_string(player);
+            return in;
+        };
+        ResolveOrCreateResult a, b;
+        if (!PlacementStore::Instance().ResolveOrCreate(ein(82101), &a) || !a.ok)
+            return Fail("empty-all a");
+        if (!PlacementStore::Instance().ResolveOrCreate(ein(82102), &b) || !b.ok)
+            return Fail("empty-all b");
+        if (a.placement.line_no == b.placement.line_no)
+            return Fail("empty-all need two lines");
+        PlacementStore::Instance().ReleaseByPlayer(82101);
+        PlacementStore::Instance().ReleaseByPlayer(82102);
+        const int64_t now = static_cast<int64_t>(
+            std::chrono::duration_cast<std::chrono::seconds>(
+                std::chrono::system_clock::now().time_since_epoch())
+                .count());
+        std::vector<uint64_t> closed;
+        if (!PlacementStore::Instance().CloseIdleInstances(now, 16, &closed))
+            return Fail("empty-all close");
+        bool extra_closed = false;
+        for (uint64_t id : closed) {
+            if (id == a.placement.map_instance_id || id == b.placement.map_instance_id)
+                extra_closed = true;
+        }
+        if (!extra_closed)
+            return Fail("empty template must close extra line without delay");
+        if (closed.size() > 1)
+            return Fail("must keep min_lines when template empty");
+        std::vector<MapLineInfo> leftover;
+        if (!PlacementStore::Instance().ListLines(1, etpl, &leftover))
+            return Fail("empty-all list");
+        uint32_t ready_n = 0, leftover_ln = 0;
+        for (const auto &r : leftover) {
+            if (r.state == "READY") {
+                ++ready_n;
+                leftover_ln = r.line_no;
+            }
+        }
+        if (ready_n != 1 || leftover_ln != 1)
+            return Fail("empty leftover must be line 1");
+    }
+    {
+        ResolveOrCreateInput in;
+        in.realm_id = 1;
+        in.map_template_id = tpl + 12;
+        in.player_id = 82201;
+        in.kind = "LINE";
+        in.line_no = 0;
+        in.soft_cap = 2;
+        in.hard_cap = 2;
+        in.max_lines = 4;
+        in.min_lines = 1;
+        in.operation_id = "orphan-pres-82201";
+        ResolveOrCreateResult out;
+        if (!PlacementStore::Instance().ResolveOrCreate(in, &out) || !out.ok)
+            return Fail("orphan reserve");
+        if (PlacementStore::Instance().Occupancy(out.placement.map_instance_id) != 1)
+            return Fail("orphan occ");
+        const size_t n = PlacementStore::Instance().ReclaimStaleReservations(
+            [](uint64_t pid) { return pid != 82201; }, 16);
+        if (n < 1)
+            return Fail("orphan reclaim");
+        if (PlacementStore::Instance().Occupancy(out.placement.map_instance_id) != 0)
+            return Fail("orphan occ after reclaim");
+    }
+    {
+        const uint64_t stpl = tpl + 13;
+        auto sin = [&](uint64_t player) {
+            ResolveOrCreateInput in;
+            in.realm_id = 1;
+            in.map_template_id = stpl;
+            in.player_id = player;
+            in.kind = "LINE";
+            in.soft_cap = 2;
+            in.hard_cap = 2;
+            in.max_lines = 8;
+            in.min_lines = 1;
+            in.operation_id = "stale-l1-" + std::to_string(player);
+            return in;
+        };
+        ResolveOrCreateResult a;
+        if (!PlacementStore::Instance().ResolveOrCreate(sin(82301), &a) || !a.ok)
+            return Fail("stale seed");
+        if (a.placement.line_no != 1)
+            return Fail("stale seed line");
+        PlacementStore::Instance().ReleaseByPlayer(82301);
+        auto rlease = RedisPool::Instance().Acquire();
+        if (!rlease)
+            return Fail("stale redis");
+        const std::string ikey =
+            prefix + "map:inst:" + std::to_string(a.placement.map_instance_id);
+        const std::string lkey = prefix + "map:line:1:" + std::to_string(stpl) + ":1";
+        std::vector<std::string> planted;
+        if (!rlease->Eval("redis.call('HSET', KEYS[1], 'state', 'CLOSED') "
+                          "redis.call('SET', KEYS[2], ARGV[1]) return 1",
+                          {ikey, lkey}, {std::to_string(a.placement.map_instance_id)},
+                          &planted))
+            return Fail("stale plant");
+        rlease = RedisPool::Lease();
+        ResolveOrCreateResult b;
+        if (!PlacementStore::Instance().ResolveOrCreate(sin(82302), &b) || !b.ok)
+            return Fail("stale join");
+        if (b.placement.line_no != 1)
+            return Fail("stale closed line 1 must not skip to line 2");
+    }
+
     std::printf("OK map_dungeon_test create/member/empty-close/line-min\n");
     std::printf("PASS map_dungeon_test\n");
     return 0;

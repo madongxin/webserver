@@ -1161,6 +1161,18 @@ bool SessionStore::AcquireSession(const AcquireSessionInput &in, AcquireSessionR
         const OpBegin st = BeginOperation(in.operation_id, &cached, &kind, &err);
         if (st == OpBegin::Done) {
             *out = cached;
+            if (out->ok && in.player_id != 0) {
+                SessionRecord rec;
+                if (!LoadSession(in.player_id, &rec) || rec.token.empty() ||
+                    (!out->fence_token.empty() && rec.token != out->fence_token)) {
+                    LOG_WARN << "SessionStore: stale acquire DONE cache player_id="
+                             << in.player_id << " op=" << in.operation_id
+                             << " — session missing or fence mismatch, re-acquire";
+                    InvalidateOperation(in.operation_id);
+                    continue;
+                }
+                TrackOnline(in.player_id);
+            }
             return out->ok;
         }
         if (st == OpBegin::Error) {
@@ -2078,6 +2090,31 @@ size_t SessionStore::ExpireDueDisconnected(size_t limit) {
             ClearGraceIndex(pid);
     }
     return expired;
+}
+
+size_t SessionStore::ReclaimOrphanMapReservations(size_t limit) {
+    if (!available_ || !PlacementStore::Instance().Available())
+        return 0;
+    return PlacementStore::Instance().ReclaimStaleReservations(
+        [this](uint64_t player_id) {
+            SessionRecord rec;
+            if (!LoadSession(player_id, &rec))
+                return false;
+            if (rec.state == SessionState::Disconnected)
+                return true;
+            if (rec.state != SessionState::Online)
+                return false;
+            auto lease = RedisPool::Instance().Acquire();
+            if (!lease)
+                return false;
+            std::vector<std::string> reply;
+            if (!lease->Eval("return redis.call('SISMEMBER', KEYS[1], ARGV[1])",
+                             {OnlineSetKey()}, {std::to_string(player_id)}, &reply) ||
+                reply.empty())
+                return false;
+            return reply[0] == "1";
+        },
+        limit);
 }
 
 void SessionStore::UntrackOnline(uint64_t player_id) {

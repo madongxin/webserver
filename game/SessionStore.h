@@ -141,6 +141,10 @@ public:
      * 不等于 Logout；只处理 deadline 已过的断线号。Session 进程定时调用。
      */
     size_t ExpireDueDisconnected(size_t limit = 64);
+    /**
+     * 释放没有 ONLINE/DISCONNECTED Session 的地图占位（切线失败、进程被杀留下的幽灵 occupancy）。
+     */
+    size_t ReclaimOrphanMapReservations(size_t limit = 64);
     struct KickResult {
         bool ok = false;
         std::string message;

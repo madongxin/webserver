@@ -173,7 +173,7 @@
 
     <section class="module">
       <h2>业务 · 玩家与 Gateway 流量</h2>
-      <p class="module-desc">Gateway 绑定 = 当前游戏 TCP 上已 Login/Reconnect 的不重复 player_id。Session ONLINE = Redis 会话集合（重连宽限内可能仍 ONLINE，即使 TCP 已断）。两条对不上时优先看 Gateway 绑定。</p>
+      <p class="module-desc">Gateway 绑定 = 当前游戏 TCP 上已 Login/Reconnect 的不重复 player_id。Session ONLINE = Redis 会话集合（两台 Session 报同一份，图上取 max 不是 sum；重连宽限内可能仍 ONLINE，即使 TCP 已断）。两条对不上时优先看 Gateway 绑定。</p>
       <div class="charts" id="bizCharts"></div>
     </section>
 
@@ -425,8 +425,8 @@
     const BIZ_PANELS = [
       { id: 'pPlayers', title: 'Gateway 绑定玩家（合计）', beginZero: true,
         promql: () => 'sum(gamemesh_online_players{' + jobSel() + ',role="gateway"})' },
-      { id: 'pSessOnline', title: 'Session ONLINE（合计）', beginZero: true,
-        promql: () => 'sum(gamemesh_session_online_players{' + jobSel() + ',role="session"})' },
+      { id: 'pSessOnline', title: 'Session ONLINE（Redis 权威）', beginZero: true,
+        promql: () => 'max(gamemesh_session_online_players{' + jobSel() + ',role="session"})' },
       { id: 'pGwConn', title: 'Gateway TCP 连接', beginZero: true,
         promql: () => 'gamemesh_gateway_tcp_connections{' + jobSel() + ',role="gateway"}' },
       { id: 'pGwRx', title: 'Gateway 入站 (B/s)', promql: () => 'rate(gamemesh_gateway_rx_bytes_total{' + jobSel() + ',role="gateway"}[1m])' },
@@ -494,7 +494,7 @@
           queryInstant('process_threads{' + js + '}'),
           queryInstant('time() - process_start_time_seconds{' + js + '}'),
           queryInstant('sum(gamemesh_online_players{' + js + ',role="gateway"})'),
-          queryInstant('sum(gamemesh_session_online_players{' + js + ',role="session"})'),
+          queryInstant('max(gamemesh_session_online_players{' + js + ',role="session"})'),
           queryInstant('gamemesh_online_players{' + js + ',role="gateway"}'),
           queryInstant('sum(rate(gamemesh_gateway_rx_bytes_total{' + js + ',role="gateway"}[1m]))'),
           queryInstant('sum(rate(gamemesh_gateway_tx_bytes_total{' + js + ',role="gateway"}[1m]))'),
@@ -577,7 +577,7 @@
         return;
       }
       const n = cluster.process_n || 0;
-      const exp = cluster.expected_n || 8;
+      const exp = cluster.expected_n || 9;
       setStatus('cluster', cluster.alive_n + '/' + n + ' 在跑（期望 ' + exp + '）',
         !!cluster.all_alive && n >= exp);
       setStatus('live', cluster.live_n + '/' + n + ' 存活', cluster.live_n === n && n > 0);
