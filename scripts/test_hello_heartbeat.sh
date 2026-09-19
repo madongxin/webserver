@@ -41,12 +41,20 @@ run_cmd() {
 }
 
 run_cmd client-hello client-hello "$HOST" "$GW0"
-echo "$LAST_OUT" | grep -q 'map_manifest_version=1' || {
-  echo "ERROR: client-hello missing map_manifest_version=1" >&2
+echo "$LAST_OUT" | grep -q 'map_manifest_version=2' || {
+  echo "ERROR: client-hello missing map_manifest_version=2" >&2
   exit 1
 }
-echo "$LAST_OUT" | grep -q 'hello_maps_n=4' || {
-  echo "ERROR: client-hello missing hello_maps_n=4" >&2
+echo "$LAST_OUT" | grep -q 'hello_maps_n=5' || {
+  echo "ERROR: client-hello missing hello_maps_n=5" >&2
+  exit 1
+}
+echo "$LAST_OUT" | grep -q 'hello_map_template_id=2102' || {
+  echo "ERROR: client-hello missing map 2102" >&2
+  exit 1
+}
+echo "$LAST_OUT" | grep -q 'hello_portal_id=spawn_to_dungeon' || {
+  echo "ERROR: client-hello missing spawn portal" >&2
   exit 1
 }
 echo "$LAST_OUT" | grep -q 'hello_map_template_id=1001' || {

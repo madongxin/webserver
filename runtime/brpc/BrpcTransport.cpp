@@ -293,7 +293,8 @@ void BrpcTransport::PostPlayerRequest(const SessionHandle &handle, std::string r
     if (parsed_ok && !to_world) {
         if (parsed.body_case() == game::GameRequest::kEnterMap ||
             parsed.body_case() == game::GameRequest::kSwitchLine ||
-            parsed.body_case() == game::GameRequest::kEnqueueMap) {
+            parsed.body_case() == game::GameRequest::kEnqueueMap ||
+            parsed.body_case() == game::GameRequest::kInteractPortal) {
             if (sink) {
                 const std::string err =
                     BuildErrorFrame(request_payload, "enter_map_must_use_gateway_orchestrator");

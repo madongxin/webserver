@@ -44,6 +44,8 @@ extern PROTOBUF_INTERNAL_EXPORT_game_2eproto ::PROTOBUF_NAMESPACE_ID::internal::
 extern PROTOBUF_INTERNAL_EXPORT_game_2eproto ::PROTOBUF_NAMESPACE_ID::internal::SCCInfo<0> scc_info_GrantItemRsp_game_2eproto;
 extern PROTOBUF_INTERNAL_EXPORT_game_2eproto ::PROTOBUF_NAMESPACE_ID::internal::SCCInfo<0> scc_info_HeartbeatReq_game_2eproto;
 extern PROTOBUF_INTERNAL_EXPORT_game_2eproto ::PROTOBUF_NAMESPACE_ID::internal::SCCInfo<0> scc_info_HeartbeatRsp_game_2eproto;
+extern PROTOBUF_INTERNAL_EXPORT_game_2eproto ::PROTOBUF_NAMESPACE_ID::internal::SCCInfo<0> scc_info_InteractPortalReq_game_2eproto;
+extern PROTOBUF_INTERNAL_EXPORT_game_2eproto ::PROTOBUF_NAMESPACE_ID::internal::SCCInfo<2> scc_info_InteractPortalRsp_game_2eproto;
 extern PROTOBUF_INTERNAL_EXPORT_game_2eproto ::PROTOBUF_NAMESPACE_ID::internal::SCCInfo<0> scc_info_LeaveMapReq_game_2eproto;
 extern PROTOBUF_INTERNAL_EXPORT_game_2eproto ::PROTOBUF_NAMESPACE_ID::internal::SCCInfo<0> scc_info_LeaveMapRsp_game_2eproto;
 extern PROTOBUF_INTERNAL_EXPORT_game_2eproto ::PROTOBUF_NAMESPACE_ID::internal::SCCInfo<0> scc_info_LoginReq_game_2eproto;
@@ -77,7 +79,7 @@ extern PROTOBUF_INTERNAL_EXPORT_game_2eproto ::PROTOBUF_NAMESPACE_ID::internal::
 extern PROTOBUF_INTERNAL_EXPORT_game_2eproto ::PROTOBUF_NAMESPACE_ID::internal::SCCInfo<0> scc_info_MailboxSummaryReq_game_2eproto;
 extern PROTOBUF_INTERNAL_EXPORT_game_2eproto ::PROTOBUF_NAMESPACE_ID::internal::SCCInfo<0> scc_info_MailboxSummaryRsp_game_2eproto;
 extern PROTOBUF_INTERNAL_EXPORT_game_2eproto ::PROTOBUF_NAMESPACE_ID::internal::SCCInfo<0> scc_info_MapLineInfo_game_2eproto;
-extern PROTOBUF_INTERNAL_EXPORT_game_2eproto ::PROTOBUF_NAMESPACE_ID::internal::SCCInfo<0> scc_info_MapManifestEntry_game_2eproto;
+extern PROTOBUF_INTERNAL_EXPORT_game_2eproto ::PROTOBUF_NAMESPACE_ID::internal::SCCInfo<1> scc_info_MapManifestEntry_game_2eproto;
 extern PROTOBUF_INTERNAL_EXPORT_game_2eproto ::PROTOBUF_NAMESPACE_ID::internal::SCCInfo<0> scc_info_MapPingReq_game_2eproto;
 extern PROTOBUF_INTERNAL_EXPORT_game_2eproto ::PROTOBUF_NAMESPACE_ID::internal::SCCInfo<0> scc_info_MapPingRsp_game_2eproto;
 extern PROTOBUF_INTERNAL_EXPORT_game_2eproto ::PROTOBUF_NAMESPACE_ID::internal::SCCInfo<1> scc_info_MoveReq_game_2eproto;
@@ -86,6 +88,7 @@ extern PROTOBUF_INTERNAL_EXPORT_game_2eproto ::PROTOBUF_NAMESPACE_ID::internal::
 extern PROTOBUF_INTERNAL_EXPORT_game_2eproto ::PROTOBUF_NAMESPACE_ID::internal::SCCInfo<0> scc_info_PlayerBrief_game_2eproto;
 extern PROTOBUF_INTERNAL_EXPORT_game_2eproto ::PROTOBUF_NAMESPACE_ID::internal::SCCInfo<0> scc_info_PlayerMailSendReq_game_2eproto;
 extern PROTOBUF_INTERNAL_EXPORT_game_2eproto ::PROTOBUF_NAMESPACE_ID::internal::SCCInfo<0> scc_info_PlayerMailSendRsp_game_2eproto;
+extern PROTOBUF_INTERNAL_EXPORT_game_2eproto ::PROTOBUF_NAMESPACE_ID::internal::SCCInfo<1> scc_info_PortalDef_game_2eproto;
 extern PROTOBUF_INTERNAL_EXPORT_game_2eproto ::PROTOBUF_NAMESPACE_ID::internal::SCCInfo<0> scc_info_PushAckReq_game_2eproto;
 extern PROTOBUF_INTERNAL_EXPORT_game_2eproto ::PROTOBUF_NAMESPACE_ID::internal::SCCInfo<0> scc_info_PushAckRsp_game_2eproto;
 extern PROTOBUF_INTERNAL_EXPORT_game_2eproto ::PROTOBUF_NAMESPACE_ID::internal::SCCInfo<0> scc_info_QueryMapLinesReq_game_2eproto;
@@ -470,10 +473,22 @@ class ClientHelloReqDefaultTypeInternal {
  public:
   ::PROTOBUF_NAMESPACE_ID::internal::ExplicitlyConstructed<ClientHelloReq> _instance;
 } _ClientHelloReq_default_instance_;
+class PortalDefDefaultTypeInternal {
+ public:
+  ::PROTOBUF_NAMESPACE_ID::internal::ExplicitlyConstructed<PortalDef> _instance;
+} _PortalDef_default_instance_;
 class MapManifestEntryDefaultTypeInternal {
  public:
   ::PROTOBUF_NAMESPACE_ID::internal::ExplicitlyConstructed<MapManifestEntry> _instance;
 } _MapManifestEntry_default_instance_;
+class InteractPortalReqDefaultTypeInternal {
+ public:
+  ::PROTOBUF_NAMESPACE_ID::internal::ExplicitlyConstructed<InteractPortalReq> _instance;
+} _InteractPortalReq_default_instance_;
+class InteractPortalRspDefaultTypeInternal {
+ public:
+  ::PROTOBUF_NAMESPACE_ID::internal::ExplicitlyConstructed<InteractPortalRsp> _instance;
+} _InteractPortalRsp_default_instance_;
 class ServerHelloRspDefaultTypeInternal {
  public:
   ::PROTOBUF_NAMESPACE_ID::internal::ExplicitlyConstructed<ServerHelloRsp> _instance;
@@ -532,6 +547,7 @@ class GameRequestDefaultTypeInternal {
   const ::game::CreateDungeonReq* create_dungeon_;
   const ::game::SwitchLineReq* switch_line_;
   const ::game::EnqueueMapReq* enqueue_map_;
+  const ::game::InteractPortalReq* interact_portal_;
 } _GameRequest_default_instance_;
 class GameResponseDefaultTypeInternal {
  public:
@@ -580,6 +596,7 @@ class GameResponseDefaultTypeInternal {
   const ::game::CreateDungeonRsp* create_dungeon_;
   const ::game::SwitchLineRsp* switch_line_;
   const ::game::EnqueueMapRsp* enqueue_map_;
+  const ::game::InteractPortalRsp* interact_portal_;
 } _GameResponse_default_instance_;
 }  // namespace game
 static void InitDefaultsscc_info_AoiDelta_game_2eproto() {
@@ -909,8 +926,8 @@ static void InitDefaultsscc_info_GameRequest_game_2eproto() {
   ::game::GameRequest::InitAsDefaultInstance();
 }
 
-::PROTOBUF_NAMESPACE_ID::internal::SCCInfo<39> scc_info_GameRequest_game_2eproto =
-    {{ATOMIC_VAR_INIT(::PROTOBUF_NAMESPACE_ID::internal::SCCInfoBase::kUninitialized), 39, 0, InitDefaultsscc_info_GameRequest_game_2eproto}, {
+::PROTOBUF_NAMESPACE_ID::internal::SCCInfo<40> scc_info_GameRequest_game_2eproto =
+    {{ATOMIC_VAR_INIT(::PROTOBUF_NAMESPACE_ID::internal::SCCInfoBase::kUninitialized), 40, 0, InitDefaultsscc_info_GameRequest_game_2eproto}, {
       &scc_info_ConsumeItemReq_game_2eproto.base,
       &scc_info_ReleaseSkillReq_game_2eproto.base,
       &scc_info_GrantItemReq_game_2eproto.base,
@@ -949,7 +966,8 @@ static void InitDefaultsscc_info_GameRequest_game_2eproto() {
       &scc_info_QueryMapLinesReq_game_2eproto.base,
       &scc_info_CreateDungeonReq_game_2eproto.base,
       &scc_info_SwitchLineReq_game_2eproto.base,
-      &scc_info_EnqueueMapReq_game_2eproto.base,}};
+      &scc_info_EnqueueMapReq_game_2eproto.base,
+      &scc_info_InteractPortalReq_game_2eproto.base,}};
 
 static void InitDefaultsscc_info_GameResponse_game_2eproto() {
   GOOGLE_PROTOBUF_VERIFY_VERSION;
@@ -962,8 +980,8 @@ static void InitDefaultsscc_info_GameResponse_game_2eproto() {
   ::game::GameResponse::InitAsDefaultInstance();
 }
 
-::PROTOBUF_NAMESPACE_ID::internal::SCCInfo<44> scc_info_GameResponse_game_2eproto =
-    {{ATOMIC_VAR_INIT(::PROTOBUF_NAMESPACE_ID::internal::SCCInfoBase::kUninitialized), 44, 0, InitDefaultsscc_info_GameResponse_game_2eproto}, {
+::PROTOBUF_NAMESPACE_ID::internal::SCCInfo<45> scc_info_GameResponse_game_2eproto =
+    {{ATOMIC_VAR_INIT(::PROTOBUF_NAMESPACE_ID::internal::SCCInfoBase::kUninitialized), 45, 0, InitDefaultsscc_info_GameResponse_game_2eproto}, {
       &scc_info_ConsumeItemRsp_game_2eproto.base,
       &scc_info_ReleaseSkillRsp_game_2eproto.base,
       &scc_info_GrantItemRsp_game_2eproto.base,
@@ -1007,7 +1025,8 @@ static void InitDefaultsscc_info_GameResponse_game_2eproto() {
       &scc_info_QueryMapLinesRsp_game_2eproto.base,
       &scc_info_CreateDungeonRsp_game_2eproto.base,
       &scc_info_SwitchLineRsp_game_2eproto.base,
-      &scc_info_EnqueueMapRsp_game_2eproto.base,}};
+      &scc_info_EnqueueMapRsp_game_2eproto.base,
+      &scc_info_InteractPortalRsp_game_2eproto.base,}};
 
 static void InitDefaultsscc_info_GetPlayerBriefReq_game_2eproto() {
   GOOGLE_PROTOBUF_VERIFY_VERSION;
@@ -1122,6 +1141,36 @@ static void InitDefaultsscc_info_HeartbeatRsp_game_2eproto() {
 
 ::PROTOBUF_NAMESPACE_ID::internal::SCCInfo<0> scc_info_HeartbeatRsp_game_2eproto =
     {{ATOMIC_VAR_INIT(::PROTOBUF_NAMESPACE_ID::internal::SCCInfoBase::kUninitialized), 0, 0, InitDefaultsscc_info_HeartbeatRsp_game_2eproto}, {}};
+
+static void InitDefaultsscc_info_InteractPortalReq_game_2eproto() {
+  GOOGLE_PROTOBUF_VERIFY_VERSION;
+
+  {
+    void* ptr = &::game::_InteractPortalReq_default_instance_;
+    new (ptr) ::game::InteractPortalReq();
+    ::PROTOBUF_NAMESPACE_ID::internal::OnShutdownDestroyMessage(ptr);
+  }
+  ::game::InteractPortalReq::InitAsDefaultInstance();
+}
+
+::PROTOBUF_NAMESPACE_ID::internal::SCCInfo<0> scc_info_InteractPortalReq_game_2eproto =
+    {{ATOMIC_VAR_INIT(::PROTOBUF_NAMESPACE_ID::internal::SCCInfoBase::kUninitialized), 0, 0, InitDefaultsscc_info_InteractPortalReq_game_2eproto}, {}};
+
+static void InitDefaultsscc_info_InteractPortalRsp_game_2eproto() {
+  GOOGLE_PROTOBUF_VERIFY_VERSION;
+
+  {
+    void* ptr = &::game::_InteractPortalRsp_default_instance_;
+    new (ptr) ::game::InteractPortalRsp();
+    ::PROTOBUF_NAMESPACE_ID::internal::OnShutdownDestroyMessage(ptr);
+  }
+  ::game::InteractPortalRsp::InitAsDefaultInstance();
+}
+
+::PROTOBUF_NAMESPACE_ID::internal::SCCInfo<2> scc_info_InteractPortalRsp_game_2eproto =
+    {{ATOMIC_VAR_INIT(::PROTOBUF_NAMESPACE_ID::internal::SCCInfoBase::kUninitialized), 2, 0, InitDefaultsscc_info_InteractPortalRsp_game_2eproto}, {
+      &scc_info_Vec3_game_2eproto.base,
+      &scc_info_EntitySnapshot_game_2eproto.base,}};
 
 static void InitDefaultsscc_info_LeaveMapReq_game_2eproto() {
   GOOGLE_PROTOBUF_VERIFY_VERSION;
@@ -1604,8 +1653,9 @@ static void InitDefaultsscc_info_MapManifestEntry_game_2eproto() {
   ::game::MapManifestEntry::InitAsDefaultInstance();
 }
 
-::PROTOBUF_NAMESPACE_ID::internal::SCCInfo<0> scc_info_MapManifestEntry_game_2eproto =
-    {{ATOMIC_VAR_INIT(::PROTOBUF_NAMESPACE_ID::internal::SCCInfoBase::kUninitialized), 0, 0, InitDefaultsscc_info_MapManifestEntry_game_2eproto}, {}};
+::PROTOBUF_NAMESPACE_ID::internal::SCCInfo<1> scc_info_MapManifestEntry_game_2eproto =
+    {{ATOMIC_VAR_INIT(::PROTOBUF_NAMESPACE_ID::internal::SCCInfoBase::kUninitialized), 1, 0, InitDefaultsscc_info_MapManifestEntry_game_2eproto}, {
+      &scc_info_PortalDef_game_2eproto.base,}};
 
 static void InitDefaultsscc_info_MapPingReq_game_2eproto() {
   GOOGLE_PROTOBUF_VERIFY_VERSION;
@@ -1720,6 +1770,21 @@ static void InitDefaultsscc_info_PlayerMailSendRsp_game_2eproto() {
 
 ::PROTOBUF_NAMESPACE_ID::internal::SCCInfo<0> scc_info_PlayerMailSendRsp_game_2eproto =
     {{ATOMIC_VAR_INIT(::PROTOBUF_NAMESPACE_ID::internal::SCCInfoBase::kUninitialized), 0, 0, InitDefaultsscc_info_PlayerMailSendRsp_game_2eproto}, {}};
+
+static void InitDefaultsscc_info_PortalDef_game_2eproto() {
+  GOOGLE_PROTOBUF_VERIFY_VERSION;
+
+  {
+    void* ptr = &::game::_PortalDef_default_instance_;
+    new (ptr) ::game::PortalDef();
+    ::PROTOBUF_NAMESPACE_ID::internal::OnShutdownDestroyMessage(ptr);
+  }
+  ::game::PortalDef::InitAsDefaultInstance();
+}
+
+::PROTOBUF_NAMESPACE_ID::internal::SCCInfo<1> scc_info_PortalDef_game_2eproto =
+    {{ATOMIC_VAR_INIT(::PROTOBUF_NAMESPACE_ID::internal::SCCInfoBase::kUninitialized), 1, 0, InitDefaultsscc_info_PortalDef_game_2eproto}, {
+      &scc_info_Vec3_game_2eproto.base,}};
 
 static void InitDefaultsscc_info_PushAckReq_game_2eproto() {
   GOOGLE_PROTOBUF_VERIFY_VERSION;
@@ -2049,7 +2114,7 @@ static void InitDefaultsscc_info_WorldSnapshotReq_game_2eproto() {
 ::PROTOBUF_NAMESPACE_ID::internal::SCCInfo<0> scc_info_WorldSnapshotReq_game_2eproto =
     {{ATOMIC_VAR_INIT(::PROTOBUF_NAMESPACE_ID::internal::SCCInfoBase::kUninitialized), 0, 0, InitDefaultsscc_info_WorldSnapshotReq_game_2eproto}, {}};
 
-static ::PROTOBUF_NAMESPACE_ID::Metadata file_level_metadata_game_2eproto[97];
+static ::PROTOBUF_NAMESPACE_ID::Metadata file_level_metadata_game_2eproto[100];
 static constexpr ::PROTOBUF_NAMESPACE_ID::EnumDescriptor const** file_level_enum_descriptors_game_2eproto = nullptr;
 static constexpr ::PROTOBUF_NAMESPACE_ID::ServiceDescriptor const** file_level_service_descriptors_game_2eproto = nullptr;
 
@@ -2996,6 +3061,17 @@ const ::PROTOBUF_NAMESPACE_ID::uint32 TableStruct_game_2eproto::offsets[] PROTOB
   PROTOBUF_FIELD_OFFSET(::game::ClientHelloReq, build_channel_),
   PROTOBUF_FIELD_OFFSET(::game::ClientHelloReq, capabilities_),
   ~0u,  // no _has_bits_
+  PROTOBUF_FIELD_OFFSET(::game::PortalDef, _internal_metadata_),
+  ~0u,  // no _extensions_
+  ~0u,  // no _oneof_case_
+  ~0u,  // no _weak_field_map_
+  PROTOBUF_FIELD_OFFSET(::game::PortalDef, portal_id_),
+  PROTOBUF_FIELD_OFFSET(::game::PortalDef, from_map_template_id_),
+  PROTOBUF_FIELD_OFFSET(::game::PortalDef, to_map_template_id_),
+  PROTOBUF_FIELD_OFFSET(::game::PortalDef, position_),
+  PROTOBUF_FIELD_OFFSET(::game::PortalDef, yaw_),
+  PROTOBUF_FIELD_OFFSET(::game::PortalDef, trigger_radius_),
+  ~0u,  // no _has_bits_
   PROTOBUF_FIELD_OFFSET(::game::MapManifestEntry, _internal_metadata_),
   ~0u,  // no _extensions_
   ~0u,  // no _oneof_case_
@@ -3003,6 +3079,47 @@ const ::PROTOBUF_NAMESPACE_ID::uint32 TableStruct_game_2eproto::offsets[] PROTOB
   PROTOBUF_FIELD_OFFSET(::game::MapManifestEntry, map_template_id_),
   PROTOBUF_FIELD_OFFSET(::game::MapManifestEntry, data_version_),
   PROTOBUF_FIELD_OFFSET(::game::MapManifestEntry, sha256_),
+  PROTOBUF_FIELD_OFFSET(::game::MapManifestEntry, scene_name_),
+  PROTOBUF_FIELD_OFFSET(::game::MapManifestEntry, kind_),
+  PROTOBUF_FIELD_OFFSET(::game::MapManifestEntry, visual_map_template_id_),
+  PROTOBUF_FIELD_OFFSET(::game::MapManifestEntry, portals_),
+  ~0u,  // no _has_bits_
+  PROTOBUF_FIELD_OFFSET(::game::InteractPortalReq, _internal_metadata_),
+  ~0u,  // no _extensions_
+  ~0u,  // no _oneof_case_
+  ~0u,  // no _weak_field_map_
+  PROTOBUF_FIELD_OFFSET(::game::InteractPortalReq, player_id_),
+  PROTOBUF_FIELD_OFFSET(::game::InteractPortalReq, realm_id_),
+  PROTOBUF_FIELD_OFFSET(::game::InteractPortalReq, portal_id_),
+  PROTOBUF_FIELD_OFFSET(::game::InteractPortalReq, operation_id_),
+  PROTOBUF_FIELD_OFFSET(::game::InteractPortalReq, map_data_version_),
+  PROTOBUF_FIELD_OFFSET(::game::InteractPortalReq, map_data_sha256_),
+  ~0u,  // no _has_bits_
+  PROTOBUF_FIELD_OFFSET(::game::InteractPortalRsp, _internal_metadata_),
+  ~0u,  // no _extensions_
+  ~0u,  // no _oneof_case_
+  ~0u,  // no _weak_field_map_
+  PROTOBUF_FIELD_OFFSET(::game::InteractPortalRsp, ok_),
+  PROTOBUF_FIELD_OFFSET(::game::InteractPortalRsp, message_),
+  PROTOBUF_FIELD_OFFSET(::game::InteractPortalRsp, error_code_),
+  PROTOBUF_FIELD_OFFSET(::game::InteractPortalRsp, map_template_id_),
+  PROTOBUF_FIELD_OFFSET(::game::InteractPortalRsp, map_instance_id_),
+  PROTOBUF_FIELD_OFFSET(::game::InteractPortalRsp, gamelogic_instance_id_),
+  PROTOBUF_FIELD_OFFSET(::game::InteractPortalRsp, owner_epoch_),
+  PROTOBUF_FIELD_OFFSET(::game::InteractPortalRsp, route_version_),
+  PROTOBUF_FIELD_OFFSET(::game::InteractPortalRsp, spawn_position_),
+  PROTOBUF_FIELD_OFFSET(::game::InteractPortalRsp, spawn_yaw_),
+  PROTOBUF_FIELD_OFFSET(::game::InteractPortalRsp, map_data_version_),
+  PROTOBUF_FIELD_OFFSET(::game::InteractPortalRsp, map_data_sha256_),
+  PROTOBUF_FIELD_OFFSET(::game::InteractPortalRsp, self_),
+  PROTOBUF_FIELD_OFFSET(::game::InteractPortalRsp, aoi_snapshot_),
+  PROTOBUF_FIELD_OFFSET(::game::InteractPortalRsp, kind_),
+  PROTOBUF_FIELD_OFFSET(::game::InteractPortalRsp, line_no_),
+  PROTOBUF_FIELD_OFFSET(::game::InteractPortalRsp, occupancy_),
+  PROTOBUF_FIELD_OFFSET(::game::InteractPortalRsp, soft_cap_),
+  PROTOBUF_FIELD_OFFSET(::game::InteractPortalRsp, hard_cap_),
+  PROTOBUF_FIELD_OFFSET(::game::InteractPortalRsp, portal_id_),
+  PROTOBUF_FIELD_OFFSET(::game::InteractPortalRsp, from_map_template_id_),
   ~0u,  // no _has_bits_
   PROTOBUF_FIELD_OFFSET(::game::ServerHelloRsp, _internal_metadata_),
   ~0u,  // no _extensions_
@@ -3095,6 +3212,7 @@ const ::PROTOBUF_NAMESPACE_ID::uint32 TableStruct_game_2eproto::offsets[] PROTOB
   offsetof(::game::GameRequestDefaultTypeInternal, create_dungeon_),
   offsetof(::game::GameRequestDefaultTypeInternal, switch_line_),
   offsetof(::game::GameRequestDefaultTypeInternal, enqueue_map_),
+  offsetof(::game::GameRequestDefaultTypeInternal, interact_portal_),
   PROTOBUF_FIELD_OFFSET(::game::GameRequest, body_),
   ~0u,  // no _has_bits_
   PROTOBUF_FIELD_OFFSET(::game::GameResponse, _internal_metadata_),
@@ -3152,6 +3270,7 @@ const ::PROTOBUF_NAMESPACE_ID::uint32 TableStruct_game_2eproto::offsets[] PROTOB
   offsetof(::game::GameResponseDefaultTypeInternal, create_dungeon_),
   offsetof(::game::GameResponseDefaultTypeInternal, switch_line_),
   offsetof(::game::GameResponseDefaultTypeInternal, enqueue_map_),
+  offsetof(::game::GameResponseDefaultTypeInternal, interact_portal_),
   PROTOBUF_FIELD_OFFSET(::game::GameResponse, body_),
 };
 static const ::PROTOBUF_NAMESPACE_ID::internal::MigrationSchema schemas[] PROTOBUF_SECTION_VARIABLE(protodesc_cold) = {
@@ -3245,13 +3364,16 @@ static const ::PROTOBUF_NAMESPACE_ID::internal::MigrationSchema schemas[] PROTOB
   { 912, -1, sizeof(::game::PlayerMailSendRsp)},
   { 922, -1, sizeof(::game::MailboxChangedNotify)},
   { 930, -1, sizeof(::game::ClientHelloReq)},
-  { 941, -1, sizeof(::game::MapManifestEntry)},
-  { 949, -1, sizeof(::game::ServerHelloRsp)},
-  { 968, -1, sizeof(::game::SessionReplacedNotify)},
-  { 976, -1, sizeof(::game::HeartbeatReq)},
-  { 984, -1, sizeof(::game::HeartbeatRsp)},
-  { 995, -1, sizeof(::game::GameRequest)},
-  { 1042, -1, sizeof(::game::GameResponse)},
+  { 941, -1, sizeof(::game::PortalDef)},
+  { 952, -1, sizeof(::game::MapManifestEntry)},
+  { 964, -1, sizeof(::game::InteractPortalReq)},
+  { 975, -1, sizeof(::game::InteractPortalRsp)},
+  { 1001, -1, sizeof(::game::ServerHelloRsp)},
+  { 1020, -1, sizeof(::game::SessionReplacedNotify)},
+  { 1028, -1, sizeof(::game::HeartbeatReq)},
+  { 1036, -1, sizeof(::game::HeartbeatRsp)},
+  { 1047, -1, sizeof(::game::GameRequest)},
+  { 1095, -1, sizeof(::game::GameResponse)},
 };
 
 static ::PROTOBUF_NAMESPACE_ID::Message const * const file_default_instances[] = {
@@ -3345,7 +3467,10 @@ static ::PROTOBUF_NAMESPACE_ID::Message const * const file_default_instances[] =
   reinterpret_cast<const ::PROTOBUF_NAMESPACE_ID::Message*>(&::game::_PlayerMailSendRsp_default_instance_),
   reinterpret_cast<const ::PROTOBUF_NAMESPACE_ID::Message*>(&::game::_MailboxChangedNotify_default_instance_),
   reinterpret_cast<const ::PROTOBUF_NAMESPACE_ID::Message*>(&::game::_ClientHelloReq_default_instance_),
+  reinterpret_cast<const ::PROTOBUF_NAMESPACE_ID::Message*>(&::game::_PortalDef_default_instance_),
   reinterpret_cast<const ::PROTOBUF_NAMESPACE_ID::Message*>(&::game::_MapManifestEntry_default_instance_),
+  reinterpret_cast<const ::PROTOBUF_NAMESPACE_ID::Message*>(&::game::_InteractPortalReq_default_instance_),
+  reinterpret_cast<const ::PROTOBUF_NAMESPACE_ID::Message*>(&::game::_InteractPortalRsp_default_instance_),
   reinterpret_cast<const ::PROTOBUF_NAMESPACE_ID::Message*>(&::game::_ServerHelloRsp_default_instance_),
   reinterpret_cast<const ::PROTOBUF_NAMESPACE_ID::Message*>(&::game::_SessionReplacedNotify_default_instance_),
   reinterpret_cast<const ::PROTOBUF_NAMESPACE_ID::Message*>(&::game::_HeartbeatReq_default_instance_),
@@ -3648,130 +3773,155 @@ const char descriptor_table_protodef_game_2eproto[] PROTOBUF_SECTION_VARIABLE(pr
   "entHelloReq\022\030\n\020protocol_version\030\001 \001(\r\022\025\n"
   "\rschema_sha256\030\002 \001(\t\022\026\n\016client_version\030\003"
   " \001(\t\022\020\n\010platform\030\004 \001(\t\022\025\n\rbuild_channel\030"
-  "\005 \001(\t\022\024\n\014capabilities\030\006 \003(\t\"Q\n\020MapManife"
-  "stEntry\022\027\n\017map_template_id\030\001 \001(\004\022\024\n\014data"
-  "_version\030\002 \001(\004\022\016\n\006sha256\030\003 \001(\t\"\373\002\n\016Serve"
-  "rHelloRsp\022\n\n\002ok\030\001 \001(\010\022\022\n\nerror_code\030\002 \001("
-  "\t\022\017\n\007message\030\003 \001(\t\022\030\n\020protocol_version\030\004"
-  " \001(\r\022&\n\036min_supported_protocol_version\030\005"
-  " \001(\r\022\025\n\rschema_sha256\030\006 \001(\t\022\024\n\014server_bu"
-  "ild\030\007 \001(\t\022\026\n\016server_time_ms\030\010 \001(\003\022\035\n\025hea"
-  "rtbeat_interval_ms\030\t \001(\r\022\027\n\017idle_timeout"
-  "_ms\030\n \001(\r\022\024\n\014capabilities\030\013 \003(\t\022\037\n\027gamep"
-  "lay_config_version\030\014 \001(\r\022\034\n\024map_manifest"
-  "_version\030\r \001(\r\022$\n\004maps\030\016 \003(\0132\026.game.MapM"
-  "anifestEntry\"U\n\025SessionReplacedNotify\022\023\n"
-  "\013reason_code\030\001 \001(\t\022\026\n\016server_time_ms\030\002 \001"
-  "(\003\022\017\n\007message\030\003 \001(\t\"U\n\014HeartbeatReq\022\033\n\023c"
-  "lient_monotonic_ms\030\001 \001(\003\022\027\n\017last_server_"
-  "seq\030\002 \001(\004\022\017\n\007echo_ms\030\003 \001(\003\"\207\001\n\014Heartbeat"
-  "Rsp\022\n\n\002ok\030\001 \001(\010\022\022\n\nerror_code\030\002 \001(\t\022\026\n\016s"
-  "erver_time_ms\030\003 \001(\003\022\017\n\007echo_ms\030\004 \001(\003\022\026\n\016"
-  "server_recv_ms\030\005 \001(\003\022\026\n\016jitter_hint_ms\030\006"
-  " \001(\r\"\204\016\n\013GameRequest\022\013\n\003seq\030\001 \001(\004\022\025\n\rses"
-  "sion_token\030\002 \001(\t\022,\n\014consume_item\030\n \001(\0132\024"
-  ".game.ConsumeItemReqH\000\022.\n\rrelease_skill\030"
-  "\013 \001(\0132\025.game.ReleaseSkillReqH\000\022(\n\ngrant_"
-  "item\030\014 \001(\0132\022.game.GrantItemReqH\000\022\037\n\005logi"
-  "n\030\024 \001(\0132\016.game.LoginReqH\000\0224\n\020validate_se"
-  "ssion\030\025 \001(\0132\030.game.ValidateSessionReqH\000\022"
-  ",\n\014check_online\030\026 \001(\0132\024.game.CheckOnline"
-  "ReqH\000\022!\n\006logout\030\027 \001(\0132\017.game.LogoutReqH\000"
-  "\022\'\n\treconnect\030\030 \001(\0132\022.game.ReconnectReqH"
-  "\000\022%\n\010register\030\031 \001(\0132\021.game.RegisterReqH\000"
-  "\022&\n\tflush_bag\030\032 \001(\0132\021.game.FlushBagReqH\000"
-  "\0222\n\017mailbox_summary\030\036 \001(\0132\027.game.Mailbox"
-  "SummaryReqH\000\022&\n\tmail_list\030\037 \001(\0132\021.game.M"
-  "ailListReqH\000\022$\n\010mail_get\030  \001(\0132\020.game.Ma"
-  "ilGetReqH\000\022&\n\tmail_read\030! \001(\0132\021.game.Mai"
-  "lReadReqH\000\022(\n\nmail_claim\030\" \001(\0132\022.game.Ma"
-  "ilClaimReqH\000\0223\n\020mail_batch_claim\030# \001(\0132\027"
-  ".game.MailBatchClaimReqH\000\022.\n\rmail_favori"
-  "te\030$ \001(\0132\025.game.MailFavoriteReqH\000\0221\n\017mai"
-  "l_batch_read\030% \001(\0132\026.game.MailBatchReadR"
-  "eqH\000\0225\n\021mail_batch_delete\030& \001(\0132\030.game.M"
-  "ailBatchDeleteReqH\000\022,\n\014mail_deliver\030\' \001("
-  "\0132\024.game.MailDeliverReqH\000\022&\n\tenter_map\030("
-  " \001(\0132\021.game.EnterMapReqH\000\022&\n\tleave_map\030)"
-  " \001(\0132\021.game.LeaveMapReqH\000\022$\n\010map_ping\030* "
-  "\001(\0132\020.game.MapPingReqH\000\022&\n\tchat_send\0302 \001"
-  "(\0132\021.game.ChatSendReqH\000\022*\n\013friend_list\0303"
-  " \001(\0132\023.game.FriendListReqH\000\022$\n\010push_ack\030"
-  "4 \001(\0132\020.game.PushAckReqH\000\0223\n\020get_self_pr"
-  "ofile\030< \001(\0132\027.game.GetSelfProfileReqH\000\022\035"
-  "\n\004move\030= \001(\0132\r.game.MoveReqH\000\0223\n\020player_"
-  "mail_send\030\? \001(\0132\027.game.PlayerMailSendReq"
-  "H\000\022,\n\014client_hello\030F \001(\0132\024.game.ClientHe"
-  "lloReqH\000\022\'\n\theartbeat\030G \001(\0132\022.game.Heart"
-  "beatReqH\000\0220\n\016world_snapshot\030H \001(\0132\026.game"
-  ".WorldSnapshotReqH\000\022#\n\007respawn\030I \001(\0132\020.g"
-  "ame.RespawnReqH\000\0223\n\020get_player_brief\030J \001"
-  "(\0132\027.game.GetPlayerBriefReqH\000\0227\n\022query_o"
-  "nline_state\030K \001(\0132\031.game.QueryOnlineStat"
-  "eReqH\000\0221\n\017query_map_lines\030L \001(\0132\026.game.Q"
-  "ueryMapLinesReqH\000\0220\n\016create_dungeon\030M \001("
-  "\0132\026.game.CreateDungeonReqH\000\022*\n\013switch_li"
-  "ne\030N \001(\0132\023.game.SwitchLineReqH\000\022*\n\013enque"
-  "ue_map\030O \001(\0132\023.game.EnqueueMapReqH\000B\006\n\004b"
-  "ody\"\316\020\n\014GameResponse\022\013\n\003seq\030\001 \001(\004\022\n\n\002ok\030"
-  "\002 \001(\010\022\017\n\007message\030\003 \001(\t\022\022\n\nerror_code\030\004 \001"
-  "(\t\022\021\n\tretryable\030\005 \001(\010\022\026\n\016server_time_ms\030"
-  "\006 \001(\003\022\020\n\010trace_id\030\007 \001(\t\022,\n\014consume_item\030"
-  "\n \001(\0132\024.game.ConsumeItemRspH\000\022.\n\rrelease"
-  "_skill\030\013 \001(\0132\025.game.ReleaseSkillRspH\000\022(\n"
-  "\ngrant_item\030\014 \001(\0132\022.game.GrantItemRspH\000\022"
-  "\037\n\005login\030\024 \001(\0132\016.game.LoginRspH\000\0224\n\020vali"
+  "\005 \001(\t\022\024\n\014capabilities\030\006 \003(\t\"\233\001\n\tPortalDe"
+  "f\022\021\n\tportal_id\030\001 \001(\t\022\034\n\024from_map_templat"
+  "e_id\030\002 \001(\004\022\032\n\022to_map_template_id\030\003 \001(\004\022\034"
+  "\n\010position\030\004 \001(\0132\n.game.Vec3\022\013\n\003yaw\030\005 \001("
+  "\002\022\026\n\016trigger_radius\030\006 \001(\002\"\265\001\n\020MapManifes"
+  "tEntry\022\027\n\017map_template_id\030\001 \001(\004\022\024\n\014data_"
+  "version\030\002 \001(\004\022\016\n\006sha256\030\003 \001(\t\022\022\n\nscene_n"
+  "ame\030\004 \001(\t\022\014\n\004kind\030\005 \001(\t\022\036\n\026visual_map_te"
+  "mplate_id\030\006 \001(\004\022 \n\007portals\030\007 \003(\0132\017.game."
+  "PortalDef\"\224\001\n\021InteractPortalReq\022\021\n\tplaye"
+  "r_id\030\001 \001(\004\022\020\n\010realm_id\030\002 \001(\r\022\021\n\tportal_i"
+  "d\030\003 \001(\t\022\024\n\014operation_id\030\004 \001(\t\022\030\n\020map_dat"
+  "a_version\030\005 \001(\004\022\027\n\017map_data_sha256\030\006 \001(\t"
+  "\"\202\004\n\021InteractPortalRsp\022\n\n\002ok\030\001 \001(\010\022\017\n\007me"
+  "ssage\030\002 \001(\t\022\022\n\nerror_code\030\003 \001(\t\022\027\n\017map_t"
+  "emplate_id\030\004 \001(\004\022\027\n\017map_instance_id\030\005 \001("
+  "\004\022\035\n\025gamelogic_instance_id\030\006 \001(\t\022\023\n\013owne"
+  "r_epoch\030\007 \001(\004\022\025\n\rroute_version\030\010 \001(\004\022\"\n\016"
+  "spawn_position\030\t \001(\0132\n.game.Vec3\022\021\n\tspaw"
+  "n_yaw\030\n \001(\002\022\030\n\020map_data_version\030\013 \001(\004\022\027\n"
+  "\017map_data_sha256\030\014 \001(\t\022\"\n\004self\030\r \001(\0132\024.g"
+  "ame.EntitySnapshot\022*\n\014aoi_snapshot\030\016 \003(\013"
+  "2\024.game.EntitySnapshot\022\014\n\004kind\030\017 \001(\t\022\017\n\007"
+  "line_no\030\020 \001(\r\022\021\n\toccupancy\030\021 \001(\r\022\020\n\010soft"
+  "_cap\030\022 \001(\r\022\020\n\010hard_cap\030\023 \001(\r\022\021\n\tportal_i"
+  "d\030\024 \001(\t\022\034\n\024from_map_template_id\030\025 \001(\004\"\373\002"
+  "\n\016ServerHelloRsp\022\n\n\002ok\030\001 \001(\010\022\022\n\nerror_co"
+  "de\030\002 \001(\t\022\017\n\007message\030\003 \001(\t\022\030\n\020protocol_ve"
+  "rsion\030\004 \001(\r\022&\n\036min_supported_protocol_ve"
+  "rsion\030\005 \001(\r\022\025\n\rschema_sha256\030\006 \001(\t\022\024\n\014se"
+  "rver_build\030\007 \001(\t\022\026\n\016server_time_ms\030\010 \001(\003"
+  "\022\035\n\025heartbeat_interval_ms\030\t \001(\r\022\027\n\017idle_"
+  "timeout_ms\030\n \001(\r\022\024\n\014capabilities\030\013 \003(\t\022\037"
+  "\n\027gameplay_config_version\030\014 \001(\r\022\034\n\024map_m"
+  "anifest_version\030\r \001(\r\022$\n\004maps\030\016 \003(\0132\026.ga"
+  "me.MapManifestEntry\"U\n\025SessionReplacedNo"
+  "tify\022\023\n\013reason_code\030\001 \001(\t\022\026\n\016server_time"
+  "_ms\030\002 \001(\003\022\017\n\007message\030\003 \001(\t\"U\n\014HeartbeatR"
+  "eq\022\033\n\023client_monotonic_ms\030\001 \001(\003\022\027\n\017last_"
+  "server_seq\030\002 \001(\004\022\017\n\007echo_ms\030\003 \001(\003\"\207\001\n\014He"
+  "artbeatRsp\022\n\n\002ok\030\001 \001(\010\022\022\n\nerror_code\030\002 \001"
+  "(\t\022\026\n\016server_time_ms\030\003 \001(\003\022\017\n\007echo_ms\030\004 "
+  "\001(\003\022\026\n\016server_recv_ms\030\005 \001(\003\022\026\n\016jitter_hi"
+  "nt_ms\030\006 \001(\r\"\270\016\n\013GameRequest\022\013\n\003seq\030\001 \001(\004"
+  "\022\025\n\rsession_token\030\002 \001(\t\022,\n\014consume_item\030"
+  "\n \001(\0132\024.game.ConsumeItemReqH\000\022.\n\rrelease"
+  "_skill\030\013 \001(\0132\025.game.ReleaseSkillReqH\000\022(\n"
+  "\ngrant_item\030\014 \001(\0132\022.game.GrantItemReqH\000\022"
+  "\037\n\005login\030\024 \001(\0132\016.game.LoginReqH\000\0224\n\020vali"
   "date_session\030\025 \001(\0132\030.game.ValidateSessio"
-  "nRspH\000\022,\n\014check_online\030\026 \001(\0132\024.game.Chec"
-  "kOnlineRspH\000\022!\n\006logout\030\027 \001(\0132\017.game.Logo"
-  "utRspH\000\022\'\n\treconnect\030\030 \001(\0132\022.game.Reconn"
-  "ectRspH\000\022%\n\010register\030\031 \001(\0132\021.game.Regist"
-  "erRspH\000\022&\n\tflush_bag\030\032 \001(\0132\021.game.FlushB"
-  "agRspH\000\0222\n\017mailbox_summary\030\036 \001(\0132\027.game."
-  "MailboxSummaryRspH\000\022&\n\tmail_list\030\037 \001(\0132\021"
-  ".game.MailListRspH\000\022$\n\010mail_get\030  \001(\0132\020."
-  "game.MailGetRspH\000\022&\n\tmail_read\030! \001(\0132\021.g"
-  "ame.MailReadRspH\000\022(\n\nmail_claim\030\" \001(\0132\022."
-  "game.MailClaimRspH\000\0223\n\020mail_batch_claim\030"
-  "# \001(\0132\027.game.MailBatchClaimRspH\000\022.\n\rmail"
-  "_favorite\030$ \001(\0132\025.game.MailFavoriteRspH\000"
+  "nReqH\000\022,\n\014check_online\030\026 \001(\0132\024.game.Chec"
+  "kOnlineReqH\000\022!\n\006logout\030\027 \001(\0132\017.game.Logo"
+  "utReqH\000\022\'\n\treconnect\030\030 \001(\0132\022.game.Reconn"
+  "ectReqH\000\022%\n\010register\030\031 \001(\0132\021.game.Regist"
+  "erReqH\000\022&\n\tflush_bag\030\032 \001(\0132\021.game.FlushB"
+  "agReqH\000\0222\n\017mailbox_summary\030\036 \001(\0132\027.game."
+  "MailboxSummaryReqH\000\022&\n\tmail_list\030\037 \001(\0132\021"
+  ".game.MailListReqH\000\022$\n\010mail_get\030  \001(\0132\020."
+  "game.MailGetReqH\000\022&\n\tmail_read\030! \001(\0132\021.g"
+  "ame.MailReadReqH\000\022(\n\nmail_claim\030\" \001(\0132\022."
+  "game.MailClaimReqH\000\0223\n\020mail_batch_claim\030"
+  "# \001(\0132\027.game.MailBatchClaimReqH\000\022.\n\rmail"
+  "_favorite\030$ \001(\0132\025.game.MailFavoriteReqH\000"
   "\0221\n\017mail_batch_read\030% \001(\0132\026.game.MailBat"
-  "chReadRspH\000\0225\n\021mail_batch_delete\030& \001(\0132\030"
-  ".game.MailBatchDeleteRspH\000\022,\n\014mail_deliv"
-  "er\030\' \001(\0132\024.game.MailDeliverRspH\000\022&\n\tente"
-  "r_map\030( \001(\0132\021.game.EnterMapRspH\000\022&\n\tleav"
-  "e_map\030) \001(\0132\021.game.LeaveMapRspH\000\022$\n\010map_"
-  "ping\030* \001(\0132\020.game.MapPingRspH\000\022&\n\tchat_s"
-  "end\0302 \001(\0132\021.game.ChatSendRspH\000\022*\n\013friend"
-  "_list\0303 \001(\0132\023.game.FriendListRspH\000\022$\n\010pu"
-  "sh_ack\0304 \001(\0132\020.game.PushAckRspH\000\022/\n\013serv"
-  "er_push\0305 \001(\0132\030.game.ServerPushEnvelopeH"
-  "\000\0223\n\rfull_snapshot\0306 \001(\0132\032.game.FullStat"
-  "eSnapshotRspH\000\0223\n\020get_self_profile\030< \001(\013"
-  "2\027.game.GetSelfProfileRspH\000\022\035\n\004move\030= \001("
-  "\0132\r.game.MoveRspH\000\022#\n\taoi_delta\030> \001(\0132\016."
-  "game.AoiDeltaH\000\0223\n\020player_mail_send\030\? \001("
-  "\0132\027.game.PlayerMailSendRspH\000\0225\n\017mailbox_"
-  "changed\030@ \001(\0132\032.game.MailboxChangedNotif"
-  "yH\000\022,\n\014server_hello\030F \001(\0132\024.game.ServerH"
-  "elloRspH\000\022\'\n\theartbeat\030G \001(\0132\022.game.Hear"
-  "tbeatRspH\000\022#\n\007respawn\030H \001(\0132\020.game.Respa"
-  "wnRspH\000\022\'\n\013chat_notify\030I \001(\0132\020.game.Chat"
-  "NotifyH\000\0223\n\020get_player_brief\030J \001(\0132\027.gam"
-  "e.GetPlayerBriefRspH\000\0227\n\022query_online_st"
-  "ate\030K \001(\0132\031.game.QueryOnlineStateRspH\000\0227"
-  "\n\020session_replaced\030L \001(\0132\033.game.SessionR"
-  "eplacedNotifyH\000\0221\n\017query_map_lines\030M \001(\013"
-  "2\026.game.QueryMapLinesRspH\000\0220\n\016create_dun"
-  "geon\030N \001(\0132\026.game.CreateDungeonRspH\000\022*\n\013"
-  "switch_line\030O \001(\0132\023.game.SwitchLineRspH\000"
-  "\022*\n\013enqueue_map\030P \001(\0132\023.game.EnqueueMapR"
-  "spH\000B\006\n\004bodyB\024\252\002\021GameMesh.Protocolb\006prot"
-  "o3"
+  "chReadReqH\000\0225\n\021mail_batch_delete\030& \001(\0132\030"
+  ".game.MailBatchDeleteReqH\000\022,\n\014mail_deliv"
+  "er\030\' \001(\0132\024.game.MailDeliverReqH\000\022&\n\tente"
+  "r_map\030( \001(\0132\021.game.EnterMapReqH\000\022&\n\tleav"
+  "e_map\030) \001(\0132\021.game.LeaveMapReqH\000\022$\n\010map_"
+  "ping\030* \001(\0132\020.game.MapPingReqH\000\022&\n\tchat_s"
+  "end\0302 \001(\0132\021.game.ChatSendReqH\000\022*\n\013friend"
+  "_list\0303 \001(\0132\023.game.FriendListReqH\000\022$\n\010pu"
+  "sh_ack\0304 \001(\0132\020.game.PushAckReqH\000\0223\n\020get_"
+  "self_profile\030< \001(\0132\027.game.GetSelfProfile"
+  "ReqH\000\022\035\n\004move\030= \001(\0132\r.game.MoveReqH\000\0223\n\020"
+  "player_mail_send\030\? \001(\0132\027.game.PlayerMail"
+  "SendReqH\000\022,\n\014client_hello\030F \001(\0132\024.game.C"
+  "lientHelloReqH\000\022\'\n\theartbeat\030G \001(\0132\022.gam"
+  "e.HeartbeatReqH\000\0220\n\016world_snapshot\030H \001(\013"
+  "2\026.game.WorldSnapshotReqH\000\022#\n\007respawn\030I "
+  "\001(\0132\020.game.RespawnReqH\000\0223\n\020get_player_br"
+  "ief\030J \001(\0132\027.game.GetPlayerBriefReqH\000\0227\n\022"
+  "query_online_state\030K \001(\0132\031.game.QueryOnl"
+  "ineStateReqH\000\0221\n\017query_map_lines\030L \001(\0132\026"
+  ".game.QueryMapLinesReqH\000\0220\n\016create_dunge"
+  "on\030M \001(\0132\026.game.CreateDungeonReqH\000\022*\n\013sw"
+  "itch_line\030N \001(\0132\023.game.SwitchLineReqH\000\022*"
+  "\n\013enqueue_map\030O \001(\0132\023.game.EnqueueMapReq"
+  "H\000\0222\n\017interact_portal\030P \001(\0132\027.game.Inter"
+  "actPortalReqH\000B\006\n\004body\"\202\021\n\014GameResponse\022"
+  "\013\n\003seq\030\001 \001(\004\022\n\n\002ok\030\002 \001(\010\022\017\n\007message\030\003 \001("
+  "\t\022\022\n\nerror_code\030\004 \001(\t\022\021\n\tretryable\030\005 \001(\010"
+  "\022\026\n\016server_time_ms\030\006 \001(\003\022\020\n\010trace_id\030\007 \001"
+  "(\t\022,\n\014consume_item\030\n \001(\0132\024.game.ConsumeI"
+  "temRspH\000\022.\n\rrelease_skill\030\013 \001(\0132\025.game.R"
+  "eleaseSkillRspH\000\022(\n\ngrant_item\030\014 \001(\0132\022.g"
+  "ame.GrantItemRspH\000\022\037\n\005login\030\024 \001(\0132\016.game"
+  ".LoginRspH\000\0224\n\020validate_session\030\025 \001(\0132\030."
+  "game.ValidateSessionRspH\000\022,\n\014check_onlin"
+  "e\030\026 \001(\0132\024.game.CheckOnlineRspH\000\022!\n\006logou"
+  "t\030\027 \001(\0132\017.game.LogoutRspH\000\022\'\n\treconnect\030"
+  "\030 \001(\0132\022.game.ReconnectRspH\000\022%\n\010register\030"
+  "\031 \001(\0132\021.game.RegisterRspH\000\022&\n\tflush_bag\030"
+  "\032 \001(\0132\021.game.FlushBagRspH\000\0222\n\017mailbox_su"
+  "mmary\030\036 \001(\0132\027.game.MailboxSummaryRspH\000\022&"
+  "\n\tmail_list\030\037 \001(\0132\021.game.MailListRspH\000\022$"
+  "\n\010mail_get\030  \001(\0132\020.game.MailGetRspH\000\022&\n\t"
+  "mail_read\030! \001(\0132\021.game.MailReadRspH\000\022(\n\n"
+  "mail_claim\030\" \001(\0132\022.game.MailClaimRspH\000\0223"
+  "\n\020mail_batch_claim\030# \001(\0132\027.game.MailBatc"
+  "hClaimRspH\000\022.\n\rmail_favorite\030$ \001(\0132\025.gam"
+  "e.MailFavoriteRspH\000\0221\n\017mail_batch_read\030%"
+  " \001(\0132\026.game.MailBatchReadRspH\000\0225\n\021mail_b"
+  "atch_delete\030& \001(\0132\030.game.MailBatchDelete"
+  "RspH\000\022,\n\014mail_deliver\030\' \001(\0132\024.game.MailD"
+  "eliverRspH\000\022&\n\tenter_map\030( \001(\0132\021.game.En"
+  "terMapRspH\000\022&\n\tleave_map\030) \001(\0132\021.game.Le"
+  "aveMapRspH\000\022$\n\010map_ping\030* \001(\0132\020.game.Map"
+  "PingRspH\000\022&\n\tchat_send\0302 \001(\0132\021.game.Chat"
+  "SendRspH\000\022*\n\013friend_list\0303 \001(\0132\023.game.Fr"
+  "iendListRspH\000\022$\n\010push_ack\0304 \001(\0132\020.game.P"
+  "ushAckRspH\000\022/\n\013server_push\0305 \001(\0132\030.game."
+  "ServerPushEnvelopeH\000\0223\n\rfull_snapshot\0306 "
+  "\001(\0132\032.game.FullStateSnapshotRspH\000\0223\n\020get"
+  "_self_profile\030< \001(\0132\027.game.GetSelfProfil"
+  "eRspH\000\022\035\n\004move\030= \001(\0132\r.game.MoveRspH\000\022#\n"
+  "\taoi_delta\030> \001(\0132\016.game.AoiDeltaH\000\0223\n\020pl"
+  "ayer_mail_send\030\? \001(\0132\027.game.PlayerMailSe"
+  "ndRspH\000\0225\n\017mailbox_changed\030@ \001(\0132\032.game."
+  "MailboxChangedNotifyH\000\022,\n\014server_hello\030F"
+  " \001(\0132\024.game.ServerHelloRspH\000\022\'\n\theartbea"
+  "t\030G \001(\0132\022.game.HeartbeatRspH\000\022#\n\007respawn"
+  "\030H \001(\0132\020.game.RespawnRspH\000\022\'\n\013chat_notif"
+  "y\030I \001(\0132\020.game.ChatNotifyH\000\0223\n\020get_playe"
+  "r_brief\030J \001(\0132\027.game.GetPlayerBriefRspH\000"
+  "\0227\n\022query_online_state\030K \001(\0132\031.game.Quer"
+  "yOnlineStateRspH\000\0227\n\020session_replaced\030L "
+  "\001(\0132\033.game.SessionReplacedNotifyH\000\0221\n\017qu"
+  "ery_map_lines\030M \001(\0132\026.game.QueryMapLines"
+  "RspH\000\0220\n\016create_dungeon\030N \001(\0132\026.game.Cre"
+  "ateDungeonRspH\000\022*\n\013switch_line\030O \001(\0132\023.g"
+  "ame.SwitchLineRspH\000\022*\n\013enqueue_map\030P \001(\013"
+  "2\023.game.EnqueueMapRspH\000\0222\n\017interact_port"
+  "al\030Q \001(\0132\027.game.InteractPortalRspH\000B\006\n\004b"
+  "odyB\024\252\002\021GameMesh.Protocolb\006proto3"
   ;
 static const ::PROTOBUF_NAMESPACE_ID::internal::DescriptorTable*const descriptor_table_game_2eproto_deps[1] = {
 };
-static ::PROTOBUF_NAMESPACE_ID::internal::SCCInfoBase*const descriptor_table_game_2eproto_sccs[97] = {
+static ::PROTOBUF_NAMESPACE_ID::internal::SCCInfoBase*const descriptor_table_game_2eproto_sccs[100] = {
   &scc_info_AoiDelta_game_2eproto.base,
   &scc_info_AoiEvent_game_2eproto.base,
   &scc_info_ChatNotify_game_2eproto.base,
@@ -3804,6 +3954,8 @@ static ::PROTOBUF_NAMESPACE_ID::internal::SCCInfoBase*const descriptor_table_gam
   &scc_info_GrantItemRsp_game_2eproto.base,
   &scc_info_HeartbeatReq_game_2eproto.base,
   &scc_info_HeartbeatRsp_game_2eproto.base,
+  &scc_info_InteractPortalReq_game_2eproto.base,
+  &scc_info_InteractPortalRsp_game_2eproto.base,
   &scc_info_LeaveMapReq_game_2eproto.base,
   &scc_info_LeaveMapRsp_game_2eproto.base,
   &scc_info_LoginReq_game_2eproto.base,
@@ -3846,6 +3998,7 @@ static ::PROTOBUF_NAMESPACE_ID::internal::SCCInfoBase*const descriptor_table_gam
   &scc_info_PlayerBrief_game_2eproto.base,
   &scc_info_PlayerMailSendReq_game_2eproto.base,
   &scc_info_PlayerMailSendRsp_game_2eproto.base,
+  &scc_info_PortalDef_game_2eproto.base,
   &scc_info_PushAckReq_game_2eproto.base,
   &scc_info_PushAckRsp_game_2eproto.base,
   &scc_info_QueryMapLinesReq_game_2eproto.base,
@@ -3872,10 +4025,10 @@ static ::PROTOBUF_NAMESPACE_ID::internal::SCCInfoBase*const descriptor_table_gam
 };
 static ::PROTOBUF_NAMESPACE_ID::internal::once_flag descriptor_table_game_2eproto_once;
 const ::PROTOBUF_NAMESPACE_ID::internal::DescriptorTable descriptor_table_game_2eproto = {
-  false, false, descriptor_table_protodef_game_2eproto, "game.proto", 16482,
-  &descriptor_table_game_2eproto_once, descriptor_table_game_2eproto_sccs, descriptor_table_game_2eproto_deps, 97, 0,
+  false, false, descriptor_table_protodef_game_2eproto, "game.proto", 17513,
+  &descriptor_table_game_2eproto_once, descriptor_table_game_2eproto_sccs, descriptor_table_game_2eproto_deps, 100, 0,
   schemas, file_default_instances, TableStruct_game_2eproto::offsets,
-  file_level_metadata_game_2eproto, 97, file_level_enum_descriptors_game_2eproto, file_level_service_descriptors_game_2eproto,
+  file_level_metadata_game_2eproto, 100, file_level_enum_descriptors_game_2eproto, file_level_service_descriptors_game_2eproto,
 };
 
 // Force running AddDescriptors() at dynamic initialization time.
@@ -34570,6 +34723,360 @@ void ClientHelloReq::InternalSwap(ClientHelloReq* other) {
 
 // ===================================================================
 
+void PortalDef::InitAsDefaultInstance() {
+  ::game::_PortalDef_default_instance_._instance.get_mutable()->position_ = const_cast< ::game::Vec3*>(
+      ::game::Vec3::internal_default_instance());
+}
+class PortalDef::_Internal {
+ public:
+  static const ::game::Vec3& position(const PortalDef* msg);
+};
+
+const ::game::Vec3&
+PortalDef::_Internal::position(const PortalDef* msg) {
+  return *msg->position_;
+}
+PortalDef::PortalDef(::PROTOBUF_NAMESPACE_ID::Arena* arena)
+  : ::PROTOBUF_NAMESPACE_ID::Message(arena) {
+  SharedCtor();
+  RegisterArenaDtor(arena);
+  // @@protoc_insertion_point(arena_constructor:game.PortalDef)
+}
+PortalDef::PortalDef(const PortalDef& from)
+  : ::PROTOBUF_NAMESPACE_ID::Message() {
+  _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
+  portal_id_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
+  if (!from._internal_portal_id().empty()) {
+    portal_id_.Set(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), from._internal_portal_id(),
+      GetArena());
+  }
+  if (from._internal_has_position()) {
+    position_ = new ::game::Vec3(*from.position_);
+  } else {
+    position_ = nullptr;
+  }
+  ::memcpy(&from_map_template_id_, &from.from_map_template_id_,
+    static_cast<size_t>(reinterpret_cast<char*>(&trigger_radius_) -
+    reinterpret_cast<char*>(&from_map_template_id_)) + sizeof(trigger_radius_));
+  // @@protoc_insertion_point(copy_constructor:game.PortalDef)
+}
+
+void PortalDef::SharedCtor() {
+  ::PROTOBUF_NAMESPACE_ID::internal::InitSCC(&scc_info_PortalDef_game_2eproto.base);
+  portal_id_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
+  ::memset(&position_, 0, static_cast<size_t>(
+      reinterpret_cast<char*>(&trigger_radius_) -
+      reinterpret_cast<char*>(&position_)) + sizeof(trigger_radius_));
+}
+
+PortalDef::~PortalDef() {
+  // @@protoc_insertion_point(destructor:game.PortalDef)
+  SharedDtor();
+  _internal_metadata_.Delete<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
+}
+
+void PortalDef::SharedDtor() {
+  GOOGLE_DCHECK(GetArena() == nullptr);
+  portal_id_.DestroyNoArena(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
+  if (this != internal_default_instance()) delete position_;
+}
+
+void PortalDef::ArenaDtor(void* object) {
+  PortalDef* _this = reinterpret_cast< PortalDef* >(object);
+  (void)_this;
+}
+void PortalDef::RegisterArenaDtor(::PROTOBUF_NAMESPACE_ID::Arena*) {
+}
+void PortalDef::SetCachedSize(int size) const {
+  _cached_size_.Set(size);
+}
+const PortalDef& PortalDef::default_instance() {
+  ::PROTOBUF_NAMESPACE_ID::internal::InitSCC(&::scc_info_PortalDef_game_2eproto.base);
+  return *internal_default_instance();
+}
+
+
+void PortalDef::Clear() {
+// @@protoc_insertion_point(message_clear_start:game.PortalDef)
+  ::PROTOBUF_NAMESPACE_ID::uint32 cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void) cached_has_bits;
+
+  portal_id_.ClearToEmpty(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
+  if (GetArena() == nullptr && position_ != nullptr) {
+    delete position_;
+  }
+  position_ = nullptr;
+  ::memset(&from_map_template_id_, 0, static_cast<size_t>(
+      reinterpret_cast<char*>(&trigger_radius_) -
+      reinterpret_cast<char*>(&from_map_template_id_)) + sizeof(trigger_radius_));
+  _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
+}
+
+const char* PortalDef::_InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::internal::ParseContext* ctx) {
+#define CHK_(x) if (PROTOBUF_PREDICT_FALSE(!(x))) goto failure
+  ::PROTOBUF_NAMESPACE_ID::Arena* arena = GetArena(); (void)arena;
+  while (!ctx->Done(&ptr)) {
+    ::PROTOBUF_NAMESPACE_ID::uint32 tag;
+    ptr = ::PROTOBUF_NAMESPACE_ID::internal::ReadTag(ptr, &tag);
+    CHK_(ptr);
+    switch (tag >> 3) {
+      // string portal_id = 1;
+      case 1:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 10)) {
+          auto str = _internal_mutable_portal_id();
+          ptr = ::PROTOBUF_NAMESPACE_ID::internal::InlineGreedyStringParser(str, ptr, ctx);
+          CHK_(::PROTOBUF_NAMESPACE_ID::internal::VerifyUTF8(str, "game.PortalDef.portal_id"));
+          CHK_(ptr);
+        } else goto handle_unusual;
+        continue;
+      // uint64 from_map_template_id = 2;
+      case 2:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 16)) {
+          from_map_template_id_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint64(&ptr);
+          CHK_(ptr);
+        } else goto handle_unusual;
+        continue;
+      // uint64 to_map_template_id = 3;
+      case 3:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 24)) {
+          to_map_template_id_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint64(&ptr);
+          CHK_(ptr);
+        } else goto handle_unusual;
+        continue;
+      // .game.Vec3 position = 4;
+      case 4:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 34)) {
+          ptr = ctx->ParseMessage(_internal_mutable_position(), ptr);
+          CHK_(ptr);
+        } else goto handle_unusual;
+        continue;
+      // float yaw = 5;
+      case 5:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 45)) {
+          yaw_ = ::PROTOBUF_NAMESPACE_ID::internal::UnalignedLoad<float>(ptr);
+          ptr += sizeof(float);
+        } else goto handle_unusual;
+        continue;
+      // float trigger_radius = 6;
+      case 6:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 53)) {
+          trigger_radius_ = ::PROTOBUF_NAMESPACE_ID::internal::UnalignedLoad<float>(ptr);
+          ptr += sizeof(float);
+        } else goto handle_unusual;
+        continue;
+      default: {
+      handle_unusual:
+        if ((tag & 7) == 4 || tag == 0) {
+          ctx->SetLastTag(tag);
+          goto success;
+        }
+        ptr = UnknownFieldParse(tag,
+            _internal_metadata_.mutable_unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(),
+            ptr, ctx);
+        CHK_(ptr != nullptr);
+        continue;
+      }
+    }  // switch
+  }  // while
+success:
+  return ptr;
+failure:
+  ptr = nullptr;
+  goto success;
+#undef CHK_
+}
+
+::PROTOBUF_NAMESPACE_ID::uint8* PortalDef::_InternalSerialize(
+    ::PROTOBUF_NAMESPACE_ID::uint8* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const {
+  // @@protoc_insertion_point(serialize_to_array_start:game.PortalDef)
+  ::PROTOBUF_NAMESPACE_ID::uint32 cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  // string portal_id = 1;
+  if (this->portal_id().size() > 0) {
+    ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::VerifyUtf8String(
+      this->_internal_portal_id().data(), static_cast<int>(this->_internal_portal_id().length()),
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::SERIALIZE,
+      "game.PortalDef.portal_id");
+    target = stream->WriteStringMaybeAliased(
+        1, this->_internal_portal_id(), target);
+  }
+
+  // uint64 from_map_template_id = 2;
+  if (this->from_map_template_id() != 0) {
+    target = stream->EnsureSpace(target);
+    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::WriteUInt64ToArray(2, this->_internal_from_map_template_id(), target);
+  }
+
+  // uint64 to_map_template_id = 3;
+  if (this->to_map_template_id() != 0) {
+    target = stream->EnsureSpace(target);
+    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::WriteUInt64ToArray(3, this->_internal_to_map_template_id(), target);
+  }
+
+  // .game.Vec3 position = 4;
+  if (this->has_position()) {
+    target = stream->EnsureSpace(target);
+    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
+      InternalWriteMessage(
+        4, _Internal::position(this), target, stream);
+  }
+
+  // float yaw = 5;
+  if (!(this->yaw() <= 0 && this->yaw() >= 0)) {
+    target = stream->EnsureSpace(target);
+    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::WriteFloatToArray(5, this->_internal_yaw(), target);
+  }
+
+  // float trigger_radius = 6;
+  if (!(this->trigger_radius() <= 0 && this->trigger_radius() >= 0)) {
+    target = stream->EnsureSpace(target);
+    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::WriteFloatToArray(6, this->_internal_trigger_radius(), target);
+  }
+
+  if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
+    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormat::InternalSerializeUnknownFieldsToArray(
+        _internal_metadata_.unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(::PROTOBUF_NAMESPACE_ID::UnknownFieldSet::default_instance), target, stream);
+  }
+  // @@protoc_insertion_point(serialize_to_array_end:game.PortalDef)
+  return target;
+}
+
+size_t PortalDef::ByteSizeLong() const {
+// @@protoc_insertion_point(message_byte_size_start:game.PortalDef)
+  size_t total_size = 0;
+
+  ::PROTOBUF_NAMESPACE_ID::uint32 cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void) cached_has_bits;
+
+  // string portal_id = 1;
+  if (this->portal_id().size() > 0) {
+    total_size += 1 +
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::StringSize(
+        this->_internal_portal_id());
+  }
+
+  // .game.Vec3 position = 4;
+  if (this->has_position()) {
+    total_size += 1 +
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(
+        *position_);
+  }
+
+  // uint64 from_map_template_id = 2;
+  if (this->from_map_template_id() != 0) {
+    total_size += 1 +
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::UInt64Size(
+        this->_internal_from_map_template_id());
+  }
+
+  // uint64 to_map_template_id = 3;
+  if (this->to_map_template_id() != 0) {
+    total_size += 1 +
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::UInt64Size(
+        this->_internal_to_map_template_id());
+  }
+
+  // float yaw = 5;
+  if (!(this->yaw() <= 0 && this->yaw() >= 0)) {
+    total_size += 1 + 4;
+  }
+
+  // float trigger_radius = 6;
+  if (!(this->trigger_radius() <= 0 && this->trigger_radius() >= 0)) {
+    total_size += 1 + 4;
+  }
+
+  if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
+    return ::PROTOBUF_NAMESPACE_ID::internal::ComputeUnknownFieldsSize(
+        _internal_metadata_, total_size, &_cached_size_);
+  }
+  int cached_size = ::PROTOBUF_NAMESPACE_ID::internal::ToCachedSize(total_size);
+  SetCachedSize(cached_size);
+  return total_size;
+}
+
+void PortalDef::MergeFrom(const ::PROTOBUF_NAMESPACE_ID::Message& from) {
+// @@protoc_insertion_point(generalized_merge_from_start:game.PortalDef)
+  GOOGLE_DCHECK_NE(&from, this);
+  const PortalDef* source =
+      ::PROTOBUF_NAMESPACE_ID::DynamicCastToGenerated<PortalDef>(
+          &from);
+  if (source == nullptr) {
+  // @@protoc_insertion_point(generalized_merge_from_cast_fail:game.PortalDef)
+    ::PROTOBUF_NAMESPACE_ID::internal::ReflectionOps::Merge(from, this);
+  } else {
+  // @@protoc_insertion_point(generalized_merge_from_cast_success:game.PortalDef)
+    MergeFrom(*source);
+  }
+}
+
+void PortalDef::MergeFrom(const PortalDef& from) {
+// @@protoc_insertion_point(class_specific_merge_from_start:game.PortalDef)
+  GOOGLE_DCHECK_NE(&from, this);
+  _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
+  ::PROTOBUF_NAMESPACE_ID::uint32 cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  if (from.portal_id().size() > 0) {
+    _internal_set_portal_id(from._internal_portal_id());
+  }
+  if (from.has_position()) {
+    _internal_mutable_position()->::game::Vec3::MergeFrom(from._internal_position());
+  }
+  if (from.from_map_template_id() != 0) {
+    _internal_set_from_map_template_id(from._internal_from_map_template_id());
+  }
+  if (from.to_map_template_id() != 0) {
+    _internal_set_to_map_template_id(from._internal_to_map_template_id());
+  }
+  if (!(from.yaw() <= 0 && from.yaw() >= 0)) {
+    _internal_set_yaw(from._internal_yaw());
+  }
+  if (!(from.trigger_radius() <= 0 && from.trigger_radius() >= 0)) {
+    _internal_set_trigger_radius(from._internal_trigger_radius());
+  }
+}
+
+void PortalDef::CopyFrom(const ::PROTOBUF_NAMESPACE_ID::Message& from) {
+// @@protoc_insertion_point(generalized_copy_from_start:game.PortalDef)
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+void PortalDef::CopyFrom(const PortalDef& from) {
+// @@protoc_insertion_point(class_specific_copy_from_start:game.PortalDef)
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+bool PortalDef::IsInitialized() const {
+  return true;
+}
+
+void PortalDef::InternalSwap(PortalDef* other) {
+  using std::swap;
+  _internal_metadata_.Swap<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(&other->_internal_metadata_);
+  portal_id_.Swap(&other->portal_id_, &::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
+  ::PROTOBUF_NAMESPACE_ID::internal::memswap<
+      PROTOBUF_FIELD_OFFSET(PortalDef, trigger_radius_)
+      + sizeof(PortalDef::trigger_radius_)
+      - PROTOBUF_FIELD_OFFSET(PortalDef, position_)>(
+          reinterpret_cast<char*>(&position_),
+          reinterpret_cast<char*>(&other->position_));
+}
+
+::PROTOBUF_NAMESPACE_ID::Metadata PortalDef::GetMetadata() const {
+  return GetMetadataStatic();
+}
+
+
+// ===================================================================
+
 void MapManifestEntry::InitAsDefaultInstance() {
 }
 class MapManifestEntry::_Internal {
@@ -34577,31 +35084,45 @@ class MapManifestEntry::_Internal {
 };
 
 MapManifestEntry::MapManifestEntry(::PROTOBUF_NAMESPACE_ID::Arena* arena)
-  : ::PROTOBUF_NAMESPACE_ID::Message(arena) {
+  : ::PROTOBUF_NAMESPACE_ID::Message(arena),
+  portals_(arena) {
   SharedCtor();
   RegisterArenaDtor(arena);
   // @@protoc_insertion_point(arena_constructor:game.MapManifestEntry)
 }
 MapManifestEntry::MapManifestEntry(const MapManifestEntry& from)
-  : ::PROTOBUF_NAMESPACE_ID::Message() {
+  : ::PROTOBUF_NAMESPACE_ID::Message(),
+      portals_(from.portals_) {
   _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
   sha256_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
   if (!from._internal_sha256().empty()) {
     sha256_.Set(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), from._internal_sha256(),
       GetArena());
   }
+  scene_name_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
+  if (!from._internal_scene_name().empty()) {
+    scene_name_.Set(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), from._internal_scene_name(),
+      GetArena());
+  }
+  kind_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
+  if (!from._internal_kind().empty()) {
+    kind_.Set(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), from._internal_kind(),
+      GetArena());
+  }
   ::memcpy(&map_template_id_, &from.map_template_id_,
-    static_cast<size_t>(reinterpret_cast<char*>(&data_version_) -
-    reinterpret_cast<char*>(&map_template_id_)) + sizeof(data_version_));
+    static_cast<size_t>(reinterpret_cast<char*>(&visual_map_template_id_) -
+    reinterpret_cast<char*>(&map_template_id_)) + sizeof(visual_map_template_id_));
   // @@protoc_insertion_point(copy_constructor:game.MapManifestEntry)
 }
 
 void MapManifestEntry::SharedCtor() {
   ::PROTOBUF_NAMESPACE_ID::internal::InitSCC(&scc_info_MapManifestEntry_game_2eproto.base);
   sha256_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
+  scene_name_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
+  kind_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
   ::memset(&map_template_id_, 0, static_cast<size_t>(
-      reinterpret_cast<char*>(&data_version_) -
-      reinterpret_cast<char*>(&map_template_id_)) + sizeof(data_version_));
+      reinterpret_cast<char*>(&visual_map_template_id_) -
+      reinterpret_cast<char*>(&map_template_id_)) + sizeof(visual_map_template_id_));
 }
 
 MapManifestEntry::~MapManifestEntry() {
@@ -34613,6 +35134,8 @@ MapManifestEntry::~MapManifestEntry() {
 void MapManifestEntry::SharedDtor() {
   GOOGLE_DCHECK(GetArena() == nullptr);
   sha256_.DestroyNoArena(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
+  scene_name_.DestroyNoArena(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
+  kind_.DestroyNoArena(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
 }
 
 void MapManifestEntry::ArenaDtor(void* object) {
@@ -34636,10 +35159,13 @@ void MapManifestEntry::Clear() {
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
 
+  portals_.Clear();
   sha256_.ClearToEmpty(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
+  scene_name_.ClearToEmpty(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
+  kind_.ClearToEmpty(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
   ::memset(&map_template_id_, 0, static_cast<size_t>(
-      reinterpret_cast<char*>(&data_version_) -
-      reinterpret_cast<char*>(&map_template_id_)) + sizeof(data_version_));
+      reinterpret_cast<char*>(&visual_map_template_id_) -
+      reinterpret_cast<char*>(&map_template_id_)) + sizeof(visual_map_template_id_));
   _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
 }
 
@@ -34672,6 +35198,43 @@ const char* MapManifestEntry::_InternalParse(const char* ptr, ::PROTOBUF_NAMESPA
           ptr = ::PROTOBUF_NAMESPACE_ID::internal::InlineGreedyStringParser(str, ptr, ctx);
           CHK_(::PROTOBUF_NAMESPACE_ID::internal::VerifyUTF8(str, "game.MapManifestEntry.sha256"));
           CHK_(ptr);
+        } else goto handle_unusual;
+        continue;
+      // string scene_name = 4;
+      case 4:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 34)) {
+          auto str = _internal_mutable_scene_name();
+          ptr = ::PROTOBUF_NAMESPACE_ID::internal::InlineGreedyStringParser(str, ptr, ctx);
+          CHK_(::PROTOBUF_NAMESPACE_ID::internal::VerifyUTF8(str, "game.MapManifestEntry.scene_name"));
+          CHK_(ptr);
+        } else goto handle_unusual;
+        continue;
+      // string kind = 5;
+      case 5:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 42)) {
+          auto str = _internal_mutable_kind();
+          ptr = ::PROTOBUF_NAMESPACE_ID::internal::InlineGreedyStringParser(str, ptr, ctx);
+          CHK_(::PROTOBUF_NAMESPACE_ID::internal::VerifyUTF8(str, "game.MapManifestEntry.kind"));
+          CHK_(ptr);
+        } else goto handle_unusual;
+        continue;
+      // uint64 visual_map_template_id = 6;
+      case 6:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 48)) {
+          visual_map_template_id_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint64(&ptr);
+          CHK_(ptr);
+        } else goto handle_unusual;
+        continue;
+      // repeated .game.PortalDef portals = 7;
+      case 7:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 58)) {
+          ptr -= 1;
+          do {
+            ptr += 1;
+            ptr = ctx->ParseMessage(_internal_add_portals(), ptr);
+            CHK_(ptr);
+            if (!ctx->DataAvailable(ptr)) break;
+          } while (::PROTOBUF_NAMESPACE_ID::internal::ExpectTag<58>(ptr));
         } else goto handle_unusual;
         continue;
       default: {
@@ -34724,6 +35287,40 @@ failure:
         3, this->_internal_sha256(), target);
   }
 
+  // string scene_name = 4;
+  if (this->scene_name().size() > 0) {
+    ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::VerifyUtf8String(
+      this->_internal_scene_name().data(), static_cast<int>(this->_internal_scene_name().length()),
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::SERIALIZE,
+      "game.MapManifestEntry.scene_name");
+    target = stream->WriteStringMaybeAliased(
+        4, this->_internal_scene_name(), target);
+  }
+
+  // string kind = 5;
+  if (this->kind().size() > 0) {
+    ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::VerifyUtf8String(
+      this->_internal_kind().data(), static_cast<int>(this->_internal_kind().length()),
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::SERIALIZE,
+      "game.MapManifestEntry.kind");
+    target = stream->WriteStringMaybeAliased(
+        5, this->_internal_kind(), target);
+  }
+
+  // uint64 visual_map_template_id = 6;
+  if (this->visual_map_template_id() != 0) {
+    target = stream->EnsureSpace(target);
+    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::WriteUInt64ToArray(6, this->_internal_visual_map_template_id(), target);
+  }
+
+  // repeated .game.PortalDef portals = 7;
+  for (unsigned int i = 0,
+      n = static_cast<unsigned int>(this->_internal_portals_size()); i < n; i++) {
+    target = stream->EnsureSpace(target);
+    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
+      InternalWriteMessage(7, this->_internal_portals(i), target, stream);
+  }
+
   if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
     target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormat::InternalSerializeUnknownFieldsToArray(
         _internal_metadata_.unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(::PROTOBUF_NAMESPACE_ID::UnknownFieldSet::default_instance), target, stream);
@@ -34740,11 +35337,32 @@ size_t MapManifestEntry::ByteSizeLong() const {
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
 
+  // repeated .game.PortalDef portals = 7;
+  total_size += 1UL * this->_internal_portals_size();
+  for (const auto& msg : this->portals_) {
+    total_size +=
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(msg);
+  }
+
   // string sha256 = 3;
   if (this->sha256().size() > 0) {
     total_size += 1 +
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::StringSize(
         this->_internal_sha256());
+  }
+
+  // string scene_name = 4;
+  if (this->scene_name().size() > 0) {
+    total_size += 1 +
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::StringSize(
+        this->_internal_scene_name());
+  }
+
+  // string kind = 5;
+  if (this->kind().size() > 0) {
+    total_size += 1 +
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::StringSize(
+        this->_internal_kind());
   }
 
   // uint64 map_template_id = 1;
@@ -34759,6 +35377,13 @@ size_t MapManifestEntry::ByteSizeLong() const {
     total_size += 1 +
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::UInt64Size(
         this->_internal_data_version());
+  }
+
+  // uint64 visual_map_template_id = 6;
+  if (this->visual_map_template_id() != 0) {
+    total_size += 1 +
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::UInt64Size(
+        this->_internal_visual_map_template_id());
   }
 
   if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
@@ -34792,14 +35417,24 @@ void MapManifestEntry::MergeFrom(const MapManifestEntry& from) {
   ::PROTOBUF_NAMESPACE_ID::uint32 cached_has_bits = 0;
   (void) cached_has_bits;
 
+  portals_.MergeFrom(from.portals_);
   if (from.sha256().size() > 0) {
     _internal_set_sha256(from._internal_sha256());
+  }
+  if (from.scene_name().size() > 0) {
+    _internal_set_scene_name(from._internal_scene_name());
+  }
+  if (from.kind().size() > 0) {
+    _internal_set_kind(from._internal_kind());
   }
   if (from.map_template_id() != 0) {
     _internal_set_map_template_id(from._internal_map_template_id());
   }
   if (from.data_version() != 0) {
     _internal_set_data_version(from._internal_data_version());
+  }
+  if (from.visual_map_template_id() != 0) {
+    _internal_set_visual_map_template_id(from._internal_visual_map_template_id());
   }
 }
 
@@ -34824,16 +35459,1190 @@ bool MapManifestEntry::IsInitialized() const {
 void MapManifestEntry::InternalSwap(MapManifestEntry* other) {
   using std::swap;
   _internal_metadata_.Swap<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(&other->_internal_metadata_);
+  portals_.InternalSwap(&other->portals_);
   sha256_.Swap(&other->sha256_, &::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
+  scene_name_.Swap(&other->scene_name_, &::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
+  kind_.Swap(&other->kind_, &::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
   ::PROTOBUF_NAMESPACE_ID::internal::memswap<
-      PROTOBUF_FIELD_OFFSET(MapManifestEntry, data_version_)
-      + sizeof(MapManifestEntry::data_version_)
+      PROTOBUF_FIELD_OFFSET(MapManifestEntry, visual_map_template_id_)
+      + sizeof(MapManifestEntry::visual_map_template_id_)
       - PROTOBUF_FIELD_OFFSET(MapManifestEntry, map_template_id_)>(
           reinterpret_cast<char*>(&map_template_id_),
           reinterpret_cast<char*>(&other->map_template_id_));
 }
 
 ::PROTOBUF_NAMESPACE_ID::Metadata MapManifestEntry::GetMetadata() const {
+  return GetMetadataStatic();
+}
+
+
+// ===================================================================
+
+void InteractPortalReq::InitAsDefaultInstance() {
+}
+class InteractPortalReq::_Internal {
+ public:
+};
+
+InteractPortalReq::InteractPortalReq(::PROTOBUF_NAMESPACE_ID::Arena* arena)
+  : ::PROTOBUF_NAMESPACE_ID::Message(arena) {
+  SharedCtor();
+  RegisterArenaDtor(arena);
+  // @@protoc_insertion_point(arena_constructor:game.InteractPortalReq)
+}
+InteractPortalReq::InteractPortalReq(const InteractPortalReq& from)
+  : ::PROTOBUF_NAMESPACE_ID::Message() {
+  _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
+  portal_id_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
+  if (!from._internal_portal_id().empty()) {
+    portal_id_.Set(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), from._internal_portal_id(),
+      GetArena());
+  }
+  operation_id_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
+  if (!from._internal_operation_id().empty()) {
+    operation_id_.Set(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), from._internal_operation_id(),
+      GetArena());
+  }
+  map_data_sha256_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
+  if (!from._internal_map_data_sha256().empty()) {
+    map_data_sha256_.Set(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), from._internal_map_data_sha256(),
+      GetArena());
+  }
+  ::memcpy(&player_id_, &from.player_id_,
+    static_cast<size_t>(reinterpret_cast<char*>(&realm_id_) -
+    reinterpret_cast<char*>(&player_id_)) + sizeof(realm_id_));
+  // @@protoc_insertion_point(copy_constructor:game.InteractPortalReq)
+}
+
+void InteractPortalReq::SharedCtor() {
+  ::PROTOBUF_NAMESPACE_ID::internal::InitSCC(&scc_info_InteractPortalReq_game_2eproto.base);
+  portal_id_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
+  operation_id_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
+  map_data_sha256_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
+  ::memset(&player_id_, 0, static_cast<size_t>(
+      reinterpret_cast<char*>(&realm_id_) -
+      reinterpret_cast<char*>(&player_id_)) + sizeof(realm_id_));
+}
+
+InteractPortalReq::~InteractPortalReq() {
+  // @@protoc_insertion_point(destructor:game.InteractPortalReq)
+  SharedDtor();
+  _internal_metadata_.Delete<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
+}
+
+void InteractPortalReq::SharedDtor() {
+  GOOGLE_DCHECK(GetArena() == nullptr);
+  portal_id_.DestroyNoArena(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
+  operation_id_.DestroyNoArena(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
+  map_data_sha256_.DestroyNoArena(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
+}
+
+void InteractPortalReq::ArenaDtor(void* object) {
+  InteractPortalReq* _this = reinterpret_cast< InteractPortalReq* >(object);
+  (void)_this;
+}
+void InteractPortalReq::RegisterArenaDtor(::PROTOBUF_NAMESPACE_ID::Arena*) {
+}
+void InteractPortalReq::SetCachedSize(int size) const {
+  _cached_size_.Set(size);
+}
+const InteractPortalReq& InteractPortalReq::default_instance() {
+  ::PROTOBUF_NAMESPACE_ID::internal::InitSCC(&::scc_info_InteractPortalReq_game_2eproto.base);
+  return *internal_default_instance();
+}
+
+
+void InteractPortalReq::Clear() {
+// @@protoc_insertion_point(message_clear_start:game.InteractPortalReq)
+  ::PROTOBUF_NAMESPACE_ID::uint32 cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void) cached_has_bits;
+
+  portal_id_.ClearToEmpty(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
+  operation_id_.ClearToEmpty(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
+  map_data_sha256_.ClearToEmpty(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
+  ::memset(&player_id_, 0, static_cast<size_t>(
+      reinterpret_cast<char*>(&realm_id_) -
+      reinterpret_cast<char*>(&player_id_)) + sizeof(realm_id_));
+  _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
+}
+
+const char* InteractPortalReq::_InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::internal::ParseContext* ctx) {
+#define CHK_(x) if (PROTOBUF_PREDICT_FALSE(!(x))) goto failure
+  ::PROTOBUF_NAMESPACE_ID::Arena* arena = GetArena(); (void)arena;
+  while (!ctx->Done(&ptr)) {
+    ::PROTOBUF_NAMESPACE_ID::uint32 tag;
+    ptr = ::PROTOBUF_NAMESPACE_ID::internal::ReadTag(ptr, &tag);
+    CHK_(ptr);
+    switch (tag >> 3) {
+      // uint64 player_id = 1;
+      case 1:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 8)) {
+          player_id_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint64(&ptr);
+          CHK_(ptr);
+        } else goto handle_unusual;
+        continue;
+      // uint32 realm_id = 2;
+      case 2:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 16)) {
+          realm_id_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint32(&ptr);
+          CHK_(ptr);
+        } else goto handle_unusual;
+        continue;
+      // string portal_id = 3;
+      case 3:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 26)) {
+          auto str = _internal_mutable_portal_id();
+          ptr = ::PROTOBUF_NAMESPACE_ID::internal::InlineGreedyStringParser(str, ptr, ctx);
+          CHK_(::PROTOBUF_NAMESPACE_ID::internal::VerifyUTF8(str, "game.InteractPortalReq.portal_id"));
+          CHK_(ptr);
+        } else goto handle_unusual;
+        continue;
+      // string operation_id = 4;
+      case 4:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 34)) {
+          auto str = _internal_mutable_operation_id();
+          ptr = ::PROTOBUF_NAMESPACE_ID::internal::InlineGreedyStringParser(str, ptr, ctx);
+          CHK_(::PROTOBUF_NAMESPACE_ID::internal::VerifyUTF8(str, "game.InteractPortalReq.operation_id"));
+          CHK_(ptr);
+        } else goto handle_unusual;
+        continue;
+      // uint64 map_data_version = 5;
+      case 5:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 40)) {
+          map_data_version_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint64(&ptr);
+          CHK_(ptr);
+        } else goto handle_unusual;
+        continue;
+      // string map_data_sha256 = 6;
+      case 6:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 50)) {
+          auto str = _internal_mutable_map_data_sha256();
+          ptr = ::PROTOBUF_NAMESPACE_ID::internal::InlineGreedyStringParser(str, ptr, ctx);
+          CHK_(::PROTOBUF_NAMESPACE_ID::internal::VerifyUTF8(str, "game.InteractPortalReq.map_data_sha256"));
+          CHK_(ptr);
+        } else goto handle_unusual;
+        continue;
+      default: {
+      handle_unusual:
+        if ((tag & 7) == 4 || tag == 0) {
+          ctx->SetLastTag(tag);
+          goto success;
+        }
+        ptr = UnknownFieldParse(tag,
+            _internal_metadata_.mutable_unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(),
+            ptr, ctx);
+        CHK_(ptr != nullptr);
+        continue;
+      }
+    }  // switch
+  }  // while
+success:
+  return ptr;
+failure:
+  ptr = nullptr;
+  goto success;
+#undef CHK_
+}
+
+::PROTOBUF_NAMESPACE_ID::uint8* InteractPortalReq::_InternalSerialize(
+    ::PROTOBUF_NAMESPACE_ID::uint8* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const {
+  // @@protoc_insertion_point(serialize_to_array_start:game.InteractPortalReq)
+  ::PROTOBUF_NAMESPACE_ID::uint32 cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  // uint64 player_id = 1;
+  if (this->player_id() != 0) {
+    target = stream->EnsureSpace(target);
+    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::WriteUInt64ToArray(1, this->_internal_player_id(), target);
+  }
+
+  // uint32 realm_id = 2;
+  if (this->realm_id() != 0) {
+    target = stream->EnsureSpace(target);
+    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::WriteUInt32ToArray(2, this->_internal_realm_id(), target);
+  }
+
+  // string portal_id = 3;
+  if (this->portal_id().size() > 0) {
+    ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::VerifyUtf8String(
+      this->_internal_portal_id().data(), static_cast<int>(this->_internal_portal_id().length()),
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::SERIALIZE,
+      "game.InteractPortalReq.portal_id");
+    target = stream->WriteStringMaybeAliased(
+        3, this->_internal_portal_id(), target);
+  }
+
+  // string operation_id = 4;
+  if (this->operation_id().size() > 0) {
+    ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::VerifyUtf8String(
+      this->_internal_operation_id().data(), static_cast<int>(this->_internal_operation_id().length()),
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::SERIALIZE,
+      "game.InteractPortalReq.operation_id");
+    target = stream->WriteStringMaybeAliased(
+        4, this->_internal_operation_id(), target);
+  }
+
+  // uint64 map_data_version = 5;
+  if (this->map_data_version() != 0) {
+    target = stream->EnsureSpace(target);
+    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::WriteUInt64ToArray(5, this->_internal_map_data_version(), target);
+  }
+
+  // string map_data_sha256 = 6;
+  if (this->map_data_sha256().size() > 0) {
+    ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::VerifyUtf8String(
+      this->_internal_map_data_sha256().data(), static_cast<int>(this->_internal_map_data_sha256().length()),
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::SERIALIZE,
+      "game.InteractPortalReq.map_data_sha256");
+    target = stream->WriteStringMaybeAliased(
+        6, this->_internal_map_data_sha256(), target);
+  }
+
+  if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
+    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormat::InternalSerializeUnknownFieldsToArray(
+        _internal_metadata_.unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(::PROTOBUF_NAMESPACE_ID::UnknownFieldSet::default_instance), target, stream);
+  }
+  // @@protoc_insertion_point(serialize_to_array_end:game.InteractPortalReq)
+  return target;
+}
+
+size_t InteractPortalReq::ByteSizeLong() const {
+// @@protoc_insertion_point(message_byte_size_start:game.InteractPortalReq)
+  size_t total_size = 0;
+
+  ::PROTOBUF_NAMESPACE_ID::uint32 cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void) cached_has_bits;
+
+  // string portal_id = 3;
+  if (this->portal_id().size() > 0) {
+    total_size += 1 +
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::StringSize(
+        this->_internal_portal_id());
+  }
+
+  // string operation_id = 4;
+  if (this->operation_id().size() > 0) {
+    total_size += 1 +
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::StringSize(
+        this->_internal_operation_id());
+  }
+
+  // string map_data_sha256 = 6;
+  if (this->map_data_sha256().size() > 0) {
+    total_size += 1 +
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::StringSize(
+        this->_internal_map_data_sha256());
+  }
+
+  // uint64 player_id = 1;
+  if (this->player_id() != 0) {
+    total_size += 1 +
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::UInt64Size(
+        this->_internal_player_id());
+  }
+
+  // uint64 map_data_version = 5;
+  if (this->map_data_version() != 0) {
+    total_size += 1 +
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::UInt64Size(
+        this->_internal_map_data_version());
+  }
+
+  // uint32 realm_id = 2;
+  if (this->realm_id() != 0) {
+    total_size += 1 +
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::UInt32Size(
+        this->_internal_realm_id());
+  }
+
+  if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
+    return ::PROTOBUF_NAMESPACE_ID::internal::ComputeUnknownFieldsSize(
+        _internal_metadata_, total_size, &_cached_size_);
+  }
+  int cached_size = ::PROTOBUF_NAMESPACE_ID::internal::ToCachedSize(total_size);
+  SetCachedSize(cached_size);
+  return total_size;
+}
+
+void InteractPortalReq::MergeFrom(const ::PROTOBUF_NAMESPACE_ID::Message& from) {
+// @@protoc_insertion_point(generalized_merge_from_start:game.InteractPortalReq)
+  GOOGLE_DCHECK_NE(&from, this);
+  const InteractPortalReq* source =
+      ::PROTOBUF_NAMESPACE_ID::DynamicCastToGenerated<InteractPortalReq>(
+          &from);
+  if (source == nullptr) {
+  // @@protoc_insertion_point(generalized_merge_from_cast_fail:game.InteractPortalReq)
+    ::PROTOBUF_NAMESPACE_ID::internal::ReflectionOps::Merge(from, this);
+  } else {
+  // @@protoc_insertion_point(generalized_merge_from_cast_success:game.InteractPortalReq)
+    MergeFrom(*source);
+  }
+}
+
+void InteractPortalReq::MergeFrom(const InteractPortalReq& from) {
+// @@protoc_insertion_point(class_specific_merge_from_start:game.InteractPortalReq)
+  GOOGLE_DCHECK_NE(&from, this);
+  _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
+  ::PROTOBUF_NAMESPACE_ID::uint32 cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  if (from.portal_id().size() > 0) {
+    _internal_set_portal_id(from._internal_portal_id());
+  }
+  if (from.operation_id().size() > 0) {
+    _internal_set_operation_id(from._internal_operation_id());
+  }
+  if (from.map_data_sha256().size() > 0) {
+    _internal_set_map_data_sha256(from._internal_map_data_sha256());
+  }
+  if (from.player_id() != 0) {
+    _internal_set_player_id(from._internal_player_id());
+  }
+  if (from.map_data_version() != 0) {
+    _internal_set_map_data_version(from._internal_map_data_version());
+  }
+  if (from.realm_id() != 0) {
+    _internal_set_realm_id(from._internal_realm_id());
+  }
+}
+
+void InteractPortalReq::CopyFrom(const ::PROTOBUF_NAMESPACE_ID::Message& from) {
+// @@protoc_insertion_point(generalized_copy_from_start:game.InteractPortalReq)
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+void InteractPortalReq::CopyFrom(const InteractPortalReq& from) {
+// @@protoc_insertion_point(class_specific_copy_from_start:game.InteractPortalReq)
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+bool InteractPortalReq::IsInitialized() const {
+  return true;
+}
+
+void InteractPortalReq::InternalSwap(InteractPortalReq* other) {
+  using std::swap;
+  _internal_metadata_.Swap<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(&other->_internal_metadata_);
+  portal_id_.Swap(&other->portal_id_, &::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
+  operation_id_.Swap(&other->operation_id_, &::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
+  map_data_sha256_.Swap(&other->map_data_sha256_, &::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
+  ::PROTOBUF_NAMESPACE_ID::internal::memswap<
+      PROTOBUF_FIELD_OFFSET(InteractPortalReq, realm_id_)
+      + sizeof(InteractPortalReq::realm_id_)
+      - PROTOBUF_FIELD_OFFSET(InteractPortalReq, player_id_)>(
+          reinterpret_cast<char*>(&player_id_),
+          reinterpret_cast<char*>(&other->player_id_));
+}
+
+::PROTOBUF_NAMESPACE_ID::Metadata InteractPortalReq::GetMetadata() const {
+  return GetMetadataStatic();
+}
+
+
+// ===================================================================
+
+void InteractPortalRsp::InitAsDefaultInstance() {
+  ::game::_InteractPortalRsp_default_instance_._instance.get_mutable()->spawn_position_ = const_cast< ::game::Vec3*>(
+      ::game::Vec3::internal_default_instance());
+  ::game::_InteractPortalRsp_default_instance_._instance.get_mutable()->self_ = const_cast< ::game::EntitySnapshot*>(
+      ::game::EntitySnapshot::internal_default_instance());
+}
+class InteractPortalRsp::_Internal {
+ public:
+  static const ::game::Vec3& spawn_position(const InteractPortalRsp* msg);
+  static const ::game::EntitySnapshot& self(const InteractPortalRsp* msg);
+};
+
+const ::game::Vec3&
+InteractPortalRsp::_Internal::spawn_position(const InteractPortalRsp* msg) {
+  return *msg->spawn_position_;
+}
+const ::game::EntitySnapshot&
+InteractPortalRsp::_Internal::self(const InteractPortalRsp* msg) {
+  return *msg->self_;
+}
+InteractPortalRsp::InteractPortalRsp(::PROTOBUF_NAMESPACE_ID::Arena* arena)
+  : ::PROTOBUF_NAMESPACE_ID::Message(arena),
+  aoi_snapshot_(arena) {
+  SharedCtor();
+  RegisterArenaDtor(arena);
+  // @@protoc_insertion_point(arena_constructor:game.InteractPortalRsp)
+}
+InteractPortalRsp::InteractPortalRsp(const InteractPortalRsp& from)
+  : ::PROTOBUF_NAMESPACE_ID::Message(),
+      aoi_snapshot_(from.aoi_snapshot_) {
+  _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
+  message_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
+  if (!from._internal_message().empty()) {
+    message_.Set(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), from._internal_message(),
+      GetArena());
+  }
+  error_code_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
+  if (!from._internal_error_code().empty()) {
+    error_code_.Set(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), from._internal_error_code(),
+      GetArena());
+  }
+  gamelogic_instance_id_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
+  if (!from._internal_gamelogic_instance_id().empty()) {
+    gamelogic_instance_id_.Set(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), from._internal_gamelogic_instance_id(),
+      GetArena());
+  }
+  map_data_sha256_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
+  if (!from._internal_map_data_sha256().empty()) {
+    map_data_sha256_.Set(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), from._internal_map_data_sha256(),
+      GetArena());
+  }
+  kind_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
+  if (!from._internal_kind().empty()) {
+    kind_.Set(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), from._internal_kind(),
+      GetArena());
+  }
+  portal_id_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
+  if (!from._internal_portal_id().empty()) {
+    portal_id_.Set(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), from._internal_portal_id(),
+      GetArena());
+  }
+  if (from._internal_has_spawn_position()) {
+    spawn_position_ = new ::game::Vec3(*from.spawn_position_);
+  } else {
+    spawn_position_ = nullptr;
+  }
+  if (from._internal_has_self()) {
+    self_ = new ::game::EntitySnapshot(*from.self_);
+  } else {
+    self_ = nullptr;
+  }
+  ::memcpy(&map_template_id_, &from.map_template_id_,
+    static_cast<size_t>(reinterpret_cast<char*>(&from_map_template_id_) -
+    reinterpret_cast<char*>(&map_template_id_)) + sizeof(from_map_template_id_));
+  // @@protoc_insertion_point(copy_constructor:game.InteractPortalRsp)
+}
+
+void InteractPortalRsp::SharedCtor() {
+  ::PROTOBUF_NAMESPACE_ID::internal::InitSCC(&scc_info_InteractPortalRsp_game_2eproto.base);
+  message_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
+  error_code_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
+  gamelogic_instance_id_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
+  map_data_sha256_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
+  kind_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
+  portal_id_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
+  ::memset(&spawn_position_, 0, static_cast<size_t>(
+      reinterpret_cast<char*>(&from_map_template_id_) -
+      reinterpret_cast<char*>(&spawn_position_)) + sizeof(from_map_template_id_));
+}
+
+InteractPortalRsp::~InteractPortalRsp() {
+  // @@protoc_insertion_point(destructor:game.InteractPortalRsp)
+  SharedDtor();
+  _internal_metadata_.Delete<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
+}
+
+void InteractPortalRsp::SharedDtor() {
+  GOOGLE_DCHECK(GetArena() == nullptr);
+  message_.DestroyNoArena(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
+  error_code_.DestroyNoArena(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
+  gamelogic_instance_id_.DestroyNoArena(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
+  map_data_sha256_.DestroyNoArena(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
+  kind_.DestroyNoArena(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
+  portal_id_.DestroyNoArena(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
+  if (this != internal_default_instance()) delete spawn_position_;
+  if (this != internal_default_instance()) delete self_;
+}
+
+void InteractPortalRsp::ArenaDtor(void* object) {
+  InteractPortalRsp* _this = reinterpret_cast< InteractPortalRsp* >(object);
+  (void)_this;
+}
+void InteractPortalRsp::RegisterArenaDtor(::PROTOBUF_NAMESPACE_ID::Arena*) {
+}
+void InteractPortalRsp::SetCachedSize(int size) const {
+  _cached_size_.Set(size);
+}
+const InteractPortalRsp& InteractPortalRsp::default_instance() {
+  ::PROTOBUF_NAMESPACE_ID::internal::InitSCC(&::scc_info_InteractPortalRsp_game_2eproto.base);
+  return *internal_default_instance();
+}
+
+
+void InteractPortalRsp::Clear() {
+// @@protoc_insertion_point(message_clear_start:game.InteractPortalRsp)
+  ::PROTOBUF_NAMESPACE_ID::uint32 cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void) cached_has_bits;
+
+  aoi_snapshot_.Clear();
+  message_.ClearToEmpty(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
+  error_code_.ClearToEmpty(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
+  gamelogic_instance_id_.ClearToEmpty(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
+  map_data_sha256_.ClearToEmpty(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
+  kind_.ClearToEmpty(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
+  portal_id_.ClearToEmpty(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
+  if (GetArena() == nullptr && spawn_position_ != nullptr) {
+    delete spawn_position_;
+  }
+  spawn_position_ = nullptr;
+  if (GetArena() == nullptr && self_ != nullptr) {
+    delete self_;
+  }
+  self_ = nullptr;
+  ::memset(&map_template_id_, 0, static_cast<size_t>(
+      reinterpret_cast<char*>(&from_map_template_id_) -
+      reinterpret_cast<char*>(&map_template_id_)) + sizeof(from_map_template_id_));
+  _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
+}
+
+const char* InteractPortalRsp::_InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::internal::ParseContext* ctx) {
+#define CHK_(x) if (PROTOBUF_PREDICT_FALSE(!(x))) goto failure
+  ::PROTOBUF_NAMESPACE_ID::Arena* arena = GetArena(); (void)arena;
+  while (!ctx->Done(&ptr)) {
+    ::PROTOBUF_NAMESPACE_ID::uint32 tag;
+    ptr = ::PROTOBUF_NAMESPACE_ID::internal::ReadTag(ptr, &tag);
+    CHK_(ptr);
+    switch (tag >> 3) {
+      // bool ok = 1;
+      case 1:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 8)) {
+          ok_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint64(&ptr);
+          CHK_(ptr);
+        } else goto handle_unusual;
+        continue;
+      // string message = 2;
+      case 2:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 18)) {
+          auto str = _internal_mutable_message();
+          ptr = ::PROTOBUF_NAMESPACE_ID::internal::InlineGreedyStringParser(str, ptr, ctx);
+          CHK_(::PROTOBUF_NAMESPACE_ID::internal::VerifyUTF8(str, "game.InteractPortalRsp.message"));
+          CHK_(ptr);
+        } else goto handle_unusual;
+        continue;
+      // string error_code = 3;
+      case 3:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 26)) {
+          auto str = _internal_mutable_error_code();
+          ptr = ::PROTOBUF_NAMESPACE_ID::internal::InlineGreedyStringParser(str, ptr, ctx);
+          CHK_(::PROTOBUF_NAMESPACE_ID::internal::VerifyUTF8(str, "game.InteractPortalRsp.error_code"));
+          CHK_(ptr);
+        } else goto handle_unusual;
+        continue;
+      // uint64 map_template_id = 4;
+      case 4:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 32)) {
+          map_template_id_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint64(&ptr);
+          CHK_(ptr);
+        } else goto handle_unusual;
+        continue;
+      // uint64 map_instance_id = 5;
+      case 5:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 40)) {
+          map_instance_id_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint64(&ptr);
+          CHK_(ptr);
+        } else goto handle_unusual;
+        continue;
+      // string gamelogic_instance_id = 6;
+      case 6:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 50)) {
+          auto str = _internal_mutable_gamelogic_instance_id();
+          ptr = ::PROTOBUF_NAMESPACE_ID::internal::InlineGreedyStringParser(str, ptr, ctx);
+          CHK_(::PROTOBUF_NAMESPACE_ID::internal::VerifyUTF8(str, "game.InteractPortalRsp.gamelogic_instance_id"));
+          CHK_(ptr);
+        } else goto handle_unusual;
+        continue;
+      // uint64 owner_epoch = 7;
+      case 7:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 56)) {
+          owner_epoch_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint64(&ptr);
+          CHK_(ptr);
+        } else goto handle_unusual;
+        continue;
+      // uint64 route_version = 8;
+      case 8:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 64)) {
+          route_version_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint64(&ptr);
+          CHK_(ptr);
+        } else goto handle_unusual;
+        continue;
+      // .game.Vec3 spawn_position = 9;
+      case 9:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 74)) {
+          ptr = ctx->ParseMessage(_internal_mutable_spawn_position(), ptr);
+          CHK_(ptr);
+        } else goto handle_unusual;
+        continue;
+      // float spawn_yaw = 10;
+      case 10:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 85)) {
+          spawn_yaw_ = ::PROTOBUF_NAMESPACE_ID::internal::UnalignedLoad<float>(ptr);
+          ptr += sizeof(float);
+        } else goto handle_unusual;
+        continue;
+      // uint64 map_data_version = 11;
+      case 11:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 88)) {
+          map_data_version_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint64(&ptr);
+          CHK_(ptr);
+        } else goto handle_unusual;
+        continue;
+      // string map_data_sha256 = 12;
+      case 12:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 98)) {
+          auto str = _internal_mutable_map_data_sha256();
+          ptr = ::PROTOBUF_NAMESPACE_ID::internal::InlineGreedyStringParser(str, ptr, ctx);
+          CHK_(::PROTOBUF_NAMESPACE_ID::internal::VerifyUTF8(str, "game.InteractPortalRsp.map_data_sha256"));
+          CHK_(ptr);
+        } else goto handle_unusual;
+        continue;
+      // .game.EntitySnapshot self = 13;
+      case 13:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 106)) {
+          ptr = ctx->ParseMessage(_internal_mutable_self(), ptr);
+          CHK_(ptr);
+        } else goto handle_unusual;
+        continue;
+      // repeated .game.EntitySnapshot aoi_snapshot = 14;
+      case 14:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 114)) {
+          ptr -= 1;
+          do {
+            ptr += 1;
+            ptr = ctx->ParseMessage(_internal_add_aoi_snapshot(), ptr);
+            CHK_(ptr);
+            if (!ctx->DataAvailable(ptr)) break;
+          } while (::PROTOBUF_NAMESPACE_ID::internal::ExpectTag<114>(ptr));
+        } else goto handle_unusual;
+        continue;
+      // string kind = 15;
+      case 15:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 122)) {
+          auto str = _internal_mutable_kind();
+          ptr = ::PROTOBUF_NAMESPACE_ID::internal::InlineGreedyStringParser(str, ptr, ctx);
+          CHK_(::PROTOBUF_NAMESPACE_ID::internal::VerifyUTF8(str, "game.InteractPortalRsp.kind"));
+          CHK_(ptr);
+        } else goto handle_unusual;
+        continue;
+      // uint32 line_no = 16;
+      case 16:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 128)) {
+          line_no_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint32(&ptr);
+          CHK_(ptr);
+        } else goto handle_unusual;
+        continue;
+      // uint32 occupancy = 17;
+      case 17:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 136)) {
+          occupancy_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint32(&ptr);
+          CHK_(ptr);
+        } else goto handle_unusual;
+        continue;
+      // uint32 soft_cap = 18;
+      case 18:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 144)) {
+          soft_cap_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint32(&ptr);
+          CHK_(ptr);
+        } else goto handle_unusual;
+        continue;
+      // uint32 hard_cap = 19;
+      case 19:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 152)) {
+          hard_cap_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint32(&ptr);
+          CHK_(ptr);
+        } else goto handle_unusual;
+        continue;
+      // string portal_id = 20;
+      case 20:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 162)) {
+          auto str = _internal_mutable_portal_id();
+          ptr = ::PROTOBUF_NAMESPACE_ID::internal::InlineGreedyStringParser(str, ptr, ctx);
+          CHK_(::PROTOBUF_NAMESPACE_ID::internal::VerifyUTF8(str, "game.InteractPortalRsp.portal_id"));
+          CHK_(ptr);
+        } else goto handle_unusual;
+        continue;
+      // uint64 from_map_template_id = 21;
+      case 21:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 168)) {
+          from_map_template_id_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint64(&ptr);
+          CHK_(ptr);
+        } else goto handle_unusual;
+        continue;
+      default: {
+      handle_unusual:
+        if ((tag & 7) == 4 || tag == 0) {
+          ctx->SetLastTag(tag);
+          goto success;
+        }
+        ptr = UnknownFieldParse(tag,
+            _internal_metadata_.mutable_unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(),
+            ptr, ctx);
+        CHK_(ptr != nullptr);
+        continue;
+      }
+    }  // switch
+  }  // while
+success:
+  return ptr;
+failure:
+  ptr = nullptr;
+  goto success;
+#undef CHK_
+}
+
+::PROTOBUF_NAMESPACE_ID::uint8* InteractPortalRsp::_InternalSerialize(
+    ::PROTOBUF_NAMESPACE_ID::uint8* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const {
+  // @@protoc_insertion_point(serialize_to_array_start:game.InteractPortalRsp)
+  ::PROTOBUF_NAMESPACE_ID::uint32 cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  // bool ok = 1;
+  if (this->ok() != 0) {
+    target = stream->EnsureSpace(target);
+    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::WriteBoolToArray(1, this->_internal_ok(), target);
+  }
+
+  // string message = 2;
+  if (this->message().size() > 0) {
+    ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::VerifyUtf8String(
+      this->_internal_message().data(), static_cast<int>(this->_internal_message().length()),
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::SERIALIZE,
+      "game.InteractPortalRsp.message");
+    target = stream->WriteStringMaybeAliased(
+        2, this->_internal_message(), target);
+  }
+
+  // string error_code = 3;
+  if (this->error_code().size() > 0) {
+    ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::VerifyUtf8String(
+      this->_internal_error_code().data(), static_cast<int>(this->_internal_error_code().length()),
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::SERIALIZE,
+      "game.InteractPortalRsp.error_code");
+    target = stream->WriteStringMaybeAliased(
+        3, this->_internal_error_code(), target);
+  }
+
+  // uint64 map_template_id = 4;
+  if (this->map_template_id() != 0) {
+    target = stream->EnsureSpace(target);
+    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::WriteUInt64ToArray(4, this->_internal_map_template_id(), target);
+  }
+
+  // uint64 map_instance_id = 5;
+  if (this->map_instance_id() != 0) {
+    target = stream->EnsureSpace(target);
+    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::WriteUInt64ToArray(5, this->_internal_map_instance_id(), target);
+  }
+
+  // string gamelogic_instance_id = 6;
+  if (this->gamelogic_instance_id().size() > 0) {
+    ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::VerifyUtf8String(
+      this->_internal_gamelogic_instance_id().data(), static_cast<int>(this->_internal_gamelogic_instance_id().length()),
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::SERIALIZE,
+      "game.InteractPortalRsp.gamelogic_instance_id");
+    target = stream->WriteStringMaybeAliased(
+        6, this->_internal_gamelogic_instance_id(), target);
+  }
+
+  // uint64 owner_epoch = 7;
+  if (this->owner_epoch() != 0) {
+    target = stream->EnsureSpace(target);
+    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::WriteUInt64ToArray(7, this->_internal_owner_epoch(), target);
+  }
+
+  // uint64 route_version = 8;
+  if (this->route_version() != 0) {
+    target = stream->EnsureSpace(target);
+    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::WriteUInt64ToArray(8, this->_internal_route_version(), target);
+  }
+
+  // .game.Vec3 spawn_position = 9;
+  if (this->has_spawn_position()) {
+    target = stream->EnsureSpace(target);
+    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
+      InternalWriteMessage(
+        9, _Internal::spawn_position(this), target, stream);
+  }
+
+  // float spawn_yaw = 10;
+  if (!(this->spawn_yaw() <= 0 && this->spawn_yaw() >= 0)) {
+    target = stream->EnsureSpace(target);
+    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::WriteFloatToArray(10, this->_internal_spawn_yaw(), target);
+  }
+
+  // uint64 map_data_version = 11;
+  if (this->map_data_version() != 0) {
+    target = stream->EnsureSpace(target);
+    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::WriteUInt64ToArray(11, this->_internal_map_data_version(), target);
+  }
+
+  // string map_data_sha256 = 12;
+  if (this->map_data_sha256().size() > 0) {
+    ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::VerifyUtf8String(
+      this->_internal_map_data_sha256().data(), static_cast<int>(this->_internal_map_data_sha256().length()),
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::SERIALIZE,
+      "game.InteractPortalRsp.map_data_sha256");
+    target = stream->WriteStringMaybeAliased(
+        12, this->_internal_map_data_sha256(), target);
+  }
+
+  // .game.EntitySnapshot self = 13;
+  if (this->has_self()) {
+    target = stream->EnsureSpace(target);
+    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
+      InternalWriteMessage(
+        13, _Internal::self(this), target, stream);
+  }
+
+  // repeated .game.EntitySnapshot aoi_snapshot = 14;
+  for (unsigned int i = 0,
+      n = static_cast<unsigned int>(this->_internal_aoi_snapshot_size()); i < n; i++) {
+    target = stream->EnsureSpace(target);
+    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
+      InternalWriteMessage(14, this->_internal_aoi_snapshot(i), target, stream);
+  }
+
+  // string kind = 15;
+  if (this->kind().size() > 0) {
+    ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::VerifyUtf8String(
+      this->_internal_kind().data(), static_cast<int>(this->_internal_kind().length()),
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::SERIALIZE,
+      "game.InteractPortalRsp.kind");
+    target = stream->WriteStringMaybeAliased(
+        15, this->_internal_kind(), target);
+  }
+
+  // uint32 line_no = 16;
+  if (this->line_no() != 0) {
+    target = stream->EnsureSpace(target);
+    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::WriteUInt32ToArray(16, this->_internal_line_no(), target);
+  }
+
+  // uint32 occupancy = 17;
+  if (this->occupancy() != 0) {
+    target = stream->EnsureSpace(target);
+    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::WriteUInt32ToArray(17, this->_internal_occupancy(), target);
+  }
+
+  // uint32 soft_cap = 18;
+  if (this->soft_cap() != 0) {
+    target = stream->EnsureSpace(target);
+    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::WriteUInt32ToArray(18, this->_internal_soft_cap(), target);
+  }
+
+  // uint32 hard_cap = 19;
+  if (this->hard_cap() != 0) {
+    target = stream->EnsureSpace(target);
+    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::WriteUInt32ToArray(19, this->_internal_hard_cap(), target);
+  }
+
+  // string portal_id = 20;
+  if (this->portal_id().size() > 0) {
+    ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::VerifyUtf8String(
+      this->_internal_portal_id().data(), static_cast<int>(this->_internal_portal_id().length()),
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::SERIALIZE,
+      "game.InteractPortalRsp.portal_id");
+    target = stream->WriteStringMaybeAliased(
+        20, this->_internal_portal_id(), target);
+  }
+
+  // uint64 from_map_template_id = 21;
+  if (this->from_map_template_id() != 0) {
+    target = stream->EnsureSpace(target);
+    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::WriteUInt64ToArray(21, this->_internal_from_map_template_id(), target);
+  }
+
+  if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
+    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormat::InternalSerializeUnknownFieldsToArray(
+        _internal_metadata_.unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(::PROTOBUF_NAMESPACE_ID::UnknownFieldSet::default_instance), target, stream);
+  }
+  // @@protoc_insertion_point(serialize_to_array_end:game.InteractPortalRsp)
+  return target;
+}
+
+size_t InteractPortalRsp::ByteSizeLong() const {
+// @@protoc_insertion_point(message_byte_size_start:game.InteractPortalRsp)
+  size_t total_size = 0;
+
+  ::PROTOBUF_NAMESPACE_ID::uint32 cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void) cached_has_bits;
+
+  // repeated .game.EntitySnapshot aoi_snapshot = 14;
+  total_size += 1UL * this->_internal_aoi_snapshot_size();
+  for (const auto& msg : this->aoi_snapshot_) {
+    total_size +=
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(msg);
+  }
+
+  // string message = 2;
+  if (this->message().size() > 0) {
+    total_size += 1 +
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::StringSize(
+        this->_internal_message());
+  }
+
+  // string error_code = 3;
+  if (this->error_code().size() > 0) {
+    total_size += 1 +
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::StringSize(
+        this->_internal_error_code());
+  }
+
+  // string gamelogic_instance_id = 6;
+  if (this->gamelogic_instance_id().size() > 0) {
+    total_size += 1 +
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::StringSize(
+        this->_internal_gamelogic_instance_id());
+  }
+
+  // string map_data_sha256 = 12;
+  if (this->map_data_sha256().size() > 0) {
+    total_size += 1 +
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::StringSize(
+        this->_internal_map_data_sha256());
+  }
+
+  // string kind = 15;
+  if (this->kind().size() > 0) {
+    total_size += 1 +
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::StringSize(
+        this->_internal_kind());
+  }
+
+  // string portal_id = 20;
+  if (this->portal_id().size() > 0) {
+    total_size += 2 +
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::StringSize(
+        this->_internal_portal_id());
+  }
+
+  // .game.Vec3 spawn_position = 9;
+  if (this->has_spawn_position()) {
+    total_size += 1 +
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(
+        *spawn_position_);
+  }
+
+  // .game.EntitySnapshot self = 13;
+  if (this->has_self()) {
+    total_size += 1 +
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(
+        *self_);
+  }
+
+  // uint64 map_template_id = 4;
+  if (this->map_template_id() != 0) {
+    total_size += 1 +
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::UInt64Size(
+        this->_internal_map_template_id());
+  }
+
+  // uint64 map_instance_id = 5;
+  if (this->map_instance_id() != 0) {
+    total_size += 1 +
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::UInt64Size(
+        this->_internal_map_instance_id());
+  }
+
+  // bool ok = 1;
+  if (this->ok() != 0) {
+    total_size += 1 + 1;
+  }
+
+  // float spawn_yaw = 10;
+  if (!(this->spawn_yaw() <= 0 && this->spawn_yaw() >= 0)) {
+    total_size += 1 + 4;
+  }
+
+  // uint64 owner_epoch = 7;
+  if (this->owner_epoch() != 0) {
+    total_size += 1 +
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::UInt64Size(
+        this->_internal_owner_epoch());
+  }
+
+  // uint64 route_version = 8;
+  if (this->route_version() != 0) {
+    total_size += 1 +
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::UInt64Size(
+        this->_internal_route_version());
+  }
+
+  // uint64 map_data_version = 11;
+  if (this->map_data_version() != 0) {
+    total_size += 1 +
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::UInt64Size(
+        this->_internal_map_data_version());
+  }
+
+  // uint32 line_no = 16;
+  if (this->line_no() != 0) {
+    total_size += 2 +
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::UInt32Size(
+        this->_internal_line_no());
+  }
+
+  // uint32 occupancy = 17;
+  if (this->occupancy() != 0) {
+    total_size += 2 +
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::UInt32Size(
+        this->_internal_occupancy());
+  }
+
+  // uint32 soft_cap = 18;
+  if (this->soft_cap() != 0) {
+    total_size += 2 +
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::UInt32Size(
+        this->_internal_soft_cap());
+  }
+
+  // uint32 hard_cap = 19;
+  if (this->hard_cap() != 0) {
+    total_size += 2 +
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::UInt32Size(
+        this->_internal_hard_cap());
+  }
+
+  // uint64 from_map_template_id = 21;
+  if (this->from_map_template_id() != 0) {
+    total_size += 2 +
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::UInt64Size(
+        this->_internal_from_map_template_id());
+  }
+
+  if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
+    return ::PROTOBUF_NAMESPACE_ID::internal::ComputeUnknownFieldsSize(
+        _internal_metadata_, total_size, &_cached_size_);
+  }
+  int cached_size = ::PROTOBUF_NAMESPACE_ID::internal::ToCachedSize(total_size);
+  SetCachedSize(cached_size);
+  return total_size;
+}
+
+void InteractPortalRsp::MergeFrom(const ::PROTOBUF_NAMESPACE_ID::Message& from) {
+// @@protoc_insertion_point(generalized_merge_from_start:game.InteractPortalRsp)
+  GOOGLE_DCHECK_NE(&from, this);
+  const InteractPortalRsp* source =
+      ::PROTOBUF_NAMESPACE_ID::DynamicCastToGenerated<InteractPortalRsp>(
+          &from);
+  if (source == nullptr) {
+  // @@protoc_insertion_point(generalized_merge_from_cast_fail:game.InteractPortalRsp)
+    ::PROTOBUF_NAMESPACE_ID::internal::ReflectionOps::Merge(from, this);
+  } else {
+  // @@protoc_insertion_point(generalized_merge_from_cast_success:game.InteractPortalRsp)
+    MergeFrom(*source);
+  }
+}
+
+void InteractPortalRsp::MergeFrom(const InteractPortalRsp& from) {
+// @@protoc_insertion_point(class_specific_merge_from_start:game.InteractPortalRsp)
+  GOOGLE_DCHECK_NE(&from, this);
+  _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
+  ::PROTOBUF_NAMESPACE_ID::uint32 cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  aoi_snapshot_.MergeFrom(from.aoi_snapshot_);
+  if (from.message().size() > 0) {
+    _internal_set_message(from._internal_message());
+  }
+  if (from.error_code().size() > 0) {
+    _internal_set_error_code(from._internal_error_code());
+  }
+  if (from.gamelogic_instance_id().size() > 0) {
+    _internal_set_gamelogic_instance_id(from._internal_gamelogic_instance_id());
+  }
+  if (from.map_data_sha256().size() > 0) {
+    _internal_set_map_data_sha256(from._internal_map_data_sha256());
+  }
+  if (from.kind().size() > 0) {
+    _internal_set_kind(from._internal_kind());
+  }
+  if (from.portal_id().size() > 0) {
+    _internal_set_portal_id(from._internal_portal_id());
+  }
+  if (from.has_spawn_position()) {
+    _internal_mutable_spawn_position()->::game::Vec3::MergeFrom(from._internal_spawn_position());
+  }
+  if (from.has_self()) {
+    _internal_mutable_self()->::game::EntitySnapshot::MergeFrom(from._internal_self());
+  }
+  if (from.map_template_id() != 0) {
+    _internal_set_map_template_id(from._internal_map_template_id());
+  }
+  if (from.map_instance_id() != 0) {
+    _internal_set_map_instance_id(from._internal_map_instance_id());
+  }
+  if (from.ok() != 0) {
+    _internal_set_ok(from._internal_ok());
+  }
+  if (!(from.spawn_yaw() <= 0 && from.spawn_yaw() >= 0)) {
+    _internal_set_spawn_yaw(from._internal_spawn_yaw());
+  }
+  if (from.owner_epoch() != 0) {
+    _internal_set_owner_epoch(from._internal_owner_epoch());
+  }
+  if (from.route_version() != 0) {
+    _internal_set_route_version(from._internal_route_version());
+  }
+  if (from.map_data_version() != 0) {
+    _internal_set_map_data_version(from._internal_map_data_version());
+  }
+  if (from.line_no() != 0) {
+    _internal_set_line_no(from._internal_line_no());
+  }
+  if (from.occupancy() != 0) {
+    _internal_set_occupancy(from._internal_occupancy());
+  }
+  if (from.soft_cap() != 0) {
+    _internal_set_soft_cap(from._internal_soft_cap());
+  }
+  if (from.hard_cap() != 0) {
+    _internal_set_hard_cap(from._internal_hard_cap());
+  }
+  if (from.from_map_template_id() != 0) {
+    _internal_set_from_map_template_id(from._internal_from_map_template_id());
+  }
+}
+
+void InteractPortalRsp::CopyFrom(const ::PROTOBUF_NAMESPACE_ID::Message& from) {
+// @@protoc_insertion_point(generalized_copy_from_start:game.InteractPortalRsp)
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+void InteractPortalRsp::CopyFrom(const InteractPortalRsp& from) {
+// @@protoc_insertion_point(class_specific_copy_from_start:game.InteractPortalRsp)
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+bool InteractPortalRsp::IsInitialized() const {
+  return true;
+}
+
+void InteractPortalRsp::InternalSwap(InteractPortalRsp* other) {
+  using std::swap;
+  _internal_metadata_.Swap<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(&other->_internal_metadata_);
+  aoi_snapshot_.InternalSwap(&other->aoi_snapshot_);
+  message_.Swap(&other->message_, &::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
+  error_code_.Swap(&other->error_code_, &::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
+  gamelogic_instance_id_.Swap(&other->gamelogic_instance_id_, &::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
+  map_data_sha256_.Swap(&other->map_data_sha256_, &::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
+  kind_.Swap(&other->kind_, &::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
+  portal_id_.Swap(&other->portal_id_, &::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
+  ::PROTOBUF_NAMESPACE_ID::internal::memswap<
+      PROTOBUF_FIELD_OFFSET(InteractPortalRsp, from_map_template_id_)
+      + sizeof(InteractPortalRsp::from_map_template_id_)
+      - PROTOBUF_FIELD_OFFSET(InteractPortalRsp, spawn_position_)>(
+          reinterpret_cast<char*>(&spawn_position_),
+          reinterpret_cast<char*>(&other->spawn_position_));
+}
+
+::PROTOBUF_NAMESPACE_ID::Metadata InteractPortalRsp::GetMetadata() const {
   return GetMetadataStatic();
 }
 
@@ -36373,6 +38182,8 @@ void GameRequest::InitAsDefaultInstance() {
       ::game::SwitchLineReq::internal_default_instance());
   ::game::_GameRequest_default_instance_.enqueue_map_ = const_cast< ::game::EnqueueMapReq*>(
       ::game::EnqueueMapReq::internal_default_instance());
+  ::game::_GameRequest_default_instance_.interact_portal_ = const_cast< ::game::InteractPortalReq*>(
+      ::game::InteractPortalReq::internal_default_instance());
 }
 class GameRequest::_Internal {
  public:
@@ -36415,6 +38226,7 @@ class GameRequest::_Internal {
   static const ::game::CreateDungeonReq& create_dungeon(const GameRequest* msg);
   static const ::game::SwitchLineReq& switch_line(const GameRequest* msg);
   static const ::game::EnqueueMapReq& enqueue_map(const GameRequest* msg);
+  static const ::game::InteractPortalReq& interact_portal(const GameRequest* msg);
 };
 
 const ::game::ConsumeItemReq&
@@ -36572,6 +38384,10 @@ GameRequest::_Internal::switch_line(const GameRequest* msg) {
 const ::game::EnqueueMapReq&
 GameRequest::_Internal::enqueue_map(const GameRequest* msg) {
   return *msg->body_.enqueue_map_;
+}
+const ::game::InteractPortalReq&
+GameRequest::_Internal::interact_portal(const GameRequest* msg) {
+  return *msg->body_.interact_portal_;
 }
 void GameRequest::set_allocated_consume_item(::game::ConsumeItemReq* consume_item) {
   ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArena();
@@ -37158,6 +38974,21 @@ void GameRequest::set_allocated_enqueue_map(::game::EnqueueMapReq* enqueue_map) 
   }
   // @@protoc_insertion_point(field_set_allocated:game.GameRequest.enqueue_map)
 }
+void GameRequest::set_allocated_interact_portal(::game::InteractPortalReq* interact_portal) {
+  ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArena();
+  clear_body();
+  if (interact_portal) {
+    ::PROTOBUF_NAMESPACE_ID::Arena* submessage_arena =
+      ::PROTOBUF_NAMESPACE_ID::Arena::GetArena(interact_portal);
+    if (message_arena != submessage_arena) {
+      interact_portal = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
+          message_arena, interact_portal, submessage_arena);
+    }
+    set_has_interact_portal();
+    body_.interact_portal_ = interact_portal;
+  }
+  // @@protoc_insertion_point(field_set_allocated:game.GameRequest.interact_portal)
+}
 GameRequest::GameRequest(::PROTOBUF_NAMESPACE_ID::Arena* arena)
   : ::PROTOBUF_NAMESPACE_ID::Message(arena) {
   SharedCtor();
@@ -37329,6 +39160,10 @@ GameRequest::GameRequest(const GameRequest& from)
     }
     case kEnqueueMap: {
       _internal_mutable_enqueue_map()->::game::EnqueueMapReq::MergeFrom(from._internal_enqueue_map());
+      break;
+    }
+    case kInteractPortal: {
+      _internal_mutable_interact_portal()->::game::InteractPortalReq::MergeFrom(from._internal_interact_portal());
       break;
     }
     case BODY_NOT_SET: {
@@ -37608,6 +39443,12 @@ void GameRequest::clear_body() {
     case kEnqueueMap: {
       if (GetArena() == nullptr) {
         delete body_.enqueue_map_;
+      }
+      break;
+    }
+    case kInteractPortal: {
+      if (GetArena() == nullptr) {
+        delete body_.interact_portal_;
       }
       break;
     }
@@ -37925,6 +39766,13 @@ const char* GameRequest::_InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID
       case 79:
         if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 122)) {
           ptr = ctx->ParseMessage(_internal_mutable_enqueue_map(), ptr);
+          CHK_(ptr);
+        } else goto handle_unusual;
+        continue;
+      // .game.InteractPortalReq interact_portal = 80;
+      case 80:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 130)) {
+          ptr = ctx->ParseMessage(_internal_mutable_interact_portal(), ptr);
           CHK_(ptr);
         } else goto handle_unusual;
         continue;
@@ -38284,6 +40132,14 @@ failure:
         79, _Internal::enqueue_map(this), target, stream);
   }
 
+  // .game.InteractPortalReq interact_portal = 80;
+  if (_internal_has_interact_portal()) {
+    target = stream->EnsureSpace(target);
+    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
+      InternalWriteMessage(
+        80, _Internal::interact_portal(this), target, stream);
+  }
+
   if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
     target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormat::InternalSerializeUnknownFieldsToArray(
         _internal_metadata_.unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(::PROTOBUF_NAMESPACE_ID::UnknownFieldSet::default_instance), target, stream);
@@ -38588,6 +40444,13 @@ size_t GameRequest::ByteSizeLong() const {
           *body_.enqueue_map_);
       break;
     }
+    // .game.InteractPortalReq interact_portal = 80;
+    case kInteractPortal: {
+      total_size += 2 +
+        ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(
+          *body_.interact_portal_);
+      break;
+    }
     case BODY_NOT_SET: {
       break;
     }
@@ -38786,6 +40649,10 @@ void GameRequest::MergeFrom(const GameRequest& from) {
       _internal_mutable_enqueue_map()->::game::EnqueueMapReq::MergeFrom(from._internal_enqueue_map());
       break;
     }
+    case kInteractPortal: {
+      _internal_mutable_interact_portal()->::game::InteractPortalReq::MergeFrom(from._internal_interact_portal());
+      break;
+    }
     case BODY_NOT_SET: {
       break;
     }
@@ -38915,6 +40782,8 @@ void GameResponse::InitAsDefaultInstance() {
       ::game::SwitchLineRsp::internal_default_instance());
   ::game::_GameResponse_default_instance_.enqueue_map_ = const_cast< ::game::EnqueueMapRsp*>(
       ::game::EnqueueMapRsp::internal_default_instance());
+  ::game::_GameResponse_default_instance_.interact_portal_ = const_cast< ::game::InteractPortalRsp*>(
+      ::game::InteractPortalRsp::internal_default_instance());
 }
 class GameResponse::_Internal {
  public:
@@ -38962,6 +40831,7 @@ class GameResponse::_Internal {
   static const ::game::CreateDungeonRsp& create_dungeon(const GameResponse* msg);
   static const ::game::SwitchLineRsp& switch_line(const GameResponse* msg);
   static const ::game::EnqueueMapRsp& enqueue_map(const GameResponse* msg);
+  static const ::game::InteractPortalRsp& interact_portal(const GameResponse* msg);
 };
 
 const ::game::ConsumeItemRsp&
@@ -39139,6 +41009,10 @@ GameResponse::_Internal::switch_line(const GameResponse* msg) {
 const ::game::EnqueueMapRsp&
 GameResponse::_Internal::enqueue_map(const GameResponse* msg) {
   return *msg->body_.enqueue_map_;
+}
+const ::game::InteractPortalRsp&
+GameResponse::_Internal::interact_portal(const GameResponse* msg) {
+  return *msg->body_.interact_portal_;
 }
 void GameResponse::set_allocated_consume_item(::game::ConsumeItemRsp* consume_item) {
   ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArena();
@@ -39800,6 +41674,21 @@ void GameResponse::set_allocated_enqueue_map(::game::EnqueueMapRsp* enqueue_map)
   }
   // @@protoc_insertion_point(field_set_allocated:game.GameResponse.enqueue_map)
 }
+void GameResponse::set_allocated_interact_portal(::game::InteractPortalRsp* interact_portal) {
+  ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArena();
+  clear_body();
+  if (interact_portal) {
+    ::PROTOBUF_NAMESPACE_ID::Arena* submessage_arena =
+      ::PROTOBUF_NAMESPACE_ID::Arena::GetArena(interact_portal);
+    if (message_arena != submessage_arena) {
+      interact_portal = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
+          message_arena, interact_portal, submessage_arena);
+    }
+    set_has_interact_portal();
+    body_.interact_portal_ = interact_portal;
+  }
+  // @@protoc_insertion_point(field_set_allocated:game.GameResponse.interact_portal)
+}
 GameResponse::GameResponse(::PROTOBUF_NAMESPACE_ID::Arena* arena)
   : ::PROTOBUF_NAMESPACE_ID::Message(arena) {
   SharedCtor();
@@ -40003,6 +41892,10 @@ GameResponse::GameResponse(const GameResponse& from)
     }
     case kEnqueueMap: {
       _internal_mutable_enqueue_map()->::game::EnqueueMapRsp::MergeFrom(from._internal_enqueue_map());
+      break;
+    }
+    case kInteractPortal: {
+      _internal_mutable_interact_portal()->::game::InteractPortalRsp::MergeFrom(from._internal_interact_portal());
       break;
     }
     case BODY_NOT_SET: {
@@ -40318,6 +42211,12 @@ void GameResponse::clear_body() {
     case kEnqueueMap: {
       if (GetArena() == nullptr) {
         delete body_.enqueue_map_;
+      }
+      break;
+    }
+    case kInteractPortal: {
+      if (GetArena() == nullptr) {
+        delete body_.interact_portal_;
       }
       break;
     }
@@ -40713,6 +42612,13 @@ const char* GameResponse::_InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_I
       case 80:
         if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 130)) {
           ptr = ctx->ParseMessage(_internal_mutable_enqueue_map(), ptr);
+          CHK_(ptr);
+        } else goto handle_unusual;
+        continue;
+      // .game.InteractPortalRsp interact_portal = 81;
+      case 81:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 138)) {
+          ptr = ctx->ParseMessage(_internal_mutable_interact_portal(), ptr);
           CHK_(ptr);
         } else goto handle_unusual;
         continue;
@@ -41150,6 +43056,14 @@ failure:
         80, _Internal::enqueue_map(this), target, stream);
   }
 
+  // .game.InteractPortalRsp interact_portal = 81;
+  if (_internal_has_interact_portal()) {
+    target = stream->EnsureSpace(target);
+    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
+      InternalWriteMessage(
+        81, _Internal::interact_portal(this), target, stream);
+  }
+
   if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
     target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormat::InternalSerializeUnknownFieldsToArray(
         _internal_metadata_.unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(::PROTOBUF_NAMESPACE_ID::UnknownFieldSet::default_instance), target, stream);
@@ -41520,6 +43434,13 @@ size_t GameResponse::ByteSizeLong() const {
           *body_.enqueue_map_);
       break;
     }
+    // .game.InteractPortalRsp interact_portal = 81;
+    case kInteractPortal: {
+      total_size += 2 +
+        ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(
+          *body_.interact_portal_);
+      break;
+    }
     case BODY_NOT_SET: {
       break;
     }
@@ -41751,6 +43672,10 @@ void GameResponse::MergeFrom(const GameResponse& from) {
     }
     case kEnqueueMap: {
       _internal_mutable_enqueue_map()->::game::EnqueueMapRsp::MergeFrom(from._internal_enqueue_map());
+      break;
+    }
+    case kInteractPortal: {
+      _internal_mutable_interact_portal()->::game::InteractPortalRsp::MergeFrom(from._internal_interact_portal());
       break;
     }
     case BODY_NOT_SET: {
@@ -42071,8 +43996,17 @@ template<> PROTOBUF_NOINLINE ::game::MailboxChangedNotify* Arena::CreateMaybeMes
 template<> PROTOBUF_NOINLINE ::game::ClientHelloReq* Arena::CreateMaybeMessage< ::game::ClientHelloReq >(Arena* arena) {
   return Arena::CreateMessageInternal< ::game::ClientHelloReq >(arena);
 }
+template<> PROTOBUF_NOINLINE ::game::PortalDef* Arena::CreateMaybeMessage< ::game::PortalDef >(Arena* arena) {
+  return Arena::CreateMessageInternal< ::game::PortalDef >(arena);
+}
 template<> PROTOBUF_NOINLINE ::game::MapManifestEntry* Arena::CreateMaybeMessage< ::game::MapManifestEntry >(Arena* arena) {
   return Arena::CreateMessageInternal< ::game::MapManifestEntry >(arena);
+}
+template<> PROTOBUF_NOINLINE ::game::InteractPortalReq* Arena::CreateMaybeMessage< ::game::InteractPortalReq >(Arena* arena) {
+  return Arena::CreateMessageInternal< ::game::InteractPortalReq >(arena);
+}
+template<> PROTOBUF_NOINLINE ::game::InteractPortalRsp* Arena::CreateMaybeMessage< ::game::InteractPortalRsp >(Arena* arena) {
+  return Arena::CreateMessageInternal< ::game::InteractPortalRsp >(arena);
 }
 template<> PROTOBUF_NOINLINE ::game::ServerHelloRsp* Arena::CreateMaybeMessage< ::game::ServerHelloRsp >(Arena* arena) {
   return Arena::CreateMessageInternal< ::game::ServerHelloRsp >(arena);

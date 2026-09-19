@@ -73,6 +73,7 @@ int main() {
     CHECK_ONE(mutable_respawn, respawn);
     CHECK_ONE(mutable_get_player_brief, get_player_brief);
     CHECK_ONE(mutable_query_online_state, query_online_state);
+    CHECK_ONE(mutable_interact_portal, interact_portal);
     {
         game::GameRequest req;
         req.mutable_player_mail_send()->set_sender_player_id(1);

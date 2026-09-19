@@ -7,6 +7,7 @@
 #include "MapInstanceRegistry.h"
 #include "MapPlacement.h"
 #include "MapRuntime.h"
+#include "PublicError.h"
 #include "SceneKind.h"
 
 #ifdef WEBSERVER_ENABLE_REDIS
@@ -1544,6 +1545,11 @@ bool GameLogic::HandleEnterMap(const game::EnterMapReq &req, game::GameResponse 
         rsp->set_message(body->message());
         return false;
     }
+    {
+        const uint64_t old_mid = MapRuntime::Instance().PlayerMap(req.player_id());
+        if (old_mid != 0 && old_mid != place.map_instance_id)
+            MapInstanceRegistry::Instance().RemovePlayer(old_mid, req.player_id());
+    }
     MapInstanceRegistry::Instance().AddPlayer(place.map_instance_id, req.player_id());
 
     auto rollback_enter = [&]() {
@@ -1822,6 +1828,48 @@ bool GameLogic::HandleEnterMap(const game::EnterMapReq &req, game::GameResponse 
         }
     }
 #endif
+    return true;
+}
+
+bool GameLogic::HandleInteractPortal(const game::InteractPortalReq &req, game::GameResponse *rsp) {
+    auto *body = rsp->mutable_interact_portal();
+    body->set_ok(false);
+    body->set_portal_id(req.portal_id());
+    MapEntity self;
+    uint64_t mid = 0;
+    if (!MapRuntime::Instance().SnapshotView(req.player_id(), &self, nullptr, &mid) || mid == 0) {
+        body->set_message("not on map");
+        body->set_error_code(gameproto::kErrNotOnMap);
+        rsp->set_ok(false);
+        rsp->set_error_code(gameproto::kErrNotOnMap);
+        rsp->set_message(body->message());
+        return false;
+    }
+    const uint64_t from = MapInstanceRegistry::Instance().TemplateId(mid);
+    MapPortal portal;
+    if (from == 0 || !MapCatalog::Instance().GetPortal(from, req.portal_id(), &portal)) {
+        body->set_message("unknown portal");
+        body->set_error_code(gameproto::kErrPortalUnknown);
+        rsp->set_ok(false);
+        rsp->set_error_code(gameproto::kErrPortalUnknown);
+        rsp->set_message(body->message());
+        return false;
+    }
+    if (!PlayerNearPortal(portal, self.x, self.z)) {
+        body->set_message("too far from portal");
+        body->set_error_code(gameproto::kErrPortalTooFar);
+        rsp->set_ok(false);
+        rsp->set_error_code(gameproto::kErrPortalTooFar);
+        rsp->set_message(body->message());
+        return false;
+    }
+    body->set_ok(true);
+    body->set_message("ok");
+    body->set_portal_id(portal.portal_id);
+    body->set_from_map_template_id(from);
+    body->set_map_template_id(portal.to_map_template_id);
+    rsp->set_ok(true);
+    rsp->set_message("ok");
     return true;
 }
 
@@ -2490,6 +2538,10 @@ bool GameLogic::Handle(const game::GameRequest &req, game::GameResponse *rsp) {
             if (!RequireSessionToken(req, req.map_ping().player_id(), rsp))
                 return false;
             return HandleMapPing(req.map_ping(), rsp);
+        case game::GameRequest::kInteractPortal:
+            if (!RequireSessionToken(req, req.interact_portal().player_id(), rsp))
+                return false;
+            return HandleInteractPortal(req.interact_portal(), rsp);
         case game::GameRequest::kChatSend:
             if (!RequireSessionToken(req, req.chat_send().player_id(), rsp))
                 return false;

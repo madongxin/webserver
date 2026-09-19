@@ -1,5 +1,5 @@
 
-Ýµ
+ÀÁ
 
 game.protogame"Æ
 LoginReq
@@ -687,11 +687,57 @@ error_code (	R	errorCode
 client_version (	RclientVersion
 platform (	Rplatform#
 build_channel (	RbuildChannel"
-capabilities (	Rcapabilities"u
+capabilities (	Rcapabilities"ç
+	PortalDef
+	portal_id (	RportalId/
+from_map_template_id (RfromMapTemplateId+
+to_map_template_id (RtoMapTemplateId&
+position (2
+.game.Vec3Rposition
+yaw (Ryaw%
+trigger_radius (RtriggerRadius"ˆ
 MapManifestEntry&
 map_template_id (RmapTemplateId!
 data_version (RdataVersion
-sha256 (	Rsha256"Í
+sha256 (	Rsha256
+
+scene_name (	R	sceneName
+kind (	Rkind3
+visual_map_template_id (RvisualMapTemplateId)
+portals (2.game.PortalDefRportals"Ý
+InteractPortalReq
+	player_id (RplayerId
+realm_id (RrealmId
+	portal_id (	RportalId!
+operation_id (	RoperationId(
+map_data_version (RmapDataVersion&
+map_data_sha256 (	RmapDataSha256"ú
+InteractPortalRsp
+ok (Rok
+message (	Rmessage
+
+error_code (	R	errorCode&
+map_template_id (RmapTemplateId&
+map_instance_id (RmapInstanceId2
+gamelogic_instance_id (	RgamelogicInstanceId
+owner_epoch (R
+ownerEpoch#
+route_version (RrouteVersion1
+spawn_position	 (2
+.game.Vec3RspawnPosition
+	spawn_yaw
+ (RspawnYaw(
+map_data_version (RmapDataVersion&
+map_data_sha256 (	RmapDataSha256(
+self (2.game.EntitySnapshotRself7
+aoi_snapshot (2.game.EntitySnapshotRaoiSnapshot
+kind (	Rkind
+line_no (RlineNo
+	occupancy (R	occupancy
+soft_cap (RsoftCap
+hard_cap (RhardCap
+	portal_id (	RportalId/
+from_map_template_id (RfromMapTemplateId"Í
 ServerHelloRsp
 ok (Rok
 
@@ -725,7 +771,7 @@ error_code (	R	errorCode$
 server_time_ms (RserverTimeMs
 echo_ms (RechoMs$
 server_recv_ms (RserverRecvMs$
-jitter_hint_ms (RjitterHintMs"ö
+jitter_hint_ms (RjitterHintMs"º
 GameRequest
 seq (Rseq#
 session_token (	RsessionToken9
@@ -773,8 +819,9 @@ friendList-
 switch_lineN (2.game.SwitchLineReqH R
 switchLine6
 enqueue_mapO (2.game.EnqueueMapReqH R
-enqueueMapB
-body"®
+enqueueMapB
+interact_portalP (2.game.InteractPortalReqH RinteractPortalB
+body"ò
 GameResponse
 seq (Rseq
 ok (Rok
@@ -835,5 +882,6 @@ chatNotifyC
 switch_lineO (2.game.SwitchLineRspH R
 switchLine6
 enqueue_mapP (2.game.EnqueueMapRspH R
-enqueueMapB
+enqueueMapB
+interact_portalQ (2.game.InteractPortalRspH RinteractPortalB
 bodyBªGameMesh.Protocolbproto3

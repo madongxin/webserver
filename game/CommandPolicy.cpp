@@ -64,6 +64,7 @@ bool IsAuthenticatedClientAllowlisted(game::GameRequest::BodyCase body) {
     case game::GameRequest::kCreateDungeon:
     case game::GameRequest::kSwitchLine:
     case game::GameRequest::kEnqueueMap:
+    case game::GameRequest::kInteractPortal:
         return true;
     default:
         return false;

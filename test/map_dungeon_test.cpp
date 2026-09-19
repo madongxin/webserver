@@ -126,6 +126,19 @@ int main() {
         return Fail("member enter");
     if (okm.placement.map_instance_id != created.placement.map_instance_id)
         return Fail("member instance");
+    {
+        std::vector<MapDungeonInfo> listed;
+        if (!PlacementStore::Instance().ListDungeons(1, tpl, &listed) || listed.size() != 1)
+            return Fail("list dungeons after enter");
+        if (listed[0].map_instance_id != created.placement.map_instance_id)
+            return Fail("list dungeon id");
+        if (listed[0].occupancy != 1)
+            return Fail("list dungeon occupancy");
+        if (listed[0].members_n < 2)
+            return Fail("list dungeon members");
+        if (listed[0].state != "READY")
+            return Fail("list dungeon state");
+    }
 
     if (!PlacementStore::Instance().ReleaseByPlayer(member))
         return Fail("release member");
@@ -157,6 +170,13 @@ int main() {
         return Fail("enter after close should fail");
     if (gone.error_code != "ERR_DUNGEON_NOT_FOUND")
         return Fail("after close code");
+    {
+        std::vector<MapDungeonInfo> after;
+        if (!PlacementStore::Instance().ListDungeons(1, tpl, &after))
+            return Fail("list dungeons after close");
+        if (!after.empty())
+            return Fail("closed dungeon still listed");
+    }
 
     // LINE 空线：两条线时才关空线
     {

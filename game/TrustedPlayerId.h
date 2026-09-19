@@ -15,7 +15,7 @@ enum class TrustedPlayerIdResult {
 };
 
 /** 当前 GameRequest oneof 中含 player_id 的分支数（测试锁定；含 login/reconnect；不含 mail_deliver） */
-inline constexpr int kTrustedPlayerIdBodyCaseCount = 31;
+inline constexpr int kTrustedPlayerIdBodyCaseCount = 32;
 
 inline bool GameRequestBodyHasPlayerId(game::GameRequest::BodyCase c) {
     switch (c) {
@@ -50,6 +50,7 @@ inline bool GameRequestBodyHasPlayerId(game::GameRequest::BodyCase c) {
     case game::GameRequest::kRespawn:
     case game::GameRequest::kGetPlayerBrief:
     case game::GameRequest::kQueryOnlineState:
+    case game::GameRequest::kInteractPortal:
         return true;
     case game::GameRequest::kRegister:
     case game::GameRequest::BODY_NOT_SET:
@@ -122,6 +123,8 @@ inline uint64_t ReportedPlayerId(const game::GameRequest &req) {
         return req.get_player_brief().player_id();
     case game::GameRequest::kQueryOnlineState:
         return req.query_online_state().player_id();
+    case game::GameRequest::kInteractPortal:
+        return req.interact_portal().player_id();
     default:
         return 0;
     }
@@ -221,6 +224,9 @@ inline void SetBodyPlayerId(game::GameRequest *req, uint64_t pid) {
         break;
     case game::GameRequest::kQueryOnlineState:
         req->mutable_query_online_state()->set_player_id(pid);
+        break;
+    case game::GameRequest::kInteractPortal:
+        req->mutable_interact_portal()->set_player_id(pid);
         break;
     default:
         break;

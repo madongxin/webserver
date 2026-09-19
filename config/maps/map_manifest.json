@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "map_manifest_version": 1,
+  "map_manifest_version": 2,
   "gameplay_config_version": 1,
   "maps": [
     {
@@ -9,7 +9,16 @@
       "file": "map_1001.json",
       "sha256_file": "map_1001.json.sha256",
       "data_version": 1,
-      "spawn_scatter_radius": 4
+      "spawn_scatter_radius": 4,
+      "portals": [
+        {
+          "portal_id": "spawn_to_dungeon",
+          "to_map_template_id": 2102,
+          "position": [-22.5, -0.244, -7.25],
+          "yaw": 76.022,
+          "trigger_radius": 3.0
+        }
+      ]
     },
     {
       "map_template_id": 1002,
@@ -52,6 +61,31 @@
       "hard_cap": 5,
       "empty_close_delay": 30,
       "aoi_view_radius_cells": 2
+    },
+    {
+      "map_template_id": 2102,
+      "scene_name": "MainScene",
+      "file": "map_1001.json",
+      "sha256_file": "map_1001.json.sha256",
+      "data_version": 1,
+      "kind": "DUNGEON",
+      "soft_cap": 5,
+      "hard_cap": 5,
+      "empty_close_delay": 30,
+      "aoi_view_radius_cells": 2,
+      "spawn_scatter_radius": 4,
+      "visual_map_template_id": 1001,
+      "allow_template_id_override": true,
+      "portal_gated": true,
+      "portals": [
+        {
+          "portal_id": "dungeon_to_spawn",
+          "to_map_template_id": 1001,
+          "position": [-22.5, -0.244, -7.25],
+          "yaw": 76.022,
+          "trigger_radius": 3.0
+        }
+      ]
     }
   ]
 }

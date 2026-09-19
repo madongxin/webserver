@@ -37,10 +37,16 @@ public:
         uint64_t map_template_id = 0;
         uint64_t data_version = 0;
         std::string sha256;
+        std::string scene_name;
+        uint64_t visual_map_template_id = 0;
         MapScenePolicy policy;
+        std::vector<MapPortal> portals;
     };
     std::vector<ManifestEntry> ManifestEntries() const;
     bool GetScenePolicy(uint64_t map_template_id, MapScenePolicy *out) const;
+    bool GetPortal(uint64_t from_map_template_id, const std::string &portal_id,
+                   MapPortal *out) const;
+    std::vector<MapPortal> PortalsFor(uint64_t map_template_id) const;
 
     void ClearForTest();
     /** 测试注入（不经过目录/哈希文件） */

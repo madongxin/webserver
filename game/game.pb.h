@@ -47,7 +47,7 @@ struct TableStruct_game_2eproto {
     PROTOBUF_SECTION_VARIABLE(protodesc_cold);
   static const ::PROTOBUF_NAMESPACE_ID::internal::AuxillaryParseTableField aux[]
     PROTOBUF_SECTION_VARIABLE(protodesc_cold);
-  static const ::PROTOBUF_NAMESPACE_ID::internal::ParseTable schema[97]
+  static const ::PROTOBUF_NAMESPACE_ID::internal::ParseTable schema[100]
     PROTOBUF_SECTION_VARIABLE(protodesc_cold);
   static const ::PROTOBUF_NAMESPACE_ID::internal::FieldMetadata field_metadata[];
   static const ::PROTOBUF_NAMESPACE_ID::internal::SerializationTable serialization_table[];
@@ -151,6 +151,12 @@ extern HeartbeatReqDefaultTypeInternal _HeartbeatReq_default_instance_;
 class HeartbeatRsp;
 class HeartbeatRspDefaultTypeInternal;
 extern HeartbeatRspDefaultTypeInternal _HeartbeatRsp_default_instance_;
+class InteractPortalReq;
+class InteractPortalReqDefaultTypeInternal;
+extern InteractPortalReqDefaultTypeInternal _InteractPortalReq_default_instance_;
+class InteractPortalRsp;
+class InteractPortalRspDefaultTypeInternal;
+extern InteractPortalRspDefaultTypeInternal _InteractPortalRsp_default_instance_;
 class LeaveMapReq;
 class LeaveMapReqDefaultTypeInternal;
 extern LeaveMapReqDefaultTypeInternal _LeaveMapReq_default_instance_;
@@ -277,6 +283,9 @@ extern PlayerMailSendReqDefaultTypeInternal _PlayerMailSendReq_default_instance_
 class PlayerMailSendRsp;
 class PlayerMailSendRspDefaultTypeInternal;
 extern PlayerMailSendRspDefaultTypeInternal _PlayerMailSendRsp_default_instance_;
+class PortalDef;
+class PortalDefDefaultTypeInternal;
+extern PortalDefDefaultTypeInternal _PortalDef_default_instance_;
 class PushAckReq;
 class PushAckReqDefaultTypeInternal;
 extern PushAckReqDefaultTypeInternal _PushAckReq_default_instance_;
@@ -380,6 +389,8 @@ template<> ::game::GrantItemReq* Arena::CreateMaybeMessage<::game::GrantItemReq>
 template<> ::game::GrantItemRsp* Arena::CreateMaybeMessage<::game::GrantItemRsp>(Arena*);
 template<> ::game::HeartbeatReq* Arena::CreateMaybeMessage<::game::HeartbeatReq>(Arena*);
 template<> ::game::HeartbeatRsp* Arena::CreateMaybeMessage<::game::HeartbeatRsp>(Arena*);
+template<> ::game::InteractPortalReq* Arena::CreateMaybeMessage<::game::InteractPortalReq>(Arena*);
+template<> ::game::InteractPortalRsp* Arena::CreateMaybeMessage<::game::InteractPortalRsp>(Arena*);
 template<> ::game::LeaveMapReq* Arena::CreateMaybeMessage<::game::LeaveMapReq>(Arena*);
 template<> ::game::LeaveMapRsp* Arena::CreateMaybeMessage<::game::LeaveMapRsp>(Arena*);
 template<> ::game::LoginReq* Arena::CreateMaybeMessage<::game::LoginReq>(Arena*);
@@ -422,6 +433,7 @@ template<> ::game::PlayerAttributes* Arena::CreateMaybeMessage<::game::PlayerAtt
 template<> ::game::PlayerBrief* Arena::CreateMaybeMessage<::game::PlayerBrief>(Arena*);
 template<> ::game::PlayerMailSendReq* Arena::CreateMaybeMessage<::game::PlayerMailSendReq>(Arena*);
 template<> ::game::PlayerMailSendRsp* Arena::CreateMaybeMessage<::game::PlayerMailSendRsp>(Arena*);
+template<> ::game::PortalDef* Arena::CreateMaybeMessage<::game::PortalDef>(Arena*);
 template<> ::game::PushAckReq* Arena::CreateMaybeMessage<::game::PushAckReq>(Arena*);
 template<> ::game::PushAckRsp* Arena::CreateMaybeMessage<::game::PushAckRsp>(Arena*);
 template<> ::game::QueryMapLinesReq* Arena::CreateMaybeMessage<::game::QueryMapLinesReq>(Arena*);
@@ -20209,6 +20221,223 @@ class ClientHelloReq PROTOBUF_FINAL :
 };
 // -------------------------------------------------------------------
 
+class PortalDef PROTOBUF_FINAL :
+    public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:game.PortalDef) */ {
+ public:
+  inline PortalDef() : PortalDef(nullptr) {};
+  virtual ~PortalDef();
+
+  PortalDef(const PortalDef& from);
+  PortalDef(PortalDef&& from) noexcept
+    : PortalDef() {
+    *this = ::std::move(from);
+  }
+
+  inline PortalDef& operator=(const PortalDef& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  inline PortalDef& operator=(PortalDef&& from) noexcept {
+    if (GetArena() == from.GetArena()) {
+      if (this != &from) InternalSwap(&from);
+    } else {
+      CopyFrom(from);
+    }
+    return *this;
+  }
+
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* descriptor() {
+    return GetDescriptor();
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* GetDescriptor() {
+    return GetMetadataStatic().descriptor;
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Reflection* GetReflection() {
+    return GetMetadataStatic().reflection;
+  }
+  static const PortalDef& default_instance();
+
+  static void InitAsDefaultInstance();  // FOR INTERNAL USE ONLY
+  static inline const PortalDef* internal_default_instance() {
+    return reinterpret_cast<const PortalDef*>(
+               &_PortalDef_default_instance_);
+  }
+  static constexpr int kIndexInFileMessages =
+    90;
+
+  friend void swap(PortalDef& a, PortalDef& b) {
+    a.Swap(&b);
+  }
+  inline void Swap(PortalDef* other) {
+    if (other == this) return;
+    if (GetArena() == other->GetArena()) {
+      InternalSwap(other);
+    } else {
+      ::PROTOBUF_NAMESPACE_ID::internal::GenericSwap(this, other);
+    }
+  }
+  void UnsafeArenaSwap(PortalDef* other) {
+    if (other == this) return;
+    GOOGLE_DCHECK(GetArena() == other->GetArena());
+    InternalSwap(other);
+  }
+
+  // implements Message ----------------------------------------------
+
+  inline PortalDef* New() const final {
+    return CreateMaybeMessage<PortalDef>(nullptr);
+  }
+
+  PortalDef* New(::PROTOBUF_NAMESPACE_ID::Arena* arena) const final {
+    return CreateMaybeMessage<PortalDef>(arena);
+  }
+  void CopyFrom(const ::PROTOBUF_NAMESPACE_ID::Message& from) final;
+  void MergeFrom(const ::PROTOBUF_NAMESPACE_ID::Message& from) final;
+  void CopyFrom(const PortalDef& from);
+  void MergeFrom(const PortalDef& from);
+  PROTOBUF_ATTRIBUTE_REINITIALIZES void Clear() final;
+  bool IsInitialized() const final;
+
+  size_t ByteSizeLong() const final;
+  const char* _InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::internal::ParseContext* ctx) final;
+  ::PROTOBUF_NAMESPACE_ID::uint8* _InternalSerialize(
+      ::PROTOBUF_NAMESPACE_ID::uint8* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const final;
+  int GetCachedSize() const final { return _cached_size_.Get(); }
+
+  private:
+  inline void SharedCtor();
+  inline void SharedDtor();
+  void SetCachedSize(int size) const final;
+  void InternalSwap(PortalDef* other);
+  friend class ::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata;
+  static ::PROTOBUF_NAMESPACE_ID::StringPiece FullMessageName() {
+    return "game.PortalDef";
+  }
+  protected:
+  explicit PortalDef(::PROTOBUF_NAMESPACE_ID::Arena* arena);
+  private:
+  static void ArenaDtor(void* object);
+  inline void RegisterArenaDtor(::PROTOBUF_NAMESPACE_ID::Arena* arena);
+  public:
+
+  ::PROTOBUF_NAMESPACE_ID::Metadata GetMetadata() const final;
+  private:
+  static ::PROTOBUF_NAMESPACE_ID::Metadata GetMetadataStatic() {
+    ::PROTOBUF_NAMESPACE_ID::internal::AssignDescriptors(&::descriptor_table_game_2eproto);
+    return ::descriptor_table_game_2eproto.file_level_metadata[kIndexInFileMessages];
+  }
+
+  public:
+
+  // nested types ----------------------------------------------------
+
+  // accessors -------------------------------------------------------
+
+  enum : int {
+    kPortalIdFieldNumber = 1,
+    kPositionFieldNumber = 4,
+    kFromMapTemplateIdFieldNumber = 2,
+    kToMapTemplateIdFieldNumber = 3,
+    kYawFieldNumber = 5,
+    kTriggerRadiusFieldNumber = 6,
+  };
+  // string portal_id = 1;
+  void clear_portal_id();
+  const std::string& portal_id() const;
+  void set_portal_id(const std::string& value);
+  void set_portal_id(std::string&& value);
+  void set_portal_id(const char* value);
+  void set_portal_id(const char* value, size_t size);
+  std::string* mutable_portal_id();
+  std::string* release_portal_id();
+  void set_allocated_portal_id(std::string* portal_id);
+  GOOGLE_PROTOBUF_RUNTIME_DEPRECATED("The unsafe_arena_ accessors for"
+  "    string fields are deprecated and will be removed in a"
+  "    future release.")
+  std::string* unsafe_arena_release_portal_id();
+  GOOGLE_PROTOBUF_RUNTIME_DEPRECATED("The unsafe_arena_ accessors for"
+  "    string fields are deprecated and will be removed in a"
+  "    future release.")
+  void unsafe_arena_set_allocated_portal_id(
+      std::string* portal_id);
+  private:
+  const std::string& _internal_portal_id() const;
+  void _internal_set_portal_id(const std::string& value);
+  std::string* _internal_mutable_portal_id();
+  public:
+
+  // .game.Vec3 position = 4;
+  bool has_position() const;
+  private:
+  bool _internal_has_position() const;
+  public:
+  void clear_position();
+  const ::game::Vec3& position() const;
+  ::game::Vec3* release_position();
+  ::game::Vec3* mutable_position();
+  void set_allocated_position(::game::Vec3* position);
+  private:
+  const ::game::Vec3& _internal_position() const;
+  ::game::Vec3* _internal_mutable_position();
+  public:
+  void unsafe_arena_set_allocated_position(
+      ::game::Vec3* position);
+  ::game::Vec3* unsafe_arena_release_position();
+
+  // uint64 from_map_template_id = 2;
+  void clear_from_map_template_id();
+  ::PROTOBUF_NAMESPACE_ID::uint64 from_map_template_id() const;
+  void set_from_map_template_id(::PROTOBUF_NAMESPACE_ID::uint64 value);
+  private:
+  ::PROTOBUF_NAMESPACE_ID::uint64 _internal_from_map_template_id() const;
+  void _internal_set_from_map_template_id(::PROTOBUF_NAMESPACE_ID::uint64 value);
+  public:
+
+  // uint64 to_map_template_id = 3;
+  void clear_to_map_template_id();
+  ::PROTOBUF_NAMESPACE_ID::uint64 to_map_template_id() const;
+  void set_to_map_template_id(::PROTOBUF_NAMESPACE_ID::uint64 value);
+  private:
+  ::PROTOBUF_NAMESPACE_ID::uint64 _internal_to_map_template_id() const;
+  void _internal_set_to_map_template_id(::PROTOBUF_NAMESPACE_ID::uint64 value);
+  public:
+
+  // float yaw = 5;
+  void clear_yaw();
+  float yaw() const;
+  void set_yaw(float value);
+  private:
+  float _internal_yaw() const;
+  void _internal_set_yaw(float value);
+  public:
+
+  // float trigger_radius = 6;
+  void clear_trigger_radius();
+  float trigger_radius() const;
+  void set_trigger_radius(float value);
+  private:
+  float _internal_trigger_radius() const;
+  void _internal_set_trigger_radius(float value);
+  public:
+
+  // @@protoc_insertion_point(class_scope:game.PortalDef)
+ private:
+  class _Internal;
+
+  template <typename T> friend class ::PROTOBUF_NAMESPACE_ID::Arena::InternalHelper;
+  typedef void InternalArenaConstructable_;
+  typedef void DestructorSkippable_;
+  ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr portal_id_;
+  ::game::Vec3* position_;
+  ::PROTOBUF_NAMESPACE_ID::uint64 from_map_template_id_;
+  ::PROTOBUF_NAMESPACE_ID::uint64 to_map_template_id_;
+  float yaw_;
+  float trigger_radius_;
+  mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
+  friend struct ::TableStruct_game_2eproto;
+};
+// -------------------------------------------------------------------
+
 class MapManifestEntry PROTOBUF_FINAL :
     public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:game.MapManifestEntry) */ {
  public:
@@ -20251,7 +20480,7 @@ class MapManifestEntry PROTOBUF_FINAL :
                &_MapManifestEntry_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    90;
+    91;
 
   friend void swap(MapManifestEntry& a, MapManifestEntry& b) {
     a.Swap(&b);
@@ -20322,10 +20551,32 @@ class MapManifestEntry PROTOBUF_FINAL :
   // accessors -------------------------------------------------------
 
   enum : int {
+    kPortalsFieldNumber = 7,
     kSha256FieldNumber = 3,
+    kSceneNameFieldNumber = 4,
+    kKindFieldNumber = 5,
     kMapTemplateIdFieldNumber = 1,
     kDataVersionFieldNumber = 2,
+    kVisualMapTemplateIdFieldNumber = 6,
   };
+  // repeated .game.PortalDef portals = 7;
+  int portals_size() const;
+  private:
+  int _internal_portals_size() const;
+  public:
+  void clear_portals();
+  ::game::PortalDef* mutable_portals(int index);
+  ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::game::PortalDef >*
+      mutable_portals();
+  private:
+  const ::game::PortalDef& _internal_portals(int index) const;
+  ::game::PortalDef* _internal_add_portals();
+  public:
+  const ::game::PortalDef& portals(int index) const;
+  ::game::PortalDef* add_portals();
+  const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::game::PortalDef >&
+      portals() const;
+
   // string sha256 = 3;
   void clear_sha256();
   const std::string& sha256() const;
@@ -20351,6 +20602,56 @@ class MapManifestEntry PROTOBUF_FINAL :
   std::string* _internal_mutable_sha256();
   public:
 
+  // string scene_name = 4;
+  void clear_scene_name();
+  const std::string& scene_name() const;
+  void set_scene_name(const std::string& value);
+  void set_scene_name(std::string&& value);
+  void set_scene_name(const char* value);
+  void set_scene_name(const char* value, size_t size);
+  std::string* mutable_scene_name();
+  std::string* release_scene_name();
+  void set_allocated_scene_name(std::string* scene_name);
+  GOOGLE_PROTOBUF_RUNTIME_DEPRECATED("The unsafe_arena_ accessors for"
+  "    string fields are deprecated and will be removed in a"
+  "    future release.")
+  std::string* unsafe_arena_release_scene_name();
+  GOOGLE_PROTOBUF_RUNTIME_DEPRECATED("The unsafe_arena_ accessors for"
+  "    string fields are deprecated and will be removed in a"
+  "    future release.")
+  void unsafe_arena_set_allocated_scene_name(
+      std::string* scene_name);
+  private:
+  const std::string& _internal_scene_name() const;
+  void _internal_set_scene_name(const std::string& value);
+  std::string* _internal_mutable_scene_name();
+  public:
+
+  // string kind = 5;
+  void clear_kind();
+  const std::string& kind() const;
+  void set_kind(const std::string& value);
+  void set_kind(std::string&& value);
+  void set_kind(const char* value);
+  void set_kind(const char* value, size_t size);
+  std::string* mutable_kind();
+  std::string* release_kind();
+  void set_allocated_kind(std::string* kind);
+  GOOGLE_PROTOBUF_RUNTIME_DEPRECATED("The unsafe_arena_ accessors for"
+  "    string fields are deprecated and will be removed in a"
+  "    future release.")
+  std::string* unsafe_arena_release_kind();
+  GOOGLE_PROTOBUF_RUNTIME_DEPRECATED("The unsafe_arena_ accessors for"
+  "    string fields are deprecated and will be removed in a"
+  "    future release.")
+  void unsafe_arena_set_allocated_kind(
+      std::string* kind);
+  private:
+  const std::string& _internal_kind() const;
+  void _internal_set_kind(const std::string& value);
+  std::string* _internal_mutable_kind();
+  public:
+
   // uint64 map_template_id = 1;
   void clear_map_template_id();
   ::PROTOBUF_NAMESPACE_ID::uint64 map_template_id() const;
@@ -20369,6 +20670,15 @@ class MapManifestEntry PROTOBUF_FINAL :
   void _internal_set_data_version(::PROTOBUF_NAMESPACE_ID::uint64 value);
   public:
 
+  // uint64 visual_map_template_id = 6;
+  void clear_visual_map_template_id();
+  ::PROTOBUF_NAMESPACE_ID::uint64 visual_map_template_id() const;
+  void set_visual_map_template_id(::PROTOBUF_NAMESPACE_ID::uint64 value);
+  private:
+  ::PROTOBUF_NAMESPACE_ID::uint64 _internal_visual_map_template_id() const;
+  void _internal_set_visual_map_template_id(::PROTOBUF_NAMESPACE_ID::uint64 value);
+  public:
+
   // @@protoc_insertion_point(class_scope:game.MapManifestEntry)
  private:
   class _Internal;
@@ -20376,9 +20686,733 @@ class MapManifestEntry PROTOBUF_FINAL :
   template <typename T> friend class ::PROTOBUF_NAMESPACE_ID::Arena::InternalHelper;
   typedef void InternalArenaConstructable_;
   typedef void DestructorSkippable_;
+  ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::game::PortalDef > portals_;
   ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr sha256_;
+  ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr scene_name_;
+  ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr kind_;
   ::PROTOBUF_NAMESPACE_ID::uint64 map_template_id_;
   ::PROTOBUF_NAMESPACE_ID::uint64 data_version_;
+  ::PROTOBUF_NAMESPACE_ID::uint64 visual_map_template_id_;
+  mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
+  friend struct ::TableStruct_game_2eproto;
+};
+// -------------------------------------------------------------------
+
+class InteractPortalReq PROTOBUF_FINAL :
+    public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:game.InteractPortalReq) */ {
+ public:
+  inline InteractPortalReq() : InteractPortalReq(nullptr) {};
+  virtual ~InteractPortalReq();
+
+  InteractPortalReq(const InteractPortalReq& from);
+  InteractPortalReq(InteractPortalReq&& from) noexcept
+    : InteractPortalReq() {
+    *this = ::std::move(from);
+  }
+
+  inline InteractPortalReq& operator=(const InteractPortalReq& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  inline InteractPortalReq& operator=(InteractPortalReq&& from) noexcept {
+    if (GetArena() == from.GetArena()) {
+      if (this != &from) InternalSwap(&from);
+    } else {
+      CopyFrom(from);
+    }
+    return *this;
+  }
+
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* descriptor() {
+    return GetDescriptor();
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* GetDescriptor() {
+    return GetMetadataStatic().descriptor;
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Reflection* GetReflection() {
+    return GetMetadataStatic().reflection;
+  }
+  static const InteractPortalReq& default_instance();
+
+  static void InitAsDefaultInstance();  // FOR INTERNAL USE ONLY
+  static inline const InteractPortalReq* internal_default_instance() {
+    return reinterpret_cast<const InteractPortalReq*>(
+               &_InteractPortalReq_default_instance_);
+  }
+  static constexpr int kIndexInFileMessages =
+    92;
+
+  friend void swap(InteractPortalReq& a, InteractPortalReq& b) {
+    a.Swap(&b);
+  }
+  inline void Swap(InteractPortalReq* other) {
+    if (other == this) return;
+    if (GetArena() == other->GetArena()) {
+      InternalSwap(other);
+    } else {
+      ::PROTOBUF_NAMESPACE_ID::internal::GenericSwap(this, other);
+    }
+  }
+  void UnsafeArenaSwap(InteractPortalReq* other) {
+    if (other == this) return;
+    GOOGLE_DCHECK(GetArena() == other->GetArena());
+    InternalSwap(other);
+  }
+
+  // implements Message ----------------------------------------------
+
+  inline InteractPortalReq* New() const final {
+    return CreateMaybeMessage<InteractPortalReq>(nullptr);
+  }
+
+  InteractPortalReq* New(::PROTOBUF_NAMESPACE_ID::Arena* arena) const final {
+    return CreateMaybeMessage<InteractPortalReq>(arena);
+  }
+  void CopyFrom(const ::PROTOBUF_NAMESPACE_ID::Message& from) final;
+  void MergeFrom(const ::PROTOBUF_NAMESPACE_ID::Message& from) final;
+  void CopyFrom(const InteractPortalReq& from);
+  void MergeFrom(const InteractPortalReq& from);
+  PROTOBUF_ATTRIBUTE_REINITIALIZES void Clear() final;
+  bool IsInitialized() const final;
+
+  size_t ByteSizeLong() const final;
+  const char* _InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::internal::ParseContext* ctx) final;
+  ::PROTOBUF_NAMESPACE_ID::uint8* _InternalSerialize(
+      ::PROTOBUF_NAMESPACE_ID::uint8* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const final;
+  int GetCachedSize() const final { return _cached_size_.Get(); }
+
+  private:
+  inline void SharedCtor();
+  inline void SharedDtor();
+  void SetCachedSize(int size) const final;
+  void InternalSwap(InteractPortalReq* other);
+  friend class ::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata;
+  static ::PROTOBUF_NAMESPACE_ID::StringPiece FullMessageName() {
+    return "game.InteractPortalReq";
+  }
+  protected:
+  explicit InteractPortalReq(::PROTOBUF_NAMESPACE_ID::Arena* arena);
+  private:
+  static void ArenaDtor(void* object);
+  inline void RegisterArenaDtor(::PROTOBUF_NAMESPACE_ID::Arena* arena);
+  public:
+
+  ::PROTOBUF_NAMESPACE_ID::Metadata GetMetadata() const final;
+  private:
+  static ::PROTOBUF_NAMESPACE_ID::Metadata GetMetadataStatic() {
+    ::PROTOBUF_NAMESPACE_ID::internal::AssignDescriptors(&::descriptor_table_game_2eproto);
+    return ::descriptor_table_game_2eproto.file_level_metadata[kIndexInFileMessages];
+  }
+
+  public:
+
+  // nested types ----------------------------------------------------
+
+  // accessors -------------------------------------------------------
+
+  enum : int {
+    kPortalIdFieldNumber = 3,
+    kOperationIdFieldNumber = 4,
+    kMapDataSha256FieldNumber = 6,
+    kPlayerIdFieldNumber = 1,
+    kMapDataVersionFieldNumber = 5,
+    kRealmIdFieldNumber = 2,
+  };
+  // string portal_id = 3;
+  void clear_portal_id();
+  const std::string& portal_id() const;
+  void set_portal_id(const std::string& value);
+  void set_portal_id(std::string&& value);
+  void set_portal_id(const char* value);
+  void set_portal_id(const char* value, size_t size);
+  std::string* mutable_portal_id();
+  std::string* release_portal_id();
+  void set_allocated_portal_id(std::string* portal_id);
+  GOOGLE_PROTOBUF_RUNTIME_DEPRECATED("The unsafe_arena_ accessors for"
+  "    string fields are deprecated and will be removed in a"
+  "    future release.")
+  std::string* unsafe_arena_release_portal_id();
+  GOOGLE_PROTOBUF_RUNTIME_DEPRECATED("The unsafe_arena_ accessors for"
+  "    string fields are deprecated and will be removed in a"
+  "    future release.")
+  void unsafe_arena_set_allocated_portal_id(
+      std::string* portal_id);
+  private:
+  const std::string& _internal_portal_id() const;
+  void _internal_set_portal_id(const std::string& value);
+  std::string* _internal_mutable_portal_id();
+  public:
+
+  // string operation_id = 4;
+  void clear_operation_id();
+  const std::string& operation_id() const;
+  void set_operation_id(const std::string& value);
+  void set_operation_id(std::string&& value);
+  void set_operation_id(const char* value);
+  void set_operation_id(const char* value, size_t size);
+  std::string* mutable_operation_id();
+  std::string* release_operation_id();
+  void set_allocated_operation_id(std::string* operation_id);
+  GOOGLE_PROTOBUF_RUNTIME_DEPRECATED("The unsafe_arena_ accessors for"
+  "    string fields are deprecated and will be removed in a"
+  "    future release.")
+  std::string* unsafe_arena_release_operation_id();
+  GOOGLE_PROTOBUF_RUNTIME_DEPRECATED("The unsafe_arena_ accessors for"
+  "    string fields are deprecated and will be removed in a"
+  "    future release.")
+  void unsafe_arena_set_allocated_operation_id(
+      std::string* operation_id);
+  private:
+  const std::string& _internal_operation_id() const;
+  void _internal_set_operation_id(const std::string& value);
+  std::string* _internal_mutable_operation_id();
+  public:
+
+  // string map_data_sha256 = 6;
+  void clear_map_data_sha256();
+  const std::string& map_data_sha256() const;
+  void set_map_data_sha256(const std::string& value);
+  void set_map_data_sha256(std::string&& value);
+  void set_map_data_sha256(const char* value);
+  void set_map_data_sha256(const char* value, size_t size);
+  std::string* mutable_map_data_sha256();
+  std::string* release_map_data_sha256();
+  void set_allocated_map_data_sha256(std::string* map_data_sha256);
+  GOOGLE_PROTOBUF_RUNTIME_DEPRECATED("The unsafe_arena_ accessors for"
+  "    string fields are deprecated and will be removed in a"
+  "    future release.")
+  std::string* unsafe_arena_release_map_data_sha256();
+  GOOGLE_PROTOBUF_RUNTIME_DEPRECATED("The unsafe_arena_ accessors for"
+  "    string fields are deprecated and will be removed in a"
+  "    future release.")
+  void unsafe_arena_set_allocated_map_data_sha256(
+      std::string* map_data_sha256);
+  private:
+  const std::string& _internal_map_data_sha256() const;
+  void _internal_set_map_data_sha256(const std::string& value);
+  std::string* _internal_mutable_map_data_sha256();
+  public:
+
+  // uint64 player_id = 1;
+  void clear_player_id();
+  ::PROTOBUF_NAMESPACE_ID::uint64 player_id() const;
+  void set_player_id(::PROTOBUF_NAMESPACE_ID::uint64 value);
+  private:
+  ::PROTOBUF_NAMESPACE_ID::uint64 _internal_player_id() const;
+  void _internal_set_player_id(::PROTOBUF_NAMESPACE_ID::uint64 value);
+  public:
+
+  // uint64 map_data_version = 5;
+  void clear_map_data_version();
+  ::PROTOBUF_NAMESPACE_ID::uint64 map_data_version() const;
+  void set_map_data_version(::PROTOBUF_NAMESPACE_ID::uint64 value);
+  private:
+  ::PROTOBUF_NAMESPACE_ID::uint64 _internal_map_data_version() const;
+  void _internal_set_map_data_version(::PROTOBUF_NAMESPACE_ID::uint64 value);
+  public:
+
+  // uint32 realm_id = 2;
+  void clear_realm_id();
+  ::PROTOBUF_NAMESPACE_ID::uint32 realm_id() const;
+  void set_realm_id(::PROTOBUF_NAMESPACE_ID::uint32 value);
+  private:
+  ::PROTOBUF_NAMESPACE_ID::uint32 _internal_realm_id() const;
+  void _internal_set_realm_id(::PROTOBUF_NAMESPACE_ID::uint32 value);
+  public:
+
+  // @@protoc_insertion_point(class_scope:game.InteractPortalReq)
+ private:
+  class _Internal;
+
+  template <typename T> friend class ::PROTOBUF_NAMESPACE_ID::Arena::InternalHelper;
+  typedef void InternalArenaConstructable_;
+  typedef void DestructorSkippable_;
+  ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr portal_id_;
+  ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr operation_id_;
+  ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr map_data_sha256_;
+  ::PROTOBUF_NAMESPACE_ID::uint64 player_id_;
+  ::PROTOBUF_NAMESPACE_ID::uint64 map_data_version_;
+  ::PROTOBUF_NAMESPACE_ID::uint32 realm_id_;
+  mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
+  friend struct ::TableStruct_game_2eproto;
+};
+// -------------------------------------------------------------------
+
+class InteractPortalRsp PROTOBUF_FINAL :
+    public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:game.InteractPortalRsp) */ {
+ public:
+  inline InteractPortalRsp() : InteractPortalRsp(nullptr) {};
+  virtual ~InteractPortalRsp();
+
+  InteractPortalRsp(const InteractPortalRsp& from);
+  InteractPortalRsp(InteractPortalRsp&& from) noexcept
+    : InteractPortalRsp() {
+    *this = ::std::move(from);
+  }
+
+  inline InteractPortalRsp& operator=(const InteractPortalRsp& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  inline InteractPortalRsp& operator=(InteractPortalRsp&& from) noexcept {
+    if (GetArena() == from.GetArena()) {
+      if (this != &from) InternalSwap(&from);
+    } else {
+      CopyFrom(from);
+    }
+    return *this;
+  }
+
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* descriptor() {
+    return GetDescriptor();
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* GetDescriptor() {
+    return GetMetadataStatic().descriptor;
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Reflection* GetReflection() {
+    return GetMetadataStatic().reflection;
+  }
+  static const InteractPortalRsp& default_instance();
+
+  static void InitAsDefaultInstance();  // FOR INTERNAL USE ONLY
+  static inline const InteractPortalRsp* internal_default_instance() {
+    return reinterpret_cast<const InteractPortalRsp*>(
+               &_InteractPortalRsp_default_instance_);
+  }
+  static constexpr int kIndexInFileMessages =
+    93;
+
+  friend void swap(InteractPortalRsp& a, InteractPortalRsp& b) {
+    a.Swap(&b);
+  }
+  inline void Swap(InteractPortalRsp* other) {
+    if (other == this) return;
+    if (GetArena() == other->GetArena()) {
+      InternalSwap(other);
+    } else {
+      ::PROTOBUF_NAMESPACE_ID::internal::GenericSwap(this, other);
+    }
+  }
+  void UnsafeArenaSwap(InteractPortalRsp* other) {
+    if (other == this) return;
+    GOOGLE_DCHECK(GetArena() == other->GetArena());
+    InternalSwap(other);
+  }
+
+  // implements Message ----------------------------------------------
+
+  inline InteractPortalRsp* New() const final {
+    return CreateMaybeMessage<InteractPortalRsp>(nullptr);
+  }
+
+  InteractPortalRsp* New(::PROTOBUF_NAMESPACE_ID::Arena* arena) const final {
+    return CreateMaybeMessage<InteractPortalRsp>(arena);
+  }
+  void CopyFrom(const ::PROTOBUF_NAMESPACE_ID::Message& from) final;
+  void MergeFrom(const ::PROTOBUF_NAMESPACE_ID::Message& from) final;
+  void CopyFrom(const InteractPortalRsp& from);
+  void MergeFrom(const InteractPortalRsp& from);
+  PROTOBUF_ATTRIBUTE_REINITIALIZES void Clear() final;
+  bool IsInitialized() const final;
+
+  size_t ByteSizeLong() const final;
+  const char* _InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::internal::ParseContext* ctx) final;
+  ::PROTOBUF_NAMESPACE_ID::uint8* _InternalSerialize(
+      ::PROTOBUF_NAMESPACE_ID::uint8* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const final;
+  int GetCachedSize() const final { return _cached_size_.Get(); }
+
+  private:
+  inline void SharedCtor();
+  inline void SharedDtor();
+  void SetCachedSize(int size) const final;
+  void InternalSwap(InteractPortalRsp* other);
+  friend class ::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata;
+  static ::PROTOBUF_NAMESPACE_ID::StringPiece FullMessageName() {
+    return "game.InteractPortalRsp";
+  }
+  protected:
+  explicit InteractPortalRsp(::PROTOBUF_NAMESPACE_ID::Arena* arena);
+  private:
+  static void ArenaDtor(void* object);
+  inline void RegisterArenaDtor(::PROTOBUF_NAMESPACE_ID::Arena* arena);
+  public:
+
+  ::PROTOBUF_NAMESPACE_ID::Metadata GetMetadata() const final;
+  private:
+  static ::PROTOBUF_NAMESPACE_ID::Metadata GetMetadataStatic() {
+    ::PROTOBUF_NAMESPACE_ID::internal::AssignDescriptors(&::descriptor_table_game_2eproto);
+    return ::descriptor_table_game_2eproto.file_level_metadata[kIndexInFileMessages];
+  }
+
+  public:
+
+  // nested types ----------------------------------------------------
+
+  // accessors -------------------------------------------------------
+
+  enum : int {
+    kAoiSnapshotFieldNumber = 14,
+    kMessageFieldNumber = 2,
+    kErrorCodeFieldNumber = 3,
+    kGamelogicInstanceIdFieldNumber = 6,
+    kMapDataSha256FieldNumber = 12,
+    kKindFieldNumber = 15,
+    kPortalIdFieldNumber = 20,
+    kSpawnPositionFieldNumber = 9,
+    kSelfFieldNumber = 13,
+    kMapTemplateIdFieldNumber = 4,
+    kMapInstanceIdFieldNumber = 5,
+    kOkFieldNumber = 1,
+    kSpawnYawFieldNumber = 10,
+    kOwnerEpochFieldNumber = 7,
+    kRouteVersionFieldNumber = 8,
+    kMapDataVersionFieldNumber = 11,
+    kLineNoFieldNumber = 16,
+    kOccupancyFieldNumber = 17,
+    kSoftCapFieldNumber = 18,
+    kHardCapFieldNumber = 19,
+    kFromMapTemplateIdFieldNumber = 21,
+  };
+  // repeated .game.EntitySnapshot aoi_snapshot = 14;
+  int aoi_snapshot_size() const;
+  private:
+  int _internal_aoi_snapshot_size() const;
+  public:
+  void clear_aoi_snapshot();
+  ::game::EntitySnapshot* mutable_aoi_snapshot(int index);
+  ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::game::EntitySnapshot >*
+      mutable_aoi_snapshot();
+  private:
+  const ::game::EntitySnapshot& _internal_aoi_snapshot(int index) const;
+  ::game::EntitySnapshot* _internal_add_aoi_snapshot();
+  public:
+  const ::game::EntitySnapshot& aoi_snapshot(int index) const;
+  ::game::EntitySnapshot* add_aoi_snapshot();
+  const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::game::EntitySnapshot >&
+      aoi_snapshot() const;
+
+  // string message = 2;
+  void clear_message();
+  const std::string& message() const;
+  void set_message(const std::string& value);
+  void set_message(std::string&& value);
+  void set_message(const char* value);
+  void set_message(const char* value, size_t size);
+  std::string* mutable_message();
+  std::string* release_message();
+  void set_allocated_message(std::string* message);
+  GOOGLE_PROTOBUF_RUNTIME_DEPRECATED("The unsafe_arena_ accessors for"
+  "    string fields are deprecated and will be removed in a"
+  "    future release.")
+  std::string* unsafe_arena_release_message();
+  GOOGLE_PROTOBUF_RUNTIME_DEPRECATED("The unsafe_arena_ accessors for"
+  "    string fields are deprecated and will be removed in a"
+  "    future release.")
+  void unsafe_arena_set_allocated_message(
+      std::string* message);
+  private:
+  const std::string& _internal_message() const;
+  void _internal_set_message(const std::string& value);
+  std::string* _internal_mutable_message();
+  public:
+
+  // string error_code = 3;
+  void clear_error_code();
+  const std::string& error_code() const;
+  void set_error_code(const std::string& value);
+  void set_error_code(std::string&& value);
+  void set_error_code(const char* value);
+  void set_error_code(const char* value, size_t size);
+  std::string* mutable_error_code();
+  std::string* release_error_code();
+  void set_allocated_error_code(std::string* error_code);
+  GOOGLE_PROTOBUF_RUNTIME_DEPRECATED("The unsafe_arena_ accessors for"
+  "    string fields are deprecated and will be removed in a"
+  "    future release.")
+  std::string* unsafe_arena_release_error_code();
+  GOOGLE_PROTOBUF_RUNTIME_DEPRECATED("The unsafe_arena_ accessors for"
+  "    string fields are deprecated and will be removed in a"
+  "    future release.")
+  void unsafe_arena_set_allocated_error_code(
+      std::string* error_code);
+  private:
+  const std::string& _internal_error_code() const;
+  void _internal_set_error_code(const std::string& value);
+  std::string* _internal_mutable_error_code();
+  public:
+
+  // string gamelogic_instance_id = 6;
+  void clear_gamelogic_instance_id();
+  const std::string& gamelogic_instance_id() const;
+  void set_gamelogic_instance_id(const std::string& value);
+  void set_gamelogic_instance_id(std::string&& value);
+  void set_gamelogic_instance_id(const char* value);
+  void set_gamelogic_instance_id(const char* value, size_t size);
+  std::string* mutable_gamelogic_instance_id();
+  std::string* release_gamelogic_instance_id();
+  void set_allocated_gamelogic_instance_id(std::string* gamelogic_instance_id);
+  GOOGLE_PROTOBUF_RUNTIME_DEPRECATED("The unsafe_arena_ accessors for"
+  "    string fields are deprecated and will be removed in a"
+  "    future release.")
+  std::string* unsafe_arena_release_gamelogic_instance_id();
+  GOOGLE_PROTOBUF_RUNTIME_DEPRECATED("The unsafe_arena_ accessors for"
+  "    string fields are deprecated and will be removed in a"
+  "    future release.")
+  void unsafe_arena_set_allocated_gamelogic_instance_id(
+      std::string* gamelogic_instance_id);
+  private:
+  const std::string& _internal_gamelogic_instance_id() const;
+  void _internal_set_gamelogic_instance_id(const std::string& value);
+  std::string* _internal_mutable_gamelogic_instance_id();
+  public:
+
+  // string map_data_sha256 = 12;
+  void clear_map_data_sha256();
+  const std::string& map_data_sha256() const;
+  void set_map_data_sha256(const std::string& value);
+  void set_map_data_sha256(std::string&& value);
+  void set_map_data_sha256(const char* value);
+  void set_map_data_sha256(const char* value, size_t size);
+  std::string* mutable_map_data_sha256();
+  std::string* release_map_data_sha256();
+  void set_allocated_map_data_sha256(std::string* map_data_sha256);
+  GOOGLE_PROTOBUF_RUNTIME_DEPRECATED("The unsafe_arena_ accessors for"
+  "    string fields are deprecated and will be removed in a"
+  "    future release.")
+  std::string* unsafe_arena_release_map_data_sha256();
+  GOOGLE_PROTOBUF_RUNTIME_DEPRECATED("The unsafe_arena_ accessors for"
+  "    string fields are deprecated and will be removed in a"
+  "    future release.")
+  void unsafe_arena_set_allocated_map_data_sha256(
+      std::string* map_data_sha256);
+  private:
+  const std::string& _internal_map_data_sha256() const;
+  void _internal_set_map_data_sha256(const std::string& value);
+  std::string* _internal_mutable_map_data_sha256();
+  public:
+
+  // string kind = 15;
+  void clear_kind();
+  const std::string& kind() const;
+  void set_kind(const std::string& value);
+  void set_kind(std::string&& value);
+  void set_kind(const char* value);
+  void set_kind(const char* value, size_t size);
+  std::string* mutable_kind();
+  std::string* release_kind();
+  void set_allocated_kind(std::string* kind);
+  GOOGLE_PROTOBUF_RUNTIME_DEPRECATED("The unsafe_arena_ accessors for"
+  "    string fields are deprecated and will be removed in a"
+  "    future release.")
+  std::string* unsafe_arena_release_kind();
+  GOOGLE_PROTOBUF_RUNTIME_DEPRECATED("The unsafe_arena_ accessors for"
+  "    string fields are deprecated and will be removed in a"
+  "    future release.")
+  void unsafe_arena_set_allocated_kind(
+      std::string* kind);
+  private:
+  const std::string& _internal_kind() const;
+  void _internal_set_kind(const std::string& value);
+  std::string* _internal_mutable_kind();
+  public:
+
+  // string portal_id = 20;
+  void clear_portal_id();
+  const std::string& portal_id() const;
+  void set_portal_id(const std::string& value);
+  void set_portal_id(std::string&& value);
+  void set_portal_id(const char* value);
+  void set_portal_id(const char* value, size_t size);
+  std::string* mutable_portal_id();
+  std::string* release_portal_id();
+  void set_allocated_portal_id(std::string* portal_id);
+  GOOGLE_PROTOBUF_RUNTIME_DEPRECATED("The unsafe_arena_ accessors for"
+  "    string fields are deprecated and will be removed in a"
+  "    future release.")
+  std::string* unsafe_arena_release_portal_id();
+  GOOGLE_PROTOBUF_RUNTIME_DEPRECATED("The unsafe_arena_ accessors for"
+  "    string fields are deprecated and will be removed in a"
+  "    future release.")
+  void unsafe_arena_set_allocated_portal_id(
+      std::string* portal_id);
+  private:
+  const std::string& _internal_portal_id() const;
+  void _internal_set_portal_id(const std::string& value);
+  std::string* _internal_mutable_portal_id();
+  public:
+
+  // .game.Vec3 spawn_position = 9;
+  bool has_spawn_position() const;
+  private:
+  bool _internal_has_spawn_position() const;
+  public:
+  void clear_spawn_position();
+  const ::game::Vec3& spawn_position() const;
+  ::game::Vec3* release_spawn_position();
+  ::game::Vec3* mutable_spawn_position();
+  void set_allocated_spawn_position(::game::Vec3* spawn_position);
+  private:
+  const ::game::Vec3& _internal_spawn_position() const;
+  ::game::Vec3* _internal_mutable_spawn_position();
+  public:
+  void unsafe_arena_set_allocated_spawn_position(
+      ::game::Vec3* spawn_position);
+  ::game::Vec3* unsafe_arena_release_spawn_position();
+
+  // .game.EntitySnapshot self = 13;
+  bool has_self() const;
+  private:
+  bool _internal_has_self() const;
+  public:
+  void clear_self();
+  const ::game::EntitySnapshot& self() const;
+  ::game::EntitySnapshot* release_self();
+  ::game::EntitySnapshot* mutable_self();
+  void set_allocated_self(::game::EntitySnapshot* self);
+  private:
+  const ::game::EntitySnapshot& _internal_self() const;
+  ::game::EntitySnapshot* _internal_mutable_self();
+  public:
+  void unsafe_arena_set_allocated_self(
+      ::game::EntitySnapshot* self);
+  ::game::EntitySnapshot* unsafe_arena_release_self();
+
+  // uint64 map_template_id = 4;
+  void clear_map_template_id();
+  ::PROTOBUF_NAMESPACE_ID::uint64 map_template_id() const;
+  void set_map_template_id(::PROTOBUF_NAMESPACE_ID::uint64 value);
+  private:
+  ::PROTOBUF_NAMESPACE_ID::uint64 _internal_map_template_id() const;
+  void _internal_set_map_template_id(::PROTOBUF_NAMESPACE_ID::uint64 value);
+  public:
+
+  // uint64 map_instance_id = 5;
+  void clear_map_instance_id();
+  ::PROTOBUF_NAMESPACE_ID::uint64 map_instance_id() const;
+  void set_map_instance_id(::PROTOBUF_NAMESPACE_ID::uint64 value);
+  private:
+  ::PROTOBUF_NAMESPACE_ID::uint64 _internal_map_instance_id() const;
+  void _internal_set_map_instance_id(::PROTOBUF_NAMESPACE_ID::uint64 value);
+  public:
+
+  // bool ok = 1;
+  void clear_ok();
+  bool ok() const;
+  void set_ok(bool value);
+  private:
+  bool _internal_ok() const;
+  void _internal_set_ok(bool value);
+  public:
+
+  // float spawn_yaw = 10;
+  void clear_spawn_yaw();
+  float spawn_yaw() const;
+  void set_spawn_yaw(float value);
+  private:
+  float _internal_spawn_yaw() const;
+  void _internal_set_spawn_yaw(float value);
+  public:
+
+  // uint64 owner_epoch = 7;
+  void clear_owner_epoch();
+  ::PROTOBUF_NAMESPACE_ID::uint64 owner_epoch() const;
+  void set_owner_epoch(::PROTOBUF_NAMESPACE_ID::uint64 value);
+  private:
+  ::PROTOBUF_NAMESPACE_ID::uint64 _internal_owner_epoch() const;
+  void _internal_set_owner_epoch(::PROTOBUF_NAMESPACE_ID::uint64 value);
+  public:
+
+  // uint64 route_version = 8;
+  void clear_route_version();
+  ::PROTOBUF_NAMESPACE_ID::uint64 route_version() const;
+  void set_route_version(::PROTOBUF_NAMESPACE_ID::uint64 value);
+  private:
+  ::PROTOBUF_NAMESPACE_ID::uint64 _internal_route_version() const;
+  void _internal_set_route_version(::PROTOBUF_NAMESPACE_ID::uint64 value);
+  public:
+
+  // uint64 map_data_version = 11;
+  void clear_map_data_version();
+  ::PROTOBUF_NAMESPACE_ID::uint64 map_data_version() const;
+  void set_map_data_version(::PROTOBUF_NAMESPACE_ID::uint64 value);
+  private:
+  ::PROTOBUF_NAMESPACE_ID::uint64 _internal_map_data_version() const;
+  void _internal_set_map_data_version(::PROTOBUF_NAMESPACE_ID::uint64 value);
+  public:
+
+  // uint32 line_no = 16;
+  void clear_line_no();
+  ::PROTOBUF_NAMESPACE_ID::uint32 line_no() const;
+  void set_line_no(::PROTOBUF_NAMESPACE_ID::uint32 value);
+  private:
+  ::PROTOBUF_NAMESPACE_ID::uint32 _internal_line_no() const;
+  void _internal_set_line_no(::PROTOBUF_NAMESPACE_ID::uint32 value);
+  public:
+
+  // uint32 occupancy = 17;
+  void clear_occupancy();
+  ::PROTOBUF_NAMESPACE_ID::uint32 occupancy() const;
+  void set_occupancy(::PROTOBUF_NAMESPACE_ID::uint32 value);
+  private:
+  ::PROTOBUF_NAMESPACE_ID::uint32 _internal_occupancy() const;
+  void _internal_set_occupancy(::PROTOBUF_NAMESPACE_ID::uint32 value);
+  public:
+
+  // uint32 soft_cap = 18;
+  void clear_soft_cap();
+  ::PROTOBUF_NAMESPACE_ID::uint32 soft_cap() const;
+  void set_soft_cap(::PROTOBUF_NAMESPACE_ID::uint32 value);
+  private:
+  ::PROTOBUF_NAMESPACE_ID::uint32 _internal_soft_cap() const;
+  void _internal_set_soft_cap(::PROTOBUF_NAMESPACE_ID::uint32 value);
+  public:
+
+  // uint32 hard_cap = 19;
+  void clear_hard_cap();
+  ::PROTOBUF_NAMESPACE_ID::uint32 hard_cap() const;
+  void set_hard_cap(::PROTOBUF_NAMESPACE_ID::uint32 value);
+  private:
+  ::PROTOBUF_NAMESPACE_ID::uint32 _internal_hard_cap() const;
+  void _internal_set_hard_cap(::PROTOBUF_NAMESPACE_ID::uint32 value);
+  public:
+
+  // uint64 from_map_template_id = 21;
+  void clear_from_map_template_id();
+  ::PROTOBUF_NAMESPACE_ID::uint64 from_map_template_id() const;
+  void set_from_map_template_id(::PROTOBUF_NAMESPACE_ID::uint64 value);
+  private:
+  ::PROTOBUF_NAMESPACE_ID::uint64 _internal_from_map_template_id() const;
+  void _internal_set_from_map_template_id(::PROTOBUF_NAMESPACE_ID::uint64 value);
+  public:
+
+  // @@protoc_insertion_point(class_scope:game.InteractPortalRsp)
+ private:
+  class _Internal;
+
+  template <typename T> friend class ::PROTOBUF_NAMESPACE_ID::Arena::InternalHelper;
+  typedef void InternalArenaConstructable_;
+  typedef void DestructorSkippable_;
+  ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::game::EntitySnapshot > aoi_snapshot_;
+  ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr message_;
+  ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr error_code_;
+  ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr gamelogic_instance_id_;
+  ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr map_data_sha256_;
+  ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr kind_;
+  ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr portal_id_;
+  ::game::Vec3* spawn_position_;
+  ::game::EntitySnapshot* self_;
+  ::PROTOBUF_NAMESPACE_ID::uint64 map_template_id_;
+  ::PROTOBUF_NAMESPACE_ID::uint64 map_instance_id_;
+  bool ok_;
+  float spawn_yaw_;
+  ::PROTOBUF_NAMESPACE_ID::uint64 owner_epoch_;
+  ::PROTOBUF_NAMESPACE_ID::uint64 route_version_;
+  ::PROTOBUF_NAMESPACE_ID::uint64 map_data_version_;
+  ::PROTOBUF_NAMESPACE_ID::uint32 line_no_;
+  ::PROTOBUF_NAMESPACE_ID::uint32 occupancy_;
+  ::PROTOBUF_NAMESPACE_ID::uint32 soft_cap_;
+  ::PROTOBUF_NAMESPACE_ID::uint32 hard_cap_;
+  ::PROTOBUF_NAMESPACE_ID::uint64 from_map_template_id_;
   mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
   friend struct ::TableStruct_game_2eproto;
 };
@@ -20426,7 +21460,7 @@ class ServerHelloRsp PROTOBUF_FINAL :
                &_ServerHelloRsp_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    91;
+    94;
 
   friend void swap(ServerHelloRsp& a, ServerHelloRsp& b) {
     a.Swap(&b);
@@ -20794,7 +21828,7 @@ class SessionReplacedNotify PROTOBUF_FINAL :
                &_SessionReplacedNotify_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    92;
+    95;
 
   friend void swap(SessionReplacedNotify& a, SessionReplacedNotify& b) {
     a.Swap(&b);
@@ -20985,7 +22019,7 @@ class HeartbeatReq PROTOBUF_FINAL :
                &_HeartbeatReq_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    93;
+    96;
 
   friend void swap(HeartbeatReq& a, HeartbeatReq& b) {
     a.Swap(&b);
@@ -21144,7 +22178,7 @@ class HeartbeatRsp PROTOBUF_FINAL :
                &_HeartbeatRsp_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    94;
+    97;
 
   friend void swap(HeartbeatRsp& a, HeartbeatRsp& b) {
     a.Swap(&b);
@@ -21386,6 +22420,7 @@ class GameRequest PROTOBUF_FINAL :
     kCreateDungeon = 77,
     kSwitchLine = 78,
     kEnqueueMap = 79,
+    kInteractPortal = 80,
     BODY_NOT_SET = 0,
   };
 
@@ -21395,7 +22430,7 @@ class GameRequest PROTOBUF_FINAL :
                &_GameRequest_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    95;
+    98;
 
   friend void swap(GameRequest& a, GameRequest& b) {
     a.Swap(&b);
@@ -21507,6 +22542,7 @@ class GameRequest PROTOBUF_FINAL :
     kCreateDungeonFieldNumber = 77,
     kSwitchLineFieldNumber = 78,
     kEnqueueMapFieldNumber = 79,
+    kInteractPortalFieldNumber = 80,
   };
   // string session_token = 2;
   void clear_session_token();
@@ -22244,6 +23280,24 @@ class GameRequest PROTOBUF_FINAL :
       ::game::EnqueueMapReq* enqueue_map);
   ::game::EnqueueMapReq* unsafe_arena_release_enqueue_map();
 
+  // .game.InteractPortalReq interact_portal = 80;
+  bool has_interact_portal() const;
+  private:
+  bool _internal_has_interact_portal() const;
+  public:
+  void clear_interact_portal();
+  const ::game::InteractPortalReq& interact_portal() const;
+  ::game::InteractPortalReq* release_interact_portal();
+  ::game::InteractPortalReq* mutable_interact_portal();
+  void set_allocated_interact_portal(::game::InteractPortalReq* interact_portal);
+  private:
+  const ::game::InteractPortalReq& _internal_interact_portal() const;
+  ::game::InteractPortalReq* _internal_mutable_interact_portal();
+  public:
+  void unsafe_arena_set_allocated_interact_portal(
+      ::game::InteractPortalReq* interact_portal);
+  ::game::InteractPortalReq* unsafe_arena_release_interact_portal();
+
   void clear_body();
   BodyCase body_case() const;
   // @@protoc_insertion_point(class_scope:game.GameRequest)
@@ -22288,6 +23342,7 @@ class GameRequest PROTOBUF_FINAL :
   void set_has_create_dungeon();
   void set_has_switch_line();
   void set_has_enqueue_map();
+  void set_has_interact_portal();
 
   inline bool has_body() const;
   inline void clear_has_body();
@@ -22338,6 +23393,7 @@ class GameRequest PROTOBUF_FINAL :
     ::game::CreateDungeonReq* create_dungeon_;
     ::game::SwitchLineReq* switch_line_;
     ::game::EnqueueMapReq* enqueue_map_;
+    ::game::InteractPortalReq* interact_portal_;
   } body_;
   mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
   ::PROTOBUF_NAMESPACE_ID::uint32 _oneof_case_[1];
@@ -22427,6 +23483,7 @@ class GameResponse PROTOBUF_FINAL :
     kCreateDungeon = 78,
     kSwitchLine = 79,
     kEnqueueMap = 80,
+    kInteractPortal = 81,
     BODY_NOT_SET = 0,
   };
 
@@ -22436,7 +23493,7 @@ class GameResponse PROTOBUF_FINAL :
                &_GameResponse_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    96;
+    99;
 
   friend void swap(GameResponse& a, GameResponse& b) {
     a.Swap(&b);
@@ -22558,6 +23615,7 @@ class GameResponse PROTOBUF_FINAL :
     kCreateDungeonFieldNumber = 78,
     kSwitchLineFieldNumber = 79,
     kEnqueueMapFieldNumber = 80,
+    kInteractPortalFieldNumber = 81,
   };
   // string message = 3;
   void clear_message();
@@ -23462,6 +24520,24 @@ class GameResponse PROTOBUF_FINAL :
       ::game::EnqueueMapRsp* enqueue_map);
   ::game::EnqueueMapRsp* unsafe_arena_release_enqueue_map();
 
+  // .game.InteractPortalRsp interact_portal = 81;
+  bool has_interact_portal() const;
+  private:
+  bool _internal_has_interact_portal() const;
+  public:
+  void clear_interact_portal();
+  const ::game::InteractPortalRsp& interact_portal() const;
+  ::game::InteractPortalRsp* release_interact_portal();
+  ::game::InteractPortalRsp* mutable_interact_portal();
+  void set_allocated_interact_portal(::game::InteractPortalRsp* interact_portal);
+  private:
+  const ::game::InteractPortalRsp& _internal_interact_portal() const;
+  ::game::InteractPortalRsp* _internal_mutable_interact_portal();
+  public:
+  void unsafe_arena_set_allocated_interact_portal(
+      ::game::InteractPortalRsp* interact_portal);
+  ::game::InteractPortalRsp* unsafe_arena_release_interact_portal();
+
   void clear_body();
   BodyCase body_case() const;
   // @@protoc_insertion_point(class_scope:game.GameResponse)
@@ -23511,6 +24587,7 @@ class GameResponse PROTOBUF_FINAL :
   void set_has_create_dungeon();
   void set_has_switch_line();
   void set_has_enqueue_map();
+  void set_has_interact_portal();
 
   inline bool has_body() const;
   inline void clear_has_body();
@@ -23571,6 +24648,7 @@ class GameResponse PROTOBUF_FINAL :
     ::game::CreateDungeonRsp* create_dungeon_;
     ::game::SwitchLineRsp* switch_line_;
     ::game::EnqueueMapRsp* enqueue_map_;
+    ::game::InteractPortalRsp* interact_portal_;
   } body_;
   mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
   ::PROTOBUF_NAMESPACE_ID::uint32 _oneof_case_[1];
@@ -45340,6 +46418,252 @@ ClientHelloReq::mutable_capabilities() {
 
 // -------------------------------------------------------------------
 
+// PortalDef
+
+// string portal_id = 1;
+inline void PortalDef::clear_portal_id() {
+  portal_id_.ClearToEmpty(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
+}
+inline const std::string& PortalDef::portal_id() const {
+  // @@protoc_insertion_point(field_get:game.PortalDef.portal_id)
+  return _internal_portal_id();
+}
+inline void PortalDef::set_portal_id(const std::string& value) {
+  _internal_set_portal_id(value);
+  // @@protoc_insertion_point(field_set:game.PortalDef.portal_id)
+}
+inline std::string* PortalDef::mutable_portal_id() {
+  // @@protoc_insertion_point(field_mutable:game.PortalDef.portal_id)
+  return _internal_mutable_portal_id();
+}
+inline const std::string& PortalDef::_internal_portal_id() const {
+  return portal_id_.Get();
+}
+inline void PortalDef::_internal_set_portal_id(const std::string& value) {
+  
+  portal_id_.Set(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), value, GetArena());
+}
+inline void PortalDef::set_portal_id(std::string&& value) {
+  
+  portal_id_.Set(
+    &::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), ::std::move(value), GetArena());
+  // @@protoc_insertion_point(field_set_rvalue:game.PortalDef.portal_id)
+}
+inline void PortalDef::set_portal_id(const char* value) {
+  GOOGLE_DCHECK(value != nullptr);
+  
+  portal_id_.Set(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), ::std::string(value),
+              GetArena());
+  // @@protoc_insertion_point(field_set_char:game.PortalDef.portal_id)
+}
+inline void PortalDef::set_portal_id(const char* value,
+    size_t size) {
+  
+  portal_id_.Set(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), ::std::string(
+      reinterpret_cast<const char*>(value), size), GetArena());
+  // @@protoc_insertion_point(field_set_pointer:game.PortalDef.portal_id)
+}
+inline std::string* PortalDef::_internal_mutable_portal_id() {
+  
+  return portal_id_.Mutable(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
+}
+inline std::string* PortalDef::release_portal_id() {
+  // @@protoc_insertion_point(field_release:game.PortalDef.portal_id)
+  return portal_id_.Release(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
+}
+inline void PortalDef::set_allocated_portal_id(std::string* portal_id) {
+  if (portal_id != nullptr) {
+    
+  } else {
+    
+  }
+  portal_id_.SetAllocated(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), portal_id,
+      GetArena());
+  // @@protoc_insertion_point(field_set_allocated:game.PortalDef.portal_id)
+}
+inline std::string* PortalDef::unsafe_arena_release_portal_id() {
+  // @@protoc_insertion_point(field_unsafe_arena_release:game.PortalDef.portal_id)
+  GOOGLE_DCHECK(GetArena() != nullptr);
+  
+  return portal_id_.UnsafeArenaRelease(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(),
+      GetArena());
+}
+inline void PortalDef::unsafe_arena_set_allocated_portal_id(
+    std::string* portal_id) {
+  GOOGLE_DCHECK(GetArena() != nullptr);
+  if (portal_id != nullptr) {
+    
+  } else {
+    
+  }
+  portal_id_.UnsafeArenaSetAllocated(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(),
+      portal_id, GetArena());
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:game.PortalDef.portal_id)
+}
+
+// uint64 from_map_template_id = 2;
+inline void PortalDef::clear_from_map_template_id() {
+  from_map_template_id_ = PROTOBUF_ULONGLONG(0);
+}
+inline ::PROTOBUF_NAMESPACE_ID::uint64 PortalDef::_internal_from_map_template_id() const {
+  return from_map_template_id_;
+}
+inline ::PROTOBUF_NAMESPACE_ID::uint64 PortalDef::from_map_template_id() const {
+  // @@protoc_insertion_point(field_get:game.PortalDef.from_map_template_id)
+  return _internal_from_map_template_id();
+}
+inline void PortalDef::_internal_set_from_map_template_id(::PROTOBUF_NAMESPACE_ID::uint64 value) {
+  
+  from_map_template_id_ = value;
+}
+inline void PortalDef::set_from_map_template_id(::PROTOBUF_NAMESPACE_ID::uint64 value) {
+  _internal_set_from_map_template_id(value);
+  // @@protoc_insertion_point(field_set:game.PortalDef.from_map_template_id)
+}
+
+// uint64 to_map_template_id = 3;
+inline void PortalDef::clear_to_map_template_id() {
+  to_map_template_id_ = PROTOBUF_ULONGLONG(0);
+}
+inline ::PROTOBUF_NAMESPACE_ID::uint64 PortalDef::_internal_to_map_template_id() const {
+  return to_map_template_id_;
+}
+inline ::PROTOBUF_NAMESPACE_ID::uint64 PortalDef::to_map_template_id() const {
+  // @@protoc_insertion_point(field_get:game.PortalDef.to_map_template_id)
+  return _internal_to_map_template_id();
+}
+inline void PortalDef::_internal_set_to_map_template_id(::PROTOBUF_NAMESPACE_ID::uint64 value) {
+  
+  to_map_template_id_ = value;
+}
+inline void PortalDef::set_to_map_template_id(::PROTOBUF_NAMESPACE_ID::uint64 value) {
+  _internal_set_to_map_template_id(value);
+  // @@protoc_insertion_point(field_set:game.PortalDef.to_map_template_id)
+}
+
+// .game.Vec3 position = 4;
+inline bool PortalDef::_internal_has_position() const {
+  return this != internal_default_instance() && position_ != nullptr;
+}
+inline bool PortalDef::has_position() const {
+  return _internal_has_position();
+}
+inline void PortalDef::clear_position() {
+  if (GetArena() == nullptr && position_ != nullptr) {
+    delete position_;
+  }
+  position_ = nullptr;
+}
+inline const ::game::Vec3& PortalDef::_internal_position() const {
+  const ::game::Vec3* p = position_;
+  return p != nullptr ? *p : *reinterpret_cast<const ::game::Vec3*>(
+      &::game::_Vec3_default_instance_);
+}
+inline const ::game::Vec3& PortalDef::position() const {
+  // @@protoc_insertion_point(field_get:game.PortalDef.position)
+  return _internal_position();
+}
+inline void PortalDef::unsafe_arena_set_allocated_position(
+    ::game::Vec3* position) {
+  if (GetArena() == nullptr) {
+    delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(position_);
+  }
+  position_ = position;
+  if (position) {
+    
+  } else {
+    
+  }
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:game.PortalDef.position)
+}
+inline ::game::Vec3* PortalDef::release_position() {
+  auto temp = unsafe_arena_release_position();
+  if (GetArena() != nullptr) {
+    temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+  }
+  return temp;
+}
+inline ::game::Vec3* PortalDef::unsafe_arena_release_position() {
+  // @@protoc_insertion_point(field_release:game.PortalDef.position)
+  
+  ::game::Vec3* temp = position_;
+  position_ = nullptr;
+  return temp;
+}
+inline ::game::Vec3* PortalDef::_internal_mutable_position() {
+  
+  if (position_ == nullptr) {
+    auto* p = CreateMaybeMessage<::game::Vec3>(GetArena());
+    position_ = p;
+  }
+  return position_;
+}
+inline ::game::Vec3* PortalDef::mutable_position() {
+  // @@protoc_insertion_point(field_mutable:game.PortalDef.position)
+  return _internal_mutable_position();
+}
+inline void PortalDef::set_allocated_position(::game::Vec3* position) {
+  ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArena();
+  if (message_arena == nullptr) {
+    delete position_;
+  }
+  if (position) {
+    ::PROTOBUF_NAMESPACE_ID::Arena* submessage_arena =
+      ::PROTOBUF_NAMESPACE_ID::Arena::GetArena(position);
+    if (message_arena != submessage_arena) {
+      position = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
+          message_arena, position, submessage_arena);
+    }
+    
+  } else {
+    
+  }
+  position_ = position;
+  // @@protoc_insertion_point(field_set_allocated:game.PortalDef.position)
+}
+
+// float yaw = 5;
+inline void PortalDef::clear_yaw() {
+  yaw_ = 0;
+}
+inline float PortalDef::_internal_yaw() const {
+  return yaw_;
+}
+inline float PortalDef::yaw() const {
+  // @@protoc_insertion_point(field_get:game.PortalDef.yaw)
+  return _internal_yaw();
+}
+inline void PortalDef::_internal_set_yaw(float value) {
+  
+  yaw_ = value;
+}
+inline void PortalDef::set_yaw(float value) {
+  _internal_set_yaw(value);
+  // @@protoc_insertion_point(field_set:game.PortalDef.yaw)
+}
+
+// float trigger_radius = 6;
+inline void PortalDef::clear_trigger_radius() {
+  trigger_radius_ = 0;
+}
+inline float PortalDef::_internal_trigger_radius() const {
+  return trigger_radius_;
+}
+inline float PortalDef::trigger_radius() const {
+  // @@protoc_insertion_point(field_get:game.PortalDef.trigger_radius)
+  return _internal_trigger_radius();
+}
+inline void PortalDef::_internal_set_trigger_radius(float value) {
+  
+  trigger_radius_ = value;
+}
+inline void PortalDef::set_trigger_radius(float value) {
+  _internal_set_trigger_radius(value);
+  // @@protoc_insertion_point(field_set:game.PortalDef.trigger_radius)
+}
+
+// -------------------------------------------------------------------
+
 // MapManifestEntry
 
 // uint64 map_template_id = 1;
@@ -45461,6 +46785,1465 @@ inline void MapManifestEntry::unsafe_arena_set_allocated_sha256(
   sha256_.UnsafeArenaSetAllocated(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(),
       sha256, GetArena());
   // @@protoc_insertion_point(field_unsafe_arena_set_allocated:game.MapManifestEntry.sha256)
+}
+
+// string scene_name = 4;
+inline void MapManifestEntry::clear_scene_name() {
+  scene_name_.ClearToEmpty(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
+}
+inline const std::string& MapManifestEntry::scene_name() const {
+  // @@protoc_insertion_point(field_get:game.MapManifestEntry.scene_name)
+  return _internal_scene_name();
+}
+inline void MapManifestEntry::set_scene_name(const std::string& value) {
+  _internal_set_scene_name(value);
+  // @@protoc_insertion_point(field_set:game.MapManifestEntry.scene_name)
+}
+inline std::string* MapManifestEntry::mutable_scene_name() {
+  // @@protoc_insertion_point(field_mutable:game.MapManifestEntry.scene_name)
+  return _internal_mutable_scene_name();
+}
+inline const std::string& MapManifestEntry::_internal_scene_name() const {
+  return scene_name_.Get();
+}
+inline void MapManifestEntry::_internal_set_scene_name(const std::string& value) {
+  
+  scene_name_.Set(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), value, GetArena());
+}
+inline void MapManifestEntry::set_scene_name(std::string&& value) {
+  
+  scene_name_.Set(
+    &::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), ::std::move(value), GetArena());
+  // @@protoc_insertion_point(field_set_rvalue:game.MapManifestEntry.scene_name)
+}
+inline void MapManifestEntry::set_scene_name(const char* value) {
+  GOOGLE_DCHECK(value != nullptr);
+  
+  scene_name_.Set(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), ::std::string(value),
+              GetArena());
+  // @@protoc_insertion_point(field_set_char:game.MapManifestEntry.scene_name)
+}
+inline void MapManifestEntry::set_scene_name(const char* value,
+    size_t size) {
+  
+  scene_name_.Set(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), ::std::string(
+      reinterpret_cast<const char*>(value), size), GetArena());
+  // @@protoc_insertion_point(field_set_pointer:game.MapManifestEntry.scene_name)
+}
+inline std::string* MapManifestEntry::_internal_mutable_scene_name() {
+  
+  return scene_name_.Mutable(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
+}
+inline std::string* MapManifestEntry::release_scene_name() {
+  // @@protoc_insertion_point(field_release:game.MapManifestEntry.scene_name)
+  return scene_name_.Release(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
+}
+inline void MapManifestEntry::set_allocated_scene_name(std::string* scene_name) {
+  if (scene_name != nullptr) {
+    
+  } else {
+    
+  }
+  scene_name_.SetAllocated(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), scene_name,
+      GetArena());
+  // @@protoc_insertion_point(field_set_allocated:game.MapManifestEntry.scene_name)
+}
+inline std::string* MapManifestEntry::unsafe_arena_release_scene_name() {
+  // @@protoc_insertion_point(field_unsafe_arena_release:game.MapManifestEntry.scene_name)
+  GOOGLE_DCHECK(GetArena() != nullptr);
+  
+  return scene_name_.UnsafeArenaRelease(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(),
+      GetArena());
+}
+inline void MapManifestEntry::unsafe_arena_set_allocated_scene_name(
+    std::string* scene_name) {
+  GOOGLE_DCHECK(GetArena() != nullptr);
+  if (scene_name != nullptr) {
+    
+  } else {
+    
+  }
+  scene_name_.UnsafeArenaSetAllocated(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(),
+      scene_name, GetArena());
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:game.MapManifestEntry.scene_name)
+}
+
+// string kind = 5;
+inline void MapManifestEntry::clear_kind() {
+  kind_.ClearToEmpty(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
+}
+inline const std::string& MapManifestEntry::kind() const {
+  // @@protoc_insertion_point(field_get:game.MapManifestEntry.kind)
+  return _internal_kind();
+}
+inline void MapManifestEntry::set_kind(const std::string& value) {
+  _internal_set_kind(value);
+  // @@protoc_insertion_point(field_set:game.MapManifestEntry.kind)
+}
+inline std::string* MapManifestEntry::mutable_kind() {
+  // @@protoc_insertion_point(field_mutable:game.MapManifestEntry.kind)
+  return _internal_mutable_kind();
+}
+inline const std::string& MapManifestEntry::_internal_kind() const {
+  return kind_.Get();
+}
+inline void MapManifestEntry::_internal_set_kind(const std::string& value) {
+  
+  kind_.Set(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), value, GetArena());
+}
+inline void MapManifestEntry::set_kind(std::string&& value) {
+  
+  kind_.Set(
+    &::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), ::std::move(value), GetArena());
+  // @@protoc_insertion_point(field_set_rvalue:game.MapManifestEntry.kind)
+}
+inline void MapManifestEntry::set_kind(const char* value) {
+  GOOGLE_DCHECK(value != nullptr);
+  
+  kind_.Set(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), ::std::string(value),
+              GetArena());
+  // @@protoc_insertion_point(field_set_char:game.MapManifestEntry.kind)
+}
+inline void MapManifestEntry::set_kind(const char* value,
+    size_t size) {
+  
+  kind_.Set(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), ::std::string(
+      reinterpret_cast<const char*>(value), size), GetArena());
+  // @@protoc_insertion_point(field_set_pointer:game.MapManifestEntry.kind)
+}
+inline std::string* MapManifestEntry::_internal_mutable_kind() {
+  
+  return kind_.Mutable(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
+}
+inline std::string* MapManifestEntry::release_kind() {
+  // @@protoc_insertion_point(field_release:game.MapManifestEntry.kind)
+  return kind_.Release(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
+}
+inline void MapManifestEntry::set_allocated_kind(std::string* kind) {
+  if (kind != nullptr) {
+    
+  } else {
+    
+  }
+  kind_.SetAllocated(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), kind,
+      GetArena());
+  // @@protoc_insertion_point(field_set_allocated:game.MapManifestEntry.kind)
+}
+inline std::string* MapManifestEntry::unsafe_arena_release_kind() {
+  // @@protoc_insertion_point(field_unsafe_arena_release:game.MapManifestEntry.kind)
+  GOOGLE_DCHECK(GetArena() != nullptr);
+  
+  return kind_.UnsafeArenaRelease(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(),
+      GetArena());
+}
+inline void MapManifestEntry::unsafe_arena_set_allocated_kind(
+    std::string* kind) {
+  GOOGLE_DCHECK(GetArena() != nullptr);
+  if (kind != nullptr) {
+    
+  } else {
+    
+  }
+  kind_.UnsafeArenaSetAllocated(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(),
+      kind, GetArena());
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:game.MapManifestEntry.kind)
+}
+
+// uint64 visual_map_template_id = 6;
+inline void MapManifestEntry::clear_visual_map_template_id() {
+  visual_map_template_id_ = PROTOBUF_ULONGLONG(0);
+}
+inline ::PROTOBUF_NAMESPACE_ID::uint64 MapManifestEntry::_internal_visual_map_template_id() const {
+  return visual_map_template_id_;
+}
+inline ::PROTOBUF_NAMESPACE_ID::uint64 MapManifestEntry::visual_map_template_id() const {
+  // @@protoc_insertion_point(field_get:game.MapManifestEntry.visual_map_template_id)
+  return _internal_visual_map_template_id();
+}
+inline void MapManifestEntry::_internal_set_visual_map_template_id(::PROTOBUF_NAMESPACE_ID::uint64 value) {
+  
+  visual_map_template_id_ = value;
+}
+inline void MapManifestEntry::set_visual_map_template_id(::PROTOBUF_NAMESPACE_ID::uint64 value) {
+  _internal_set_visual_map_template_id(value);
+  // @@protoc_insertion_point(field_set:game.MapManifestEntry.visual_map_template_id)
+}
+
+// repeated .game.PortalDef portals = 7;
+inline int MapManifestEntry::_internal_portals_size() const {
+  return portals_.size();
+}
+inline int MapManifestEntry::portals_size() const {
+  return _internal_portals_size();
+}
+inline void MapManifestEntry::clear_portals() {
+  portals_.Clear();
+}
+inline ::game::PortalDef* MapManifestEntry::mutable_portals(int index) {
+  // @@protoc_insertion_point(field_mutable:game.MapManifestEntry.portals)
+  return portals_.Mutable(index);
+}
+inline ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::game::PortalDef >*
+MapManifestEntry::mutable_portals() {
+  // @@protoc_insertion_point(field_mutable_list:game.MapManifestEntry.portals)
+  return &portals_;
+}
+inline const ::game::PortalDef& MapManifestEntry::_internal_portals(int index) const {
+  return portals_.Get(index);
+}
+inline const ::game::PortalDef& MapManifestEntry::portals(int index) const {
+  // @@protoc_insertion_point(field_get:game.MapManifestEntry.portals)
+  return _internal_portals(index);
+}
+inline ::game::PortalDef* MapManifestEntry::_internal_add_portals() {
+  return portals_.Add();
+}
+inline ::game::PortalDef* MapManifestEntry::add_portals() {
+  // @@protoc_insertion_point(field_add:game.MapManifestEntry.portals)
+  return _internal_add_portals();
+}
+inline const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::game::PortalDef >&
+MapManifestEntry::portals() const {
+  // @@protoc_insertion_point(field_list:game.MapManifestEntry.portals)
+  return portals_;
+}
+
+// -------------------------------------------------------------------
+
+// InteractPortalReq
+
+// uint64 player_id = 1;
+inline void InteractPortalReq::clear_player_id() {
+  player_id_ = PROTOBUF_ULONGLONG(0);
+}
+inline ::PROTOBUF_NAMESPACE_ID::uint64 InteractPortalReq::_internal_player_id() const {
+  return player_id_;
+}
+inline ::PROTOBUF_NAMESPACE_ID::uint64 InteractPortalReq::player_id() const {
+  // @@protoc_insertion_point(field_get:game.InteractPortalReq.player_id)
+  return _internal_player_id();
+}
+inline void InteractPortalReq::_internal_set_player_id(::PROTOBUF_NAMESPACE_ID::uint64 value) {
+  
+  player_id_ = value;
+}
+inline void InteractPortalReq::set_player_id(::PROTOBUF_NAMESPACE_ID::uint64 value) {
+  _internal_set_player_id(value);
+  // @@protoc_insertion_point(field_set:game.InteractPortalReq.player_id)
+}
+
+// uint32 realm_id = 2;
+inline void InteractPortalReq::clear_realm_id() {
+  realm_id_ = 0u;
+}
+inline ::PROTOBUF_NAMESPACE_ID::uint32 InteractPortalReq::_internal_realm_id() const {
+  return realm_id_;
+}
+inline ::PROTOBUF_NAMESPACE_ID::uint32 InteractPortalReq::realm_id() const {
+  // @@protoc_insertion_point(field_get:game.InteractPortalReq.realm_id)
+  return _internal_realm_id();
+}
+inline void InteractPortalReq::_internal_set_realm_id(::PROTOBUF_NAMESPACE_ID::uint32 value) {
+  
+  realm_id_ = value;
+}
+inline void InteractPortalReq::set_realm_id(::PROTOBUF_NAMESPACE_ID::uint32 value) {
+  _internal_set_realm_id(value);
+  // @@protoc_insertion_point(field_set:game.InteractPortalReq.realm_id)
+}
+
+// string portal_id = 3;
+inline void InteractPortalReq::clear_portal_id() {
+  portal_id_.ClearToEmpty(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
+}
+inline const std::string& InteractPortalReq::portal_id() const {
+  // @@protoc_insertion_point(field_get:game.InteractPortalReq.portal_id)
+  return _internal_portal_id();
+}
+inline void InteractPortalReq::set_portal_id(const std::string& value) {
+  _internal_set_portal_id(value);
+  // @@protoc_insertion_point(field_set:game.InteractPortalReq.portal_id)
+}
+inline std::string* InteractPortalReq::mutable_portal_id() {
+  // @@protoc_insertion_point(field_mutable:game.InteractPortalReq.portal_id)
+  return _internal_mutable_portal_id();
+}
+inline const std::string& InteractPortalReq::_internal_portal_id() const {
+  return portal_id_.Get();
+}
+inline void InteractPortalReq::_internal_set_portal_id(const std::string& value) {
+  
+  portal_id_.Set(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), value, GetArena());
+}
+inline void InteractPortalReq::set_portal_id(std::string&& value) {
+  
+  portal_id_.Set(
+    &::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), ::std::move(value), GetArena());
+  // @@protoc_insertion_point(field_set_rvalue:game.InteractPortalReq.portal_id)
+}
+inline void InteractPortalReq::set_portal_id(const char* value) {
+  GOOGLE_DCHECK(value != nullptr);
+  
+  portal_id_.Set(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), ::std::string(value),
+              GetArena());
+  // @@protoc_insertion_point(field_set_char:game.InteractPortalReq.portal_id)
+}
+inline void InteractPortalReq::set_portal_id(const char* value,
+    size_t size) {
+  
+  portal_id_.Set(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), ::std::string(
+      reinterpret_cast<const char*>(value), size), GetArena());
+  // @@protoc_insertion_point(field_set_pointer:game.InteractPortalReq.portal_id)
+}
+inline std::string* InteractPortalReq::_internal_mutable_portal_id() {
+  
+  return portal_id_.Mutable(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
+}
+inline std::string* InteractPortalReq::release_portal_id() {
+  // @@protoc_insertion_point(field_release:game.InteractPortalReq.portal_id)
+  return portal_id_.Release(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
+}
+inline void InteractPortalReq::set_allocated_portal_id(std::string* portal_id) {
+  if (portal_id != nullptr) {
+    
+  } else {
+    
+  }
+  portal_id_.SetAllocated(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), portal_id,
+      GetArena());
+  // @@protoc_insertion_point(field_set_allocated:game.InteractPortalReq.portal_id)
+}
+inline std::string* InteractPortalReq::unsafe_arena_release_portal_id() {
+  // @@protoc_insertion_point(field_unsafe_arena_release:game.InteractPortalReq.portal_id)
+  GOOGLE_DCHECK(GetArena() != nullptr);
+  
+  return portal_id_.UnsafeArenaRelease(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(),
+      GetArena());
+}
+inline void InteractPortalReq::unsafe_arena_set_allocated_portal_id(
+    std::string* portal_id) {
+  GOOGLE_DCHECK(GetArena() != nullptr);
+  if (portal_id != nullptr) {
+    
+  } else {
+    
+  }
+  portal_id_.UnsafeArenaSetAllocated(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(),
+      portal_id, GetArena());
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:game.InteractPortalReq.portal_id)
+}
+
+// string operation_id = 4;
+inline void InteractPortalReq::clear_operation_id() {
+  operation_id_.ClearToEmpty(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
+}
+inline const std::string& InteractPortalReq::operation_id() const {
+  // @@protoc_insertion_point(field_get:game.InteractPortalReq.operation_id)
+  return _internal_operation_id();
+}
+inline void InteractPortalReq::set_operation_id(const std::string& value) {
+  _internal_set_operation_id(value);
+  // @@protoc_insertion_point(field_set:game.InteractPortalReq.operation_id)
+}
+inline std::string* InteractPortalReq::mutable_operation_id() {
+  // @@protoc_insertion_point(field_mutable:game.InteractPortalReq.operation_id)
+  return _internal_mutable_operation_id();
+}
+inline const std::string& InteractPortalReq::_internal_operation_id() const {
+  return operation_id_.Get();
+}
+inline void InteractPortalReq::_internal_set_operation_id(const std::string& value) {
+  
+  operation_id_.Set(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), value, GetArena());
+}
+inline void InteractPortalReq::set_operation_id(std::string&& value) {
+  
+  operation_id_.Set(
+    &::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), ::std::move(value), GetArena());
+  // @@protoc_insertion_point(field_set_rvalue:game.InteractPortalReq.operation_id)
+}
+inline void InteractPortalReq::set_operation_id(const char* value) {
+  GOOGLE_DCHECK(value != nullptr);
+  
+  operation_id_.Set(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), ::std::string(value),
+              GetArena());
+  // @@protoc_insertion_point(field_set_char:game.InteractPortalReq.operation_id)
+}
+inline void InteractPortalReq::set_operation_id(const char* value,
+    size_t size) {
+  
+  operation_id_.Set(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), ::std::string(
+      reinterpret_cast<const char*>(value), size), GetArena());
+  // @@protoc_insertion_point(field_set_pointer:game.InteractPortalReq.operation_id)
+}
+inline std::string* InteractPortalReq::_internal_mutable_operation_id() {
+  
+  return operation_id_.Mutable(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
+}
+inline std::string* InteractPortalReq::release_operation_id() {
+  // @@protoc_insertion_point(field_release:game.InteractPortalReq.operation_id)
+  return operation_id_.Release(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
+}
+inline void InteractPortalReq::set_allocated_operation_id(std::string* operation_id) {
+  if (operation_id != nullptr) {
+    
+  } else {
+    
+  }
+  operation_id_.SetAllocated(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), operation_id,
+      GetArena());
+  // @@protoc_insertion_point(field_set_allocated:game.InteractPortalReq.operation_id)
+}
+inline std::string* InteractPortalReq::unsafe_arena_release_operation_id() {
+  // @@protoc_insertion_point(field_unsafe_arena_release:game.InteractPortalReq.operation_id)
+  GOOGLE_DCHECK(GetArena() != nullptr);
+  
+  return operation_id_.UnsafeArenaRelease(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(),
+      GetArena());
+}
+inline void InteractPortalReq::unsafe_arena_set_allocated_operation_id(
+    std::string* operation_id) {
+  GOOGLE_DCHECK(GetArena() != nullptr);
+  if (operation_id != nullptr) {
+    
+  } else {
+    
+  }
+  operation_id_.UnsafeArenaSetAllocated(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(),
+      operation_id, GetArena());
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:game.InteractPortalReq.operation_id)
+}
+
+// uint64 map_data_version = 5;
+inline void InteractPortalReq::clear_map_data_version() {
+  map_data_version_ = PROTOBUF_ULONGLONG(0);
+}
+inline ::PROTOBUF_NAMESPACE_ID::uint64 InteractPortalReq::_internal_map_data_version() const {
+  return map_data_version_;
+}
+inline ::PROTOBUF_NAMESPACE_ID::uint64 InteractPortalReq::map_data_version() const {
+  // @@protoc_insertion_point(field_get:game.InteractPortalReq.map_data_version)
+  return _internal_map_data_version();
+}
+inline void InteractPortalReq::_internal_set_map_data_version(::PROTOBUF_NAMESPACE_ID::uint64 value) {
+  
+  map_data_version_ = value;
+}
+inline void InteractPortalReq::set_map_data_version(::PROTOBUF_NAMESPACE_ID::uint64 value) {
+  _internal_set_map_data_version(value);
+  // @@protoc_insertion_point(field_set:game.InteractPortalReq.map_data_version)
+}
+
+// string map_data_sha256 = 6;
+inline void InteractPortalReq::clear_map_data_sha256() {
+  map_data_sha256_.ClearToEmpty(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
+}
+inline const std::string& InteractPortalReq::map_data_sha256() const {
+  // @@protoc_insertion_point(field_get:game.InteractPortalReq.map_data_sha256)
+  return _internal_map_data_sha256();
+}
+inline void InteractPortalReq::set_map_data_sha256(const std::string& value) {
+  _internal_set_map_data_sha256(value);
+  // @@protoc_insertion_point(field_set:game.InteractPortalReq.map_data_sha256)
+}
+inline std::string* InteractPortalReq::mutable_map_data_sha256() {
+  // @@protoc_insertion_point(field_mutable:game.InteractPortalReq.map_data_sha256)
+  return _internal_mutable_map_data_sha256();
+}
+inline const std::string& InteractPortalReq::_internal_map_data_sha256() const {
+  return map_data_sha256_.Get();
+}
+inline void InteractPortalReq::_internal_set_map_data_sha256(const std::string& value) {
+  
+  map_data_sha256_.Set(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), value, GetArena());
+}
+inline void InteractPortalReq::set_map_data_sha256(std::string&& value) {
+  
+  map_data_sha256_.Set(
+    &::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), ::std::move(value), GetArena());
+  // @@protoc_insertion_point(field_set_rvalue:game.InteractPortalReq.map_data_sha256)
+}
+inline void InteractPortalReq::set_map_data_sha256(const char* value) {
+  GOOGLE_DCHECK(value != nullptr);
+  
+  map_data_sha256_.Set(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), ::std::string(value),
+              GetArena());
+  // @@protoc_insertion_point(field_set_char:game.InteractPortalReq.map_data_sha256)
+}
+inline void InteractPortalReq::set_map_data_sha256(const char* value,
+    size_t size) {
+  
+  map_data_sha256_.Set(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), ::std::string(
+      reinterpret_cast<const char*>(value), size), GetArena());
+  // @@protoc_insertion_point(field_set_pointer:game.InteractPortalReq.map_data_sha256)
+}
+inline std::string* InteractPortalReq::_internal_mutable_map_data_sha256() {
+  
+  return map_data_sha256_.Mutable(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
+}
+inline std::string* InteractPortalReq::release_map_data_sha256() {
+  // @@protoc_insertion_point(field_release:game.InteractPortalReq.map_data_sha256)
+  return map_data_sha256_.Release(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
+}
+inline void InteractPortalReq::set_allocated_map_data_sha256(std::string* map_data_sha256) {
+  if (map_data_sha256 != nullptr) {
+    
+  } else {
+    
+  }
+  map_data_sha256_.SetAllocated(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), map_data_sha256,
+      GetArena());
+  // @@protoc_insertion_point(field_set_allocated:game.InteractPortalReq.map_data_sha256)
+}
+inline std::string* InteractPortalReq::unsafe_arena_release_map_data_sha256() {
+  // @@protoc_insertion_point(field_unsafe_arena_release:game.InteractPortalReq.map_data_sha256)
+  GOOGLE_DCHECK(GetArena() != nullptr);
+  
+  return map_data_sha256_.UnsafeArenaRelease(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(),
+      GetArena());
+}
+inline void InteractPortalReq::unsafe_arena_set_allocated_map_data_sha256(
+    std::string* map_data_sha256) {
+  GOOGLE_DCHECK(GetArena() != nullptr);
+  if (map_data_sha256 != nullptr) {
+    
+  } else {
+    
+  }
+  map_data_sha256_.UnsafeArenaSetAllocated(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(),
+      map_data_sha256, GetArena());
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:game.InteractPortalReq.map_data_sha256)
+}
+
+// -------------------------------------------------------------------
+
+// InteractPortalRsp
+
+// bool ok = 1;
+inline void InteractPortalRsp::clear_ok() {
+  ok_ = false;
+}
+inline bool InteractPortalRsp::_internal_ok() const {
+  return ok_;
+}
+inline bool InteractPortalRsp::ok() const {
+  // @@protoc_insertion_point(field_get:game.InteractPortalRsp.ok)
+  return _internal_ok();
+}
+inline void InteractPortalRsp::_internal_set_ok(bool value) {
+  
+  ok_ = value;
+}
+inline void InteractPortalRsp::set_ok(bool value) {
+  _internal_set_ok(value);
+  // @@protoc_insertion_point(field_set:game.InteractPortalRsp.ok)
+}
+
+// string message = 2;
+inline void InteractPortalRsp::clear_message() {
+  message_.ClearToEmpty(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
+}
+inline const std::string& InteractPortalRsp::message() const {
+  // @@protoc_insertion_point(field_get:game.InteractPortalRsp.message)
+  return _internal_message();
+}
+inline void InteractPortalRsp::set_message(const std::string& value) {
+  _internal_set_message(value);
+  // @@protoc_insertion_point(field_set:game.InteractPortalRsp.message)
+}
+inline std::string* InteractPortalRsp::mutable_message() {
+  // @@protoc_insertion_point(field_mutable:game.InteractPortalRsp.message)
+  return _internal_mutable_message();
+}
+inline const std::string& InteractPortalRsp::_internal_message() const {
+  return message_.Get();
+}
+inline void InteractPortalRsp::_internal_set_message(const std::string& value) {
+  
+  message_.Set(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), value, GetArena());
+}
+inline void InteractPortalRsp::set_message(std::string&& value) {
+  
+  message_.Set(
+    &::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), ::std::move(value), GetArena());
+  // @@protoc_insertion_point(field_set_rvalue:game.InteractPortalRsp.message)
+}
+inline void InteractPortalRsp::set_message(const char* value) {
+  GOOGLE_DCHECK(value != nullptr);
+  
+  message_.Set(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), ::std::string(value),
+              GetArena());
+  // @@protoc_insertion_point(field_set_char:game.InteractPortalRsp.message)
+}
+inline void InteractPortalRsp::set_message(const char* value,
+    size_t size) {
+  
+  message_.Set(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), ::std::string(
+      reinterpret_cast<const char*>(value), size), GetArena());
+  // @@protoc_insertion_point(field_set_pointer:game.InteractPortalRsp.message)
+}
+inline std::string* InteractPortalRsp::_internal_mutable_message() {
+  
+  return message_.Mutable(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
+}
+inline std::string* InteractPortalRsp::release_message() {
+  // @@protoc_insertion_point(field_release:game.InteractPortalRsp.message)
+  return message_.Release(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
+}
+inline void InteractPortalRsp::set_allocated_message(std::string* message) {
+  if (message != nullptr) {
+    
+  } else {
+    
+  }
+  message_.SetAllocated(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), message,
+      GetArena());
+  // @@protoc_insertion_point(field_set_allocated:game.InteractPortalRsp.message)
+}
+inline std::string* InteractPortalRsp::unsafe_arena_release_message() {
+  // @@protoc_insertion_point(field_unsafe_arena_release:game.InteractPortalRsp.message)
+  GOOGLE_DCHECK(GetArena() != nullptr);
+  
+  return message_.UnsafeArenaRelease(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(),
+      GetArena());
+}
+inline void InteractPortalRsp::unsafe_arena_set_allocated_message(
+    std::string* message) {
+  GOOGLE_DCHECK(GetArena() != nullptr);
+  if (message != nullptr) {
+    
+  } else {
+    
+  }
+  message_.UnsafeArenaSetAllocated(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(),
+      message, GetArena());
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:game.InteractPortalRsp.message)
+}
+
+// string error_code = 3;
+inline void InteractPortalRsp::clear_error_code() {
+  error_code_.ClearToEmpty(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
+}
+inline const std::string& InteractPortalRsp::error_code() const {
+  // @@protoc_insertion_point(field_get:game.InteractPortalRsp.error_code)
+  return _internal_error_code();
+}
+inline void InteractPortalRsp::set_error_code(const std::string& value) {
+  _internal_set_error_code(value);
+  // @@protoc_insertion_point(field_set:game.InteractPortalRsp.error_code)
+}
+inline std::string* InteractPortalRsp::mutable_error_code() {
+  // @@protoc_insertion_point(field_mutable:game.InteractPortalRsp.error_code)
+  return _internal_mutable_error_code();
+}
+inline const std::string& InteractPortalRsp::_internal_error_code() const {
+  return error_code_.Get();
+}
+inline void InteractPortalRsp::_internal_set_error_code(const std::string& value) {
+  
+  error_code_.Set(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), value, GetArena());
+}
+inline void InteractPortalRsp::set_error_code(std::string&& value) {
+  
+  error_code_.Set(
+    &::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), ::std::move(value), GetArena());
+  // @@protoc_insertion_point(field_set_rvalue:game.InteractPortalRsp.error_code)
+}
+inline void InteractPortalRsp::set_error_code(const char* value) {
+  GOOGLE_DCHECK(value != nullptr);
+  
+  error_code_.Set(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), ::std::string(value),
+              GetArena());
+  // @@protoc_insertion_point(field_set_char:game.InteractPortalRsp.error_code)
+}
+inline void InteractPortalRsp::set_error_code(const char* value,
+    size_t size) {
+  
+  error_code_.Set(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), ::std::string(
+      reinterpret_cast<const char*>(value), size), GetArena());
+  // @@protoc_insertion_point(field_set_pointer:game.InteractPortalRsp.error_code)
+}
+inline std::string* InteractPortalRsp::_internal_mutable_error_code() {
+  
+  return error_code_.Mutable(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
+}
+inline std::string* InteractPortalRsp::release_error_code() {
+  // @@protoc_insertion_point(field_release:game.InteractPortalRsp.error_code)
+  return error_code_.Release(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
+}
+inline void InteractPortalRsp::set_allocated_error_code(std::string* error_code) {
+  if (error_code != nullptr) {
+    
+  } else {
+    
+  }
+  error_code_.SetAllocated(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), error_code,
+      GetArena());
+  // @@protoc_insertion_point(field_set_allocated:game.InteractPortalRsp.error_code)
+}
+inline std::string* InteractPortalRsp::unsafe_arena_release_error_code() {
+  // @@protoc_insertion_point(field_unsafe_arena_release:game.InteractPortalRsp.error_code)
+  GOOGLE_DCHECK(GetArena() != nullptr);
+  
+  return error_code_.UnsafeArenaRelease(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(),
+      GetArena());
+}
+inline void InteractPortalRsp::unsafe_arena_set_allocated_error_code(
+    std::string* error_code) {
+  GOOGLE_DCHECK(GetArena() != nullptr);
+  if (error_code != nullptr) {
+    
+  } else {
+    
+  }
+  error_code_.UnsafeArenaSetAllocated(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(),
+      error_code, GetArena());
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:game.InteractPortalRsp.error_code)
+}
+
+// uint64 map_template_id = 4;
+inline void InteractPortalRsp::clear_map_template_id() {
+  map_template_id_ = PROTOBUF_ULONGLONG(0);
+}
+inline ::PROTOBUF_NAMESPACE_ID::uint64 InteractPortalRsp::_internal_map_template_id() const {
+  return map_template_id_;
+}
+inline ::PROTOBUF_NAMESPACE_ID::uint64 InteractPortalRsp::map_template_id() const {
+  // @@protoc_insertion_point(field_get:game.InteractPortalRsp.map_template_id)
+  return _internal_map_template_id();
+}
+inline void InteractPortalRsp::_internal_set_map_template_id(::PROTOBUF_NAMESPACE_ID::uint64 value) {
+  
+  map_template_id_ = value;
+}
+inline void InteractPortalRsp::set_map_template_id(::PROTOBUF_NAMESPACE_ID::uint64 value) {
+  _internal_set_map_template_id(value);
+  // @@protoc_insertion_point(field_set:game.InteractPortalRsp.map_template_id)
+}
+
+// uint64 map_instance_id = 5;
+inline void InteractPortalRsp::clear_map_instance_id() {
+  map_instance_id_ = PROTOBUF_ULONGLONG(0);
+}
+inline ::PROTOBUF_NAMESPACE_ID::uint64 InteractPortalRsp::_internal_map_instance_id() const {
+  return map_instance_id_;
+}
+inline ::PROTOBUF_NAMESPACE_ID::uint64 InteractPortalRsp::map_instance_id() const {
+  // @@protoc_insertion_point(field_get:game.InteractPortalRsp.map_instance_id)
+  return _internal_map_instance_id();
+}
+inline void InteractPortalRsp::_internal_set_map_instance_id(::PROTOBUF_NAMESPACE_ID::uint64 value) {
+  
+  map_instance_id_ = value;
+}
+inline void InteractPortalRsp::set_map_instance_id(::PROTOBUF_NAMESPACE_ID::uint64 value) {
+  _internal_set_map_instance_id(value);
+  // @@protoc_insertion_point(field_set:game.InteractPortalRsp.map_instance_id)
+}
+
+// string gamelogic_instance_id = 6;
+inline void InteractPortalRsp::clear_gamelogic_instance_id() {
+  gamelogic_instance_id_.ClearToEmpty(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
+}
+inline const std::string& InteractPortalRsp::gamelogic_instance_id() const {
+  // @@protoc_insertion_point(field_get:game.InteractPortalRsp.gamelogic_instance_id)
+  return _internal_gamelogic_instance_id();
+}
+inline void InteractPortalRsp::set_gamelogic_instance_id(const std::string& value) {
+  _internal_set_gamelogic_instance_id(value);
+  // @@protoc_insertion_point(field_set:game.InteractPortalRsp.gamelogic_instance_id)
+}
+inline std::string* InteractPortalRsp::mutable_gamelogic_instance_id() {
+  // @@protoc_insertion_point(field_mutable:game.InteractPortalRsp.gamelogic_instance_id)
+  return _internal_mutable_gamelogic_instance_id();
+}
+inline const std::string& InteractPortalRsp::_internal_gamelogic_instance_id() const {
+  return gamelogic_instance_id_.Get();
+}
+inline void InteractPortalRsp::_internal_set_gamelogic_instance_id(const std::string& value) {
+  
+  gamelogic_instance_id_.Set(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), value, GetArena());
+}
+inline void InteractPortalRsp::set_gamelogic_instance_id(std::string&& value) {
+  
+  gamelogic_instance_id_.Set(
+    &::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), ::std::move(value), GetArena());
+  // @@protoc_insertion_point(field_set_rvalue:game.InteractPortalRsp.gamelogic_instance_id)
+}
+inline void InteractPortalRsp::set_gamelogic_instance_id(const char* value) {
+  GOOGLE_DCHECK(value != nullptr);
+  
+  gamelogic_instance_id_.Set(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), ::std::string(value),
+              GetArena());
+  // @@protoc_insertion_point(field_set_char:game.InteractPortalRsp.gamelogic_instance_id)
+}
+inline void InteractPortalRsp::set_gamelogic_instance_id(const char* value,
+    size_t size) {
+  
+  gamelogic_instance_id_.Set(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), ::std::string(
+      reinterpret_cast<const char*>(value), size), GetArena());
+  // @@protoc_insertion_point(field_set_pointer:game.InteractPortalRsp.gamelogic_instance_id)
+}
+inline std::string* InteractPortalRsp::_internal_mutable_gamelogic_instance_id() {
+  
+  return gamelogic_instance_id_.Mutable(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
+}
+inline std::string* InteractPortalRsp::release_gamelogic_instance_id() {
+  // @@protoc_insertion_point(field_release:game.InteractPortalRsp.gamelogic_instance_id)
+  return gamelogic_instance_id_.Release(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
+}
+inline void InteractPortalRsp::set_allocated_gamelogic_instance_id(std::string* gamelogic_instance_id) {
+  if (gamelogic_instance_id != nullptr) {
+    
+  } else {
+    
+  }
+  gamelogic_instance_id_.SetAllocated(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), gamelogic_instance_id,
+      GetArena());
+  // @@protoc_insertion_point(field_set_allocated:game.InteractPortalRsp.gamelogic_instance_id)
+}
+inline std::string* InteractPortalRsp::unsafe_arena_release_gamelogic_instance_id() {
+  // @@protoc_insertion_point(field_unsafe_arena_release:game.InteractPortalRsp.gamelogic_instance_id)
+  GOOGLE_DCHECK(GetArena() != nullptr);
+  
+  return gamelogic_instance_id_.UnsafeArenaRelease(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(),
+      GetArena());
+}
+inline void InteractPortalRsp::unsafe_arena_set_allocated_gamelogic_instance_id(
+    std::string* gamelogic_instance_id) {
+  GOOGLE_DCHECK(GetArena() != nullptr);
+  if (gamelogic_instance_id != nullptr) {
+    
+  } else {
+    
+  }
+  gamelogic_instance_id_.UnsafeArenaSetAllocated(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(),
+      gamelogic_instance_id, GetArena());
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:game.InteractPortalRsp.gamelogic_instance_id)
+}
+
+// uint64 owner_epoch = 7;
+inline void InteractPortalRsp::clear_owner_epoch() {
+  owner_epoch_ = PROTOBUF_ULONGLONG(0);
+}
+inline ::PROTOBUF_NAMESPACE_ID::uint64 InteractPortalRsp::_internal_owner_epoch() const {
+  return owner_epoch_;
+}
+inline ::PROTOBUF_NAMESPACE_ID::uint64 InteractPortalRsp::owner_epoch() const {
+  // @@protoc_insertion_point(field_get:game.InteractPortalRsp.owner_epoch)
+  return _internal_owner_epoch();
+}
+inline void InteractPortalRsp::_internal_set_owner_epoch(::PROTOBUF_NAMESPACE_ID::uint64 value) {
+  
+  owner_epoch_ = value;
+}
+inline void InteractPortalRsp::set_owner_epoch(::PROTOBUF_NAMESPACE_ID::uint64 value) {
+  _internal_set_owner_epoch(value);
+  // @@protoc_insertion_point(field_set:game.InteractPortalRsp.owner_epoch)
+}
+
+// uint64 route_version = 8;
+inline void InteractPortalRsp::clear_route_version() {
+  route_version_ = PROTOBUF_ULONGLONG(0);
+}
+inline ::PROTOBUF_NAMESPACE_ID::uint64 InteractPortalRsp::_internal_route_version() const {
+  return route_version_;
+}
+inline ::PROTOBUF_NAMESPACE_ID::uint64 InteractPortalRsp::route_version() const {
+  // @@protoc_insertion_point(field_get:game.InteractPortalRsp.route_version)
+  return _internal_route_version();
+}
+inline void InteractPortalRsp::_internal_set_route_version(::PROTOBUF_NAMESPACE_ID::uint64 value) {
+  
+  route_version_ = value;
+}
+inline void InteractPortalRsp::set_route_version(::PROTOBUF_NAMESPACE_ID::uint64 value) {
+  _internal_set_route_version(value);
+  // @@protoc_insertion_point(field_set:game.InteractPortalRsp.route_version)
+}
+
+// .game.Vec3 spawn_position = 9;
+inline bool InteractPortalRsp::_internal_has_spawn_position() const {
+  return this != internal_default_instance() && spawn_position_ != nullptr;
+}
+inline bool InteractPortalRsp::has_spawn_position() const {
+  return _internal_has_spawn_position();
+}
+inline void InteractPortalRsp::clear_spawn_position() {
+  if (GetArena() == nullptr && spawn_position_ != nullptr) {
+    delete spawn_position_;
+  }
+  spawn_position_ = nullptr;
+}
+inline const ::game::Vec3& InteractPortalRsp::_internal_spawn_position() const {
+  const ::game::Vec3* p = spawn_position_;
+  return p != nullptr ? *p : *reinterpret_cast<const ::game::Vec3*>(
+      &::game::_Vec3_default_instance_);
+}
+inline const ::game::Vec3& InteractPortalRsp::spawn_position() const {
+  // @@protoc_insertion_point(field_get:game.InteractPortalRsp.spawn_position)
+  return _internal_spawn_position();
+}
+inline void InteractPortalRsp::unsafe_arena_set_allocated_spawn_position(
+    ::game::Vec3* spawn_position) {
+  if (GetArena() == nullptr) {
+    delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(spawn_position_);
+  }
+  spawn_position_ = spawn_position;
+  if (spawn_position) {
+    
+  } else {
+    
+  }
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:game.InteractPortalRsp.spawn_position)
+}
+inline ::game::Vec3* InteractPortalRsp::release_spawn_position() {
+  auto temp = unsafe_arena_release_spawn_position();
+  if (GetArena() != nullptr) {
+    temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+  }
+  return temp;
+}
+inline ::game::Vec3* InteractPortalRsp::unsafe_arena_release_spawn_position() {
+  // @@protoc_insertion_point(field_release:game.InteractPortalRsp.spawn_position)
+  
+  ::game::Vec3* temp = spawn_position_;
+  spawn_position_ = nullptr;
+  return temp;
+}
+inline ::game::Vec3* InteractPortalRsp::_internal_mutable_spawn_position() {
+  
+  if (spawn_position_ == nullptr) {
+    auto* p = CreateMaybeMessage<::game::Vec3>(GetArena());
+    spawn_position_ = p;
+  }
+  return spawn_position_;
+}
+inline ::game::Vec3* InteractPortalRsp::mutable_spawn_position() {
+  // @@protoc_insertion_point(field_mutable:game.InteractPortalRsp.spawn_position)
+  return _internal_mutable_spawn_position();
+}
+inline void InteractPortalRsp::set_allocated_spawn_position(::game::Vec3* spawn_position) {
+  ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArena();
+  if (message_arena == nullptr) {
+    delete spawn_position_;
+  }
+  if (spawn_position) {
+    ::PROTOBUF_NAMESPACE_ID::Arena* submessage_arena =
+      ::PROTOBUF_NAMESPACE_ID::Arena::GetArena(spawn_position);
+    if (message_arena != submessage_arena) {
+      spawn_position = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
+          message_arena, spawn_position, submessage_arena);
+    }
+    
+  } else {
+    
+  }
+  spawn_position_ = spawn_position;
+  // @@protoc_insertion_point(field_set_allocated:game.InteractPortalRsp.spawn_position)
+}
+
+// float spawn_yaw = 10;
+inline void InteractPortalRsp::clear_spawn_yaw() {
+  spawn_yaw_ = 0;
+}
+inline float InteractPortalRsp::_internal_spawn_yaw() const {
+  return spawn_yaw_;
+}
+inline float InteractPortalRsp::spawn_yaw() const {
+  // @@protoc_insertion_point(field_get:game.InteractPortalRsp.spawn_yaw)
+  return _internal_spawn_yaw();
+}
+inline void InteractPortalRsp::_internal_set_spawn_yaw(float value) {
+  
+  spawn_yaw_ = value;
+}
+inline void InteractPortalRsp::set_spawn_yaw(float value) {
+  _internal_set_spawn_yaw(value);
+  // @@protoc_insertion_point(field_set:game.InteractPortalRsp.spawn_yaw)
+}
+
+// uint64 map_data_version = 11;
+inline void InteractPortalRsp::clear_map_data_version() {
+  map_data_version_ = PROTOBUF_ULONGLONG(0);
+}
+inline ::PROTOBUF_NAMESPACE_ID::uint64 InteractPortalRsp::_internal_map_data_version() const {
+  return map_data_version_;
+}
+inline ::PROTOBUF_NAMESPACE_ID::uint64 InteractPortalRsp::map_data_version() const {
+  // @@protoc_insertion_point(field_get:game.InteractPortalRsp.map_data_version)
+  return _internal_map_data_version();
+}
+inline void InteractPortalRsp::_internal_set_map_data_version(::PROTOBUF_NAMESPACE_ID::uint64 value) {
+  
+  map_data_version_ = value;
+}
+inline void InteractPortalRsp::set_map_data_version(::PROTOBUF_NAMESPACE_ID::uint64 value) {
+  _internal_set_map_data_version(value);
+  // @@protoc_insertion_point(field_set:game.InteractPortalRsp.map_data_version)
+}
+
+// string map_data_sha256 = 12;
+inline void InteractPortalRsp::clear_map_data_sha256() {
+  map_data_sha256_.ClearToEmpty(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
+}
+inline const std::string& InteractPortalRsp::map_data_sha256() const {
+  // @@protoc_insertion_point(field_get:game.InteractPortalRsp.map_data_sha256)
+  return _internal_map_data_sha256();
+}
+inline void InteractPortalRsp::set_map_data_sha256(const std::string& value) {
+  _internal_set_map_data_sha256(value);
+  // @@protoc_insertion_point(field_set:game.InteractPortalRsp.map_data_sha256)
+}
+inline std::string* InteractPortalRsp::mutable_map_data_sha256() {
+  // @@protoc_insertion_point(field_mutable:game.InteractPortalRsp.map_data_sha256)
+  return _internal_mutable_map_data_sha256();
+}
+inline const std::string& InteractPortalRsp::_internal_map_data_sha256() const {
+  return map_data_sha256_.Get();
+}
+inline void InteractPortalRsp::_internal_set_map_data_sha256(const std::string& value) {
+  
+  map_data_sha256_.Set(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), value, GetArena());
+}
+inline void InteractPortalRsp::set_map_data_sha256(std::string&& value) {
+  
+  map_data_sha256_.Set(
+    &::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), ::std::move(value), GetArena());
+  // @@protoc_insertion_point(field_set_rvalue:game.InteractPortalRsp.map_data_sha256)
+}
+inline void InteractPortalRsp::set_map_data_sha256(const char* value) {
+  GOOGLE_DCHECK(value != nullptr);
+  
+  map_data_sha256_.Set(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), ::std::string(value),
+              GetArena());
+  // @@protoc_insertion_point(field_set_char:game.InteractPortalRsp.map_data_sha256)
+}
+inline void InteractPortalRsp::set_map_data_sha256(const char* value,
+    size_t size) {
+  
+  map_data_sha256_.Set(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), ::std::string(
+      reinterpret_cast<const char*>(value), size), GetArena());
+  // @@protoc_insertion_point(field_set_pointer:game.InteractPortalRsp.map_data_sha256)
+}
+inline std::string* InteractPortalRsp::_internal_mutable_map_data_sha256() {
+  
+  return map_data_sha256_.Mutable(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
+}
+inline std::string* InteractPortalRsp::release_map_data_sha256() {
+  // @@protoc_insertion_point(field_release:game.InteractPortalRsp.map_data_sha256)
+  return map_data_sha256_.Release(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
+}
+inline void InteractPortalRsp::set_allocated_map_data_sha256(std::string* map_data_sha256) {
+  if (map_data_sha256 != nullptr) {
+    
+  } else {
+    
+  }
+  map_data_sha256_.SetAllocated(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), map_data_sha256,
+      GetArena());
+  // @@protoc_insertion_point(field_set_allocated:game.InteractPortalRsp.map_data_sha256)
+}
+inline std::string* InteractPortalRsp::unsafe_arena_release_map_data_sha256() {
+  // @@protoc_insertion_point(field_unsafe_arena_release:game.InteractPortalRsp.map_data_sha256)
+  GOOGLE_DCHECK(GetArena() != nullptr);
+  
+  return map_data_sha256_.UnsafeArenaRelease(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(),
+      GetArena());
+}
+inline void InteractPortalRsp::unsafe_arena_set_allocated_map_data_sha256(
+    std::string* map_data_sha256) {
+  GOOGLE_DCHECK(GetArena() != nullptr);
+  if (map_data_sha256 != nullptr) {
+    
+  } else {
+    
+  }
+  map_data_sha256_.UnsafeArenaSetAllocated(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(),
+      map_data_sha256, GetArena());
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:game.InteractPortalRsp.map_data_sha256)
+}
+
+// .game.EntitySnapshot self = 13;
+inline bool InteractPortalRsp::_internal_has_self() const {
+  return this != internal_default_instance() && self_ != nullptr;
+}
+inline bool InteractPortalRsp::has_self() const {
+  return _internal_has_self();
+}
+inline void InteractPortalRsp::clear_self() {
+  if (GetArena() == nullptr && self_ != nullptr) {
+    delete self_;
+  }
+  self_ = nullptr;
+}
+inline const ::game::EntitySnapshot& InteractPortalRsp::_internal_self() const {
+  const ::game::EntitySnapshot* p = self_;
+  return p != nullptr ? *p : *reinterpret_cast<const ::game::EntitySnapshot*>(
+      &::game::_EntitySnapshot_default_instance_);
+}
+inline const ::game::EntitySnapshot& InteractPortalRsp::self() const {
+  // @@protoc_insertion_point(field_get:game.InteractPortalRsp.self)
+  return _internal_self();
+}
+inline void InteractPortalRsp::unsafe_arena_set_allocated_self(
+    ::game::EntitySnapshot* self) {
+  if (GetArena() == nullptr) {
+    delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(self_);
+  }
+  self_ = self;
+  if (self) {
+    
+  } else {
+    
+  }
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:game.InteractPortalRsp.self)
+}
+inline ::game::EntitySnapshot* InteractPortalRsp::release_self() {
+  auto temp = unsafe_arena_release_self();
+  if (GetArena() != nullptr) {
+    temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+  }
+  return temp;
+}
+inline ::game::EntitySnapshot* InteractPortalRsp::unsafe_arena_release_self() {
+  // @@protoc_insertion_point(field_release:game.InteractPortalRsp.self)
+  
+  ::game::EntitySnapshot* temp = self_;
+  self_ = nullptr;
+  return temp;
+}
+inline ::game::EntitySnapshot* InteractPortalRsp::_internal_mutable_self() {
+  
+  if (self_ == nullptr) {
+    auto* p = CreateMaybeMessage<::game::EntitySnapshot>(GetArena());
+    self_ = p;
+  }
+  return self_;
+}
+inline ::game::EntitySnapshot* InteractPortalRsp::mutable_self() {
+  // @@protoc_insertion_point(field_mutable:game.InteractPortalRsp.self)
+  return _internal_mutable_self();
+}
+inline void InteractPortalRsp::set_allocated_self(::game::EntitySnapshot* self) {
+  ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArena();
+  if (message_arena == nullptr) {
+    delete self_;
+  }
+  if (self) {
+    ::PROTOBUF_NAMESPACE_ID::Arena* submessage_arena =
+      ::PROTOBUF_NAMESPACE_ID::Arena::GetArena(self);
+    if (message_arena != submessage_arena) {
+      self = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
+          message_arena, self, submessage_arena);
+    }
+    
+  } else {
+    
+  }
+  self_ = self;
+  // @@protoc_insertion_point(field_set_allocated:game.InteractPortalRsp.self)
+}
+
+// repeated .game.EntitySnapshot aoi_snapshot = 14;
+inline int InteractPortalRsp::_internal_aoi_snapshot_size() const {
+  return aoi_snapshot_.size();
+}
+inline int InteractPortalRsp::aoi_snapshot_size() const {
+  return _internal_aoi_snapshot_size();
+}
+inline void InteractPortalRsp::clear_aoi_snapshot() {
+  aoi_snapshot_.Clear();
+}
+inline ::game::EntitySnapshot* InteractPortalRsp::mutable_aoi_snapshot(int index) {
+  // @@protoc_insertion_point(field_mutable:game.InteractPortalRsp.aoi_snapshot)
+  return aoi_snapshot_.Mutable(index);
+}
+inline ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::game::EntitySnapshot >*
+InteractPortalRsp::mutable_aoi_snapshot() {
+  // @@protoc_insertion_point(field_mutable_list:game.InteractPortalRsp.aoi_snapshot)
+  return &aoi_snapshot_;
+}
+inline const ::game::EntitySnapshot& InteractPortalRsp::_internal_aoi_snapshot(int index) const {
+  return aoi_snapshot_.Get(index);
+}
+inline const ::game::EntitySnapshot& InteractPortalRsp::aoi_snapshot(int index) const {
+  // @@protoc_insertion_point(field_get:game.InteractPortalRsp.aoi_snapshot)
+  return _internal_aoi_snapshot(index);
+}
+inline ::game::EntitySnapshot* InteractPortalRsp::_internal_add_aoi_snapshot() {
+  return aoi_snapshot_.Add();
+}
+inline ::game::EntitySnapshot* InteractPortalRsp::add_aoi_snapshot() {
+  // @@protoc_insertion_point(field_add:game.InteractPortalRsp.aoi_snapshot)
+  return _internal_add_aoi_snapshot();
+}
+inline const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::game::EntitySnapshot >&
+InteractPortalRsp::aoi_snapshot() const {
+  // @@protoc_insertion_point(field_list:game.InteractPortalRsp.aoi_snapshot)
+  return aoi_snapshot_;
+}
+
+// string kind = 15;
+inline void InteractPortalRsp::clear_kind() {
+  kind_.ClearToEmpty(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
+}
+inline const std::string& InteractPortalRsp::kind() const {
+  // @@protoc_insertion_point(field_get:game.InteractPortalRsp.kind)
+  return _internal_kind();
+}
+inline void InteractPortalRsp::set_kind(const std::string& value) {
+  _internal_set_kind(value);
+  // @@protoc_insertion_point(field_set:game.InteractPortalRsp.kind)
+}
+inline std::string* InteractPortalRsp::mutable_kind() {
+  // @@protoc_insertion_point(field_mutable:game.InteractPortalRsp.kind)
+  return _internal_mutable_kind();
+}
+inline const std::string& InteractPortalRsp::_internal_kind() const {
+  return kind_.Get();
+}
+inline void InteractPortalRsp::_internal_set_kind(const std::string& value) {
+  
+  kind_.Set(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), value, GetArena());
+}
+inline void InteractPortalRsp::set_kind(std::string&& value) {
+  
+  kind_.Set(
+    &::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), ::std::move(value), GetArena());
+  // @@protoc_insertion_point(field_set_rvalue:game.InteractPortalRsp.kind)
+}
+inline void InteractPortalRsp::set_kind(const char* value) {
+  GOOGLE_DCHECK(value != nullptr);
+  
+  kind_.Set(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), ::std::string(value),
+              GetArena());
+  // @@protoc_insertion_point(field_set_char:game.InteractPortalRsp.kind)
+}
+inline void InteractPortalRsp::set_kind(const char* value,
+    size_t size) {
+  
+  kind_.Set(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), ::std::string(
+      reinterpret_cast<const char*>(value), size), GetArena());
+  // @@protoc_insertion_point(field_set_pointer:game.InteractPortalRsp.kind)
+}
+inline std::string* InteractPortalRsp::_internal_mutable_kind() {
+  
+  return kind_.Mutable(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
+}
+inline std::string* InteractPortalRsp::release_kind() {
+  // @@protoc_insertion_point(field_release:game.InteractPortalRsp.kind)
+  return kind_.Release(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
+}
+inline void InteractPortalRsp::set_allocated_kind(std::string* kind) {
+  if (kind != nullptr) {
+    
+  } else {
+    
+  }
+  kind_.SetAllocated(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), kind,
+      GetArena());
+  // @@protoc_insertion_point(field_set_allocated:game.InteractPortalRsp.kind)
+}
+inline std::string* InteractPortalRsp::unsafe_arena_release_kind() {
+  // @@protoc_insertion_point(field_unsafe_arena_release:game.InteractPortalRsp.kind)
+  GOOGLE_DCHECK(GetArena() != nullptr);
+  
+  return kind_.UnsafeArenaRelease(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(),
+      GetArena());
+}
+inline void InteractPortalRsp::unsafe_arena_set_allocated_kind(
+    std::string* kind) {
+  GOOGLE_DCHECK(GetArena() != nullptr);
+  if (kind != nullptr) {
+    
+  } else {
+    
+  }
+  kind_.UnsafeArenaSetAllocated(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(),
+      kind, GetArena());
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:game.InteractPortalRsp.kind)
+}
+
+// uint32 line_no = 16;
+inline void InteractPortalRsp::clear_line_no() {
+  line_no_ = 0u;
+}
+inline ::PROTOBUF_NAMESPACE_ID::uint32 InteractPortalRsp::_internal_line_no() const {
+  return line_no_;
+}
+inline ::PROTOBUF_NAMESPACE_ID::uint32 InteractPortalRsp::line_no() const {
+  // @@protoc_insertion_point(field_get:game.InteractPortalRsp.line_no)
+  return _internal_line_no();
+}
+inline void InteractPortalRsp::_internal_set_line_no(::PROTOBUF_NAMESPACE_ID::uint32 value) {
+  
+  line_no_ = value;
+}
+inline void InteractPortalRsp::set_line_no(::PROTOBUF_NAMESPACE_ID::uint32 value) {
+  _internal_set_line_no(value);
+  // @@protoc_insertion_point(field_set:game.InteractPortalRsp.line_no)
+}
+
+// uint32 occupancy = 17;
+inline void InteractPortalRsp::clear_occupancy() {
+  occupancy_ = 0u;
+}
+inline ::PROTOBUF_NAMESPACE_ID::uint32 InteractPortalRsp::_internal_occupancy() const {
+  return occupancy_;
+}
+inline ::PROTOBUF_NAMESPACE_ID::uint32 InteractPortalRsp::occupancy() const {
+  // @@protoc_insertion_point(field_get:game.InteractPortalRsp.occupancy)
+  return _internal_occupancy();
+}
+inline void InteractPortalRsp::_internal_set_occupancy(::PROTOBUF_NAMESPACE_ID::uint32 value) {
+  
+  occupancy_ = value;
+}
+inline void InteractPortalRsp::set_occupancy(::PROTOBUF_NAMESPACE_ID::uint32 value) {
+  _internal_set_occupancy(value);
+  // @@protoc_insertion_point(field_set:game.InteractPortalRsp.occupancy)
+}
+
+// uint32 soft_cap = 18;
+inline void InteractPortalRsp::clear_soft_cap() {
+  soft_cap_ = 0u;
+}
+inline ::PROTOBUF_NAMESPACE_ID::uint32 InteractPortalRsp::_internal_soft_cap() const {
+  return soft_cap_;
+}
+inline ::PROTOBUF_NAMESPACE_ID::uint32 InteractPortalRsp::soft_cap() const {
+  // @@protoc_insertion_point(field_get:game.InteractPortalRsp.soft_cap)
+  return _internal_soft_cap();
+}
+inline void InteractPortalRsp::_internal_set_soft_cap(::PROTOBUF_NAMESPACE_ID::uint32 value) {
+  
+  soft_cap_ = value;
+}
+inline void InteractPortalRsp::set_soft_cap(::PROTOBUF_NAMESPACE_ID::uint32 value) {
+  _internal_set_soft_cap(value);
+  // @@protoc_insertion_point(field_set:game.InteractPortalRsp.soft_cap)
+}
+
+// uint32 hard_cap = 19;
+inline void InteractPortalRsp::clear_hard_cap() {
+  hard_cap_ = 0u;
+}
+inline ::PROTOBUF_NAMESPACE_ID::uint32 InteractPortalRsp::_internal_hard_cap() const {
+  return hard_cap_;
+}
+inline ::PROTOBUF_NAMESPACE_ID::uint32 InteractPortalRsp::hard_cap() const {
+  // @@protoc_insertion_point(field_get:game.InteractPortalRsp.hard_cap)
+  return _internal_hard_cap();
+}
+inline void InteractPortalRsp::_internal_set_hard_cap(::PROTOBUF_NAMESPACE_ID::uint32 value) {
+  
+  hard_cap_ = value;
+}
+inline void InteractPortalRsp::set_hard_cap(::PROTOBUF_NAMESPACE_ID::uint32 value) {
+  _internal_set_hard_cap(value);
+  // @@protoc_insertion_point(field_set:game.InteractPortalRsp.hard_cap)
+}
+
+// string portal_id = 20;
+inline void InteractPortalRsp::clear_portal_id() {
+  portal_id_.ClearToEmpty(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
+}
+inline const std::string& InteractPortalRsp::portal_id() const {
+  // @@protoc_insertion_point(field_get:game.InteractPortalRsp.portal_id)
+  return _internal_portal_id();
+}
+inline void InteractPortalRsp::set_portal_id(const std::string& value) {
+  _internal_set_portal_id(value);
+  // @@protoc_insertion_point(field_set:game.InteractPortalRsp.portal_id)
+}
+inline std::string* InteractPortalRsp::mutable_portal_id() {
+  // @@protoc_insertion_point(field_mutable:game.InteractPortalRsp.portal_id)
+  return _internal_mutable_portal_id();
+}
+inline const std::string& InteractPortalRsp::_internal_portal_id() const {
+  return portal_id_.Get();
+}
+inline void InteractPortalRsp::_internal_set_portal_id(const std::string& value) {
+  
+  portal_id_.Set(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), value, GetArena());
+}
+inline void InteractPortalRsp::set_portal_id(std::string&& value) {
+  
+  portal_id_.Set(
+    &::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), ::std::move(value), GetArena());
+  // @@protoc_insertion_point(field_set_rvalue:game.InteractPortalRsp.portal_id)
+}
+inline void InteractPortalRsp::set_portal_id(const char* value) {
+  GOOGLE_DCHECK(value != nullptr);
+  
+  portal_id_.Set(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), ::std::string(value),
+              GetArena());
+  // @@protoc_insertion_point(field_set_char:game.InteractPortalRsp.portal_id)
+}
+inline void InteractPortalRsp::set_portal_id(const char* value,
+    size_t size) {
+  
+  portal_id_.Set(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), ::std::string(
+      reinterpret_cast<const char*>(value), size), GetArena());
+  // @@protoc_insertion_point(field_set_pointer:game.InteractPortalRsp.portal_id)
+}
+inline std::string* InteractPortalRsp::_internal_mutable_portal_id() {
+  
+  return portal_id_.Mutable(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
+}
+inline std::string* InteractPortalRsp::release_portal_id() {
+  // @@protoc_insertion_point(field_release:game.InteractPortalRsp.portal_id)
+  return portal_id_.Release(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
+}
+inline void InteractPortalRsp::set_allocated_portal_id(std::string* portal_id) {
+  if (portal_id != nullptr) {
+    
+  } else {
+    
+  }
+  portal_id_.SetAllocated(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), portal_id,
+      GetArena());
+  // @@protoc_insertion_point(field_set_allocated:game.InteractPortalRsp.portal_id)
+}
+inline std::string* InteractPortalRsp::unsafe_arena_release_portal_id() {
+  // @@protoc_insertion_point(field_unsafe_arena_release:game.InteractPortalRsp.portal_id)
+  GOOGLE_DCHECK(GetArena() != nullptr);
+  
+  return portal_id_.UnsafeArenaRelease(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(),
+      GetArena());
+}
+inline void InteractPortalRsp::unsafe_arena_set_allocated_portal_id(
+    std::string* portal_id) {
+  GOOGLE_DCHECK(GetArena() != nullptr);
+  if (portal_id != nullptr) {
+    
+  } else {
+    
+  }
+  portal_id_.UnsafeArenaSetAllocated(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(),
+      portal_id, GetArena());
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:game.InteractPortalRsp.portal_id)
+}
+
+// uint64 from_map_template_id = 21;
+inline void InteractPortalRsp::clear_from_map_template_id() {
+  from_map_template_id_ = PROTOBUF_ULONGLONG(0);
+}
+inline ::PROTOBUF_NAMESPACE_ID::uint64 InteractPortalRsp::_internal_from_map_template_id() const {
+  return from_map_template_id_;
+}
+inline ::PROTOBUF_NAMESPACE_ID::uint64 InteractPortalRsp::from_map_template_id() const {
+  // @@protoc_insertion_point(field_get:game.InteractPortalRsp.from_map_template_id)
+  return _internal_from_map_template_id();
+}
+inline void InteractPortalRsp::_internal_set_from_map_template_id(::PROTOBUF_NAMESPACE_ID::uint64 value) {
+  
+  from_map_template_id_ = value;
+}
+inline void InteractPortalRsp::set_from_map_template_id(::PROTOBUF_NAMESPACE_ID::uint64 value) {
+  _internal_set_from_map_template_id(value);
+  // @@protoc_insertion_point(field_set:game.InteractPortalRsp.from_map_template_id)
 }
 
 // -------------------------------------------------------------------
@@ -49451,6 +52234,79 @@ inline ::game::EnqueueMapReq* GameRequest::mutable_enqueue_map() {
   return _internal_mutable_enqueue_map();
 }
 
+// .game.InteractPortalReq interact_portal = 80;
+inline bool GameRequest::_internal_has_interact_portal() const {
+  return body_case() == kInteractPortal;
+}
+inline bool GameRequest::has_interact_portal() const {
+  return _internal_has_interact_portal();
+}
+inline void GameRequest::set_has_interact_portal() {
+  _oneof_case_[0] = kInteractPortal;
+}
+inline void GameRequest::clear_interact_portal() {
+  if (_internal_has_interact_portal()) {
+    if (GetArena() == nullptr) {
+      delete body_.interact_portal_;
+    }
+    clear_has_body();
+  }
+}
+inline ::game::InteractPortalReq* GameRequest::release_interact_portal() {
+  // @@protoc_insertion_point(field_release:game.GameRequest.interact_portal)
+  if (_internal_has_interact_portal()) {
+    clear_has_body();
+      ::game::InteractPortalReq* temp = body_.interact_portal_;
+    if (GetArena() != nullptr) {
+      temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+    }
+    body_.interact_portal_ = nullptr;
+    return temp;
+  } else {
+    return nullptr;
+  }
+}
+inline const ::game::InteractPortalReq& GameRequest::_internal_interact_portal() const {
+  return _internal_has_interact_portal()
+      ? *body_.interact_portal_
+      : *reinterpret_cast< ::game::InteractPortalReq*>(&::game::_InteractPortalReq_default_instance_);
+}
+inline const ::game::InteractPortalReq& GameRequest::interact_portal() const {
+  // @@protoc_insertion_point(field_get:game.GameRequest.interact_portal)
+  return _internal_interact_portal();
+}
+inline ::game::InteractPortalReq* GameRequest::unsafe_arena_release_interact_portal() {
+  // @@protoc_insertion_point(field_unsafe_arena_release:game.GameRequest.interact_portal)
+  if (_internal_has_interact_portal()) {
+    clear_has_body();
+    ::game::InteractPortalReq* temp = body_.interact_portal_;
+    body_.interact_portal_ = nullptr;
+    return temp;
+  } else {
+    return nullptr;
+  }
+}
+inline void GameRequest::unsafe_arena_set_allocated_interact_portal(::game::InteractPortalReq* interact_portal) {
+  clear_body();
+  if (interact_portal) {
+    set_has_interact_portal();
+    body_.interact_portal_ = interact_portal;
+  }
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:game.GameRequest.interact_portal)
+}
+inline ::game::InteractPortalReq* GameRequest::_internal_mutable_interact_portal() {
+  if (!_internal_has_interact_portal()) {
+    clear_body();
+    set_has_interact_portal();
+    body_.interact_portal_ = CreateMaybeMessage< ::game::InteractPortalReq >(GetArena());
+  }
+  return body_.interact_portal_;
+}
+inline ::game::InteractPortalReq* GameRequest::mutable_interact_portal() {
+  // @@protoc_insertion_point(field_mutable:game.GameRequest.interact_portal)
+  return _internal_mutable_interact_portal();
+}
+
 inline bool GameRequest::has_body() const {
   return body_case() != BODY_NOT_SET;
 }
@@ -52999,6 +55855,79 @@ inline ::game::EnqueueMapRsp* GameResponse::mutable_enqueue_map() {
   return _internal_mutable_enqueue_map();
 }
 
+// .game.InteractPortalRsp interact_portal = 81;
+inline bool GameResponse::_internal_has_interact_portal() const {
+  return body_case() == kInteractPortal;
+}
+inline bool GameResponse::has_interact_portal() const {
+  return _internal_has_interact_portal();
+}
+inline void GameResponse::set_has_interact_portal() {
+  _oneof_case_[0] = kInteractPortal;
+}
+inline void GameResponse::clear_interact_portal() {
+  if (_internal_has_interact_portal()) {
+    if (GetArena() == nullptr) {
+      delete body_.interact_portal_;
+    }
+    clear_has_body();
+  }
+}
+inline ::game::InteractPortalRsp* GameResponse::release_interact_portal() {
+  // @@protoc_insertion_point(field_release:game.GameResponse.interact_portal)
+  if (_internal_has_interact_portal()) {
+    clear_has_body();
+      ::game::InteractPortalRsp* temp = body_.interact_portal_;
+    if (GetArena() != nullptr) {
+      temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+    }
+    body_.interact_portal_ = nullptr;
+    return temp;
+  } else {
+    return nullptr;
+  }
+}
+inline const ::game::InteractPortalRsp& GameResponse::_internal_interact_portal() const {
+  return _internal_has_interact_portal()
+      ? *body_.interact_portal_
+      : *reinterpret_cast< ::game::InteractPortalRsp*>(&::game::_InteractPortalRsp_default_instance_);
+}
+inline const ::game::InteractPortalRsp& GameResponse::interact_portal() const {
+  // @@protoc_insertion_point(field_get:game.GameResponse.interact_portal)
+  return _internal_interact_portal();
+}
+inline ::game::InteractPortalRsp* GameResponse::unsafe_arena_release_interact_portal() {
+  // @@protoc_insertion_point(field_unsafe_arena_release:game.GameResponse.interact_portal)
+  if (_internal_has_interact_portal()) {
+    clear_has_body();
+    ::game::InteractPortalRsp* temp = body_.interact_portal_;
+    body_.interact_portal_ = nullptr;
+    return temp;
+  } else {
+    return nullptr;
+  }
+}
+inline void GameResponse::unsafe_arena_set_allocated_interact_portal(::game::InteractPortalRsp* interact_portal) {
+  clear_body();
+  if (interact_portal) {
+    set_has_interact_portal();
+    body_.interact_portal_ = interact_portal;
+  }
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:game.GameResponse.interact_portal)
+}
+inline ::game::InteractPortalRsp* GameResponse::_internal_mutable_interact_portal() {
+  if (!_internal_has_interact_portal()) {
+    clear_body();
+    set_has_interact_portal();
+    body_.interact_portal_ = CreateMaybeMessage< ::game::InteractPortalRsp >(GetArena());
+  }
+  return body_.interact_portal_;
+}
+inline ::game::InteractPortalRsp* GameResponse::mutable_interact_portal() {
+  // @@protoc_insertion_point(field_mutable:game.GameResponse.interact_portal)
+  return _internal_mutable_interact_portal();
+}
+
 inline bool GameResponse::has_body() const {
   return body_case() != BODY_NOT_SET;
 }
@@ -53011,6 +55940,12 @@ inline GameResponse::BodyCase GameResponse::body_case() const {
 #ifdef __GNUC__
   #pragma GCC diagnostic pop
 #endif  // __GNUC__
+// -------------------------------------------------------------------
+
+// -------------------------------------------------------------------
+
+// -------------------------------------------------------------------
+
 // -------------------------------------------------------------------
 
 // -------------------------------------------------------------------

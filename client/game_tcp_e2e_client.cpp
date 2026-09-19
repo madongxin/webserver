@@ -2400,6 +2400,18 @@ int CmdClientHello(int argc, char **argv) {
             PrintKv("hello_map_template_id", m.map_template_id());
             PrintKv("hello_map_data_version", m.data_version());
             PrintKv("hello_map_sha256", m.sha256());
+            if (!m.scene_name().empty())
+                PrintKv("hello_map_scene", m.scene_name());
+            if (!m.kind().empty())
+                PrintKv("hello_map_kind", m.kind());
+            if (m.visual_map_template_id() != 0)
+                PrintKv("hello_map_visual_template_id", m.visual_map_template_id());
+            PrintKv("hello_map_portals_n", static_cast<uint64_t>(m.portals_size()));
+            for (int p = 0; p < m.portals_size(); ++p) {
+                const auto &pt = m.portals(p);
+                PrintKv("hello_portal_id", pt.portal_id());
+                PrintKv("hello_portal_to", pt.to_map_template_id());
+            }
         }
     }
     ::close(fd);

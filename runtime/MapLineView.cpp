@@ -83,12 +83,8 @@ std::string PrometheusText(const std::string &owner_only) {
     if (!PlacementStore::Instance().Available())
         return "";
     std::ostringstream os;
-    os << "# HELP gamemesh_map_line_occupancy Players reserved on a LINE instance.\n"
-          "# TYPE gamemesh_map_line_occupancy gauge\n";
     std::ostringstream count_os;
-    count_os << "# HELP gamemesh_map_line_count Ready LINE instances per owner/template.\n"
-                "# TYPE gamemesh_map_line_count gauge\n";
-    bool any = false;
+    bool any_line = false;
     std::unordered_map<std::string, uint32_t> counts;
     const auto entries = MapCatalog::Instance().ManifestEntries();
     for (const auto &e : entries) {
@@ -100,7 +96,13 @@ std::string PrometheusText(const std::string &owner_only) {
         for (const auto &r : rows) {
             if (!owner_only.empty() && r.owner_logic_server_id != owner_only)
                 continue;
-            any = true;
+            if (!any_line) {
+                os << "# HELP gamemesh_map_line_occupancy Players reserved on a LINE instance.\n"
+                      "# TYPE gamemesh_map_line_occupancy gauge\n";
+                count_os << "# HELP gamemesh_map_line_count Ready LINE instances per owner/template.\n"
+                            "# TYPE gamemesh_map_line_count gauge\n";
+                any_line = true;
+            }
             const std::string owner =
                 r.owner_logic_server_id.empty() ? "unknown" : r.owner_logic_server_id;
             os << "gamemesh_map_line_occupancy{map_template_id=\"" << e.map_template_id
@@ -111,18 +113,71 @@ std::string PrometheusText(const std::string &owner_only) {
             counts[ck] += 1;
         }
     }
-    if (!any)
-        return "";
-    os << "\n";
-    for (const auto &kv : counts) {
-        const auto tab = kv.first.find('\t');
-        const std::string owner = kv.first.substr(0, tab);
-        const std::string tpl = tab == std::string::npos ? "0" : kv.first.substr(tab + 1);
-        count_os << "gamemesh_map_line_count{map_template_id=\"" << tpl << "\",owner=\""
-                 << PromEscape(owner) << "\",kind=\"LINE\"} " << kv.second << "\n";
+    if (any_line) {
+        os << "\n";
+        for (const auto &kv : counts) {
+            const auto tab = kv.first.find('\t');
+            const std::string owner = kv.first.substr(0, tab);
+            const std::string tpl = tab == std::string::npos ? "0" : kv.first.substr(tab + 1);
+            count_os << "gamemesh_map_line_count{map_template_id=\"" << tpl << "\",owner=\""
+                     << PromEscape(owner) << "\",kind=\"LINE\"} " << kv.second << "\n";
+        }
+        count_os << "\n";
+        os << count_os.str();
     }
-    count_os << "\n";
-    os << count_os.str();
+
+    std::ostringstream d_os;
+    std::ostringstream d_mem;
+    std::ostringstream d_cnt;
+    bool any_dungeon = false;
+    std::unordered_map<std::string, uint32_t> d_counts;
+    for (const auto &e : entries) {
+        if (e.policy.kind != SceneKind::Dungeon)
+            continue;
+        std::vector<MapDungeonInfo> rows;
+        if (!PlacementStore::Instance().ListDungeons(1, e.map_template_id, &rows))
+            continue;
+        for (const auto &r : rows) {
+            if (!owner_only.empty() && r.owner_logic_server_id != owner_only)
+                continue;
+            if (r.state == "CLOSED")
+                continue;
+            if (!any_dungeon) {
+                d_os << "# HELP gamemesh_map_dungeon_occupancy Players reserved on a DUNGEON instance.\n"
+                        "# TYPE gamemesh_map_dungeon_occupancy gauge\n";
+                d_mem << "# HELP gamemesh_map_dungeon_members Allowed members on a DUNGEON instance.\n"
+                         "# TYPE gamemesh_map_dungeon_members gauge\n";
+                d_cnt << "# HELP gamemesh_map_dungeon_count Live DUNGEON instances per owner/template.\n"
+                         "# TYPE gamemesh_map_dungeon_count gauge\n";
+                any_dungeon = true;
+            }
+            const std::string owner =
+                r.owner_logic_server_id.empty() ? "unknown" : r.owner_logic_server_id;
+            d_os << "gamemesh_map_dungeon_occupancy{map_template_id=\"" << e.map_template_id
+                 << "\",map_instance_id=\"" << r.map_instance_id << "\",owner=\""
+                 << PromEscape(owner) << "\",kind=\"DUNGEON\",state=\"" << PromEscape(r.state)
+                 << "\",soft_cap=\"" << r.soft_cap << "\",hard_cap=\"" << r.hard_cap << "\"} "
+                 << r.occupancy << "\n";
+            d_mem << "gamemesh_map_dungeon_members{map_template_id=\"" << e.map_template_id
+                  << "\",map_instance_id=\"" << r.map_instance_id << "\",owner=\""
+                  << PromEscape(owner) << "\",kind=\"DUNGEON\",state=\"" << PromEscape(r.state)
+                  << "\"} " << r.members_n << "\n";
+            const std::string ck = owner + "\t" + std::to_string(e.map_template_id);
+            d_counts[ck] += 1;
+        }
+    }
+    if (any_dungeon) {
+        d_os << "\n" << d_mem.str() << "\n";
+        for (const auto &kv : d_counts) {
+            const auto tab = kv.first.find('\t');
+            const std::string owner = kv.first.substr(0, tab);
+            const std::string tpl = tab == std::string::npos ? "0" : kv.first.substr(tab + 1);
+            d_cnt << "gamemesh_map_dungeon_count{map_template_id=\"" << tpl << "\",owner=\""
+                  << PromEscape(owner) << "\",kind=\"DUNGEON\"} " << kv.second << "\n";
+        }
+        d_cnt << "\n";
+        os << d_os.str() << d_cnt.str();
+    }
     return os.str();
 }
 

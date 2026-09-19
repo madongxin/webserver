@@ -83,7 +83,7 @@ required = [
     "SessionReplacedNotify", "MapManifestEntry",
     "CreateDungeonReq", "CreateDungeonRsp",
     "QueryMapLinesReq", "QueryMapLinesRsp", "SwitchLineReq", "SwitchLineRsp",
-    "MapLineInfo",
+    "MapLineInfo", "InteractPortalReq", "InteractPortalRsp", "PortalDef",
 ]
 missing = [t for t in required if not re.search(rf"message\s+{t}\b", proto_text)]
 if missing:

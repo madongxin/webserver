@@ -90,6 +90,18 @@ Push 外层永远是 `GameResponse.server_push`。`payload` 是**内层** `GameR
 
 地图文件：`config/maps/map_1001.json` + `.sha256`。客户端必须发送同一 SHA-256。
 
+## 传送门 / 副本 2102
+
+Hello `maps[]` 会带 `scene_name` / `kind` / `visual_map_template_id` / `portals[]`。
+
+- 公共图 **1001** 出生点旁有 `spawn_to_dungeon`，目标模板 **2102**（`kind=DUNGEON`）。
+- **2102 复用 1001 的 MainScene 与同一份网格 SHA-256**（`visual_map_template_id=1001`）。不要另做场景。
+- 玩家走进触发半径后发 `InteractPortal`（oneof 80）。禁止对 2102 发公网 `CreateDungeon`（`ERR_PORTAL_REQUIRED`）。
+- 成功响应按 `EnterMapRsp` 切图。副本内同一坐标的 `dungeon_to_spawn` 送回 1001。
+- 空本超过 `empty_close_delay=30s` 由 Session `CloseIdle` 关闭。
+
+冻结坐标（Hello 缺失时）：传送门 `(-22.5, -0.244, -7.25)`，半径 3m；1001 出生点 `(-28.5, -0.244, -7.25)`。
+
 ## Move / AOI
 
 协议字段已冻结（`MoveReq` 61，`AoiDelta` 62）。服务器权威位置：拒绝 NaN/Inf、越界、不可走、超速、旧 seq/epoch。AOI Push `aoi.delta.v1`（ENTER/LEAVE 可靠，MOVE 可合并）。

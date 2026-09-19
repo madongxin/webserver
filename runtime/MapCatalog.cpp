@@ -106,9 +106,12 @@ bool MapCatalog::LoadDirectory(const std::string &dir, std::string *err) {
         if (!MapStaticData::LoadFromFile(json_path, expect, &data, err))
             return false;
         if (data->map_template_id() != tid) {
-            if (err)
-                *err = "template id mismatch in " + file;
-            return false;
+            if (!m.get("allow_template_id_override", false).asBool()) {
+                if (err)
+                    *err = "template id mismatch in " + file;
+                return false;
+            }
+            data = data->CloneWithTemplateId(tid);
         }
         MapCatalog::ManifestEntry ent;
         ent.map_template_id = tid;
@@ -118,6 +121,10 @@ bool MapCatalog::LoadDirectory(const std::string &dir, std::string *err) {
         if (ent.data_version == 0)
             ent.data_version = data->data_version();
         ent.sha256 = data->sha256();
+        ent.scene_name = m.get("scene_name", data->scene_name()).asString();
+        if (ent.scene_name.empty())
+            ent.scene_name = data->scene_name();
+        ent.visual_map_template_id = m.get("visual_map_template_id", 0).asUInt64();
         ent.policy.kind = SceneKindFromString(m.get("kind", "").asString());
         ent.policy.soft_cap = m.get("soft_cap", 0).asUInt();
         ent.policy.hard_cap = m.get("hard_cap", 0).asUInt();
@@ -126,6 +133,7 @@ bool MapCatalog::LoadDirectory(const std::string &dir, std::string *err) {
         ent.policy.empty_close_delay = m.get("empty_close_delay", 0).asUInt();
         ent.policy.aoi_view_radius_cells = m.get("aoi_view_radius_cells", -1).asInt();
         ent.policy.spawn_scatter_radius = m.get("spawn_scatter_radius", 0).asFloat();
+        ent.policy.portal_gated = m.get("portal_gated", false).asBool();
         if (ent.policy.kind == SceneKind::Line) {
             if (ent.policy.soft_cap == 0)
                 ent.policy.soft_cap = 200;
@@ -146,6 +154,34 @@ bool MapCatalog::LoadDirectory(const std::string &dir, std::string *err) {
                 ent.policy.soft_cap = ent.policy.hard_cap;
             if (ent.policy.empty_close_delay == 0)
                 ent.policy.empty_close_delay = 30;
+        }
+        const Json::Value &portals = m["portals"];
+        if (portals.isArray()) {
+            for (const auto &p : portals) {
+                MapPortal portal;
+                portal.portal_id = p.get("portal_id", "").asString();
+                portal.from_map_template_id =
+                    p.isMember("from_map_template_id") && p["from_map_template_id"].asUInt64() != 0
+                        ? p["from_map_template_id"].asUInt64()
+                        : tid;
+                if (portal.from_map_template_id == 0)
+                    portal.from_map_template_id = tid;
+                portal.to_map_template_id = p.get("to_map_template_id", 0).asUInt64();
+                portal.yaw = p.get("yaw", 0).asFloat();
+                portal.trigger_radius = p.get("trigger_radius", 3).asFloat();
+                const Json::Value &pos = p["position"];
+                if (pos.isArray() && pos.size() == 3) {
+                    portal.position.x = pos[0].asFloat();
+                    portal.position.y = pos[1].asFloat();
+                    portal.position.z = pos[2].asFloat();
+                }
+                if (portal.portal_id.empty() || portal.to_map_template_id == 0) {
+                    if (err)
+                        *err = "portal missing portal_id/to_map_template_id";
+                    return false;
+                }
+                ent.portals.push_back(portal);
+            }
         }
         loaded[tid] = std::move(data);
         entries.push_back(std::move(ent));
@@ -236,4 +272,31 @@ bool MapCatalog::GetScenePolicy(uint64_t map_template_id, MapScenePolicy *out) c
         }
     }
     return false;
+}
+
+bool MapCatalog::GetPortal(uint64_t from_map_template_id, const std::string &portal_id,
+                           MapPortal *out) const {
+    if (!out || from_map_template_id == 0 || portal_id.empty())
+        return false;
+    std::lock_guard<std::mutex> lk(mu_);
+    for (const auto &e : manifest_entries_) {
+        if (e.map_template_id != from_map_template_id)
+            continue;
+        for (const auto &p : e.portals) {
+            if (p.portal_id == portal_id) {
+                *out = p;
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+std::vector<MapPortal> MapCatalog::PortalsFor(uint64_t map_template_id) const {
+    std::lock_guard<std::mutex> lk(mu_);
+    for (const auto &e : manifest_entries_) {
+        if (e.map_template_id == map_template_id)
+            return e.portals;
+    }
+    return {};
 }

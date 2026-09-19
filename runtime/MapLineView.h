@@ -22,7 +22,7 @@ bool FillLines(uint32_t realm_id, uint64_t map_template_id,
 bool FillQueryRsp(uint32_t realm_id, uint64_t map_template_id, game::QueryMapLinesRsp *out);
 #endif
 
-/** Redis 权威分线占用。owner_only 非空时只导出该 GameLogic 的线。 */
+/** Redis 权威分线/副本占用。owner_only 非空时只导出该 GameLogic 的实例。 */
 std::string PrometheusText(const std::string &owner_only);
 
 }  // namespace MapLineView

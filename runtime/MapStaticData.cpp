@@ -316,3 +316,10 @@ bool MapStaticData::FindScatteredSpawn(float cx, float cy, float cz, float radiu
     }
     return IsWalkable(cx, cz);
 }
+
+std::shared_ptr<const MapStaticData> MapStaticData::CloneWithTemplateId(
+    uint64_t map_template_id) const {
+    auto copy = std::shared_ptr<MapStaticData>(new MapStaticData(*this));
+    copy->map_template_id_ = map_template_id;
+    return copy;
+}

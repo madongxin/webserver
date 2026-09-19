@@ -45,4 +45,10 @@ bool BeginOrchestrateGatewayEnqueueMap(const SessionHandle &sticky,
                                        const std::string &request_payload,
                                        GatewayEnterMapDone done);
 
+bool OrchestrateGatewayInteractPortal(const SessionHandle &sticky, const std::string &request_payload,
+                                      std::string *response_frame, SessionHandle *route_out);
+bool BeginOrchestrateGatewayInteractPortal(const SessionHandle &sticky,
+                                           const std::string &request_payload,
+                                           GatewayEnterMapDone done);
+
 }  // namespace gameproto

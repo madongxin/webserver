@@ -95,6 +95,17 @@ struct MapLineInfo {
     std::string owner_logic_server_id;
 };
 
+struct MapDungeonInfo {
+    uint64_t map_instance_id = 0;
+    uint64_t map_template_id = 0;
+    uint32_t occupancy = 0;
+    uint32_t members_n = 0;
+    uint32_t soft_cap = 0;
+    uint32_t hard_cap = 0;
+    std::string state;
+    std::string owner_logic_server_id;
+};
+
 struct SwitchLineInput {
     uint32_t realm_id = 0;
     uint64_t map_template_id = 0;
@@ -146,6 +157,7 @@ public:
     bool ReserveDungeonEnter(const ResolveOrCreateInput &in, ResolveOrCreateResult *out);
     bool CreateDungeon(const CreateDungeonInput &in, CreateDungeonResult *out);
     bool ListLines(uint32_t realm_id, uint64_t map_template_id, std::vector<MapLineInfo> *out);
+    bool ListDungeons(uint32_t realm_id, uint64_t map_template_id, std::vector<MapDungeonInfo> *out);
     /** 占用/线数变化钩子（进图、切线、离图、空线关闭）。测试可不设。 */
     using LineStatusHook = void (*)(uint32_t realm_id, uint64_t map_template_id);
     void SetLineStatusHook(LineStatusHook hook);
@@ -206,6 +218,7 @@ private:
     std::string HealthyOwnersCsv() const;
 
     std::string LinesKey(uint32_t realm, uint64_t tpl) const;
+    std::string DungeonsKey(uint32_t realm, uint64_t tpl) const;
     std::string LineKey(uint32_t realm, uint64_t tpl, uint32_t line_no) const;
     std::string PoolKey(uint32_t realm, uint64_t tpl) const;
     std::string OccKey(uint64_t map_instance_id) const;

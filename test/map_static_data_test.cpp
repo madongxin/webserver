@@ -5,6 +5,7 @@
 #include "GameMeshPaths.h"
 #include "MapCatalog.h"
 #include "MapStaticData.h"
+#include "SceneKind.h"
 
 #include <cmath>
 #include <cstdio>
@@ -136,7 +137,7 @@ int main() {
     Expect(MapCatalog::Instance().Get(1002)->sha256() == hash_1002, "catalog 1002 hash");
     Expect(MapCatalog::Instance().Get(1002)->aoi_cell_size() == 32.f, "catalog 1002 aoi");
     Expect(MapCatalog::Instance().Get(1002)->nav_sample_step() == 8.f, "catalog 1002 step");
-    Expect(MapCatalog::Instance().ManifestEntries().size() == 4, "manifest 4 maps");
+    Expect(MapCatalog::Instance().ManifestEntries().size() == 5, "manifest 5 maps");
     {
         MapScenePolicy pol;
         Expect(MapCatalog::Instance().GetScenePolicy(1001, &pol) &&
@@ -160,6 +161,26 @@ int main() {
         Expect(MapCatalog::Instance().GetScenePolicy(2101, &pol) && pol.kind == SceneKind::Dungeon &&
                    pol.hard_cap == 5 && pol.empty_close_delay == 30,
                "2101 DUNGEON policy");
+        Expect(MapCatalog::Instance().Get(2102) != nullptr, "catalog has 2102");
+        Expect(MapCatalog::Instance().Get(2102)->map_template_id() == 2102, "2102 remapped id");
+        Expect(MapCatalog::Instance().Get(2102)->sha256() == expect_hash, "2102 shares 1001 hash");
+        Expect(MapCatalog::Instance().Get(2102)->scene_name() == "MainScene", "2102 MainScene");
+        Expect(MapCatalog::Instance().GetScenePolicy(2102, &pol) && pol.kind == SceneKind::Dungeon &&
+                   pol.portal_gated && pol.empty_close_delay == 30,
+               "2102 portal dungeon");
+        MapPortal portal;
+        Expect(MapCatalog::Instance().GetPortal(1001, "spawn_to_dungeon", &portal) &&
+                   portal.to_map_template_id == 2102,
+               "1001 spawn portal");
+        Expect(std::fabs(portal.position.x + 22.5f) < 0.01f &&
+                   std::fabs(portal.position.z + 7.25f) < 0.01f,
+               "portal xyz");
+        Expect(data->IsWalkable(portal.position.x, portal.position.z), "portal walkable");
+        Expect(PlayerNearPortal(portal, -22.5f, -7.25f), "standing on portal");
+        Expect(!PlayerNearPortal(portal, -28.5f, -7.25f), "spawn outside radius");
+        Expect(MapCatalog::Instance().GetPortal(2102, "dungeon_to_spawn", &portal) &&
+                   portal.to_map_template_id == 1001,
+               "2102 return portal");
     }
     {
         float x = 0, y = 0, z = 0;
@@ -168,7 +189,7 @@ int main() {
         Expect(data->IsWalkable(x, z), "scattered cell walkable");
     }
     Expect(MapCatalog::Instance().gameplay_config_version() == 1, "gameplay_config_version");
-    Expect(MapCatalog::Instance().map_manifest_version() == 1, "map_manifest_version");
+    Expect(MapCatalog::Instance().map_manifest_version() == 2, "map_manifest_version");
     Expect(!MapCatalog::Instance().ManifestEntries().empty(), "manifest entries");
 
     if (fails) {

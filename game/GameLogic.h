@@ -99,6 +99,7 @@ private:
     bool HandleMove(const game::MoveReq &req, game::GameResponse *rsp);
     bool HandleWorldSnapshot(const game::WorldSnapshotReq &req, game::GameResponse *rsp);
     bool HandleRespawn(const game::RespawnReq &req, game::GameResponse *rsp);
+    bool HandleInteractPortal(const game::InteractPortalReq &req, game::GameResponse *rsp);
     bool RequireSessionToken(const game::GameRequest &req, uint64_t player_id, game::GameResponse *rsp);
     /** @return false：Formal 下 GameDB 加载失败，不得当作空背包成功 */
     bool EnsurePlayerLoaded(uint64_t player_id, std::string *err);

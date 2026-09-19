@@ -169,6 +169,7 @@
       <div class="status-pill na" data-mod="sessionOnline"><div class="name">Session ONLINE</div><div class="value">—</div></div>
       <div class="status-pill na" data-mod="gwtraffic"><div class="name">Gateway 流量</div><div class="value">—</div></div>
       <div class="status-pill na" data-mod="lines"><div class="name">分线（LINE）</div><div class="value">—</div></div>
+      <div class="status-pill na" data-mod="dungeons"><div class="name">副本（DUNGEON）</div><div class="value">—</div></div>
     </div>
 
     <section class="module">
@@ -220,6 +221,29 @@
               <th>模板</th>
               <th>线号</th>
               <th>人数</th>
+              <th>状态</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="module">
+      <h2>副本 · 每实例</h2>
+      <p class="module-desc">每个副本实例单独记人数（<code>map_instance_id</code>），不是按模板合计。人数 = Redis 占位；成员 = 允许进本名单。空本约 30s 后 CloseIdle。曲线是所选时间范围的历史。</p>
+      <div class="charts" id="dungeonCharts"></div>
+      <div class="table-wrap">
+        <table class="data" id="dungeonTable">
+          <thead>
+            <tr>
+              <th>GameLogic</th>
+              <th>模板</th>
+              <th>实例 ID</th>
+              <th>人数</th>
+              <th>成员</th>
+              <th>软上限</th>
+              <th>硬上限</th>
               <th>状态</th>
             </tr>
           </thead>
@@ -290,6 +314,13 @@
 
     function seriesLabel(s) {
       const m = s.metric || {};
+      const owner = m.owner || '';
+      if (m.map_instance_id && m.map_template_id)
+        return (owner ? owner + ' ' : '') + '模板' + m.map_template_id + ' #' + m.map_instance_id;
+      if (m.line_no && m.map_template_id)
+        return (owner ? owner + ' ' : '') + '模板' + m.map_template_id + ' 线' + m.line_no;
+      if (m.map_template_id && owner)
+        return owner + ' 模板' + m.map_template_id;
       return m.instance_id || m.role || m.instance || m.__name__ || 'series';
     }
 
@@ -442,6 +473,13 @@
         promql: () => 'max by (owner, map_template_id) (gamemesh_map_line_count{' + jobSel() + '})' },
     ];
 
+    const DUNGEON_PANELS = [
+      { id: 'pDunOcc', title: '每个副本人数', beginZero: true,
+        promql: () => 'max by (owner, map_template_id, map_instance_id) (gamemesh_map_dungeon_occupancy{' + jobSel() + '})' },
+      { id: 'pDunCnt', title: '每模板副本数', beginZero: true,
+        promql: () => 'max by (owner, map_template_id) (gamemesh_map_dungeon_count{' + jobSel() + '})' },
+    ];
+
     const PROM_PANELS = [
       { id: 'pCpu', title: 'CPU（核）', promql: () => 'rate(process_cpu_seconds_total{' + jobSel() + '}[1m])' },
       { id: 'pRss', title: '内存 RSS', promql: () => 'process_resident_memory_bytes{' + jobSel() + '}' },
@@ -469,9 +507,10 @@
       errEl.style.display = 'none';
       ensureChartBoxes('bizCharts', BIZ_PANELS);
       ensureChartBoxes('lineCharts', LINE_PANELS);
+      ensureChartBoxes('dungeonCharts', DUNGEON_PANELS);
       ensureChartBoxes('promCharts', PROM_PANELS);
       try {
-        for (const p of BIZ_PANELS.concat(LINE_PANELS).concat(PROM_PANELS)) {
+        for (const p of BIZ_PANELS.concat(LINE_PANELS).concat(DUNGEON_PANELS).concat(PROM_PANELS)) {
           const result = await queryRange(p.promql());
           upsertChart(p.id, seriesToChartData(result), p.beginZero);
         }
@@ -486,7 +525,7 @@
       const empty = { up: {}, cpu: {}, rss: {}, fds: {}, thr: {}, uptime: {}, bound: {} };
       try {
         const js = jobSel();
-        const [up, cpu, rss, fds, thr, uptime, players, sessOnline, boundMap, rx, tx, lineOcc] = await Promise.all([
+        const [up, cpu, rss, fds, thr, uptime, players, sessOnline, boundMap, rx, tx, lineOcc, dunOcc, dunMem] = await Promise.all([
           queryInstant('up{' + js + '}'),
           queryInstant('rate(process_cpu_seconds_total{' + js + '}[1m])'),
           queryInstant('process_resident_memory_bytes{' + js + '}'),
@@ -499,6 +538,8 @@
           queryInstant('sum(rate(gamemesh_gateway_rx_bytes_total{' + js + ',role="gateway"}[1m]))'),
           queryInstant('sum(rate(gamemesh_gateway_tx_bytes_total{' + js + ',role="gateway"}[1m]))'),
           queryInstant('max by (owner, map_template_id, line_no, state) (gamemesh_map_line_occupancy{' + js + '})'),
+          queryInstant('max by (owner, map_template_id, map_instance_id, state, soft_cap, hard_cap) (gamemesh_map_dungeon_occupancy{' + js + '})'),
+          queryInstant('max by (owner, map_template_id, map_instance_id) (gamemesh_map_dungeon_members{' + js + '})'),
         ]);
         const upMap = instantMap(up);
         const n = Object.keys(upMap).length;
@@ -547,6 +588,50 @@
           lineN ? (lineN + ' 线 / ' + Math.round(linePlayers) + ' 人 / ' +
             Object.keys(owners).length + ' Logic') : '无分线',
           lineN > 0);
+        const dunMembers = {};
+        (dunMem || []).forEach(s => {
+          const m = s.metric || {};
+          const id = m.map_instance_id;
+          if (!id) return;
+          const v = s.value ? parseFloat(s.value[1]) : 0;
+          dunMembers[id] = isFinite(v) ? v : 0;
+        });
+        const dunTbody = document.querySelector('#dungeonTable tbody');
+        if (dunTbody)
+          dunTbody.innerHTML = '';
+        let dunN = 0;
+        let dunPlayers = 0;
+        const dunRows = (dunOcc || []).slice();
+        dunRows.sort((a, b) => {
+          const ma = a.metric || {}, mb = b.metric || {};
+          const ta = Number(ma.map_template_id || 0), tb = Number(mb.map_template_id || 0);
+          if (ta !== tb) return ta - tb;
+          return Number(ma.map_instance_id || 0) - Number(mb.map_instance_id || 0);
+        });
+        dunRows.forEach(s => {
+          const m = s.metric || {};
+          const occ = s.value ? parseFloat(s.value[1]) : 0;
+          dunN += 1;
+          dunPlayers += isFinite(occ) ? occ : 0;
+          if (!dunTbody)
+            return;
+          const inst = m.map_instance_id || '—';
+          const mem = dunMembers[inst];
+          const tr = document.createElement('tr');
+          [m.owner || '—', m.map_template_id || '—', inst,
+           isFinite(occ) ? String(Math.round(occ)) : '—',
+           mem == null ? '—' : String(Math.round(mem)),
+           m.soft_cap || '—', m.hard_cap || '—', m.state || '—']
+            .forEach(v => {
+              const td = document.createElement('td');
+              td.textContent = v;
+              tr.appendChild(td);
+            });
+          dunTbody.appendChild(tr);
+        });
+        setStatus('dungeons',
+          dunN ? (dunN + ' 本 / ' + Math.round(dunPlayers) + ' 人') : '无副本',
+          dunN > 0);
         return {
           up: upMap,
           cpu: instantMap(cpu),
@@ -558,6 +643,7 @@
         };
       } catch {
         setStatus('targets', 'Prometheus 不可用', false);
+        setStatus('dungeons', '—', null);
         return empty;
       }
     }

@@ -677,6 +677,17 @@ bool OrchestrateGatewayCreateDungeon(const SessionHandle &sticky, const std::str
     MapScenePolicy pol;
     if (MapCatalog::Instance().GetScenePolicy(q.map_template_id(), &pol) &&
         pol.kind == SceneKind::Dungeon) {
+        if (pol.portal_gated) {
+            rsp.set_ok(false);
+            body->set_ok(false);
+            body->set_message("use InteractPortal");
+            body->set_error_code(gameproto::kErrPortalRequired);
+            rsp.set_message(body->message());
+            rsp.set_error_code(gameproto::kErrPortalRequired);
+            gameproto::PromotePublicError(&rsp, 0);
+            std::string raw;
+            return rsp.SerializeToString(&raw) && EncodeFrame(raw, response_frame);
+        }
         sreq.set_soft_cap(pol.soft_cap);
         sreq.set_hard_cap(pol.hard_cap);
         sreq.set_empty_close_delay(pol.empty_close_delay);
@@ -1091,6 +1102,268 @@ bool BeginOrchestrateGatewayEnqueueMap(const SessionHandle &sticky,
             std::string out;
             SessionHandle route = h->sticky;
             const bool ok = OrchestrateGatewayEnqueueMap(h->sticky, h->payload, &out);
+            if (!PlayerSerialQueue::Instance().CompleteAsyncInFlight(
+                    h->shard_key, [h, ok, out = std::move(out),
+                                   route = std::move(route)]() mutable {
+                        h->done(ok, std::move(out), std::move(route));
+                    })) {
+                (void)ok;
+            }
+        })) {
+        PlayerSerialQueue::Instance().ClearAsyncInFlight(shard_key);
+        return false;
+    }
+    return true;
+}
+
+bool OrchestrateGatewayInteractPortal(const SessionHandle &sticky, const std::string &request_payload,
+                                      std::string *response_frame, SessionHandle *route_out) {
+    if (route_out)
+        *route_out = sticky;
+    game::GameRequest req;
+    if (!req.ParseFromString(request_payload) || !req.has_interact_portal()) {
+        game::GameResponse rsp;
+        rsp.set_ok(false);
+        rsp.set_message("invalid interact_portal");
+        rsp.set_error_code(gameproto::kErrInvalidArgument);
+        auto *body = rsp.mutable_interact_portal();
+        body->set_ok(false);
+        body->set_message(rsp.message());
+        body->set_error_code(gameproto::kErrInvalidArgument);
+        gameproto::PromotePublicError(&rsp, 0);
+        std::string raw;
+        return rsp.SerializeToString(&raw) && EncodeFrame(raw, response_frame);
+    }
+    const auto &q = req.interact_portal();
+    auto fail = [&](const std::string &msg, const std::string &code) {
+        game::GameResponse rsp;
+        rsp.set_seq(req.seq());
+        rsp.set_ok(false);
+        rsp.set_message(msg);
+        rsp.set_error_code(code.empty() ? gameproto::kErrInternal : code);
+        auto *body = rsp.mutable_interact_portal();
+        body->set_ok(false);
+        body->set_message(msg);
+        body->set_error_code(rsp.error_code());
+        body->set_portal_id(q.portal_id());
+        gameproto::PromotePublicError(&rsp, 0);
+        std::string raw;
+        return rsp.SerializeToString(&raw) && EncodeFrame(raw, response_frame);
+    };
+    if (q.portal_id().empty())
+        return fail("portal_id required", gameproto::kErrInvalidArgument);
+    if (sticky.map_instance_id == 0 || sticky.gamelogic_instance_id.empty())
+        return fail("not on map", gameproto::kErrNotOnMap);
+
+    glrpc::ClientCommand cmd;
+    cmd.set_request_id(sticky.connection_id);
+    cmd.set_player_id(sticky.player_id);
+    cmd.set_session_id(sticky.session_id);
+    cmd.set_fence_token(sticky.fence_token);
+    cmd.set_gamelogic_instance_id(sticky.gamelogic_instance_id);
+    cmd.set_map_instance_id(sticky.map_instance_id);
+    cmd.set_map_owner_epoch(sticky.owner_epoch);
+    cmd.set_route_version(sticky.route_version);
+    cmd.set_generation(sticky.generation);
+    cmd.set_payload(request_payload);
+    cmd.set_message_type("interact_portal");
+    cmd.set_client_seq(req.seq());
+    cmd.set_deadline_ms(3000);
+    glrpc::CommandResult validated;
+    if (!GatewayAuthClients::Instance().Dispatch(sticky.gamelogic_instance_id, cmd, &validated) ||
+        !validated.ok()) {
+        if (!validated.response_frame().empty()) {
+            *response_frame = validated.response_frame();
+            return false;
+        }
+        return fail(validated.message().empty() ? "portal validate failed" : validated.message(),
+                    validated.error_code().empty() ? gameproto::kErrDependencyUnavailable
+                                                   : validated.error_code());
+    }
+    std::string vbuf = validated.response_frame();
+    std::string vpayload;
+    game::GameResponse vrsp;
+    if (DecodeOneFrame(&vbuf, &vpayload) != FrameDecodeResult::Complete ||
+        !vrsp.ParseFromString(vpayload) || !vrsp.ok() || !vrsp.has_interact_portal() ||
+        !vrsp.interact_portal().ok()) {
+        if (!validated.response_frame().empty()) {
+            *response_frame = validated.response_frame();
+            return false;
+        }
+        return fail("portal validate failed", gameproto::kErrInternal);
+    }
+    const uint64_t from_tpl = vrsp.interact_portal().from_map_template_id();
+    const uint64_t to_tpl = vrsp.interact_portal().map_template_id();
+    if (to_tpl == 0)
+        return fail("portal destination missing", gameproto::kErrPortalUnknown);
+
+    auto dest = MapCatalog::Instance().Get(to_tpl);
+    MapScenePolicy pol;
+    const bool have_pol = MapCatalog::Instance().GetScenePolicy(to_tpl, &pol);
+    uint64_t dest_instance = 0;
+    if (have_pol && pol.kind == SceneKind::Dungeon) {
+        sess::CreateDungeonRequest sreq;
+        sreq.set_realm_id(MapLineView::EffectiveRealm(q.realm_id()));
+        sreq.set_map_template_id(to_tpl);
+        sreq.set_player_id(sticky.player_id);
+        sreq.set_operation_id(q.operation_id().empty()
+                                  ? ("portal:" + std::to_string(sticky.player_id) + ":" +
+                                     q.portal_id())
+                                  : q.operation_id());
+        sreq.add_member_player_ids(sticky.player_id);
+        if (!sticky.gamelogic_instance_id.empty())
+            sreq.set_preferred_owner(sticky.gamelogic_instance_id);
+        sreq.set_soft_cap(pol.soft_cap);
+        sreq.set_hard_cap(pol.hard_cap);
+        sreq.set_empty_close_delay(pol.empty_close_delay);
+        sess::CreateDungeonResponse srsp;
+        bool cok = false;
+        if (GatewayAuthClients::Instance().ready()) {
+            cok = GatewayAuthClients::Instance().CreateDungeon(sreq, &srsp) && srsp.ok();
+        } else if (PlacementStore::Instance().Available()) {
+            CreateDungeonInput in;
+            in.realm_id = sreq.realm_id();
+            in.map_template_id = sreq.map_template_id();
+            in.player_id = sreq.player_id();
+            in.operation_id = sreq.operation_id();
+            in.preferred_owner = sreq.preferred_owner();
+            in.soft_cap = sreq.soft_cap();
+            in.hard_cap = sreq.hard_cap();
+            in.empty_close_delay = sreq.empty_close_delay();
+            in.member_player_ids.push_back(sticky.player_id);
+            CreateDungeonResult result;
+            cok = PlacementStore::Instance().CreateDungeon(in, &result) && result.ok;
+            srsp.set_ok(cok);
+            srsp.set_message(cok ? "ok" : result.message);
+            srsp.set_error_code(result.error_code);
+            if (cok) {
+                auto *p = srsp.mutable_placement();
+                p->set_map_instance_id(result.placement.map_instance_id);
+                p->set_map_template_id(result.placement.map_template_id);
+                p->set_owner_logic_server_id(result.placement.owner_logic_server_id);
+                p->set_owner_epoch(result.placement.owner_epoch);
+                p->set_route_version(result.placement.route_version);
+            }
+        }
+        if (!cok)
+            return fail(srsp.message().empty() ? "create dungeon failed" : srsp.message(),
+                        srsp.error_code().empty() ? gameproto::kErrDependencyUnavailable
+                                                  : srsp.error_code());
+        dest_instance = srsp.placement().map_instance_id();
+        if (dest_instance == 0)
+            return fail("create dungeon missing instance", gameproto::kErrInternal);
+    }
+
+    if (PlacementStore::Instance().Available())
+        PlacementStore::Instance().ReleaseByPlayer(sticky.player_id);
+
+    game::GameRequest enter;
+    enter.set_seq(req.seq());
+    enter.set_session_token(req.session_token());
+    auto *e = enter.mutable_enter_map();
+    e->set_player_id(sticky.player_id);
+    e->set_realm_id(MapLineView::EffectiveRealm(q.realm_id()));
+    e->set_map_template_id(to_tpl);
+    e->set_map_instance_id(dest_instance);
+    e->set_operation_id(q.operation_id().empty()
+                            ? ("portal-enter:" + std::to_string(sticky.player_id) + ":" +
+                               q.portal_id())
+                            : (q.operation_id() + ":enter"));
+    if (q.map_data_version() != 0)
+        e->set_map_data_version(q.map_data_version());
+    else if (dest)
+        e->set_map_data_version(dest->data_version());
+    if (!q.map_data_sha256().empty())
+        e->set_map_data_sha256(q.map_data_sha256());
+    else if (dest)
+        e->set_map_data_sha256(dest->sha256());
+    std::string enter_payload;
+    if (!enter.SerializeToString(&enter_payload))
+        return fail("serialize enter_map failed", gameproto::kErrInternal);
+    SessionHandle enter_sticky = sticky;
+    enter_sticky.route_version = 0;
+    SessionHandle route = enter_sticky;
+    std::string enter_frame;
+    const bool entered =
+        OrchestrateGatewayEnterMap(enter_sticky, enter_payload, &enter_frame, &route);
+    if (route_out)
+        *route_out = route;
+    std::string buf = enter_frame;
+    std::string payload;
+    game::GameResponse gr;
+    if (DecodeOneFrame(&buf, &payload) == FrameDecodeResult::Complete &&
+        gr.ParseFromString(payload)) {
+        game::GameResponse out;
+        out.set_seq(req.seq());
+        out.set_ok(gr.ok());
+        out.set_message(gr.message());
+        out.set_error_code(gr.error_code());
+        auto *body = out.mutable_interact_portal();
+        body->set_portal_id(q.portal_id());
+        body->set_from_map_template_id(from_tpl);
+        if (gr.has_enter_map()) {
+            const auto &em = gr.enter_map();
+            body->set_ok(em.ok());
+            body->set_message(em.message());
+            body->set_error_code(em.error_code());
+            body->set_map_template_id(em.map_template_id());
+            body->set_map_instance_id(em.map_instance_id());
+            body->set_gamelogic_instance_id(em.gamelogic_instance_id());
+            body->set_owner_epoch(em.owner_epoch());
+            body->set_route_version(em.route_version());
+            *body->mutable_spawn_position() = em.spawn_position();
+            body->set_spawn_yaw(em.spawn_yaw());
+            body->set_map_data_version(em.map_data_version());
+            body->set_map_data_sha256(em.map_data_sha256());
+            *body->mutable_self() = em.self();
+            for (int i = 0; i < em.aoi_snapshot_size(); ++i)
+                *body->add_aoi_snapshot() = em.aoi_snapshot(i);
+            body->set_kind(em.kind());
+            body->set_line_no(em.line_no());
+            body->set_occupancy(em.occupancy());
+            body->set_soft_cap(em.soft_cap());
+            body->set_hard_cap(em.hard_cap());
+        } else {
+            body->set_ok(false);
+            body->set_message(gr.message());
+            body->set_error_code(gr.error_code());
+        }
+        if (!entered || !gr.ok()) {
+            LOG_WARN << "InteractPortal enter fail player=" << sticky.player_id
+                     << " portal=" << q.portal_id() << " code=" << out.error_code();
+        }
+        gameproto::PromotePublicError(&out, 0);
+        std::string raw;
+        return out.SerializeToString(&raw) && EncodeFrame(raw, response_frame) && entered &&
+               gr.ok();
+    }
+    return fail("portal enter failed",
+                entered ? gameproto::kErrInternal : gameproto::kErrDependencyUnavailable);
+}
+
+bool BeginOrchestrateGatewayInteractPortal(const SessionHandle &sticky,
+                                           const std::string &request_payload,
+                                           GatewayEnterMapDone done) {
+    if (!done)
+        return false;
+    const uint64_t shard_key = sticky.player_id;
+    PlayerSerialQueue::Instance().MarkAsyncInFlight(shard_key);
+    struct Holder {
+        SessionHandle sticky;
+        std::string payload;
+        uint64_t shard_key = 0;
+        GatewayEnterMapDone done;
+    };
+    auto h = std::make_shared<Holder>();
+    h->sticky = sticky;
+    h->payload = request_payload;
+    h->shard_key = shard_key;
+    h->done = std::move(done);
+    if (!RpcOffloadPool::Instance().TryPost([h]() {
+            std::string out;
+            SessionHandle route = h->sticky;
+            const bool ok =
+                OrchestrateGatewayInteractPortal(h->sticky, h->payload, &out, &route);
             if (!PlayerSerialQueue::Instance().CompleteAsyncInFlight(
                     h->shard_key, [h, ok, out = std::move(out),
                                    route = std::move(route)]() mutable {

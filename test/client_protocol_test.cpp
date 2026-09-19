@@ -37,6 +37,7 @@ int main() {
     Expect(game::GameRequest::kCreateDungeonFieldNumber == 77, "req create_dungeon=77");
     Expect(game::GameRequest::kSwitchLineFieldNumber == 78, "req switch_line=78");
     Expect(game::GameRequest::kEnqueueMapFieldNumber == 79, "req enqueue_map=79");
+    Expect(game::GameRequest::kInteractPortalFieldNumber == 80, "req interact_portal=80");
     Expect(game::EnterMapReq::kQueueTokenFieldNumber == 9, "enter_map.queue_token=9");
     Expect(game::EnterMapReq::kLineNoFieldNumber == 8, "enter_map.line_no=8");
     Expect(game::GameResponse::kErrorCodeFieldNumber == 4, "rsp error_code=4");
@@ -58,6 +59,9 @@ int main() {
     Expect(game::GameResponse::kCreateDungeonFieldNumber == 78, "rsp create_dungeon=78");
     Expect(game::GameResponse::kSwitchLineFieldNumber == 79, "rsp switch_line=79");
     Expect(game::GameResponse::kEnqueueMapFieldNumber == 80, "rsp enqueue_map=80");
+    Expect(game::GameResponse::kInteractPortalFieldNumber == 81, "rsp interact_portal=81");
+    Expect(game::MapManifestEntry::kSceneNameFieldNumber == 4, "hello map scene_name=4");
+    Expect(game::MapManifestEntry::kPortalsFieldNumber == 7, "hello map portals=7");
     Expect(game::EnterMapRsp::kKindFieldNumber == 14, "enter_map.kind=14");
     Expect(game::EnterMapRsp::kLineNoFieldNumber == 15, "enter_map.rsp.line_no=15");
     Expect(game::EnterMapRsp::kLinesFieldNumber == 22, "enter_map.rsp.lines=22");

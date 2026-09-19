@@ -35,6 +35,8 @@ AOI 格子用 `aoi_cell_size`，与 nav 采样步长不是同一个概念。
 
 模板 1001 默认出生点：`(-28.5, -0.244, -7.25)`，yaw `76.022`，必须在边界内且可走。
 
+传送门（出生点旁约 6m）：`(-22.5, -0.244, -7.25)`，触发半径 3m。副本模板 **2102** 复用 `map_1001.json`（`allow_template_id_override`），`kind=DUNGEON`，`portal_gated`。
+
 ## EnterMap 校验
 
 - 字段 5 `map_data_version`、字段 6 `map_data_sha256`、字段 7 `operation_id`

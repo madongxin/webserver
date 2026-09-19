@@ -93,6 +93,10 @@ int main() {
                                  CommandTrustLevel::AuthenticatedClient, true, &code) ==
                CommandDecision::Allow,
            "enqueue_map allowlisted");
+    Expect(ValidateCommandPolicy(game::GameRequest::kInteractPortal,
+                                 CommandTrustLevel::AuthenticatedClient, true, &code) ==
+               CommandDecision::Allow,
+           "interact_portal allowlisted");
     Expect(ValidateCommandPolicy(game::GameRequest::kChatSend,
                                  CommandTrustLevel::AuthenticatedClient, true, &code) ==
                CommandDecision::Allow,

@@ -54,6 +54,9 @@ public:
     bool FindScatteredSpawn(float cx, float cy, float cz, float radius, uint64_t seed, float *ox,
                             float *oy, float *oz) const;
 
+    /** 副本复用同一份网格 JSON，仅改模板 ID（load 时一次性拷贝）。 */
+    std::shared_ptr<const MapStaticData> CloneWithTemplateId(uint64_t map_template_id) const;
+
     /** 共享不可变 grid，实例不得拷贝整表 */
     const std::vector<uint8_t> &walkable() const { return walkable_; }
 

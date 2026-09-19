@@ -29,6 +29,7 @@
 #include "PublicError.h"
 #include "ReplySink.h"
 #include "RpcOffloadPool.h"
+#include "SceneKind.h"
 #include "ServiceHealth.h"
 #include "SessionHandle.h"
 #include "TcpConnection.h"
@@ -546,6 +547,21 @@ void GameTcpGateway::OnMessage(const std::shared_ptr<TcpConnection> &conn) {
                 m->set_map_template_id(ent.map_template_id);
                 m->set_data_version(ent.data_version);
                 m->set_sha256(ent.sha256);
+                m->set_scene_name(ent.scene_name);
+                m->set_kind(SceneKindToString(ent.policy.kind));
+                if (ent.visual_map_template_id != 0)
+                    m->set_visual_map_template_id(ent.visual_map_template_id);
+                for (const auto &p : ent.portals) {
+                    auto *pp = m->add_portals();
+                    pp->set_portal_id(p.portal_id);
+                    pp->set_from_map_template_id(p.from_map_template_id);
+                    pp->set_to_map_template_id(p.to_map_template_id);
+                    pp->mutable_position()->set_x(p.position.x);
+                    pp->mutable_position()->set_y(p.position.y);
+                    pp->mutable_position()->set_z(p.position.z);
+                    pp->set_yaw(p.yaw);
+                    pp->set_trigger_radius(p.trigger_radius);
+                }
             }
             *outer.mutable_server_hello() = hello;
             if (hello.ok()) {
@@ -960,6 +976,35 @@ void GameTcpGateway::OnMessage(const std::shared_ptr<TcpConnection> &conn) {
                         [conn_id, sink](bool ok, std::string out, SessionHandle) {
                             (void)ok;
                             (void)conn_id;
+                            if (!out.empty() && sink)
+                                sink->SendFrame(out);
+                        })) {
+                    OpsMetrics::Instance().IncQueueOverload();
+                    SendPublicErr(tcp_sink, conn->id(), peek.seq(), gameproto::kErrOverloaded,
+                                  "queue overloaded");
+                }
+                continue;
+            }
+            if (peek.has_interact_portal()) {
+                if (ServiceHealth::Instance().draining()) {
+                    OpsMetrics::Instance().IncDrainReject();
+                    SendPublicErr(tcp_sink, conn->id(), peek.seq(), gameproto::kErrOverloaded,
+                                  "gateway draining");
+                    continue;
+                }
+                const uint64_t conn_id = conn->id();
+                auto sink = tcp_sink;
+                SessionHandle h = handle;
+                std::string payload = frame;
+                if (!gameproto::BeginOrchestrateGatewayInteractPortal(
+                        h, payload,
+                        [conn_id, sink](bool ok, std::string out, SessionHandle route) {
+                            if (ok) {
+                                GatewayConnRegistry::Instance().ApplyRoute(
+                                    conn_id, route.gamelogic_instance_id, route.map_instance_id,
+                                    route.owner_epoch, route.route_version);
+                            }
+                            (void)ok;
                             if (!out.empty() && sink)
                                 sink->SendFrame(out);
                         })) {

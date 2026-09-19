@@ -1266,6 +1266,31 @@ end
 return out
 )LUA";
 
+const char kLuaListDungeons[] = R"LUA(
+local dungeons_key = KEYS[1]
+local prefix = ARGV[1]
+local ids = redis.call('ZRANGE', dungeons_key, 0, -1)
+local out = {}
+for _, id in ipairs(ids) do
+  local key = prefix .. 'map:inst:' .. tostring(id)
+  local raw = redis.call('HGETALL', key)
+  if #raw > 0 then
+    local f = {}
+    for i = 1, #raw, 2 do f[raw[i]] = raw[i + 1] end
+    local occ = tonumber(redis.call('SCARD', prefix .. 'map:occ:' .. tostring(id))) or 0
+    local members = tonumber(redis.call('SCARD', prefix .. 'map:members:' .. tostring(id))) or 0
+    out[#out + 1] = tostring(id)
+    out[#out + 1] = tostring(occ)
+    out[#out + 1] = tostring(members)
+    out[#out + 1] = f['softCap'] or '0'
+    out[#out + 1] = f['hardCap'] or '0'
+    out[#out + 1] = f['state'] or 'CLOSED'
+    out[#out + 1] = f['ownerLogicServerId'] or ''
+  end
+end
+return out
+)LUA";
+
 const char kLuaReleaseSlot[] = R"LUA(
 local pres_key = KEYS[1]
 local prefix = ARGV[1]
@@ -1404,6 +1429,7 @@ for _, pid in ipairs(members) do
 end
 redis.call('EXPIRE', mkey, 86400)
 redis.call('ZADD', prefix .. 'map:idle', now, tostring(id))
+redis.call('ZADD', prefix .. 'map:dungeons:' .. realm .. ':' .. tpl, now, tostring(id))
 local L = {tostring(id), realm, tpl, chosen, '1', '1', 'READY', tostring(now),
            tostring(lease_until)}
 local R = pack(L, 0, '0')
@@ -1503,6 +1529,15 @@ if redis.call('SISMEMBER', occ, player) ~= 1 then
   redis.call('SADD', occ, player)
   redis.call('EXPIRE', occ, 86400)
 end
+local old_id = redis.call('HGET', pres_key, 'mapInstanceId')
+if old_id and old_id ~= '' and old_id ~= want_id then
+  redis.call('SREM', prefix .. 'map:occ:' .. old_id, player)
+  local left = tonumber(redis.call('SCARD', prefix .. 'map:occ:' .. old_id)) or 0
+  if left == 0 then
+    redis.call('HSET', prefix .. 'map:inst:' .. old_id, 'lastOccupiedAt', tostring(now))
+    redis.call('ZADD', prefix .. 'map:idle', now, old_id)
+  end
+end
 redis.call('ZREM', prefix .. 'map:idle', tostring(want_id))
 save_pres(want_id)
 local n = tonumber(redis.call('SCARD', occ)) or 0
@@ -1581,6 +1616,11 @@ for i = 1, #rows, 2 do
           redis.call('ZREM', prefix .. 'map:lines:' .. realm .. ':' .. tpl, id)
         end
         redis.call('DEL', prefix .. 'map:members:' .. tostring(id))
+        if kind == 'DUNGEON' then
+          local realm = f['realmId'] or '0'
+          local tpl = f['mapTemplateId'] or '0'
+          redis.call('ZREM', prefix .. 'map:dungeons:' .. realm .. ':' .. tpl, id)
+        end
         redis.call('ZREM', idle_key, id)
         closed[#closed + 1] = tostring(id)
         n = n + 1
@@ -2290,6 +2330,42 @@ bool PlacementStore::ListLines(uint32_t realm_id, uint64_t map_template_id,
         row.map_instance_id = ParseU64(reply[i]);
         row.line_no = static_cast<uint32_t>(ParseU64(reply[i + 1]));
         row.occupancy = static_cast<uint32_t>(ParseU64(reply[i + 2]));
+        row.soft_cap = static_cast<uint32_t>(ParseU64(reply[i + 3]));
+        row.hard_cap = static_cast<uint32_t>(ParseU64(reply[i + 4]));
+        row.state = reply[i + 5];
+        if (i + 6 < reply.size())
+            row.owner_logic_server_id = reply[i + 6];
+        out->push_back(row);
+    }
+    return true;
+}
+
+std::string PlacementStore::DungeonsKey(uint32_t realm, uint64_t tpl) const {
+    char buf[128];
+    std::snprintf(buf, sizeof(buf), "%smap:dungeons:%u:%llu", key_prefix_.c_str(), realm,
+                  static_cast<unsigned long long>(tpl));
+    return buf;
+}
+
+bool PlacementStore::ListDungeons(uint32_t realm_id, uint64_t map_template_id,
+                                  std::vector<MapDungeonInfo> *out) {
+    if (!out || !available_ || map_template_id == 0)
+        return false;
+    out->clear();
+    auto lease = RedisPool::Instance().Acquire();
+    if (!lease)
+        return false;
+    std::vector<std::string> keys{DungeonsKey(EffectiveRealmId(realm_id), map_template_id)};
+    std::vector<std::string> args{key_prefix_};
+    std::vector<std::string> reply;
+    if (!lease->Eval(kLuaListDungeons, keys, args, &reply))
+        return false;
+    for (size_t i = 0; i + 5 < reply.size(); i += 7) {
+        MapDungeonInfo row;
+        row.map_template_id = map_template_id;
+        row.map_instance_id = ParseU64(reply[i]);
+        row.occupancy = static_cast<uint32_t>(ParseU64(reply[i + 1]));
+        row.members_n = static_cast<uint32_t>(ParseU64(reply[i + 2]));
         row.soft_cap = static_cast<uint32_t>(ParseU64(reply[i + 3]));
         row.hard_cap = static_cast<uint32_t>(ParseU64(reply[i + 4]));
         row.state = reply[i + 5];

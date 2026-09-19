@@ -783,10 +783,58 @@ message ClientHelloReq {
   repeated string capabilities = 6;
 }
 
+// 主城/副本传送门。Hello 下发坐标；靠近后发 InteractPortal，不要直打 CreateDungeon(2102)。
+message PortalDef {
+  string portal_id = 1;              // spawn_to_dungeon | dungeon_to_spawn
+  uint64 from_map_template_id = 2;
+  uint64 to_map_template_id = 3;
+  Vec3 position = 4;
+  float yaw = 5;
+  float trigger_radius = 6;          // 水平面 X/Z 米
+}
+
 message MapManifestEntry {
   uint64 map_template_id = 1;
   uint64 data_version = 2;
   string sha256 = 3;
+  string scene_name = 4;             // Unity 场景；2102 与 1001 同为 MainScene
+  string kind = 5;                   // LEGACY_POOL | LINE | DUNGEON
+  uint64 visual_map_template_id = 6; // 非 0：客户端加载该模板的场景/网格资源
+  repeated PortalDef portals = 7;
+}
+
+message InteractPortalReq {
+  uint64 player_id = 1;
+  uint32 realm_id = 2;
+  string portal_id = 3;
+  string operation_id = 4;
+  uint64 map_data_version = 5;       // 目标模板；0=用服务器目录
+  string map_data_sha256 = 6;
+}
+
+// 成功后按 EnterMapRsp 应用场景切换；portal_id / from_map_template_id 供 UI。
+message InteractPortalRsp {
+  bool ok = 1;
+  string message = 2;
+  string error_code = 3;
+  uint64 map_template_id = 4;
+  uint64 map_instance_id = 5;
+  string gamelogic_instance_id = 6;
+  uint64 owner_epoch = 7;
+  uint64 route_version = 8;
+  Vec3 spawn_position = 9;
+  float spawn_yaw = 10;
+  uint64 map_data_version = 11;
+  string map_data_sha256 = 12;
+  EntitySnapshot self = 13;
+  repeated EntitySnapshot aoi_snapshot = 14;
+  string kind = 15;
+  uint32 line_no = 16;
+  uint32 occupancy = 17;
+  uint32 soft_cap = 18;
+  uint32 hard_cap = 19;
+  string portal_id = 20;
+  uint64 from_map_template_id = 21;
 }
 
 message ServerHelloRsp {
@@ -870,6 +918,7 @@ message GameRequest {
     CreateDungeonReq create_dungeon = 77;
     SwitchLineReq switch_line = 78;
     EnqueueMapReq enqueue_map = 79;
+    InteractPortalReq interact_portal = 80;
   }
 }
 
@@ -926,5 +975,6 @@ message GameResponse {
     CreateDungeonRsp create_dungeon = 78;
     SwitchLineRsp switch_line = 79;
     EnqueueMapRsp enqueue_map = 80;
+    InteractPortalRsp interact_portal = 81;
   }
 }
