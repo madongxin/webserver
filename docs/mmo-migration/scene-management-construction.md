@@ -258,6 +258,6 @@ Client EnterMap / CreateDungeon
 
 客户端分线：`QueryMapLines`；`EnterMapRsp.lines` / `SwitchLineRsp.lines` 快照；Push `map.lines.v1`（内层 `QueryMapLinesRsp`，可合并、不可靠）。切线：`SwitchLine`（`line_no>0`，满员 `ERR_MAP_LINE_FULL`）。
 
-主城传送门进本：模板 **2102** 复用 1001 网格与 MainScene。Hello `MapManifestEntry.portals` 下发 `spawn_to_dungeon` / `dungeon_to_spawn`。公网走 `InteractPortal`（校验距离 → CreateDungeon → EnterMap）；2102 禁止直打 `CreateDungeon`。空本 30s `CloseIdle`。
+主城传送门进本：模板 **2102** 复用 1001 网格与 MainScene。Hello 仍下发 `spawn_to_dungeon` / `dungeon_to_spawn`。公网允许 `CreateDungeon(2102)`（只建本+队员，不切 occupancy），再 `EnterMap` 指定实例；`InteractPortal` 仍可一次完成建本+进图。`EnterMap(2102, 0)` 禁止。空本 30s `CloseIdle`。
 
 监控：`/metrics` 导出 `gamemesh_map_line_occupancy` / `gamemesh_map_line_count`（label `owner`=`gl-*`）以及 `gamemesh_map_dungeon_occupancy` / `gamemesh_map_dungeon_members` / `gamemesh_map_dungeon_count`（按 `map_instance_id`）。`/monitor` 有分线表和副本表。

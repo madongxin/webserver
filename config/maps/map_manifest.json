@@ -76,7 +76,7 @@
       "spawn_scatter_radius": 4,
       "visual_map_template_id": 1001,
       "allow_template_id_override": true,
-      "portal_gated": true,
+      "portal_gated": false,
       "portals": [
         {
           "portal_id": "dungeon_to_spawn",

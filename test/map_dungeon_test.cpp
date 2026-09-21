@@ -76,6 +76,26 @@ int main() {
     const uint64_t member = 81002;
     const uint64_t stranger = 81003;
 
+    uint64_t line_inst = 0;
+    {
+        ResolveOrCreateInput lin;
+        lin.realm_id = 1;
+        lin.map_template_id = tpl + 50;
+        lin.player_id = leader;
+        lin.kind = "LINE";
+        lin.soft_cap = 100;
+        lin.hard_cap = 400;
+        lin.max_lines = 8;
+        lin.min_lines = 1;
+        lin.operation_id = "line-before-dungeon";
+        ResolveOrCreateResult lout;
+        if (!PlacementStore::Instance().ResolveOrCreate(lin, &lout) || !lout.ok)
+            return Fail("occupy line before create dungeon");
+        line_inst = lout.placement.map_instance_id;
+        if (line_inst == 0 || lout.occupancy < 1)
+            return Fail("line occupancy before dungeon");
+    }
+
     CreateDungeonInput cin;
     cin.realm_id = 1;
     cin.map_template_id = tpl;
@@ -98,6 +118,13 @@ int main() {
     }
     if (!have_leader || !have_member)
         return Fail("members must include leader and invitee");
+    {
+        uint64_t still = 0;
+        if (!PlacementStore::Instance().GetPlayerPresence(leader, &still) || still != line_inst)
+            return Fail("create dungeon must not move occupancy");
+        if (PlacementStore::Instance().Occupancy(created.placement.map_instance_id) != 0)
+            return Fail("new dungeon occupancy must stay 0 until EnterMap");
+    }
 
     CreateDungeonResult again;
     if (!PlacementStore::Instance().CreateDungeon(cin, &again) || !again.ok)

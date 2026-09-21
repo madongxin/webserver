@@ -48,7 +48,7 @@ struct MapScenePolicy {
     uint32_t empty_close_delay = 0;  // 0=LINE 300 / DUNGEON 30
     int aoi_view_radius_cells = -1;  // <0 用进程默认
     float spawn_scatter_radius = 0.f;
-    bool portal_gated = false;  // true：禁止公网 CreateDungeon，须 InteractPortal
+    bool portal_gated = false;  // true：Hello 下发传送门；公网仍允许 CreateDungeon
 };
 
 struct MapPortal {

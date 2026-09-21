@@ -166,8 +166,8 @@ int main() {
         Expect(MapCatalog::Instance().Get(2102)->sha256() == expect_hash, "2102 shares 1001 hash");
         Expect(MapCatalog::Instance().Get(2102)->scene_name() == "MainScene", "2102 MainScene");
         Expect(MapCatalog::Instance().GetScenePolicy(2102, &pol) && pol.kind == SceneKind::Dungeon &&
-                   pol.portal_gated && pol.empty_close_delay == 30,
-               "2102 portal dungeon");
+                   !pol.portal_gated && pol.empty_close_delay == 30,
+               "2102 dungeon allows CreateDungeon");
         MapPortal portal;
         Expect(MapCatalog::Instance().GetPortal(1001, "spawn_to_dungeon", &portal) &&
                    portal.to_map_template_id == 2102,

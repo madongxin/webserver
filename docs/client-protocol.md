@@ -96,8 +96,9 @@ Hello `maps[]` 会带 `scene_name` / `kind` / `visual_map_template_id` / `portal
 
 - 公共图 **1001** 出生点旁有 `spawn_to_dungeon`，目标模板 **2102**（`kind=DUNGEON`）。
 - **2102 复用 1001 的 MainScene 与同一份网格 SHA-256**（`visual_map_template_id=1001`）。不要另做场景。
-- 玩家走进触发半径后发 `InteractPortal`（oneof 80）。禁止对 2102 发公网 `CreateDungeon`（`ERR_PORTAL_REQUIRED`）。
-- 成功响应按 `EnterMapRsp` 切图。副本内同一坐标的 `dungeon_to_spawn` 送回 1001。
+- 联调可对 2102 发公网 `CreateDungeon`（oneof 77）：只建本并把创建者写入队员，不切 occupancy。随后 `LeaveMap` 当前图再 `EnterMap(2102, map_instance_id=回包实例)`。`map_instance_id=0` 仍禁止。
+- `InteractPortal`（oneof 80）仍可用：走近 1001 传送门后一次完成建本+进图。
+- 出本：`LeaveMap` 该 2102 实例后 `EnterMap(1001)` 回主城。
 - 空本超过 `empty_close_delay=30s` 由 Session `CloseIdle` 关闭。
 
 冻结坐标（Hello 缺失时）：传送门 `(-22.5, -0.244, -7.25)`，半径 3m；1001 出生点 `(-28.5, -0.244, -7.25)`。

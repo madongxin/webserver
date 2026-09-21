@@ -29,7 +29,7 @@
 | `ERR_DUNGEON_NOT_MEMBER` | 非该副本队员 | 否 | — |
 | `ERR_PORTAL_UNKNOWN` | 传送门 ID 不存在或不属于当前图 | 否 | 用 Hello `maps[].portals` |
 | `ERR_PORTAL_TOO_FAR` | 不在传送门触发半径内 | 否 | 走近后再 `InteractPortal` |
-| `ERR_PORTAL_REQUIRED` | 该副本必须走传送门，禁止公网 `CreateDungeon` | 否 | `InteractPortal` |
+| `ERR_PORTAL_REQUIRED` | 保留码；2102 公网 `CreateDungeon` 已允许 | 否 | 联调用 `CreateDungeon` + `EnterMap(instance)` |
 | `ERR_MAP_DATA_MISMATCH` | 地图静态数据 hash 不符 | 否 | 更新地图资源 |
 | `ERR_NOT_ON_MAP` | 未进图 | 否 | EnterMap |
 | `ERR_STALE_SEQ` | 客户端序号过旧 | 否 | 以服务器 seq 为准 |

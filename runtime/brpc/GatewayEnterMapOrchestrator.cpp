@@ -677,17 +677,6 @@ bool OrchestrateGatewayCreateDungeon(const SessionHandle &sticky, const std::str
     MapScenePolicy pol;
     if (MapCatalog::Instance().GetScenePolicy(q.map_template_id(), &pol) &&
         pol.kind == SceneKind::Dungeon) {
-        if (pol.portal_gated) {
-            rsp.set_ok(false);
-            body->set_ok(false);
-            body->set_message("use InteractPortal");
-            body->set_error_code(gameproto::kErrPortalRequired);
-            rsp.set_message(body->message());
-            rsp.set_error_code(gameproto::kErrPortalRequired);
-            gameproto::PromotePublicError(&rsp, 0);
-            std::string raw;
-            return rsp.SerializeToString(&raw) && EncodeFrame(raw, response_frame);
-        }
         sreq.set_soft_cap(pol.soft_cap);
         sreq.set_hard_cap(pol.hard_cap);
         sreq.set_empty_close_delay(pol.empty_close_delay);
@@ -749,6 +738,13 @@ bool OrchestrateGatewayCreateDungeon(const SessionHandle &sticky, const std::str
         body->add_member_player_ids(srsp.member_player_ids(i));
     rsp.set_ok(true);
     rsp.set_message("ok");
+    LOG_INFO << "CREATE_DUNGEON_RSP ok=true player=" << sreq.player_id()
+             << " template=" << body->map_template_id()
+             << " instance=" << body->map_instance_id()
+             << " owner=" << body->gamelogic_instance_id()
+             << " epoch=" << body->owner_epoch()
+             << " route=" << body->route_version()
+             << " members_n=" << body->member_player_ids_size();
     gameproto::PromotePublicError(&rsp, 0);
     std::string raw;
     return rsp.SerializeToString(&raw) && EncodeFrame(raw, response_frame);

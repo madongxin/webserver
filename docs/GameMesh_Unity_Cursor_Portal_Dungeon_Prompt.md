@@ -107,7 +107,7 @@ InteractPortalReq:
 | --- | --- |
 | `ERR_PORTAL_TOO_FAR` | 忽略，人走开再靠近 |
 | `ERR_PORTAL_UNKNOWN` | 用 Hello 重建传送门，不要重试错 ID |
-| `ERR_PORTAL_REQUIRED` | 你误发了 CreateDungeon(2102)，改成 InteractPortal |
+| `ERR_PORTAL_REQUIRED` | 旧策略；2102 已允许 CreateDungeon | 忽略 |
 | `ERR_SESSION_EXPIRED` | 重新 Login，不要当缺线 |
 | `ERR_MAP_DATA_MISMATCH` | 用响应里的服务器 hash 更新本地地图数据 |
 | `ERR_DUNGEON_NOT_FOUND` | 本已关，回到 1001 后再走一次门 |
@@ -121,8 +121,7 @@ InteractPortalReq:
 
 ### 5. 不要做的事
 
-- 不要 `CreateDungeon(map_template_id=2102)`。
-- 不要 `EnterMap(2102, map_instance_id=0)`。
+- 不要 `EnterMap(2102, map_instance_id=0)`（公共池）。必须用 CreateDungeon 回包里的 instance。
 - 不要在客户端把人直接 `transform` 到副本坐标而不等服务器响应。
 - 不要用 2101 `PartyDungeon` 小方块图。那是组队测试图，不是本功能。
 - 不要为 2102 新建 Unity 场景或再导一份网格。
