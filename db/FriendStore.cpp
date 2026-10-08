@@ -802,6 +802,12 @@ void FriendStore::DeleteFriend(const gdb::FriendOpReq &req, gdb::FriendOpRsp *rs
         return;
     }
     const bool was = IsFriend(conn.get(), a, b);
+    if (!was) {
+        conn->rollback();
+        Fail(rsp, "ERR_NOT_FRIEND", "not friend");
+        SaveIdempotency(conn.get(), a, req.idempotency_key(), "DELETE", *rsp);
+        return;
+    }
     conn->update("DELETE FROM friend_relation WHERE (player_id=" + std::to_string(a) +
                  " AND friend_player_id=" + std::to_string(b) + ") OR (player_id=" +
                  std::to_string(b) + " AND friend_player_id=" + std::to_string(a) + ")");

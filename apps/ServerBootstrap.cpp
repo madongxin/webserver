@@ -1298,9 +1298,9 @@ int RunServer(const LaunchOpts &launch) {
                 PlacementStore::Instance().InitFromSessionPrefix(
                     SessionStore::Instance().key_prefix());
             }
-            // Gateway / GameLogic：跨 GW 可靠 Push 回放
-            if (role == "all" || role == "gateway" || role == "gamelogic" || role == "session" ||
-                role == "gamedb") {
+            // Gateway / GameLogic / World：跨 GW 可靠 Push 回放。好友申请在 World 发出。
+            if (role == "all" || role == "gateway" || role == "gamelogic" || role == "world" ||
+                role == "session" || role == "gamedb") {
                 PushReplayStore::Instance().InitFromSessionPrefix(
                     SessionStore::Instance().key_prefix());
             }

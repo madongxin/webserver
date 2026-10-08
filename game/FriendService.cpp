@@ -10,6 +10,7 @@
 #include "gateway_push.pb.h"
 #endif
 #ifdef WEBSERVER_ENABLE_REDIS
+#include "PushReplayStore.h"
 #include "SessionStore.h"
 #endif
 
@@ -126,26 +127,40 @@ void RefreshFriendIdCache(uint64_t player_id) {
 void PushToPlayer(uint64_t player_id, const std::string &message_type, bool reliable,
                   const game::GameResponse &inner) {
 #ifdef WEBSERVER_ENABLE_REDIS
-    SessionStore::OnlinePushTarget t;
-    if (!SessionStore::Instance().GetOnlinePushTarget(player_id, &t))
+    SessionRecord rec;
+    if (!SessionStore::Instance().PeekSession(player_id, &rec) || rec.session_id.empty())
         return;
+    const bool online = rec.state == SessionState::Online && !rec.gateway_id.empty();
+    const bool hold_for_reconnect =
+        reliable && (rec.state == SessionState::Online || rec.state == SessionState::Disconnected);
     std::string payload;
     if (!inner.SerializeToString(&payload))
         return;
+    uint64_t seq = 0;
+    if (hold_for_reconnect && PushReplayStore::Instance().Available()) {
+        seq = PushReplayStore::Instance().AppendReliable(player_id, rec.session_id, message_type,
+                                                         payload);
+        if (seq == 0) {
+            LOG_WARN << "[friend] replay append failed type=" << message_type
+                     << " player=" << player_id;
+        }
+    }
+    if (!online)
+        return;
     gwpush::PushBatchRequest preq;
-    preq.set_gateway_instance_id(t.gateway_id);
+    preq.set_gateway_instance_id(rec.gateway_id);
     auto *m = preq.add_messages();
-    m->set_player_id(t.player_id);
-    m->set_session_id(t.session_id);
-    m->set_server_seq(0);
+    m->set_player_id(player_id);
+    m->set_session_id(rec.session_id);
+    m->set_server_seq(seq);
     m->set_message_type(message_type);
     m->set_payload(payload);
-    m->set_reliable(reliable);
-    m->set_coalescable(!reliable);
-    m->set_fence_token(t.fence_token);
-    m->set_generation(t.generation);
+    m->set_reliable(reliable && seq != 0);
+    m->set_coalescable(!(reliable && seq != 0));
+    m->set_fence_token(rec.token);
+    m->set_generation(rec.generation);
     gwpush::PushBatchResponse prsp;
-    if (!GatewayPushClient::Instance().PushBatch(t.gateway_id, preq, &prsp) || !prsp.ok()) {
+    if (!GatewayPushClient::Instance().PushBatch(rec.gateway_id, preq, &prsp) || !prsp.ok()) {
         LOG_WARN << "[friend] PushBatch failed type=" << message_type << " player=" << player_id
                  << " msg=" << prsp.message();
     }

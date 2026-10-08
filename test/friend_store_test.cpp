@@ -104,6 +104,14 @@ int main() {
             still = true;
     Expect(!still, "deleted both sides from a");
 
+    req.Clear();
+    req.set_op("DELETE");
+    req.set_actor_player_id(a);
+    req.set_target_player_id(b);
+    req.set_idempotency_key("del-missing:" + std::to_string(suffix));
+    FriendStore::Instance().Execute(req, &rsp);
+    Expect(!rsp.ok() && rsp.error_code() == "ERR_NOT_FRIEND", "delete missing friend");
+
     if (fails) {
         std::printf("friend_store_test FAIL count=%d\n", fails);
         return 1;
