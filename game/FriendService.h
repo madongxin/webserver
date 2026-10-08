@@ -3,6 +3,10 @@
 #include "game.pb.h"
 
 #include <cstdint>
+#include <string>
+
+/** 私聊是否可以投递。Hide 表示对方拉黑了自己：对发送方返回成功，但不把消息送出去。 */
+enum class FriendWhisperGate { Deliver, Reject, Hide };
 
 class FriendService {
 public:
@@ -20,6 +24,8 @@ public:
     bool HandleBlockList(const game::FriendBlockListReq &req, game::GameResponse *rsp);
 
     void FanoutPresence(uint64_t player_id, bool online);
+    FriendWhisperGate GateWhisper(uint64_t actor_player_id, uint64_t target_player_id,
+                                  std::string *error_code);
 
 private:
     FriendService() = default;

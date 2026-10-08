@@ -285,6 +285,8 @@ void FriendStore::Execute(const gdb::FriendOpReq &req, gdb::FriendOpRsp *rsp) {
         DeleteFriend(req, rsp);
     else if (op == "BLOCK")
         Block(req, rsp);
+    else if (op == "BLOCK_GATE")
+        BlockGate(req, rsp);
     else if (op == "UNBLOCK")
         Unblock(req, rsp);
     else if (op == "BLOCK_LIST")
@@ -820,6 +822,30 @@ void FriendStore::DeleteFriend(const gdb::FriendOpReq &req, gdb::FriendOpRsp *rs
         conn->rollback();
         Fail(rsp, "ERR_INTERNAL", "commit failed");
     }
+}
+
+void FriendStore::BlockGate(const gdb::FriendOpReq &req, gdb::FriendOpRsp *rsp) {
+    auto conn = ConnectionPool::getconnectionPool()->getConnection();
+    if (!conn) {
+        Fail(rsp, "ERR_DEPENDENCY_UNAVAILABLE", "mysql unavailable");
+        return;
+    }
+    const uint64_t a = req.actor_player_id();
+    const uint64_t b = req.target_player_id();
+    if (b == 0 || a == b) {
+        Fail(rsp, a == b ? "ERR_CANNOT_ADD_SELF" : "ERR_INVALID_ARGUMENT", "target");
+        return;
+    }
+    if (Blocked(conn.get(), a, b)) {
+        Fail(rsp, "ERR_ALREADY_BLOCKED", "blocked");
+        return;
+    }
+    if (Blocked(conn.get(), b, a)) {
+        rsp->set_privacy_ok(true);
+        Ok(rsp);
+        return;
+    }
+    Ok(rsp);
 }
 
 void FriendStore::Block(const gdb::FriendOpReq &req, gdb::FriendOpRsp *rsp) {

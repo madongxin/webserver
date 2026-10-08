@@ -2066,6 +2066,18 @@ bool GameLogic::HandleChatSend(const game::ChatSendReq &req, game::GameResponse 
         return fail("ERR_INVALID_ARGUMENT", "whisper requires target_player_id");
     if (whisper && req.target_player_id() == req.player_id())
         return fail("ERR_INVALID_ARGUMENT", "cannot whisper self");
+    bool hide_whisper = false;
+    if (whisper) {
+        std::string gate_err;
+        const FriendWhisperGate gate = FriendService::Instance().GateWhisper(
+            req.player_id(), req.target_player_id(), &gate_err);
+        if (gate == FriendWhisperGate::Reject)
+            return fail(gate_err.empty() ? "ERR_ALREADY_BLOCKED" : gate_err.c_str(), "blocked");
+        hide_whisper = gate == FriendWhisperGate::Hide;
+    }
+#ifndef WEBSERVER_ENABLE_BRPC
+    (void)hide_whisper;
+#endif
     const size_t max_cp = static_cast<size_t>(EnvBoundedInt("GAMEMESH_CHAT_MAX_CP", 200, 8, 2000));
     const size_t max_bytes =
         static_cast<size_t>(EnvBoundedInt("GAMEMESH_CHAT_MAX_BYTES", 800, 16, 4096));
@@ -2115,9 +2127,11 @@ bool GameLogic::HandleChatSend(const game::ChatSendReq &req, game::GameResponse 
     if (inner.SerializeToString(&payload)) {
         std::vector<SessionStore::OnlinePushTarget> targets;
         if (whisper) {
-            SessionStore::OnlinePushTarget one;
-            if (SessionStore::Instance().GetOnlinePushTarget(req.target_player_id(), &one))
-                targets.push_back(std::move(one));
+            if (!hide_whisper) {
+                SessionStore::OnlinePushTarget one;
+                if (SessionStore::Instance().GetOnlinePushTarget(req.target_player_id(), &one))
+                    targets.push_back(std::move(one));
+            }
         } else {
             SessionStore::Instance().ListOnlinePushTargets(&targets, 256);
         }
@@ -2138,7 +2152,7 @@ bool GameLogic::HandleChatSend(const game::ChatSendReq &req, game::GameResponse 
             m->set_fence_token(t.fence_token);
             m->set_generation(t.generation);
         }
-        if (batches.empty())
+        if (batches.empty() && !hide_whisper)
             LOG_WARN << "[chat] no online push targets sender=" << req.player_id();
         for (auto &kv : batches) {
             if (kv.second.messages_size() == 0)

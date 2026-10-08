@@ -15,8 +15,12 @@
 #endif
 
 #include <chrono>
+#include <condition_variable>
 #include <map>
+#include <mutex>
 #include <string>
+#include <thread>
+#include <unordered_map>
 #include <vector>
 
 namespace {
@@ -246,6 +250,9 @@ bool FriendService::HandleBlockList(const game::FriendBlockListReq &, game::Game
     return FriendUnavailable(rsp);
 }
 void FriendService::FanoutPresence(uint64_t, bool) {}
+FriendWhisperGate FriendService::GateWhisper(uint64_t, uint64_t, std::string *) {
+    return FriendWhisperGate::Deliver;
+}
 #else
 
 bool FriendService::HandleList(const game::FriendListReq &req, game::GameResponse *rsp) {
@@ -588,8 +595,28 @@ bool FriendService::HandleBlockList(const game::FriendBlockListReq &req, game::G
     return orsp.ok();
 }
 
-void FriendService::FanoutPresence(uint64_t player_id, bool online) {
-#ifdef WEBSERVER_ENABLE_BRPC
+FriendWhisperGate FriendService::GateWhisper(uint64_t actor_player_id, uint64_t target_player_id,
+                                             std::string *error_code) {
+    gdb::FriendOpReq op;
+    op.set_op("BLOCK_GATE");
+    op.set_actor_player_id(actor_player_id);
+    op.set_target_player_id(target_player_id);
+    gdb::FriendOpRsp orsp;
+    std::string err;
+    CallFriendOp(op, &orsp, &err);
+    (void)err;
+    if (orsp.ok() && orsp.privacy_ok())
+        return FriendWhisperGate::Hide;
+    if (!orsp.ok()) {
+        if (error_code)
+            *error_code = orsp.error_code().empty() ? "ERR_DEPENDENCY_UNAVAILABLE" : orsp.error_code();
+        return FriendWhisperGate::Reject;
+    }
+    return FriendWhisperGate::Deliver;
+}
+
+namespace {
+void RunPresenceFanout(uint64_t player_id, bool online) {
 #ifdef WEBSERVER_ENABLE_REDIS
     if (player_id == 0)
         return;
@@ -632,6 +659,55 @@ void FriendService::FanoutPresence(uint64_t player_id, bool online) {
     (void)player_id;
     (void)online;
 #endif
+}
+
+struct PresenceFanoutQueue {
+    std::mutex mu;
+    std::condition_variable cv;
+    std::unordered_map<uint64_t, bool> pending;
+    bool started = false;
+};
+
+PresenceFanoutQueue &PresenceQueue() {
+    static PresenceFanoutQueue q;
+    return q;
+}
+
+void PresenceFanoutLoop() {
+    auto &q = PresenceQueue();
+    for (;;) {
+        std::unordered_map<uint64_t, bool> batch;
+        {
+            std::unique_lock<std::mutex> lk(q.mu);
+            q.cv.wait(lk, [&] { return !q.pending.empty(); });
+            batch.swap(q.pending);
+        }
+        for (const auto &kv : batch)
+            RunPresenceFanout(kv.first, kv.second);
+    }
+}
+
+void EnsurePresenceFanoutThread() {
+    auto &q = PresenceQueue();
+    std::lock_guard<std::mutex> lk(q.mu);
+    if (q.started)
+        return;
+    q.started = true;
+    std::thread(PresenceFanoutLoop).detach();
+}
+}  // namespace
+
+void FriendService::FanoutPresence(uint64_t player_id, bool online) {
+#ifdef WEBSERVER_ENABLE_REDIS
+    if (player_id == 0)
+        return;
+    EnsurePresenceFanoutThread();
+    auto &q = PresenceQueue();
+    {
+        std::lock_guard<std::mutex> lk(q.mu);
+        q.pending[player_id] = online;
+    }
+    q.cv.notify_one();
 #else
     (void)player_id;
     (void)online;
