@@ -60,6 +60,27 @@ void AttachOnline(std::vector<game::FriendBrief *> briefs) {
         const auto &st = pres[i].state;
         const bool on = (st == "online" || st == "disconnected");
         briefs[i]->set_online(on);
+        if (on) {
+            const int64_t seen = pres[i].last_online_unix;
+            briefs[i]->set_last_online_time(
+                seen > 0 ? static_cast<uint64_t>(seen)
+                         : static_cast<uint64_t>(NowMs() / 1000));
+        }
+    }
+    std::vector<uint64_t> offline_ids;
+    std::vector<game::FriendBrief *> offline_briefs;
+    for (size_t i = 0; i < briefs.size(); ++i) {
+        if (!briefs[i] || briefs[i]->online() || briefs[i]->player_id() == 0)
+            continue;
+        offline_ids.push_back(briefs[i]->player_id());
+        offline_briefs.push_back(briefs[i]);
+    }
+    std::vector<int64_t> seen;
+    if (!offline_ids.empty() && SessionStore::Instance().BatchLastSeen(offline_ids, &seen)) {
+        for (size_t i = 0; i < offline_briefs.size() && i < seen.size(); ++i) {
+            if (seen[i] > 0)
+                offline_briefs[i]->set_last_online_time(static_cast<uint64_t>(seen[i]));
+        }
     }
 }
 #endif
@@ -76,6 +97,30 @@ bool CallFriendOp(const gdb::FriendOpReq &req, gdb::FriendOpRsp *rsp, std::strin
         rsp->set_message("gamedb unavailable");
     }
     return false;
+}
+
+void RefreshFriendIdCache(uint64_t player_id) {
+#ifdef WEBSERVER_ENABLE_REDIS
+    if (player_id == 0)
+        return;
+    gdb::FriendOpReq op;
+    op.set_op("LIST");
+    op.set_actor_player_id(player_id);
+    op.set_page_size(100);
+    gdb::FriendOpRsp orsp;
+    std::string err;
+    if (!CallFriendOp(op, &orsp, &err) || !orsp.ok())
+        return;
+    std::vector<uint64_t> ids;
+    for (int i = 0; i < orsp.friends_size(); ++i) {
+        const uint64_t id = orsp.friends(i).player_id();
+        if (id != 0)
+            ids.push_back(id);
+    }
+    SessionStore::Instance().ReplaceFriendIdCache(player_id, ids);
+#else
+    (void)player_id;
+#endif
 }
 
 void PushToPlayer(uint64_t player_id, const std::string &message_type, bool reliable,
@@ -296,13 +341,22 @@ bool FriendService::HandleApply(const game::FriendApplyReq &req, game::GameRespo
         inner.set_ok(true);
         inner.set_seq(0);
         auto *p = inner.mutable_friend_request_push();
-        p->set_request_id(orsp.request_id());
-        p->set_created_at(static_cast<uint64_t>(NowMs() / 1000));
-        if (orsp.has_player()) {
-            /* applicant is actor */
+        if (orsp.requests_size() > 0) {
+            const auto &rq = orsp.requests(0);
+            p->set_request_id(rq.request_id() != 0 ? rq.request_id() : orsp.request_id());
+            p->set_created_at(rq.created_at());
+            p->set_expire_at(rq.expire_at());
+            CopyBrief(rq.applicant(), p->mutable_applicant());
+        } else {
+            p->set_request_id(orsp.request_id());
+            p->set_created_at(static_cast<uint64_t>(NowMs() / 1000));
         }
-        auto *ap = p->mutable_applicant();
-        ap->set_player_id(req.player_id());
+        if (p->applicant().player_id() == 0)
+            p->mutable_applicant()->set_player_id(req.player_id());
+#ifdef WEBSERVER_ENABLE_REDIS
+        std::vector<game::FriendBrief *> ptrs{p->mutable_applicant()};
+        AttachOnline(ptrs);
+#endif
         PushToPlayer(orsp.peer_player_id(), "friend.request.v1", true, inner);
     }
 #endif
@@ -368,7 +422,20 @@ bool FriendService::HandleAccept(const game::FriendAcceptReq &req, game::GameRes
         game::GameResponse inner;
         inner.set_ok(true);
         auto *p = inner.mutable_friend_added_push();
-        p->mutable_peer()->set_player_id(req.player_id());
+        if (orsp.requests_size() > 0 && orsp.requests(0).has_applicant())
+            CopyBrief(orsp.requests(0).applicant(), p->mutable_peer());
+        else
+            p->mutable_peer()->set_player_id(req.player_id());
+        if (p->peer().player_id() == 0)
+            p->mutable_peer()->set_player_id(req.player_id());
+#ifdef WEBSERVER_ENABLE_REDIS
+        std::vector<game::FriendBrief *> ptrs{p->mutable_peer()};
+        AttachOnline(ptrs);
+        SessionStore::Instance().AddFriendIdCache(req.player_id(), orsp.peer_player_id());
+        SessionStore::Instance().AddFriendIdCache(orsp.peer_player_id(), req.player_id());
+        RefreshFriendIdCache(req.player_id());
+        RefreshFriendIdCache(orsp.peer_player_id());
+#endif
         PushToPlayer(orsp.peer_player_id(), "friend.added.v1", true, inner);
     }
 #endif
@@ -416,6 +483,12 @@ bool FriendService::HandleDelete(const game::FriendDeleteReq &req, game::GameRes
         inner.set_ok(true);
         inner.mutable_friend_removed_push()->set_friend_player_id(req.player_id());
         PushToPlayer(orsp.peer_player_id(), "friend.removed.v1", true, inner);
+#ifdef WEBSERVER_ENABLE_REDIS
+        SessionStore::Instance().RemoveFriendIdCache(req.player_id(), orsp.peer_player_id());
+        SessionStore::Instance().RemoveFriendIdCache(orsp.peer_player_id(), req.player_id());
+        RefreshFriendIdCache(req.player_id());
+        RefreshFriendIdCache(orsp.peer_player_id());
+#endif
     }
 #endif
     rsp->set_ok(orsp.ok());
@@ -443,6 +516,12 @@ bool FriendService::HandleBlock(const game::FriendBlockReq &req, game::GameRespo
         inner.set_ok(true);
         inner.mutable_friend_removed_push()->set_friend_player_id(req.player_id());
         PushToPlayer(orsp.peer_player_id(), "friend.removed.v1", true, inner);
+#ifdef WEBSERVER_ENABLE_REDIS
+        SessionStore::Instance().RemoveFriendIdCache(req.player_id(), orsp.peer_player_id());
+        SessionStore::Instance().RemoveFriendIdCache(orsp.peer_player_id(), req.player_id());
+        RefreshFriendIdCache(req.player_id());
+        RefreshFriendIdCache(orsp.peer_player_id());
+#endif
     }
 #endif
     rsp->set_ok(orsp.ok());
@@ -499,13 +578,30 @@ void FriendService::FanoutPresence(uint64_t player_id, bool online) {
 #ifdef WEBSERVER_ENABLE_REDIS
     if (player_id == 0)
         return;
+    const uint64_t now = static_cast<uint64_t>(NowMs() / 1000);
+    SessionStore::Instance().RememberLastSeen(player_id, static_cast<int64_t>(now));
     std::vector<uint64_t> ids;
-    if (!SessionStore::Instance().ListFriendIdsFromCache(player_id, &ids) || ids.empty())
-        return;
+    if (!SessionStore::Instance().ListFriendIdsFromCache(player_id, &ids) || ids.empty()) {
+        gdb::FriendOpReq op;
+        op.set_op("LIST");
+        op.set_actor_player_id(player_id);
+        op.set_page_size(100);
+        gdb::FriendOpRsp orsp;
+        std::string err;
+        if (!CallFriendOp(op, &orsp, &err) || !orsp.ok())
+            return;
+        for (int i = 0; i < orsp.friends_size(); ++i) {
+            const uint64_t id = orsp.friends(i).player_id();
+            if (id != 0)
+                ids.push_back(id);
+        }
+        if (ids.empty())
+            return;
+        SessionStore::Instance().ReplaceFriendIdCache(player_id, ids);
+    }
     std::vector<SessionStore::PublicPresence> pres;
     if (!SessionStore::Instance().BatchQueryPublicPresence(ids, &pres))
         return;
-    const uint64_t now = static_cast<uint64_t>(NowMs() / 1000);
     game::GameResponse inner;
     inner.set_ok(true);
     auto *p = inner.mutable_friend_presence_push();

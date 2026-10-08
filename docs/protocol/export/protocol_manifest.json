@@ -2,9 +2,9 @@
   "protocol_name": "gamemesh.game",
   "protocol_version": 1,
   "min_supported_protocol_version": 1,
-  "server_commit": "a4e0e84de0f92da5483fa4b08fa56dd66bc59407",
-  "server_git_sha": "a4e0e84de0f92da5483fa4b08fa56dd66bc59407",
-  "git_sha": "a4e0e84de0f92da5483fa4b08fa56dd66bc59407",
+  "server_commit": "a95a095b5eb4544849d8b63bf85f188e3636e5e3",
+  "server_git_sha": "a95a095b5eb4544849d8b63bf85f188e3636e5e3",
+  "git_sha": "a95a095b5eb4544849d8b63bf85f188e3636e5e3",
   "dirty": true,
   "schema_file": "game.proto",
   "schema_files": [
@@ -21,7 +21,7 @@
   "protoc_version": "3.12.4",
   "package": "game",
   "csharp_namespace": "GameMesh.Protocol",
-  "generated_at_utc": "2026-09-22T04:10:21Z",
+  "generated_at_utc": "2026-10-08T03:41:35Z",
   "required_types": [
     "ClientHelloReq",
     "ServerHelloRsp",
@@ -54,7 +54,33 @@
     "MapLineInfo",
     "InteractPortalReq",
     "InteractPortalRsp",
-    "PortalDef"
+    "PortalDef",
+    "FriendBrief",
+    "FriendListReq",
+    "FriendListRsp",
+    "FriendSearchReq",
+    "FriendSearchRsp",
+    "FriendApplyReq",
+    "FriendApplyRsp",
+    "FriendRequestInfo",
+    "FriendRequestListReq",
+    "FriendRequestListRsp",
+    "FriendAcceptReq",
+    "FriendAcceptRsp",
+    "FriendRejectReq",
+    "FriendRejectRsp",
+    "FriendDeleteReq",
+    "FriendDeleteRsp",
+    "FriendBlockReq",
+    "FriendBlockRsp",
+    "FriendUnblockReq",
+    "FriendUnblockRsp",
+    "FriendBlockListReq",
+    "FriendBlockListRsp",
+    "FriendRequestPush",
+    "FriendAddedPush",
+    "FriendRemovedPush",
+    "FriendPresencePush"
   ],
   "push_message_types": [
     "aoi.delta.v1",
@@ -62,6 +88,10 @@
     "player.state.v1",
     "chat.world.v1",
     "chat.whisper.v1",
-    "map.lines.v1"
+    "map.lines.v1",
+    "friend.request.v1",
+    "friend.added.v1",
+    "friend.removed.v1",
+    "friend.presence.v1"
   ]
 }

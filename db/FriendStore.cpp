@@ -512,6 +512,16 @@ void FriendStore::Apply(const gdb::FriendOpReq &req, gdb::FriendOpRsp *rsp) {
     rsp->set_request_id(rid);
     rsp->set_peer_player_id(b);
     rsp->set_notify_kind("request");
+    gdb::FriendBriefDb actor;
+    if (!LoadProfile(conn.get(), a, &actor)) {
+        actor.set_player_id(a);
+        actor.set_level(1);
+    }
+    auto *rq = rsp->add_requests();
+    rq->set_request_id(rid);
+    rq->set_created_at(static_cast<uint64_t>(now));
+    rq->set_expire_at(static_cast<uint64_t>(expire));
+    *rq->mutable_applicant() = actor;
     Ok(rsp);
     SaveIdempotency(conn.get(), a, req.idempotency_key(), "APPLY", *rsp);
     if (!conn->commit()) {
@@ -689,6 +699,12 @@ void FriendStore::Accept(const gdb::FriendOpReq &req, gdb::FriendOpRsp *rsp) {
     rsp->set_peer_player_id(from);
     rsp->set_request_id(req.request_id());
     rsp->set_notify_kind("added");
+    gdb::FriendBriefDb accepter;
+    if (!LoadProfile(conn.get(), to, &accepter)) {
+        accepter.set_player_id(to);
+        accepter.set_level(1);
+    }
+    *rsp->add_requests()->mutable_applicant() = accepter;
     Ok(rsp);
     SaveIdempotency(conn.get(), req.actor_player_id(), req.idempotency_key(), "ACCEPT", *rsp);
     if (!conn->commit()) {

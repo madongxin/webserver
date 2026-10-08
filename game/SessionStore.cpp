@@ -2274,12 +2274,73 @@ void SessionStore::ReplaceFriendIdCache(uint64_t player_id, const std::vector<ui
         return;
     const std::string key = key_prefix_ + "friend:ids:" + std::to_string(player_id);
     lease->Del(key);
+    bool any = false;
     for (uint64_t id : friend_ids) {
-        if (id != 0)
-            lease->SAdd(key, std::to_string(id));
+        if (id == 0)
+            continue;
+        lease->SAdd(key, std::to_string(id));
+        any = true;
     }
-    if (!friend_ids.empty())
-        lease->Expire(key, 1800);
+    if (!any)
+        lease->SAdd(key, "0");
+    lease->Expire(key, 1800);
+}
+
+void SessionStore::AddFriendIdCache(uint64_t player_id, uint64_t friend_id) {
+    if (!available_ || player_id == 0 || friend_id == 0)
+        return;
+    auto lease = RedisPool::Instance().Acquire();
+    if (!lease)
+        return;
+    const std::string key = key_prefix_ + "friend:ids:" + std::to_string(player_id);
+    lease->SAdd(key, std::to_string(friend_id));
+    lease->Expire(key, 1800);
+}
+
+void SessionStore::RemoveFriendIdCache(uint64_t player_id, uint64_t friend_id) {
+    if (!available_ || player_id == 0 || friend_id == 0)
+        return;
+    auto lease = RedisPool::Instance().Acquire();
+    if (!lease)
+        return;
+    lease->SRem(key_prefix_ + "friend:ids:" + std::to_string(player_id), std::to_string(friend_id));
+}
+
+void SessionStore::RememberLastSeen(uint64_t player_id, int64_t unix_sec) {
+    if (!available_ || player_id == 0 || unix_sec <= 0)
+        return;
+    auto lease = RedisPool::Instance().Acquire();
+    if (!lease)
+        return;
+    static const char *kLua = "redis.call('SETEX', KEYS[1], ARGV[1], ARGV[2]) return 1";
+    std::vector<std::string> reply;
+    lease->Eval(kLua, {key_prefix_ + "friend:seen:" + std::to_string(player_id)},
+                {"2592000", std::to_string(unix_sec)}, &reply);
+}
+
+bool SessionStore::BatchLastSeen(const std::vector<uint64_t> &player_ids, std::vector<int64_t> *out) {
+    if (!out)
+        return false;
+    out->assign(player_ids.size(), 0);
+    if (!available_ || player_ids.empty())
+        return true;
+    auto lease = RedisPool::Instance().Acquire();
+    if (!lease)
+        return false;
+    std::vector<std::string> keys;
+    keys.reserve(player_ids.size());
+    for (uint64_t id : player_ids)
+        keys.push_back(key_prefix_ + "friend:seen:" + std::to_string(id));
+    static const char *kLua =
+        "local r = {} for i=1,#KEYS do r[i] = redis.call('GET', KEYS[i]) or '' end return r";
+    std::vector<std::string> reply;
+    if (!lease->Eval(kLua, keys, {}, &reply) || reply.size() != player_ids.size())
+        return false;
+    for (size_t i = 0; i < reply.size(); ++i) {
+        if (!reply[i].empty())
+            (*out)[i] = static_cast<int64_t>(std::strtoll(reply[i].c_str(), nullptr, 10));
+    }
+    return true;
 }
 
 bool SessionStore::ListFriendIdsFromCache(uint64_t player_id, std::vector<uint64_t> *out) {
@@ -2289,8 +2350,11 @@ bool SessionStore::ListFriendIdsFromCache(uint64_t player_id, std::vector<uint64
     auto lease = RedisPool::Instance().Acquire();
     if (!lease)
         return false;
+    const std::string key = key_prefix_ + "friend:ids:" + std::to_string(player_id);
+    if (!lease->Exists(key))
+        return false;
     std::vector<std::string> members;
-    if (!lease->SMembers(key_prefix_ + "friend:ids:" + std::to_string(player_id), &members))
+    if (!lease->SMembers(key, &members))
         return false;
     for (const auto &m : members) {
         const uint64_t id = static_cast<uint64_t>(std::strtoull(m.c_str(), nullptr, 10));
@@ -2348,7 +2412,7 @@ bool SessionStore::BatchQueryPublicPresence(const std::vector<uint64_t> &player_
         (*out)[i].map_instance_id = rec.map_instance_id;
         (*out)[i].gamelogic_instance_id = rec.gamelogic_instance_id;
         (*out)[i].map_owner_epoch = rec.map_owner_epoch;
-        (void)rec.login_time_sec;
+        (*out)[i].last_online_unix = rec.login_time_sec;
     }
     return true;
 }

@@ -84,6 +84,13 @@ required = [
     "CreateDungeonReq", "CreateDungeonRsp",
     "QueryMapLinesReq", "QueryMapLinesRsp", "SwitchLineReq", "SwitchLineRsp",
     "MapLineInfo", "InteractPortalReq", "InteractPortalRsp", "PortalDef",
+    "FriendBrief", "FriendListReq", "FriendListRsp", "FriendSearchReq", "FriendSearchRsp",
+    "FriendApplyReq", "FriendApplyRsp", "FriendRequestInfo",
+    "FriendRequestListReq", "FriendRequestListRsp",
+    "FriendAcceptReq", "FriendAcceptRsp", "FriendRejectReq", "FriendRejectRsp",
+    "FriendDeleteReq", "FriendDeleteRsp", "FriendBlockReq", "FriendBlockRsp",
+    "FriendUnblockReq", "FriendUnblockRsp", "FriendBlockListReq", "FriendBlockListRsp",
+    "FriendRequestPush", "FriendAddedPush", "FriendRemovedPush", "FriendPresencePush",
 ]
 missing = [t for t in required if not re.search(rf"message\s+{t}\b", proto_text)]
 if missing:
@@ -114,7 +121,9 @@ manifest = {
     "generated_at_utc": os.environ["TS"],
     "required_types": required,
     "push_message_types": ["aoi.delta.v1", "mailbox.changed.v1", "player.state.v1",
-                           "chat.world.v1", "chat.whisper.v1", "map.lines.v1"],
+                           "chat.world.v1", "chat.whisper.v1", "map.lines.v1",
+                           "friend.request.v1", "friend.added.v1", "friend.removed.v1",
+                           "friend.presence.v1"],
 }
 (out / "protocol_manifest.json").write_text(
     json.dumps(manifest, indent=2, ensure_ascii=False) + "\n", encoding="utf-8"

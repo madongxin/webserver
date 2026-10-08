@@ -252,6 +252,8 @@ public:
         uint64_t map_instance_id = 0;
         std::string gamelogic_instance_id;
         uint64_t map_owner_epoch = 0;
+        /** 在线或重连宽限中：本次登录时间。离线为 0，最近在线另见 BatchLastSeen。 */
+        int64_t last_online_unix = 0;
     };
     bool QueryPublicPresence(uint64_t player_id, PublicPresence *out);
     /** 内部读会话（含 fence）；不校验 fence。 */
@@ -267,7 +269,12 @@ public:
     bool BatchQueryPublicPresence(const std::vector<uint64_t> &player_ids,
                                   std::vector<PublicPresence> *out);
     void ReplaceFriendIdCache(uint64_t player_id, const std::vector<uint64_t> &friend_ids);
+    void AddFriendIdCache(uint64_t player_id, uint64_t friend_id);
+    void RemoveFriendIdCache(uint64_t player_id, uint64_t friend_id);
     bool ListFriendIdsFromCache(uint64_t player_id, std::vector<uint64_t> *out);
+    /** 离线后好友列表用的最近在线时间，保留 30 天。 */
+    void RememberLastSeen(uint64_t player_id, int64_t unix_sec);
+    bool BatchLastSeen(const std::vector<uint64_t> &player_ids, std::vector<int64_t> *out);
 
     using FriendPresenceFn = void (*)(uint64_t player_id, bool online);
     void SetFriendPresenceFn(FriendPresenceFn fn);

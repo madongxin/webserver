@@ -1452,6 +1452,18 @@ int RunServer(const LaunchOpts &launch) {
         if (EtcdDiscovery::Instance().enabled())
             EtcdDiscovery::Instance().Register("session", sid, adv, 30);
         apply_gateway_push_addrs();
+        {
+            std::string gamedb_addr = GatewayConfigPath::ReadValue("gamedb_addrs");
+            if (gamedb_addr.empty()) {
+                std::string cnf = "../config/session.cnf";
+                std::string resolved;
+                if (GameMeshPaths::ResolveProjectSubdir("config/session.cnf", &resolved))
+                    cnf = resolved;
+                gamedb_addr = load_kv(cnf, "gamedb_addrs");
+            }
+            if (!gamedb_addr.empty())
+                BrpcGameDbRepository::Instance().Init(split_addrs(gamedb_addr));
+        }
         LOG_INFO << "role=session listen=" << listen << " instance_id=" << sid;
     } else if (role == "gamedb") {
         if (logic_port_override > 0) {
