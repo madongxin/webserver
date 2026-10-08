@@ -23,6 +23,8 @@ int Fail(const char *msg) {
 }  // namespace
 
 int main() {
+    if (SessionStore::kReconnectPrepareTtlSec != 10)
+        return Fail("reconnect prepare ttl is not 10s");
     if (!SessionStore::Instance().InitFromConfig()) {
         std::printf("FAIL session_store_test (Redis unavailable)\n");
         return 1;
@@ -446,8 +448,48 @@ int main() {
         SessionStore::Instance().Logout(slo, &slor);
     }
 
+    {
+        const uint64_t rpid = 900211;
+        game::LoginReq rlogin;
+        rlogin.set_player_id(rpid);
+        rlogin.set_device_id("reconn-ttl");
+        rlogin.set_server_id(1);
+        game::LoginRsp rlr;
+        if (!SessionStore::Instance().Login(rlogin, &rlr) || !rlr.ok())
+            return Fail("prepare ttl login");
+        ReconnectSessionInput rin;
+        rin.player_id = rpid;
+        rin.session_id = rlr.session_id();
+        rin.reconnect_ticket = rlr.token();
+        rin.operation_id = "op-prepare-ttl";
+        AcquireSessionResult rout;
+        if (!SessionStore::Instance().PrepareReconnect(rin, &rout) || !rout.ok)
+            return Fail("prepare reconnect");
+        SessionOpStatus st = SessionOpStatus::Done;
+        if (!SessionStore::Instance().GetSessionOperation(rin.operation_id, &st, nullptr, nullptr) ||
+            st != SessionOpStatus::Pending)
+            return Fail("prepare still pending inside ttl");
+        auto lease = RedisPool::Instance().Acquire();
+        if (!lease)
+            return Fail("prepare ttl redis");
+        const std::string pkey =
+            SessionStore::Instance().key_prefix() + "reconnect:pending:" + rin.operation_id;
+        std::vector<std::string> er;
+        if (!lease->Eval("return {redis.call('DEL', KEYS[1])}", {pkey}, {}, &er))
+            return Fail("drop pending key");
+        lease = RedisPool::Lease();
+        st = SessionOpStatus::Pending;
+        if (!SessionStore::Instance().GetSessionOperation(rin.operation_id, &st, nullptr, nullptr) ||
+            st != SessionOpStatus::NotFound)
+            return Fail("prepare missing after ttl");
+        game::LogoutReq rlo;
+        rlo.set_player_id(rpid);
+        game::LogoutRsp rlor;
+        SessionStore::Instance().Logout(rlo, &rlor);
+    }
+
     for (uint64_t id : {pid, pid2, pid3, uint64_t{900004}, uint64_t{900088}, uint64_t{900099},
-                        uint64_t{900077}}) {
+                        uint64_t{900077}, uint64_t{900211}}) {
         game::LogoutReq clo;
         clo.set_player_id(id);
         game::LogoutRsp cr;

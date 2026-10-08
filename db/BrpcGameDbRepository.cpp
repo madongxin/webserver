@@ -841,3 +841,37 @@ bool BrpcGameDbRepository::HandleGameFrame(uint64_t player_id, const std::string
         *err = "gamedb unavailable";
     return false;
 }
+
+bool BrpcGameDbRepository::FriendOp(const gdb::FriendOpReq &req, gdb::FriendOpRsp *rsp,
+                                    std::string *err) {
+    if (!rsp)
+        return false;
+    rsp->Clear();
+    const uint64_t pid = req.actor_player_id();
+    const size_t n = channel_count();
+    for (size_t i = 0; i < n; ++i) {
+        const size_t idx = pid != 0 ? (static_cast<size_t>(pid) + i) % n : i;
+        auto ch = ChannelAt(idx);
+        if (!ch)
+            continue;
+        brpc::Controller cntl;
+        gdb::FriendOpRsp local;
+        gdb::GameDbService_Stub stub(ch.get());
+        stub.FriendOp(&cntl, &req, &local, nullptr);
+        if (cntl.Failed()) {
+            if (err)
+                *err = cntl.ErrorText();
+            continue;
+        }
+        *rsp = local;
+        if (err)
+            *err = local.message();
+        return local.ok() || !local.error_code().empty();
+    }
+    if (err && err->empty())
+        *err = "gamedb unavailable";
+    rsp->set_ok(false);
+    rsp->set_error_code("ERR_DEPENDENCY_UNAVAILABLE");
+    rsp->set_message("gamedb unavailable");
+    return false;
+}

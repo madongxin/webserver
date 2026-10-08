@@ -38,6 +38,13 @@ int main() {
     Expect(game::GameRequest::kSwitchLineFieldNumber == 78, "req switch_line=78");
     Expect(game::GameRequest::kEnqueueMapFieldNumber == 79, "req enqueue_map=79");
     Expect(game::GameRequest::kInteractPortalFieldNumber == 80, "req interact_portal=80");
+    Expect(game::GameRequest::kFriendSearchFieldNumber == 81, "req friend_search=81");
+    Expect(game::GameRequest::kFriendApplyFieldNumber == 82, "req friend_apply=82");
+    Expect(game::GameRequest::kFriendAcceptFieldNumber == 83, "req friend_accept=83");
+    Expect(game::GameRequest::kFriendDeleteFieldNumber == 85, "req friend_delete=85");
+    Expect(game::GameResponse::kFriendRequestPushFieldNumber == 90, "rsp friend_request_push=90");
+    Expect(game::GameResponse::kFriendPresencePushFieldNumber == 93, "rsp friend_presence_push=93");
+    Expect(game::GameResponse::kFriendSearchFieldNumber == 94, "rsp friend_search=94");
     Expect(game::EnterMapReq::kQueueTokenFieldNumber == 9, "enter_map.queue_token=9");
     Expect(game::EnterMapReq::kLineNoFieldNumber == 8, "enter_map.line_no=8");
     Expect(game::GameResponse::kErrorCodeFieldNumber == 4, "rsp error_code=4");

@@ -996,6 +996,24 @@ void HttpResponseCallback(const HttpRequest &request, HttpResponse *response) {
         SendJson(response, j);
         return;
     }
+    if (url == "/api/gateway") {
+        const char *host = std::getenv("GAMEMESH_ADVERTISE_HOST");
+        if (!host || !host[0])
+            host = "127.0.0.1";
+        int port = g_game_port;
+        if (const char *ep = std::getenv("GAMEMESH_PUBLIC_GAME_PORT")) {
+            const int parsed = std::atoi(ep);
+            if (parsed > 0)
+                port = parsed;
+        }
+        Json::Value j;
+        j["gateway"] = std::string(host) + ":" + std::to_string(port);
+        j["host"] = host;
+        j["port"] = port;
+        j["tls"] = false;
+        SendJson(response, j);
+        return;
+    }
 #ifdef WEBSERVER_ENABLE_REDIS
     if (url == "/api/redis/status") {
         Json::Value j;
@@ -1143,6 +1161,7 @@ int RunServer(const LaunchOpts &launch) {
     else
         g_game_port = game_port;
 
+    SetLogService(role.c_str());
     LOG_INFO << "gamemesh role=" << role << " http=" << port << " game_port=" << g_game_port;
     if (FormalModeEnabled()) {
         LOG_WARN << "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!";
@@ -1893,7 +1912,10 @@ int RunServer(const LaunchOpts &launch) {
             std::vector<uint64_t> closed;
             if (PlacementStore::Instance().CloseIdleInstances(0, 64, &closed) && !closed.empty())
                 LOG_INFO << "PlacementIdleCloser: closed idle maps n=" << closed.size();
-            const size_t expired = SessionStore::Instance().ExpireDueDisconnected(64);
+            const size_t expired = SessionStore::Instance().ExpireDueDisconnected(100);
+            const size_t aborted = SessionStore::Instance().ExpireDueTransfers(100);
+            if (aborted > 0)
+                LOG_WARN << "SessionTransferSweeper: aborted n=" << aborted;
             if (expired > 0)
                 LOG_INFO << "SessionGraceSweeper: expired n=" << expired;
             const size_t orphans = SessionStore::Instance().ReclaimOrphanMapReservations(64);

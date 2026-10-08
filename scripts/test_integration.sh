@@ -87,6 +87,11 @@ if [[ ! -x ./build/test/player_profile_store_test ]]; then
   exit 1
 fi
 ./build/test/player_profile_store_test
+if [[ ! -x ./build/test/friend_store_test ]]; then
+  echo "ERROR: missing friend_store_test"
+  exit 1
+fi
+./build/test/friend_store_test
 if [[ ! -x ./build/test/last_safe_position_store_test ]]; then
   echo "ERROR: missing last_safe_position_store_test"
   exit 1

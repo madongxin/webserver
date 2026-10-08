@@ -59,6 +59,8 @@ public:
     void SetViewRadiusCells(int n);
     int view_radius_cells() const { return view_radius_; }
 
+    /** EnterMap / 重连之后把移动序号窗口清零，下一个合法 seq 从 1 起。 */
+    void ResetClientSeq(uint64_t player_id);
     bool Enter(uint64_t map_instance_id, std::shared_ptr<const MapStaticData> data,
                MapEntity entity, MapEntity *self_out, std::vector<MapEntity> *aoi_snapshot,
                AoiPushBatch *pushes, std::string *err, int view_radius_cells = -1);

@@ -2,6 +2,8 @@
  * Remediation 阶段 2：Session Transfer Lua + GatewayConnRegistry ApplyRoute
  */
 #include "GatewayConnRegistry.h"
+#include "RedisPool.h"
+#include "ServerStats.h"
 #include "SessionStore.h"
 
 #include <iostream>
@@ -118,7 +120,12 @@ void TestApplyRoute() {
     Expect(reg.ApplyRoute(5, "gl-1", 9, 2, 4), "ApplyRoute newer rv");
     GatewayConnRegistry::Bind out;
     Expect(reg.FindByConnection(5, &out) && out.gamelogic_instance_id == "gl-1", "sticky gl-1");
+    const uint64_t rejected_before =
+        ServerStats::route_apply_rejected.load(std::memory_order_relaxed);
     Expect(!reg.ApplyRoute(5, "gl-0", 1, 1, 2), "reject stale rv");
+    Expect(ServerStats::route_apply_rejected.load(std::memory_order_relaxed) ==
+               rejected_before + 1,
+           "route_apply_rejected_count");
     Expect(reg.FindByConnection(5, &out) && out.gamelogic_instance_id == "gl-1",
            "sticky unchanged on stale");
     reg.Forget(5);
@@ -126,9 +133,55 @@ void TestApplyRoute() {
 
 }  // namespace
 
+void TestTransferTimeout() {
+    const uint64_t pid = 910088;
+    std::string fence;
+    uint64_t rv = 0;
+    std::string from_logic;
+    if (!EnsureSession(pid, &fence, &rv, &from_logic)) {
+        Expect(false, "redis session required for transfer ttl");
+        return;
+    }
+    const std::string to_logic = (from_logic == "gl-0") ? "gl-1" : "gl-0";
+    SessionStore::TransferBeginIn bin;
+    bin.player_id = pid;
+    bin.fence_token = fence;
+    bin.expected_route_version = rv;
+    bin.from_logic = from_logic;
+    bin.to_logic = to_logic;
+    bin.map_instance_id = 42;
+    bin.map_owner_epoch = 7;
+    bin.transfer_id = "ttl-xfer";
+    SessionStore::TransferBeginOut bout;
+    Expect(SessionStore::Instance().BeginPlayerTransfer(bin, &bout) && bout.ok, "Begin for ttl");
+    auto lease = RedisPool::Instance().Acquire();
+    Expect(static_cast<bool>(lease), "redis lease");
+    if (!lease)
+        return;
+    const std::string skey = SessionStore::Instance().key_prefix() + "session:" + std::to_string(pid);
+    const std::string zkey = SessionStore::Instance().key_prefix() + "transfer:deadlines";
+    std::vector<std::string> reply;
+    Expect(lease->Eval("redis.call('HSET', KEYS[1], 'transferDeadline', '1') "
+                       "redis.call('ZADD', KEYS[2], 1, ARGV[1]) return {'1'}",
+                       {skey, zkey}, {std::to_string(pid)}, &reply),
+           "force transfer deadline");
+    lease = RedisPool::Lease();
+    Expect(SessionStore::Instance().ExpireDueTransfers(100) >= 1, "transfer ttl abort");
+    SessionRecord rec;
+    std::string st, tid, err;
+    Expect(SessionStore::Instance().GetPlayerRoute(pid, fence, &rec, &st, &tid, &err),
+           "route after abort");
+    Expect(st != "TRANSFERRING", "transfer rolled back");
+    game::LogoutReq lo;
+    lo.set_player_id(pid);
+    game::LogoutRsp lor;
+    SessionStore::Instance().Logout(lo, &lor);
+}
+
 int main() {
     TestApplyRoute();
     TestTransferSm();
+    TestTransferTimeout();
     if (g_fail) {
         std::cerr << "player_transfer_test FAIL count=" << g_fail << "\n";
         return 1;

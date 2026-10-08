@@ -1,5 +1,7 @@
 #include "RedisClient.h"
 
+#include "ServerStats.h"
+
 #include <hiredis/hiredis.h>
 
 #include <arpa/inet.h>
@@ -178,6 +180,52 @@ bool RedisClient::HGetAll(const std::string &key, std::map<std::string, std::str
     return true;
 }
 
+bool RedisClient::HGetAllMany(const std::vector<std::string> &keys,
+                              std::vector<std::map<std::string, std::string>> *out) {
+    if (!ctx_ || !out)
+        return false;
+    out->clear();
+    if (keys.empty())
+        return true;
+    out->resize(keys.size());
+    auto *c = static_cast<redisContext *>(ctx_);
+    for (const auto &key : keys) {
+        if (redisAppendCommand(c, "HGETALL %s", key.c_str()) != REDIS_OK) {
+            Disconnect();
+            return false;
+        }
+    }
+    for (size_t i = 0; i < keys.size(); ++i) {
+        redisReply *r = nullptr;
+        if (redisGetReply(c, reinterpret_cast<void **>(&r)) != REDIS_OK || !r) {
+            if (r)
+                freeReplyObject(r);
+            Disconnect();
+            return false;
+        }
+        if (r->type == REDIS_REPLY_ERROR) {
+            freeReplyObject(r);
+            return false;
+        }
+        if (r->type == REDIS_REPLY_NIL) {
+            freeReplyObject(r);
+            continue;
+        }
+        if (r->type != REDIS_REPLY_ARRAY || r->elements % 2 != 0) {
+            freeReplyObject(r);
+            return false;
+        }
+        for (size_t j = 0; j < r->elements; j += 2) {
+            redisReply *k = r->element[j];
+            redisReply *v = r->element[j + 1];
+            if (k->type == REDIS_REPLY_STRING && v->type == REDIS_REPLY_STRING)
+                (*out)[i][std::string(k->str, k->len)] = std::string(v->str, v->len);
+        }
+        freeReplyObject(r);
+    }
+    return true;
+}
+
 namespace {
 
 void AppendReplyFlat(redisReply *r, std::vector<std::string> *out) {
@@ -237,6 +285,7 @@ bool RedisClient::Eval(const std::string &script, const std::vector<std::string>
         return false;
     }
     if (r->type == REDIS_REPLY_ERROR) {
+        ServerStats::redis_lua_errors.fetch_add(1, std::memory_order_relaxed);
         freeReplyObject(r);
         return false;
     }

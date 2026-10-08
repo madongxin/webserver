@@ -26,9 +26,18 @@ bool IsWorldBoundRequest(const game::GameRequest &req) {
         return true;
     switch (req.body_case()) {
     case game::GameRequest::kChatSend:
-    case game::GameRequest::kFriendList:
     case game::GameRequest::kGetPlayerBrief:
     case game::GameRequest::kQueryOnlineState:
+    case game::GameRequest::kFriendList:
+    case game::GameRequest::kFriendSearch:
+    case game::GameRequest::kFriendApply:
+    case game::GameRequest::kFriendAccept:
+    case game::GameRequest::kFriendReject:
+    case game::GameRequest::kFriendDelete:
+    case game::GameRequest::kFriendRequestList:
+    case game::GameRequest::kFriendBlock:
+    case game::GameRequest::kFriendUnblock:
+    case game::GameRequest::kFriendBlockList:
         return true;
     default:
         return false;

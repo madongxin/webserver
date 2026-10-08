@@ -17,17 +17,6 @@ namespace {
 
 std::mutex g_mu;
 
-std::string SqlEscape(const std::string &s) {
-    std::string out;
-    out.reserve(s.size() + 8);
-    for (char c : s) {
-        if (c == '\\' || c == '\'')
-            out.push_back('\\');
-        out.push_back(c);
-    }
-    return out;
-}
-
 }  // namespace
 
 PlayerAccountStore &PlayerAccountStore::Instance() {
@@ -89,19 +78,14 @@ bool PlayerAccountStore::FindByIdempotencyKey(const std::string &idempotency_key
     auto conn = ConnectionPool::getconnectionPool()->getConnection();
     if (!conn)
         return false;
-    std::ostringstream sql;
-    sql << "SELECT player_id FROM player_account WHERE idempotency_key='"
-        << SqlEscape(idempotency_key) << "' LIMIT 1";
-    MYSQL_RES *res = conn->query(sql.str());
-    if (!res)
+    std::vector<std::vector<std::string>> rows;
+    if (!conn->QueryPrepared(
+            "SELECT player_id FROM player_account WHERE idempotency_key=? LIMIT 1",
+            {idempotency_key}, &rows))
         return false;
-    MYSQL_ROW row = mysql_fetch_row(res);
-    if (!row || !row[0]) {
-        mysql_free_result(res);
+    if (rows.empty() || rows[0].empty() || rows[0][0].empty())
         return false;
-    }
-    *player_id = static_cast<uint64_t>(std::strtoull(row[0], nullptr, 10));
-    mysql_free_result(res);
+    *player_id = static_cast<uint64_t>(std::strtoull(rows[0][0].c_str(), nullptr, 10));
     return *player_id != 0;
 }
 
@@ -158,13 +142,11 @@ bool PlayerAccountStore::RegisterWithPasswordIdempotent(
             *err = "begin failed";
         return false;
     }
-    std::ostringstream sql;
-    sql << "INSERT INTO player_account (device_id,display_name,password_hash,password_salt,"
-           "password_iters,idempotency_key) VALUES ('"
-        << SqlEscape(device_id) << "','" << SqlEscape(name) << "','" << SqlEscape(password_hash)
-        << "','" << SqlEscape(password_salt) << "'," << password_iters << ",'"
-        << SqlEscape(idempotency_key) << "')";
-    if (!conn->update(sql.str())) {
+    if (!conn->UpdatePrepared(
+            "INSERT INTO player_account (device_id,display_name,password_hash,password_salt,"
+            "password_iters,idempotency_key) VALUES (?,?,?,?,?,?)",
+            {device_id, name, password_hash, password_salt, std::to_string(password_iters),
+             idempotency_key})) {
         conn->rollback();
         // 并发唯一冲突：回读首次结果并补 Profile
         if (FindByIdempotencyKey(idempotency_key, player_id)) {
@@ -263,13 +245,10 @@ bool PlayerAccountStore::RegisterWithPassword(const std::string &device_id,
             *err = "begin failed";
         return false;
     }
-    std::ostringstream sql;
-    sql << "INSERT INTO player_account (device_id,display_name,password_hash,password_salt,"
-           "password_iters,idempotency_key) VALUES ('"
-        << SqlEscape(device_id) << "','" << SqlEscape(name) << "','" << SqlEscape(password_hash)
-        << "','" << SqlEscape(password_salt) << "'," << password_iters << ",'" << SqlEscape(na)
-        << "')";
-    if (!conn->update(sql.str())) {
+    if (!conn->UpdatePrepared(
+            "INSERT INTO player_account (device_id,display_name,password_hash,password_salt,"
+            "password_iters,idempotency_key) VALUES (?,?,?,?,?,?)",
+            {device_id, name, password_hash, password_salt, std::to_string(password_iters), na})) {
         conn->rollback();
         if (err)
             *err = "insert failed";
@@ -327,29 +306,27 @@ bool PlayerAccountStore::LoadAuth(uint64_t player_id, AccountAuthRow *out) {
     auto conn = ConnectionPool::getconnectionPool()->getConnection();
     if (!conn)
         return false;
-    std::ostringstream sql;
-    sql << "SELECT player_id,IFNULL(password_hash,''),IFNULL(password_salt,''),"
-           "IFNULL(password_iters,0),IFNULL(banned,0),IFNULL(display_name,'') FROM player_account WHERE player_id="
-        << player_id << " LIMIT 1";
-    MYSQL_RES *res = conn->query(sql.str());
-    if (!res)
+    std::vector<std::vector<std::string>> rows;
+    if (!conn->QueryPrepared(
+            "SELECT player_id,IFNULL(password_hash,''),IFNULL(password_salt,''),"
+            "IFNULL(password_iters,0),IFNULL(banned,0),IFNULL(display_name,'') "
+            "FROM player_account WHERE player_id=? LIMIT 1",
+            {std::to_string(player_id)}, &rows))
         return false;
-    MYSQL_ROW row = mysql_fetch_row(res);
-    if (!row) {
-        mysql_free_result(res);
+    if (rows.empty() || rows[0].size() < 6) {
         out->exists = false;
         return true;
     }
+    const auto &row = rows[0];
     out->exists = true;
-    out->player_id = static_cast<uint64_t>(std::strtoull(row[0] ? row[0] : "0", nullptr, 10));
+    out->player_id = static_cast<uint64_t>(std::strtoull(row[0].c_str(), nullptr, 10));
     out->account_id = out->player_id;
-    out->password_hash = row[1] ? row[1] : "";
-    out->password_salt = row[2] ? row[2] : "";
-    out->password_iters = row[3] ? std::atoi(row[3]) : 0;
-    out->banned = row[4] && std::atoi(row[4]) != 0;
-    out->display_name = row[5] ? row[5] : "";
+    out->password_hash = row[1];
+    out->password_salt = row[2];
+    out->password_iters = std::atoi(row[3].c_str());
+    out->banned = std::atoi(row[4].c_str()) != 0;
+    out->display_name = row[5];
     out->has_password = !out->password_hash.empty() && !out->password_salt.empty() &&
                         out->password_iters > 0;
-    mysql_free_result(res);
     return true;
 }

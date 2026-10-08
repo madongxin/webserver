@@ -7,8 +7,10 @@
 
 #include "DbConfigPath.h"
 #include "Logging.h"
+#include "ServerStats.h"
 
 #include <atomic>
+#include <chrono>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -160,17 +162,31 @@ void ConnectionPool::recycleConnectionTask() {
 }
 
 std::shared_ptr<Connection> ConnectionPool::getConnection() {
+    const auto wait_started = std::chrono::steady_clock::now();
     std::unique_lock<std::mutex> lock(_queueMutex);
     while (_connectionQue.empty()) {
-        // 等待：业务归还（deleter）或生产者 addConnection 后的 notify
+        // 等待：业务归还（deleter）或生产者 addConnection 后的 notify。池满时到时返回，不再新建连接。
         if (cv.wait_for(lock, std::chrono::milliseconds(_connectionTimeout)) ==
             std::cv_status::timeout) {
             if (_connectionQue.empty()) {
+                const auto ms = static_cast<uint64_t>(
+                    std::chrono::duration_cast<std::chrono::milliseconds>(
+                        std::chrono::steady_clock::now() - wait_started)
+                        .count());
+                ServerStats::ObserveDbWaitMs(ms);
+                ServerStats::db_pool_exhausted.fetch_add(1, std::memory_order_relaxed);
                 LOG_ERROR << "getConnection: timeout";
                 return nullptr;
             }
         }
         // 被虚假唤醒或超时瞬间有人归还：循环再检查 empty
+    }
+    {
+        const auto ms = static_cast<uint64_t>(
+            std::chrono::duration_cast<std::chrono::milliseconds>(
+                std::chrono::steady_clock::now() - wait_started)
+                .count());
+        ServerStats::ObserveDbWaitMs(ms);
     }
 
     Connection *raw = _connectionQue.front();

@@ -35,6 +35,7 @@ constexpr const char *kErrPortalTooFar = "ERR_PORTAL_TOO_FAR";
 constexpr const char *kErrPortalRequired = "ERR_PORTAL_REQUIRED";
 constexpr const char *kErrMapDataMismatch = "ERR_MAP_DATA_MISMATCH";
 constexpr const char *kErrNotOnMap = "ERR_NOT_ON_MAP";
+constexpr const char *kErrMapNotLoaded = "ERR_MAP_NOT_LOADED";
 constexpr const char *kErrStaleSeq = "ERR_STALE_SEQ";
 constexpr const char *kErrMoveTooFast = "ERR_MOVE_TOO_FAST";
 constexpr const char *kErrAoiResyncRequired = "ERR_AOI_RESYNC_REQUIRED";

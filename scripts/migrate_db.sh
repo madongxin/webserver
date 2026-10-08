@@ -73,6 +73,7 @@ required_safe_cols = [
     "player_id", "realm_id", "map_template_id", "last_safe_x", "last_safe_y", "last_safe_z",
     "last_safe_yaw", "position_version",
 ]
+required_friend_tables = ["friend_relation", "friend_request", "friend_block", "friend_op_idempotency"]
 
 def verify_profile():
     tables = mysql("SHOW TABLES LIKE 'player_profile'").strip()
@@ -104,9 +105,18 @@ def verify_last_safe():
         sys.exit(1)
     print("verify player_last_safe_position ok")
 
+def verify_friend():
+    for t in required_friend_tables:
+        tables = mysql("SHOW TABLES LIKE '%s'" % t).strip()
+        if not tables:
+            sys.stderr.write("ERROR: %s missing; run ./scripts/migrate_db.sh\n" % t)
+            sys.exit(1)
+    print("verify friend tables ok")
+
 if mode == "verify":
     verify_profile()
     verify_last_safe()
+    verify_friend()
     sys.exit(0)
 
 for path in files:
@@ -134,5 +144,6 @@ for path in files:
 
 verify_profile()
 verify_last_safe()
+verify_friend()
 print("migrate_db.sh PASS")
 PY

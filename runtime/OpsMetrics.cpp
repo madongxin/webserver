@@ -1,5 +1,7 @@
 #include "OpsMetrics.h"
 
+#include "ServerStats.h"
+
 #include <mutex>
 #include <sstream>
 #include <unordered_map>
@@ -134,5 +136,38 @@ std::string OpsMetrics::PrometheusText() const {
         disconnect_failed_.load(std::memory_order_relaxed));
     ctr("gamemesh_kick_gateway_attempt_total", "Session Kick best-effort GatewayKick.",
         kick_gateway_attempt_.load(std::memory_order_relaxed));
+    ctr("gamemesh_move_err_stale_seq_total", "Move or dispatch rejected with ERR_STALE_SEQ.",
+        ServerStats::move_err_stale_seq.load(std::memory_order_relaxed));
+    ctr("gamemesh_session_grace_expire_total", "Disconnected sessions past grace.",
+        ServerStats::session_grace_expire.load(std::memory_order_relaxed));
+    ctr("gamemesh_player_transfer_abort_total", "Player transfers rolled back after TTL.",
+        ServerStats::player_transfer_abort.load(std::memory_order_relaxed));
+    ctr("gamemesh_route_apply_rejected_total", "Gateway route updates dropped as stale.",
+        ServerStats::route_apply_rejected.load(std::memory_order_relaxed));
+    ctr("gamemesh_session_replace_total", "Connections notified for session replace.",
+        ServerStats::session_replace_count.load(std::memory_order_relaxed));
+    ctr("gamemesh_session_replace_notify_failed_total", "Session replace notify had no frame.",
+        ServerStats::session_replace_notify_failed.load(std::memory_order_relaxed));
+    ctr("gamemesh_redis_lua_errors_total", "Redis Lua EVAL returned an error.",
+        ServerStats::redis_lua_errors.load(std::memory_order_relaxed));
+    ctr("gamemesh_db_pool_exhausted_total", "MySQL pool wait timed out with no connection.",
+        ServerStats::db_pool_exhausted.load(std::memory_order_relaxed));
+    os << "# HELP gamemesh_db_pool_wait_ms MySQL connection checkout latency.\n"
+          "# TYPE gamemesh_db_pool_wait_ms histogram\n";
+    auto bucket = [&](const char *le, uint64_t v) {
+        os << "gamemesh_db_pool_wait_ms_bucket{le=\"" << le << "\"} " << v << "\n";
+    };
+    bucket("1", ServerStats::db_wait_le_1.load(std::memory_order_relaxed));
+    bucket("5", ServerStats::db_wait_le_5.load(std::memory_order_relaxed));
+    bucket("10", ServerStats::db_wait_le_10.load(std::memory_order_relaxed));
+    bucket("50", ServerStats::db_wait_le_50.load(std::memory_order_relaxed));
+    bucket("100", ServerStats::db_wait_le_100.load(std::memory_order_relaxed));
+    bucket("500", ServerStats::db_wait_le_500.load(std::memory_order_relaxed));
+    bucket("1000", ServerStats::db_wait_le_1000.load(std::memory_order_relaxed));
+    bucket("+Inf", ServerStats::db_wait_le_inf.load(std::memory_order_relaxed));
+    os << "gamemesh_db_pool_wait_ms_sum "
+       << ServerStats::db_pool_wait_sum_ms.load(std::memory_order_relaxed) << "\n";
+    os << "gamemesh_db_pool_wait_ms_count "
+       << ServerStats::db_pool_wait_count.load(std::memory_order_relaxed) << "\n\n";
     return os.str();
 }

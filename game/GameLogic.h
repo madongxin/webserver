@@ -61,6 +61,8 @@ public:
     bool FlushBag(uint64_t player_id, const std::string &reason);
     /** 锁外推送 AOI（brpc/Redis 不得在 MapRuntime 锁内） */
     void EmitAoi(const AoiPushBatch &batch);
+    /** 转移冻结期间暂存该玩家的 AOI，Commit/Import 后按原顺序重放。 */
+    void SetAoiHold(uint64_t player_id, bool hold);
 
     /** 跨 Logic 迁移：导出/导入运行时背包与技能 CD（不含凭证） */
     bool ExportRuntimeState(uint64_t player_id, std::map<uint32_t, uint32_t> *bag,

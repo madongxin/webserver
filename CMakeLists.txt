@@ -103,6 +103,7 @@ if(ENABLE_GAME_PROTOBUF)
     game/game.pb.cc
     game/ProtoFraming.cpp
     game/GameLogic.cpp
+    game/FriendService.cpp
     game/GameService.cpp
     game/GameTcpGateway.cpp
     game/GatewayConnRegistry.cpp
@@ -165,6 +166,7 @@ if(ENABLE_MYSQL)
               db/GameDbRepository.cpp db/GameDbOutbox.cpp db/AsyncMysqlGameDbRepository.cpp
               db/PlayerAccountStore.cpp db/PlayerProfileStore.cpp db/PlayerProfileDefaults.cpp
               db/LastSafePositionStore.cpp
+              db/FriendStore.cpp
               db/GameDbAssetStore.cpp
               runtime/discovery/NatsThinClient.cpp)
   message(STATUS "MySQL pool: include=${MYSQL_INCLUDE_DIR} lib=${MYSQL_CLIENT_LIB}")
@@ -499,6 +501,7 @@ if(ENABLE_GAME_PROTOBUF)
   add_executable(auth_session_boundary_test
     test/auth_session_boundary_test.cpp
     game/GameLogic.cpp
+    game/FriendService.cpp
     game/GatewayConnRegistry.cpp
     game/game.pb.cc
     runtime/MessageRoute.cpp
@@ -526,6 +529,7 @@ if(ENABLE_GAME_PROTOBUF)
   add_executable(asset_dirty_consistency_test
     test/asset_dirty_consistency_test.cpp
     game/GameLogic.cpp
+    game/FriendService.cpp
     game/GatewayConnRegistry.cpp
     game/game.pb.cc
     runtime/MessageRoute.cpp
@@ -571,6 +575,7 @@ if(ENABLE_GAME_PROTOBUF)
   add_executable(phase1_correctness_test
     test/phase1_correctness_test.cpp
     game/GameLogic.cpp
+    game/FriendService.cpp
     game/GatewayConnRegistry.cpp
     game/game.pb.cc
     runtime/MessageRoute.cpp
@@ -661,6 +666,7 @@ if(ENABLE_GAME_PROTOBUF)
   add_executable(phase2_transfer_snapshot_test
     test/phase2_transfer_snapshot_test.cpp
     game/GameLogic.cpp
+    game/FriendService.cpp
     game/game.pb.cc
     runtime/MessageRoute.cpp
     runtime/ForwardMetaContext.cpp
@@ -687,6 +693,7 @@ if(ENABLE_GAME_PROTOBUF)
   add_executable(world_snapshot_test
     test/world_snapshot_test.cpp
     game/GameLogic.cpp
+    game/FriendService.cpp
     game/game.pb.cc
     runtime/MessageRoute.cpp
     runtime/ForwardMetaContext.cpp
@@ -1255,6 +1262,7 @@ if(ENABLE_MYSQL AND ENABLE_GAME_PROTOBUF)
     game/MailStore.cpp
     game/MailService.cpp
     game/GameLogic.cpp
+    game/FriendService.cpp
     game/game.pb.cc
     db/Connection.cpp
     db/ConnectionPool.cpp
@@ -1435,6 +1443,25 @@ if(ENABLE_MYSQL AND ENABLE_GAME_PROTOBUF)
     ${MYSQL_INCLUDE_DIR} db base log timer game)
   target_link_libraries(player_profile_store_test
     ${CMAKE_THREAD_LIBS_INIT} ${MYSQL_CLIENT_LIB})
+
+  add_executable(friend_store_test
+    test/friend_store_test.cpp
+    db/FriendStore.cpp
+    db/Connection.cpp
+    db/ConnectionPool.cpp
+    db/PlayerProfileStore.cpp
+    db/PlayerProfileDefaults.cpp
+    runtime/brpc/gamedb.pb.cc
+    base/CurrentThread.cpp
+    log/Logging.cpp
+    log/LogStream.cpp
+    log/LogFile.cpp
+    log/AsyncLogging.cpp)
+  target_compile_definitions(friend_store_test PRIVATE WEBSERVER_ENABLE_MYSQL WEBSERVER_ENABLE_GAME_PROTOBUF)
+  target_include_directories(friend_store_test PRIVATE
+    ${MYSQL_INCLUDE_DIR} ${Protobuf_INCLUDE_DIRS} db base log timer game runtime/brpc)
+  target_link_libraries(friend_store_test
+    ${CMAKE_THREAD_LIBS_INIT} ${MYSQL_CLIENT_LIB} ${Protobuf_LIBRARIES})
 
   add_executable(last_safe_position_store_test
     test/last_safe_position_store_test.cpp

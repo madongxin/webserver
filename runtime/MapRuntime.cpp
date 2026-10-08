@@ -1,5 +1,8 @@
 #include "MapRuntime.h"
 
+#include "Logging.h"
+#include "ServerStats.h"
+
 #include <chrono>
 #include <cmath>
 
@@ -10,6 +13,19 @@ bool Finite4(float a, float b, float c, float d) {
 }
 
 }  // namespace
+
+void MapRuntime::ResetClientSeq(uint64_t player_id) {
+    std::lock_guard<std::mutex> lk(mu_);
+    auto mit = player_map_.find(player_id);
+    if (mit == player_map_.end())
+        return;
+    auto iit = maps_.find(mit->second);
+    if (iit == maps_.end() || !iit->second)
+        return;
+    auto eit = iit->second->entities.find(player_id);
+    if (eit != iit->second->entities.end())
+        eit->second.last_client_seq = 0;
+}
 
 MapRuntime &MapRuntime::Instance() {
     static MapRuntime g;
@@ -139,7 +155,7 @@ bool MapRuntime::Enter(uint64_t map_instance_id, std::shared_ptr<const MapStatic
     if (existing != st.entities.end()) {
         RemoveFromCell(&st, existing->second);
         entity.state_seq = existing->second.state_seq;
-        entity.last_client_seq = existing->second.last_client_seq;
+        entity.last_client_seq = 0;
         entity.last_move_server_ms = existing->second.last_move_server_ms;
         if (entity.x == 0 && entity.y == 0 && entity.z == 0) {
             entity.x = existing->second.x;
@@ -192,8 +208,16 @@ MapMoveReject MapRuntime::Move(uint64_t map_instance_id, uint64_t player_id, flo
     MapEntity &e = eit->second;
     if (!e.connected)
         return fail(MapMoveReject::Disconnected, "ERR_DISCONNECTED");
-    if (client_seq != 0 && e.last_client_seq != 0 && client_seq <= e.last_client_seq)
+    if (client_seq != 0 && e.last_client_seq != 0 && client_seq <= e.last_client_seq) {
+        const uint64_t expected_seq_min = e.last_client_seq;
+        ServerStats::move_err_stale_seq.fetch_add(1, std::memory_order_relaxed);
+        SetLogPlayer(player_id);
+        SetLogErrorCode("ERR_STALE_SEQ");
+        LOG_WARN << "ERR_STALE_SEQ expected_seq_min=" << expected_seq_min
+                 << " received_seq=" << client_seq << " player_id=" << player_id;
+        SetLogErrorCode("");
         return fail(MapMoveReject::StaleSeq, "ERR_STALE_SEQ");
+    }
     if (!st.data)
         return fail(MapMoveReject::NotOnMap, "ERR_MAP_RUNTIME_NOT_READY");
     if (!st.data->InBounds(x, y, z))

@@ -2,6 +2,7 @@
 
 #include "IGameDbRepository.h"
 #include "game.pb.h"
+#include "gamedb.pb.h"
 
 #include <atomic>
 #include <cstdint>
@@ -86,6 +87,7 @@ public:
     /** Formal World 邮件：把 GameRequest payload 交给 GameDB MailService */
     bool HandleGameFrame(uint64_t player_id, const std::string &request_payload,
                          std::string *response_frame, std::string *err);
+    bool FriendOp(const gdb::FriendOpReq &req, gdb::FriendOpRsp *rsp, std::string *err);
 
 private:
     BrpcGameDbRepository() = default;

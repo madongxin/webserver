@@ -95,6 +95,9 @@ public:
     bool InitFromConfig();
     bool Available() const { return available_; }
     int grace_sec() const { return grace_sec_; }
+    /** PrepareReconnect 候选 fence 的 Redis TTL。超期未 Commit 视为 Abort。 */
+    static constexpr int kReconnectPrepareTtlSec = 10;
+    static constexpr int kTransferTtlSec = 30;
     const std::string &key_prefix() const { return key_prefix_; }
 
     /** 配置可分配的 GameLogic instance_id 列表（勿写死端口）。 */
@@ -140,7 +143,10 @@ public:
      * 扫描宽限已到期的 DISCONNECTED 会话：删 Session、ReleaseByPlayer、从分线占位摘除。
      * 不等于 Logout；只处理 deadline 已过的断线号。Session 进程定时调用。
      */
-    size_t ExpireDueDisconnected(size_t limit = 64);
+    /** 只处理 score ≤ now 的成员，单次最多 100 条。 */
+    size_t ExpireDueDisconnected(size_t limit = 100);
+    /** 转移记录超过 kTransferTtlSec 未 Commit 时回滚为 ONLINE。 */
+    size_t ExpireDueTransfers(size_t limit = 100);
     /**
      * 释放没有 ONLINE/DISCONNECTED Session 的地图占位（切线失败、进程被杀留下的幽灵 occupancy）。
      */
@@ -255,7 +261,16 @@ public:
     int64_t OnlinePlayerCount();
     bool ConsumeChatQuota(uint64_t player_id, int limit, int window_sec);
     bool ConsumeNameQueryQuota(uint64_t player_id, int limit, int window_sec);
+    bool ConsumeFriendApplyQuota(uint64_t player_id);
     uint64_t NextWorldChatMessageId();
+
+    bool BatchQueryPublicPresence(const std::vector<uint64_t> &player_ids,
+                                  std::vector<PublicPresence> *out);
+    void ReplaceFriendIdCache(uint64_t player_id, const std::vector<uint64_t> &friend_ids);
+    bool ListFriendIdsFromCache(uint64_t player_id, std::vector<uint64_t> *out);
+
+    using FriendPresenceFn = void (*)(uint64_t player_id, bool online);
+    void SetFriendPresenceFn(FriendPresenceFn fn);
 
 private:
     SessionStore() = default;
@@ -268,6 +283,7 @@ private:
     static SessionState StateFromString(const std::string &s);
     std::string OnlineSetKey() const;
     std::string GraceIndexKey() const;
+    std::string TransferDeadlineKey() const;
     void IndexGraceDeadline(uint64_t player_id, int64_t deadline_unix);
     void ClearGraceIndex(uint64_t player_id);
     void TrackOnline(uint64_t player_id);
@@ -294,4 +310,5 @@ private:
     /** 保护 logic_instance_ids_ 等进程内配置；Redis 权威状态靠 Lua */
     mutable std::mutex cfg_mu_;
     std::function<void()> grace_after_load_hook_;
+    FriendPresenceFn friend_presence_fn_ = nullptr;
 };

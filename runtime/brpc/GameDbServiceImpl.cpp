@@ -8,6 +8,7 @@
 #include "PlayerAccountStore.h"
 #include "PlayerProfileStore.h"
 #include "LastSafePositionStore.h"
+#include "FriendStore.h"
 
 #include <brpc/controller.h>
 
@@ -672,5 +673,26 @@ void GameDbServiceImpl::HandleGameFrame(::google::protobuf::RpcController *contr
     (void)request;
     response->set_ok(false);
     response->set_message("protobuf disabled");
+#endif
+}
+
+void GameDbServiceImpl::FriendOp(::google::protobuf::RpcController *controller,
+                                 const ::gdb::FriendOpReq *request, ::gdb::FriendOpRsp *response,
+                                 ::google::protobuf::Closure *done) {
+    (void)controller;
+    brpc::ClosureGuard done_guard(done);
+    response->Clear();
+    if (!request) {
+        response->set_ok(false);
+        response->set_error_code("ERR_INVALID_ARGUMENT");
+        response->set_message("null request");
+        return;
+    }
+#ifdef WEBSERVER_ENABLE_MYSQL
+    FriendStore::Instance().Execute(*request, response);
+#else
+    response->set_ok(false);
+    response->set_error_code("MYSQL_DISABLED");
+    response->set_message("mysql not enabled");
 #endif
 }

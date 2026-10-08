@@ -116,6 +116,9 @@ void TestClientSeq() {
     Expect(EvaluateClientSeq(6, 4, "", &cached, &err) == ClientSeqDecision::Reject, "seq stale rewind");
     Expect(EvaluateClientSeq(5, 0, "", &cached, &err) == ClientSeqDecision::Execute,
            "seq 0 skip check");
+    // EnterMap / 重连把窗口下界清零后，客户端从 1 重新发 Move 必须被接受。
+    Expect(EvaluateClientSeq(0, 1, "", &cached, &err) == ClientSeqDecision::Execute,
+           "post-enter seq window accepts 1");
 }
 
 void TestTrustedPlayerId() {

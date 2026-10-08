@@ -6,7 +6,11 @@
 #include <string>
 #include <unordered_map>
 
-/** Gateway 连接表：Push 按 session_id 查找；转发按粘性 gamelogic_instance_id。 */
+/**
+ * Gateway 连接表：Push 按 session_id 查找；转发按粘性 gamelogic_instance_id。
+ * by_conn_ / session_to_conn_ / player_to_conn_ 的增删改都在 mu_ 内完成。
+ * 跨线程只拷贝回调；碰 TCP 的 send/close 经 queue_on_loop 回到该连接的 EventLoop。
+ */
 class GatewayConnRegistry {
 public:
     struct Bind {

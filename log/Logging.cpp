@@ -1,5 +1,10 @@
 #include "Logging.h"
 #include "CurrentThread.h"
+
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+#include <string>
 #include <utility>
 
 // 为了实现多线程中日志时间格式化的效率，增加了两个__thread变量，
@@ -106,6 +111,57 @@ void defaultFlush(){
     fflush(stdout);    // 默认flush到stdout
 }
 
+namespace {
+
+char g_log_service[32] = "gamemesh";
+thread_local uint64_t t_log_player = 0;
+thread_local std::string t_log_session;
+thread_local std::string t_log_error;
+
+bool JsonLogsEnabled() {
+    const char *flag = std::getenv("GAMEMESH_LOG_JSON");
+    if (flag && flag[0] == '0')
+        return false;
+    if (flag && flag[0] == '1')
+        return true;
+    const char *formal = std::getenv("GAMEMESH_FORMAL");
+    return formal && formal[0] == '1';
+}
+
+void AppendJsonEscaped(std::string *out, const char *s, size_t n) {
+    for (size_t i = 0; i < n; ++i) {
+        const unsigned char c = static_cast<unsigned char>(s[i]);
+        if (c == '"' || c == '\\') {
+            out->push_back('\\');
+            out->push_back(static_cast<char>(c));
+        } else if (c == '\n') {
+            out->append("\\n");
+        } else if (c == '\r') {
+            out->append("\\r");
+        } else if (c < 0x20) {
+            char buf[8];
+            std::snprintf(buf, sizeof(buf), "\\u%04x", c);
+            out->append(buf);
+        } else {
+            out->push_back(static_cast<char>(c));
+        }
+    }
+}
+
+}  // namespace
+
+void SetLogService(const char *service) {
+    if (!service || !service[0])
+        return;
+    std::snprintf(g_log_service, sizeof(g_log_service), "%s", service);
+}
+
+void SetLogPlayer(uint64_t player_id) { t_log_player = player_id; }
+
+void SetLogSession(const char *session_id) { t_log_session = session_id ? session_id : ""; }
+
+void SetLogErrorCode(const char *error_code) { t_log_error = error_code ? error_code : ""; }
+
 // 定义默认值
 Logger::OutputFunc g_output = defaultOutput;
 Logger::FlushFunc g_flush = defaultFlush;
@@ -119,7 +175,41 @@ Logger::~Logger()
 {
     impl_.Finish(); // 补足源代码位置和行数
     const LogStream::Buffer& buf(stream().buffer());  // 获取缓冲区
-    g_output(buf.data(), buf.len());  // 默认输出到stdout
+    if (JsonLogsEnabled()) {
+        std::string line;
+        line.reserve(static_cast<size_t>(buf.len()) + 128);
+        line.append("{\"timestamp\":\"");
+        AppendJsonEscaped(&line, t_time, std::strlen(t_time));
+        line.append("\",\"level\":\"");
+        const char *lv = impl_.loglevel();
+        while (lv && *lv == ' ')
+            ++lv;
+        AppendJsonEscaped(&line, lv ? lv : "INFO", lv ? std::strlen(lv) : 4);
+        // loglevel() 带尾随空格
+        while (!line.empty() && line.back() == ' ')
+            line.pop_back();
+        line.append("\",\"service\":\"");
+        AppendJsonEscaped(&line, g_log_service, std::strlen(g_log_service));
+        line.append("\"");
+        if (t_log_player != 0)
+            line.append(",\"player_id\":").append(std::to_string(t_log_player));
+        if (!t_log_session.empty()) {
+            line.append(",\"session_id\":\"");
+            AppendJsonEscaped(&line, t_log_session.data(), t_log_session.size());
+            line.append("\"");
+        }
+        if (!t_log_error.empty()) {
+            line.append(",\"error_code\":\"");
+            AppendJsonEscaped(&line, t_log_error.data(), t_log_error.size());
+            line.append("\"");
+        }
+        line.append(",\"msg\":\"");
+        AppendJsonEscaped(&line, buf.data(), static_cast<size_t>(buf.len()));
+        line.append("\"}\n");
+        g_output(line.data(), static_cast<int>(line.size()));
+    } else {
+        g_output(buf.data(), buf.len());  // 默认输出到stdout
+    }
  
     // 当日志级别为FATAL时，flush设备缓冲区并终止程序
     if (impl_.level_ == FATAL) {

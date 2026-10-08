@@ -12,8 +12,11 @@
 
 namespace gameproto {
 
-/** 单帧 payload 上限 4MB，防止恶意超大长度头 */
+/** 默认单帧 payload 上限 4MB。运行时可用 GAMEMESH_MAX_FRAME_BYTES 覆盖。 */
 constexpr uint32_t kMaxFrameSize = 4 * 1024 * 1024;
+/** 配置不得超过该编译期上限，避免误把帧上限放到过大。 */
+constexpr uint32_t kAbsoluteMaxFrameSize = 16 * 1024 * 1024;
+uint32_t MaxFrameSize();
 
 enum class FrameDecodeResult {
     Complete,    // 取出一帧并消费缓冲

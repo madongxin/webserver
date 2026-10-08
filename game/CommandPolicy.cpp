@@ -50,7 +50,6 @@ bool IsAuthenticatedClientAllowlisted(game::GameRequest::BodyCase body) {
     case game::GameRequest::kLeaveMap:
     case game::GameRequest::kMapPing:
     case game::GameRequest::kChatSend:
-    case game::GameRequest::kFriendList:
     case game::GameRequest::kPushAck:
     case game::GameRequest::kGetSelfProfile:
     case game::GameRequest::kMove:
@@ -65,6 +64,16 @@ bool IsAuthenticatedClientAllowlisted(game::GameRequest::BodyCase body) {
     case game::GameRequest::kSwitchLine:
     case game::GameRequest::kEnqueueMap:
     case game::GameRequest::kInteractPortal:
+    case game::GameRequest::kFriendList:
+    case game::GameRequest::kFriendSearch:
+    case game::GameRequest::kFriendApply:
+    case game::GameRequest::kFriendAccept:
+    case game::GameRequest::kFriendReject:
+    case game::GameRequest::kFriendDelete:
+    case game::GameRequest::kFriendRequestList:
+    case game::GameRequest::kFriendBlock:
+    case game::GameRequest::kFriendUnblock:
+    case game::GameRequest::kFriendBlockList:
         return true;
     default:
         return false;

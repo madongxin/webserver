@@ -66,6 +66,15 @@ int main() {
     CHECK_ONE(mutable_map_ping, map_ping);
     CHECK_ONE(mutable_chat_send, chat_send);
     CHECK_ONE(mutable_friend_list, friend_list);
+    CHECK_ONE(mutable_friend_search, friend_search);
+    CHECK_ONE(mutable_friend_apply, friend_apply);
+    CHECK_ONE(mutable_friend_accept, friend_accept);
+    CHECK_ONE(mutable_friend_reject, friend_reject);
+    CHECK_ONE(mutable_friend_delete, friend_delete);
+    CHECK_ONE(mutable_friend_request_list, friend_request_list);
+    CHECK_ONE(mutable_friend_block, friend_block);
+    CHECK_ONE(mutable_friend_unblock, friend_unblock);
+    CHECK_ONE(mutable_friend_block_list, friend_block_list);
     CHECK_ONE(mutable_push_ack, push_ack);
     CHECK_ONE(mutable_get_self_profile, get_self_profile);
     CHECK_ONE(mutable_move, move);

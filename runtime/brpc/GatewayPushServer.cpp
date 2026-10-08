@@ -133,11 +133,16 @@ void GatewayPushServiceImpl::KickConnection(::google::protobuf::RpcController *c
     std::string frame;
     if (!notify.SerializeToString(&payload) || !gameproto::EncodeFrame(payload, &frame))
         frame.clear();
-    double grace = 0.08;
-    if (const char *e = std::getenv("GAMEMESH_KICK_NOTIFY_GRACE_MS")) {
+    double grace = 3.0;
+    if (const char *e = std::getenv("GAMEMESH_SESSION_REPLACE_GRACE_SEC")) {
         char *end = nullptr;
-        const unsigned long ms = std::strtoul(e, &end, 10);
-        if (end != e && ms <= 500)
+        const double sec = std::strtod(e, &end);
+        if (end != e && sec >= 0.0 && sec <= 30.0)
+            grace = sec;
+    } else if (const char *ms_env = std::getenv("GAMEMESH_KICK_NOTIFY_GRACE_MS")) {
+        char *end = nullptr;
+        const unsigned long ms = std::strtoul(ms_env, &end, 10);
+        if (end != ms_env && ms <= 30000)
             grace = static_cast<double>(ms) / 1000.0;
     }
     const bool closed = GatewayConnRegistry::Instance().NotifyAndCloseIfMatch(

@@ -52,6 +52,6 @@ private:
 
     mutable std::mutex mu_;
     bool available_ = false;
-    int default_ttl_sec_ = 3600;
+    int default_ttl_sec_ = 86400;
     int default_refresh_ttl_sec_ = 86400 * 7;
 };

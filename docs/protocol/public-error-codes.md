@@ -32,6 +32,7 @@
 | `ERR_PORTAL_REQUIRED` | 保留码；2102 公网 `CreateDungeon` 已允许 | 否 | 联调用 `CreateDungeon` + `EnterMap(instance)` |
 | `ERR_MAP_DATA_MISMATCH` | 地图静态数据 hash 不符 | 否 | 更新地图资源 |
 | `ERR_NOT_ON_MAP` | 未进图 | 否 | EnterMap |
+| `ERR_MAP_NOT_LOADED` | 尚未完成 EnterMap 就发送 Move | 否 | 先 EnterMap |
 | `ERR_STALE_SEQ` | 客户端序号过旧 | 否 | 以服务器 seq 为准 |
 | `ERR_MOVE_TOO_FAST` | 移动超速 | 否 | 拉回服务器位置 |
 | `ERR_AOI_RESYNC_REQUIRED` | AOI 序号缺口 | 是 | 请求 `WorldSnapshotReq` 后从 baseline 继续 |
@@ -43,5 +44,19 @@
 | `ERR_BAD_CREDENTIAL` | 账号或密码错误 | 否 | 核对密码后重新 Login |
 | `ERR_ACCOUNT_NOT_FOUND` | 账号未注册 | 否 | 先 Register |
 | `ERR_BANNED` | 账号已封禁 | 否 | 不可登录 |
+| `ERR_PLAYER_NOT_FOUND` | 目标玩家不存在 | 否 | 核对 PlayerID/角色名 |
+| `ERR_CANNOT_ADD_SELF` | 不能添加自己 | 否 | — |
+| `ERR_ALREADY_FRIEND` | 已经是好友 | 否 | 刷新好友列表 |
+| `ERR_REQUEST_ALREADY_SENT` | 已有同向待处理申请 | 否 | 等待对方处理 |
+| `ERR_INCOMING_REQUEST_EXISTS` | 对方已向自己发申请 | 否 | 走 Accept/Reject |
+| `ERR_REQUEST_NOT_FOUND` | 申请不存在或不是待处理 | 否 | 刷新申请列表 |
+| `ERR_REQUEST_EXPIRED` | 申请已过期 | 否 | 重新申请 |
+| `ERR_FRIEND_LIMIT` | 自己好友已满 | 否 | 删除好友 |
+| `ERR_TARGET_FRIEND_LIMIT` | 对方好友已满 | 否 | 稍后 |
+| `ERR_PENDING_LIMIT` | 待处理申请或黑名单已满 | 否 | 清理申请/黑名单 |
+| `ERR_ALREADY_BLOCKED` | 已拉黑该玩家 | 否 | Unblock 后再申请 |
+| `ERR_NOT_FRIEND` | 当前不是好友 | 否 | 刷新列表 |
+| `ERR_OPERATION_TOO_FREQUENT` | 好友申请过于频繁 | 是 | 等待后重试 |
+| `ERR_RELATION_CONFLICT` | 关系并发冲突 | 是 | 刷新后重试 |
 
 Gateway 在 Hello/心跳/未登录拒绝路径直接填写顶层码。GameLogic/GameDB 回包由 `PromotePublicError` 提升子响应 `error_code` 并消毒 `message`。

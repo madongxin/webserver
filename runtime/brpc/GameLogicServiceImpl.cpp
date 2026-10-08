@@ -6,6 +6,7 @@
 #include "GameLogic.h"
 #include "GameService.h"
 #include "Logging.h"
+#include "ServerStats.h"
 #include "MapInstanceRegistry.h"
 #include "MapRuntime.h"
 #include "MailService.h"
@@ -128,7 +129,26 @@ SeqDecision CheckClientSeq(uint64_t player_id, uint64_t client_seq, std::string 
     const uint64_t last = (it == g_bound.end()) ? 0 : it->second.last_client_seq;
     const std::string &cached =
         (it == g_bound.end()) ? std::string() : it->second.last_response_frame;
-    return EvaluateClientSeq(last, client_seq, cached, cached_frame, err);
+    const SeqDecision d = EvaluateClientSeq(last, client_seq, cached, cached_frame, err);
+    if (d == SeqDecision::Reject) {
+        const uint64_t expected_seq_min = last == 0 ? 1 : last;
+        ServerStats::move_err_stale_seq.fetch_add(1, std::memory_order_relaxed);
+        SetLogPlayer(player_id);
+        SetLogErrorCode("ERR_STALE_SEQ");
+        LOG_WARN << "ERR_STALE_SEQ expected_seq_min=" << expected_seq_min
+                 << " received_seq=" << client_seq << " player_id=" << player_id;
+        SetLogErrorCode("");
+    }
+    return d;
+}
+
+void ResetClientSeqWindow(uint64_t player_id) {
+    std::lock_guard<std::mutex> lk(g_bound_mu);
+    auto it = g_bound.find(player_id);
+    if (it == g_bound.end())
+        return;
+    it->second.last_client_seq = 0;
+    it->second.last_response_frame.clear();
 }
 
 void CommitClientSeq(uint64_t player_id, uint64_t client_seq, const std::string &frame) {
@@ -272,8 +292,15 @@ void ExecuteDispatch(const glrpc::ClientCommand &request, glrpc::CommandResult *
     response->set_message(ok ? "ok" : "handle_frame_failed");
     if (!out_frame.empty())
         response->set_response_frame(out_frame);
-    if (ok)
-        CommitClientSeq(request.player_id(), request.client_seq(), out_frame);
+    if (!ok)
+        return;
+    if (request.message_type() == "enter_map") {
+        // EnterMap 确认后重新开序号窗口，避免登录阶段或上一局的 seq 把首个 Move 判成过期。
+        ResetClientSeqWindow(request.player_id());
+        MapRuntime::Instance().ResetClientSeq(request.player_id());
+        return;
+    }
+    CommitClientSeq(request.player_id(), request.client_seq(), out_frame);
 }
 
 }  // namespace
@@ -615,6 +642,7 @@ void GameLogicServiceImpl::FreezePlayer(::google::protobuf::RpcController *contr
             it->second.frozen = true;
             if (!transfer_id.empty())
                 it->second.transfer_id = transfer_id;
+            GameLogic::Instance().SetAoiHold(pid, true);
             rsp->set_ok(true);
             rsp->set_message("frozen");
             LOG_INFO << "FreezePlayer ok player_id=" << pid << " transfer=" << transfer_id;
@@ -779,6 +807,7 @@ void GameLogicServiceImpl::ImportPlayerSnapshot(
                     rsp->set_ok(true);
                     rsp->set_already_applied(true);
                     rsp->set_message("import idempotent");
+                    GameLogic::Instance().SetAoiHold(snap.player_id(), false);
                     return;
                 }
             }
@@ -798,7 +827,12 @@ void GameLogicServiceImpl::ImportPlayerSnapshot(
                 std::lock_guard<std::mutex> lk(g_bound_mu);
                 auto it = g_bound.find(snap.player_id());
                 if (it != g_bound.end()) {
-                    it->second.last_client_seq = snap.state().last_client_seq();
+                    const bool reconnect =
+                        snap.transfer_id().find("reconnect") != std::string::npos;
+                    it->second.last_client_seq =
+                        reconnect ? 0 : snap.state().last_client_seq();
+                    if (reconnect)
+                        it->second.last_response_frame.clear();
                     it->second.last_import_checksum =
                         snap.checksum().empty() ? expect : snap.checksum();
                     it->second.frozen = false;
@@ -810,6 +844,11 @@ void GameLogicServiceImpl::ImportPlayerSnapshot(
                         it->second.map_owner_epoch = snap.target_owner_epoch();
                 }
             }
+            const bool reconnect_snap =
+                snap.transfer_id().find("reconnect") != std::string::npos;
+            if (reconnect_snap)
+                MapRuntime::Instance().ResetClientSeq(snap.player_id());
+            GameLogic::Instance().SetAoiHold(snap.player_id(), false);
             rsp->set_ok(true);
             rsp->set_already_applied(false);
             rsp->set_message("imported");

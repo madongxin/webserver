@@ -48,7 +48,7 @@ struct TableStruct_gamedb_2eproto {
     PROTOBUF_SECTION_VARIABLE(protodesc_cold);
   static const ::PROTOBUF_NAMESPACE_ID::internal::AuxillaryParseTableField aux[]
     PROTOBUF_SECTION_VARIABLE(protodesc_cold);
-  static const ::PROTOBUF_NAMESPACE_ID::internal::ParseTable schema[34]
+  static const ::PROTOBUF_NAMESPACE_ID::internal::ParseTable schema[38]
     PROTOBUF_SECTION_VARIABLE(protodesc_cold);
   static const ::PROTOBUF_NAMESPACE_ID::internal::FieldMetadata field_metadata[];
   static const ::PROTOBUF_NAMESPACE_ID::internal::SerializationTable serialization_table[];
@@ -77,6 +77,18 @@ extern FlushPlayerReqDefaultTypeInternal _FlushPlayerReq_default_instance_;
 class FlushPlayerRsp;
 class FlushPlayerRspDefaultTypeInternal;
 extern FlushPlayerRspDefaultTypeInternal _FlushPlayerRsp_default_instance_;
+class FriendBriefDb;
+class FriendBriefDbDefaultTypeInternal;
+extern FriendBriefDbDefaultTypeInternal _FriendBriefDb_default_instance_;
+class FriendOpReq;
+class FriendOpReqDefaultTypeInternal;
+extern FriendOpReqDefaultTypeInternal _FriendOpReq_default_instance_;
+class FriendOpRsp;
+class FriendOpRspDefaultTypeInternal;
+extern FriendOpRspDefaultTypeInternal _FriendOpRsp_default_instance_;
+class FriendRequestDb;
+class FriendRequestDbDefaultTypeInternal;
+extern FriendRequestDbDefaultTypeInternal _FriendRequestDb_default_instance_;
 class GrantedItem;
 class GrantedItemDefaultTypeInternal;
 extern GrantedItemDefaultTypeInternal _GrantedItem_default_instance_;
@@ -167,6 +179,10 @@ template<> ::gdb::ClaimMailReq* Arena::CreateMaybeMessage<::gdb::ClaimMailReq>(A
 template<> ::gdb::ClaimMailRsp* Arena::CreateMaybeMessage<::gdb::ClaimMailRsp>(Arena*);
 template<> ::gdb::FlushPlayerReq* Arena::CreateMaybeMessage<::gdb::FlushPlayerReq>(Arena*);
 template<> ::gdb::FlushPlayerRsp* Arena::CreateMaybeMessage<::gdb::FlushPlayerRsp>(Arena*);
+template<> ::gdb::FriendBriefDb* Arena::CreateMaybeMessage<::gdb::FriendBriefDb>(Arena*);
+template<> ::gdb::FriendOpReq* Arena::CreateMaybeMessage<::gdb::FriendOpReq>(Arena*);
+template<> ::gdb::FriendOpRsp* Arena::CreateMaybeMessage<::gdb::FriendOpRsp>(Arena*);
+template<> ::gdb::FriendRequestDb* Arena::CreateMaybeMessage<::gdb::FriendRequestDb>(Arena*);
 template<> ::gdb::GrantedItem* Arena::CreateMaybeMessage<::gdb::GrantedItem>(Arena*);
 template<> ::gdb::HandleGameFrameReq* Arena::CreateMaybeMessage<::gdb::HandleGameFrameReq>(Arena*);
 template<> ::gdb::HandleGameFrameRsp* Arena::CreateMaybeMessage<::gdb::HandleGameFrameRsp>(Arena*);
@@ -7221,6 +7237,1096 @@ class HandleGameFrameRsp PROTOBUF_FINAL :
   mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
   friend struct ::TableStruct_gamedb_2eproto;
 };
+// -------------------------------------------------------------------
+
+class FriendBriefDb PROTOBUF_FINAL :
+    public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:gdb.FriendBriefDb) */ {
+ public:
+  inline FriendBriefDb() : FriendBriefDb(nullptr) {};
+  virtual ~FriendBriefDb();
+
+  FriendBriefDb(const FriendBriefDb& from);
+  FriendBriefDb(FriendBriefDb&& from) noexcept
+    : FriendBriefDb() {
+    *this = ::std::move(from);
+  }
+
+  inline FriendBriefDb& operator=(const FriendBriefDb& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  inline FriendBriefDb& operator=(FriendBriefDb&& from) noexcept {
+    if (GetArena() == from.GetArena()) {
+      if (this != &from) InternalSwap(&from);
+    } else {
+      CopyFrom(from);
+    }
+    return *this;
+  }
+
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* descriptor() {
+    return GetDescriptor();
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* GetDescriptor() {
+    return GetMetadataStatic().descriptor;
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Reflection* GetReflection() {
+    return GetMetadataStatic().reflection;
+  }
+  static const FriendBriefDb& default_instance();
+
+  static void InitAsDefaultInstance();  // FOR INTERNAL USE ONLY
+  static inline const FriendBriefDb* internal_default_instance() {
+    return reinterpret_cast<const FriendBriefDb*>(
+               &_FriendBriefDb_default_instance_);
+  }
+  static constexpr int kIndexInFileMessages =
+    34;
+
+  friend void swap(FriendBriefDb& a, FriendBriefDb& b) {
+    a.Swap(&b);
+  }
+  inline void Swap(FriendBriefDb* other) {
+    if (other == this) return;
+    if (GetArena() == other->GetArena()) {
+      InternalSwap(other);
+    } else {
+      ::PROTOBUF_NAMESPACE_ID::internal::GenericSwap(this, other);
+    }
+  }
+  void UnsafeArenaSwap(FriendBriefDb* other) {
+    if (other == this) return;
+    GOOGLE_DCHECK(GetArena() == other->GetArena());
+    InternalSwap(other);
+  }
+
+  // implements Message ----------------------------------------------
+
+  inline FriendBriefDb* New() const final {
+    return CreateMaybeMessage<FriendBriefDb>(nullptr);
+  }
+
+  FriendBriefDb* New(::PROTOBUF_NAMESPACE_ID::Arena* arena) const final {
+    return CreateMaybeMessage<FriendBriefDb>(arena);
+  }
+  void CopyFrom(const ::PROTOBUF_NAMESPACE_ID::Message& from) final;
+  void MergeFrom(const ::PROTOBUF_NAMESPACE_ID::Message& from) final;
+  void CopyFrom(const FriendBriefDb& from);
+  void MergeFrom(const FriendBriefDb& from);
+  PROTOBUF_ATTRIBUTE_REINITIALIZES void Clear() final;
+  bool IsInitialized() const final;
+
+  size_t ByteSizeLong() const final;
+  const char* _InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::internal::ParseContext* ctx) final;
+  ::PROTOBUF_NAMESPACE_ID::uint8* _InternalSerialize(
+      ::PROTOBUF_NAMESPACE_ID::uint8* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const final;
+  int GetCachedSize() const final { return _cached_size_.Get(); }
+
+  private:
+  inline void SharedCtor();
+  inline void SharedDtor();
+  void SetCachedSize(int size) const final;
+  void InternalSwap(FriendBriefDb* other);
+  friend class ::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata;
+  static ::PROTOBUF_NAMESPACE_ID::StringPiece FullMessageName() {
+    return "gdb.FriendBriefDb";
+  }
+  protected:
+  explicit FriendBriefDb(::PROTOBUF_NAMESPACE_ID::Arena* arena);
+  private:
+  static void ArenaDtor(void* object);
+  inline void RegisterArenaDtor(::PROTOBUF_NAMESPACE_ID::Arena* arena);
+  public:
+
+  ::PROTOBUF_NAMESPACE_ID::Metadata GetMetadata() const final;
+  private:
+  static ::PROTOBUF_NAMESPACE_ID::Metadata GetMetadataStatic() {
+    ::PROTOBUF_NAMESPACE_ID::internal::AssignDescriptors(&::descriptor_table_gamedb_2eproto);
+    return ::descriptor_table_gamedb_2eproto.file_level_metadata[kIndexInFileMessages];
+  }
+
+  public:
+
+  // nested types ----------------------------------------------------
+
+  // accessors -------------------------------------------------------
+
+  enum : int {
+    kNameFieldNumber = 2,
+    kAvatarFieldNumber = 5,
+    kRemarkFieldNumber = 7,
+    kPlayerIdFieldNumber = 1,
+    kLevelFieldNumber = 3,
+    kProfessionFieldNumber = 4,
+    kLastOnlineTimeFieldNumber = 6,
+  };
+  // string name = 2;
+  void clear_name();
+  const std::string& name() const;
+  void set_name(const std::string& value);
+  void set_name(std::string&& value);
+  void set_name(const char* value);
+  void set_name(const char* value, size_t size);
+  std::string* mutable_name();
+  std::string* release_name();
+  void set_allocated_name(std::string* name);
+  GOOGLE_PROTOBUF_RUNTIME_DEPRECATED("The unsafe_arena_ accessors for"
+  "    string fields are deprecated and will be removed in a"
+  "    future release.")
+  std::string* unsafe_arena_release_name();
+  GOOGLE_PROTOBUF_RUNTIME_DEPRECATED("The unsafe_arena_ accessors for"
+  "    string fields are deprecated and will be removed in a"
+  "    future release.")
+  void unsafe_arena_set_allocated_name(
+      std::string* name);
+  private:
+  const std::string& _internal_name() const;
+  void _internal_set_name(const std::string& value);
+  std::string* _internal_mutable_name();
+  public:
+
+  // string avatar = 5;
+  void clear_avatar();
+  const std::string& avatar() const;
+  void set_avatar(const std::string& value);
+  void set_avatar(std::string&& value);
+  void set_avatar(const char* value);
+  void set_avatar(const char* value, size_t size);
+  std::string* mutable_avatar();
+  std::string* release_avatar();
+  void set_allocated_avatar(std::string* avatar);
+  GOOGLE_PROTOBUF_RUNTIME_DEPRECATED("The unsafe_arena_ accessors for"
+  "    string fields are deprecated and will be removed in a"
+  "    future release.")
+  std::string* unsafe_arena_release_avatar();
+  GOOGLE_PROTOBUF_RUNTIME_DEPRECATED("The unsafe_arena_ accessors for"
+  "    string fields are deprecated and will be removed in a"
+  "    future release.")
+  void unsafe_arena_set_allocated_avatar(
+      std::string* avatar);
+  private:
+  const std::string& _internal_avatar() const;
+  void _internal_set_avatar(const std::string& value);
+  std::string* _internal_mutable_avatar();
+  public:
+
+  // string remark = 7;
+  void clear_remark();
+  const std::string& remark() const;
+  void set_remark(const std::string& value);
+  void set_remark(std::string&& value);
+  void set_remark(const char* value);
+  void set_remark(const char* value, size_t size);
+  std::string* mutable_remark();
+  std::string* release_remark();
+  void set_allocated_remark(std::string* remark);
+  GOOGLE_PROTOBUF_RUNTIME_DEPRECATED("The unsafe_arena_ accessors for"
+  "    string fields are deprecated and will be removed in a"
+  "    future release.")
+  std::string* unsafe_arena_release_remark();
+  GOOGLE_PROTOBUF_RUNTIME_DEPRECATED("The unsafe_arena_ accessors for"
+  "    string fields are deprecated and will be removed in a"
+  "    future release.")
+  void unsafe_arena_set_allocated_remark(
+      std::string* remark);
+  private:
+  const std::string& _internal_remark() const;
+  void _internal_set_remark(const std::string& value);
+  std::string* _internal_mutable_remark();
+  public:
+
+  // uint64 player_id = 1;
+  void clear_player_id();
+  ::PROTOBUF_NAMESPACE_ID::uint64 player_id() const;
+  void set_player_id(::PROTOBUF_NAMESPACE_ID::uint64 value);
+  private:
+  ::PROTOBUF_NAMESPACE_ID::uint64 _internal_player_id() const;
+  void _internal_set_player_id(::PROTOBUF_NAMESPACE_ID::uint64 value);
+  public:
+
+  // uint32 level = 3;
+  void clear_level();
+  ::PROTOBUF_NAMESPACE_ID::uint32 level() const;
+  void set_level(::PROTOBUF_NAMESPACE_ID::uint32 value);
+  private:
+  ::PROTOBUF_NAMESPACE_ID::uint32 _internal_level() const;
+  void _internal_set_level(::PROTOBUF_NAMESPACE_ID::uint32 value);
+  public:
+
+  // uint32 profession = 4;
+  void clear_profession();
+  ::PROTOBUF_NAMESPACE_ID::uint32 profession() const;
+  void set_profession(::PROTOBUF_NAMESPACE_ID::uint32 value);
+  private:
+  ::PROTOBUF_NAMESPACE_ID::uint32 _internal_profession() const;
+  void _internal_set_profession(::PROTOBUF_NAMESPACE_ID::uint32 value);
+  public:
+
+  // uint64 last_online_time = 6;
+  void clear_last_online_time();
+  ::PROTOBUF_NAMESPACE_ID::uint64 last_online_time() const;
+  void set_last_online_time(::PROTOBUF_NAMESPACE_ID::uint64 value);
+  private:
+  ::PROTOBUF_NAMESPACE_ID::uint64 _internal_last_online_time() const;
+  void _internal_set_last_online_time(::PROTOBUF_NAMESPACE_ID::uint64 value);
+  public:
+
+  // @@protoc_insertion_point(class_scope:gdb.FriendBriefDb)
+ private:
+  class _Internal;
+
+  template <typename T> friend class ::PROTOBUF_NAMESPACE_ID::Arena::InternalHelper;
+  typedef void InternalArenaConstructable_;
+  typedef void DestructorSkippable_;
+  ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr name_;
+  ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr avatar_;
+  ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr remark_;
+  ::PROTOBUF_NAMESPACE_ID::uint64 player_id_;
+  ::PROTOBUF_NAMESPACE_ID::uint32 level_;
+  ::PROTOBUF_NAMESPACE_ID::uint32 profession_;
+  ::PROTOBUF_NAMESPACE_ID::uint64 last_online_time_;
+  mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
+  friend struct ::TableStruct_gamedb_2eproto;
+};
+// -------------------------------------------------------------------
+
+class FriendRequestDb PROTOBUF_FINAL :
+    public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:gdb.FriendRequestDb) */ {
+ public:
+  inline FriendRequestDb() : FriendRequestDb(nullptr) {};
+  virtual ~FriendRequestDb();
+
+  FriendRequestDb(const FriendRequestDb& from);
+  FriendRequestDb(FriendRequestDb&& from) noexcept
+    : FriendRequestDb() {
+    *this = ::std::move(from);
+  }
+
+  inline FriendRequestDb& operator=(const FriendRequestDb& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  inline FriendRequestDb& operator=(FriendRequestDb&& from) noexcept {
+    if (GetArena() == from.GetArena()) {
+      if (this != &from) InternalSwap(&from);
+    } else {
+      CopyFrom(from);
+    }
+    return *this;
+  }
+
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* descriptor() {
+    return GetDescriptor();
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* GetDescriptor() {
+    return GetMetadataStatic().descriptor;
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Reflection* GetReflection() {
+    return GetMetadataStatic().reflection;
+  }
+  static const FriendRequestDb& default_instance();
+
+  static void InitAsDefaultInstance();  // FOR INTERNAL USE ONLY
+  static inline const FriendRequestDb* internal_default_instance() {
+    return reinterpret_cast<const FriendRequestDb*>(
+               &_FriendRequestDb_default_instance_);
+  }
+  static constexpr int kIndexInFileMessages =
+    35;
+
+  friend void swap(FriendRequestDb& a, FriendRequestDb& b) {
+    a.Swap(&b);
+  }
+  inline void Swap(FriendRequestDb* other) {
+    if (other == this) return;
+    if (GetArena() == other->GetArena()) {
+      InternalSwap(other);
+    } else {
+      ::PROTOBUF_NAMESPACE_ID::internal::GenericSwap(this, other);
+    }
+  }
+  void UnsafeArenaSwap(FriendRequestDb* other) {
+    if (other == this) return;
+    GOOGLE_DCHECK(GetArena() == other->GetArena());
+    InternalSwap(other);
+  }
+
+  // implements Message ----------------------------------------------
+
+  inline FriendRequestDb* New() const final {
+    return CreateMaybeMessage<FriendRequestDb>(nullptr);
+  }
+
+  FriendRequestDb* New(::PROTOBUF_NAMESPACE_ID::Arena* arena) const final {
+    return CreateMaybeMessage<FriendRequestDb>(arena);
+  }
+  void CopyFrom(const ::PROTOBUF_NAMESPACE_ID::Message& from) final;
+  void MergeFrom(const ::PROTOBUF_NAMESPACE_ID::Message& from) final;
+  void CopyFrom(const FriendRequestDb& from);
+  void MergeFrom(const FriendRequestDb& from);
+  PROTOBUF_ATTRIBUTE_REINITIALIZES void Clear() final;
+  bool IsInitialized() const final;
+
+  size_t ByteSizeLong() const final;
+  const char* _InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::internal::ParseContext* ctx) final;
+  ::PROTOBUF_NAMESPACE_ID::uint8* _InternalSerialize(
+      ::PROTOBUF_NAMESPACE_ID::uint8* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const final;
+  int GetCachedSize() const final { return _cached_size_.Get(); }
+
+  private:
+  inline void SharedCtor();
+  inline void SharedDtor();
+  void SetCachedSize(int size) const final;
+  void InternalSwap(FriendRequestDb* other);
+  friend class ::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata;
+  static ::PROTOBUF_NAMESPACE_ID::StringPiece FullMessageName() {
+    return "gdb.FriendRequestDb";
+  }
+  protected:
+  explicit FriendRequestDb(::PROTOBUF_NAMESPACE_ID::Arena* arena);
+  private:
+  static void ArenaDtor(void* object);
+  inline void RegisterArenaDtor(::PROTOBUF_NAMESPACE_ID::Arena* arena);
+  public:
+
+  ::PROTOBUF_NAMESPACE_ID::Metadata GetMetadata() const final;
+  private:
+  static ::PROTOBUF_NAMESPACE_ID::Metadata GetMetadataStatic() {
+    ::PROTOBUF_NAMESPACE_ID::internal::AssignDescriptors(&::descriptor_table_gamedb_2eproto);
+    return ::descriptor_table_gamedb_2eproto.file_level_metadata[kIndexInFileMessages];
+  }
+
+  public:
+
+  // nested types ----------------------------------------------------
+
+  // accessors -------------------------------------------------------
+
+  enum : int {
+    kApplicantFieldNumber = 2,
+    kRequestIdFieldNumber = 1,
+    kCreatedAtFieldNumber = 3,
+    kExpireAtFieldNumber = 4,
+  };
+  // .gdb.FriendBriefDb applicant = 2;
+  bool has_applicant() const;
+  private:
+  bool _internal_has_applicant() const;
+  public:
+  void clear_applicant();
+  const ::gdb::FriendBriefDb& applicant() const;
+  ::gdb::FriendBriefDb* release_applicant();
+  ::gdb::FriendBriefDb* mutable_applicant();
+  void set_allocated_applicant(::gdb::FriendBriefDb* applicant);
+  private:
+  const ::gdb::FriendBriefDb& _internal_applicant() const;
+  ::gdb::FriendBriefDb* _internal_mutable_applicant();
+  public:
+  void unsafe_arena_set_allocated_applicant(
+      ::gdb::FriendBriefDb* applicant);
+  ::gdb::FriendBriefDb* unsafe_arena_release_applicant();
+
+  // uint64 request_id = 1;
+  void clear_request_id();
+  ::PROTOBUF_NAMESPACE_ID::uint64 request_id() const;
+  void set_request_id(::PROTOBUF_NAMESPACE_ID::uint64 value);
+  private:
+  ::PROTOBUF_NAMESPACE_ID::uint64 _internal_request_id() const;
+  void _internal_set_request_id(::PROTOBUF_NAMESPACE_ID::uint64 value);
+  public:
+
+  // uint64 created_at = 3;
+  void clear_created_at();
+  ::PROTOBUF_NAMESPACE_ID::uint64 created_at() const;
+  void set_created_at(::PROTOBUF_NAMESPACE_ID::uint64 value);
+  private:
+  ::PROTOBUF_NAMESPACE_ID::uint64 _internal_created_at() const;
+  void _internal_set_created_at(::PROTOBUF_NAMESPACE_ID::uint64 value);
+  public:
+
+  // uint64 expire_at = 4;
+  void clear_expire_at();
+  ::PROTOBUF_NAMESPACE_ID::uint64 expire_at() const;
+  void set_expire_at(::PROTOBUF_NAMESPACE_ID::uint64 value);
+  private:
+  ::PROTOBUF_NAMESPACE_ID::uint64 _internal_expire_at() const;
+  void _internal_set_expire_at(::PROTOBUF_NAMESPACE_ID::uint64 value);
+  public:
+
+  // @@protoc_insertion_point(class_scope:gdb.FriendRequestDb)
+ private:
+  class _Internal;
+
+  template <typename T> friend class ::PROTOBUF_NAMESPACE_ID::Arena::InternalHelper;
+  typedef void InternalArenaConstructable_;
+  typedef void DestructorSkippable_;
+  ::gdb::FriendBriefDb* applicant_;
+  ::PROTOBUF_NAMESPACE_ID::uint64 request_id_;
+  ::PROTOBUF_NAMESPACE_ID::uint64 created_at_;
+  ::PROTOBUF_NAMESPACE_ID::uint64 expire_at_;
+  mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
+  friend struct ::TableStruct_gamedb_2eproto;
+};
+// -------------------------------------------------------------------
+
+class FriendOpReq PROTOBUF_FINAL :
+    public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:gdb.FriendOpReq) */ {
+ public:
+  inline FriendOpReq() : FriendOpReq(nullptr) {};
+  virtual ~FriendOpReq();
+
+  FriendOpReq(const FriendOpReq& from);
+  FriendOpReq(FriendOpReq&& from) noexcept
+    : FriendOpReq() {
+    *this = ::std::move(from);
+  }
+
+  inline FriendOpReq& operator=(const FriendOpReq& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  inline FriendOpReq& operator=(FriendOpReq&& from) noexcept {
+    if (GetArena() == from.GetArena()) {
+      if (this != &from) InternalSwap(&from);
+    } else {
+      CopyFrom(from);
+    }
+    return *this;
+  }
+
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* descriptor() {
+    return GetDescriptor();
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* GetDescriptor() {
+    return GetMetadataStatic().descriptor;
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Reflection* GetReflection() {
+    return GetMetadataStatic().reflection;
+  }
+  static const FriendOpReq& default_instance();
+
+  static void InitAsDefaultInstance();  // FOR INTERNAL USE ONLY
+  static inline const FriendOpReq* internal_default_instance() {
+    return reinterpret_cast<const FriendOpReq*>(
+               &_FriendOpReq_default_instance_);
+  }
+  static constexpr int kIndexInFileMessages =
+    36;
+
+  friend void swap(FriendOpReq& a, FriendOpReq& b) {
+    a.Swap(&b);
+  }
+  inline void Swap(FriendOpReq* other) {
+    if (other == this) return;
+    if (GetArena() == other->GetArena()) {
+      InternalSwap(other);
+    } else {
+      ::PROTOBUF_NAMESPACE_ID::internal::GenericSwap(this, other);
+    }
+  }
+  void UnsafeArenaSwap(FriendOpReq* other) {
+    if (other == this) return;
+    GOOGLE_DCHECK(GetArena() == other->GetArena());
+    InternalSwap(other);
+  }
+
+  // implements Message ----------------------------------------------
+
+  inline FriendOpReq* New() const final {
+    return CreateMaybeMessage<FriendOpReq>(nullptr);
+  }
+
+  FriendOpReq* New(::PROTOBUF_NAMESPACE_ID::Arena* arena) const final {
+    return CreateMaybeMessage<FriendOpReq>(arena);
+  }
+  void CopyFrom(const ::PROTOBUF_NAMESPACE_ID::Message& from) final;
+  void MergeFrom(const ::PROTOBUF_NAMESPACE_ID::Message& from) final;
+  void CopyFrom(const FriendOpReq& from);
+  void MergeFrom(const FriendOpReq& from);
+  PROTOBUF_ATTRIBUTE_REINITIALIZES void Clear() final;
+  bool IsInitialized() const final;
+
+  size_t ByteSizeLong() const final;
+  const char* _InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::internal::ParseContext* ctx) final;
+  ::PROTOBUF_NAMESPACE_ID::uint8* _InternalSerialize(
+      ::PROTOBUF_NAMESPACE_ID::uint8* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const final;
+  int GetCachedSize() const final { return _cached_size_.Get(); }
+
+  private:
+  inline void SharedCtor();
+  inline void SharedDtor();
+  void SetCachedSize(int size) const final;
+  void InternalSwap(FriendOpReq* other);
+  friend class ::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata;
+  static ::PROTOBUF_NAMESPACE_ID::StringPiece FullMessageName() {
+    return "gdb.FriendOpReq";
+  }
+  protected:
+  explicit FriendOpReq(::PROTOBUF_NAMESPACE_ID::Arena* arena);
+  private:
+  static void ArenaDtor(void* object);
+  inline void RegisterArenaDtor(::PROTOBUF_NAMESPACE_ID::Arena* arena);
+  public:
+
+  ::PROTOBUF_NAMESPACE_ID::Metadata GetMetadata() const final;
+  private:
+  static ::PROTOBUF_NAMESPACE_ID::Metadata GetMetadataStatic() {
+    ::PROTOBUF_NAMESPACE_ID::internal::AssignDescriptors(&::descriptor_table_gamedb_2eproto);
+    return ::descriptor_table_gamedb_2eproto.file_level_metadata[kIndexInFileMessages];
+  }
+
+  public:
+
+  // nested types ----------------------------------------------------
+
+  // accessors -------------------------------------------------------
+
+  enum : int {
+    kOpFieldNumber = 1,
+    kExactNameFieldNumber = 5,
+    kCursorFieldNumber = 6,
+    kIdempotencyKeyFieldNumber = 8,
+    kActorPlayerIdFieldNumber = 2,
+    kTargetPlayerIdFieldNumber = 3,
+    kRequestIdFieldNumber = 4,
+    kPageSizeFieldNumber = 7,
+  };
+  // string op = 1;
+  void clear_op();
+  const std::string& op() const;
+  void set_op(const std::string& value);
+  void set_op(std::string&& value);
+  void set_op(const char* value);
+  void set_op(const char* value, size_t size);
+  std::string* mutable_op();
+  std::string* release_op();
+  void set_allocated_op(std::string* op);
+  GOOGLE_PROTOBUF_RUNTIME_DEPRECATED("The unsafe_arena_ accessors for"
+  "    string fields are deprecated and will be removed in a"
+  "    future release.")
+  std::string* unsafe_arena_release_op();
+  GOOGLE_PROTOBUF_RUNTIME_DEPRECATED("The unsafe_arena_ accessors for"
+  "    string fields are deprecated and will be removed in a"
+  "    future release.")
+  void unsafe_arena_set_allocated_op(
+      std::string* op);
+  private:
+  const std::string& _internal_op() const;
+  void _internal_set_op(const std::string& value);
+  std::string* _internal_mutable_op();
+  public:
+
+  // string exact_name = 5;
+  void clear_exact_name();
+  const std::string& exact_name() const;
+  void set_exact_name(const std::string& value);
+  void set_exact_name(std::string&& value);
+  void set_exact_name(const char* value);
+  void set_exact_name(const char* value, size_t size);
+  std::string* mutable_exact_name();
+  std::string* release_exact_name();
+  void set_allocated_exact_name(std::string* exact_name);
+  GOOGLE_PROTOBUF_RUNTIME_DEPRECATED("The unsafe_arena_ accessors for"
+  "    string fields are deprecated and will be removed in a"
+  "    future release.")
+  std::string* unsafe_arena_release_exact_name();
+  GOOGLE_PROTOBUF_RUNTIME_DEPRECATED("The unsafe_arena_ accessors for"
+  "    string fields are deprecated and will be removed in a"
+  "    future release.")
+  void unsafe_arena_set_allocated_exact_name(
+      std::string* exact_name);
+  private:
+  const std::string& _internal_exact_name() const;
+  void _internal_set_exact_name(const std::string& value);
+  std::string* _internal_mutable_exact_name();
+  public:
+
+  // string cursor = 6;
+  void clear_cursor();
+  const std::string& cursor() const;
+  void set_cursor(const std::string& value);
+  void set_cursor(std::string&& value);
+  void set_cursor(const char* value);
+  void set_cursor(const char* value, size_t size);
+  std::string* mutable_cursor();
+  std::string* release_cursor();
+  void set_allocated_cursor(std::string* cursor);
+  GOOGLE_PROTOBUF_RUNTIME_DEPRECATED("The unsafe_arena_ accessors for"
+  "    string fields are deprecated and will be removed in a"
+  "    future release.")
+  std::string* unsafe_arena_release_cursor();
+  GOOGLE_PROTOBUF_RUNTIME_DEPRECATED("The unsafe_arena_ accessors for"
+  "    string fields are deprecated and will be removed in a"
+  "    future release.")
+  void unsafe_arena_set_allocated_cursor(
+      std::string* cursor);
+  private:
+  const std::string& _internal_cursor() const;
+  void _internal_set_cursor(const std::string& value);
+  std::string* _internal_mutable_cursor();
+  public:
+
+  // string idempotency_key = 8;
+  void clear_idempotency_key();
+  const std::string& idempotency_key() const;
+  void set_idempotency_key(const std::string& value);
+  void set_idempotency_key(std::string&& value);
+  void set_idempotency_key(const char* value);
+  void set_idempotency_key(const char* value, size_t size);
+  std::string* mutable_idempotency_key();
+  std::string* release_idempotency_key();
+  void set_allocated_idempotency_key(std::string* idempotency_key);
+  GOOGLE_PROTOBUF_RUNTIME_DEPRECATED("The unsafe_arena_ accessors for"
+  "    string fields are deprecated and will be removed in a"
+  "    future release.")
+  std::string* unsafe_arena_release_idempotency_key();
+  GOOGLE_PROTOBUF_RUNTIME_DEPRECATED("The unsafe_arena_ accessors for"
+  "    string fields are deprecated and will be removed in a"
+  "    future release.")
+  void unsafe_arena_set_allocated_idempotency_key(
+      std::string* idempotency_key);
+  private:
+  const std::string& _internal_idempotency_key() const;
+  void _internal_set_idempotency_key(const std::string& value);
+  std::string* _internal_mutable_idempotency_key();
+  public:
+
+  // uint64 actor_player_id = 2;
+  void clear_actor_player_id();
+  ::PROTOBUF_NAMESPACE_ID::uint64 actor_player_id() const;
+  void set_actor_player_id(::PROTOBUF_NAMESPACE_ID::uint64 value);
+  private:
+  ::PROTOBUF_NAMESPACE_ID::uint64 _internal_actor_player_id() const;
+  void _internal_set_actor_player_id(::PROTOBUF_NAMESPACE_ID::uint64 value);
+  public:
+
+  // uint64 target_player_id = 3;
+  void clear_target_player_id();
+  ::PROTOBUF_NAMESPACE_ID::uint64 target_player_id() const;
+  void set_target_player_id(::PROTOBUF_NAMESPACE_ID::uint64 value);
+  private:
+  ::PROTOBUF_NAMESPACE_ID::uint64 _internal_target_player_id() const;
+  void _internal_set_target_player_id(::PROTOBUF_NAMESPACE_ID::uint64 value);
+  public:
+
+  // uint64 request_id = 4;
+  void clear_request_id();
+  ::PROTOBUF_NAMESPACE_ID::uint64 request_id() const;
+  void set_request_id(::PROTOBUF_NAMESPACE_ID::uint64 value);
+  private:
+  ::PROTOBUF_NAMESPACE_ID::uint64 _internal_request_id() const;
+  void _internal_set_request_id(::PROTOBUF_NAMESPACE_ID::uint64 value);
+  public:
+
+  // uint32 page_size = 7;
+  void clear_page_size();
+  ::PROTOBUF_NAMESPACE_ID::uint32 page_size() const;
+  void set_page_size(::PROTOBUF_NAMESPACE_ID::uint32 value);
+  private:
+  ::PROTOBUF_NAMESPACE_ID::uint32 _internal_page_size() const;
+  void _internal_set_page_size(::PROTOBUF_NAMESPACE_ID::uint32 value);
+  public:
+
+  // @@protoc_insertion_point(class_scope:gdb.FriendOpReq)
+ private:
+  class _Internal;
+
+  template <typename T> friend class ::PROTOBUF_NAMESPACE_ID::Arena::InternalHelper;
+  typedef void InternalArenaConstructable_;
+  typedef void DestructorSkippable_;
+  ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr op_;
+  ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr exact_name_;
+  ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr cursor_;
+  ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr idempotency_key_;
+  ::PROTOBUF_NAMESPACE_ID::uint64 actor_player_id_;
+  ::PROTOBUF_NAMESPACE_ID::uint64 target_player_id_;
+  ::PROTOBUF_NAMESPACE_ID::uint64 request_id_;
+  ::PROTOBUF_NAMESPACE_ID::uint32 page_size_;
+  mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
+  friend struct ::TableStruct_gamedb_2eproto;
+};
+// -------------------------------------------------------------------
+
+class FriendOpRsp PROTOBUF_FINAL :
+    public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:gdb.FriendOpRsp) */ {
+ public:
+  inline FriendOpRsp() : FriendOpRsp(nullptr) {};
+  virtual ~FriendOpRsp();
+
+  FriendOpRsp(const FriendOpRsp& from);
+  FriendOpRsp(FriendOpRsp&& from) noexcept
+    : FriendOpRsp() {
+    *this = ::std::move(from);
+  }
+
+  inline FriendOpRsp& operator=(const FriendOpRsp& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  inline FriendOpRsp& operator=(FriendOpRsp&& from) noexcept {
+    if (GetArena() == from.GetArena()) {
+      if (this != &from) InternalSwap(&from);
+    } else {
+      CopyFrom(from);
+    }
+    return *this;
+  }
+
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* descriptor() {
+    return GetDescriptor();
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* GetDescriptor() {
+    return GetMetadataStatic().descriptor;
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Reflection* GetReflection() {
+    return GetMetadataStatic().reflection;
+  }
+  static const FriendOpRsp& default_instance();
+
+  static void InitAsDefaultInstance();  // FOR INTERNAL USE ONLY
+  static inline const FriendOpRsp* internal_default_instance() {
+    return reinterpret_cast<const FriendOpRsp*>(
+               &_FriendOpRsp_default_instance_);
+  }
+  static constexpr int kIndexInFileMessages =
+    37;
+
+  friend void swap(FriendOpRsp& a, FriendOpRsp& b) {
+    a.Swap(&b);
+  }
+  inline void Swap(FriendOpRsp* other) {
+    if (other == this) return;
+    if (GetArena() == other->GetArena()) {
+      InternalSwap(other);
+    } else {
+      ::PROTOBUF_NAMESPACE_ID::internal::GenericSwap(this, other);
+    }
+  }
+  void UnsafeArenaSwap(FriendOpRsp* other) {
+    if (other == this) return;
+    GOOGLE_DCHECK(GetArena() == other->GetArena());
+    InternalSwap(other);
+  }
+
+  // implements Message ----------------------------------------------
+
+  inline FriendOpRsp* New() const final {
+    return CreateMaybeMessage<FriendOpRsp>(nullptr);
+  }
+
+  FriendOpRsp* New(::PROTOBUF_NAMESPACE_ID::Arena* arena) const final {
+    return CreateMaybeMessage<FriendOpRsp>(arena);
+  }
+  void CopyFrom(const ::PROTOBUF_NAMESPACE_ID::Message& from) final;
+  void MergeFrom(const ::PROTOBUF_NAMESPACE_ID::Message& from) final;
+  void CopyFrom(const FriendOpRsp& from);
+  void MergeFrom(const FriendOpRsp& from);
+  PROTOBUF_ATTRIBUTE_REINITIALIZES void Clear() final;
+  bool IsInitialized() const final;
+
+  size_t ByteSizeLong() const final;
+  const char* _InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::internal::ParseContext* ctx) final;
+  ::PROTOBUF_NAMESPACE_ID::uint8* _InternalSerialize(
+      ::PROTOBUF_NAMESPACE_ID::uint8* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const final;
+  int GetCachedSize() const final { return _cached_size_.Get(); }
+
+  private:
+  inline void SharedCtor();
+  inline void SharedDtor();
+  void SetCachedSize(int size) const final;
+  void InternalSwap(FriendOpRsp* other);
+  friend class ::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata;
+  static ::PROTOBUF_NAMESPACE_ID::StringPiece FullMessageName() {
+    return "gdb.FriendOpRsp";
+  }
+  protected:
+  explicit FriendOpRsp(::PROTOBUF_NAMESPACE_ID::Arena* arena);
+  private:
+  static void ArenaDtor(void* object);
+  inline void RegisterArenaDtor(::PROTOBUF_NAMESPACE_ID::Arena* arena);
+  public:
+
+  ::PROTOBUF_NAMESPACE_ID::Metadata GetMetadata() const final;
+  private:
+  static ::PROTOBUF_NAMESPACE_ID::Metadata GetMetadataStatic() {
+    ::PROTOBUF_NAMESPACE_ID::internal::AssignDescriptors(&::descriptor_table_gamedb_2eproto);
+    return ::descriptor_table_gamedb_2eproto.file_level_metadata[kIndexInFileMessages];
+  }
+
+  public:
+
+  // nested types ----------------------------------------------------
+
+  // accessors -------------------------------------------------------
+
+  enum : int {
+    kFriendsFieldNumber = 5,
+    kRequestsFieldNumber = 6,
+    kErrorCodeFieldNumber = 2,
+    kMessageFieldNumber = 3,
+    kNextCursorFieldNumber = 10,
+    kNotifyKindFieldNumber = 14,
+    kPlayerFieldNumber = 8,
+    kRequestIdFieldNumber = 7,
+    kOkFieldNumber = 1,
+    kIdempotentHitFieldNumber = 4,
+    kPrivacyOkFieldNumber = 15,
+    kRelationFieldNumber = 9,
+    kFriendNFieldNumber = 11,
+    kFriendCapFieldNumber = 12,
+    kPeerPlayerIdFieldNumber = 13,
+  };
+  // repeated .gdb.FriendBriefDb friends = 5;
+  int friends_size() const;
+  private:
+  int _internal_friends_size() const;
+  public:
+  void clear_friends();
+  ::gdb::FriendBriefDb* mutable_friends(int index);
+  ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::gdb::FriendBriefDb >*
+      mutable_friends();
+  private:
+  const ::gdb::FriendBriefDb& _internal_friends(int index) const;
+  ::gdb::FriendBriefDb* _internal_add_friends();
+  public:
+  const ::gdb::FriendBriefDb& friends(int index) const;
+  ::gdb::FriendBriefDb* add_friends();
+  const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::gdb::FriendBriefDb >&
+      friends() const;
+
+  // repeated .gdb.FriendRequestDb requests = 6;
+  int requests_size() const;
+  private:
+  int _internal_requests_size() const;
+  public:
+  void clear_requests();
+  ::gdb::FriendRequestDb* mutable_requests(int index);
+  ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::gdb::FriendRequestDb >*
+      mutable_requests();
+  private:
+  const ::gdb::FriendRequestDb& _internal_requests(int index) const;
+  ::gdb::FriendRequestDb* _internal_add_requests();
+  public:
+  const ::gdb::FriendRequestDb& requests(int index) const;
+  ::gdb::FriendRequestDb* add_requests();
+  const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::gdb::FriendRequestDb >&
+      requests() const;
+
+  // string error_code = 2;
+  void clear_error_code();
+  const std::string& error_code() const;
+  void set_error_code(const std::string& value);
+  void set_error_code(std::string&& value);
+  void set_error_code(const char* value);
+  void set_error_code(const char* value, size_t size);
+  std::string* mutable_error_code();
+  std::string* release_error_code();
+  void set_allocated_error_code(std::string* error_code);
+  GOOGLE_PROTOBUF_RUNTIME_DEPRECATED("The unsafe_arena_ accessors for"
+  "    string fields are deprecated and will be removed in a"
+  "    future release.")
+  std::string* unsafe_arena_release_error_code();
+  GOOGLE_PROTOBUF_RUNTIME_DEPRECATED("The unsafe_arena_ accessors for"
+  "    string fields are deprecated and will be removed in a"
+  "    future release.")
+  void unsafe_arena_set_allocated_error_code(
+      std::string* error_code);
+  private:
+  const std::string& _internal_error_code() const;
+  void _internal_set_error_code(const std::string& value);
+  std::string* _internal_mutable_error_code();
+  public:
+
+  // string message = 3;
+  void clear_message();
+  const std::string& message() const;
+  void set_message(const std::string& value);
+  void set_message(std::string&& value);
+  void set_message(const char* value);
+  void set_message(const char* value, size_t size);
+  std::string* mutable_message();
+  std::string* release_message();
+  void set_allocated_message(std::string* message);
+  GOOGLE_PROTOBUF_RUNTIME_DEPRECATED("The unsafe_arena_ accessors for"
+  "    string fields are deprecated and will be removed in a"
+  "    future release.")
+  std::string* unsafe_arena_release_message();
+  GOOGLE_PROTOBUF_RUNTIME_DEPRECATED("The unsafe_arena_ accessors for"
+  "    string fields are deprecated and will be removed in a"
+  "    future release.")
+  void unsafe_arena_set_allocated_message(
+      std::string* message);
+  private:
+  const std::string& _internal_message() const;
+  void _internal_set_message(const std::string& value);
+  std::string* _internal_mutable_message();
+  public:
+
+  // string next_cursor = 10;
+  void clear_next_cursor();
+  const std::string& next_cursor() const;
+  void set_next_cursor(const std::string& value);
+  void set_next_cursor(std::string&& value);
+  void set_next_cursor(const char* value);
+  void set_next_cursor(const char* value, size_t size);
+  std::string* mutable_next_cursor();
+  std::string* release_next_cursor();
+  void set_allocated_next_cursor(std::string* next_cursor);
+  GOOGLE_PROTOBUF_RUNTIME_DEPRECATED("The unsafe_arena_ accessors for"
+  "    string fields are deprecated and will be removed in a"
+  "    future release.")
+  std::string* unsafe_arena_release_next_cursor();
+  GOOGLE_PROTOBUF_RUNTIME_DEPRECATED("The unsafe_arena_ accessors for"
+  "    string fields are deprecated and will be removed in a"
+  "    future release.")
+  void unsafe_arena_set_allocated_next_cursor(
+      std::string* next_cursor);
+  private:
+  const std::string& _internal_next_cursor() const;
+  void _internal_set_next_cursor(const std::string& value);
+  std::string* _internal_mutable_next_cursor();
+  public:
+
+  // string notify_kind = 14;
+  void clear_notify_kind();
+  const std::string& notify_kind() const;
+  void set_notify_kind(const std::string& value);
+  void set_notify_kind(std::string&& value);
+  void set_notify_kind(const char* value);
+  void set_notify_kind(const char* value, size_t size);
+  std::string* mutable_notify_kind();
+  std::string* release_notify_kind();
+  void set_allocated_notify_kind(std::string* notify_kind);
+  GOOGLE_PROTOBUF_RUNTIME_DEPRECATED("The unsafe_arena_ accessors for"
+  "    string fields are deprecated and will be removed in a"
+  "    future release.")
+  std::string* unsafe_arena_release_notify_kind();
+  GOOGLE_PROTOBUF_RUNTIME_DEPRECATED("The unsafe_arena_ accessors for"
+  "    string fields are deprecated and will be removed in a"
+  "    future release.")
+  void unsafe_arena_set_allocated_notify_kind(
+      std::string* notify_kind);
+  private:
+  const std::string& _internal_notify_kind() const;
+  void _internal_set_notify_kind(const std::string& value);
+  std::string* _internal_mutable_notify_kind();
+  public:
+
+  // .gdb.FriendBriefDb player = 8;
+  bool has_player() const;
+  private:
+  bool _internal_has_player() const;
+  public:
+  void clear_player();
+  const ::gdb::FriendBriefDb& player() const;
+  ::gdb::FriendBriefDb* release_player();
+  ::gdb::FriendBriefDb* mutable_player();
+  void set_allocated_player(::gdb::FriendBriefDb* player);
+  private:
+  const ::gdb::FriendBriefDb& _internal_player() const;
+  ::gdb::FriendBriefDb* _internal_mutable_player();
+  public:
+  void unsafe_arena_set_allocated_player(
+      ::gdb::FriendBriefDb* player);
+  ::gdb::FriendBriefDb* unsafe_arena_release_player();
+
+  // uint64 request_id = 7;
+  void clear_request_id();
+  ::PROTOBUF_NAMESPACE_ID::uint64 request_id() const;
+  void set_request_id(::PROTOBUF_NAMESPACE_ID::uint64 value);
+  private:
+  ::PROTOBUF_NAMESPACE_ID::uint64 _internal_request_id() const;
+  void _internal_set_request_id(::PROTOBUF_NAMESPACE_ID::uint64 value);
+  public:
+
+  // bool ok = 1;
+  void clear_ok();
+  bool ok() const;
+  void set_ok(bool value);
+  private:
+  bool _internal_ok() const;
+  void _internal_set_ok(bool value);
+  public:
+
+  // bool idempotent_hit = 4;
+  void clear_idempotent_hit();
+  bool idempotent_hit() const;
+  void set_idempotent_hit(bool value);
+  private:
+  bool _internal_idempotent_hit() const;
+  void _internal_set_idempotent_hit(bool value);
+  public:
+
+  // bool privacy_ok = 15;
+  void clear_privacy_ok();
+  bool privacy_ok() const;
+  void set_privacy_ok(bool value);
+  private:
+  bool _internal_privacy_ok() const;
+  void _internal_set_privacy_ok(bool value);
+  public:
+
+  // int32 relation = 9;
+  void clear_relation();
+  ::PROTOBUF_NAMESPACE_ID::int32 relation() const;
+  void set_relation(::PROTOBUF_NAMESPACE_ID::int32 value);
+  private:
+  ::PROTOBUF_NAMESPACE_ID::int32 _internal_relation() const;
+  void _internal_set_relation(::PROTOBUF_NAMESPACE_ID::int32 value);
+  public:
+
+  // uint32 friend_n = 11;
+  void clear_friend_n();
+  ::PROTOBUF_NAMESPACE_ID::uint32 friend_n() const;
+  void set_friend_n(::PROTOBUF_NAMESPACE_ID::uint32 value);
+  private:
+  ::PROTOBUF_NAMESPACE_ID::uint32 _internal_friend_n() const;
+  void _internal_set_friend_n(::PROTOBUF_NAMESPACE_ID::uint32 value);
+  public:
+
+  // uint32 friend_cap = 12;
+  void clear_friend_cap();
+  ::PROTOBUF_NAMESPACE_ID::uint32 friend_cap() const;
+  void set_friend_cap(::PROTOBUF_NAMESPACE_ID::uint32 value);
+  private:
+  ::PROTOBUF_NAMESPACE_ID::uint32 _internal_friend_cap() const;
+  void _internal_set_friend_cap(::PROTOBUF_NAMESPACE_ID::uint32 value);
+  public:
+
+  // uint64 peer_player_id = 13;
+  void clear_peer_player_id();
+  ::PROTOBUF_NAMESPACE_ID::uint64 peer_player_id() const;
+  void set_peer_player_id(::PROTOBUF_NAMESPACE_ID::uint64 value);
+  private:
+  ::PROTOBUF_NAMESPACE_ID::uint64 _internal_peer_player_id() const;
+  void _internal_set_peer_player_id(::PROTOBUF_NAMESPACE_ID::uint64 value);
+  public:
+
+  // @@protoc_insertion_point(class_scope:gdb.FriendOpRsp)
+ private:
+  class _Internal;
+
+  template <typename T> friend class ::PROTOBUF_NAMESPACE_ID::Arena::InternalHelper;
+  typedef void InternalArenaConstructable_;
+  typedef void DestructorSkippable_;
+  ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::gdb::FriendBriefDb > friends_;
+  ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::gdb::FriendRequestDb > requests_;
+  ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr error_code_;
+  ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr message_;
+  ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr next_cursor_;
+  ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr notify_kind_;
+  ::gdb::FriendBriefDb* player_;
+  ::PROTOBUF_NAMESPACE_ID::uint64 request_id_;
+  bool ok_;
+  bool idempotent_hit_;
+  bool privacy_ok_;
+  ::PROTOBUF_NAMESPACE_ID::int32 relation_;
+  ::PROTOBUF_NAMESPACE_ID::uint32 friend_n_;
+  ::PROTOBUF_NAMESPACE_ID::uint32 friend_cap_;
+  ::PROTOBUF_NAMESPACE_ID::uint64 peer_player_id_;
+  mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
+  friend struct ::TableStruct_gamedb_2eproto;
+};
 // ===================================================================
 
 class GameDbService_Stub;
@@ -7295,6 +8401,10 @@ class GameDbService : public ::PROTOBUF_NAMESPACE_ID::Service {
   virtual void HandleGameFrame(::PROTOBUF_NAMESPACE_ID::RpcController* controller,
                        const ::gdb::HandleGameFrameReq* request,
                        ::gdb::HandleGameFrameRsp* response,
+                       ::google::protobuf::Closure* done);
+  virtual void FriendOp(::PROTOBUF_NAMESPACE_ID::RpcController* controller,
+                       const ::gdb::FriendOpReq* request,
+                       ::gdb::FriendOpRsp* response,
                        ::google::protobuf::Closure* done);
 
   // implements Service ----------------------------------------------
@@ -7384,6 +8494,10 @@ class GameDbService_Stub : public GameDbService {
   void HandleGameFrame(::PROTOBUF_NAMESPACE_ID::RpcController* controller,
                        const ::gdb::HandleGameFrameReq* request,
                        ::gdb::HandleGameFrameRsp* response,
+                       ::google::protobuf::Closure* done);
+  void FriendOp(::PROTOBUF_NAMESPACE_ID::RpcController* controller,
+                       const ::gdb::FriendOpReq* request,
+                       ::gdb::FriendOpRsp* response,
                        ::google::protobuf::Closure* done);
  private:
   ::PROTOBUF_NAMESPACE_ID::RpcChannel* channel_;
@@ -14429,9 +15543,1544 @@ inline void HandleGameFrameRsp::unsafe_arena_set_allocated_response_frame(
   // @@protoc_insertion_point(field_unsafe_arena_set_allocated:gdb.HandleGameFrameRsp.response_frame)
 }
 
+// -------------------------------------------------------------------
+
+// FriendBriefDb
+
+// uint64 player_id = 1;
+inline void FriendBriefDb::clear_player_id() {
+  player_id_ = PROTOBUF_ULONGLONG(0);
+}
+inline ::PROTOBUF_NAMESPACE_ID::uint64 FriendBriefDb::_internal_player_id() const {
+  return player_id_;
+}
+inline ::PROTOBUF_NAMESPACE_ID::uint64 FriendBriefDb::player_id() const {
+  // @@protoc_insertion_point(field_get:gdb.FriendBriefDb.player_id)
+  return _internal_player_id();
+}
+inline void FriendBriefDb::_internal_set_player_id(::PROTOBUF_NAMESPACE_ID::uint64 value) {
+  
+  player_id_ = value;
+}
+inline void FriendBriefDb::set_player_id(::PROTOBUF_NAMESPACE_ID::uint64 value) {
+  _internal_set_player_id(value);
+  // @@protoc_insertion_point(field_set:gdb.FriendBriefDb.player_id)
+}
+
+// string name = 2;
+inline void FriendBriefDb::clear_name() {
+  name_.ClearToEmpty(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
+}
+inline const std::string& FriendBriefDb::name() const {
+  // @@protoc_insertion_point(field_get:gdb.FriendBriefDb.name)
+  return _internal_name();
+}
+inline void FriendBriefDb::set_name(const std::string& value) {
+  _internal_set_name(value);
+  // @@protoc_insertion_point(field_set:gdb.FriendBriefDb.name)
+}
+inline std::string* FriendBriefDb::mutable_name() {
+  // @@protoc_insertion_point(field_mutable:gdb.FriendBriefDb.name)
+  return _internal_mutable_name();
+}
+inline const std::string& FriendBriefDb::_internal_name() const {
+  return name_.Get();
+}
+inline void FriendBriefDb::_internal_set_name(const std::string& value) {
+  
+  name_.Set(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), value, GetArena());
+}
+inline void FriendBriefDb::set_name(std::string&& value) {
+  
+  name_.Set(
+    &::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), ::std::move(value), GetArena());
+  // @@protoc_insertion_point(field_set_rvalue:gdb.FriendBriefDb.name)
+}
+inline void FriendBriefDb::set_name(const char* value) {
+  GOOGLE_DCHECK(value != nullptr);
+  
+  name_.Set(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), ::std::string(value),
+              GetArena());
+  // @@protoc_insertion_point(field_set_char:gdb.FriendBriefDb.name)
+}
+inline void FriendBriefDb::set_name(const char* value,
+    size_t size) {
+  
+  name_.Set(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), ::std::string(
+      reinterpret_cast<const char*>(value), size), GetArena());
+  // @@protoc_insertion_point(field_set_pointer:gdb.FriendBriefDb.name)
+}
+inline std::string* FriendBriefDb::_internal_mutable_name() {
+  
+  return name_.Mutable(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
+}
+inline std::string* FriendBriefDb::release_name() {
+  // @@protoc_insertion_point(field_release:gdb.FriendBriefDb.name)
+  return name_.Release(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
+}
+inline void FriendBriefDb::set_allocated_name(std::string* name) {
+  if (name != nullptr) {
+    
+  } else {
+    
+  }
+  name_.SetAllocated(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), name,
+      GetArena());
+  // @@protoc_insertion_point(field_set_allocated:gdb.FriendBriefDb.name)
+}
+inline std::string* FriendBriefDb::unsafe_arena_release_name() {
+  // @@protoc_insertion_point(field_unsafe_arena_release:gdb.FriendBriefDb.name)
+  GOOGLE_DCHECK(GetArena() != nullptr);
+  
+  return name_.UnsafeArenaRelease(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(),
+      GetArena());
+}
+inline void FriendBriefDb::unsafe_arena_set_allocated_name(
+    std::string* name) {
+  GOOGLE_DCHECK(GetArena() != nullptr);
+  if (name != nullptr) {
+    
+  } else {
+    
+  }
+  name_.UnsafeArenaSetAllocated(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(),
+      name, GetArena());
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:gdb.FriendBriefDb.name)
+}
+
+// uint32 level = 3;
+inline void FriendBriefDb::clear_level() {
+  level_ = 0u;
+}
+inline ::PROTOBUF_NAMESPACE_ID::uint32 FriendBriefDb::_internal_level() const {
+  return level_;
+}
+inline ::PROTOBUF_NAMESPACE_ID::uint32 FriendBriefDb::level() const {
+  // @@protoc_insertion_point(field_get:gdb.FriendBriefDb.level)
+  return _internal_level();
+}
+inline void FriendBriefDb::_internal_set_level(::PROTOBUF_NAMESPACE_ID::uint32 value) {
+  
+  level_ = value;
+}
+inline void FriendBriefDb::set_level(::PROTOBUF_NAMESPACE_ID::uint32 value) {
+  _internal_set_level(value);
+  // @@protoc_insertion_point(field_set:gdb.FriendBriefDb.level)
+}
+
+// uint32 profession = 4;
+inline void FriendBriefDb::clear_profession() {
+  profession_ = 0u;
+}
+inline ::PROTOBUF_NAMESPACE_ID::uint32 FriendBriefDb::_internal_profession() const {
+  return profession_;
+}
+inline ::PROTOBUF_NAMESPACE_ID::uint32 FriendBriefDb::profession() const {
+  // @@protoc_insertion_point(field_get:gdb.FriendBriefDb.profession)
+  return _internal_profession();
+}
+inline void FriendBriefDb::_internal_set_profession(::PROTOBUF_NAMESPACE_ID::uint32 value) {
+  
+  profession_ = value;
+}
+inline void FriendBriefDb::set_profession(::PROTOBUF_NAMESPACE_ID::uint32 value) {
+  _internal_set_profession(value);
+  // @@protoc_insertion_point(field_set:gdb.FriendBriefDb.profession)
+}
+
+// string avatar = 5;
+inline void FriendBriefDb::clear_avatar() {
+  avatar_.ClearToEmpty(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
+}
+inline const std::string& FriendBriefDb::avatar() const {
+  // @@protoc_insertion_point(field_get:gdb.FriendBriefDb.avatar)
+  return _internal_avatar();
+}
+inline void FriendBriefDb::set_avatar(const std::string& value) {
+  _internal_set_avatar(value);
+  // @@protoc_insertion_point(field_set:gdb.FriendBriefDb.avatar)
+}
+inline std::string* FriendBriefDb::mutable_avatar() {
+  // @@protoc_insertion_point(field_mutable:gdb.FriendBriefDb.avatar)
+  return _internal_mutable_avatar();
+}
+inline const std::string& FriendBriefDb::_internal_avatar() const {
+  return avatar_.Get();
+}
+inline void FriendBriefDb::_internal_set_avatar(const std::string& value) {
+  
+  avatar_.Set(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), value, GetArena());
+}
+inline void FriendBriefDb::set_avatar(std::string&& value) {
+  
+  avatar_.Set(
+    &::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), ::std::move(value), GetArena());
+  // @@protoc_insertion_point(field_set_rvalue:gdb.FriendBriefDb.avatar)
+}
+inline void FriendBriefDb::set_avatar(const char* value) {
+  GOOGLE_DCHECK(value != nullptr);
+  
+  avatar_.Set(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), ::std::string(value),
+              GetArena());
+  // @@protoc_insertion_point(field_set_char:gdb.FriendBriefDb.avatar)
+}
+inline void FriendBriefDb::set_avatar(const char* value,
+    size_t size) {
+  
+  avatar_.Set(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), ::std::string(
+      reinterpret_cast<const char*>(value), size), GetArena());
+  // @@protoc_insertion_point(field_set_pointer:gdb.FriendBriefDb.avatar)
+}
+inline std::string* FriendBriefDb::_internal_mutable_avatar() {
+  
+  return avatar_.Mutable(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
+}
+inline std::string* FriendBriefDb::release_avatar() {
+  // @@protoc_insertion_point(field_release:gdb.FriendBriefDb.avatar)
+  return avatar_.Release(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
+}
+inline void FriendBriefDb::set_allocated_avatar(std::string* avatar) {
+  if (avatar != nullptr) {
+    
+  } else {
+    
+  }
+  avatar_.SetAllocated(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), avatar,
+      GetArena());
+  // @@protoc_insertion_point(field_set_allocated:gdb.FriendBriefDb.avatar)
+}
+inline std::string* FriendBriefDb::unsafe_arena_release_avatar() {
+  // @@protoc_insertion_point(field_unsafe_arena_release:gdb.FriendBriefDb.avatar)
+  GOOGLE_DCHECK(GetArena() != nullptr);
+  
+  return avatar_.UnsafeArenaRelease(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(),
+      GetArena());
+}
+inline void FriendBriefDb::unsafe_arena_set_allocated_avatar(
+    std::string* avatar) {
+  GOOGLE_DCHECK(GetArena() != nullptr);
+  if (avatar != nullptr) {
+    
+  } else {
+    
+  }
+  avatar_.UnsafeArenaSetAllocated(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(),
+      avatar, GetArena());
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:gdb.FriendBriefDb.avatar)
+}
+
+// uint64 last_online_time = 6;
+inline void FriendBriefDb::clear_last_online_time() {
+  last_online_time_ = PROTOBUF_ULONGLONG(0);
+}
+inline ::PROTOBUF_NAMESPACE_ID::uint64 FriendBriefDb::_internal_last_online_time() const {
+  return last_online_time_;
+}
+inline ::PROTOBUF_NAMESPACE_ID::uint64 FriendBriefDb::last_online_time() const {
+  // @@protoc_insertion_point(field_get:gdb.FriendBriefDb.last_online_time)
+  return _internal_last_online_time();
+}
+inline void FriendBriefDb::_internal_set_last_online_time(::PROTOBUF_NAMESPACE_ID::uint64 value) {
+  
+  last_online_time_ = value;
+}
+inline void FriendBriefDb::set_last_online_time(::PROTOBUF_NAMESPACE_ID::uint64 value) {
+  _internal_set_last_online_time(value);
+  // @@protoc_insertion_point(field_set:gdb.FriendBriefDb.last_online_time)
+}
+
+// string remark = 7;
+inline void FriendBriefDb::clear_remark() {
+  remark_.ClearToEmpty(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
+}
+inline const std::string& FriendBriefDb::remark() const {
+  // @@protoc_insertion_point(field_get:gdb.FriendBriefDb.remark)
+  return _internal_remark();
+}
+inline void FriendBriefDb::set_remark(const std::string& value) {
+  _internal_set_remark(value);
+  // @@protoc_insertion_point(field_set:gdb.FriendBriefDb.remark)
+}
+inline std::string* FriendBriefDb::mutable_remark() {
+  // @@protoc_insertion_point(field_mutable:gdb.FriendBriefDb.remark)
+  return _internal_mutable_remark();
+}
+inline const std::string& FriendBriefDb::_internal_remark() const {
+  return remark_.Get();
+}
+inline void FriendBriefDb::_internal_set_remark(const std::string& value) {
+  
+  remark_.Set(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), value, GetArena());
+}
+inline void FriendBriefDb::set_remark(std::string&& value) {
+  
+  remark_.Set(
+    &::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), ::std::move(value), GetArena());
+  // @@protoc_insertion_point(field_set_rvalue:gdb.FriendBriefDb.remark)
+}
+inline void FriendBriefDb::set_remark(const char* value) {
+  GOOGLE_DCHECK(value != nullptr);
+  
+  remark_.Set(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), ::std::string(value),
+              GetArena());
+  // @@protoc_insertion_point(field_set_char:gdb.FriendBriefDb.remark)
+}
+inline void FriendBriefDb::set_remark(const char* value,
+    size_t size) {
+  
+  remark_.Set(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), ::std::string(
+      reinterpret_cast<const char*>(value), size), GetArena());
+  // @@protoc_insertion_point(field_set_pointer:gdb.FriendBriefDb.remark)
+}
+inline std::string* FriendBriefDb::_internal_mutable_remark() {
+  
+  return remark_.Mutable(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
+}
+inline std::string* FriendBriefDb::release_remark() {
+  // @@protoc_insertion_point(field_release:gdb.FriendBriefDb.remark)
+  return remark_.Release(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
+}
+inline void FriendBriefDb::set_allocated_remark(std::string* remark) {
+  if (remark != nullptr) {
+    
+  } else {
+    
+  }
+  remark_.SetAllocated(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), remark,
+      GetArena());
+  // @@protoc_insertion_point(field_set_allocated:gdb.FriendBriefDb.remark)
+}
+inline std::string* FriendBriefDb::unsafe_arena_release_remark() {
+  // @@protoc_insertion_point(field_unsafe_arena_release:gdb.FriendBriefDb.remark)
+  GOOGLE_DCHECK(GetArena() != nullptr);
+  
+  return remark_.UnsafeArenaRelease(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(),
+      GetArena());
+}
+inline void FriendBriefDb::unsafe_arena_set_allocated_remark(
+    std::string* remark) {
+  GOOGLE_DCHECK(GetArena() != nullptr);
+  if (remark != nullptr) {
+    
+  } else {
+    
+  }
+  remark_.UnsafeArenaSetAllocated(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(),
+      remark, GetArena());
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:gdb.FriendBriefDb.remark)
+}
+
+// -------------------------------------------------------------------
+
+// FriendRequestDb
+
+// uint64 request_id = 1;
+inline void FriendRequestDb::clear_request_id() {
+  request_id_ = PROTOBUF_ULONGLONG(0);
+}
+inline ::PROTOBUF_NAMESPACE_ID::uint64 FriendRequestDb::_internal_request_id() const {
+  return request_id_;
+}
+inline ::PROTOBUF_NAMESPACE_ID::uint64 FriendRequestDb::request_id() const {
+  // @@protoc_insertion_point(field_get:gdb.FriendRequestDb.request_id)
+  return _internal_request_id();
+}
+inline void FriendRequestDb::_internal_set_request_id(::PROTOBUF_NAMESPACE_ID::uint64 value) {
+  
+  request_id_ = value;
+}
+inline void FriendRequestDb::set_request_id(::PROTOBUF_NAMESPACE_ID::uint64 value) {
+  _internal_set_request_id(value);
+  // @@protoc_insertion_point(field_set:gdb.FriendRequestDb.request_id)
+}
+
+// .gdb.FriendBriefDb applicant = 2;
+inline bool FriendRequestDb::_internal_has_applicant() const {
+  return this != internal_default_instance() && applicant_ != nullptr;
+}
+inline bool FriendRequestDb::has_applicant() const {
+  return _internal_has_applicant();
+}
+inline void FriendRequestDb::clear_applicant() {
+  if (GetArena() == nullptr && applicant_ != nullptr) {
+    delete applicant_;
+  }
+  applicant_ = nullptr;
+}
+inline const ::gdb::FriendBriefDb& FriendRequestDb::_internal_applicant() const {
+  const ::gdb::FriendBriefDb* p = applicant_;
+  return p != nullptr ? *p : *reinterpret_cast<const ::gdb::FriendBriefDb*>(
+      &::gdb::_FriendBriefDb_default_instance_);
+}
+inline const ::gdb::FriendBriefDb& FriendRequestDb::applicant() const {
+  // @@protoc_insertion_point(field_get:gdb.FriendRequestDb.applicant)
+  return _internal_applicant();
+}
+inline void FriendRequestDb::unsafe_arena_set_allocated_applicant(
+    ::gdb::FriendBriefDb* applicant) {
+  if (GetArena() == nullptr) {
+    delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(applicant_);
+  }
+  applicant_ = applicant;
+  if (applicant) {
+    
+  } else {
+    
+  }
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:gdb.FriendRequestDb.applicant)
+}
+inline ::gdb::FriendBriefDb* FriendRequestDb::release_applicant() {
+  auto temp = unsafe_arena_release_applicant();
+  if (GetArena() != nullptr) {
+    temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+  }
+  return temp;
+}
+inline ::gdb::FriendBriefDb* FriendRequestDb::unsafe_arena_release_applicant() {
+  // @@protoc_insertion_point(field_release:gdb.FriendRequestDb.applicant)
+  
+  ::gdb::FriendBriefDb* temp = applicant_;
+  applicant_ = nullptr;
+  return temp;
+}
+inline ::gdb::FriendBriefDb* FriendRequestDb::_internal_mutable_applicant() {
+  
+  if (applicant_ == nullptr) {
+    auto* p = CreateMaybeMessage<::gdb::FriendBriefDb>(GetArena());
+    applicant_ = p;
+  }
+  return applicant_;
+}
+inline ::gdb::FriendBriefDb* FriendRequestDb::mutable_applicant() {
+  // @@protoc_insertion_point(field_mutable:gdb.FriendRequestDb.applicant)
+  return _internal_mutable_applicant();
+}
+inline void FriendRequestDb::set_allocated_applicant(::gdb::FriendBriefDb* applicant) {
+  ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArena();
+  if (message_arena == nullptr) {
+    delete applicant_;
+  }
+  if (applicant) {
+    ::PROTOBUF_NAMESPACE_ID::Arena* submessage_arena =
+      ::PROTOBUF_NAMESPACE_ID::Arena::GetArena(applicant);
+    if (message_arena != submessage_arena) {
+      applicant = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
+          message_arena, applicant, submessage_arena);
+    }
+    
+  } else {
+    
+  }
+  applicant_ = applicant;
+  // @@protoc_insertion_point(field_set_allocated:gdb.FriendRequestDb.applicant)
+}
+
+// uint64 created_at = 3;
+inline void FriendRequestDb::clear_created_at() {
+  created_at_ = PROTOBUF_ULONGLONG(0);
+}
+inline ::PROTOBUF_NAMESPACE_ID::uint64 FriendRequestDb::_internal_created_at() const {
+  return created_at_;
+}
+inline ::PROTOBUF_NAMESPACE_ID::uint64 FriendRequestDb::created_at() const {
+  // @@protoc_insertion_point(field_get:gdb.FriendRequestDb.created_at)
+  return _internal_created_at();
+}
+inline void FriendRequestDb::_internal_set_created_at(::PROTOBUF_NAMESPACE_ID::uint64 value) {
+  
+  created_at_ = value;
+}
+inline void FriendRequestDb::set_created_at(::PROTOBUF_NAMESPACE_ID::uint64 value) {
+  _internal_set_created_at(value);
+  // @@protoc_insertion_point(field_set:gdb.FriendRequestDb.created_at)
+}
+
+// uint64 expire_at = 4;
+inline void FriendRequestDb::clear_expire_at() {
+  expire_at_ = PROTOBUF_ULONGLONG(0);
+}
+inline ::PROTOBUF_NAMESPACE_ID::uint64 FriendRequestDb::_internal_expire_at() const {
+  return expire_at_;
+}
+inline ::PROTOBUF_NAMESPACE_ID::uint64 FriendRequestDb::expire_at() const {
+  // @@protoc_insertion_point(field_get:gdb.FriendRequestDb.expire_at)
+  return _internal_expire_at();
+}
+inline void FriendRequestDb::_internal_set_expire_at(::PROTOBUF_NAMESPACE_ID::uint64 value) {
+  
+  expire_at_ = value;
+}
+inline void FriendRequestDb::set_expire_at(::PROTOBUF_NAMESPACE_ID::uint64 value) {
+  _internal_set_expire_at(value);
+  // @@protoc_insertion_point(field_set:gdb.FriendRequestDb.expire_at)
+}
+
+// -------------------------------------------------------------------
+
+// FriendOpReq
+
+// string op = 1;
+inline void FriendOpReq::clear_op() {
+  op_.ClearToEmpty(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
+}
+inline const std::string& FriendOpReq::op() const {
+  // @@protoc_insertion_point(field_get:gdb.FriendOpReq.op)
+  return _internal_op();
+}
+inline void FriendOpReq::set_op(const std::string& value) {
+  _internal_set_op(value);
+  // @@protoc_insertion_point(field_set:gdb.FriendOpReq.op)
+}
+inline std::string* FriendOpReq::mutable_op() {
+  // @@protoc_insertion_point(field_mutable:gdb.FriendOpReq.op)
+  return _internal_mutable_op();
+}
+inline const std::string& FriendOpReq::_internal_op() const {
+  return op_.Get();
+}
+inline void FriendOpReq::_internal_set_op(const std::string& value) {
+  
+  op_.Set(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), value, GetArena());
+}
+inline void FriendOpReq::set_op(std::string&& value) {
+  
+  op_.Set(
+    &::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), ::std::move(value), GetArena());
+  // @@protoc_insertion_point(field_set_rvalue:gdb.FriendOpReq.op)
+}
+inline void FriendOpReq::set_op(const char* value) {
+  GOOGLE_DCHECK(value != nullptr);
+  
+  op_.Set(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), ::std::string(value),
+              GetArena());
+  // @@protoc_insertion_point(field_set_char:gdb.FriendOpReq.op)
+}
+inline void FriendOpReq::set_op(const char* value,
+    size_t size) {
+  
+  op_.Set(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), ::std::string(
+      reinterpret_cast<const char*>(value), size), GetArena());
+  // @@protoc_insertion_point(field_set_pointer:gdb.FriendOpReq.op)
+}
+inline std::string* FriendOpReq::_internal_mutable_op() {
+  
+  return op_.Mutable(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
+}
+inline std::string* FriendOpReq::release_op() {
+  // @@protoc_insertion_point(field_release:gdb.FriendOpReq.op)
+  return op_.Release(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
+}
+inline void FriendOpReq::set_allocated_op(std::string* op) {
+  if (op != nullptr) {
+    
+  } else {
+    
+  }
+  op_.SetAllocated(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), op,
+      GetArena());
+  // @@protoc_insertion_point(field_set_allocated:gdb.FriendOpReq.op)
+}
+inline std::string* FriendOpReq::unsafe_arena_release_op() {
+  // @@protoc_insertion_point(field_unsafe_arena_release:gdb.FriendOpReq.op)
+  GOOGLE_DCHECK(GetArena() != nullptr);
+  
+  return op_.UnsafeArenaRelease(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(),
+      GetArena());
+}
+inline void FriendOpReq::unsafe_arena_set_allocated_op(
+    std::string* op) {
+  GOOGLE_DCHECK(GetArena() != nullptr);
+  if (op != nullptr) {
+    
+  } else {
+    
+  }
+  op_.UnsafeArenaSetAllocated(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(),
+      op, GetArena());
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:gdb.FriendOpReq.op)
+}
+
+// uint64 actor_player_id = 2;
+inline void FriendOpReq::clear_actor_player_id() {
+  actor_player_id_ = PROTOBUF_ULONGLONG(0);
+}
+inline ::PROTOBUF_NAMESPACE_ID::uint64 FriendOpReq::_internal_actor_player_id() const {
+  return actor_player_id_;
+}
+inline ::PROTOBUF_NAMESPACE_ID::uint64 FriendOpReq::actor_player_id() const {
+  // @@protoc_insertion_point(field_get:gdb.FriendOpReq.actor_player_id)
+  return _internal_actor_player_id();
+}
+inline void FriendOpReq::_internal_set_actor_player_id(::PROTOBUF_NAMESPACE_ID::uint64 value) {
+  
+  actor_player_id_ = value;
+}
+inline void FriendOpReq::set_actor_player_id(::PROTOBUF_NAMESPACE_ID::uint64 value) {
+  _internal_set_actor_player_id(value);
+  // @@protoc_insertion_point(field_set:gdb.FriendOpReq.actor_player_id)
+}
+
+// uint64 target_player_id = 3;
+inline void FriendOpReq::clear_target_player_id() {
+  target_player_id_ = PROTOBUF_ULONGLONG(0);
+}
+inline ::PROTOBUF_NAMESPACE_ID::uint64 FriendOpReq::_internal_target_player_id() const {
+  return target_player_id_;
+}
+inline ::PROTOBUF_NAMESPACE_ID::uint64 FriendOpReq::target_player_id() const {
+  // @@protoc_insertion_point(field_get:gdb.FriendOpReq.target_player_id)
+  return _internal_target_player_id();
+}
+inline void FriendOpReq::_internal_set_target_player_id(::PROTOBUF_NAMESPACE_ID::uint64 value) {
+  
+  target_player_id_ = value;
+}
+inline void FriendOpReq::set_target_player_id(::PROTOBUF_NAMESPACE_ID::uint64 value) {
+  _internal_set_target_player_id(value);
+  // @@protoc_insertion_point(field_set:gdb.FriendOpReq.target_player_id)
+}
+
+// uint64 request_id = 4;
+inline void FriendOpReq::clear_request_id() {
+  request_id_ = PROTOBUF_ULONGLONG(0);
+}
+inline ::PROTOBUF_NAMESPACE_ID::uint64 FriendOpReq::_internal_request_id() const {
+  return request_id_;
+}
+inline ::PROTOBUF_NAMESPACE_ID::uint64 FriendOpReq::request_id() const {
+  // @@protoc_insertion_point(field_get:gdb.FriendOpReq.request_id)
+  return _internal_request_id();
+}
+inline void FriendOpReq::_internal_set_request_id(::PROTOBUF_NAMESPACE_ID::uint64 value) {
+  
+  request_id_ = value;
+}
+inline void FriendOpReq::set_request_id(::PROTOBUF_NAMESPACE_ID::uint64 value) {
+  _internal_set_request_id(value);
+  // @@protoc_insertion_point(field_set:gdb.FriendOpReq.request_id)
+}
+
+// string exact_name = 5;
+inline void FriendOpReq::clear_exact_name() {
+  exact_name_.ClearToEmpty(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
+}
+inline const std::string& FriendOpReq::exact_name() const {
+  // @@protoc_insertion_point(field_get:gdb.FriendOpReq.exact_name)
+  return _internal_exact_name();
+}
+inline void FriendOpReq::set_exact_name(const std::string& value) {
+  _internal_set_exact_name(value);
+  // @@protoc_insertion_point(field_set:gdb.FriendOpReq.exact_name)
+}
+inline std::string* FriendOpReq::mutable_exact_name() {
+  // @@protoc_insertion_point(field_mutable:gdb.FriendOpReq.exact_name)
+  return _internal_mutable_exact_name();
+}
+inline const std::string& FriendOpReq::_internal_exact_name() const {
+  return exact_name_.Get();
+}
+inline void FriendOpReq::_internal_set_exact_name(const std::string& value) {
+  
+  exact_name_.Set(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), value, GetArena());
+}
+inline void FriendOpReq::set_exact_name(std::string&& value) {
+  
+  exact_name_.Set(
+    &::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), ::std::move(value), GetArena());
+  // @@protoc_insertion_point(field_set_rvalue:gdb.FriendOpReq.exact_name)
+}
+inline void FriendOpReq::set_exact_name(const char* value) {
+  GOOGLE_DCHECK(value != nullptr);
+  
+  exact_name_.Set(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), ::std::string(value),
+              GetArena());
+  // @@protoc_insertion_point(field_set_char:gdb.FriendOpReq.exact_name)
+}
+inline void FriendOpReq::set_exact_name(const char* value,
+    size_t size) {
+  
+  exact_name_.Set(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), ::std::string(
+      reinterpret_cast<const char*>(value), size), GetArena());
+  // @@protoc_insertion_point(field_set_pointer:gdb.FriendOpReq.exact_name)
+}
+inline std::string* FriendOpReq::_internal_mutable_exact_name() {
+  
+  return exact_name_.Mutable(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
+}
+inline std::string* FriendOpReq::release_exact_name() {
+  // @@protoc_insertion_point(field_release:gdb.FriendOpReq.exact_name)
+  return exact_name_.Release(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
+}
+inline void FriendOpReq::set_allocated_exact_name(std::string* exact_name) {
+  if (exact_name != nullptr) {
+    
+  } else {
+    
+  }
+  exact_name_.SetAllocated(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), exact_name,
+      GetArena());
+  // @@protoc_insertion_point(field_set_allocated:gdb.FriendOpReq.exact_name)
+}
+inline std::string* FriendOpReq::unsafe_arena_release_exact_name() {
+  // @@protoc_insertion_point(field_unsafe_arena_release:gdb.FriendOpReq.exact_name)
+  GOOGLE_DCHECK(GetArena() != nullptr);
+  
+  return exact_name_.UnsafeArenaRelease(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(),
+      GetArena());
+}
+inline void FriendOpReq::unsafe_arena_set_allocated_exact_name(
+    std::string* exact_name) {
+  GOOGLE_DCHECK(GetArena() != nullptr);
+  if (exact_name != nullptr) {
+    
+  } else {
+    
+  }
+  exact_name_.UnsafeArenaSetAllocated(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(),
+      exact_name, GetArena());
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:gdb.FriendOpReq.exact_name)
+}
+
+// string cursor = 6;
+inline void FriendOpReq::clear_cursor() {
+  cursor_.ClearToEmpty(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
+}
+inline const std::string& FriendOpReq::cursor() const {
+  // @@protoc_insertion_point(field_get:gdb.FriendOpReq.cursor)
+  return _internal_cursor();
+}
+inline void FriendOpReq::set_cursor(const std::string& value) {
+  _internal_set_cursor(value);
+  // @@protoc_insertion_point(field_set:gdb.FriendOpReq.cursor)
+}
+inline std::string* FriendOpReq::mutable_cursor() {
+  // @@protoc_insertion_point(field_mutable:gdb.FriendOpReq.cursor)
+  return _internal_mutable_cursor();
+}
+inline const std::string& FriendOpReq::_internal_cursor() const {
+  return cursor_.Get();
+}
+inline void FriendOpReq::_internal_set_cursor(const std::string& value) {
+  
+  cursor_.Set(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), value, GetArena());
+}
+inline void FriendOpReq::set_cursor(std::string&& value) {
+  
+  cursor_.Set(
+    &::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), ::std::move(value), GetArena());
+  // @@protoc_insertion_point(field_set_rvalue:gdb.FriendOpReq.cursor)
+}
+inline void FriendOpReq::set_cursor(const char* value) {
+  GOOGLE_DCHECK(value != nullptr);
+  
+  cursor_.Set(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), ::std::string(value),
+              GetArena());
+  // @@protoc_insertion_point(field_set_char:gdb.FriendOpReq.cursor)
+}
+inline void FriendOpReq::set_cursor(const char* value,
+    size_t size) {
+  
+  cursor_.Set(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), ::std::string(
+      reinterpret_cast<const char*>(value), size), GetArena());
+  // @@protoc_insertion_point(field_set_pointer:gdb.FriendOpReq.cursor)
+}
+inline std::string* FriendOpReq::_internal_mutable_cursor() {
+  
+  return cursor_.Mutable(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
+}
+inline std::string* FriendOpReq::release_cursor() {
+  // @@protoc_insertion_point(field_release:gdb.FriendOpReq.cursor)
+  return cursor_.Release(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
+}
+inline void FriendOpReq::set_allocated_cursor(std::string* cursor) {
+  if (cursor != nullptr) {
+    
+  } else {
+    
+  }
+  cursor_.SetAllocated(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), cursor,
+      GetArena());
+  // @@protoc_insertion_point(field_set_allocated:gdb.FriendOpReq.cursor)
+}
+inline std::string* FriendOpReq::unsafe_arena_release_cursor() {
+  // @@protoc_insertion_point(field_unsafe_arena_release:gdb.FriendOpReq.cursor)
+  GOOGLE_DCHECK(GetArena() != nullptr);
+  
+  return cursor_.UnsafeArenaRelease(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(),
+      GetArena());
+}
+inline void FriendOpReq::unsafe_arena_set_allocated_cursor(
+    std::string* cursor) {
+  GOOGLE_DCHECK(GetArena() != nullptr);
+  if (cursor != nullptr) {
+    
+  } else {
+    
+  }
+  cursor_.UnsafeArenaSetAllocated(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(),
+      cursor, GetArena());
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:gdb.FriendOpReq.cursor)
+}
+
+// uint32 page_size = 7;
+inline void FriendOpReq::clear_page_size() {
+  page_size_ = 0u;
+}
+inline ::PROTOBUF_NAMESPACE_ID::uint32 FriendOpReq::_internal_page_size() const {
+  return page_size_;
+}
+inline ::PROTOBUF_NAMESPACE_ID::uint32 FriendOpReq::page_size() const {
+  // @@protoc_insertion_point(field_get:gdb.FriendOpReq.page_size)
+  return _internal_page_size();
+}
+inline void FriendOpReq::_internal_set_page_size(::PROTOBUF_NAMESPACE_ID::uint32 value) {
+  
+  page_size_ = value;
+}
+inline void FriendOpReq::set_page_size(::PROTOBUF_NAMESPACE_ID::uint32 value) {
+  _internal_set_page_size(value);
+  // @@protoc_insertion_point(field_set:gdb.FriendOpReq.page_size)
+}
+
+// string idempotency_key = 8;
+inline void FriendOpReq::clear_idempotency_key() {
+  idempotency_key_.ClearToEmpty(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
+}
+inline const std::string& FriendOpReq::idempotency_key() const {
+  // @@protoc_insertion_point(field_get:gdb.FriendOpReq.idempotency_key)
+  return _internal_idempotency_key();
+}
+inline void FriendOpReq::set_idempotency_key(const std::string& value) {
+  _internal_set_idempotency_key(value);
+  // @@protoc_insertion_point(field_set:gdb.FriendOpReq.idempotency_key)
+}
+inline std::string* FriendOpReq::mutable_idempotency_key() {
+  // @@protoc_insertion_point(field_mutable:gdb.FriendOpReq.idempotency_key)
+  return _internal_mutable_idempotency_key();
+}
+inline const std::string& FriendOpReq::_internal_idempotency_key() const {
+  return idempotency_key_.Get();
+}
+inline void FriendOpReq::_internal_set_idempotency_key(const std::string& value) {
+  
+  idempotency_key_.Set(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), value, GetArena());
+}
+inline void FriendOpReq::set_idempotency_key(std::string&& value) {
+  
+  idempotency_key_.Set(
+    &::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), ::std::move(value), GetArena());
+  // @@protoc_insertion_point(field_set_rvalue:gdb.FriendOpReq.idempotency_key)
+}
+inline void FriendOpReq::set_idempotency_key(const char* value) {
+  GOOGLE_DCHECK(value != nullptr);
+  
+  idempotency_key_.Set(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), ::std::string(value),
+              GetArena());
+  // @@protoc_insertion_point(field_set_char:gdb.FriendOpReq.idempotency_key)
+}
+inline void FriendOpReq::set_idempotency_key(const char* value,
+    size_t size) {
+  
+  idempotency_key_.Set(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), ::std::string(
+      reinterpret_cast<const char*>(value), size), GetArena());
+  // @@protoc_insertion_point(field_set_pointer:gdb.FriendOpReq.idempotency_key)
+}
+inline std::string* FriendOpReq::_internal_mutable_idempotency_key() {
+  
+  return idempotency_key_.Mutable(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
+}
+inline std::string* FriendOpReq::release_idempotency_key() {
+  // @@protoc_insertion_point(field_release:gdb.FriendOpReq.idempotency_key)
+  return idempotency_key_.Release(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
+}
+inline void FriendOpReq::set_allocated_idempotency_key(std::string* idempotency_key) {
+  if (idempotency_key != nullptr) {
+    
+  } else {
+    
+  }
+  idempotency_key_.SetAllocated(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), idempotency_key,
+      GetArena());
+  // @@protoc_insertion_point(field_set_allocated:gdb.FriendOpReq.idempotency_key)
+}
+inline std::string* FriendOpReq::unsafe_arena_release_idempotency_key() {
+  // @@protoc_insertion_point(field_unsafe_arena_release:gdb.FriendOpReq.idempotency_key)
+  GOOGLE_DCHECK(GetArena() != nullptr);
+  
+  return idempotency_key_.UnsafeArenaRelease(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(),
+      GetArena());
+}
+inline void FriendOpReq::unsafe_arena_set_allocated_idempotency_key(
+    std::string* idempotency_key) {
+  GOOGLE_DCHECK(GetArena() != nullptr);
+  if (idempotency_key != nullptr) {
+    
+  } else {
+    
+  }
+  idempotency_key_.UnsafeArenaSetAllocated(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(),
+      idempotency_key, GetArena());
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:gdb.FriendOpReq.idempotency_key)
+}
+
+// -------------------------------------------------------------------
+
+// FriendOpRsp
+
+// bool ok = 1;
+inline void FriendOpRsp::clear_ok() {
+  ok_ = false;
+}
+inline bool FriendOpRsp::_internal_ok() const {
+  return ok_;
+}
+inline bool FriendOpRsp::ok() const {
+  // @@protoc_insertion_point(field_get:gdb.FriendOpRsp.ok)
+  return _internal_ok();
+}
+inline void FriendOpRsp::_internal_set_ok(bool value) {
+  
+  ok_ = value;
+}
+inline void FriendOpRsp::set_ok(bool value) {
+  _internal_set_ok(value);
+  // @@protoc_insertion_point(field_set:gdb.FriendOpRsp.ok)
+}
+
+// string error_code = 2;
+inline void FriendOpRsp::clear_error_code() {
+  error_code_.ClearToEmpty(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
+}
+inline const std::string& FriendOpRsp::error_code() const {
+  // @@protoc_insertion_point(field_get:gdb.FriendOpRsp.error_code)
+  return _internal_error_code();
+}
+inline void FriendOpRsp::set_error_code(const std::string& value) {
+  _internal_set_error_code(value);
+  // @@protoc_insertion_point(field_set:gdb.FriendOpRsp.error_code)
+}
+inline std::string* FriendOpRsp::mutable_error_code() {
+  // @@protoc_insertion_point(field_mutable:gdb.FriendOpRsp.error_code)
+  return _internal_mutable_error_code();
+}
+inline const std::string& FriendOpRsp::_internal_error_code() const {
+  return error_code_.Get();
+}
+inline void FriendOpRsp::_internal_set_error_code(const std::string& value) {
+  
+  error_code_.Set(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), value, GetArena());
+}
+inline void FriendOpRsp::set_error_code(std::string&& value) {
+  
+  error_code_.Set(
+    &::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), ::std::move(value), GetArena());
+  // @@protoc_insertion_point(field_set_rvalue:gdb.FriendOpRsp.error_code)
+}
+inline void FriendOpRsp::set_error_code(const char* value) {
+  GOOGLE_DCHECK(value != nullptr);
+  
+  error_code_.Set(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), ::std::string(value),
+              GetArena());
+  // @@protoc_insertion_point(field_set_char:gdb.FriendOpRsp.error_code)
+}
+inline void FriendOpRsp::set_error_code(const char* value,
+    size_t size) {
+  
+  error_code_.Set(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), ::std::string(
+      reinterpret_cast<const char*>(value), size), GetArena());
+  // @@protoc_insertion_point(field_set_pointer:gdb.FriendOpRsp.error_code)
+}
+inline std::string* FriendOpRsp::_internal_mutable_error_code() {
+  
+  return error_code_.Mutable(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
+}
+inline std::string* FriendOpRsp::release_error_code() {
+  // @@protoc_insertion_point(field_release:gdb.FriendOpRsp.error_code)
+  return error_code_.Release(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
+}
+inline void FriendOpRsp::set_allocated_error_code(std::string* error_code) {
+  if (error_code != nullptr) {
+    
+  } else {
+    
+  }
+  error_code_.SetAllocated(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), error_code,
+      GetArena());
+  // @@protoc_insertion_point(field_set_allocated:gdb.FriendOpRsp.error_code)
+}
+inline std::string* FriendOpRsp::unsafe_arena_release_error_code() {
+  // @@protoc_insertion_point(field_unsafe_arena_release:gdb.FriendOpRsp.error_code)
+  GOOGLE_DCHECK(GetArena() != nullptr);
+  
+  return error_code_.UnsafeArenaRelease(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(),
+      GetArena());
+}
+inline void FriendOpRsp::unsafe_arena_set_allocated_error_code(
+    std::string* error_code) {
+  GOOGLE_DCHECK(GetArena() != nullptr);
+  if (error_code != nullptr) {
+    
+  } else {
+    
+  }
+  error_code_.UnsafeArenaSetAllocated(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(),
+      error_code, GetArena());
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:gdb.FriendOpRsp.error_code)
+}
+
+// string message = 3;
+inline void FriendOpRsp::clear_message() {
+  message_.ClearToEmpty(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
+}
+inline const std::string& FriendOpRsp::message() const {
+  // @@protoc_insertion_point(field_get:gdb.FriendOpRsp.message)
+  return _internal_message();
+}
+inline void FriendOpRsp::set_message(const std::string& value) {
+  _internal_set_message(value);
+  // @@protoc_insertion_point(field_set:gdb.FriendOpRsp.message)
+}
+inline std::string* FriendOpRsp::mutable_message() {
+  // @@protoc_insertion_point(field_mutable:gdb.FriendOpRsp.message)
+  return _internal_mutable_message();
+}
+inline const std::string& FriendOpRsp::_internal_message() const {
+  return message_.Get();
+}
+inline void FriendOpRsp::_internal_set_message(const std::string& value) {
+  
+  message_.Set(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), value, GetArena());
+}
+inline void FriendOpRsp::set_message(std::string&& value) {
+  
+  message_.Set(
+    &::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), ::std::move(value), GetArena());
+  // @@protoc_insertion_point(field_set_rvalue:gdb.FriendOpRsp.message)
+}
+inline void FriendOpRsp::set_message(const char* value) {
+  GOOGLE_DCHECK(value != nullptr);
+  
+  message_.Set(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), ::std::string(value),
+              GetArena());
+  // @@protoc_insertion_point(field_set_char:gdb.FriendOpRsp.message)
+}
+inline void FriendOpRsp::set_message(const char* value,
+    size_t size) {
+  
+  message_.Set(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), ::std::string(
+      reinterpret_cast<const char*>(value), size), GetArena());
+  // @@protoc_insertion_point(field_set_pointer:gdb.FriendOpRsp.message)
+}
+inline std::string* FriendOpRsp::_internal_mutable_message() {
+  
+  return message_.Mutable(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
+}
+inline std::string* FriendOpRsp::release_message() {
+  // @@protoc_insertion_point(field_release:gdb.FriendOpRsp.message)
+  return message_.Release(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
+}
+inline void FriendOpRsp::set_allocated_message(std::string* message) {
+  if (message != nullptr) {
+    
+  } else {
+    
+  }
+  message_.SetAllocated(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), message,
+      GetArena());
+  // @@protoc_insertion_point(field_set_allocated:gdb.FriendOpRsp.message)
+}
+inline std::string* FriendOpRsp::unsafe_arena_release_message() {
+  // @@protoc_insertion_point(field_unsafe_arena_release:gdb.FriendOpRsp.message)
+  GOOGLE_DCHECK(GetArena() != nullptr);
+  
+  return message_.UnsafeArenaRelease(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(),
+      GetArena());
+}
+inline void FriendOpRsp::unsafe_arena_set_allocated_message(
+    std::string* message) {
+  GOOGLE_DCHECK(GetArena() != nullptr);
+  if (message != nullptr) {
+    
+  } else {
+    
+  }
+  message_.UnsafeArenaSetAllocated(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(),
+      message, GetArena());
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:gdb.FriendOpRsp.message)
+}
+
+// bool idempotent_hit = 4;
+inline void FriendOpRsp::clear_idempotent_hit() {
+  idempotent_hit_ = false;
+}
+inline bool FriendOpRsp::_internal_idempotent_hit() const {
+  return idempotent_hit_;
+}
+inline bool FriendOpRsp::idempotent_hit() const {
+  // @@protoc_insertion_point(field_get:gdb.FriendOpRsp.idempotent_hit)
+  return _internal_idempotent_hit();
+}
+inline void FriendOpRsp::_internal_set_idempotent_hit(bool value) {
+  
+  idempotent_hit_ = value;
+}
+inline void FriendOpRsp::set_idempotent_hit(bool value) {
+  _internal_set_idempotent_hit(value);
+  // @@protoc_insertion_point(field_set:gdb.FriendOpRsp.idempotent_hit)
+}
+
+// repeated .gdb.FriendBriefDb friends = 5;
+inline int FriendOpRsp::_internal_friends_size() const {
+  return friends_.size();
+}
+inline int FriendOpRsp::friends_size() const {
+  return _internal_friends_size();
+}
+inline void FriendOpRsp::clear_friends() {
+  friends_.Clear();
+}
+inline ::gdb::FriendBriefDb* FriendOpRsp::mutable_friends(int index) {
+  // @@protoc_insertion_point(field_mutable:gdb.FriendOpRsp.friends)
+  return friends_.Mutable(index);
+}
+inline ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::gdb::FriendBriefDb >*
+FriendOpRsp::mutable_friends() {
+  // @@protoc_insertion_point(field_mutable_list:gdb.FriendOpRsp.friends)
+  return &friends_;
+}
+inline const ::gdb::FriendBriefDb& FriendOpRsp::_internal_friends(int index) const {
+  return friends_.Get(index);
+}
+inline const ::gdb::FriendBriefDb& FriendOpRsp::friends(int index) const {
+  // @@protoc_insertion_point(field_get:gdb.FriendOpRsp.friends)
+  return _internal_friends(index);
+}
+inline ::gdb::FriendBriefDb* FriendOpRsp::_internal_add_friends() {
+  return friends_.Add();
+}
+inline ::gdb::FriendBriefDb* FriendOpRsp::add_friends() {
+  // @@protoc_insertion_point(field_add:gdb.FriendOpRsp.friends)
+  return _internal_add_friends();
+}
+inline const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::gdb::FriendBriefDb >&
+FriendOpRsp::friends() const {
+  // @@protoc_insertion_point(field_list:gdb.FriendOpRsp.friends)
+  return friends_;
+}
+
+// repeated .gdb.FriendRequestDb requests = 6;
+inline int FriendOpRsp::_internal_requests_size() const {
+  return requests_.size();
+}
+inline int FriendOpRsp::requests_size() const {
+  return _internal_requests_size();
+}
+inline void FriendOpRsp::clear_requests() {
+  requests_.Clear();
+}
+inline ::gdb::FriendRequestDb* FriendOpRsp::mutable_requests(int index) {
+  // @@protoc_insertion_point(field_mutable:gdb.FriendOpRsp.requests)
+  return requests_.Mutable(index);
+}
+inline ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::gdb::FriendRequestDb >*
+FriendOpRsp::mutable_requests() {
+  // @@protoc_insertion_point(field_mutable_list:gdb.FriendOpRsp.requests)
+  return &requests_;
+}
+inline const ::gdb::FriendRequestDb& FriendOpRsp::_internal_requests(int index) const {
+  return requests_.Get(index);
+}
+inline const ::gdb::FriendRequestDb& FriendOpRsp::requests(int index) const {
+  // @@protoc_insertion_point(field_get:gdb.FriendOpRsp.requests)
+  return _internal_requests(index);
+}
+inline ::gdb::FriendRequestDb* FriendOpRsp::_internal_add_requests() {
+  return requests_.Add();
+}
+inline ::gdb::FriendRequestDb* FriendOpRsp::add_requests() {
+  // @@protoc_insertion_point(field_add:gdb.FriendOpRsp.requests)
+  return _internal_add_requests();
+}
+inline const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::gdb::FriendRequestDb >&
+FriendOpRsp::requests() const {
+  // @@protoc_insertion_point(field_list:gdb.FriendOpRsp.requests)
+  return requests_;
+}
+
+// uint64 request_id = 7;
+inline void FriendOpRsp::clear_request_id() {
+  request_id_ = PROTOBUF_ULONGLONG(0);
+}
+inline ::PROTOBUF_NAMESPACE_ID::uint64 FriendOpRsp::_internal_request_id() const {
+  return request_id_;
+}
+inline ::PROTOBUF_NAMESPACE_ID::uint64 FriendOpRsp::request_id() const {
+  // @@protoc_insertion_point(field_get:gdb.FriendOpRsp.request_id)
+  return _internal_request_id();
+}
+inline void FriendOpRsp::_internal_set_request_id(::PROTOBUF_NAMESPACE_ID::uint64 value) {
+  
+  request_id_ = value;
+}
+inline void FriendOpRsp::set_request_id(::PROTOBUF_NAMESPACE_ID::uint64 value) {
+  _internal_set_request_id(value);
+  // @@protoc_insertion_point(field_set:gdb.FriendOpRsp.request_id)
+}
+
+// .gdb.FriendBriefDb player = 8;
+inline bool FriendOpRsp::_internal_has_player() const {
+  return this != internal_default_instance() && player_ != nullptr;
+}
+inline bool FriendOpRsp::has_player() const {
+  return _internal_has_player();
+}
+inline void FriendOpRsp::clear_player() {
+  if (GetArena() == nullptr && player_ != nullptr) {
+    delete player_;
+  }
+  player_ = nullptr;
+}
+inline const ::gdb::FriendBriefDb& FriendOpRsp::_internal_player() const {
+  const ::gdb::FriendBriefDb* p = player_;
+  return p != nullptr ? *p : *reinterpret_cast<const ::gdb::FriendBriefDb*>(
+      &::gdb::_FriendBriefDb_default_instance_);
+}
+inline const ::gdb::FriendBriefDb& FriendOpRsp::player() const {
+  // @@protoc_insertion_point(field_get:gdb.FriendOpRsp.player)
+  return _internal_player();
+}
+inline void FriendOpRsp::unsafe_arena_set_allocated_player(
+    ::gdb::FriendBriefDb* player) {
+  if (GetArena() == nullptr) {
+    delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(player_);
+  }
+  player_ = player;
+  if (player) {
+    
+  } else {
+    
+  }
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:gdb.FriendOpRsp.player)
+}
+inline ::gdb::FriendBriefDb* FriendOpRsp::release_player() {
+  auto temp = unsafe_arena_release_player();
+  if (GetArena() != nullptr) {
+    temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+  }
+  return temp;
+}
+inline ::gdb::FriendBriefDb* FriendOpRsp::unsafe_arena_release_player() {
+  // @@protoc_insertion_point(field_release:gdb.FriendOpRsp.player)
+  
+  ::gdb::FriendBriefDb* temp = player_;
+  player_ = nullptr;
+  return temp;
+}
+inline ::gdb::FriendBriefDb* FriendOpRsp::_internal_mutable_player() {
+  
+  if (player_ == nullptr) {
+    auto* p = CreateMaybeMessage<::gdb::FriendBriefDb>(GetArena());
+    player_ = p;
+  }
+  return player_;
+}
+inline ::gdb::FriendBriefDb* FriendOpRsp::mutable_player() {
+  // @@protoc_insertion_point(field_mutable:gdb.FriendOpRsp.player)
+  return _internal_mutable_player();
+}
+inline void FriendOpRsp::set_allocated_player(::gdb::FriendBriefDb* player) {
+  ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArena();
+  if (message_arena == nullptr) {
+    delete player_;
+  }
+  if (player) {
+    ::PROTOBUF_NAMESPACE_ID::Arena* submessage_arena =
+      ::PROTOBUF_NAMESPACE_ID::Arena::GetArena(player);
+    if (message_arena != submessage_arena) {
+      player = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
+          message_arena, player, submessage_arena);
+    }
+    
+  } else {
+    
+  }
+  player_ = player;
+  // @@protoc_insertion_point(field_set_allocated:gdb.FriendOpRsp.player)
+}
+
+// int32 relation = 9;
+inline void FriendOpRsp::clear_relation() {
+  relation_ = 0;
+}
+inline ::PROTOBUF_NAMESPACE_ID::int32 FriendOpRsp::_internal_relation() const {
+  return relation_;
+}
+inline ::PROTOBUF_NAMESPACE_ID::int32 FriendOpRsp::relation() const {
+  // @@protoc_insertion_point(field_get:gdb.FriendOpRsp.relation)
+  return _internal_relation();
+}
+inline void FriendOpRsp::_internal_set_relation(::PROTOBUF_NAMESPACE_ID::int32 value) {
+  
+  relation_ = value;
+}
+inline void FriendOpRsp::set_relation(::PROTOBUF_NAMESPACE_ID::int32 value) {
+  _internal_set_relation(value);
+  // @@protoc_insertion_point(field_set:gdb.FriendOpRsp.relation)
+}
+
+// string next_cursor = 10;
+inline void FriendOpRsp::clear_next_cursor() {
+  next_cursor_.ClearToEmpty(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
+}
+inline const std::string& FriendOpRsp::next_cursor() const {
+  // @@protoc_insertion_point(field_get:gdb.FriendOpRsp.next_cursor)
+  return _internal_next_cursor();
+}
+inline void FriendOpRsp::set_next_cursor(const std::string& value) {
+  _internal_set_next_cursor(value);
+  // @@protoc_insertion_point(field_set:gdb.FriendOpRsp.next_cursor)
+}
+inline std::string* FriendOpRsp::mutable_next_cursor() {
+  // @@protoc_insertion_point(field_mutable:gdb.FriendOpRsp.next_cursor)
+  return _internal_mutable_next_cursor();
+}
+inline const std::string& FriendOpRsp::_internal_next_cursor() const {
+  return next_cursor_.Get();
+}
+inline void FriendOpRsp::_internal_set_next_cursor(const std::string& value) {
+  
+  next_cursor_.Set(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), value, GetArena());
+}
+inline void FriendOpRsp::set_next_cursor(std::string&& value) {
+  
+  next_cursor_.Set(
+    &::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), ::std::move(value), GetArena());
+  // @@protoc_insertion_point(field_set_rvalue:gdb.FriendOpRsp.next_cursor)
+}
+inline void FriendOpRsp::set_next_cursor(const char* value) {
+  GOOGLE_DCHECK(value != nullptr);
+  
+  next_cursor_.Set(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), ::std::string(value),
+              GetArena());
+  // @@protoc_insertion_point(field_set_char:gdb.FriendOpRsp.next_cursor)
+}
+inline void FriendOpRsp::set_next_cursor(const char* value,
+    size_t size) {
+  
+  next_cursor_.Set(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), ::std::string(
+      reinterpret_cast<const char*>(value), size), GetArena());
+  // @@protoc_insertion_point(field_set_pointer:gdb.FriendOpRsp.next_cursor)
+}
+inline std::string* FriendOpRsp::_internal_mutable_next_cursor() {
+  
+  return next_cursor_.Mutable(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
+}
+inline std::string* FriendOpRsp::release_next_cursor() {
+  // @@protoc_insertion_point(field_release:gdb.FriendOpRsp.next_cursor)
+  return next_cursor_.Release(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
+}
+inline void FriendOpRsp::set_allocated_next_cursor(std::string* next_cursor) {
+  if (next_cursor != nullptr) {
+    
+  } else {
+    
+  }
+  next_cursor_.SetAllocated(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), next_cursor,
+      GetArena());
+  // @@protoc_insertion_point(field_set_allocated:gdb.FriendOpRsp.next_cursor)
+}
+inline std::string* FriendOpRsp::unsafe_arena_release_next_cursor() {
+  // @@protoc_insertion_point(field_unsafe_arena_release:gdb.FriendOpRsp.next_cursor)
+  GOOGLE_DCHECK(GetArena() != nullptr);
+  
+  return next_cursor_.UnsafeArenaRelease(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(),
+      GetArena());
+}
+inline void FriendOpRsp::unsafe_arena_set_allocated_next_cursor(
+    std::string* next_cursor) {
+  GOOGLE_DCHECK(GetArena() != nullptr);
+  if (next_cursor != nullptr) {
+    
+  } else {
+    
+  }
+  next_cursor_.UnsafeArenaSetAllocated(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(),
+      next_cursor, GetArena());
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:gdb.FriendOpRsp.next_cursor)
+}
+
+// uint32 friend_n = 11;
+inline void FriendOpRsp::clear_friend_n() {
+  friend_n_ = 0u;
+}
+inline ::PROTOBUF_NAMESPACE_ID::uint32 FriendOpRsp::_internal_friend_n() const {
+  return friend_n_;
+}
+inline ::PROTOBUF_NAMESPACE_ID::uint32 FriendOpRsp::friend_n() const {
+  // @@protoc_insertion_point(field_get:gdb.FriendOpRsp.friend_n)
+  return _internal_friend_n();
+}
+inline void FriendOpRsp::_internal_set_friend_n(::PROTOBUF_NAMESPACE_ID::uint32 value) {
+  
+  friend_n_ = value;
+}
+inline void FriendOpRsp::set_friend_n(::PROTOBUF_NAMESPACE_ID::uint32 value) {
+  _internal_set_friend_n(value);
+  // @@protoc_insertion_point(field_set:gdb.FriendOpRsp.friend_n)
+}
+
+// uint32 friend_cap = 12;
+inline void FriendOpRsp::clear_friend_cap() {
+  friend_cap_ = 0u;
+}
+inline ::PROTOBUF_NAMESPACE_ID::uint32 FriendOpRsp::_internal_friend_cap() const {
+  return friend_cap_;
+}
+inline ::PROTOBUF_NAMESPACE_ID::uint32 FriendOpRsp::friend_cap() const {
+  // @@protoc_insertion_point(field_get:gdb.FriendOpRsp.friend_cap)
+  return _internal_friend_cap();
+}
+inline void FriendOpRsp::_internal_set_friend_cap(::PROTOBUF_NAMESPACE_ID::uint32 value) {
+  
+  friend_cap_ = value;
+}
+inline void FriendOpRsp::set_friend_cap(::PROTOBUF_NAMESPACE_ID::uint32 value) {
+  _internal_set_friend_cap(value);
+  // @@protoc_insertion_point(field_set:gdb.FriendOpRsp.friend_cap)
+}
+
+// uint64 peer_player_id = 13;
+inline void FriendOpRsp::clear_peer_player_id() {
+  peer_player_id_ = PROTOBUF_ULONGLONG(0);
+}
+inline ::PROTOBUF_NAMESPACE_ID::uint64 FriendOpRsp::_internal_peer_player_id() const {
+  return peer_player_id_;
+}
+inline ::PROTOBUF_NAMESPACE_ID::uint64 FriendOpRsp::peer_player_id() const {
+  // @@protoc_insertion_point(field_get:gdb.FriendOpRsp.peer_player_id)
+  return _internal_peer_player_id();
+}
+inline void FriendOpRsp::_internal_set_peer_player_id(::PROTOBUF_NAMESPACE_ID::uint64 value) {
+  
+  peer_player_id_ = value;
+}
+inline void FriendOpRsp::set_peer_player_id(::PROTOBUF_NAMESPACE_ID::uint64 value) {
+  _internal_set_peer_player_id(value);
+  // @@protoc_insertion_point(field_set:gdb.FriendOpRsp.peer_player_id)
+}
+
+// string notify_kind = 14;
+inline void FriendOpRsp::clear_notify_kind() {
+  notify_kind_.ClearToEmpty(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
+}
+inline const std::string& FriendOpRsp::notify_kind() const {
+  // @@protoc_insertion_point(field_get:gdb.FriendOpRsp.notify_kind)
+  return _internal_notify_kind();
+}
+inline void FriendOpRsp::set_notify_kind(const std::string& value) {
+  _internal_set_notify_kind(value);
+  // @@protoc_insertion_point(field_set:gdb.FriendOpRsp.notify_kind)
+}
+inline std::string* FriendOpRsp::mutable_notify_kind() {
+  // @@protoc_insertion_point(field_mutable:gdb.FriendOpRsp.notify_kind)
+  return _internal_mutable_notify_kind();
+}
+inline const std::string& FriendOpRsp::_internal_notify_kind() const {
+  return notify_kind_.Get();
+}
+inline void FriendOpRsp::_internal_set_notify_kind(const std::string& value) {
+  
+  notify_kind_.Set(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), value, GetArena());
+}
+inline void FriendOpRsp::set_notify_kind(std::string&& value) {
+  
+  notify_kind_.Set(
+    &::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), ::std::move(value), GetArena());
+  // @@protoc_insertion_point(field_set_rvalue:gdb.FriendOpRsp.notify_kind)
+}
+inline void FriendOpRsp::set_notify_kind(const char* value) {
+  GOOGLE_DCHECK(value != nullptr);
+  
+  notify_kind_.Set(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), ::std::string(value),
+              GetArena());
+  // @@protoc_insertion_point(field_set_char:gdb.FriendOpRsp.notify_kind)
+}
+inline void FriendOpRsp::set_notify_kind(const char* value,
+    size_t size) {
+  
+  notify_kind_.Set(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), ::std::string(
+      reinterpret_cast<const char*>(value), size), GetArena());
+  // @@protoc_insertion_point(field_set_pointer:gdb.FriendOpRsp.notify_kind)
+}
+inline std::string* FriendOpRsp::_internal_mutable_notify_kind() {
+  
+  return notify_kind_.Mutable(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
+}
+inline std::string* FriendOpRsp::release_notify_kind() {
+  // @@protoc_insertion_point(field_release:gdb.FriendOpRsp.notify_kind)
+  return notify_kind_.Release(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
+}
+inline void FriendOpRsp::set_allocated_notify_kind(std::string* notify_kind) {
+  if (notify_kind != nullptr) {
+    
+  } else {
+    
+  }
+  notify_kind_.SetAllocated(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), notify_kind,
+      GetArena());
+  // @@protoc_insertion_point(field_set_allocated:gdb.FriendOpRsp.notify_kind)
+}
+inline std::string* FriendOpRsp::unsafe_arena_release_notify_kind() {
+  // @@protoc_insertion_point(field_unsafe_arena_release:gdb.FriendOpRsp.notify_kind)
+  GOOGLE_DCHECK(GetArena() != nullptr);
+  
+  return notify_kind_.UnsafeArenaRelease(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(),
+      GetArena());
+}
+inline void FriendOpRsp::unsafe_arena_set_allocated_notify_kind(
+    std::string* notify_kind) {
+  GOOGLE_DCHECK(GetArena() != nullptr);
+  if (notify_kind != nullptr) {
+    
+  } else {
+    
+  }
+  notify_kind_.UnsafeArenaSetAllocated(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(),
+      notify_kind, GetArena());
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:gdb.FriendOpRsp.notify_kind)
+}
+
+// bool privacy_ok = 15;
+inline void FriendOpRsp::clear_privacy_ok() {
+  privacy_ok_ = false;
+}
+inline bool FriendOpRsp::_internal_privacy_ok() const {
+  return privacy_ok_;
+}
+inline bool FriendOpRsp::privacy_ok() const {
+  // @@protoc_insertion_point(field_get:gdb.FriendOpRsp.privacy_ok)
+  return _internal_privacy_ok();
+}
+inline void FriendOpRsp::_internal_set_privacy_ok(bool value) {
+  
+  privacy_ok_ = value;
+}
+inline void FriendOpRsp::set_privacy_ok(bool value) {
+  _internal_set_privacy_ok(value);
+  // @@protoc_insertion_point(field_set:gdb.FriendOpRsp.privacy_ok)
+}
+
 #ifdef __GNUC__
   #pragma GCC diagnostic pop
 #endif  // __GNUC__
+// -------------------------------------------------------------------
+
+// -------------------------------------------------------------------
+
+// -------------------------------------------------------------------
+
+// -------------------------------------------------------------------
+
 // -------------------------------------------------------------------
 
 // -------------------------------------------------------------------

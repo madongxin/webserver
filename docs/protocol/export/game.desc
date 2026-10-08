@@ -1,5 +1,5 @@
 
-¿¡
+ÖË
 
 game.protogame"∆
 LoginReq
@@ -554,14 +554,153 @@ senderName
 channel (	Rchannel
 text (	Rtext$
 server_time_ms (RserverTimeMs(
-target_player_id (RtargetPlayerId",
+target_player_id (RtargetPlayerId"Å
+FriendBrief
+	player_id (RplayerId
+name (	Rname
+level (Rlevel
+
+profession (R
+profession
+avatar (	Ravatar
+online (Ronline(
+last_online_time (RlastOnlineTime
+map_name (	RmapName
+remark	 (	Rremark"a
 FriendListReq
-	player_id (RplayerId"X
+	player_id (RplayerId
+cursor (	Rcursor
+	page_size (RpageSize"‡
 FriendListRsp
 ok (Rok
 message (	Rmessage
 
-error_code (	R	errorCode"0
+error_code (	R	errorCode+
+friends (2.game.FriendBriefRfriends
+next_cursor (	R
+nextCursor
+friend_n (RfriendN
+
+friend_cap (R	friendCap"w
+FriendSearchReq
+	player_id (RplayerId(
+target_player_id (RtargetPlayerId
+
+exact_name (	R	exactName"º
+FriendSearchRsp
+ok (Rok
+message (	Rmessage
+
+error_code (	R	errorCode)
+player (2.game.FriendBriefRplayer5
+relation (2.game.FriendRelationStateRrelation"ô
+FriendApplyReq
+	player_id (RplayerId(
+target_player_id (RtargetPlayerId
+
+exact_name (	R	exactName!
+operation_id (	RoperationId"x
+FriendApplyRsp
+ok (Rok
+message (	Rmessage
+
+error_code (	R	errorCode
+
+request_id (R	requestId"ü
+FriendRequestInfo
+
+request_id (R	requestId/
+	applicant (2.game.FriendBriefR	applicant
+
+created_at (R	createdAt
+	expire_at (RexpireAt"h
+FriendRequestListReq
+	player_id (RplayerId
+cursor (	Rcursor
+	page_size (RpageSize"µ
+FriendRequestListRsp
+ok (Rok
+message (	Rmessage
+
+error_code (	R	errorCode3
+requests (2.game.FriendRequestInfoRrequests
+next_cursor (	R
+nextCursor"p
+FriendAcceptReq
+	player_id (RplayerId
+
+request_id (R	requestId!
+operation_id (	RoperationId"Å
+FriendAcceptRsp
+ok (Rok
+message (	Rmessage
+
+error_code (	R	errorCode%
+peer (2.game.FriendBriefRpeer"p
+FriendRejectReq
+	player_id (RplayerId
+
+request_id (R	requestId!
+operation_id (	RoperationId"Z
+FriendRejectRsp
+ok (Rok
+message (	Rmessage
+
+error_code (	R	errorCode"{
+FriendDeleteReq
+	player_id (RplayerId(
+friend_player_id (RfriendPlayerId!
+operation_id (	RoperationId"Z
+FriendDeleteRsp
+ok (Rok
+message (	Rmessage
+
+error_code (	R	errorCode"z
+FriendBlockReq
+	player_id (RplayerId(
+target_player_id (RtargetPlayerId!
+operation_id (	RoperationId"Y
+FriendBlockRsp
+ok (Rok
+message (	Rmessage
+
+error_code (	R	errorCode"|
+FriendUnblockReq
+	player_id (RplayerId(
+target_player_id (RtargetPlayerId!
+operation_id (	RoperationId"[
+FriendUnblockRsp
+ok (Rok
+message (	Rmessage
+
+error_code (	R	errorCode"f
+FriendBlockListReq
+	player_id (RplayerId
+cursor (	Rcursor
+	page_size (RpageSize"´
+FriendBlockListRsp
+ok (Rok
+message (	Rmessage
+
+error_code (	R	errorCode+
+blocked (2.game.FriendBriefRblocked
+next_cursor (	R
+nextCursor"ü
+FriendRequestPush
+
+request_id (R	requestId/
+	applicant (2.game.FriendBriefR	applicant
+
+created_at (R	createdAt
+	expire_at (RexpireAt"8
+FriendAddedPush%
+peer (2.game.FriendBriefRpeer"=
+FriendRemovedPush(
+friend_player_id (RfriendPlayerId"Ä
+FriendPresencePush(
+friend_player_id (RfriendPlayerId
+online (Ronline(
+last_online_time (RlastOnlineTime"0
 Vec3
 x (Rx
 y (Ry
@@ -771,7 +910,7 @@ error_code (	R	errorCode$
 server_time_ms (RserverTimeMs
 echo_ms (RechoMs$
 server_recv_ms (RserverRecvMs$
-jitter_hint_ms (RjitterHintMs"∫
+jitter_hint_ms (RjitterHintMs"ˇ
 GameRequest
 seq (Rseq#
 session_token (	RsessionToken9
@@ -820,8 +959,17 @@ friendList-
 switchLine6
 enqueue_mapO (2.game.EnqueueMapReqH R
 enqueueMapB
-interact_portalP (2.game.InteractPortalReqH RinteractPortalB
-body"Ú
+interact_portalP (2.game.InteractPortalReqH RinteractPortal<
+friend_searchQ (2.game.FriendSearchReqH RfriendSearch9
+friend_applyR (2.game.FriendApplyReqH RfriendApply<
+friend_acceptS (2.game.FriendAcceptReqH RfriendAccept<
+friend_rejectT (2.game.FriendRejectReqH RfriendReject<
+friend_deleteU (2.game.FriendDeleteReqH RfriendDeleteL
+friend_request_listV (2.game.FriendRequestListReqH RfriendRequestList9
+friend_blockW (2.game.FriendBlockReqH RfriendBlock?
+friend_unblockX (2.game.FriendUnblockReqH RfriendUnblockF
+friend_block_listY (2.game.FriendBlockListReqH RfriendBlockListB
+body"‡
 GameResponse
 seq (Rseq
 ok (Rok
@@ -883,5 +1031,24 @@ chatNotifyC
 switchLine6
 enqueue_mapP (2.game.EnqueueMapRspH R
 enqueueMapB
-interact_portalQ (2.game.InteractPortalRspH RinteractPortalB
-bodyB™GameMesh.Protocolbproto3
+interact_portalQ (2.game.InteractPortalRspH RinteractPortal9
+friend_applyR (2.game.FriendApplyRspH RfriendApply<
+friend_acceptS (2.game.FriendAcceptRspH RfriendAccept<
+friend_rejectT (2.game.FriendRejectRspH RfriendReject<
+friend_deleteU (2.game.FriendDeleteRspH RfriendDeleteL
+friend_request_listV (2.game.FriendRequestListRspH RfriendRequestList9
+friend_blockW (2.game.FriendBlockRspH RfriendBlock?
+friend_unblockX (2.game.FriendUnblockRspH RfriendUnblockF
+friend_block_listY (2.game.FriendBlockListRspH RfriendBlockListI
+friend_request_pushZ (2.game.FriendRequestPushH RfriendRequestPushC
+friend_added_push[ (2.game.FriendAddedPushH RfriendAddedPushI
+friend_removed_push\ (2.game.FriendRemovedPushH RfriendRemovedPushL
+friend_presence_push] (2.game.FriendPresencePushH RfriendPresencePush<
+friend_search^ (2.game.FriendSearchRspH RfriendSearchB
+body*∏
+FriendRelationState
+FRIEND_RELATION_NONE 
+FRIEND_RELATION_FRIEND 
+FRIEND_RELATION_SENT_PENDING$
+ FRIEND_RELATION_RECEIVED_PENDING#
+FRIEND_RELATION_BLOCKED_BY_SELFB™GameMesh.Protocolbproto3

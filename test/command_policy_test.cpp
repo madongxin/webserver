@@ -101,6 +101,14 @@ int main() {
                                  CommandTrustLevel::AuthenticatedClient, true, &code) ==
                CommandDecision::Allow,
            "chat_send allowlisted");
+    Expect(ValidateCommandPolicy(game::GameRequest::kFriendApply,
+                                 CommandTrustLevel::AuthenticatedClient, true, &code) ==
+               CommandDecision::Allow,
+           "friend_apply allowlisted");
+    Expect(ValidateCommandPolicy(game::GameRequest::kFriendSearch,
+                                 CommandTrustLevel::AuthenticatedClient, true, &code) ==
+               CommandDecision::Allow,
+           "friend_search allowlisted");
 
     ::unsetenv("GAMEMESH_ALLOW_UNSAFE_DEBUG_COMMANDS");
     ::unsetenv("GAMEMESH_FORMAL");

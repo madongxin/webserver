@@ -82,3 +82,9 @@ inline Logger::LogLevel Logger::logLevel(){
 #define LOG_WARN Logger(__FILE__, __LINE__, Logger::WARN).stream()
 #define LOG_ERROR Logger(__FILE__, __LINE__, Logger::ERROR).stream()
 #define LOG_FATAL Logger(__FILE__, __LINE__, Logger::FATAL).stream()
+
+/** 进程级 service 名，以及当前线程的 player/session/error_code。JSON 日志会带上这些字段。 */
+void SetLogService(const char *service);
+void SetLogPlayer(uint64_t player_id);
+void SetLogSession(const char *session_id);
+void SetLogErrorCode(const char *error_code);

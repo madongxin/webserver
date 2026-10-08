@@ -6,12 +6,28 @@
 #include "ProtoFraming.h"
 
 #include <arpa/inet.h>
+#include <cstdlib>
 #include <cstring>
 
 namespace gameproto {
 
+uint32_t MaxFrameSize() {
+    static const uint32_t kLimit = [] {
+        const char *env = std::getenv("GAMEMESH_MAX_FRAME_BYTES");
+        unsigned long n = kMaxFrameSize;
+        if (env && *env)
+            n = std::strtoul(env, nullptr, 10);
+        if (n < 1024)
+            n = 1024;
+        if (n > kAbsoluteMaxFrameSize)
+            n = kAbsoluteMaxFrameSize;
+        return static_cast<uint32_t>(n);
+    }();
+    return kLimit;
+}
+
 bool EncodeFrame(const std::string &payload, std::string *out) {
-    if (!out || payload.size() > kMaxFrameSize)
+    if (!out || payload.size() > MaxFrameSize())
         return false;
     uint32_t be = htonl(static_cast<uint32_t>(payload.size()));
     out->assign(reinterpret_cast<const char *>(&be), sizeof(be));
@@ -29,7 +45,7 @@ FrameDecodeResult DecodeOneFrame(std::string *buffer, std::string *payload) {
     std::memcpy(&be, buffer->data(), 4);
     const uint32_t len = ntohl(be);
 
-    if (len == 0 || len > kMaxFrameSize)
+    if (len == 0 || len > MaxFrameSize())
         return FrameDecodeResult::Invalid;
 
     if (buffer->size() < 4u + len)

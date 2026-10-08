@@ -4,6 +4,7 @@
 
 #include <ctime>
 #include <string>
+#include <vector>
 
 class Connection {
 public:
@@ -15,6 +16,11 @@ public:
 
     bool update(const std::string &sql);
     MYSQL_RES *query(const std::string &sql);
+
+    /** 注册/登录等带外部输入的语句走 MYSQL_STMT，参数不拼进 SQL。 */
+    bool UpdatePrepared(const char *sql, const std::vector<std::string> &params);
+    bool QueryPrepared(const char *sql, const std::vector<std::string> &params,
+                       std::vector<std::vector<std::string>> *rows);
 
     /** mysql_real_escape_string；连接未就绪返回空串 */
     std::string EscapeSql(const std::string &s) const;

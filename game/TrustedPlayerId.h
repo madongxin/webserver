@@ -15,7 +15,7 @@ enum class TrustedPlayerIdResult {
 };
 
 /** 当前 GameRequest oneof 中含 player_id 的分支数（测试锁定；含 login/reconnect；不含 mail_deliver） */
-inline constexpr int kTrustedPlayerIdBodyCaseCount = 32;
+inline constexpr int kTrustedPlayerIdBodyCaseCount = 41;
 
 inline bool GameRequestBodyHasPlayerId(game::GameRequest::BodyCase c) {
     switch (c) {
@@ -42,6 +42,15 @@ inline bool GameRequestBodyHasPlayerId(game::GameRequest::BodyCase c) {
     case game::GameRequest::kMapPing:
     case game::GameRequest::kChatSend:
     case game::GameRequest::kFriendList:
+    case game::GameRequest::kFriendSearch:
+    case game::GameRequest::kFriendApply:
+    case game::GameRequest::kFriendAccept:
+    case game::GameRequest::kFriendReject:
+    case game::GameRequest::kFriendDelete:
+    case game::GameRequest::kFriendRequestList:
+    case game::GameRequest::kFriendBlock:
+    case game::GameRequest::kFriendUnblock:
+    case game::GameRequest::kFriendBlockList:
     case game::GameRequest::kPushAck:
     case game::GameRequest::kGetSelfProfile:
     case game::GameRequest::kMove:
@@ -107,6 +116,24 @@ inline uint64_t ReportedPlayerId(const game::GameRequest &req) {
         return req.chat_send().player_id();
     case game::GameRequest::kFriendList:
         return req.friend_list().player_id();
+    case game::GameRequest::kFriendSearch:
+        return req.friend_search().player_id();
+    case game::GameRequest::kFriendApply:
+        return req.friend_apply().player_id();
+    case game::GameRequest::kFriendAccept:
+        return req.friend_accept().player_id();
+    case game::GameRequest::kFriendReject:
+        return req.friend_reject().player_id();
+    case game::GameRequest::kFriendDelete:
+        return req.friend_delete().player_id();
+    case game::GameRequest::kFriendRequestList:
+        return req.friend_request_list().player_id();
+    case game::GameRequest::kFriendBlock:
+        return req.friend_block().player_id();
+    case game::GameRequest::kFriendUnblock:
+        return req.friend_unblock().player_id();
+    case game::GameRequest::kFriendBlockList:
+        return req.friend_block_list().player_id();
     case game::GameRequest::kPushAck:
         return req.push_ack().player_id();
     case game::GameRequest::kGetSelfProfile:
@@ -200,6 +227,33 @@ inline void SetBodyPlayerId(game::GameRequest *req, uint64_t pid) {
         break;
     case game::GameRequest::kFriendList:
         req->mutable_friend_list()->set_player_id(pid);
+        break;
+    case game::GameRequest::kFriendSearch:
+        req->mutable_friend_search()->set_player_id(pid);
+        break;
+    case game::GameRequest::kFriendApply:
+        req->mutable_friend_apply()->set_player_id(pid);
+        break;
+    case game::GameRequest::kFriendAccept:
+        req->mutable_friend_accept()->set_player_id(pid);
+        break;
+    case game::GameRequest::kFriendReject:
+        req->mutable_friend_reject()->set_player_id(pid);
+        break;
+    case game::GameRequest::kFriendDelete:
+        req->mutable_friend_delete()->set_player_id(pid);
+        break;
+    case game::GameRequest::kFriendRequestList:
+        req->mutable_friend_request_list()->set_player_id(pid);
+        break;
+    case game::GameRequest::kFriendBlock:
+        req->mutable_friend_block()->set_player_id(pid);
+        break;
+    case game::GameRequest::kFriendUnblock:
+        req->mutable_friend_unblock()->set_player_id(pid);
+        break;
+    case game::GameRequest::kFriendBlockList:
+        req->mutable_friend_block_list()->set_player_id(pid);
         break;
     case game::GameRequest::kPushAck:
         req->mutable_push_ack()->set_player_id(pid);

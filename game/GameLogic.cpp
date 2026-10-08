@@ -2,6 +2,7 @@
 
 #include "FormalMode.h"
 #include "ForwardMetaContext.h"
+#include "FriendService.h"
 #include "LogicMetrics.h"
 #include "MapCatalog.h"
 #include "MapInstanceRegistry.h"
@@ -43,8 +44,11 @@
 #include <chrono>
 #include <cmath>
 #include <cstdlib>
+#include <deque>
+#include <mutex>
 #include <sstream>
 #include <unordered_map>
+#include <unordered_set>
 #include <utility>
 #include <vector>
 
@@ -141,14 +145,74 @@ void FillEntitySnapshot(const MapEntity &e, game::EntitySnapshot *out) {
 }
 
 #ifdef WEBSERVER_ENABLE_BRPC
+std::mutex g_aoi_mu;
+std::unordered_set<uint64_t> g_aoi_held;
+std::unordered_map<uint64_t, AoiPushBatch> g_aoi_held_batch;
+std::deque<AoiPushBatch> g_aoi_q;
+bool g_aoi_draining = false;
+
+void PublishAoiBatch(const AoiPushBatch &batch);
+
+void DrainAoiQueue() {
+    for (;;) {
+        AoiPushBatch batch;
+        {
+            std::lock_guard<std::mutex> lk(g_aoi_mu);
+            if (g_aoi_q.empty()) {
+                g_aoi_draining = false;
+                return;
+            }
+            batch = std::move(g_aoi_q.front());
+            g_aoi_q.pop_front();
+        }
+        PublishAoiBatch(batch);
+    }
+}
+
+void EnqueueAoi(AoiPushBatch batch) {
+    if (batch.events.empty())
+        return;
+    bool start = false;
+    {
+        std::lock_guard<std::mutex> lk(g_aoi_mu);
+        g_aoi_q.push_back(std::move(batch));
+        if (!g_aoi_draining) {
+            g_aoi_draining = true;
+            start = true;
+        }
+    }
+    if (!start)
+        return;
+    if (RpcOffloadPool::Instance().started() &&
+        RpcOffloadPool::Instance().TryPost([] { DrainAoiQueue(); }))
+        return;
+    DrainAoiQueue();
+}
+
 void PublishAoiBatch(const AoiPushBatch &batch) {
     if (batch.events.empty())
         return;
+    AoiPushBatch live;
+    live.map_instance_id = batch.map_instance_id;
+    {
+        std::lock_guard<std::mutex> lk(g_aoi_mu);
+        for (const auto &ev : batch.events) {
+            if (g_aoi_held.count(ev.recipient_id) != 0) {
+                auto &held = g_aoi_held_batch[ev.recipient_id];
+                held.map_instance_id = batch.map_instance_id;
+                held.events.push_back(ev);
+            } else {
+                live.events.push_back(ev);
+            }
+        }
+    }
+    if (live.events.empty())
+        return;
     std::unordered_map<uint64_t, game::AoiDelta> by_player;
     std::unordered_map<uint64_t, std::pair<std::string, std::string>> route;
-    for (const auto &ev : batch.events) {
+    for (const auto &ev : live.events) {
         auto &delta = by_player[ev.recipient_id];
-        delta.set_map_instance_id(batch.map_instance_id);
+        delta.set_map_instance_id(live.map_instance_id);
         auto *pe = delta.add_events();
         pe->set_op(ev.op);
         FillEntitySnapshot(ev.snapshot, pe->mutable_entity());
@@ -192,14 +256,34 @@ GameLogic &GameLogic::Instance() {
 
 void GameLogic::EmitAoi(const AoiPushBatch &batch) {
 #ifdef WEBSERVER_ENABLE_BRPC
-    if (batch.events.empty())
-        return;
-    if (RpcOffloadPool::Instance().started() &&
-        RpcOffloadPool::Instance().TryPost([batch]() { PublishAoiBatch(batch); }))
-        return;
-    PublishAoiBatch(batch);
+    EnqueueAoi(batch);
 #else
     (void)batch;
+#endif
+}
+
+void GameLogic::SetAoiHold(uint64_t player_id, bool hold) {
+#ifdef WEBSERVER_ENABLE_BRPC
+    if (player_id == 0)
+        return;
+    AoiPushBatch flushed;
+    {
+        std::lock_guard<std::mutex> lk(g_aoi_mu);
+        if (hold) {
+            g_aoi_held.insert(player_id);
+            return;
+        }
+        g_aoi_held.erase(player_id);
+        auto it = g_aoi_held_batch.find(player_id);
+        if (it == g_aoi_held_batch.end())
+            return;
+        flushed = std::move(it->second);
+        g_aoi_held_batch.erase(it);
+    }
+    EnqueueAoi(std::move(flushed));
+#else
+    (void)player_id;
+    (void)hold;
 #endif
 }
 
@@ -2082,14 +2166,7 @@ bool GameLogic::HandleChatSend(const game::ChatSendReq &req, game::GameResponse 
 }
 
 bool GameLogic::HandleFriendList(const game::FriendListReq &req, game::GameResponse *rsp) {
-    (void)req;
-    auto *body = rsp->mutable_friend_list();
-    body->set_ok(false);
-    body->set_error_code("NOT_IMPLEMENTED");
-    body->set_message("friend stub: world module boundary only");
-    rsp->set_ok(false);
-    rsp->set_message(body->message());
-    return false;
+    return FriendService::Instance().HandleList(req, rsp);
 }
 
 static bool FillPublicBrief(uint64_t player_id, const std::string &exact_name, game::PlayerBrief *out,
@@ -2302,8 +2379,8 @@ bool GameLogic::HandleMove(const game::MoveReq &req, game::GameResponse *rsp) {
     }
     if (!MapInstanceRegistry::Instance().PlayerOnMap(req.map_instance_id(), req.player_id()) &&
         !MapRuntime::Instance().HasPlayer(req.map_instance_id(), req.player_id())) {
-        body->set_error_code("ERR_NOT_ON_MAP");
-        body->set_message("not on map");
+        body->set_error_code(gameproto::kErrMapNotLoaded);
+        body->set_message("map not loaded");
         rsp->set_ok(false);
         rsp->set_message(body->message());
         return false;
@@ -2343,8 +2420,8 @@ bool GameLogic::HandleMove(const game::MoveReq &req, game::GameResponse *rsp) {
     EmitAoi(pushes);
     MaybePersistLastSafe(req.player_id(), confirmed, req.map_instance_id(), false);
     body->set_ok(true);
-    body->set_error_code("OK");
-    body->set_message("ok");
+    body->clear_error_code();
+    body->clear_message();
     body->mutable_position()->set_x(confirmed.x);
     body->mutable_position()->set_y(confirmed.y);
     body->mutable_position()->set_z(confirmed.z);
@@ -2550,6 +2627,42 @@ bool GameLogic::Handle(const game::GameRequest &req, game::GameResponse *rsp) {
             if (!RequireSessionToken(req, req.friend_list().player_id(), rsp))
                 return false;
             return HandleFriendList(req.friend_list(), rsp);
+        case game::GameRequest::kFriendSearch:
+            if (!RequireSessionToken(req, req.friend_search().player_id(), rsp))
+                return false;
+            return FriendService::Instance().HandleSearch(req.friend_search(), rsp);
+        case game::GameRequest::kFriendApply:
+            if (!RequireSessionToken(req, req.friend_apply().player_id(), rsp))
+                return false;
+            return FriendService::Instance().HandleApply(req.friend_apply(), rsp);
+        case game::GameRequest::kFriendAccept:
+            if (!RequireSessionToken(req, req.friend_accept().player_id(), rsp))
+                return false;
+            return FriendService::Instance().HandleAccept(req.friend_accept(), rsp);
+        case game::GameRequest::kFriendReject:
+            if (!RequireSessionToken(req, req.friend_reject().player_id(), rsp))
+                return false;
+            return FriendService::Instance().HandleReject(req.friend_reject(), rsp);
+        case game::GameRequest::kFriendDelete:
+            if (!RequireSessionToken(req, req.friend_delete().player_id(), rsp))
+                return false;
+            return FriendService::Instance().HandleDelete(req.friend_delete(), rsp);
+        case game::GameRequest::kFriendRequestList:
+            if (!RequireSessionToken(req, req.friend_request_list().player_id(), rsp))
+                return false;
+            return FriendService::Instance().HandleRequestList(req.friend_request_list(), rsp);
+        case game::GameRequest::kFriendBlock:
+            if (!RequireSessionToken(req, req.friend_block().player_id(), rsp))
+                return false;
+            return FriendService::Instance().HandleBlock(req.friend_block(), rsp);
+        case game::GameRequest::kFriendUnblock:
+            if (!RequireSessionToken(req, req.friend_unblock().player_id(), rsp))
+                return false;
+            return FriendService::Instance().HandleUnblock(req.friend_unblock(), rsp);
+        case game::GameRequest::kFriendBlockList:
+            if (!RequireSessionToken(req, req.friend_block_list().player_id(), rsp))
+                return false;
+            return FriendService::Instance().HandleBlockList(req.friend_block_list(), rsp);
         case game::GameRequest::kGetPlayerBrief:
             if (!RequireSessionToken(req, req.get_player_brief().player_id(), rsp))
                 return false;

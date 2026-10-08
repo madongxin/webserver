@@ -196,3 +196,31 @@ jobs:
           path: ${{ env.PROTOCOL_ARTIFACT_DIR }}
       - name: shellcheck
         run: shellcheck -x scripts/*.sh deploy/docker-entrypoint.sh
+
+  asan:
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: deps
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y g++ cmake protobuf-compiler libprotobuf-dev \
+            libssl-dev libjsoncpp-dev libhiredis-dev libmysqlclient-dev \
+            libgflags-dev libleveldb-dev zlib1g-dev
+      - name: asan reactor and gateway
+        run: ./scripts/test_sanitizers.sh asan
+
+  tsan:
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: deps
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y g++ cmake protobuf-compiler libprotobuf-dev \
+            libssl-dev libjsoncpp-dev libhiredis-dev libmysqlclient-dev \
+            libgflags-dev libleveldb-dev zlib1g-dev
+      - name: tsan reactor and gateway
+        run: ./scripts/test_sanitizers.sh tsan

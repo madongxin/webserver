@@ -227,6 +227,9 @@ service GameDbService {
 
   /** World 在 Formal 下无 MySQL：邮件帧转 GameDB 执行 MailService */
   rpc HandleGameFrame(HandleGameFrameReq) returns (HandleGameFrameRsp);
+
+  /** 好友关系权威写：World 经本 RPC，禁止 World 直连 MySQL */
+  rpc FriendOp(FriendOpReq) returns (FriendOpRsp);
 }
 
 message LastSafePosition {
@@ -292,4 +295,50 @@ message HandleGameFrameRsp {
   bool ok = 1;
   string message = 2;
   bytes response_frame = 3;
+}
+
+message FriendBriefDb {
+  uint64 player_id = 1;
+  string name = 2;
+  uint32 level = 3;
+  uint32 profession = 4;
+  string avatar = 5;
+  uint64 last_online_time = 6;
+  string remark = 7;
+}
+
+message FriendRequestDb {
+  uint64 request_id = 1;
+  FriendBriefDb applicant = 2;
+  uint64 created_at = 3;
+  uint64 expire_at = 4;
+}
+
+message FriendOpReq {
+  string op = 1;  // LIST|SEARCH|APPLY|REQUEST_LIST|ACCEPT|REJECT|DELETE|BLOCK|UNBLOCK|BLOCK_LIST
+  uint64 actor_player_id = 2;
+  uint64 target_player_id = 3;
+  uint64 request_id = 4;
+  string exact_name = 5;
+  string cursor = 6;
+  uint32 page_size = 7;
+  string idempotency_key = 8;
+}
+
+message FriendOpRsp {
+  bool ok = 1;
+  string error_code = 2;
+  string message = 3;
+  bool idempotent_hit = 4;
+  repeated FriendBriefDb friends = 5;
+  repeated FriendRequestDb requests = 6;
+  uint64 request_id = 7;
+  FriendBriefDb player = 8;
+  int32 relation = 9;
+  string next_cursor = 10;
+  uint32 friend_n = 11;
+  uint32 friend_cap = 12;
+  uint64 peer_player_id = 13;
+  string notify_kind = 14;  // request|added|removed|none
+  bool privacy_ok = 15;     // APPLY 被拉黑时仍对发起方表现为成功
 }

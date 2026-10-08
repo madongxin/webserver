@@ -118,6 +118,10 @@ public:
     bool Eval(const std::string &script, const std::vector<std::string> &keys,
               const std::vector<std::string> &args, std::vector<std::string> *out);
 
+    /** Pipeline HGETALL；一次往返取多个 Hash。失败返回 false。 */
+    bool HGetAllMany(const std::vector<std::string> &keys,
+                     std::vector<std::map<std::string, std::string>> *out);
+
     bool SAdd(const std::string &key, const std::string &member);
     bool SRem(const std::string &key, const std::string &member);
     bool SCard(const std::string &key, int64_t *out);

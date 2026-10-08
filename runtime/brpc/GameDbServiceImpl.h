@@ -60,4 +60,6 @@ public:
                          const ::gdb::HandleGameFrameReq *request,
                          ::gdb::HandleGameFrameRsp *response,
                          ::google::protobuf::Closure *done) override;
+    void FriendOp(::google::protobuf::RpcController *controller, const ::gdb::FriendOpReq *request,
+                  ::gdb::FriendOpRsp *response, ::google::protobuf::Closure *done) override;
 };

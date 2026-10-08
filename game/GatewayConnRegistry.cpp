@@ -1,5 +1,8 @@
 #include "GatewayConnRegistry.h"
 
+#include "Logging.h"
+#include "ServerStats.h"
+
 #include <vector>
 
 GatewayConnRegistry &GatewayConnRegistry::Instance() {
@@ -57,8 +60,13 @@ bool GatewayConnRegistry::ApplyRoute(uint64_t connection_id, const std::string &
     if (it == by_conn_.end())
         return false;
     if (route_version != 0 && it->second.route_version != 0 &&
-        route_version < it->second.route_version)
+        route_version < it->second.route_version) {
+        LOG_WARN << "ApplyRoute rejected player_id=" << it->second.player_id
+                 << " old_route_version=" << it->second.route_version
+                 << " rejected_route_version=" << route_version;
+        ServerStats::route_apply_rejected.fetch_add(1, std::memory_order_relaxed);
         return false;
+    }
     it->second.gamelogic_instance_id = gamelogic_instance_id;
     it->second.map_instance_id = map_instance_id;
     it->second.map_owner_epoch = map_owner_epoch;
@@ -186,6 +194,8 @@ bool GatewayConnRegistry::NotifyAndCloseIfMatch(uint64_t player_id, const std::s
             jobs.push_back(std::move(j));
         }
     }
+    if (!jobs.empty())
+        ServerStats::session_replace_count.fetch_add(jobs.size(), std::memory_order_relaxed);
     for (auto &j : jobs) {
         auto closer = j.close_conn;
         auto conn_id = j.connection_id;
@@ -208,6 +218,8 @@ bool GatewayConnRegistry::NotifyAndCloseIfMatch(uint64_t player_id, const std::s
                 closer();
         };
         auto work = [send, frame, grace_sec, run_after, guarded_close]() {
+            if (frame.empty() || !send)
+                ServerStats::session_replace_notify_failed.fetch_add(1, std::memory_order_relaxed);
             if (!frame.empty() && send)
                 send(frame);
             if (grace_sec > 0.0 && run_after)

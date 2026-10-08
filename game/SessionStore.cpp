@@ -1,5 +1,7 @@
 #include "SessionStore.h"
 
+#include "ServerStats.h"
+
 #include "HealthyLogicSnapshot.h"
 #include "Logging.h"
 #include "PlacementStore.h"
@@ -510,13 +512,20 @@ if from_logic ~= '' and (f['gamelogicInstanceId'] or '') ~= '' and
   return {'0', 'FROM_MISMATCH', 'from logic mismatch'}
 end
 if tid == '' then tid = to_logic .. ':' .. map_id .. ':' .. tostring(cur + 1) end
+local now = tonumber(ARGV[9]) or 0
+local ttl = tonumber(ARGV[10]) or 30
+local dl = now + ttl
 redis.call('HMSET', key,
   'routeState', 'TRANSFERRING',
   'transferId', tid,
   'transferToLogic', to_logic,
   'transferMapId', map_id,
-  'transferEpoch', epoch)
+  'transferEpoch', epoch,
+  'transferDeadline', tostring(dl))
 if gateway ~= '' then redis.call('HSET', key, 'gatewayId', gateway) end
+if KEYS[2] ~= nil and KEYS[2] ~= '' then
+  redis.call('ZADD', KEYS[2], dl, ARGV[11])
+end
 return {'1', 'OK', tid, tostring(cur), 'TRANSFERRING'}
 )LUA";
 
@@ -553,7 +562,9 @@ redis.call('HMSET', key,
   'mapOwnerEpoch', epoch,
   'routeVersion', tostring(new_rv),
   'routeState', 'ONLINE')
-redis.call('HDEL', key, 'transferId', 'transferToLogic', 'transferMapId', 'transferEpoch')
+redis.call('HDEL', key, 'transferId', 'transferToLogic', 'transferMapId', 'transferEpoch',
+  'transferDeadline')
+if KEYS[2] ~= nil and KEYS[2] ~= '' then redis.call('ZREM', KEYS[2], ARGV[7]) end
 if gateway ~= '' then redis.call('HSET', key, 'gatewayId', gateway) end
 return {'1', 'OK', tostring(new_rv), to_logic, map_id, epoch, 'ONLINE'}
 )LUA";
@@ -576,7 +587,9 @@ if tid ~= '' and (f['transferId'] or '') ~= tid then
   return {'0', 'TRANSFER_MISMATCH', 'transfer_id mismatch'}
 end
 redis.call('HSET', key, 'routeState', 'ONLINE')
-redis.call('HDEL', key, 'transferId', 'transferToLogic', 'transferMapId', 'transferEpoch')
+redis.call('HDEL', key, 'transferId', 'transferToLogic', 'transferMapId', 'transferEpoch',
+  'transferDeadline')
+if KEYS[2] ~= nil and KEYS[2] ~= '' then redis.call('ZREM', KEYS[2], ARGV[3]) end
 return {'1', 'OK', tostring(f['routeVersion'] or '0'), 'ONLINE'}
 )LUA";
 
@@ -883,7 +896,24 @@ bool SessionStore::AbortOperation(const std::string &operation_id) {
 
 bool SessionStore::GetSessionOperation(const std::string &operation_id, SessionOpStatus *status,
                                        std::string *op_kind, AcquireSessionResult *out) {
-    return LoadOperationResult(operation_id, status, op_kind, out);
+    if (!LoadOperationResult(operation_id, status, op_kind, out))
+        return false;
+    if (!status || *status != SessionOpStatus::NotFound)
+        return true;
+    // 重连候选键带 TTL。键还在说明 Prepare 未过期，结果尚未 Commit，返回 Pending。
+    // 键被 EXPIRE 删掉之后返回 NotFound，调用方按 Abort 处理。
+    auto lease = RedisPool::Instance().Acquire();
+    if (!lease)
+        return false;
+    std::vector<std::string> reply;
+    const char *lua = "return {redis.call('EXISTS', KEYS[1])}";
+    if (!lease->Eval(lua, {ReconnectPendingKey(operation_id)}, {}, &reply) || reply.empty()) {
+        ServerStats::redis_lua_errors.fetch_add(1, std::memory_order_relaxed);
+        return false;
+    }
+    if (reply[0] != "0")
+        *status = SessionOpStatus::Pending;
+    return true;
 }
 
 bool SessionStore::LoadSession(uint64_t player_id, SessionRecord *out) {
@@ -968,6 +998,7 @@ return {'EXPIRED_AND_DELETED'}
         UntrackOnline(player_id);
         ClearGraceIndex(player_id);
         LOG_INFO << "SessionStore: grace elapsed player_id=" << player_id << " -> OFFLINE";
+        ServerStats::session_grace_expire.fetch_add(1, std::memory_order_relaxed);
         return true;
     }
     if (code == "STALE_SNAPSHOT") {
@@ -1393,10 +1424,12 @@ bool SessionStore::PrepareReconnect(const ReconnectSessionInput &in, AcquireSess
         return false;
     }
     std::vector<std::string> keys{SessionKey(in.player_id), ReconnectPendingKey(in.operation_id)};
-    std::vector<std::string> args{in.session_id, in.reconnect_ticket, cand, "15",
+    std::vector<std::string> args{in.session_id, in.reconnect_ticket, cand,
+                                  std::to_string(kReconnectPrepareTtlSec),
                                   std::to_string(NowUnixSec()), in.operation_id};
     std::vector<std::string> reply;
     if (!lease->Eval(kLuaPrepareReconnect, keys, args, &reply) || reply.size() < 3) {
+        ServerStats::redis_lua_errors.fetch_add(1, std::memory_order_relaxed);
         out->message = "redis prepare lua failed";
         out->error_code = "LUA_FAILED";
         return false;
@@ -1505,6 +1538,8 @@ bool SessionStore::BindConnection(uint64_t player_id, const std::string &token,
             return false;
     }
     TrackOnline(player_id);
+    if (friend_presence_fn_)
+        friend_presence_fn_(player_id, true);
     return true;
 }
 
@@ -1757,6 +1792,8 @@ bool SessionStore::Logout(const game::LogoutReq &req, game::LogoutRsp *rsp) {
     PlacementStore::Instance().ReleaseByPlayer(req.player_id());
     UntrackOnline(req.player_id());
     ClearGraceIndex(req.player_id());
+    if (friend_presence_fn_)
+        friend_presence_fn_(req.player_id(), false);
     return true;
 }
 
@@ -1816,7 +1853,7 @@ bool SessionStore::BeginPlayerTransfer(const TransferBeginIn &in, TransferBeginO
         out->error_code = "POOL";
         return false;
     }
-    std::vector<std::string> keys{SessionKey(in.player_id)};
+    std::vector<std::string> keys{SessionKey(in.player_id), TransferDeadlineKey()};
     std::vector<std::string> args{in.fence_token,
                                   std::to_string(in.expected_route_version),
                                   in.from_logic,
@@ -1824,9 +1861,13 @@ bool SessionStore::BeginPlayerTransfer(const TransferBeginIn &in, TransferBeginO
                                   std::to_string(in.map_instance_id),
                                   std::to_string(in.map_owner_epoch),
                                   in.transfer_id,
-                                  in.gateway_instance_id};
+                                  in.gateway_instance_id,
+                                  std::to_string(NowUnixSec()),
+                                  std::to_string(kTransferTtlSec),
+                                  std::to_string(in.player_id)};
     std::vector<std::string> reply;
     if (!lease->Eval(kLuaBeginPlayerTransfer, keys, args, &reply) || reply.size() < 2) {
+        ServerStats::redis_lua_errors.fetch_add(1, std::memory_order_relaxed);
         out->message = "lua failed";
         out->error_code = "LUA";
         return false;
@@ -1860,13 +1901,14 @@ bool SessionStore::CommitPlayerTransfer(const TransferCommitIn &in, TransferComm
         out->error_code = "POOL";
         return false;
     }
-    std::vector<std::string> keys{SessionKey(in.player_id)};
+    std::vector<std::string> keys{SessionKey(in.player_id), TransferDeadlineKey()};
     std::vector<std::string> args{in.fence_token,
                                   in.transfer_id,
                                   in.to_logic,
                                   std::to_string(in.map_instance_id),
                                   std::to_string(in.map_owner_epoch),
-                                  in.gateway_instance_id};
+                                  in.gateway_instance_id,
+                                  std::to_string(in.player_id)};
     std::vector<std::string> reply;
     if (!lease->Eval(kLuaCommitPlayerTransfer, keys, args, &reply) || reply.size() < 2) {
         out->message = "lua failed";
@@ -1902,8 +1944,8 @@ bool SessionStore::AbortPlayerTransfer(uint64_t player_id, const std::string &fe
             *err = "pool exhausted";
         return false;
     }
-    std::vector<std::string> keys{SessionKey(player_id)};
-    std::vector<std::string> args{fence_token, transfer_id};
+    std::vector<std::string> keys{SessionKey(player_id), TransferDeadlineKey()};
+    std::vector<std::string> args{fence_token, transfer_id, std::to_string(player_id)};
     std::vector<std::string> reply;
     if (!lease->Eval(kLuaAbortPlayerTransfer, keys, args, &reply) || reply.size() < 2) {
         if (err)
@@ -2036,6 +2078,10 @@ std::string SessionStore::GraceIndexKey() const {
     return key_prefix_ + "session:grace";
 }
 
+std::string SessionStore::TransferDeadlineKey() const {
+    return key_prefix_ + "transfer:deadlines";
+}
+
 void SessionStore::IndexGraceDeadline(uint64_t player_id, int64_t deadline_unix) {
     if (!available_ || player_id == 0)
         return;
@@ -2061,7 +2107,9 @@ void SessionStore::ClearGraceIndex(uint64_t player_id) {
 size_t SessionStore::ExpireDueDisconnected(size_t limit) {
     if (!available_)
         return 0;
-    const size_t n = limit > 0 ? limit : 64;
+    size_t n = limit > 0 ? limit : 100;
+    if (n > 100)
+        n = 100;
     auto lease = RedisPool::Instance().Acquire();
     if (!lease)
         return 0;
@@ -2079,10 +2127,14 @@ size_t SessionStore::ExpireDueDisconnected(size_t limit) {
         if (!LoadSession(pid, &rec)) {
             PlacementStore::Instance().ReleaseByPlayer(pid);
             ClearGraceIndex(pid);
+            if (friend_presence_fn_)
+                friend_presence_fn_(pid, false);
             ++expired;
             continue;
         }
         if (ExpireIfGraceElapsed(pid, &rec)) {
+            if (friend_presence_fn_)
+                friend_presence_fn_(pid, false);
             ++expired;
             continue;
         }
@@ -2090,6 +2142,51 @@ size_t SessionStore::ExpireDueDisconnected(size_t limit) {
             ClearGraceIndex(pid);
     }
     return expired;
+}
+
+size_t SessionStore::ExpireDueTransfers(size_t limit) {
+    if (!available_)
+        return 0;
+    size_t n = limit > 0 ? limit : 100;
+    if (n > 100)
+        n = 100;
+    auto lease = RedisPool::Instance().Acquire();
+    if (!lease)
+        return 0;
+    const char *lua = R"LUA(
+local zkey = KEYS[1]
+local prefix = ARGV[1]
+local now = tonumber(ARGV[2]) or 0
+local lim = tonumber(ARGV[3]) or 100
+local ids = redis.call('ZRANGEBYSCORE', zkey, '-inf', now, 'LIMIT', 0, lim)
+local n = 0
+for _, pid in ipairs(ids) do
+  local key = prefix .. 'session:' .. pid
+  local st = redis.call('HGET', key, 'routeState') or ''
+  local dl = tonumber(redis.call('HGET', key, 'transferDeadline') or '0') or 0
+  if st == 'TRANSFERRING' and dl > 0 and now >= dl then
+    redis.call('HSET', key, 'routeState', 'ONLINE')
+    redis.call('HDEL', key, 'transferId', 'transferToLogic', 'transferMapId', 'transferEpoch',
+      'transferDeadline')
+    n = n + 1
+  end
+  redis.call('ZREM', zkey, pid)
+end
+return {tostring(n)}
+)LUA";
+    std::vector<std::string> reply;
+    if (!lease->Eval(lua, {TransferDeadlineKey()},
+                     {key_prefix_, std::to_string(NowUnixSec()), std::to_string(n)}, &reply) ||
+        reply.empty()) {
+        ServerStats::redis_lua_errors.fetch_add(1, std::memory_order_relaxed);
+        return 0;
+    }
+    const size_t aborted = static_cast<size_t>(ParseU64(reply[0]));
+    if (aborted > 0) {
+        ServerStats::player_transfer_abort.fetch_add(aborted, std::memory_order_relaxed);
+        LOG_WARN << "SessionStore: transfer timeout abort n=" << aborted;
+    }
+    return aborted;
 }
 
 size_t SessionStore::ReclaimOrphanMapReservations(size_t limit) {
@@ -2139,7 +2236,121 @@ bool SessionStore::ConsumeKeyedQuota(const std::string &key, int limit, int wind
     if (!lease->Eval(kLua, {key}, {std::to_string(window_sec > 0 ? window_sec : 2)}, &out) ||
         out.empty())
         return false;
-    return std::atoi(out[0].c_str()) <= limit;
+    return atoi(out[0].c_str()) <= limit;
+}
+
+bool SessionStore::ConsumeFriendApplyQuota(uint64_t player_id) {
+    if (player_id == 0)
+        return false;
+    if (!available_)
+        return true;
+    auto env = [](const char *k, int def) {
+        const char *e = std::getenv(k);
+        if (!e || !*e)
+            return def;
+        const int v = std::atoi(e);
+        return v > 0 ? v : def;
+    };
+    const int per_min = env("GAMEMESH_FRIEND_RATE_PER_MINUTE", 10);
+    const int per_hour = env("GAMEMESH_FRIEND_RATE_PER_HOUR", 50);
+    const int per_day = env("GAMEMESH_FRIEND_RATE_PER_DAY", 200);
+    const std::string base = key_prefix_ + "friend:rate:" + std::to_string(player_id);
+    if (!ConsumeKeyedQuota(base + ":m", per_min, 60))
+        return false;
+    if (!ConsumeKeyedQuota(base + ":h", per_hour, 3600))
+        return false;
+    if (!ConsumeKeyedQuota(base + ":d", per_day, 86400))
+        return false;
+    return true;
+}
+
+void SessionStore::SetFriendPresenceFn(FriendPresenceFn fn) { friend_presence_fn_ = fn; }
+
+void SessionStore::ReplaceFriendIdCache(uint64_t player_id, const std::vector<uint64_t> &friend_ids) {
+    if (!available_ || player_id == 0)
+        return;
+    auto lease = RedisPool::Instance().Acquire();
+    if (!lease)
+        return;
+    const std::string key = key_prefix_ + "friend:ids:" + std::to_string(player_id);
+    lease->Del(key);
+    for (uint64_t id : friend_ids) {
+        if (id != 0)
+            lease->SAdd(key, std::to_string(id));
+    }
+    if (!friend_ids.empty())
+        lease->Expire(key, 1800);
+}
+
+bool SessionStore::ListFriendIdsFromCache(uint64_t player_id, std::vector<uint64_t> *out) {
+    if (!out || !available_ || player_id == 0)
+        return false;
+    out->clear();
+    auto lease = RedisPool::Instance().Acquire();
+    if (!lease)
+        return false;
+    std::vector<std::string> members;
+    if (!lease->SMembers(key_prefix_ + "friend:ids:" + std::to_string(player_id), &members))
+        return false;
+    for (const auto &m : members) {
+        const uint64_t id = static_cast<uint64_t>(std::strtoull(m.c_str(), nullptr, 10));
+        if (id != 0)
+            out->push_back(id);
+    }
+    return true;
+}
+
+bool SessionStore::BatchQueryPublicPresence(const std::vector<uint64_t> &player_ids,
+                                            std::vector<PublicPresence> *out) {
+    if (!out)
+        return false;
+    out->assign(player_ids.size(), PublicPresence{});
+    for (auto &p : *out)
+        p.state = "offline";
+    if (!available_ || player_ids.empty())
+        return true;
+    std::vector<std::string> keys;
+    keys.reserve(player_ids.size());
+    for (uint64_t id : player_ids)
+        keys.push_back(SessionKey(id));
+    auto lease = RedisPool::Instance().Acquire();
+    if (!lease)
+        return false;
+    std::vector<std::map<std::string, std::string>> hashes;
+    if (!lease->HGetAllMany(keys, &hashes) || hashes.size() != player_ids.size())
+        return false;
+    for (size_t i = 0; i < player_ids.size(); ++i) {
+        const auto &fields = hashes[i];
+        if (fields.empty())
+            continue;
+        SessionRecord rec;
+        rec.token = fields.count("token") ? fields.at("token") : "";
+        rec.login_time_sec = fields.count("loginTime") ? ParseI64(fields.at("loginTime")) : 0;
+        rec.state = StateFromString(fields.count("state") ? fields.at("state") : "");
+        rec.gamelogic_instance_id =
+            fields.count("gamelogicInstanceId") ? fields.at("gamelogicInstanceId") : "";
+        rec.map_instance_id =
+            fields.count("mapInstanceId") ? ParseU64(fields.at("mapInstanceId")) : 0;
+        rec.map_owner_epoch =
+            fields.count("mapOwnerEpoch") ? ParseU64(fields.at("mapOwnerEpoch")) : 0;
+        rec.disconnect_deadline_sec =
+            fields.count("disconnectDeadline") ? ParseI64(fields.at("disconnectDeadline")) : 0;
+        if (rec.state == SessionState::Disconnected && rec.disconnect_deadline_sec > 0 &&
+            NowUnixSec() > rec.disconnect_deadline_sec) {
+            continue;
+        }
+        if (rec.state == SessionState::Online)
+            (*out)[i].state = "online";
+        else if (rec.state == SessionState::Disconnected)
+            (*out)[i].state = "disconnected";
+        else
+            continue;
+        (*out)[i].map_instance_id = rec.map_instance_id;
+        (*out)[i].gamelogic_instance_id = rec.gamelogic_instance_id;
+        (*out)[i].map_owner_epoch = rec.map_owner_epoch;
+        (void)rec.login_time_sec;
+    }
+    return true;
 }
 
 bool SessionStore::ConsumeChatQuota(uint64_t player_id, int limit, int window_sec) {

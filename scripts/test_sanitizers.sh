@@ -12,6 +12,7 @@ run_asan() {
   ENABLE_ASAN=ON ENABLE_BRPC=OFF ENABLE_MYSQL=OFF ENABLE_REDIS=ON \
     GAMEMESH_BUILD_DIR="$b" ./scripts/build.sh Debug
   ASAN_OPTIONS=detect_leaks=0 "$b/test/reactor_unit_test"
+  ASAN_OPTIONS=detect_leaks=0 "$b/test/gateway_conn_race_test"
   ASAN_OPTIONS=detect_leaks=0 "$b/test/password_hash_test"
   ASAN_OPTIONS=detect_leaks=0 "$b/test/player_serial_async_test"
   rm -rf "$b"
@@ -54,6 +55,7 @@ run_tsan() {
     ENABLE_TSAN=ON ENABLE_BRPC=OFF ENABLE_MYSQL=OFF ENABLE_REDIS=ON \
       GAMEMESH_BUILD_DIR="$b" ./scripts/build.sh Debug
     TSAN_OPTIONS="$tsan_opts" "$b/test/player_serial_async_test"
+    TSAN_OPTIONS="$tsan_opts" "$b/test/gateway_conn_race_test"
     echo "WARN: brpc missing — TSan channel_snapshot_race_test skipped"
   fi
   rm -rf "$b"

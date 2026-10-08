@@ -628,14 +628,185 @@ message ChatNotify {
   uint64 target_player_id = 7;
 }
 
-message FriendListReq {
+enum FriendRelationState {
+  FRIEND_RELATION_NONE = 0;
+  FRIEND_RELATION_FRIEND = 1;
+  FRIEND_RELATION_SENT_PENDING = 2;
+  FRIEND_RELATION_RECEIVED_PENDING = 3;
+  FRIEND_RELATION_BLOCKED_BY_SELF = 4;
+}
+
+message FriendBrief {
   uint64 player_id = 1;
+  string name = 2;
+  uint32 level = 3;
+  uint32 profession = 4;
+  string avatar = 5;
+  bool online = 6;
+  uint64 last_online_time = 7;
+  string map_name = 8;
+  string remark = 9;
+}
+
+message FriendListReq {
+  uint64 player_id = 1;  // Gateway overlay
+  string cursor = 2;
+  uint32 page_size = 3;
 }
 
 message FriendListRsp {
   bool ok = 1;
   string message = 2;
   string error_code = 3;
+  repeated FriendBrief friends = 4;
+  string next_cursor = 5;
+  uint32 friend_n = 6;
+  uint32 friend_cap = 7;
+}
+
+message FriendSearchReq {
+  uint64 player_id = 1;
+  uint64 target_player_id = 2;
+  string exact_name = 3;
+}
+
+message FriendSearchRsp {
+  bool ok = 1;
+  string message = 2;
+  string error_code = 3;
+  FriendBrief player = 4;
+  FriendRelationState relation = 5;
+}
+
+message FriendApplyReq {
+  uint64 player_id = 1;
+  uint64 target_player_id = 2;
+  string exact_name = 3;
+  string operation_id = 4;
+}
+
+message FriendApplyRsp {
+  bool ok = 1;
+  string message = 2;
+  string error_code = 3;
+  uint64 request_id = 4;
+}
+
+message FriendRequestInfo {
+  uint64 request_id = 1;
+  FriendBrief applicant = 2;
+  uint64 created_at = 3;
+  uint64 expire_at = 4;
+}
+
+message FriendRequestListReq {
+  uint64 player_id = 1;
+  string cursor = 2;
+  uint32 page_size = 3;
+}
+
+message FriendRequestListRsp {
+  bool ok = 1;
+  string message = 2;
+  string error_code = 3;
+  repeated FriendRequestInfo requests = 4;
+  string next_cursor = 5;
+}
+
+message FriendAcceptReq {
+  uint64 player_id = 1;
+  uint64 request_id = 2;
+  string operation_id = 3;
+}
+
+message FriendAcceptRsp {
+  bool ok = 1;
+  string message = 2;
+  string error_code = 3;
+  FriendBrief peer = 4;
+}
+
+message FriendRejectReq {
+  uint64 player_id = 1;
+  uint64 request_id = 2;
+  string operation_id = 3;
+}
+
+message FriendRejectRsp {
+  bool ok = 1;
+  string message = 2;
+  string error_code = 3;
+}
+
+message FriendDeleteReq {
+  uint64 player_id = 1;
+  uint64 friend_player_id = 2;
+  string operation_id = 3;
+}
+
+message FriendDeleteRsp {
+  bool ok = 1;
+  string message = 2;
+  string error_code = 3;
+}
+
+message FriendBlockReq {
+  uint64 player_id = 1;
+  uint64 target_player_id = 2;
+  string operation_id = 3;
+}
+
+message FriendBlockRsp {
+  bool ok = 1;
+  string message = 2;
+  string error_code = 3;
+}
+
+message FriendUnblockReq {
+  uint64 player_id = 1;
+  uint64 target_player_id = 2;
+  string operation_id = 3;
+}
+
+message FriendUnblockRsp {
+  bool ok = 1;
+  string message = 2;
+  string error_code = 3;
+}
+
+message FriendBlockListReq {
+  uint64 player_id = 1;
+  string cursor = 2;
+  uint32 page_size = 3;
+}
+
+message FriendBlockListRsp {
+  bool ok = 1;
+  string message = 2;
+  string error_code = 3;
+  repeated FriendBrief blocked = 4;
+  string next_cursor = 5;
+}
+
+message FriendRequestPush {
+  uint64 request_id = 1;
+  FriendBrief applicant = 2;
+  uint64 created_at = 3;
+  uint64 expire_at = 4;
+}
+
+message FriendAddedPush {
+  FriendBrief peer = 1;
+}
+
+message FriendRemovedPush {
+  uint64 friend_player_id = 1;
+}
+
+message FriendPresencePush {
+  uint64 friend_player_id = 1;
+  bool online = 2;
+  uint64 last_online_time = 3;
 }
 
 // ---------- Unity 联调：坐标 / 属性 / AOI / 玩家邮件（字段编号冻结）----------
@@ -919,6 +1090,15 @@ message GameRequest {
     SwitchLineReq switch_line = 78;
     EnqueueMapReq enqueue_map = 79;
     InteractPortalReq interact_portal = 80;
+    FriendSearchReq friend_search = 81;
+    FriendApplyReq friend_apply = 82;
+    FriendAcceptReq friend_accept = 83;
+    FriendRejectReq friend_reject = 84;
+    FriendDeleteReq friend_delete = 85;
+    FriendRequestListReq friend_request_list = 86;
+    FriendBlockReq friend_block = 87;
+    FriendUnblockReq friend_unblock = 88;
+    FriendBlockListReq friend_block_list = 89;
   }
 }
 
@@ -976,5 +1156,18 @@ message GameResponse {
     SwitchLineRsp switch_line = 79;
     EnqueueMapRsp enqueue_map = 80;
     InteractPortalRsp interact_portal = 81;
+    FriendApplyRsp friend_apply = 82;
+    FriendAcceptRsp friend_accept = 83;
+    FriendRejectRsp friend_reject = 84;
+    FriendDeleteRsp friend_delete = 85;
+    FriendRequestListRsp friend_request_list = 86;
+    FriendBlockRsp friend_block = 87;
+    FriendUnblockRsp friend_unblock = 88;
+    FriendBlockListRsp friend_block_list = 89;
+    FriendRequestPush friend_request_push = 90;
+    FriendAddedPush friend_added_push = 91;
+    FriendRemovedPush friend_removed_push = 92;
+    FriendPresencePush friend_presence_push = 93;
+    FriendSearchRsp friend_search = 94;
   }
 }
