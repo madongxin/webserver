@@ -156,16 +156,20 @@ bool LoadAllFriendIds(uint64_t player_id, std::vector<uint64_t> *out) {
         std::string err;
         if (!CallFriendOp(op, &orsp, &err) || !orsp.ok())
             return false;
+        if (!orsp.next_cursor().empty() && orsp.next_cursor() == cursor)
+            return false;
         for (int n = 0; n < orsp.friends_size(); ++n) {
             const uint64_t id = orsp.friends(n).player_id();
             if (id != 0)
                 out->push_back(id);
         }
-        if (orsp.next_cursor().empty() || orsp.friends_size() == 0)
+        if (orsp.next_cursor().empty())
             return true;
+        if (orsp.friends_size() == 0)
+            return false;
         cursor = orsp.next_cursor();
     }
-    return true;
+    return false;
 }
 
 void NotePush(const std::string &message_type, bool ok) {
@@ -324,8 +328,10 @@ bool FriendService::HandleBlockList(const game::FriendBlockListReq &, game::Game
 }
 void FriendService::FanoutPresence(uint64_t, bool) {}
 void FriendService::StopPresenceFanout() {}
-FriendWhisperGate FriendService::GateWhisper(uint64_t, uint64_t, std::string *) {
-    return FriendWhisperGate::Deliver;
+FriendWhisperGate FriendService::GateWhisper(uint64_t, uint64_t, std::string *error_code) {
+    if (error_code)
+        *error_code = "ERR_DEPENDENCY_UNAVAILABLE";
+    return FriendWhisperGate::Reject;
 }
 #else
 
@@ -361,11 +367,13 @@ bool FriendService::HandleList(const game::FriendListReq &req, game::GameRespons
 #endif
 #ifdef WEBSERVER_ENABLE_REDIS
     AttachOnline(ptrs);
-    std::vector<uint64_t> ids;
-    for (auto *p : ptrs)
-        if (p)
-            ids.push_back(p->player_id());
-    SessionStore::Instance().ReplaceFriendIdCache(req.player_id(), ids);
+    if (orsp.ok() && req.cursor().empty() && orsp.next_cursor().empty()) {
+        std::vector<uint64_t> ids;
+        for (auto *p : ptrs)
+            if (p && p->player_id() != 0)
+                ids.push_back(p->player_id());
+        SessionStore::Instance().ReplaceFriendIdCache(req.player_id(), ids);
+    }
 #endif
     rsp->set_ok(orsp.ok());
     rsp->set_error_code(orsp.error_code());
@@ -788,8 +796,14 @@ bool LoadBlockSet(uint64_t player_id, std::unordered_set<uint64_t> *out) {
     ServerStats::friend_block_gate_cache_miss.fetch_add(1, std::memory_order_relaxed);
     std::vector<uint64_t> ids;
     std::string cursor;
-    const int page = FriendPageLimit();
-    for (int i = 0; i < 4; ++i) {
+    int page = 100;
+    if (const char *e = std::getenv("GAMEMESH_FRIEND_BLOCK_MAX_COUNT")) {
+        const int v = std::atoi(e);
+        if (v > 0 && v <= 500)
+            page = v;
+    }
+    bool complete = false;
+    for (int i = 0; i < 8; ++i) {
         gdb::FriendOpReq op;
         op.set_op("BLOCK_LIST");
         op.set_actor_player_id(player_id);
@@ -800,15 +814,23 @@ bool LoadBlockSet(uint64_t player_id, std::unordered_set<uint64_t> *out) {
         std::string err;
         if (!CallFriendOp(op, &orsp, &err) || !orsp.ok())
             return false;
+        if (!orsp.next_cursor().empty() && orsp.next_cursor() == cursor)
+            return false;
         for (int n = 0; n < orsp.friends_size(); ++n) {
             const uint64_t id = orsp.friends(n).player_id();
             if (id != 0)
                 ids.push_back(id);
         }
-        if (orsp.next_cursor().empty() || orsp.friends_size() == 0)
+        if (orsp.next_cursor().empty()) {
+            complete = true;
             break;
+        }
+        if (orsp.friends_size() == 0)
+            return false;
         cursor = orsp.next_cursor();
     }
+    if (!complete)
+        return false;
     out->insert(ids.begin(), ids.end());
 #ifdef WEBSERVER_ENABLE_REDIS
     if (!SessionStore::Instance().ReplaceBlockCache(player_id, ids))
@@ -820,22 +842,16 @@ bool LoadBlockSet(uint64_t player_id, std::unordered_set<uint64_t> *out) {
 
 FriendWhisperGate FriendService::GateWhisper(uint64_t actor_player_id, uint64_t target_player_id,
                                              std::string *error_code) {
-#ifdef WEBSERVER_ENABLE_REDIS
-    if (!SessionStore::Instance().Available()) {
-        ServerStats::friend_block_gate_degraded.fetch_add(1, std::memory_order_relaxed);
-        LOG_WARN << "[friend] whisper gate degraded actor=" << actor_player_id
-                 << " target=" << target_player_id;
-        return FriendWhisperGate::Deliver;
-    }
-#endif
     std::unordered_set<uint64_t> actor_blocked;
     std::unordered_set<uint64_t> target_blocked;
     if (!LoadBlockSet(actor_player_id, &actor_blocked) ||
         !LoadBlockSet(target_player_id, &target_blocked)) {
         ServerStats::friend_block_gate_degraded.fetch_add(1, std::memory_order_relaxed);
-        LOG_WARN << "[friend] whisper gate degraded actor=" << actor_player_id
+        LOG_WARN << "[friend] whisper gate unavailable actor=" << actor_player_id
                  << " target=" << target_player_id;
-        return FriendWhisperGate::Deliver;
+        if (error_code)
+            *error_code = "ERR_DEPENDENCY_UNAVAILABLE";
+        return FriendWhisperGate::Reject;
     }
     if (actor_blocked.count(target_player_id) != 0) {
         if (error_code)

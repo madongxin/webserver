@@ -189,6 +189,29 @@ int main() {
     FriendStore::Instance().Execute(req, &rsp);
     Expect(!rsp.ok() && rsp.error_code() == "ERR_INVALID_ARGUMENT", "idempotency key length");
 
+    const uint64_t e = a + 4;
+    const uint64_t f = a + 5;
+    EnsurePlayer(e, "fe_" + std::to_string(e));
+    EnsurePlayer(f, "ff_" + std::to_string(f));
+    const std::string shared = "shared:" + std::to_string(suffix);
+    req.Clear();
+    req.set_op("APPLY");
+    req.set_actor_player_id(e);
+    req.set_target_player_id(f);
+    req.set_idempotency_key(shared);
+    FriendStore::Instance().Execute(req, &rsp);
+    Expect(rsp.ok(), "apply before key reuse");
+    req.set_op("DELETE");
+    FriendStore::Instance().Execute(req, &rsp);
+    Expect(!rsp.ok() && rsp.error_code() == "ERR_INVALID_ARGUMENT", "same key different op");
+    req.Clear();
+    req.set_op("APPLY");
+    req.set_actor_player_id(e);
+    req.set_target_player_id(d);
+    req.set_idempotency_key(shared);
+    FriendStore::Instance().Execute(req, &rsp);
+    Expect(!rsp.ok() && rsp.error_code() == "ERR_INVALID_ARGUMENT", "same key different target");
+
     if (fails) {
         std::printf("friend_store_test FAIL count=%d\n", fails);
         return 1;

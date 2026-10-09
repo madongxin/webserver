@@ -2071,8 +2071,14 @@ bool GameLogic::HandleChatSend(const game::ChatSendReq &req, game::GameResponse 
         std::string gate_err;
         const FriendWhisperGate gate = FriendService::Instance().GateWhisper(
             req.player_id(), req.target_player_id(), &gate_err);
-        if (gate == FriendWhisperGate::Reject)
-            return fail(gate_err.empty() ? "ERR_ALREADY_BLOCKED" : gate_err.c_str(), "blocked");
+        if (gate == FriendWhisperGate::Reject) {
+            const std::string code = gate_err.empty() ? std::string("ERR_ALREADY_BLOCKED") : gate_err;
+            const bool unavailable = code == "ERR_DEPENDENCY_UNAVAILABLE";
+            fail(code.c_str(), unavailable ? "whisper check unavailable" : "blocked");
+            if (unavailable)
+                rsp->set_retryable(true);
+            return false;
+        }
         hide_whisper = gate == FriendWhisperGate::Hide;
     }
 #ifndef WEBSERVER_ENABLE_BRPC

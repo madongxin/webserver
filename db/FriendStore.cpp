@@ -131,28 +131,39 @@ bool LoadProfileByName(Connection *conn, const std::string &name, gdb::FriendBri
     return ok;
 }
 
-bool Blocked(Connection *conn, uint64_t a, uint64_t b) {
+enum class SqlBool { No, Yes, Error };
+
+SqlBool QueryExists(Connection *conn, const std::string &sql) {
+    if (!conn)
+        return SqlBool::Error;
+    MYSQL_RES *res = conn->query(sql);
+    if (!res)
+        return SqlBool::Error;
+    const bool y = mysql_fetch_row(res) != nullptr;
+    mysql_free_result(res);
+    return y ? SqlBool::Yes : SqlBool::No;
+}
+
+SqlBool Blocked(Connection *conn, uint64_t a, uint64_t b) {
     std::ostringstream os;
     os << "SELECT 1 FROM friend_block WHERE player_id=" << a << " AND blocked_player_id=" << b
        << " LIMIT 1";
-    MYSQL_RES *res = conn->query(os.str());
-    if (!res)
-        return false;
-    const bool y = mysql_fetch_row(res) != nullptr;
-    mysql_free_result(res);
-    return y;
+    return QueryExists(conn, os.str());
 }
 
-bool IsFriend(Connection *conn, uint64_t a, uint64_t b) {
+SqlBool IsFriend(Connection *conn, uint64_t a, uint64_t b) {
     std::ostringstream os;
     os << "SELECT 1 FROM friend_relation WHERE player_id=" << a << " AND friend_player_id=" << b
        << " LIMIT 1";
-    MYSQL_RES *res = conn->query(os.str());
-    if (!res)
+    return QueryExists(conn, os.str());
+}
+
+bool ExecSql(Connection *conn, const std::string &sql, bool require_rows) {
+    if (!conn || !conn->update(sql))
         return false;
-    const bool y = mysql_fetch_row(res) != nullptr;
-    mysql_free_result(res);
-    return y;
+    if (!require_rows)
+        return true;
+    return mysql_affected_rows(conn->raw()) > 0;
 }
 
 int64_t PendingId(Connection *conn, uint64_t from, uint64_t to, int64_t now, bool lock) {
@@ -171,31 +182,60 @@ int64_t PendingId(Connection *conn, uint64_t from, uint64_t to, int64_t now, boo
     return id;
 }
 
-bool LoadIdempotency(Connection *conn, uint64_t actor, const std::string &key,
-                     gdb::FriendOpRsp *rsp) {
-    if (!conn || key.empty() || actor == 0)
-        return false;
+enum class IdemHit { Miss, Hit, Conflict, Error };
+
+IdemHit LoadIdempotency(Connection *conn, uint64_t actor, const std::string &key,
+                        const std::string &op, uint64_t subject, uint64_t request_id,
+                        gdb::FriendOpRsp *rsp) {
+    if (!conn || !rsp || key.empty() || actor == 0)
+        return IdemHit::Error;
     const std::string lit = conn->EscapeSql(key);
     std::ostringstream os;
-    os << "SELECT error_code,request_id,peer_player_id FROM friend_op_idempotency WHERE "
+    os << "SELECT op,error_code,request_id,peer_player_id FROM friend_op_idempotency WHERE "
           "actor_player_id="
        << actor << " AND idempotency_key='" << lit << "' LIMIT 1";
     MYSQL_RES *res = conn->query(os.str());
     if (!res)
-        return false;
+        return IdemHit::Error;
     MYSQL_ROW row = mysql_fetch_row(res);
     if (!row) {
         mysql_free_result(res);
-        return false;
+        return IdemHit::Miss;
+    }
+    const std::string stored_op = row[0] ? row[0] : "";
+    const uint64_t stored_req = ParseU64(row[2]);
+    const uint64_t stored_peer = ParseU64(row[3]);
+    const bool op_mismatch = stored_op != op;
+    const bool peer_mismatch = subject != 0 && stored_peer != 0 && subject != stored_peer;
+    const bool req_mismatch = request_id != 0 && stored_req != 0 && request_id != stored_req;
+    if (op_mismatch || peer_mismatch || req_mismatch) {
+        mysql_free_result(res);
+        return IdemHit::Conflict;
     }
     rsp->set_idempotent_hit(true);
-    const std::string code = row[0] ? row[0] : "OK";
+    const std::string code = row[1] ? row[1] : "OK";
     rsp->set_error_code(code);
     rsp->set_ok(code == "OK");
     rsp->set_message(code == "OK" ? "ok" : code);
-    rsp->set_request_id(ParseU64(row[1]));
-    rsp->set_peer_player_id(ParseU64(row[2]));
+    rsp->set_request_id(stored_req);
+    rsp->set_peer_player_id(stored_peer);
     mysql_free_result(res);
+    return IdemHit::Hit;
+}
+
+bool TakeIdempotency(Connection *conn, uint64_t actor, const std::string &key, const std::string &op,
+                     uint64_t subject, uint64_t request_id, gdb::FriendOpRsp *rsp) {
+    if (key.empty())
+        return false;
+    const IdemHit hit = LoadIdempotency(conn, actor, key, op, subject, request_id, rsp);
+    if (hit == IdemHit::Miss)
+        return false;
+    if (hit == IdemHit::Hit)
+        return true;
+    if (hit == IdemHit::Conflict)
+        Fail(rsp, "ERR_INVALID_ARGUMENT", "idempotency key reused");
+    else
+        Fail(rsp, "ERR_DEPENDENCY_UNAVAILABLE", "idempotency lookup failed");
     return true;
 }
 
@@ -211,7 +251,17 @@ bool SaveIdempotency(Connection *conn, uint64_t actor, const std::string &key, c
           "request_id,peer_player_id,created_at) VALUES("
        << actor << ",'" << k << "','" << o << "','" << c << "'," << rsp.request_id() << ","
        << rsp.peer_player_id() << "," << NowUnix() << ")";
-    return conn->update(os.str());
+    if (!conn->update(os.str()))
+        return false;
+    return mysql_affected_rows(conn->raw()) > 0;
+}
+
+void PersistIdem(Connection *conn, uint64_t actor, const std::string &key, const std::string &op,
+                 gdb::FriendOpRsp *rsp) {
+    if (!rsp || key.empty())
+        return;
+    if (!SaveIdempotency(conn, actor, key, op, *rsp))
+        Fail(rsp, "ERR_DEPENDENCY_UNAVAILABLE", "idempotency save failed");
 }
 
 uint32_t PageSize(const gdb::FriendOpReq &req, uint32_t defv, uint32_t cap) {
@@ -326,7 +376,8 @@ void FriendStore::ListFriends(const gdb::FriendOpReq &req, gdb::FriendOpRsp *rsp
         return;
     }
     const uint64_t after = CursorId(req.cursor());
-    const uint32_t lim = PageSize(req, 100, 100);
+    const uint32_t lim =
+        PageSize(req, static_cast<uint32_t>(FriendCap()), static_cast<uint32_t>(FriendCap()));
     std::ostringstream os;
     os << "SELECT r.friend_player_id,IFNULL(p.player_name,''),r.remark FROM friend_relation r "
           "LEFT JOIN player_profile p ON p.player_id=r.friend_player_id WHERE r.player_id="
@@ -347,6 +398,10 @@ void FriendStore::ListFriends(const gdb::FriendOpReq &req, gdb::FriendOpRsp *rsp
     mysql_free_result(res);
     const int64_t total = CountSql(conn.get(), "SELECT COUNT(*) FROM friend_relation WHERE player_id=" +
                                                    std::to_string(req.actor_player_id()));
+    if (total < 0) {
+        Fail(rsp, "ERR_DEPENDENCY_UNAVAILABLE", "count failed");
+        return;
+    }
     bool more = rows.size() > lim;
     if (more)
         rows.resize(lim);
@@ -355,7 +410,7 @@ void FriendStore::ListFriends(const gdb::FriendOpReq &req, gdb::FriendOpRsp *rsp
     }
     if (more && !rows.empty())
         rsp->set_next_cursor(std::to_string(std::get<0>(rows.back())));
-    rsp->set_friend_n(static_cast<uint32_t>(total < 0 ? rows.size() : total));
+    rsp->set_friend_n(static_cast<uint32_t>(total));
     rsp->set_friend_cap(static_cast<uint32_t>(FriendCap()));
     Ok(rsp);
 }
@@ -385,15 +440,25 @@ void FriendStore::Search(const gdb::FriendOpReq &req, gdb::FriendOpRsp *rsp) {
     }
     const uint64_t a = req.actor_player_id();
     const uint64_t b = brief.player_id();
+    const SqlBool blocked = Blocked(conn.get(), a, b);
+    const SqlBool friends = IsFriend(conn.get(), a, b);
+    if (blocked == SqlBool::Error || friends == SqlBool::Error) {
+        Fail(rsp, "ERR_DEPENDENCY_UNAVAILABLE", "lookup failed");
+        return;
+    }
     int rel = 0;
-    if (Blocked(conn.get(), a, b))
+    if (blocked == SqlBool::Yes)
         rel = 4;
-    else if (IsFriend(conn.get(), a, b))
+    else if (friends == SqlBool::Yes)
         rel = 1;
     else {
         const int64_t now = NowUnix();
         const int64_t out = PendingId(conn.get(), a, b, now, false);
         const int64_t in = PendingId(conn.get(), b, a, now, false);
+        if (out < 0 || in < 0) {
+            Fail(rsp, "ERR_DEPENDENCY_UNAVAILABLE", "lookup failed");
+            return;
+        }
         if (out > 0)
             rel = 2;
         else if (in > 0)
@@ -411,8 +476,8 @@ void FriendStore::Apply(const gdb::FriendOpReq &req, gdb::FriendOpRsp *rsp) {
         Fail(rsp, "ERR_DEPENDENCY_UNAVAILABLE", "mysql unavailable");
         return;
     }
-    if (!req.idempotency_key().empty() &&
-        LoadIdempotency(conn.get(), req.actor_player_id(), req.idempotency_key(), rsp))
+    if (TakeIdempotency(conn.get(), req.actor_player_id(), req.idempotency_key(), "APPLY",
+                        req.target_player_id(), 0, rsp))
         return;
     if (!conn->begin()) {
         Fail(rsp, "ERR_INTERNAL", "begin failed");
@@ -427,59 +492,85 @@ void FriendStore::Apply(const gdb::FriendOpReq &req, gdb::FriendOpRsp *rsp) {
             rollback();
             Fail(rsp, amb ? "ERR_NAME_AMBIGUOUS" : "ERR_PLAYER_NOT_FOUND",
                  amb ? "ambiguous" : "not found");
-            SaveIdempotency(conn.get(), req.actor_player_id(), req.idempotency_key(), "APPLY", *rsp);
+            PersistIdem(conn.get(), req.actor_player_id(), req.idempotency_key(), "APPLY", rsp);
             return;
         }
         b = target.player_id();
     } else if (!LoadProfile(conn.get(), b, &target)) {
         rollback();
         Fail(rsp, "ERR_PLAYER_NOT_FOUND", "not found");
-        SaveIdempotency(conn.get(), req.actor_player_id(), req.idempotency_key(), "APPLY", *rsp);
+        if (b != 0)
+            rsp->set_peer_player_id(b);
+        PersistIdem(conn.get(), req.actor_player_id(), req.idempotency_key(), "APPLY", rsp);
         return;
     }
     const uint64_t a = req.actor_player_id();
+    rsp->set_peer_player_id(b);
     if (a == b) {
         rollback();
         Fail(rsp, "ERR_CANNOT_ADD_SELF", "self");
-        SaveIdempotency(conn.get(), a, req.idempotency_key(), "APPLY", *rsp);
+        PersistIdem(conn.get(), a, req.idempotency_key(), "APPLY", rsp);
         return;
     }
-    if (Blocked(conn.get(), a, b)) {
+    const SqlBool self_block = Blocked(conn.get(), a, b);
+    const SqlBool peer_block = Blocked(conn.get(), b, a);
+    if (self_block == SqlBool::Error || peer_block == SqlBool::Error) {
+        rollback();
+        Fail(rsp, "ERR_DEPENDENCY_UNAVAILABLE", "lookup failed");
+        return;
+    }
+    if (self_block == SqlBool::Yes) {
         rollback();
         Fail(rsp, "ERR_ALREADY_BLOCKED", "blocked");
-        SaveIdempotency(conn.get(), a, req.idempotency_key(), "APPLY", *rsp);
+        PersistIdem(conn.get(), a, req.idempotency_key(), "APPLY", rsp);
         return;
     }
-    if (Blocked(conn.get(), b, a)) {
+    if (peer_block == SqlBool::Yes) {
         rollback();
         rsp->set_privacy_ok(true);
         rsp->set_peer_player_id(b);
         Ok(rsp);
         rsp->set_request_id(0);
-        SaveIdempotency(conn.get(), a, req.idempotency_key(), "APPLY", *rsp);
+        PersistIdem(conn.get(), a, req.idempotency_key(), "APPLY", rsp);
         return;
     }
-    if (IsFriend(conn.get(), a, b)) {
+    const SqlBool already = IsFriend(conn.get(), a, b);
+    if (already == SqlBool::Error) {
+        rollback();
+        Fail(rsp, "ERR_DEPENDENCY_UNAVAILABLE", "lookup failed");
+        return;
+    }
+    if (already == SqlBool::Yes) {
         rollback();
         Fail(rsp, "ERR_ALREADY_FRIEND", "already friend");
-        SaveIdempotency(conn.get(), a, req.idempotency_key(), "APPLY", *rsp);
+        PersistIdem(conn.get(), a, req.idempotency_key(), "APPLY", rsp);
         return;
     }
     const int64_t now = NowUnix();
     const int64_t sent = PendingId(conn.get(), a, b, now, true);
+    if (sent < 0) {
+        rollback();
+        Fail(rsp, "ERR_DEPENDENCY_UNAVAILABLE", "lookup failed");
+        return;
+    }
     if (sent > 0) {
         rollback();
         Fail(rsp, "ERR_REQUEST_ALREADY_SENT", "already sent");
         rsp->set_request_id(static_cast<uint64_t>(sent));
-        SaveIdempotency(conn.get(), a, req.idempotency_key(), "APPLY", *rsp);
+        PersistIdem(conn.get(), a, req.idempotency_key(), "APPLY", rsp);
         return;
     }
     const int64_t incoming = PendingId(conn.get(), b, a, now, true);
+    if (incoming < 0) {
+        rollback();
+        Fail(rsp, "ERR_DEPENDENCY_UNAVAILABLE", "lookup failed");
+        return;
+    }
     if (incoming > 0) {
         rollback();
         Fail(rsp, "ERR_INCOMING_REQUEST_EXISTS", "incoming exists");
         rsp->set_request_id(static_cast<uint64_t>(incoming));
-        SaveIdempotency(conn.get(), a, req.idempotency_key(), "APPLY", *rsp);
+        PersistIdem(conn.get(), a, req.idempotency_key(), "APPLY", rsp);
         return;
     }
     const int64_t ac = CountSql(conn.get(), "SELECT COUNT(*) FROM friend_relation WHERE player_id=" +
@@ -488,19 +579,19 @@ void FriendStore::Apply(const gdb::FriendOpReq &req, gdb::FriendOpRsp *rsp) {
                                                 std::to_string(b));
     if (ac < 0 || bc < 0) {
         rollback();
-        Fail(rsp, "ERR_INTERNAL", "count failed");
+        Fail(rsp, "ERR_DEPENDENCY_UNAVAILABLE", "count failed");
         return;
     }
     if (ac >= FriendCap()) {
         rollback();
         Fail(rsp, "ERR_FRIEND_LIMIT", "self cap");
-        SaveIdempotency(conn.get(), a, req.idempotency_key(), "APPLY", *rsp);
+        PersistIdem(conn.get(), a, req.idempotency_key(), "APPLY", rsp);
         return;
     }
     if (bc >= FriendCap()) {
         rollback();
         Fail(rsp, "ERR_TARGET_FRIEND_LIMIT", "target cap");
-        SaveIdempotency(conn.get(), a, req.idempotency_key(), "APPLY", *rsp);
+        PersistIdem(conn.get(), a, req.idempotency_key(), "APPLY", rsp);
         return;
     }
     const int64_t inbox =
@@ -511,10 +602,15 @@ void FriendStore::Apply(const gdb::FriendOpReq &req, gdb::FriendOpRsp *rsp) {
         CountSql(conn.get(), "SELECT COUNT(*) FROM friend_request WHERE from_player_id=" +
                                  std::to_string(a) + " AND status=0 AND expire_at>=" +
                                  std::to_string(now));
+    if (inbox < 0 || outbox < 0) {
+        rollback();
+        Fail(rsp, "ERR_DEPENDENCY_UNAVAILABLE", "count failed");
+        return;
+    }
     if (inbox >= PendingCap() || outbox >= PendingCap()) {
         rollback();
         Fail(rsp, "ERR_PENDING_LIMIT", "pending cap");
-        SaveIdempotency(conn.get(), a, req.idempotency_key(), "APPLY", *rsp);
+        PersistIdem(conn.get(), a, req.idempotency_key(), "APPLY", rsp);
         return;
     }
     const int64_t expire = now + static_cast<int64_t>(ExpireDays()) * 86400;
@@ -529,8 +625,14 @@ void FriendStore::Apply(const gdb::FriendOpReq &req, gdb::FriendOpRsp *rsp) {
               (static_cast<uint64_t>(n) << 48);
         if (rid == 0)
             rid = a ^ (b << 1) ^ 1;
-        if (CountSql(conn.get(), "SELECT COUNT(*) FROM friend_request WHERE request_id=" +
-                                     std::to_string(rid)) > 0)
+        const int64_t used = CountSql(conn.get(), "SELECT COUNT(*) FROM friend_request WHERE request_id=" +
+                                                       std::to_string(rid));
+        if (used < 0) {
+            rollback();
+            Fail(rsp, "ERR_DEPENDENCY_UNAVAILABLE", "count failed");
+            return;
+        }
+        if (used > 0)
             continue;
         std::ostringstream ins;
         ins << "INSERT INTO friend_request(request_id,from_player_id,to_player_id,status,created_at,"
@@ -559,7 +661,11 @@ void FriendStore::Apply(const gdb::FriendOpReq &req, gdb::FriendOpRsp *rsp) {
     rq->set_expire_at(static_cast<uint64_t>(expire));
     *rq->mutable_applicant() = actor;
     Ok(rsp);
-    SaveIdempotency(conn.get(), a, req.idempotency_key(), "APPLY", *rsp);
+    if (!SaveIdempotency(conn.get(), a, req.idempotency_key(), "APPLY", *rsp)) {
+        rollback();
+        Fail(rsp, "ERR_DEPENDENCY_UNAVAILABLE", "idempotency save failed");
+        return;
+    }
     if (!conn->commit()) {
         rollback();
         Fail(rsp, "ERR_INTERNAL", "commit failed");
@@ -617,8 +723,8 @@ void FriendStore::Accept(const gdb::FriendOpReq &req, gdb::FriendOpRsp *rsp) {
         Fail(rsp, "ERR_DEPENDENCY_UNAVAILABLE", "mysql unavailable");
         return;
     }
-    if (!req.idempotency_key().empty() &&
-        LoadIdempotency(conn.get(), req.actor_player_id(), req.idempotency_key(), rsp)) {
+    if (TakeIdempotency(conn.get(), req.actor_player_id(), req.idempotency_key(), "ACCEPT", 0,
+                        req.request_id(), rsp)) {
         if (rsp->ok() && rsp->peer_player_id() != 0)
             LoadProfile(conn.get(), rsp->peer_player_id(), rsp->mutable_player());
         return;
@@ -646,7 +752,8 @@ void FriendStore::Accept(const gdb::FriendOpReq &req, gdb::FriendOpRsp *rsp) {
         mysql_free_result(res);
         conn->rollback();
         Fail(rsp, "ERR_REQUEST_NOT_FOUND", "not found");
-        SaveIdempotency(conn.get(), req.actor_player_id(), req.idempotency_key(), "ACCEPT", *rsp);
+        rsp->set_request_id(req.request_id());
+        PersistIdem(conn.get(), req.actor_player_id(), req.idempotency_key(), "ACCEPT", rsp);
         return;
     }
     const uint64_t from = ParseU64(row[1]);
@@ -660,7 +767,13 @@ void FriendStore::Accept(const gdb::FriendOpReq &req, gdb::FriendOpRsp *rsp) {
         SaveIdempotency(conn.get(), req.actor_player_id(), req.idempotency_key(), "ACCEPT", *rsp);
         return;
     }
-    if (status == kAccepted && IsFriend(conn.get(), to, from)) {
+    const SqlBool already_friends = IsFriend(conn.get(), to, from);
+    if (already_friends == SqlBool::Error) {
+        conn->rollback();
+        Fail(rsp, "ERR_DEPENDENCY_UNAVAILABLE", "lookup failed");
+        return;
+    }
+    if (status == kAccepted && already_friends == SqlBool::Yes) {
         gdb::FriendBriefDb brief;
         LoadProfile(conn.get(), from, &brief);
         *rsp->mutable_player() = brief;
@@ -679,15 +792,26 @@ void FriendStore::Accept(const gdb::FriendOpReq &req, gdb::FriendOpRsp *rsp) {
         return;
     }
     if (expire < NowUnix()) {
-        conn->update("UPDATE friend_request SET status=" + std::to_string(kExpired) +
-                     ",updated_at=" + std::to_string(NowUnix()) +
-                     " WHERE request_id=" + std::to_string(req.request_id()));
-        conn->commit();
+        const bool marked = ExecSql(conn.get(),
+                                    "UPDATE friend_request SET status=" + std::to_string(kExpired) +
+                                        ",updated_at=" + std::to_string(NowUnix()) +
+                                        " WHERE request_id=" + std::to_string(req.request_id()),
+                                    true);
+        if (!marked || !conn->commit())
+            conn->rollback();
         Fail(rsp, "ERR_REQUEST_EXPIRED", "expired");
-        SaveIdempotency(conn.get(), req.actor_player_id(), req.idempotency_key(), "ACCEPT", *rsp);
+        rsp->set_request_id(req.request_id());
+        PersistIdem(conn.get(), req.actor_player_id(), req.idempotency_key(), "ACCEPT", rsp);
         return;
     }
-    if (Blocked(conn.get(), to, from) || Blocked(conn.get(), from, to)) {
+    const SqlBool blocked_by_self = Blocked(conn.get(), to, from);
+    const SqlBool blocked_by_peer = Blocked(conn.get(), from, to);
+    if (blocked_by_self == SqlBool::Error || blocked_by_peer == SqlBool::Error) {
+        conn->rollback();
+        Fail(rsp, "ERR_DEPENDENCY_UNAVAILABLE", "lookup failed");
+        return;
+    }
+    if (blocked_by_self == SqlBool::Yes || blocked_by_peer == SqlBool::Yes) {
         conn->rollback();
         Fail(rsp, "ERR_RELATION_CONFLICT", "blocked");
         SaveIdempotency(conn.get(), req.actor_player_id(), req.idempotency_key(), "ACCEPT", *rsp);
@@ -697,6 +821,11 @@ void FriendStore::Accept(const gdb::FriendOpReq &req, gdb::FriendOpRsp *rsp) {
                                                 std::to_string(to));
     const int64_t bc = CountSql(conn.get(), "SELECT COUNT(*) FROM friend_relation WHERE player_id=" +
                                                 std::to_string(from));
+    if (ac < 0 || bc < 0) {
+        conn->rollback();
+        Fail(rsp, "ERR_DEPENDENCY_UNAVAILABLE", "count failed");
+        return;
+    }
     if (ac >= FriendCap()) {
         conn->rollback();
         Fail(rsp, "ERR_FRIEND_LIMIT", "self cap");
@@ -720,15 +849,22 @@ void FriendStore::Accept(const gdb::FriendOpReq &req, gdb::FriendOpRsp *rsp) {
         Fail(rsp, "ERR_RELATION_CONFLICT", "insert friend failed");
         return;
     }
-    conn->update("UPDATE friend_request SET status=" + std::to_string(kAccepted) +
-                 ",updated_at=" + std::to_string(now) +
-                 " WHERE request_id=" + std::to_string(req.request_id()));
-    conn->update("UPDATE friend_request SET status=" + std::to_string(kCanceled) +
-                 ",updated_at=" + std::to_string(now) + " WHERE status=" +
-                 std::to_string(kPending) + " AND ((from_player_id=" + std::to_string(from) +
-                 " AND to_player_id=" + std::to_string(to) + ") OR (from_player_id=" +
-                 std::to_string(to) + " AND to_player_id=" + std::to_string(from) +
-                 ")) AND request_id<>" + std::to_string(req.request_id()));
+    if (!ExecSql(conn.get(),
+                 "UPDATE friend_request SET status=" + std::to_string(kAccepted) + ",updated_at=" +
+                     std::to_string(now) + " WHERE request_id=" + std::to_string(req.request_id()),
+                 true) ||
+        !ExecSql(conn.get(),
+                 "UPDATE friend_request SET status=" + std::to_string(kCanceled) + ",updated_at=" +
+                     std::to_string(now) + " WHERE status=" + std::to_string(kPending) +
+                     " AND ((from_player_id=" + std::to_string(from) + " AND to_player_id=" +
+                     std::to_string(to) + ") OR (from_player_id=" + std::to_string(to) +
+                     " AND to_player_id=" + std::to_string(from) + ")) AND request_id<>" +
+                     std::to_string(req.request_id()),
+                 false)) {
+        conn->rollback();
+        Fail(rsp, "ERR_INTERNAL", "accept update failed");
+        return;
+    }
     gdb::FriendBriefDb brief;
     LoadProfile(conn.get(), from, &brief);
     *rsp->mutable_player() = brief;
@@ -742,7 +878,11 @@ void FriendStore::Accept(const gdb::FriendOpReq &req, gdb::FriendOpRsp *rsp) {
     }
     *rsp->add_requests()->mutable_applicant() = accepter;
     Ok(rsp);
-    SaveIdempotency(conn.get(), req.actor_player_id(), req.idempotency_key(), "ACCEPT", *rsp);
+    if (!SaveIdempotency(conn.get(), req.actor_player_id(), req.idempotency_key(), "ACCEPT", *rsp)) {
+        conn->rollback();
+        Fail(rsp, "ERR_DEPENDENCY_UNAVAILABLE", "idempotency save failed");
+        return;
+    }
     if (!conn->commit()) {
         conn->rollback();
         Fail(rsp, "ERR_INTERNAL", "commit failed");
@@ -755,8 +895,8 @@ void FriendStore::Reject(const gdb::FriendOpReq &req, gdb::FriendOpRsp *rsp) {
         Fail(rsp, "ERR_DEPENDENCY_UNAVAILABLE", "mysql unavailable");
         return;
     }
-    if (!req.idempotency_key().empty() &&
-        LoadIdempotency(conn.get(), req.actor_player_id(), req.idempotency_key(), rsp))
+    if (TakeIdempotency(conn.get(), req.actor_player_id(), req.idempotency_key(), "REJECT", 0,
+                        req.request_id(), rsp))
         return;
     if (req.request_id() == 0) {
         Fail(rsp, "ERR_INVALID_ARGUMENT", "request_id required");
@@ -806,12 +946,22 @@ void FriendStore::Reject(const gdb::FriendOpReq &req, gdb::FriendOpRsp *rsp) {
         SaveIdempotency(conn.get(), req.actor_player_id(), req.idempotency_key(), "REJECT", *rsp);
         return;
     }
-    conn->update("UPDATE friend_request SET status=" + std::to_string(kRejected) +
-                 ",updated_at=" + std::to_string(NowUnix()) +
-                 " WHERE request_id=" + std::to_string(req.request_id()));
+    if (!ExecSql(conn.get(),
+                 "UPDATE friend_request SET status=" + std::to_string(kRejected) + ",updated_at=" +
+                     std::to_string(NowUnix()) + " WHERE request_id=" +
+                     std::to_string(req.request_id()),
+                 true)) {
+        conn->rollback();
+        Fail(rsp, "ERR_INTERNAL", "reject update failed");
+        return;
+    }
     rsp->set_request_id(req.request_id());
     Ok(rsp);
-    SaveIdempotency(conn.get(), req.actor_player_id(), req.idempotency_key(), "REJECT", *rsp);
+    if (!SaveIdempotency(conn.get(), req.actor_player_id(), req.idempotency_key(), "REJECT", *rsp)) {
+        conn->rollback();
+        Fail(rsp, "ERR_DEPENDENCY_UNAVAILABLE", "idempotency save failed");
+        return;
+    }
     if (!conn->commit()) {
         conn->rollback();
         Fail(rsp, "ERR_INTERNAL", "commit failed");
@@ -824,8 +974,8 @@ void FriendStore::DeleteFriend(const gdb::FriendOpReq &req, gdb::FriendOpRsp *rs
         Fail(rsp, "ERR_DEPENDENCY_UNAVAILABLE", "mysql unavailable");
         return;
     }
-    if (!req.idempotency_key().empty() &&
-        LoadIdempotency(conn.get(), req.actor_player_id(), req.idempotency_key(), rsp))
+    if (TakeIdempotency(conn.get(), req.actor_player_id(), req.idempotency_key(), "DELETE",
+                        req.target_player_id(), 0, rsp))
         return;
     const uint64_t a = req.actor_player_id();
     const uint64_t b = req.target_player_id();
@@ -837,21 +987,36 @@ void FriendStore::DeleteFriend(const gdb::FriendOpReq &req, gdb::FriendOpRsp *rs
         Fail(rsp, "ERR_INTERNAL", "begin failed");
         return;
     }
-    const bool was = IsFriend(conn.get(), a, b);
-    if (!was) {
+    const SqlBool was = IsFriend(conn.get(), a, b);
+    if (was == SqlBool::Error) {
         conn->rollback();
-        Fail(rsp, "ERR_NOT_FRIEND", "not friend");
-        SaveIdempotency(conn.get(), a, req.idempotency_key(), "DELETE", *rsp);
+        Fail(rsp, "ERR_DEPENDENCY_UNAVAILABLE", "lookup failed");
         return;
     }
-    conn->update("DELETE FROM friend_relation WHERE (player_id=" + std::to_string(a) +
-                 " AND friend_player_id=" + std::to_string(b) + ") OR (player_id=" +
-                 std::to_string(b) + " AND friend_player_id=" + std::to_string(a) + ")");
+    if (was == SqlBool::No) {
+        conn->rollback();
+        Fail(rsp, "ERR_NOT_FRIEND", "not friend");
+        rsp->set_peer_player_id(b);
+        PersistIdem(conn.get(), a, req.idempotency_key(), "DELETE", rsp);
+        return;
+    }
+    if (!ExecSql(conn.get(),
+                 "DELETE FROM friend_relation WHERE (player_id=" + std::to_string(a) +
+                     " AND friend_player_id=" + std::to_string(b) + ") OR (player_id=" +
+                     std::to_string(b) + " AND friend_player_id=" + std::to_string(a) + ")",
+                 true)) {
+        conn->rollback();
+        Fail(rsp, "ERR_INTERNAL", "delete failed");
+        return;
+    }
     rsp->set_peer_player_id(b);
-    if (was)
-        rsp->set_notify_kind("removed");
+    rsp->set_notify_kind("removed");
     Ok(rsp);
-    SaveIdempotency(conn.get(), a, req.idempotency_key(), "DELETE", *rsp);
+    if (!SaveIdempotency(conn.get(), a, req.idempotency_key(), "DELETE", *rsp)) {
+        conn->rollback();
+        Fail(rsp, "ERR_DEPENDENCY_UNAVAILABLE", "idempotency save failed");
+        return;
+    }
     if (!conn->commit()) {
         conn->rollback();
         Fail(rsp, "ERR_INTERNAL", "commit failed");
@@ -870,11 +1035,17 @@ void FriendStore::BlockGate(const gdb::FriendOpReq &req, gdb::FriendOpRsp *rsp) 
         Fail(rsp, a == b ? "ERR_CANNOT_ADD_SELF" : "ERR_INVALID_ARGUMENT", "target");
         return;
     }
-    if (Blocked(conn.get(), a, b)) {
+    const SqlBool self_block = Blocked(conn.get(), a, b);
+    const SqlBool peer_block = Blocked(conn.get(), b, a);
+    if (self_block == SqlBool::Error || peer_block == SqlBool::Error) {
+        Fail(rsp, "ERR_DEPENDENCY_UNAVAILABLE", "lookup failed");
+        return;
+    }
+    if (self_block == SqlBool::Yes) {
         Fail(rsp, "ERR_ALREADY_BLOCKED", "blocked");
         return;
     }
-    if (Blocked(conn.get(), b, a)) {
+    if (peer_block == SqlBool::Yes) {
         rsp->set_privacy_ok(true);
         Ok(rsp);
         return;
@@ -888,8 +1059,8 @@ void FriendStore::Block(const gdb::FriendOpReq &req, gdb::FriendOpRsp *rsp) {
         Fail(rsp, "ERR_DEPENDENCY_UNAVAILABLE", "mysql unavailable");
         return;
     }
-    if (!req.idempotency_key().empty() &&
-        LoadIdempotency(conn.get(), req.actor_player_id(), req.idempotency_key(), rsp))
+    if (TakeIdempotency(conn.get(), req.actor_player_id(), req.idempotency_key(), "BLOCK",
+                        req.target_player_id(), 0, rsp))
         return;
     const uint64_t a = req.actor_player_id();
     const uint64_t b = req.target_player_id();
@@ -900,6 +1071,8 @@ void FriendStore::Block(const gdb::FriendOpReq &req, gdb::FriendOpRsp *rsp) {
     gdb::FriendBriefDb t;
     if (!LoadProfile(conn.get(), b, &t)) {
         Fail(rsp, "ERR_PLAYER_NOT_FOUND", "not found");
+        rsp->set_peer_player_id(b);
+        PersistIdem(conn.get(), a, req.idempotency_key(), "BLOCK", rsp);
         return;
     }
     if (!conn->begin()) {
@@ -908,30 +1081,50 @@ void FriendStore::Block(const gdb::FriendOpReq &req, gdb::FriendOpRsp *rsp) {
     }
     const int64_t n =
         CountSql(conn.get(), "SELECT COUNT(*) FROM friend_block WHERE player_id=" + std::to_string(a));
-    const bool already = Blocked(conn.get(), a, b);
-    if (!already && n >= BlockCap()) {
+    const SqlBool already = Blocked(conn.get(), a, b);
+    const SqlBool was_friend = IsFriend(conn.get(), a, b);
+    if (n < 0 || already == SqlBool::Error || was_friend == SqlBool::Error) {
         conn->rollback();
-        Fail(rsp, "ERR_PENDING_LIMIT", "block cap");
-        SaveIdempotency(conn.get(), a, req.idempotency_key(), "BLOCK", *rsp);
+        Fail(rsp, "ERR_DEPENDENCY_UNAVAILABLE", "lookup failed");
         return;
     }
-    const bool was_friend = IsFriend(conn.get(), a, b);
+    if (already == SqlBool::No && n >= BlockCap()) {
+        conn->rollback();
+        Fail(rsp, "ERR_PENDING_LIMIT", "block cap");
+        rsp->set_peer_player_id(b);
+        PersistIdem(conn.get(), a, req.idempotency_key(), "BLOCK", rsp);
+        return;
+    }
     const int64_t now = NowUnix();
-    conn->update("INSERT IGNORE INTO friend_block(player_id,blocked_player_id,created_at) VALUES(" +
-                 std::to_string(a) + "," + std::to_string(b) + "," + std::to_string(now) + ")");
-    conn->update("DELETE FROM friend_relation WHERE (player_id=" + std::to_string(a) +
-                 " AND friend_player_id=" + std::to_string(b) + ") OR (player_id=" +
-                 std::to_string(b) + " AND friend_player_id=" + std::to_string(a) + ")");
-    conn->update("UPDATE friend_request SET status=" + std::to_string(kCanceled) +
-                 ",updated_at=" + std::to_string(now) + " WHERE status=" +
-                 std::to_string(kPending) + " AND ((from_player_id=" + std::to_string(a) +
-                 " AND to_player_id=" + std::to_string(b) + ") OR (from_player_id=" +
-                 std::to_string(b) + " AND to_player_id=" + std::to_string(a) + "))");
+    if (!ExecSql(conn.get(),
+                 "INSERT IGNORE INTO friend_block(player_id,blocked_player_id,created_at) VALUES(" +
+                     std::to_string(a) + "," + std::to_string(b) + "," + std::to_string(now) + ")",
+                 false) ||
+        !ExecSql(conn.get(),
+                 "DELETE FROM friend_relation WHERE (player_id=" + std::to_string(a) +
+                     " AND friend_player_id=" + std::to_string(b) + ") OR (player_id=" +
+                     std::to_string(b) + " AND friend_player_id=" + std::to_string(a) + ")",
+                 false) ||
+        !ExecSql(conn.get(),
+                 "UPDATE friend_request SET status=" + std::to_string(kCanceled) + ",updated_at=" +
+                     std::to_string(now) + " WHERE status=" + std::to_string(kPending) +
+                     " AND ((from_player_id=" + std::to_string(a) + " AND to_player_id=" +
+                     std::to_string(b) + ") OR (from_player_id=" + std::to_string(b) +
+                     " AND to_player_id=" + std::to_string(a) + "))",
+                 false)) {
+        conn->rollback();
+        Fail(rsp, "ERR_INTERNAL", "block update failed");
+        return;
+    }
     rsp->set_peer_player_id(b);
-    if (was_friend)
+    if (was_friend == SqlBool::Yes)
         rsp->set_notify_kind("removed");
     Ok(rsp);
-    SaveIdempotency(conn.get(), a, req.idempotency_key(), "BLOCK", *rsp);
+    if (!SaveIdempotency(conn.get(), a, req.idempotency_key(), "BLOCK", *rsp)) {
+        conn->rollback();
+        Fail(rsp, "ERR_DEPENDENCY_UNAVAILABLE", "idempotency save failed");
+        return;
+    }
     if (!conn->commit()) {
         conn->rollback();
         Fail(rsp, "ERR_INTERNAL", "commit failed");
@@ -944,8 +1137,8 @@ void FriendStore::Unblock(const gdb::FriendOpReq &req, gdb::FriendOpRsp *rsp) {
         Fail(rsp, "ERR_DEPENDENCY_UNAVAILABLE", "mysql unavailable");
         return;
     }
-    if (!req.idempotency_key().empty() &&
-        LoadIdempotency(conn.get(), req.actor_player_id(), req.idempotency_key(), rsp))
+    if (TakeIdempotency(conn.get(), req.actor_player_id(), req.idempotency_key(), "UNBLOCK",
+                        req.target_player_id(), 0, rsp))
         return;
     const uint64_t a = req.actor_player_id();
     const uint64_t b = req.target_player_id();
@@ -953,11 +1146,24 @@ void FriendStore::Unblock(const gdb::FriendOpReq &req, gdb::FriendOpRsp *rsp) {
         Fail(rsp, "ERR_INVALID_ARGUMENT", "target required");
         return;
     }
-    conn->update("DELETE FROM friend_block WHERE player_id=" + std::to_string(a) +
-                 " AND blocked_player_id=" + std::to_string(b));
+    if (!conn->begin()) {
+        Fail(rsp, "ERR_INTERNAL", "begin failed");
+        return;
+    }
+    if (!ExecSql(conn.get(),
+                 "DELETE FROM friend_block WHERE player_id=" + std::to_string(a) +
+                     " AND blocked_player_id=" + std::to_string(b),
+                 false)) {
+        conn->rollback();
+        Fail(rsp, "ERR_INTERNAL", "unblock failed");
+        return;
+    }
     rsp->set_peer_player_id(b);
     Ok(rsp);
-    SaveIdempotency(conn.get(), a, req.idempotency_key(), "UNBLOCK", *rsp);
+    if (!SaveIdempotency(conn.get(), a, req.idempotency_key(), "UNBLOCK", *rsp) || !conn->commit()) {
+        conn->rollback();
+        Fail(rsp, "ERR_DEPENDENCY_UNAVAILABLE", "unblock commit failed");
+    }
 }
 
 void FriendStore::BlockList(const gdb::FriendOpReq &req, gdb::FriendOpRsp *rsp) {
@@ -967,7 +1173,8 @@ void FriendStore::BlockList(const gdb::FriendOpReq &req, gdb::FriendOpRsp *rsp) 
         return;
     }
     const uint64_t after = CursorId(req.cursor());
-    const uint32_t lim = PageSize(req, 100, 100);
+    const uint32_t lim =
+        PageSize(req, static_cast<uint32_t>(BlockCap()), static_cast<uint32_t>(BlockCap()));
     std::ostringstream os;
     os << "SELECT b.blocked_player_id,IFNULL(p.player_name,'') FROM friend_block b LEFT JOIN "
           "player_profile p ON p.player_id=b.blocked_player_id WHERE b.player_id="
