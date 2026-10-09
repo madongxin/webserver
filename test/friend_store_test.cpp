@@ -242,7 +242,8 @@ int main() {
     req.set_actor_player_id(nc);
     req.set_target_player_id(na);
     FriendStore::Instance().Execute(req, &rsp);
-    Expect(rsp.ok() && rsp.player().player_id() == na && rsp.player().level() == 1, "search by id");
+    Expect(rsp.ok() && rsp.player().player_id() == na && rsp.player().level() == 0,
+           "search by id leaves level unset");
 
     req.Clear();
     req.set_op("SEARCH");
@@ -396,6 +397,74 @@ int main() {
     FriendStore::Instance().Execute(req, &rsp);
     Expect(rsp.idempotent_hit() && rsp.ok() && CountPending(race_from, race_to) == 1,
            "concurrent key retries the stored apply");
+
+    const uint64_t idn = a + 16;
+    const uint64_t named = a + 17;
+    const std::string named_name = "idn_" + std::to_string(suffix);
+    EnsurePlayer(idn, "idnActor_" + std::to_string(idn));
+    EnsurePlayer(named, named_name);
+    const std::string id_then_name = "id-then-name:" + std::to_string(suffix);
+    req.Clear();
+    req.set_op("APPLY");
+    req.set_actor_player_id(idn);
+    req.set_target_player_id(named);
+    req.set_idempotency_key(id_then_name);
+    FriendStore::Instance().Execute(req, &rsp);
+    Expect(rsp.ok() && rsp.request_id() != 0, "apply by id before the same name");
+    const uint64_t id_name_rid = rsp.request_id();
+    req.Clear();
+    req.set_op("APPLY");
+    req.set_actor_player_id(idn);
+    req.set_exact_name(named_name);
+    req.set_idempotency_key(id_then_name);
+    FriendStore::Instance().Execute(req, &rsp);
+    Expect(rsp.idempotent_hit() && rsp.request_id() == id_name_rid, "same key id then its name");
+
+    req.Clear();
+    req.set_op("APPLY");
+    req.set_actor_player_id(idn);
+    req.set_target_player_id(named);
+    req.set_exact_name(name_b);
+    req.set_idempotency_key("mismatch:" + std::to_string(suffix));
+    FriendStore::Instance().Execute(req, &rsp);
+    Expect(!rsp.ok() && rsp.error_code() == "ERR_INVALID_ARGUMENT", "id and name disagree");
+    Expect(CountPending(idn, named) == 1, "disagreeing name does not add another request");
+
+    const uint64_t renamed = a + 18;
+    const uint64_t taken = a + 19;
+    const std::string old_name = "old_" + std::to_string(suffix);
+    const std::string new_name = "new_" + std::to_string(suffix);
+    EnsurePlayer(renamed, old_name);
+    EnsurePlayer(taken, "hold_" + std::to_string(taken));
+    const std::string rename_key = "rename:" + std::to_string(suffix);
+    req.Clear();
+    req.set_op("APPLY");
+    req.set_actor_player_id(idn);
+    req.set_exact_name(old_name);
+    req.set_idempotency_key(rename_key);
+    FriendStore::Instance().Execute(req, &rsp);
+    Expect(rsp.ok() && rsp.request_id() != 0, "apply before rename");
+    {
+        auto conn = ConnectionPool::getconnectionPool()->getConnection();
+        Expect(conn != nullptr, "mysql for rename");
+        if (conn) {
+            Expect(conn->update("UPDATE player_profile SET player_name='" + new_name +
+                                "' WHERE player_id=" + std::to_string(renamed)),
+                   "rename player");
+            Expect(conn->update("UPDATE player_profile SET player_name='" + old_name +
+                                "' WHERE player_id=" + std::to_string(taken)),
+                   "give old name to another player");
+        }
+    }
+    req.Clear();
+    req.set_op("APPLY");
+    req.set_actor_player_id(idn);
+    req.set_exact_name(old_name);
+    req.set_idempotency_key(rename_key);
+    FriendStore::Instance().Execute(req, &rsp);
+    Expect(!rsp.ok() && rsp.error_code() == "ERR_INVALID_ARGUMENT",
+           "renamed name does not replay onto the new owner");
+    Expect(CountPending(idn, taken) == 0, "new owner of the name has no request");
 
     if (fails) {
         std::printf("friend_store_test FAIL count=%d\n", fails);

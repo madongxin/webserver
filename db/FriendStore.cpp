@@ -93,7 +93,6 @@ bool LoadProfile(Connection *conn, uint64_t pid, gdb::FriendBriefDb *out) {
     if (ok) {
         out->set_player_id(ParseU64(row[0]));
         out->set_name(row[1] ? row[1] : "");
-        out->set_level(1);
     }
     mysql_free_result(res);
     return ok;
@@ -134,7 +133,6 @@ bool LoadProfileByName(Connection *conn, const std::string &name, gdb::FriendBri
         return false;
     out->set_player_id(hits[0].id);
     out->set_name(hits[0].name);
-    out->set_level(1);
     return true;
 }
 
@@ -304,7 +302,6 @@ void FillBrief(gdb::FriendBriefDb *dst, uint64_t pid, const std::string &name,
                const std::string &remark) {
     dst->set_player_id(pid);
     dst->set_name(name);
-    dst->set_level(1);
     dst->set_remark(remark);
 }
 
@@ -539,6 +536,23 @@ void FriendStore::Apply(const gdb::FriendOpReq &req, gdb::FriendOpRsp *rsp) {
                     name_fp);
         return;
     }
+    if (b != 0 && !name_fp.empty()) {
+        gdb::FriendBriefDb named;
+        bool amb = false;
+        if (!LoadProfileByName(conn.get(), name_fp, &named, &amb) || named.player_id() != b) {
+            if (TakeIdempotency(conn.get(), req.actor_player_id(), req.idempotency_key(), "APPLY",
+                                0, 0, rsp, name_fp)) {
+                rollback();
+                return;
+            }
+            rollback();
+            Fail(rsp, amb ? "ERR_NAME_AMBIGUOUS" : "ERR_INVALID_ARGUMENT",
+                 amb ? "ambiguous" : "id and name disagree");
+            PersistIdem(conn.get(), req.actor_player_id(), req.idempotency_key(), "APPLY", rsp,
+                        name_fp);
+            return;
+        }
+    }
     if (TakeIdempotency(conn.get(), req.actor_player_id(), req.idempotency_key(), "APPLY", b, 0,
                         rsp, name_fp)) {
         rollback();
@@ -693,7 +707,6 @@ void FriendStore::Apply(const gdb::FriendOpReq &req, gdb::FriendOpRsp *rsp) {
     gdb::FriendBriefDb actor;
     if (!LoadProfile(conn.get(), a, &actor)) {
         actor.set_player_id(a);
-        actor.set_level(1);
     }
     auto *rq = rsp->add_requests();
     rq->set_request_id(rid);
@@ -741,7 +754,6 @@ void FriendStore::RequestList(const gdb::FriendOpReq &req, gdb::FriendOpRsp *rsp
         it.set_request_id(ParseU64(row[0]));
         it.mutable_applicant()->set_player_id(ParseU64(row[1]));
         it.mutable_applicant()->set_name(row[2] ? row[2] : "");
-        it.mutable_applicant()->set_level(1);
         it.set_created_at(ParseU64(row[3]));
         it.set_expire_at(ParseU64(row[4]));
         rows.push_back(it);
@@ -914,7 +926,6 @@ void FriendStore::Accept(const gdb::FriendOpReq &req, gdb::FriendOpRsp *rsp) {
     gdb::FriendBriefDb accepter;
     if (!LoadProfile(conn.get(), to, &accepter)) {
         accepter.set_player_id(to);
-        accepter.set_level(1);
     }
     *rsp->add_requests()->mutable_applicant() = accepter;
     Ok(rsp);
