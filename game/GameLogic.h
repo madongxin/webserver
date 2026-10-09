@@ -17,6 +17,11 @@ public:
     static GameLogic &Instance();
     /** 按 oneof body 分发到各 HandleXxx；填充 GameResponse（含 seq） */
     bool Handle(const game::GameRequest &req, game::GameResponse *rsp);
+    /**
+     * 正式集群的 GameLogic 不处理好友命令（好友在 World）。
+     * 默认开启，供单进程和 World 复用同一分发。
+     */
+    void SetFriendCommandsEnabled(bool enabled);
 
     /** 邮件领取等：查询内存背包聚合数量 */
     uint32_t GetItemCount(uint64_t player_id, uint32_t item_id);
@@ -137,6 +142,7 @@ private:
     void MaybePersistLastSafe(uint64_t player_id, const MapEntity &e, uint64_t map_instance_id,
                               bool force);
     std::string LifeStateOf(uint64_t player_id);
+    bool friend_commands_enabled_ = true;
     bool reload_blocked_for_test_ = false;
     bool apply_blocked_for_test_ = false;
     bool reload_override_for_test_ = false;

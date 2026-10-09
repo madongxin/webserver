@@ -54,6 +54,30 @@ int main() {
     }
     {
         game::GameRequest req;
+        req.mutable_friend_accept()->set_player_id(1);
+        EXPECT_TRUE(gameproto::IsWorldBoundRequest(req));
+        EXPECT_TRUE(!gameproto::IsLogicBoundRequest(req));
+        req.Clear();
+        req.mutable_friend_reject()->set_player_id(1);
+        EXPECT_TRUE(gameproto::IsWorldBoundRequest(req));
+        req.Clear();
+        req.mutable_friend_delete()->set_player_id(1);
+        EXPECT_TRUE(gameproto::IsWorldBoundRequest(req));
+        req.Clear();
+        req.mutable_friend_request_list()->set_player_id(1);
+        EXPECT_TRUE(gameproto::IsWorldBoundRequest(req));
+        req.Clear();
+        req.mutable_friend_block()->set_player_id(1);
+        EXPECT_TRUE(gameproto::IsWorldBoundRequest(req));
+        req.Clear();
+        req.mutable_friend_unblock()->set_player_id(1);
+        EXPECT_TRUE(gameproto::IsWorldBoundRequest(req));
+        req.Clear();
+        req.mutable_friend_block_list()->set_player_id(1);
+        EXPECT_TRUE(gameproto::IsWorldBoundRequest(req));
+    }
+    {
+        game::GameRequest req;
         req.mutable_get_player_brief()->set_player_id(1);
         EXPECT_TRUE(gameproto::IsWorldBoundRequest(req));
         EXPECT_TRUE(!gameproto::IsMailBoundRequest(req));

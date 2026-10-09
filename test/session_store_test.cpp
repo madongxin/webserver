@@ -496,6 +496,32 @@ int main() {
         SessionStore::Instance().Logout(clo, &cr);
     }
 
+    {
+        const uint64_t owner = 910001;
+        std::vector<uint64_t> blocked;
+        if (SessionStore::Instance().ListBlockedIdsFromCache(owner, &blocked))
+            return Fail("block cache should miss before fill");
+        if (!SessionStore::Instance().ReplaceBlockCache(owner, {42, 43}))
+            return Fail("replace block cache");
+        if (!SessionStore::Instance().ListBlockedIdsFromCache(owner, &blocked) || blocked.size() != 2)
+            return Fail("block cache hit");
+        SessionStore::Instance().InvalidateBlockCache(owner);
+        if (SessionStore::Instance().ListBlockedIdsFromCache(owner, &blocked))
+            return Fail("block cache invalidated");
+        if (!SessionStore::Instance().ReplaceFriendIdCache(owner, {}))
+            return Fail("empty friend cache");
+        std::vector<uint64_t> friends;
+        if (!SessionStore::Instance().ListFriendIdsFromCache(owner, &friends) || !friends.empty())
+            return Fail("empty friend cache sentinel");
+        SessionStore::Instance().AddFriendIdCache(owner, 7);
+        if (!SessionStore::Instance().ListFriendIdsFromCache(owner, &friends) || friends.size() != 1 ||
+            friends[0] != 7)
+            return Fail("incremental friend cache");
+        SessionStore::Instance().RemoveFriendIdCache(owner, 7);
+        if (!SessionStore::Instance().ListFriendIdsFromCache(owner, &friends) || !friends.empty())
+            return Fail("friend cache empty after remove");
+    }
+
     std::printf("OK session_store_test login/replace/disconnect/reconnect/route/concurrent/idem\n");
     std::printf("PASS session_store_test\n");
     return 0;

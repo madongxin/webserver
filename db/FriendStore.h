@@ -11,6 +11,8 @@ public:
 
     bool EnsureTables();
     void Execute(const gdb::FriendOpReq &req, gdb::FriendOpRsp *rsp);
+    /** 把已过期的 PENDING 标成 EXPIRED，单轮最多 limit 行。 */
+    int ExpireStaleRequests(int limit);
 
 private:
     FriendStore() = default;

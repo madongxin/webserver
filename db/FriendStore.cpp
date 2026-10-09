@@ -237,6 +237,26 @@ void FillBrief(gdb::FriendBriefDb *dst, uint64_t pid, const std::string &name,
     dst->set_remark(remark);
 }
 
+int ExpireStaleRequestsImpl(int limit) {
+    if (limit <= 0)
+        limit = 200;
+    if (limit > 1000)
+        limit = 1000;
+    auto conn = ConnectionPool::getconnectionPool()->getConnection();
+    if (!conn)
+        return 0;
+    const int64_t now = NowUnix();
+    std::ostringstream sql;
+    sql << "UPDATE friend_request SET status=" << kExpired << ",updated_at=" << now
+        << " WHERE status=" << kPending << " AND expire_at<" << now << " LIMIT " << limit;
+    if (!conn->update(sql.str()))
+        return 0;
+    const auto n = mysql_affected_rows(conn->raw());
+    if (n == static_cast<my_ulonglong>(-1))
+        return 0;
+    return static_cast<int>(n);
+}
+
 }  // namespace
 
 FriendStore &FriendStore::Instance() {
@@ -261,6 +281,10 @@ void FriendStore::Execute(const gdb::FriendOpReq &req, gdb::FriendOpRsp *rsp) {
     rsp->Clear();
     if (req.actor_player_id() == 0) {
         Fail(rsp, "ERR_UNAUTHENTICATED", "actor required");
+        return;
+    }
+    if (req.idempotency_key().size() > 96) {
+        Fail(rsp, "ERR_INVALID_ARGUMENT", "idempotency_key too long");
         return;
     }
     auto *pool = ConnectionPool::getconnectionPool();
@@ -494,18 +518,28 @@ void FriendStore::Apply(const gdb::FriendOpReq &req, gdb::FriendOpRsp *rsp) {
         return;
     }
     const int64_t expire = now + static_cast<int64_t>(ExpireDays()) * 86400;
-    uint64_t rid = (static_cast<uint64_t>(now) << 20) ^ (a << 4) ^ b;
-    if (rid == 0)
-        rid = a ^ (b << 1) ^ 1;
-    std::string ikey = req.idempotency_key().empty()
-                           ? ("n:" + std::to_string(rid))
-                           : conn->EscapeSql(req.idempotency_key());
-    std::ostringstream ins;
-    ins << "INSERT INTO friend_request(request_id,from_player_id,to_player_id,status,created_at,"
-           "updated_at,expire_at,idempotency_key) VALUES("
-        << rid << "," << a << "," << b << "," << kPending << "," << now << "," << now << ","
-        << expire << ",'" << ikey << "')";
-    if (!conn->update(ins.str())) {
+    const std::string ikey = req.idempotency_key().empty()
+                                 ? ("n:" + std::to_string(now) + ":" + std::to_string(a) + ":" +
+                                    std::to_string(b))
+                                 : conn->EscapeSql(req.idempotency_key());
+    uint64_t rid = 0;
+    bool inserted = false;
+    for (int n = 0; n < 5 && !inserted; ++n) {
+        rid = (static_cast<uint64_t>(now) << 20) ^ (a << 4) ^ b ^
+              (static_cast<uint64_t>(n) << 48);
+        if (rid == 0)
+            rid = a ^ (b << 1) ^ 1;
+        if (CountSql(conn.get(), "SELECT COUNT(*) FROM friend_request WHERE request_id=" +
+                                     std::to_string(rid)) > 0)
+            continue;
+        std::ostringstream ins;
+        ins << "INSERT INTO friend_request(request_id,from_player_id,to_player_id,status,created_at,"
+               "updated_at,expire_at,idempotency_key) VALUES("
+            << rid << "," << a << "," << b << "," << kPending << "," << now << "," << now << ","
+            << expire << ",'" << ikey << "')";
+        inserted = conn->update(ins.str());
+    }
+    if (!inserted) {
         rollback();
         Fail(rsp, "ERR_RELATION_CONFLICT", "insert conflict");
         return;
@@ -960,3 +994,5 @@ void FriendStore::BlockList(const gdb::FriendOpReq &req, gdb::FriendOpRsp *rsp) 
         rsp->set_next_cursor(std::to_string(rows.back().first));
     Ok(rsp);
 }
+
+int FriendStore::ExpireStaleRequests(int limit) { return ExpireStaleRequestsImpl(limit); }

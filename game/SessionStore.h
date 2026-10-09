@@ -268,10 +268,18 @@ public:
 
     bool BatchQueryPublicPresence(const std::vector<uint64_t> &player_ids,
                                   std::vector<PublicPresence> *out);
-    void ReplaceFriendIdCache(uint64_t player_id, const std::vector<uint64_t> &friend_ids);
+    /** 一次 HGETALL 取出仍在线、且带 gateway 的推送目标。presence 不逐个 PeekSession。 */
+    bool BatchOnlinePushTargets(const std::vector<uint64_t> &player_ids,
+                                std::vector<OnlinePushTarget> *out);
+    /** 失败时删除 key，避免半截集合被当成完整好友列表。 */
+    bool ReplaceFriendIdCache(uint64_t player_id, const std::vector<uint64_t> &friend_ids);
     void AddFriendIdCache(uint64_t player_id, uint64_t friend_id);
     void RemoveFriendIdCache(uint64_t player_id, uint64_t friend_id);
     bool ListFriendIdsFromCache(uint64_t player_id, std::vector<uint64_t> *out);
+    /** `friend:block:{id}`。未命中返回 false；已知空集返回 true 且 out 为空。 */
+    bool ListBlockedIdsFromCache(uint64_t player_id, std::vector<uint64_t> *out);
+    bool ReplaceBlockCache(uint64_t player_id, const std::vector<uint64_t> &blocked_ids);
+    void InvalidateBlockCache(uint64_t player_id);
     /** 离线后好友列表用的最近在线时间，保留 30 天。 */
     void RememberLastSeen(uint64_t player_id, int64_t unix_sec);
     bool BatchLastSeen(const std::vector<uint64_t> &player_ids, std::vector<int64_t> *out);

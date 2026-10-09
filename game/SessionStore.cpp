@@ -10,14 +10,17 @@
 #include "RedisPool.h"
 #include "SecureRandom.h"
 
+#include <algorithm>
 #include <chrono>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
 #include <fstream>
 #include <map>
+#include <mutex>
 #include <sstream>
 #include <thread>
+#include <unordered_map>
 #include <vector>
 
 namespace {
@@ -2239,11 +2242,46 @@ bool SessionStore::ConsumeKeyedQuota(const std::string &key, int limit, int wind
     return atoi(out[0].c_str()) <= limit;
 }
 
+bool LocalFriendApplyQuota(uint64_t player_id) {
+    auto env = [](const char *k, int def) {
+        const char *e = std::getenv(k);
+        if (!e || !*e)
+            return def;
+        const int v = std::atoi(e);
+        return v > 0 ? v : def;
+    };
+    const int per_min = env("GAMEMESH_FRIEND_RATE_PER_MINUTE", 10);
+    const int per_hour = env("GAMEMESH_FRIEND_RATE_PER_HOUR", 50);
+    const int per_day = env("GAMEMESH_FRIEND_RATE_PER_DAY", 200);
+    static std::mutex mu;
+    static std::unordered_map<uint64_t, std::vector<int64_t>> stamps;
+    const int64_t now = NowUnixSec();
+    std::lock_guard<std::mutex> lk(mu);
+    if (stamps.size() > 10000 && stamps.find(player_id) == stamps.end())
+        return false;
+    auto &v = stamps[player_id];
+    v.erase(std::remove_if(v.begin(), v.end(),
+                           [&](int64_t t) { return now - t >= 86400; }),
+            v.end());
+    int minute = 0;
+    int hour = 0;
+    for (int64_t t : v) {
+        if (now - t < 60)
+            ++minute;
+        if (now - t < 3600)
+            ++hour;
+    }
+    if (minute >= per_min || hour >= per_hour || static_cast<int>(v.size()) >= per_day)
+        return false;
+    v.push_back(now);
+    return true;
+}
+
 bool SessionStore::ConsumeFriendApplyQuota(uint64_t player_id) {
     if (player_id == 0)
         return false;
     if (!available_)
-        return true;
+        return LocalFriendApplyQuota(player_id);
     auto env = [](const char *k, int def) {
         const char *e = std::getenv(k);
         if (!e || !*e)
@@ -2266,24 +2304,37 @@ bool SessionStore::ConsumeFriendApplyQuota(uint64_t player_id) {
 
 void SessionStore::SetFriendPresenceFn(FriendPresenceFn fn) { friend_presence_fn_ = fn; }
 
-void SessionStore::ReplaceFriendIdCache(uint64_t player_id, const std::vector<uint64_t> &friend_ids) {
+bool SessionStore::ReplaceFriendIdCache(uint64_t player_id, const std::vector<uint64_t> &friend_ids) {
     if (!available_ || player_id == 0)
-        return;
+        return false;
     auto lease = RedisPool::Instance().Acquire();
     if (!lease)
-        return;
+        return false;
     const std::string key = key_prefix_ + "friend:ids:" + std::to_string(player_id);
-    lease->Del(key);
+    auto wipe = [&]() { lease->Del(key); };
+    if (!lease->Del(key)) {
+        wipe();
+        return false;
+    }
     bool any = false;
     for (uint64_t id : friend_ids) {
         if (id == 0)
             continue;
-        lease->SAdd(key, std::to_string(id));
+        if (!lease->SAdd(key, std::to_string(id))) {
+            wipe();
+            return false;
+        }
         any = true;
     }
-    if (!any)
-        lease->SAdd(key, "0");
-    lease->Expire(key, 1800);
+    if (!any && !lease->SAdd(key, "0")) {
+        wipe();
+        return false;
+    }
+    if (!lease->Expire(key, 1800)) {
+        wipe();
+        return false;
+    }
+    return true;
 }
 
 void SessionStore::AddFriendIdCache(uint64_t player_id, uint64_t friend_id) {
@@ -2293,8 +2344,11 @@ void SessionStore::AddFriendIdCache(uint64_t player_id, uint64_t friend_id) {
     if (!lease)
         return;
     const std::string key = key_prefix_ + "friend:ids:" + std::to_string(player_id);
-    lease->SAdd(key, std::to_string(friend_id));
-    lease->Expire(key, 1800);
+    if (!lease->Exists(key))
+        return;
+    lease->SRem(key, "0");
+    if (!lease->SAdd(key, std::to_string(friend_id)) || !lease->Expire(key, 1800))
+        lease->Del(key);
 }
 
 void SessionStore::RemoveFriendIdCache(uint64_t player_id, uint64_t friend_id) {
@@ -2303,7 +2357,17 @@ void SessionStore::RemoveFriendIdCache(uint64_t player_id, uint64_t friend_id) {
     auto lease = RedisPool::Instance().Acquire();
     if (!lease)
         return;
-    lease->SRem(key_prefix_ + "friend:ids:" + std::to_string(player_id), std::to_string(friend_id));
+    const std::string key = key_prefix_ + "friend:ids:" + std::to_string(player_id);
+    if (!lease->Exists(key))
+        return;
+    if (!lease->SRem(key, std::to_string(friend_id))) {
+        lease->Del(key);
+        return;
+    }
+    if (!lease->Exists(key))
+        lease->SAdd(key, "0");
+    if (!lease->Expire(key, 1800))
+        lease->Del(key);
 }
 
 void SessionStore::RememberLastSeen(uint64_t player_id, int64_t unix_sec) {
@@ -2360,6 +2424,129 @@ bool SessionStore::ListFriendIdsFromCache(uint64_t player_id, std::vector<uint64
         const uint64_t id = static_cast<uint64_t>(std::strtoull(m.c_str(), nullptr, 10));
         if (id != 0)
             out->push_back(id);
+    }
+    return true;
+}
+
+namespace {
+
+bool ReplaceIdSet(RedisClient *lease, const std::string &key, const std::vector<uint64_t> &ids) {
+    if (!lease)
+        return false;
+    if (!lease->Del(key))
+        return false;
+    bool any = false;
+    for (uint64_t id : ids) {
+        if (id == 0)
+            continue;
+        if (!lease->SAdd(key, std::to_string(id))) {
+            lease->Del(key);
+            return false;
+        }
+        any = true;
+    }
+    if (!any && !lease->SAdd(key, "0")) {
+        lease->Del(key);
+        return false;
+    }
+    if (!lease->Expire(key, 1800)) {
+        lease->Del(key);
+        return false;
+    }
+    return true;
+}
+
+bool ListIdSet(RedisClient *lease, const std::string &key, std::vector<uint64_t> *out) {
+    if (!lease || !out)
+        return false;
+    out->clear();
+    if (!lease->Exists(key))
+        return false;
+    std::vector<std::string> members;
+    if (!lease->SMembers(key, &members))
+        return false;
+    for (const auto &m : members) {
+        const uint64_t id = static_cast<uint64_t>(std::strtoull(m.c_str(), nullptr, 10));
+        if (id != 0)
+            out->push_back(id);
+    }
+    return true;
+}
+
+}  // namespace
+
+bool SessionStore::ListBlockedIdsFromCache(uint64_t player_id, std::vector<uint64_t> *out) {
+    if (!out || !available_ || player_id == 0)
+        return false;
+    auto lease = RedisPool::Instance().Acquire();
+    if (!lease)
+        return false;
+    return ListIdSet(lease.get(), key_prefix_ + "friend:block:" + std::to_string(player_id), out);
+}
+
+bool SessionStore::ReplaceBlockCache(uint64_t player_id, const std::vector<uint64_t> &blocked_ids) {
+    if (!available_ || player_id == 0)
+        return false;
+    auto lease = RedisPool::Instance().Acquire();
+    if (!lease)
+        return false;
+    return ReplaceIdSet(lease.get(), key_prefix_ + "friend:block:" + std::to_string(player_id),
+                        blocked_ids);
+}
+
+void SessionStore::InvalidateBlockCache(uint64_t player_id) {
+    if (!available_ || player_id == 0)
+        return;
+    auto lease = RedisPool::Instance().Acquire();
+    if (!lease)
+        return;
+    lease->Del(key_prefix_ + "friend:block:" + std::to_string(player_id));
+}
+
+bool SessionStore::BatchOnlinePushTargets(const std::vector<uint64_t> &player_ids,
+                                          std::vector<OnlinePushTarget> *out) {
+    if (!out)
+        return false;
+    out->clear();
+    if (!available_)
+        return false;
+    if (player_ids.empty())
+        return true;
+    auto lease = RedisPool::Instance().Acquire();
+    if (!lease)
+        return false;
+    std::vector<std::string> keys;
+    keys.reserve(player_ids.size());
+    for (uint64_t id : player_ids)
+        keys.push_back(SessionKey(id));
+    std::vector<std::map<std::string, std::string>> rows;
+    if (!lease->HGetAllMany(keys, &rows) || rows.size() != keys.size())
+        return false;
+    for (size_t i = 0; i < rows.size(); ++i) {
+        const auto &fields = rows[i];
+        if (fields.empty())
+            continue;
+        const auto state_it = fields.find("state");
+        const std::string state = state_it == fields.end() ? std::string() : state_it->second;
+        if (StateFromString(state) != SessionState::Online)
+            continue;
+        OnlinePushTarget target;
+        target.player_id = player_ids[i];
+        const auto gw = fields.find("gatewayId");
+        const auto sid = fields.find("sessionId");
+        const auto fence = fields.find("token");
+        const auto gen = fields.find("generation");
+        if (gw != fields.end())
+            target.gateway_id = gw->second;
+        if (sid != fields.end())
+            target.session_id = sid->second;
+        if (fence != fields.end())
+            target.fence_token = fence->second;
+        if (gen != fields.end())
+            target.generation = ParseU64(gen->second);
+        if (target.gateway_id.empty() || target.session_id.empty())
+            continue;
+        out->push_back(std::move(target));
     }
     return true;
 }

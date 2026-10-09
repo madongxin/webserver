@@ -2550,6 +2550,8 @@ bool GameLogic::HandleRespawn(const game::RespawnReq &req, game::GameResponse *r
  * 根据 req.body_case()（protobuf oneof）路由到具体 Handler；
  * 游戏类接口（consume / skill / grant）会先 RequireSessionToken 校验 session_token。
  */
+void GameLogic::SetFriendCommandsEnabled(bool enabled) { friend_commands_enabled_ = enabled; }
+
 bool GameLogic::Handle(const game::GameRequest &req, game::GameResponse *rsp) {
     struct LogicHandleTimer {
         std::chrono::steady_clock::time_point t0{std::chrono::steady_clock::now()};
@@ -2564,6 +2566,28 @@ bool GameLogic::Handle(const game::GameRequest &req, game::GameResponse *rsp) {
         return false;
     rsp->Clear();
     rsp->set_seq(req.seq());  // 与请求 seq 对齐，便于客户端匹配异步响应
+    switch (req.body_case()) {
+    case game::GameRequest::kFriendList:
+    case game::GameRequest::kFriendSearch:
+    case game::GameRequest::kFriendApply:
+    case game::GameRequest::kFriendAccept:
+    case game::GameRequest::kFriendReject:
+    case game::GameRequest::kFriendDelete:
+    case game::GameRequest::kFriendRequestList:
+    case game::GameRequest::kFriendBlock:
+    case game::GameRequest::kFriendUnblock:
+    case game::GameRequest::kFriendBlockList:
+        if (!friend_commands_enabled_) {
+            LOG_WARN << "[friend] gamelogic rejected friend command seq=" << req.seq();
+            rsp->set_ok(false);
+            rsp->set_error_code("ERR_WRONG_ROUTE");
+            rsp->set_message("friend commands are served by world");
+            return false;
+        }
+        break;
+    default:
+        break;
+    }
     switch (req.body_case()) {
         case game::GameRequest::kLogin:
             return HandleLogin(req.login(), rsp);

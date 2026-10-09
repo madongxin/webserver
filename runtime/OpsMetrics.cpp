@@ -150,6 +150,76 @@ std::string OpsMetrics::PrometheusText() const {
         ServerStats::session_replace_notify_failed.load(std::memory_order_relaxed));
     ctr("gamemesh_redis_lua_errors_total", "Redis Lua EVAL returned an error.",
         ServerStats::redis_lua_errors.load(std::memory_order_relaxed));
+    os << "# HELP gamemesh_friend_request_total Friend apply results.\n"
+          "# TYPE gamemesh_friend_request_total counter\n";
+    os << "gamemesh_friend_request_total{result=\"ok\"} "
+       << ServerStats::friend_request_ok.load(std::memory_order_relaxed) << "\n";
+    os << "gamemesh_friend_request_total{result=\"denied\"} "
+       << ServerStats::friend_request_denied.load(std::memory_order_relaxed) << "\n";
+    os << "gamemesh_friend_request_total{result=\"error\"} "
+       << ServerStats::friend_request_error.load(std::memory_order_relaxed) << "\n";
+    ctr("gamemesh_friend_accept_total", "Friend accepts that committed.",
+        ServerStats::friend_accept_total.load(std::memory_order_relaxed));
+    ctr("gamemesh_friend_delete_total", "Friend deletes that committed.",
+        ServerStats::friend_delete_total.load(std::memory_order_relaxed));
+    ctr("gamemesh_friend_block_total", "Friend blocks that committed.",
+        ServerStats::friend_block_total.load(std::memory_order_relaxed));
+    ctr("gamemesh_friend_gamedb_error_total", "Friend GameDB calls that failed.",
+        ServerStats::friend_gamedb_error.load(std::memory_order_relaxed));
+    ctr("gamemesh_friend_transaction_conflict_total", "Friend ops that hit ERR_RELATION_CONFLICT.",
+        ServerStats::friend_transaction_conflict.load(std::memory_order_relaxed));
+    ctr("gamemesh_friend_replay_append_fail_total", "Reliable friend push could not be stored.",
+        ServerStats::friend_replay_append_fail.load(std::memory_order_relaxed));
+    ctr("gamemesh_friend_cache_hit_total", "Friend id cache hits.",
+        ServerStats::friend_cache_hit.load(std::memory_order_relaxed));
+    ctr("gamemesh_friend_cache_miss_total", "Friend id cache misses.",
+        ServerStats::friend_cache_miss.load(std::memory_order_relaxed));
+    ctr("gamemesh_friend_block_gate_cache_hit_total", "Whisper block cache hits.",
+        ServerStats::friend_block_gate_cache_hit.load(std::memory_order_relaxed));
+    ctr("gamemesh_friend_block_gate_cache_miss_total", "Whisper block cache misses.",
+        ServerStats::friend_block_gate_cache_miss.load(std::memory_order_relaxed));
+    ctr("gamemesh_friend_block_gate_degraded_total", "Whisper allowed because the block cache was down.",
+        ServerStats::friend_block_gate_degraded.load(std::memory_order_relaxed));
+    ctr("gamemesh_friend_presence_queue_drop_total", "Presence updates dropped because the queue was full.",
+        ServerStats::friend_presence_queue_drop.load(std::memory_order_relaxed));
+    ctr("gamemesh_friend_presence_coalesced_total", "Presence updates merged inside the window.",
+        ServerStats::friend_presence_coalesced.load(std::memory_order_relaxed));
+    os << "# HELP gamemesh_friend_presence_batch_size Last presence PushBatch size.\n"
+          "# TYPE gamemesh_friend_presence_batch_size gauge\n";
+    os << "gamemesh_friend_presence_batch_size "
+       << ServerStats::friend_presence_batch_size.load(std::memory_order_relaxed) << "\n";
+    os << "# HELP gamemesh_friend_push_success Friend pushes accepted by a gateway.\n"
+          "# TYPE gamemesh_friend_push_success counter\n";
+    os << "gamemesh_friend_push_success{type=\"request\"} "
+       << ServerStats::friend_push_ok_request.load(std::memory_order_relaxed) << "\n";
+    os << "gamemesh_friend_push_success{type=\"added\"} "
+       << ServerStats::friend_push_ok_added.load(std::memory_order_relaxed) << "\n";
+    os << "gamemesh_friend_push_success{type=\"removed\"} "
+       << ServerStats::friend_push_ok_removed.load(std::memory_order_relaxed) << "\n";
+    os << "gamemesh_friend_push_success{type=\"presence\"} "
+       << ServerStats::friend_push_ok_presence.load(std::memory_order_relaxed) << "\n";
+    os << "# HELP gamemesh_friend_push_fail Friend pushes a gateway rejected.\n"
+          "# TYPE gamemesh_friend_push_fail counter\n";
+    os << "gamemesh_friend_push_fail{type=\"request\"} "
+       << ServerStats::friend_push_fail_request.load(std::memory_order_relaxed) << "\n";
+    os << "gamemesh_friend_push_fail{type=\"added\"} "
+       << ServerStats::friend_push_fail_added.load(std::memory_order_relaxed) << "\n";
+    os << "gamemesh_friend_push_fail{type=\"removed\"} "
+       << ServerStats::friend_push_fail_removed.load(std::memory_order_relaxed) << "\n";
+    os << "gamemesh_friend_push_fail{type=\"presence\"} "
+       << ServerStats::friend_push_fail_presence.load(std::memory_order_relaxed) << "\n";
+    os << "gamemesh_friend_list_latency_ms_sum "
+       << ServerStats::friend_list_latency_ms_sum.load(std::memory_order_relaxed) << "\n";
+    os << "gamemesh_friend_list_latency_count "
+       << ServerStats::friend_list_latency_count.load(std::memory_order_relaxed) << "\n";
+    os << "gamemesh_friend_gamedb_latency_ms_sum "
+       << ServerStats::friend_gamedb_latency_ms_sum.load(std::memory_order_relaxed) << "\n";
+    os << "gamemesh_friend_gamedb_latency_count "
+       << ServerStats::friend_gamedb_latency_count.load(std::memory_order_relaxed) << "\n";
+    os << "gamemesh_friend_online_batch_latency_ms_sum "
+       << ServerStats::friend_online_batch_latency_ms_sum.load(std::memory_order_relaxed) << "\n";
+    os << "gamemesh_friend_online_batch_latency_count "
+       << ServerStats::friend_online_batch_latency_count.load(std::memory_order_relaxed) << "\n";
     ctr("gamemesh_db_pool_exhausted_total", "MySQL pool wait timed out with no connection.",
         ServerStats::db_pool_exhausted.load(std::memory_order_relaxed));
     os << "# HELP gamemesh_db_pool_wait_ms MySQL connection checkout latency.\n"

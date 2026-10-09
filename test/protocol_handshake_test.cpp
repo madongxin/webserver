@@ -2,6 +2,7 @@
  * S1：Hello 策略、schema 校验、统一错误码。
  */
 #include "FormalMode.h"
+#include "FriendPresenceBatch.h"
 #include "ProtocolHandshake.h"
 #include "PublicError.h"
 #include "game.pb.h"
@@ -39,6 +40,10 @@ int main() {
     Expect(gameproto::ErrorCodeRetryable("ERR_DEPENDENCY_UNAVAILABLE"), "dependency retryable");
     Expect(!gameproto::ErrorCodeRetryable("ERR_UNAUTHENTICATED"), "unauth not retryable");
     Expect(!gameproto::ErrorCodeRetryable("ERR_ALREADY_FRIEND"), "already friend not retryable");
+    Expect(!gameproto::ErrorCodeRetryable("ERR_NOT_FRIEND"), "not friend not retryable");
+    Expect(!gameproto::ErrorCodeRetryable("ERR_REQUEST_EXPIRED"), "expired not retryable");
+    Expect(!gameproto::ErrorCodeRetryable("ERR_FRIEND_LIMIT"), "friend cap not retryable");
+    Expect(!gameproto::ErrorCodeRetryable("ERR_WRONG_ROUTE"), "wrong route not retryable");
     Expect(gameproto::SanitizePublicMessage("mysql_query failed innodb") == "dependency unavailable",
            "sanitize mysql");
 
@@ -145,6 +150,32 @@ int main() {
     no_line.set_message("map line not found");
     gameproto::PromotePublicError(&no_line, 1);
     Expect(no_line.error_code() == std::string(gameproto::kErrMapNoLine), "keep map no line");
+
+    game::GameResponse frequent;
+    frequent.set_ok(false);
+    frequent.mutable_friend_apply()->set_ok(false);
+    frequent.mutable_friend_apply()->set_error_code("ERR_OPERATION_TOO_FREQUENT");
+    gameproto::PromotePublicError(&frequent, 1);
+    Expect(frequent.retryable(), "gateway keeps friend rate retryable");
+    Expect(frequent.error_code() == "ERR_OPERATION_TOO_FREQUENT", "friend rate code survives gateway");
+
+    game::GameResponse expired;
+    expired.set_ok(false);
+    expired.mutable_friend_accept()->set_ok(false);
+    expired.mutable_friend_accept()->set_error_code("ERR_REQUEST_EXPIRED");
+    gameproto::PromotePublicError(&expired, 1);
+    Expect(!expired.retryable(), "expired accept is terminal");
+
+    std::vector<FriendPresenceDest> dests;
+    dests.push_back(FriendPresenceDest{1, "gw-a"});
+    dests.push_back(FriendPresenceDest{2, "gw-b"});
+    dests.push_back(FriendPresenceDest{3, "gw-a"});
+    dests.push_back(FriendPresenceDest{4, "gw-a"});
+    const auto batches = SplitPresenceBatches(dests, 2);
+    Expect(batches.size() == 3, "presence splits by gateway and batch size");
+    Expect(batches[0].gateway_id == "gw-a" && batches[0].player_ids.size() == 2, "first gw-a batch");
+    Expect(batches[1].gateway_id == "gw-a" && batches[1].player_ids.size() == 1, "second gw-a batch");
+    Expect(batches[2].gateway_id == "gw-b" && batches[2].player_ids.size() == 1, "gw-b batch");
 
     if (fails) {
         std::printf("protocol_handshake_test FAIL count=%d\n", fails);

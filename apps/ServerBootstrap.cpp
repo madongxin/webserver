@@ -32,12 +32,14 @@
 #include "PlayerItemPersistQueue.h"
 #include "PlayerItemStore.h"
 #ifdef WEBSERVER_ENABLE_GAME_PROTOBUF
+#include "FriendStore.h"
 #include "MailExpireScanner.h"
 #include "MailService.h"
 #endif
 #endif
 #ifdef WEBSERVER_ENABLE_GAME_PROTOBUF
 #include "GameTcpGateway.h"
+#include "FriendService.h"
 #include "GameLogic.h"
 #include "GatewayConnRegistry.h"
 #include "MapCatalog.h"
@@ -1147,6 +1149,10 @@ int RunServer(const LaunchOpts &launch) {
 
     const std::string &role = opts.role;
     g_process_role = role;
+#ifdef WEBSERVER_ENABLE_GAME_PROTOBUF
+    if (role == "gamelogic" && FormalModeEnabled())
+        GameLogic::Instance().SetFriendCommandsEnabled(false);
+#endif
     const int port = opts.http_port;
     int game_port = opts.game_port;
 #ifdef WEBSERVER_ENABLE_BRPC
@@ -2011,6 +2017,9 @@ int RunServer(const LaunchOpts &launch) {
             OpsMetrics::Instance().SetOutboxBacklog(
                 static_cast<int64_t>(GameDbOutbox::Instance().CountUnpublished()));
         });
+#ifdef WEBSERVER_ENABLE_GAME_PROTOBUF
+        loop.RunEvery(60.0, []() { FriendStore::Instance().ExpireStaleRequests(200); });
+#endif
     }
 #endif
     ServiceHealth::Instance().SetReady(true);
@@ -2020,6 +2029,10 @@ int RunServer(const LaunchOpts &launch) {
     ServiceHealth::Instance().SetDraining(true);
     ServiceHealth::Instance().SetReady(false);
     LOG_INFO << "graceful shutdown begin role=" << role;
+#ifdef WEBSERVER_ENABLE_GAME_PROTOBUF
+    if (role == "world" || role == "all" || role == "gamelogic")
+        FriendService::Instance().StopPresenceFanout();
+#endif
 #ifdef WEBSERVER_ENABLE_GAME_PROTOBUF
     if (game_tcp_gw)
         game_tcp_gw->StopAccepting();

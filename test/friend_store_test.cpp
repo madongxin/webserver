@@ -132,6 +132,63 @@ int main() {
     FriendStore::Instance().Execute(req, &rsp);
     Expect(rsp.ok() && rsp.privacy_ok(), "gate hidden when blocked by peer");
 
+    req.Clear();
+    req.set_op("DELETE");
+    req.set_actor_player_id(a);
+    req.set_target_player_id(b);
+    req.set_idempotency_key("del-missing:" + std::to_string(suffix));
+    FriendStore::Instance().Execute(req, &rsp);
+    Expect(!rsp.ok() && rsp.error_code() == "ERR_NOT_FRIEND" && rsp.idempotent_hit(),
+           "delete missing retries the stored error");
+
+    const uint64_t c = a + 2;
+    const uint64_t d = a + 3;
+    EnsurePlayer(c, "fc_" + std::to_string(c));
+    EnsurePlayer(d, "fd_" + std::to_string(d));
+    req.Clear();
+    req.set_op("APPLY");
+    req.set_actor_player_id(c);
+    req.set_target_player_id(d);
+    req.set_idempotency_key("apply-exp:" + std::to_string(suffix));
+    FriendStore::Instance().Execute(req, &rsp);
+    Expect(rsp.ok() && rsp.request_id() != 0, "apply for expiry");
+    const uint64_t exp_rid = rsp.request_id();
+    {
+        auto conn = ConnectionPool::getconnectionPool()->getConnection();
+        Expect(conn != nullptr, "mysql for expiry update");
+        if (conn) {
+            Expect(conn->update("UPDATE friend_request SET expire_at=1 WHERE request_id=" +
+                                std::to_string(exp_rid)),
+                   "force expire");
+        }
+    }
+    req.Clear();
+    req.set_op("ACCEPT");
+    req.set_actor_player_id(d);
+    req.set_request_id(exp_rid);
+    req.set_idempotency_key("accept-exp:" + std::to_string(suffix));
+    FriendStore::Instance().Execute(req, &rsp);
+    Expect(!rsp.ok() && rsp.error_code() == "ERR_REQUEST_EXPIRED", "accept expired");
+
+    req.Clear();
+    req.set_op("APPLY");
+    req.set_actor_player_id(c);
+    req.set_target_player_id(d);
+    req.set_idempotency_key("apply-again:" + std::to_string(suffix));
+    FriendStore::Instance().Execute(req, &rsp);
+    Expect(rsp.ok() && rsp.request_id() != 0 && rsp.request_id() != exp_rid,
+           "expired pending does not block a new apply");
+
+    Expect(FriendStore::Instance().ExpireStaleRequests(50) >= 0, "expire sweep runs");
+
+    req.Clear();
+    req.set_op("APPLY");
+    req.set_actor_player_id(c);
+    req.set_target_player_id(d);
+    req.set_idempotency_key(std::string(97, 'k'));
+    FriendStore::Instance().Execute(req, &rsp);
+    Expect(!rsp.ok() && rsp.error_code() == "ERR_INVALID_ARGUMENT", "idempotency key length");
+
     if (fails) {
         std::printf("friend_store_test FAIL count=%d\n", fails);
         return 1;

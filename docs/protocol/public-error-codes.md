@@ -58,5 +58,10 @@
 | `ERR_NOT_FRIEND` | 当前不是好友 | 否 | 刷新列表 |
 | `ERR_OPERATION_TOO_FREQUENT` | 好友申请过于频繁 | 是 | 等待后重试 |
 | `ERR_RELATION_CONFLICT` | 关系并发冲突 | 是 | 刷新后重试 |
+| `ERR_WRONG_ROUTE` | 好友命令打到了 GameLogic | 否 | 改走 World |
+
+好友终态不可重试：`ERR_ALREADY_FRIEND`、`ERR_NOT_FRIEND`、`ERR_REQUEST_EXPIRED`、`ERR_FRIEND_LIMIT`、`ERR_TARGET_FRIEND_LIMIT`、`ERR_WRONG_ROUTE` 的 `retryable` 为 false。`ERR_OPERATION_TOO_FREQUENT` 与 `ERR_RELATION_CONFLICT` 经 Gateway `PromotePublicError` 之后仍为 true。
+
+好友上限、申请过期和申请频率由环境变量配置，默认好友 100、黑名单 100、待处理 50、过期 7 天、每分钟/小时/天 10/50/200：`GAMEMESH_FRIEND_MAX_COUNT`、`GAMEMESH_FRIEND_BLOCK_MAX`、`GAMEMESH_FRIEND_REQUEST_MAX_PENDING`、`GAMEMESH_FRIEND_REQUEST_EXPIRE_DAYS`、`GAMEMESH_FRIEND_RATE_PER_MINUTE`、`GAMEMESH_FRIEND_RATE_PER_HOUR`、`GAMEMESH_FRIEND_RATE_PER_DAY`。写操作的 `operation_id` 原样作为幂等键，最长 96 字节，空串会被拒绝。
 
 Gateway 在 Hello/心跳/未登录拒绝路径直接填写顶层码。GameLogic/GameDB 回包由 `PromotePublicError` 提升子响应 `error_code` 并消毒 `message`。

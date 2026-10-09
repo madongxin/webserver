@@ -24,6 +24,8 @@ public:
     bool HandleBlockList(const game::FriendBlockListReq &req, game::GameResponse *rsp);
 
     void FanoutPresence(uint64_t player_id, bool online);
+    /** 停服前停掉 presence 线程，避免退出后还访问 Redis。 */
+    void StopPresenceFanout();
     FriendWhisperGate GateWhisper(uint64_t actor_player_id, uint64_t target_player_id,
                                   std::string *error_code);
 
