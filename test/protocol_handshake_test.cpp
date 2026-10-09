@@ -34,7 +34,11 @@ int main() {
     ::unsetenv("GAMEMESH_FORMAL");
 
     Expect(gameproto::ErrorCodeRetryable("ERR_RATE_LIMITED"), "retryable rate");
+    Expect(gameproto::ErrorCodeRetryable("ERR_OPERATION_TOO_FREQUENT"), "friend apply rate retryable");
+    Expect(gameproto::ErrorCodeRetryable("ERR_RELATION_CONFLICT"), "friend conflict retryable");
+    Expect(gameproto::ErrorCodeRetryable("ERR_DEPENDENCY_UNAVAILABLE"), "dependency retryable");
     Expect(!gameproto::ErrorCodeRetryable("ERR_UNAUTHENTICATED"), "unauth not retryable");
+    Expect(!gameproto::ErrorCodeRetryable("ERR_ALREADY_FRIEND"), "already friend not retryable");
     Expect(gameproto::SanitizePublicMessage("mysql_query failed innodb") == "dependency unavailable",
            "sanitize mysql");
 

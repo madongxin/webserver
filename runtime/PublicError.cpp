@@ -174,7 +174,8 @@ std::string NormalizePublicErrorCode(const std::string &code) {
 
 bool ErrorCodeRetryable(const std::string &code) {
     return code == kErrRateLimited || code == kErrOverloaded || code == kErrDependencyUnavailable ||
-           code == kErrAoiResyncRequired;
+           code == kErrAoiResyncRequired || code == "ERR_OPERATION_TOO_FREQUENT" ||
+           code == "ERR_RELATION_CONFLICT";
 }
 
 int64_t PublicNowMs() {
