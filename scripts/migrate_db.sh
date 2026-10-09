@@ -111,6 +111,13 @@ def verify_friend():
         if not tables:
             sys.stderr.write("ERROR: %s missing; run ./scripts/migrate_db.sh\n" % t)
             sys.exit(1)
+    cols = set()
+    for line in mysql("SHOW COLUMNS FROM friend_op_idempotency").splitlines():
+        if line.strip():
+            cols.add(line.split("\t")[0])
+    if "subject_name" not in cols:
+        sys.stderr.write("ERROR: friend_op_idempotency missing subject_name; run ./scripts/migrate_db.sh\n")
+        sys.exit(1)
     print("verify friend tables ok")
 
 if mode == "verify":

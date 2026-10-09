@@ -11,6 +11,7 @@
 #include <chrono>
 #include <cstdio>
 #include <string>
+#include <thread>
 
 namespace {
 
@@ -33,6 +34,21 @@ uint64_t EnsurePlayer(uint64_t pid, const std::string &name) {
     std::string err, code;
     PlayerProfileStore::Instance().EnsureDefault(pid, name, &err);
     return pid;
+}
+
+int64_t CountPending(uint64_t from, uint64_t to) {
+    auto conn = ConnectionPool::getconnectionPool()->getConnection();
+    if (!conn)
+        return -1;
+    MYSQL_RES *res = conn->query("SELECT COUNT(*) FROM friend_request WHERE from_player_id=" +
+                                 std::to_string(from) + " AND to_player_id=" + std::to_string(to) +
+                                 " AND status=0");
+    if (!res)
+        return -1;
+    MYSQL_ROW row = mysql_fetch_row(res);
+    const int64_t n = row && row[0] ? std::stoll(row[0]) : -1;
+    mysql_free_result(res);
+    return n;
 }
 
 }  // namespace
@@ -211,6 +227,175 @@ int main() {
     req.set_idempotency_key(shared);
     FriendStore::Instance().Execute(req, &rsp);
     Expect(!rsp.ok() && rsp.error_code() == "ERR_INVALID_ARGUMENT", "same key different target");
+
+    const uint64_t na = a + 6;
+    const uint64_t nb = a + 7;
+    const uint64_t nc = a + 8;
+    const std::string name_a = "nA_" + std::to_string(suffix);
+    const std::string name_b = "nB_" + std::to_string(suffix);
+    EnsurePlayer(na, name_a);
+    EnsurePlayer(nb, name_b);
+    EnsurePlayer(nc, "nC_" + std::to_string(nc));
+
+    req.Clear();
+    req.set_op("SEARCH");
+    req.set_actor_player_id(nc);
+    req.set_target_player_id(na);
+    FriendStore::Instance().Execute(req, &rsp);
+    Expect(rsp.ok() && rsp.player().player_id() == na && rsp.player().level() == 1, "search by id");
+
+    req.Clear();
+    req.set_op("SEARCH");
+    req.set_actor_player_id(nc);
+    req.set_exact_name(name_a);
+    FriendStore::Instance().Execute(req, &rsp);
+    Expect(rsp.ok() && rsp.player().player_id() == na && rsp.player().name() == name_a,
+           "search by exact name");
+
+    req.Clear();
+    req.set_op("SEARCH");
+    req.set_actor_player_id(nc);
+    FriendStore::Instance().Execute(req, &rsp);
+    Expect(!rsp.ok() && rsp.error_code() == "ERR_INVALID_ARGUMENT", "search empty target");
+
+    req.set_exact_name("missing_" + std::to_string(suffix));
+    FriendStore::Instance().Execute(req, &rsp);
+    Expect(!rsp.ok() && rsp.error_code() == "ERR_PLAYER_NOT_FOUND", "search missing name");
+
+    const uint64_t amb1 = a + 9;
+    const uint64_t amb2 = a + 10;
+    const std::string amb = "amb_" + std::to_string(suffix);
+    EnsurePlayer(amb1, amb);
+    EnsurePlayer(amb2, amb);
+    req.Clear();
+    req.set_op("SEARCH");
+    req.set_actor_player_id(nc);
+    req.set_exact_name(amb);
+    FriendStore::Instance().Execute(req, &rsp);
+    Expect(!rsp.ok() && rsp.error_code() == "ERR_NAME_AMBIGUOUS", "search ambiguous name");
+
+    const std::string name_key = "name-apply:" + std::to_string(suffix);
+    req.Clear();
+    req.set_op("APPLY");
+    req.set_actor_player_id(nc);
+    req.set_exact_name(name_a);
+    req.set_idempotency_key(name_key);
+    FriendStore::Instance().Execute(req, &rsp);
+    Expect(rsp.ok() && rsp.request_id() != 0, "apply by name A");
+    const uint64_t name_rid = rsp.request_id();
+
+    req.Clear();
+    req.set_op("APPLY");
+    req.set_actor_player_id(nc);
+    req.set_exact_name(name_b);
+    req.set_idempotency_key(name_key);
+    FriendStore::Instance().Execute(req, &rsp);
+    Expect(!rsp.ok() && rsp.error_code() == "ERR_INVALID_ARGUMENT", "same key name A then name B");
+    Expect(CountPending(nc, nb) == 0, "name B has no request");
+
+    req.Clear();
+    req.set_op("APPLY");
+    req.set_actor_player_id(nc);
+    req.set_target_player_id(na);
+    req.set_idempotency_key(name_key);
+    FriendStore::Instance().Execute(req, &rsp);
+    Expect(rsp.idempotent_hit() && rsp.request_id() == name_rid, "same key name A then id A");
+
+    const std::string miss_key = "miss-name:" + std::to_string(suffix);
+    req.Clear();
+    req.set_op("APPLY");
+    req.set_actor_player_id(nc);
+    req.set_exact_name("missing_" + std::to_string(suffix));
+    req.set_idempotency_key(miss_key);
+    FriendStore::Instance().Execute(req, &rsp);
+    Expect(!rsp.ok() && rsp.error_code() == "ERR_PLAYER_NOT_FOUND", "unresolved name stored");
+
+    req.Clear();
+    req.set_op("APPLY");
+    req.set_actor_player_id(nc);
+    req.set_target_player_id(nb);
+    req.set_idempotency_key(miss_key);
+    FriendStore::Instance().Execute(req, &rsp);
+    Expect(!rsp.ok() && rsp.error_code() == "ERR_INVALID_ARGUMENT",
+           "unresolved name key cannot switch to an id");
+    Expect(CountPending(nc, nb) == 0, "switched id has no request");
+
+    req.Clear();
+    req.set_op("APPLY");
+    req.set_actor_player_id(na);
+    req.set_target_player_id(nb);
+    req.set_idempotency_key(name_key);
+    FriendStore::Instance().Execute(req, &rsp);
+    Expect(rsp.ok() && rsp.request_id() != 0, "different actor may reuse a key string");
+
+    const uint64_t p1 = a + 11;
+    const uint64_t p2 = a + 12;
+    const uint64_t p3 = a + 13;
+    EnsurePlayer(p1, "p1_" + std::to_string(p1));
+    EnsurePlayer(p2, "p2_" + std::to_string(p2));
+    EnsurePlayer(p3, "p3_" + std::to_string(p3));
+    req.Clear();
+    req.set_op("APPLY");
+    req.set_actor_player_id(p1);
+    req.set_target_player_id(p2);
+    req.set_idempotency_key("acc-a:" + std::to_string(suffix));
+    FriendStore::Instance().Execute(req, &rsp);
+    Expect(rsp.ok(), "apply for accept key");
+    const uint64_t acc_rid = rsp.request_id();
+    req.set_actor_player_id(p3);
+    req.set_idempotency_key("acc-b:" + std::to_string(suffix));
+    FriendStore::Instance().Execute(req, &rsp);
+    Expect(rsp.ok(), "second apply for accept key");
+    const uint64_t other_rid = rsp.request_id();
+    const std::string acc_key = "accept-share:" + std::to_string(suffix);
+    req.Clear();
+    req.set_op("ACCEPT");
+    req.set_actor_player_id(p2);
+    req.set_request_id(acc_rid);
+    req.set_idempotency_key(acc_key);
+    FriendStore::Instance().Execute(req, &rsp);
+    Expect(rsp.ok(), "accept first request");
+    req.set_request_id(other_rid);
+    FriendStore::Instance().Execute(req, &rsp);
+    Expect(!rsp.ok() && rsp.error_code() == "ERR_INVALID_ARGUMENT", "same key different request_id");
+
+    const uint64_t race_from = a + 14;
+    const uint64_t race_to = a + 15;
+    EnsurePlayer(race_from, "racef_" + std::to_string(race_from));
+    EnsurePlayer(race_to, "racet_" + std::to_string(race_to));
+    const std::string race_key = "race:" + std::to_string(suffix);
+    gdb::FriendOpRsp race_a;
+    gdb::FriendOpRsp race_b;
+    std::thread t1([&]() {
+        gdb::FriendOpReq one;
+        one.set_op("APPLY");
+        one.set_actor_player_id(race_from);
+        one.set_target_player_id(race_to);
+        one.set_idempotency_key(race_key);
+        FriendStore::Instance().Execute(one, &race_a);
+    });
+    std::thread t2([&]() {
+        gdb::FriendOpReq one;
+        one.set_op("APPLY");
+        one.set_actor_player_id(race_from);
+        one.set_target_player_id(race_to);
+        one.set_idempotency_key(race_key);
+        FriendStore::Instance().Execute(one, &race_b);
+    });
+    t1.join();
+    t2.join();
+    const bool race_ok = race_a.ok() || race_b.ok();
+    const bool race_safe =
+        (!race_a.ok() || race_a.request_id() != 0) && (!race_b.ok() || race_b.request_id() != 0);
+    Expect(race_ok && race_safe && CountPending(race_from, race_to) == 1, "concurrent same key");
+    req.Clear();
+    req.set_op("APPLY");
+    req.set_actor_player_id(race_from);
+    req.set_target_player_id(race_to);
+    req.set_idempotency_key(race_key);
+    FriendStore::Instance().Execute(req, &rsp);
+    Expect(rsp.idempotent_hit() && rsp.ok() && CountPending(race_from, race_to) == 1,
+           "concurrent key retries the stored apply");
 
     if (fails) {
         std::printf("friend_store_test FAIL count=%d\n", fails);

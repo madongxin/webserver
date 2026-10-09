@@ -382,6 +382,8 @@ bool FriendService::HandleList(const game::FriendListReq &req, game::GameRespons
 }
 
 namespace {
+// 角色表没有区服列。这里只比较双方都在线时的会话 server_id。
+// 任一方离线、会话没有 server_id、或 Redis 不可用时保持放行，避免把离线玩家全部拒绝。
 bool SameRealm(uint64_t actor, uint64_t target) {
 #ifdef WEBSERVER_ENABLE_REDIS
     if (!SessionStore::Instance().Available() || actor == 0 || target == 0)
