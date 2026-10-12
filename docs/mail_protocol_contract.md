@@ -47,6 +47,10 @@
 
 `STATE_SYNC_REQUIRED` 表示数据库可能已经入账，内存背包没对齐。客户端必须按权威背包重拉，不能把它当成“肯定没发奖”。同一 `idempotency_key` 重试不得生成第二份道具。
 
+批量领取要看每封 `MailClaimResult`。`MailBatchClaimRsp.ok` 只表示至少有一封领取调用返回成功，全部失败时它为 false。外层 `GameResponse.ok` 只表示这批请求已经处理完，不表示每封都成功。
+
+幂等查询失败返回 `INTERNAL_ERROR`，不会当成“没有这把钥匙”再执行一次。
+
 ## 版本与推送
 
 `mailbox_version` 存在进程内存，重启或多实例后不保证单调。客户端不能只靠它判断新旧，登录和重连必须拉摘要和列表。

@@ -448,32 +448,37 @@ bool MailStore::UpdateAttachmentsClaimState(Connection *conn, uint64_t mail_id,
     return conn->update(sql.str());
 }
 
-bool MailStore::FindByBusinessKey(const std::string &source_system, const std::string &business_key,
-                                  uint64_t receiver_id, mail::MailInstanceRow *out) {
+MailLookup MailStore::FindByBusinessKey(const std::string &source_system,
+                                         const std::string &business_key, uint64_t receiver_id,
+                                         mail::MailInstanceRow *out) {
     if (!out || !EnsureTables())
-        return false;
+        return MailLookup::kError;
     auto conn = GetConnection();
     if (!conn)
-        return false;
+        return MailLookup::kError;
     std::ostringstream sql;
     sql << "SELECT " << kMailSelectCols << " FROM mail_instance WHERE source_system='"
         << SqlEscape(source_system) << "' AND business_key='" << SqlEscape(business_key)
         << "' AND receiver_id=" << receiver_id << " LIMIT 1";
     MYSQL_RES *res = conn->query(sql.str());
     if (!res)
-        return false;
+        return MailLookup::kError;
     MYSQL_ROW row = mysql_fetch_row(res);
+    if (!row) {
+        mysql_free_result(res);
+        return MailLookup::kMiss;
+    }
     const bool ok = FillMailRow(row, out);
     mysql_free_result(res);
-    return ok;
+    return ok ? MailLookup::kHit : MailLookup::kError;
 }
 
-bool MailStore::FindOpByIdempotency(const std::string &key, MailOpLogRow *out) {
+MailLookup MailStore::FindOpByIdempotency(const std::string &key, MailOpLogRow *out) {
     if (!out || !EnsureTables())
-        return false;
+        return MailLookup::kError;
     auto conn = GetConnection();
     if (!conn)
-        return false;
+        return MailLookup::kError;
     std::ostringstream sql;
     sql << "SELECT operation_id,mail_id,actor_id,operation_type,idempotency_key,before_state,"
         << "after_state,result_code,trace_id,created_at FROM mail_operation_log WHERE "
@@ -481,11 +486,11 @@ bool MailStore::FindOpByIdempotency(const std::string &key, MailOpLogRow *out) {
         << SqlEscape(key) << "' LIMIT 1";
     MYSQL_RES *res = conn->query(sql.str());
     if (!res)
-        return false;
+        return MailLookup::kError;
     MYSQL_ROW row = mysql_fetch_row(res);
     if (!row) {
         mysql_free_result(res);
-        return false;
+        return MailLookup::kMiss;
     }
     out->operation_id = CellU64(row, 0);
     out->mail_id = CellU64(row, 1);
@@ -498,7 +503,7 @@ bool MailStore::FindOpByIdempotency(const std::string &key, MailOpLogRow *out) {
     out->trace_id = CellStr(row, 8);
     out->created_at = CellI64(row, 9);
     mysql_free_result(res);
-    return true;
+    return MailLookup::kHit;
 }
 
 bool MailStore::InsertOpLog(Connection *conn, const MailOpLogRow &row) {

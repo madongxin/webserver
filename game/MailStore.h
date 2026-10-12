@@ -30,6 +30,8 @@ struct MailListItem {
     mail::MailInstanceRow row;
 };
 
+enum class MailLookup { kMiss, kHit, kError };
+
 struct MailOpLogRow {
     uint64_t operation_id = 0;
     uint64_t mail_id = 0;
@@ -81,7 +83,8 @@ public:
                    int *unread_trade, int *unclaimed_attach, int *expiring_soon,
                    int *current_count);
 
-    bool FindOpByIdempotency(const std::string &key, MailOpLogRow *out);
+    /** 查询失败是 kError，不能当成未命中后继续执行。 */
+    MailLookup FindOpByIdempotency(const std::string &key, MailOpLogRow *out);
     bool InsertOpLog(Connection *conn, const MailOpLogRow &row);
 
     /** 自动清理候选：按规则排序的 mail_id 列表 */
@@ -91,8 +94,8 @@ public:
     bool MarkExpiredBatch(int64_t now_utc, int limit, int *affected);
 
     /** 按幂等键查已存在投递 */
-    bool FindByBusinessKey(const std::string &source_system, const std::string &business_key,
-                           uint64_t receiver_id, mail::MailInstanceRow *out);
+    MailLookup FindByBusinessKey(const std::string &source_system, const std::string &business_key,
+                                 uint64_t receiver_id, mail::MailInstanceRow *out);
 
     std::shared_ptr<Connection> GetConnection();
 

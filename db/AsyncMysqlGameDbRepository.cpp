@@ -238,7 +238,14 @@ GameDbMailClaimResult AsyncMysqlGameDbRepository::DoClaimMail(const GameDbMailCl
     };
 
     MailOpLogRow existed;
-    if (MailStore::Instance().FindOpByIdempotency(req.idempotency_key, &existed)) {
+    const MailLookup prior =
+        MailStore::Instance().FindOpByIdempotency(req.idempotency_key, &existed);
+    if (prior == MailLookup::kError) {
+        FillFail(&result, mail::err::kInternal, "idempotency lookup failed");
+        result.should_apply_memory = false;
+        return result;
+    }
+    if (prior == MailLookup::kHit) {
         replay_claim(existed);
         return result;
     }
@@ -322,7 +329,14 @@ GameDbMailClaimResult AsyncMysqlGameDbRepository::DoClaimMail(const GameDbMailCl
             return result;
         }
         MailStore::Instance().Rollback(conn.get());
-        if (MailStore::Instance().FindOpByIdempotency(req.idempotency_key, &existed)) {
+        const MailLookup again =
+            MailStore::Instance().FindOpByIdempotency(req.idempotency_key, &existed);
+        if (again == MailLookup::kError) {
+            FillFail(&result, mail::err::kInternal, "idempotency lookup failed");
+            result.should_apply_memory = false;
+            return result;
+        }
+        if (again == MailLookup::kHit) {
             replay_claim(existed);
             return result;
         }
@@ -440,7 +454,14 @@ GameDbMailClaimResult AsyncMysqlGameDbRepository::DoClaimMail(const GameDbMailCl
     op.created_at = now;
     if (!MailStore::Instance().InsertOpLog(conn.get(), op)) {
         MailStore::Instance().Rollback(conn.get());
-        if (MailStore::Instance().FindOpByIdempotency(req.idempotency_key, &existed)) {
+        const MailLookup again =
+            MailStore::Instance().FindOpByIdempotency(req.idempotency_key, &existed);
+        if (again == MailLookup::kError) {
+            FillFail(&result, mail::err::kInternal, "idempotency lookup failed");
+            result.should_apply_memory = false;
+            return result;
+        }
+        if (again == MailLookup::kHit) {
             replay_claim(existed);
             return result;
         }
@@ -462,7 +483,14 @@ GameDbMailClaimResult AsyncMysqlGameDbRepository::DoClaimMail(const GameDbMailCl
             conn.get(), "mail.claimed", "mail", std::to_string(req.mail_id), req.idempotency_key,
             payload.str(), now)) {
         MailStore::Instance().Rollback(conn.get());
-        if (MailStore::Instance().FindOpByIdempotency(req.idempotency_key, &existed)) {
+        const MailLookup again =
+            MailStore::Instance().FindOpByIdempotency(req.idempotency_key, &existed);
+        if (again == MailLookup::kError) {
+            FillFail(&result, mail::err::kInternal, "idempotency lookup failed");
+            result.should_apply_memory = false;
+            return result;
+        }
+        if (again == MailLookup::kHit) {
             replay_claim(existed);
             return result;
         }
@@ -473,7 +501,14 @@ GameDbMailClaimResult AsyncMysqlGameDbRepository::DoClaimMail(const GameDbMailCl
     if (!MailStore::Instance().Commit(conn.get())) {
         MailStore::Instance().Rollback(conn.get());
         // UNKNOWN_RESULT：按幂等键查询最终结果，不得武断失败
-        if (MailStore::Instance().FindOpByIdempotency(req.idempotency_key, &existed)) {
+        const MailLookup again =
+            MailStore::Instance().FindOpByIdempotency(req.idempotency_key, &existed);
+        if (again == MailLookup::kError) {
+            FillFail(&result, mail::err::kInternal, "idempotency lookup failed");
+            result.should_apply_memory = false;
+            return result;
+        }
+        if (again == MailLookup::kHit) {
             replay_claim(existed);
             if (result.idempotent_hit)
                 result.message = "idempotent_after_commit_unknown";

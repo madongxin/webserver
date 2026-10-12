@@ -266,8 +266,14 @@ bool MailService::Deliver(const mail::DeliverRequest &req, uint64_t *mail_id,
     }
 
     mail::MailInstanceRow existing;
-    if (MailStore::Instance().FindByBusinessKey(req.source_system, req.business_key,
-                                                req.receiver_id, &existing)) {
+    const MailLookup prior = MailStore::Instance().FindByBusinessKey(
+        req.source_system, req.business_key, req.receiver_id, &existing);
+    if (prior == MailLookup::kError) {
+        *error_code = mail::err::kInternal;
+        *message = "idempotency lookup failed";
+        return false;
+    }
+    if (prior == MailLookup::kHit) {
         std::string mismatch;
         if (!DeliverPayloadMatches(existing, req, cat, &mismatch)) {
             *error_code = mismatch == "load attachments failed" ? mail::err::kInternal
@@ -329,8 +335,14 @@ bool MailService::Deliver(const mail::DeliverRequest &req, uint64_t *mail_id,
     if (!MailStore::Instance().InsertMail(conn.get(), row, &id, &dup)) {
         MailStore::Instance().Rollback(conn.get());
         if (dup) {
-            if (MailStore::Instance().FindByBusinessKey(req.source_system, req.business_key,
-                                                        req.receiver_id, &existing)) {
+            const MailLookup again = MailStore::Instance().FindByBusinessKey(
+                req.source_system, req.business_key, req.receiver_id, &existing);
+            if (again == MailLookup::kError) {
+                *error_code = mail::err::kInternal;
+                *message = "idempotency lookup failed";
+                return false;
+            }
+            if (again == MailLookup::kHit) {
                 std::string mismatch;
                 if (!DeliverPayloadMatches(existing, req, cat, &mismatch)) {
                     *error_code = mismatch == "load attachments failed"
@@ -582,7 +594,17 @@ bool MailService::HandleMailRead(const game::MailReadReq &req, game::GameRespons
         return false;
     }
     MailOpLogRow existed;
-    if (MailStore::Instance().FindOpByIdempotency(req.idempotency_key(), &existed)) {
+    const MailLookup prior =
+        MailStore::Instance().FindOpByIdempotency(req.idempotency_key(), &existed);
+    if (prior == MailLookup::kError) {
+        rsp->set_ok(false);
+        body->set_ok(false);
+        body->set_error_code(mail::err::kInternal);
+        body->set_message("idempotency lookup failed");
+        rsp->set_message(body->message());
+        return false;
+    }
+    if (prior == MailLookup::kHit) {
         std::string ec, msg;
         const bool replay = ReplayOpOrConflict(existed, req.player_id(), req.mail_id(), "READ", &ec,
                                                 &msg);
@@ -630,12 +652,21 @@ bool MailService::HandleMailRead(const game::MailReadReq &req, game::GameRespons
         rsp->set_message(body->message());
         return false;
     }
+    if (!MailStore::Instance().Begin(conn.get())) {
+        rsp->set_ok(false);
+        body->set_ok(false);
+        body->set_error_code(mail::err::kInternal);
+        body->set_message("begin failed");
+        rsp->set_message(body->message());
+        return false;
+    }
     if (row.read_state != "READ") {
         row.read_state = "READ";
         row.read_at = now;
         row.updated_at = now;
         row.row_version += 1;
         if (!MailStore::Instance().UpdateMailRow(conn.get(), row)) {
+            MailStore::Instance().Rollback(conn.get());
             rsp->set_ok(false);
             body->set_ok(false);
             body->set_error_code(mail::err::kInternal);
@@ -653,7 +684,30 @@ bool MailService::HandleMailRead(const game::MailReadReq &req, game::GameRespons
     op.after_state = "{\"read\":\"READ\"}";
     op.result_code = mail::err::kOk;
     op.created_at = now;
-    MailStore::Instance().InsertOpLog(conn.get(), op);
+    if (!MailStore::Instance().InsertOpLog(conn.get(), op) ||
+        !MailStore::Instance().Commit(conn.get())) {
+        MailStore::Instance().Rollback(conn.get());
+        MailOpLogRow raced;
+        const MailLookup again =
+            MailStore::Instance().FindOpByIdempotency(req.idempotency_key(), &raced);
+        if (again == MailLookup::kHit) {
+            std::string ec, msg;
+            const bool replay =
+                ReplayOpOrConflict(raced, req.player_id(), req.mail_id(), "READ", &ec, &msg);
+            rsp->set_ok(replay);
+            body->set_ok(replay);
+            body->set_error_code(ec);
+            body->set_message(msg);
+            rsp->set_message(msg);
+            return replay;
+        }
+        rsp->set_ok(false);
+        body->set_ok(false);
+        body->set_error_code(mail::err::kInternal);
+        body->set_message("idempotency write failed");
+        rsp->set_message(body->message());
+        return false;
+    }
     BumpVersion(req.player_id());
     body->set_ok(true);
     body->set_error_code(mail::err::kOk);
@@ -1072,7 +1126,17 @@ bool MailService::HandleMailFavorite(const game::MailFavoriteReq &req, game::Gam
     const char *fav_op = req.favorite() ? "FAVORITE" : "UNFAVORITE";
     if (!req.idempotency_key().empty()) {
         MailOpLogRow existed;
-        if (MailStore::Instance().FindOpByIdempotency(req.idempotency_key(), &existed)) {
+        const MailLookup prior =
+            MailStore::Instance().FindOpByIdempotency(req.idempotency_key(), &existed);
+        if (prior == MailLookup::kError) {
+            rsp->set_ok(false);
+            body->set_ok(false);
+            body->set_error_code(mail::err::kInternal);
+            body->set_message("idempotency lookup failed");
+            rsp->set_message(body->message());
+            return false;
+        }
+        if (prior == MailLookup::kHit) {
             std::string ec, msg;
             const bool replay =
                 ReplayOpOrConflict(existed, req.player_id(), req.mail_id(), fav_op, &ec, &msg);
@@ -1205,7 +1269,17 @@ bool MailService::HandleMailBatchDelete(const game::MailBatchDeleteReq &req,
     }
     if (!req.idempotency_key().empty()) {
         MailOpLogRow existed;
-        if (MailStore::Instance().FindOpByIdempotency(req.idempotency_key(), &existed)) {
+        const MailLookup prior =
+            MailStore::Instance().FindOpByIdempotency(req.idempotency_key(), &existed);
+        if (prior == MailLookup::kError) {
+            rsp->set_ok(false);
+            body->set_ok(false);
+            body->set_error_code(mail::err::kInternal);
+            body->set_message("idempotency lookup failed");
+            rsp->set_message(body->message());
+            return false;
+        }
+        if (prior == MailLookup::kHit) {
             if (!mail::OpIntentMatches(existed.actor_id, existed.mail_id, existed.operation_type,
                                        req.player_id(), req.mail_ids(0), "BATCH_DELETE") ||
                 existed.after_state != "ids=" + fingerprint) {
@@ -1255,7 +1329,17 @@ bool MailService::HandleMailBatchDelete(const game::MailBatchDeleteReq &req,
         auto conn = MailStore::Instance().GetConnection();
         if (!conn || !MailStore::Instance().InsertOpLog(conn.get(), op)) {
             MailOpLogRow existed;
-            if (MailStore::Instance().FindOpByIdempotency(req.idempotency_key(), &existed) &&
+            const MailLookup again =
+                MailStore::Instance().FindOpByIdempotency(req.idempotency_key(), &existed);
+            if (again == MailLookup::kError) {
+                rsp->set_ok(false);
+                body->set_ok(false);
+                body->set_error_code(mail::err::kInternal);
+                body->set_message("idempotency lookup failed");
+                rsp->set_message(body->message());
+                return false;
+            }
+            if (again == MailLookup::kHit &&
                 mail::OpIntentMatches(existed.actor_id, existed.mail_id, existed.operation_type,
                                       req.player_id(), req.mail_ids(0), "BATCH_DELETE") &&
                 existed.after_state == "ids=" + fingerprint) {

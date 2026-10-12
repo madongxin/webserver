@@ -8,7 +8,7 @@
 | --- | --- |
 | Redis 不可用时邮件接口放行 | 默认拒绝。只有非正式环境的 `GAMEMESH_MAIL_DEV_SKIP_SESSION=1` 可以跳过。正式环境忽略该开关 |
 | 邮件 brpc 的 `MailDeliver` 用收件人会话鉴权 | 改为只校验 `GAMEMESH_MAIL_DELIVER_TOKEN`，并限制 `SYSTEM`/`ACTIVITY`。玩家 token 不能发奖。离线收件不依赖会话 |
-| 已读/领取/收藏/批量删除的幂等键未绑定操作意图 | 同一 key 换角色、邮件或操作类型返回 `IDEMPOTENCY_CONFLICT`。投递重复键会比对附件、发送人和到期时间 |
+| 已读/领取/收藏/批量删除的幂等键未绑定操作意图 | 同一 key 换角色、邮件或操作类型返回 `IDEMPOTENCY_CONFLICT`。投递重复键会比对附件、发送人和到期时间。查询失败返回 `INTERNAL_ERROR`，不会当成未命中再执行 |
 | 领取事务把未领附件标成过期 | `DoClaimMail` 对 `UNCLAIMED`/`CLAIMING` 不再写成 `EXPIRED`，仍可领取 |
 | 过期扫描把未领附件标成 `EXPIRED`，随后领取被拒绝 | `MarkExpiredBatch` 与 `TouchExpireIfNeeded` 跳过 `UNCLAIMED` / `CLAIMING`。`mail::PreserveAttachmentOnExpire` |
 | 正式环境玩家寄信仍开放 | `HandlePlayerMailSend` 在正式环境返回 `ERR_COMMAND_FORBIDDEN`。代码保留，非正式测试仍可跑 |
@@ -47,4 +47,4 @@
 
 ## 测试
 
-`./build/test/mail_unit_test` 输出 `mail_unit_test OK`。`cmake --build build --target world gamedb` 通过。`player_mail_send_test`、领取集成、双账号、停 Redis 未跑。
+`mail_unit_test` 输出 `mail_unit_test OK`。`player_mail_send_test` 输出 `OK player_mail_send_test`，覆盖同一已读钥匙换邮件被拒绝，以及同一业务键改附件数量被拒绝。领取集成、双账号、停 Redis 未跑。

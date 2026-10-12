@@ -84,6 +84,40 @@ int main() {
     }
     Expect(found, "receiver sees mail");
 
+    game::MailReadReq read;
+    read.set_player_id(b);
+    read.set_mail_id(mid);
+    read.set_idempotency_key("read_" + tag);
+    game::GameResponse read_rsp;
+    Expect(MailService::Instance().HandleMailRead(read, &read_rsp), "read");
+    Expect(read_rsp.mail_read().ok(), "read ok");
+    read.set_mail_id(mid + 1);
+    game::GameResponse read_other;
+    Expect(!MailService::Instance().HandleMailRead(read, &read_other), "read key other mail");
+    Expect(read_other.mail_read().error_code() == "IDEMPOTENCY_CONFLICT", "read conflict");
+
+    mail::DeliverRequest d;
+    d.source_system = "activity";
+    d.business_key = "biz_" + tag;
+    d.receiver_id = b;
+    d.category = "ACTIVITY";
+    d.title = "reward";
+    d.body = "one item";
+    mail::DeliverAttachment att;
+    att.asset_type = "ITEM";
+    att.asset_id = 11;
+    att.count = 1;
+    d.attachments.push_back(att);
+    uint64_t delivered = 0;
+    std::string ec, msg;
+    Expect(MailService::Instance().Deliver(d, &delivered, &ec, &msg), "deliver");
+    att.count = 2;
+    d.attachments[0] = att;
+    uint64_t delivered2 = 0;
+    Expect(!MailService::Instance().Deliver(d, &delivered2, &ec, &msg), "deliver conflict");
+    Expect(ec == "IDEMPOTENCY_CONFLICT", "attachment conflict");
+    Expect(delivered2 == 0, "no second mail id");
+
     game::PlayerMailSendReq bad;
     bad.set_sender_player_id(a);
     bad.set_receiver_player_id(a);
