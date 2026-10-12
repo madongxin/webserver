@@ -2,9 +2,11 @@
 
 ## 版本
 
-本地分支 `main`，HEAD 与 `origin/main` 都是 `4e5499d6648a49bed9bbceb153e95673bd8078f3`（2026-10-12 11:11:02 +0800）。`git fetch --prune origin` 成功，领先和落后都是 0。工作区当时没有已跟踪文件的修改，没有执行 pull。未跟踪的 `.deps/`、提示词草稿和规格文档未改动。
+2026-10-12 11:39 复核：本地分支 `main`，HEAD 与 `origin/main` 都是 `784d0851679adc8355ae81a6fb1ccb56861d6356`（2026-10-12 11:31:31 +0800）。`git fetch --prune origin` 成功，领先和落后都是 0。默认分支是 `main`。工作区没有已跟踪文件的修改，没有执行 pull。未跟踪的 `.deps/`、提示词草稿和规格文档未改动。
 
-正在运行的集群是 2026-10-09 拉起的进程，不包含 `4e5499d`。这次没有重启，也没有推送。
+`LoadIdempotency` 在 `4e5499d` 已把错误码复制到 `stored_code` 之后才 `mysql_free_result`。本次又读了该函数，释放后不再使用 `row`。同文件其他查询也是先复制列再释放。没有新的代码修改。
+
+正在运行的集群是 2026-10-09 拉起的进程，不包含 `4e5499d` 和 `784d085`。这次没有重启。
 
 ## 功能矩阵
 
@@ -31,7 +33,7 @@
 
 | 命令 | 结果 | 输出 |
 |---|---|---|
-| `./build/test/friend_store_test` | PASS | 末尾 `OK friend_store_test`。并发输家有一次死锁和 `uk_actor_idempotency` 重复键日志，重试后仍只有一条申请 |
+| `./build/test/friend_store_test` | PASS | 2026-10-12 11:39 再跑，末尾 `OK friend_store_test`。并发输家有一次死锁和 `uk_actor_idempotency` 重复键日志，重试后仍只有一条申请 |
 | `scripts/test_sanitizers.sh` | NOT RUN | 该脚本 `ENABLE_MYSQL=OFF`，编不出 `friend_store_test` |
 | `./scripts/test_unit.sh`、`./scripts/test_all.sh` | NOT RUN | 本次没有跑 |
 | 停 Redis 后的私聊、双客户端 | NOT RUN | 没有故障注入，也没有两个登录客户端 |
