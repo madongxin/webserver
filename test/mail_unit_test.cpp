@@ -38,6 +38,10 @@ int main() {
     EXPECT_TRUE(IsExpiredAt(100, 101));
     EXPECT_TRUE(!IsExpiredAt(100, 99));
     EXPECT_TRUE(!IsExpiredAt(0, 999));
+    EXPECT_TRUE(PreserveAttachmentOnExpire("UNCLAIMED"));
+    EXPECT_TRUE(PreserveAttachmentOnExpire("CLAIMING"));
+    EXPECT_TRUE(!PreserveAttachmentOnExpire("NONE"));
+    EXPECT_TRUE(!PreserveAttachmentOnExpire("CLAIMED"));
 
     Category c;
     EXPECT_TRUE(ParseCategory("ACTIVITY", &c) && c == Category::kActivity);

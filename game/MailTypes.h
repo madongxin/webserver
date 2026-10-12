@@ -162,6 +162,11 @@ inline bool IsExpiredAt(int64_t expire_at, int64_t now_utc_sec) {
     return expire_at > 0 && now_utc_sec >= expire_at;
 }
 
+/** 未领或领取中的附件到期后仍保留，避免过期扫描把奖励标成不可领。 */
+inline bool PreserveAttachmentOnExpire(const std::string &attachment_state) {
+    return attachment_state == "UNCLAIMED" || attachment_state == "CLAIMING";
+}
+
 struct MailAttachmentRow {
     uint64_t attachment_id = 0;
     uint64_t mail_id = 0;

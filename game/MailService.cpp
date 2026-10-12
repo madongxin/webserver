@@ -3,6 +3,7 @@
 #include "AsyncMysqlGameDbRepository.h"
 #include "Connection.h"
 #include "GameDbRepository.h"
+#include "FormalMode.h"
 #include "GameLogic.h"
 #include "IGameDbRepository.h"
 #include "Logging.h"
@@ -84,6 +85,8 @@ void MailService::BumpVersion(uint64_t player_id) {
 
 bool MailService::TouchExpireIfNeeded(mail::MailInstanceRow *row, int64_t now) {
     if (!row || row->visible_state != "ACTIVE")
+        return false;
+    if (mail::PreserveAttachmentOnExpire(row->attachment_state))
         return false;
     if (!mail::IsExpiredAt(row->expire_at, now))
         return false;
@@ -1264,6 +1267,9 @@ bool MailService::HandlePlayerMailSend(const game::PlayerMailSendReq &req, game:
     };
     if (!ready_ && !Init())
         return fail(mail::err::kInternal, "mail service not ready");
+    // V1 只投系统/活动邮件。玩家寄信留在这条入口，正式环境关闭。
+    if (FormalModeEnabled())
+        return fail("ERR_COMMAND_FORBIDDEN", "player mail is not open");
     const uint64_t sender = req.sender_player_id();
     const uint64_t receiver = req.receiver_player_id();
     if (sender == 0 || receiver == 0)

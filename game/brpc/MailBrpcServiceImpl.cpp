@@ -5,6 +5,7 @@
 
 #include "MailBrpcServiceImpl.h"
 
+#include "FormalMode.h"
 #include "MailService.h"
 
 #include <brpc/controller.h>
@@ -17,12 +18,24 @@ namespace {
 
 bool RequireToken(uint64_t player_id, const std::string &token, std::string *err) {
 #ifdef WEBSERVER_ENABLE_REDIS
-    if (!SessionStore::Instance().Available())
-        return true;  // 与 GameLogic::RequireSessionToken 一致：无 Redis 时放行
+    if (!SessionStore::Instance().Available()) {
+        // 联调无 Redis 仍放行；正式模式失败关闭，避免会话故障变成越权读信/领奖。
+        if (FormalModeEnabled()) {
+            if (err)
+                *err = "session unavailable";
+            return false;
+        }
+        return true;
+    }
     return SessionStore::Instance().ValidateToken(player_id, token, err);
 #else
     (void)player_id;
     (void)token;
+    if (FormalModeEnabled()) {
+        if (err)
+            *err = "session unavailable";
+        return false;
+    }
     (void)err;
     return true;
 #endif
@@ -265,8 +278,14 @@ void MailBrpcServiceImpl::MailDeliver(::google::protobuf::RpcController *control
     (void)controller;
     if (!request || !response)
         return;
+    // 玩家会话不能给自己投系统奖励。正式环境只允许进程内 MailService::Deliver 或已登录的 GM HTTP。
+    if (FormalModeEnabled()) {
+        response->set_ok(false);
+        response->set_error_code("ERR_COMMAND_FORBIDDEN");
+        response->set_message("internal deliver is not a player rpc");
+        return;
+    }
     std::string err;
-    // deliver 按 receiver_id 鉴权（与 GameLogic 一致）
     if (!AuthOrFail(request, request->req().receiver_id(), response, &err))
         return;
     game::GameResponse gr;

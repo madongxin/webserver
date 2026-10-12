@@ -723,9 +723,11 @@ bool MailStore::MarkExpiredBatch(int64_t now_utc, int limit, int *affected) {
     if (!conn)
         return false;
     std::ostringstream sql;
+    // 未领或领取中的附件不因到期改成 EXPIRED：领取会被拒绝，等于静默扣掉奖励。
+    // 产品未定义退回/补偿前，这些邮件保持 ACTIVE，玩家仍可领取。
     sql << "UPDATE mail_instance SET visible_state='EXPIRED',updated_at=" << now_utc
         << ",row_version=row_version+1 WHERE visible_state='ACTIVE' AND expire_at>0 AND expire_at<="
-        << now_utc << " LIMIT " << limit;
+        << now_utc << " AND attachment_state NOT IN ('UNCLAIMED','CLAIMING') LIMIT " << limit;
     if (!conn->update(sql.str()))
         return false;
     *affected = static_cast<int>(mysql_affected_rows(conn->raw()));

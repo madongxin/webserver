@@ -2572,6 +2572,29 @@ bool GameLogic::Handle(const game::GameRequest &req, game::GameResponse *rsp) {
         return false;
     rsp->Clear();
     rsp->set_seq(req.seq());  // 与请求 seq 对齐，便于客户端匹配异步响应
+    // 正式环境 Redis/Session 不可用时，邮件读写不能沿用“无会话即放行”。
+    auto mail_session = [&](uint64_t player_id) -> bool {
+        if (FormalModeEnabled()) {
+#if defined(WEBSERVER_ENABLE_BRPC)
+            if (!SessionRpcClient::Instance().ready()) {
+#endif
+#if defined(WEBSERVER_ENABLE_REDIS)
+                if (!SessionStore::Instance().Available()) {
+                    rsp->set_ok(false);
+                    rsp->set_message("session unavailable");
+                    return false;
+                }
+#else
+                rsp->set_ok(false);
+                rsp->set_message("session unavailable");
+                return false;
+#endif
+#if defined(WEBSERVER_ENABLE_BRPC)
+            }
+#endif
+        }
+        return RequireSessionToken(req, player_id, rsp);
+    };
     switch (req.body_case()) {
     case game::GameRequest::kFriendList:
     case game::GameRequest::kFriendSearch:
@@ -2733,43 +2756,43 @@ bool GameLogic::Handle(const game::GameRequest &req, game::GameResponse *rsp) {
             return HandleRespawn(req.respawn(), rsp);
 #ifdef WEBSERVER_ENABLE_MYSQL
         case game::GameRequest::kMailboxSummary:
-            if (!RequireSessionToken(req, req.mailbox_summary().player_id(), rsp))
+            if (!mail_session(req.mailbox_summary().player_id()))
                 return false;
             return MailService::Instance().HandleMailboxSummary(req.mailbox_summary(), rsp);
         case game::GameRequest::kMailList:
-            if (!RequireSessionToken(req, req.mail_list().player_id(), rsp))
+            if (!mail_session(req.mail_list().player_id()))
                 return false;
             return MailService::Instance().HandleMailList(req.mail_list(), rsp);
         case game::GameRequest::kMailGet:
-            if (!RequireSessionToken(req, req.mail_get().player_id(), rsp))
+            if (!mail_session(req.mail_get().player_id()))
                 return false;
             return MailService::Instance().HandleMailGet(req.mail_get(), rsp);
         case game::GameRequest::kMailRead:
-            if (!RequireSessionToken(req, req.mail_read().player_id(), rsp))
+            if (!mail_session(req.mail_read().player_id()))
                 return false;
             return MailService::Instance().HandleMailRead(req.mail_read(), rsp);
         case game::GameRequest::kMailClaim:
-            if (!RequireSessionToken(req, req.mail_claim().player_id(), rsp))
+            if (!mail_session(req.mail_claim().player_id()))
                 return false;
             return MailService::Instance().HandleMailClaim(req.mail_claim(), rsp);
         case game::GameRequest::kMailBatchClaim:
-            if (!RequireSessionToken(req, req.mail_batch_claim().player_id(), rsp))
+            if (!mail_session(req.mail_batch_claim().player_id()))
                 return false;
             return MailService::Instance().HandleMailBatchClaim(req.mail_batch_claim(), rsp);
         case game::GameRequest::kMailFavorite:
-            if (!RequireSessionToken(req, req.mail_favorite().player_id(), rsp))
+            if (!mail_session(req.mail_favorite().player_id()))
                 return false;
             return MailService::Instance().HandleMailFavorite(req.mail_favorite(), rsp);
         case game::GameRequest::kMailBatchRead:
-            if (!RequireSessionToken(req, req.mail_batch_read().player_id(), rsp))
+            if (!mail_session(req.mail_batch_read().player_id()))
                 return false;
             return MailService::Instance().HandleMailBatchRead(req.mail_batch_read(), rsp);
         case game::GameRequest::kMailBatchDelete:
-            if (!RequireSessionToken(req, req.mail_batch_delete().player_id(), rsp))
+            if (!mail_session(req.mail_batch_delete().player_id()))
                 return false;
             return MailService::Instance().HandleMailBatchDelete(req.mail_batch_delete(), rsp);
         case game::GameRequest::kPlayerMailSend:
-            if (!RequireSessionToken(req, req.player_mail_send().sender_player_id(), rsp))
+            if (!mail_session(req.player_mail_send().sender_player_id()))
                 return false;
             return MailService::Instance().HandlePlayerMailSend(req.player_mail_send(), rsp);
         case game::GameRequest::kMailDeliver:
