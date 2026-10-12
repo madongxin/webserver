@@ -36,6 +36,73 @@ namespace {
 
 constexpr int64_t kInventorySoftCap = 999999;
 
+bool DeliverPayloadMatches(const mail::MailInstanceRow &existing, const mail::DeliverRequest &req,
+                           mail::Category cat, std::string *error) {
+    const std::string expect_name = req.sender_name.empty() ? "System" : req.sender_name;
+    const std::string expect_sender_type = req.sender_type.empty() ? "SYSTEM" : req.sender_type;
+    const int expect_template_version = req.template_version > 0 ? req.template_version : 1;
+    if (existing.receiver_id != req.receiver_id || existing.title_snapshot != req.title ||
+        existing.body_snapshot != req.body || existing.category != mail::ToString(cat) ||
+        existing.sender_id != req.sender_id || existing.sender_type != expect_sender_type ||
+        existing.sender_name_snapshot != expect_name || existing.template_id != req.template_id ||
+        existing.template_version != expect_template_version || existing.priority != req.priority) {
+        if (error)
+            *error = "same business_key with different content";
+        return false;
+    }
+    if (req.expire_at > 0 && existing.expire_at != req.expire_at) {
+        if (error)
+            *error = "same business_key with different expire_at";
+        return false;
+    }
+    if (req.send_at > 0 && existing.sent_at != req.send_at) {
+        if (error)
+            *error = "same business_key with different send_at";
+        return false;
+    }
+    std::vector<mail::MailAttachmentRow> stored;
+    if (!MailStore::Instance().LoadAttachments(existing.mail_id, &stored)) {
+        if (error)
+            *error = "load attachments failed";
+        return false;
+    }
+    if (stored.size() != req.attachments.size()) {
+        if (error)
+            *error = "same business_key with different attachments";
+        return false;
+    }
+    for (size_t i = 0; i < stored.size(); ++i) {
+        const auto &got = stored[i];
+        const auto &want = req.attachments[i];
+        if (mail::AttachmentFingerprint(got.asset_type, got.asset_id, got.count, got.bind_type,
+                                        got.payload) !=
+            mail::AttachmentFingerprint(want.asset_type, want.asset_id, want.count, want.bind_type,
+                                        want.payload)) {
+            if (error)
+                *error = "same business_key with different attachments";
+            return false;
+        }
+    }
+    return true;
+}
+
+bool ReplayOpOrConflict(const MailOpLogRow &existed, uint64_t actor, uint64_t mail_id,
+                        const char *op, std::string *error_code, std::string *message) {
+    if (!mail::OpIntentMatches(existed.actor_id, existed.mail_id, existed.operation_type, actor,
+                               mail_id, op)) {
+        if (error_code)
+            *error_code = mail::err::kIdempotencyConflict;
+        if (message)
+            *message = "idempotency key reused";
+        return false;
+    }
+    if (error_code)
+        *error_code = existed.result_code;
+    if (message)
+        *message = "idempotent";
+    return existed.result_code == mail::err::kOk;
+}
+
 }  // namespace
 
 MailService &MailService::Instance() {
@@ -201,11 +268,11 @@ bool MailService::Deliver(const mail::DeliverRequest &req, uint64_t *mail_id,
     mail::MailInstanceRow existing;
     if (MailStore::Instance().FindByBusinessKey(req.source_system, req.business_key,
                                                 req.receiver_id, &existing)) {
-        // 幂等命中：内容不同则冲突
-        if (existing.title_snapshot != req.title || existing.body_snapshot != req.body ||
-            existing.category != mail::ToString(cat)) {
-            *error_code = mail::err::kIdempotencyConflict;
-            *message = "same business_key with different content";
+        std::string mismatch;
+        if (!DeliverPayloadMatches(existing, req, cat, &mismatch)) {
+            *error_code = mismatch == "load attachments failed" ? mail::err::kInternal
+                                                                : mail::err::kIdempotencyConflict;
+            *message = mismatch;
             LOG_ERROR << "MailDeliver IDEMPOTENCY_CONFLICT source=" << req.source_system
                       << " key=" << req.business_key << " receiver=" << req.receiver_id;
             return false;
@@ -264,6 +331,14 @@ bool MailService::Deliver(const mail::DeliverRequest &req, uint64_t *mail_id,
         if (dup) {
             if (MailStore::Instance().FindByBusinessKey(req.source_system, req.business_key,
                                                         req.receiver_id, &existing)) {
+                std::string mismatch;
+                if (!DeliverPayloadMatches(existing, req, cat, &mismatch)) {
+                    *error_code = mismatch == "load attachments failed"
+                                      ? mail::err::kInternal
+                                      : mail::err::kIdempotencyConflict;
+                    *message = mismatch;
+                    return false;
+                }
                 *mail_id = existing.mail_id;
                 *error_code = mail::err::kOk;
                 *message = "idempotent hit";
@@ -508,13 +583,16 @@ bool MailService::HandleMailRead(const game::MailReadReq &req, game::GameRespons
     }
     MailOpLogRow existed;
     if (MailStore::Instance().FindOpByIdempotency(req.idempotency_key(), &existed)) {
-        rsp->set_ok(existed.result_code == mail::err::kOk);
-        body->set_ok(rsp->ok());
-        body->set_error_code(existed.result_code);
-        body->set_message("idempotent");
+        std::string ec, msg;
+        const bool replay = ReplayOpOrConflict(existed, req.player_id(), req.mail_id(), "READ", &ec,
+                                                &msg);
+        rsp->set_ok(replay);
+        body->set_ok(replay);
+        body->set_error_code(ec);
+        body->set_message(msg);
         body->set_mailbox_version(MailboxVersion(req.player_id()));
         rsp->set_message(body->message());
-        return rsp->ok();
+        return replay;
     }
     mail::MailInstanceRow row;
     if (!MailStore::Instance().LoadMail(req.mail_id(), &row) ||
@@ -991,6 +1069,23 @@ bool MailService::HandleMailBatchClaim(const game::MailBatchClaimReq &req, game:
 bool MailService::HandleMailFavorite(const game::MailFavoriteReq &req, game::GameResponse *rsp) {
     auto *body = rsp->mutable_mail_favorite();
     body->set_server_time_utc(NowUtc());
+    const char *fav_op = req.favorite() ? "FAVORITE" : "UNFAVORITE";
+    if (!req.idempotency_key().empty()) {
+        MailOpLogRow existed;
+        if (MailStore::Instance().FindOpByIdempotency(req.idempotency_key(), &existed)) {
+            std::string ec, msg;
+            const bool replay =
+                ReplayOpOrConflict(existed, req.player_id(), req.mail_id(), fav_op, &ec, &msg);
+            rsp->set_ok(replay);
+            body->set_ok(replay);
+            body->set_error_code(ec);
+            body->set_message(msg);
+            body->set_is_favorite(req.favorite());
+            body->set_mailbox_version(MailboxVersion(req.player_id()));
+            rsp->set_message(msg);
+            return replay;
+        }
+    }
     mail::MailInstanceRow row;
     if (!MailStore::Instance().LoadMail(req.mail_id(), &row) ||
         row.receiver_id != req.player_id()) {
@@ -1074,7 +1169,8 @@ bool MailService::HandleMailBatchRead(const game::MailBatchReadReq &req, game::G
         game::MailReadReq one;
         one.set_player_id(req.player_id());
         one.set_mail_id(req.mail_ids(i));
-        one.set_idempotency_key(req.idempotency_key() + ":read:" + std::to_string(req.mail_ids(i)));
+        one.set_idempotency_key(req.idempotency_key() + ":" + std::to_string(req.player_id()) +
+                                ":read:" + std::to_string(req.mail_ids(i)));
         if (HandleMailRead(one, &tmp))
             ++ok_n;
     }
@@ -1101,24 +1197,92 @@ bool MailService::HandleMailBatchDelete(const game::MailBatchDeleteReq &req,
         rsp->set_message(body->message());
         return false;
     }
+    std::string fingerprint;
+    for (int i = 0; i < req.mail_ids_size(); ++i) {
+        if (i)
+            fingerprint.push_back(',');
+        fingerprint += std::to_string(req.mail_ids(i));
+    }
+    if (!req.idempotency_key().empty()) {
+        MailOpLogRow existed;
+        if (MailStore::Instance().FindOpByIdempotency(req.idempotency_key(), &existed)) {
+            if (!mail::OpIntentMatches(existed.actor_id, existed.mail_id, existed.operation_type,
+                                       req.player_id(), req.mail_ids(0), "BATCH_DELETE") ||
+                existed.after_state != "ids=" + fingerprint) {
+                rsp->set_ok(false);
+                body->set_ok(false);
+                body->set_error_code(mail::err::kIdempotencyConflict);
+                body->set_message("idempotency key reused");
+                rsp->set_message(body->message());
+                return false;
+            }
+            body->set_ok(existed.result_code == mail::err::kOk);
+            body->set_error_code(existed.result_code);
+            body->set_message("idempotent");
+            body->set_mailbox_version(MailboxVersion(req.player_id()));
+            rsp->set_ok(body->ok());
+            rsp->set_message(body->message());
+            return body->ok();
+        }
+    }
     uint32_t ok_n = 0;
     const int64_t now = NowUtc();
+    std::vector<uint64_t> failed;
+    std::vector<uint64_t> victims;
     for (int i = 0; i < req.mail_ids_size(); ++i) {
         const uint64_t mid = req.mail_ids(i);
         mail::MailInstanceRow row;
         if (!MailStore::Instance().LoadMail(mid, &row) || row.receiver_id != req.player_id()) {
-            body->add_failed_mail_ids(mid);
+            failed.push_back(mid);
             continue;
         }
         if (row.attachment_state == "UNCLAIMED" || row.attachment_state == "CLAIMING") {
-            body->add_failed_mail_ids(mid);
+            failed.push_back(mid);
             continue;
         }
+        victims.push_back(mid);
+    }
+    if (!req.idempotency_key().empty()) {
+        MailOpLogRow op;
+        op.mail_id = req.mail_ids(0);
+        op.actor_id = req.player_id();
+        op.operation_type = "BATCH_DELETE";
+        op.idempotency_key = req.idempotency_key();
+        op.before_state = "{}";
+        op.after_state = "ids=" + fingerprint;
+        op.result_code = mail::err::kOk;
+        op.created_at = now;
+        auto conn = MailStore::Instance().GetConnection();
+        if (!conn || !MailStore::Instance().InsertOpLog(conn.get(), op)) {
+            MailOpLogRow existed;
+            if (MailStore::Instance().FindOpByIdempotency(req.idempotency_key(), &existed) &&
+                mail::OpIntentMatches(existed.actor_id, existed.mail_id, existed.operation_type,
+                                      req.player_id(), req.mail_ids(0), "BATCH_DELETE") &&
+                existed.after_state == "ids=" + fingerprint) {
+                body->set_ok(true);
+                body->set_error_code(mail::err::kOk);
+                body->set_message("idempotent");
+                body->set_mailbox_version(MailboxVersion(req.player_id()));
+                rsp->set_ok(true);
+                rsp->set_message(body->message());
+                return true;
+            }
+            rsp->set_ok(false);
+            body->set_ok(false);
+            body->set_error_code(mail::err::kIdempotencyConflict);
+            body->set_message("idempotency key reused");
+            rsp->set_message(body->message());
+            return false;
+        }
+    }
+    for (uint64_t mid : victims) {
         if (SoftDeleteMail(mid, req.player_id(), now))
             ++ok_n;
         else
-            body->add_failed_mail_ids(mid);
+            failed.push_back(mid);
     }
+    for (uint64_t mid : failed)
+        body->add_failed_mail_ids(mid);
     BumpVersion(req.player_id());
     body->set_ok(true);
     body->set_error_code(mail::err::kOk);

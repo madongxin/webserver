@@ -219,20 +219,27 @@ GameDbMailClaimResult AsyncMysqlGameDbRepository::DoClaimMail(const GameDbMailCl
         return result;
     }
 
+    auto replay_claim = [&](const MailOpLogRow &row) {
+        if (!mail::OpIntentMatches(row.actor_id, row.mail_id, row.operation_type, req.player_id,
+                                   req.mail_id, "CLAIM")) {
+            FillFail(&result, mail::err::kIdempotencyConflict, "idempotency key reused");
+            result.idempotent_hit = false;
+            result.should_apply_memory = false;
+            return;
+        }
+        result.idempotent_hit = true;
+        result.ok = (row.result_code == mail::err::kOk ||
+                     row.result_code == mail::err::kAlreadyClaimed);
+        result.error_code = row.result_code;
+        result.message = "idempotent";
+        result.attachment_state = result.ok ? "CLAIMED" : "";
+        result.should_apply_memory = false;
+        FillIdempotentAssetVersion(&result, row);
+    };
+
     MailOpLogRow existed;
     if (MailStore::Instance().FindOpByIdempotency(req.idempotency_key, &existed)) {
-        result.idempotent_hit = true;
-        result.ok = (existed.result_code == mail::err::kOk ||
-                     existed.result_code == mail::err::kAlreadyClaimed);
-        result.error_code = existed.result_code;
-        result.message = "idempotent";
-        result.attachment_state =
-            (existed.result_code == mail::err::kOk ||
-             existed.result_code == mail::err::kAlreadyClaimed)
-                ? "CLAIMED"
-                : "";
-        result.should_apply_memory = false;
-        FillIdempotentAssetVersion(&result, existed);
+        replay_claim(existed);
         return result;
     }
 
@@ -260,7 +267,8 @@ GameDbMailClaimResult AsyncMysqlGameDbRepository::DoClaimMail(const GameDbMailCl
         FillFail(&result, mail::err::kPermissionDenied, "denied");
         return result;
     }
-    if (mail::IsExpiredAt(row.expire_at, now) || row.visible_state == "EXPIRED") {
+    if (!mail::PreserveAttachmentOnExpire(row.attachment_state) &&
+        (mail::IsExpiredAt(row.expire_at, now) || row.visible_state == "EXPIRED")) {
         row.visible_state = "EXPIRED";
         row.updated_at = now;
         row.row_version += 1;
@@ -275,7 +283,9 @@ GameDbMailClaimResult AsyncMysqlGameDbRepository::DoClaimMail(const GameDbMailCl
         FillFail(&result, mail::err::kMailRevoked, "revoked");
         return result;
     }
-    if (row.visible_state != "ACTIVE") {
+    if (row.visible_state != "ACTIVE" &&
+        !(row.visible_state == "EXPIRED" &&
+          mail::PreserveAttachmentOnExpire(row.attachment_state))) {
         MailStore::Instance().Rollback(conn.get());
         FillFail(&result, mail::err::kInvalidState, "not active");
         return result;
@@ -313,12 +323,7 @@ GameDbMailClaimResult AsyncMysqlGameDbRepository::DoClaimMail(const GameDbMailCl
         }
         MailStore::Instance().Rollback(conn.get());
         if (MailStore::Instance().FindOpByIdempotency(req.idempotency_key, &existed)) {
-            result.idempotent_hit = true;
-            result.ok = true;
-            result.error_code = existed.result_code;
-            result.message = "idempotent";
-            result.attachment_state = "CLAIMED";
-            FillIdempotentAssetVersion(&result, existed);
+            replay_claim(existed);
             return result;
         }
         // 他线程已领完但本 key 未落日志：仍视为已领取成功（资产只入账一次）
@@ -436,14 +441,7 @@ GameDbMailClaimResult AsyncMysqlGameDbRepository::DoClaimMail(const GameDbMailCl
     if (!MailStore::Instance().InsertOpLog(conn.get(), op)) {
         MailStore::Instance().Rollback(conn.get());
         if (MailStore::Instance().FindOpByIdempotency(req.idempotency_key, &existed)) {
-            result.idempotent_hit = true;
-            result.ok = (existed.result_code == mail::err::kOk ||
-                         existed.result_code == mail::err::kAlreadyClaimed);
-            result.error_code = existed.result_code;
-            result.message = "idempotent";
-            result.attachment_state = "CLAIMED";
-            result.should_apply_memory = false;
-            FillIdempotentAssetVersion(&result, existed);
+            replay_claim(existed);
             return result;
         }
         FillFail(&result, mail::err::kInternal, "op log failed");
@@ -465,12 +463,7 @@ GameDbMailClaimResult AsyncMysqlGameDbRepository::DoClaimMail(const GameDbMailCl
             payload.str(), now)) {
         MailStore::Instance().Rollback(conn.get());
         if (MailStore::Instance().FindOpByIdempotency(req.idempotency_key, &existed)) {
-            result.idempotent_hit = true;
-            result.ok = true;
-            result.error_code = existed.result_code;
-            result.message = "idempotent";
-            result.attachment_state = "CLAIMED";
-            FillIdempotentAssetVersion(&result, existed);
+            replay_claim(existed);
             return result;
         }
         FillFail(&result, mail::err::kInternal, "outbox insert failed");
@@ -481,14 +474,9 @@ GameDbMailClaimResult AsyncMysqlGameDbRepository::DoClaimMail(const GameDbMailCl
         MailStore::Instance().Rollback(conn.get());
         // UNKNOWN_RESULT：按幂等键查询最终结果，不得武断失败
         if (MailStore::Instance().FindOpByIdempotency(req.idempotency_key, &existed)) {
-            result.idempotent_hit = true;
-            result.ok = (existed.result_code == mail::err::kOk ||
-                         existed.result_code == mail::err::kAlreadyClaimed);
-            result.error_code = existed.result_code;
-            result.message = "idempotent_after_commit_unknown";
-            result.attachment_state = "CLAIMED";
-            result.should_apply_memory = false;
-            FillIdempotentAssetVersion(&result, existed);
+            replay_claim(existed);
+            if (result.idempotent_hit)
+                result.message = "idempotent_after_commit_unknown";
             return result;
         }
         FillFail(&result, mail::err::kInternal, "commit failed");

@@ -27,7 +27,7 @@
 | 玩家寄信 | `player_mail_send` | 63 |
 | 邮箱变更通知 | `mailbox_changed` | 64 |
 
-`mail_deliver` 不是客户端命令。正式环境 Gateway 与邮件 brpc 都拒绝它。系统奖励走进程内 `MailService::Deliver` 或已登录的 GM HTTP `/api/gm/mail/deliver`。
+`mail_deliver` 不是客户端命令。Gateway 在正式环境拒绝玩家投递。邮件 brpc 的 `MailDeliver` 只接受环境变量 `GAMEMESH_MAIL_DELIVER_TOKEN`，不接受玩家会话，也不要求收件人在线。分类只允许 `SYSTEM` 和 `ACTIVITY`。进程内 `MailService::Deliver` 和已登录的 GM HTTP `/api/gm/mail/deliver` 仍可用。不要把该 token 写进客户端。
 
 `player_mail_send` 在正式环境（`GAMEMESH_FORMAL=1`）返回 `ERR_COMMAND_FORBIDDEN`。V1 不开放玩家寄信。
 
@@ -49,7 +49,11 @@
 
 ## 版本与推送
 
-`mailbox_version` 存在 GameLogic 进程内存，重启后从 1 重新计。客户端以摘要和列表的服务端结果收敛，不要把版本倒退当成丢信。
+`mailbox_version` 存在进程内存，重启或多实例后不保证单调。客户端不能只靠它判断新旧，登录和重连必须拉摘要和列表。
+
+同一 `idempotency_key` 换角色、换 `mail_id` 或换操作类型返回 `IDEMPOTENCY_CONFLICT`，不会回放上一次成功。同一 `source_system + business_key + receiver_id` 改标题、正文、附件、发送人或到期时间同样冲突。
+
+Redis 或会话不可用时，玩家邮件接口拒绝。非正式联调只有显式设置 `GAMEMESH_MAIL_DEV_SKIP_SESSION=1` 才跳过会话校验，正式环境忽略该开关。
 
 在线时可能收到可靠推送 `mailbox.changed.v1`（`MailboxChangedNotify`：`player_id`、`mailbox_version`、`unread_count`）。推送丢失不影响数据库。登录、进大厅、打开邮箱、重连后都要再拉 `MailboxSummary`。
 

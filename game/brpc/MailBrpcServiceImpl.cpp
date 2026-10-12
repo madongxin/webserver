@@ -10,34 +10,50 @@
 
 #include <brpc/controller.h>
 
+#include <cstring>
+
 #ifdef WEBSERVER_ENABLE_REDIS
 #include "SessionStore.h"
 #endif
 
 namespace {
 
+bool InternalDeliverTokenOk(const std::string &presented) {
+    const char *expect = std::getenv("GAMEMESH_MAIL_DELIVER_TOKEN");
+    if (!expect || !*expect || presented.empty())
+        return false;
+    const size_t n = std::strlen(expect);
+    if (n != presented.size())
+        return false;
+    unsigned diff = 0;
+    for (size_t i = 0; i < n; ++i)
+        diff |= static_cast<unsigned char>(expect[i]) ^ static_cast<unsigned char>(presented[i]);
+    return diff == 0;
+}
+
 bool RequireToken(uint64_t player_id, const std::string &token, std::string *err) {
 #ifdef WEBSERVER_ENABLE_REDIS
     if (!SessionStore::Instance().Available()) {
-        // 联调无 Redis 仍放行；正式模式失败关闭，避免会话故障变成越权读信/领奖。
-        if (FormalModeEnabled()) {
-            if (err)
-                *err = "session unavailable";
-            return false;
-        }
-        return true;
+        if (MailDevSkipSession())
+            return true;
+        if (err)
+            *err = "session unavailable";
+        return false;
+    }
+    if (token.empty()) {
+        if (err)
+            *err = "session invalid";
+        return false;
     }
     return SessionStore::Instance().ValidateToken(player_id, token, err);
 #else
     (void)player_id;
     (void)token;
-    if (FormalModeEnabled()) {
-        if (err)
-            *err = "session unavailable";
-        return false;
-    }
-    (void)err;
-    return true;
+    if (MailDevSkipSession())
+        return true;
+    if (err)
+        *err = "session unavailable";
+    return false;
 #endif
 }
 
@@ -278,16 +294,21 @@ void MailBrpcServiceImpl::MailDeliver(::google::protobuf::RpcController *control
     (void)controller;
     if (!request || !response)
         return;
-    // 玩家会话不能给自己投系统奖励。正式环境只允许进程内 MailService::Deliver 或已登录的 GM HTTP。
-    if (FormalModeEnabled()) {
+    // 玩家会话不能投系统奖励。这里只认 GAMEMESH_MAIL_DELIVER_TOKEN，不看收件人是否在线。
+    if (!InternalDeliverTokenOk(request->session_token())) {
         response->set_ok(false);
         response->set_error_code("ERR_COMMAND_FORBIDDEN");
-        response->set_message("internal deliver is not a player rpc");
+        response->set_message("internal deliver token required");
         return;
     }
-    std::string err;
-    if (!AuthOrFail(request, request->req().receiver_id(), response, &err))
+    const std::string cat =
+        request->req().category().empty() ? "SYSTEM" : request->req().category();
+    if (cat != "SYSTEM" && cat != "ACTIVITY") {
+        response->set_ok(false);
+        response->set_error_code("ERR_COMMAND_FORBIDDEN");
+        response->set_message("deliver category not open");
         return;
+    }
     game::GameResponse gr;
     MailService::Instance().HandleMailDeliver(request->req(), &gr);
     if (gr.has_mail_deliver())

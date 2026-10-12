@@ -20,6 +20,16 @@ inline bool ExperimentalFeatureEnabled(const char *env_name) {
                  std::strcmp(v, "TRUE") == 0 || std::strcmp(v, "on") == 0);
 }
 
+/**
+ * 邮件会话故障放行只给显式联调。正式模式忽略该开关。
+ * 未设置时 Redis/Session 不可用必须拒绝玩家邮件。
+ */
+inline bool MailDevSkipSession() {
+    if (FormalModeEnabled())
+        return false;
+    return ExperimentalFeatureEnabled("GAMEMESH_MAIL_DEV_SKIP_SESSION");
+}
+
 /** 危险 HTTP 管理接口：默认关闭；GAMEMESH_ENABLE_ADMIN=1 开启。 */
 inline bool AdminHttpEnabled() {
     const char *v = std::getenv("GAMEMESH_ENABLE_ADMIN");

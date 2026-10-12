@@ -167,6 +167,22 @@ inline bool PreserveAttachmentOnExpire(const std::string &attachment_state) {
     return attachment_state == "UNCLAIMED" || attachment_state == "CLAIMING";
 }
 
+/** 同一幂等键只有发起者、目标邮件、操作类型都一致才可回放。 */
+inline bool OpIntentMatches(uint64_t stored_actor, uint64_t stored_mail,
+                            const std::string &stored_op, uint64_t actor, uint64_t mail,
+                            const char *op) {
+    return op && stored_actor == actor && stored_mail == mail && stored_op == op;
+}
+
+inline std::string AttachmentFingerprint(const std::string &asset_type, uint64_t asset_id,
+                                        uint32_t count, const std::string &bind_type,
+                                        const std::string &payload) {
+    const std::string type = asset_type.empty() ? "ITEM" : asset_type;
+    const std::string bind = bind_type.empty() ? "NONE" : bind_type;
+    return type + "|" + std::to_string(asset_id) + "|" + std::to_string(count) + "|" + bind + "|" +
+           payload;
+}
+
 struct MailAttachmentRow {
     uint64_t attachment_id = 0;
     uint64_t mail_id = 0;

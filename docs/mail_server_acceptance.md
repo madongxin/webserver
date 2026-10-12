@@ -1,13 +1,15 @@
 # 邮件 V1 服务端验收
 
-本地 `main` 在 `efeceb3` 之上有未提交修改。远端 HEAD 本次未 fetch。没有重启集群，没有推送。
+复查起点是本地 `e472f84`。本轮没有重启集群。领取集成、双账号和停 Redis 未跑。
 
 ## 本次修改
 
 | 问题 | 修改 |
 | --- | --- |
-| 正式环境 Redis 不可用时，邮件 brpc 和 Gateway 邮件命令直接放行 | `MailBrpcServiceImpl::RequireToken` 与 `MailSessionOrFail`：`GAMEMESH_FORMAL=1` 时返回 `session unavailable`。非正式联调仍放行，避免拆掉无 Redis 的本地测试 |
-| 邮件 brpc 的 `MailDeliver` 用收件人会话鉴权，玩家可以给自己投奖励 | 正式环境直接 `ERR_COMMAND_FORBIDDEN`。投递仍走 `MailService::Deliver` 和 GM HTTP |
+| Redis 不可用时邮件接口放行 | 默认拒绝。只有非正式环境的 `GAMEMESH_MAIL_DEV_SKIP_SESSION=1` 可以跳过。正式环境忽略该开关 |
+| 邮件 brpc 的 `MailDeliver` 用收件人会话鉴权 | 改为只校验 `GAMEMESH_MAIL_DELIVER_TOKEN`，并限制 `SYSTEM`/`ACTIVITY`。玩家 token 不能发奖。离线收件不依赖会话 |
+| 已读/领取/收藏/批量删除的幂等键未绑定操作意图 | 同一 key 换角色、邮件或操作类型返回 `IDEMPOTENCY_CONFLICT`。投递重复键会比对附件、发送人和到期时间 |
+| 领取事务把未领附件标成过期 | `DoClaimMail` 对 `UNCLAIMED`/`CLAIMING` 不再写成 `EXPIRED`，仍可领取 |
 | 过期扫描把未领附件标成 `EXPIRED`，随后领取被拒绝 | `MarkExpiredBatch` 与 `TouchExpireIfNeeded` 跳过 `UNCLAIMED` / `CLAIMING`。`mail::PreserveAttachmentOnExpire` |
 | 正式环境玩家寄信仍开放 | `HandlePlayerMailSend` 在正式环境返回 `ERR_COMMAND_FORBIDDEN`。代码保留，非正式测试仍可跑 |
 
@@ -19,8 +21,8 @@
 | --- | --- | --- |
 | MAIL-01 系统投递 | 已有 `MailService::Deliver`，事务写邮件、附件和流水 | 本次未跑 MySQL 集成 |
 | MAIL-02 离线可读 | 投递写 MySQL，不依赖在线会话 | 未跑双端 |
-| MAIL-03 业务键幂等 | 已有：同键同内容命中，内容不同 `IDEMPOTENCY_CONFLICT` | 未跑 |
-| MAIL-04 领取幂等 | 已有 GameDB `ClaimMailAttachments` | 未跑 |
+| MAIL-03 业务键幂等 | 同键还比对附件、发送人、模板和到期时间；并发插入走同一比较 | 未跑 MySQL |
+| MAIL-04 领取幂等 | GameDB 领取键绑定角色、邮件和 `CLAIM`。不一致返回 `IDEMPOTENCY_CONFLICT`，不发奖 | 未跑 |
 | MAIL-05 提交后超时 | 已有 `STATE_SYNC_REQUIRED`，不二次发奖 | 未跑故障注入 |
 | MAIL-06 依赖故障 | 正式环境会话故障不再放行邮件命令 | 见下方 `mail_unit_test`；Redis 故障注入未跑 |
 | MAIL-07 背包满 | 已有 `INVENTORY_FULL`，未领邮件保留 | 未跑 |
@@ -30,9 +32,11 @@
 | MAIL-11 过期与领取 | 本次改为未领/领取中不标 `EXPIRED` | `mail_unit_test` 只覆盖判定函数；扫描 SQL 未对库执行 |
 | MAIL-12 切角色 | 查询按 `receiver_id` | 未跑双角色 |
 | MAIL-13 分页与版本 | 已有 cursor；`mailbox_version` 在进程内存，重启不保持 | 未跑 |
-| MAIL-14 Redis 失联 | 正式环境邮件接口失败关闭 | 未跑停 Redis |
-| MAIL-15 收藏与批量 | 已有上限与失败列表 | 未跑 |
-| MAIL-16 内部投递权限 | 正式环境拒绝玩家 brpc/TCP `MailDeliver` | 未跑 brpc 负例 |
+| MAIL-14 Redis 失联 | 玩家邮件默认失败关闭。`GAMEMESH_MAIL_DEV_SKIP_SESSION` 只在非正式环境生效 | 未跑停 Redis |
+| MAIL-15 收藏与批量 | 收藏键绑定操作；批量删除键绑定邮件 ID 列表 | 未跑 |
+| MAIL-16 内部投递权限 | brpc 投递只认 `GAMEMESH_MAIL_DELIVER_TOKEN`。Gateway 仍拒绝玩家 `MailDeliver` | 未跑 brpc 负例 |
+| MAIL-17 幂等键冲突 | 已读、领取、收藏、批量删除在 key 换目标时拒绝 | `mail_unit_test` 覆盖意图比较；数据库回放未跑 |
+| MAIL-18 重启后版本 | `mailbox_version` 在进程内存，重启后不作为唯一对账依据 | 未跑多实例 |
 
 ## 客户端还要做的
 
@@ -43,4 +47,4 @@
 
 ## 测试
 
-`cmake --build build --target mail_unit_test gamelogic` 通过。`./build/test/mail_unit_test` 输出 `mail_unit_test OK`。`player_mail_send_test`、领取集成、双账号、停 Redis 本次未跑。
+`./build/test/mail_unit_test` 输出 `mail_unit_test OK`。`cmake --build build --target world gamedb` 通过。`player_mail_send_test`、领取集成、双账号、停 Redis 未跑。

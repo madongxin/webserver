@@ -42,6 +42,13 @@ int main() {
     EXPECT_TRUE(PreserveAttachmentOnExpire("CLAIMING"));
     EXPECT_TRUE(!PreserveAttachmentOnExpire("NONE"));
     EXPECT_TRUE(!PreserveAttachmentOnExpire("CLAIMED"));
+    EXPECT_TRUE(OpIntentMatches(7, 9, "READ", 7, 9, "READ"));
+    EXPECT_TRUE(!OpIntentMatches(7, 9, "READ", 8, 9, "READ"));
+    EXPECT_TRUE(!OpIntentMatches(7, 9, "READ", 7, 10, "READ"));
+    EXPECT_TRUE(!OpIntentMatches(7, 9, "READ", 7, 9, "CLAIM"));
+    EXPECT_TRUE(AttachmentFingerprint("ITEM", 3, 2, "", "p") == "ITEM|3|2|NONE|p");
+    EXPECT_TRUE(AttachmentFingerprint("ITEM", 3, 2, "NONE", "p") !=
+                AttachmentFingerprint("ITEM", 4, 2, "NONE", "p"));
 
     Category c;
     EXPECT_TRUE(ParseCategory("ACTIVITY", &c) && c == Category::kActivity);

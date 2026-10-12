@@ -2572,9 +2572,9 @@ bool GameLogic::Handle(const game::GameRequest &req, game::GameResponse *rsp) {
         return false;
     rsp->Clear();
     rsp->set_seq(req.seq());  // 与请求 seq 对齐，便于客户端匹配异步响应
-    // 正式环境 Redis/Session 不可用时，邮件读写不能沿用“无会话即放行”。
+    // Redis/Session 不可用时拒绝邮件。只有非正式环境显式 GAMEMESH_MAIL_DEV_SKIP_SESSION=1 才放行。
     auto mail_session = [&](uint64_t player_id) -> bool {
-        if (FormalModeEnabled()) {
+        if (!MailDevSkipSession()) {
 #if defined(WEBSERVER_ENABLE_BRPC)
             if (!SessionRpcClient::Instance().ready()) {
 #endif
