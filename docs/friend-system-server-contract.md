@@ -24,6 +24,8 @@ Gateway 用登录会话覆盖 `player_id`。服务端不信任客户端自报的
 
 `MarkDisconnected` 不是登出。断线宽限内仍算在线。在线状态推送可丢，不进重放。申请、结成好友、删除进当前会话的重放；完全离线后以好友列表和申请列表为准。推送失败不回滚已经提交的关系。
 
+`ReconnectRsp.need_full_snapshot` 和 `FullStateSnapshotRsp` 只包含角色属性、背包和地图，不含好友、申请或黑名单。该标志为真时，客户端仍要按游标拉完好友列表、收到的申请列表和黑名单列表。推送和这三份列表同时到达时，以拉完的列表为准。
+
 ## 资料
 
 `player_profile` 和 `PlayerAttributes` 只有名字和战斗属性，没有等级、职业、头像、地图名。好友资料里的 `level`、`profession` 保持 0，`avatar` 和 `map_name` 留空。0 不是 1 级。`remark` 来自 `friend_relation.remark`，没有单独的改备注协议。`online` 和 `last_online_time` 来自会话：在线或断线宽限都算在线，时间是 unix 秒，离线且没有记录时为 0。
