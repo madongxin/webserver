@@ -79,7 +79,9 @@ int main() {
     const uint64_t rid = rsp.request_id();
 
     FriendStore::Instance().Execute(req, &rsp);
-    Expect(rsp.idempotent_hit(), "apply idempotent");
+    Expect(rsp.idempotent_hit() && rsp.ok() && rsp.error_code() == "OK" && rsp.request_id() == rid &&
+               rsp.peer_player_id() == b,
+           "apply idempotent replays the stored success");
 
     req.Clear();
     req.set_op("ACCEPT");
@@ -310,6 +312,11 @@ int main() {
     req.set_idempotency_key(miss_key);
     FriendStore::Instance().Execute(req, &rsp);
     Expect(!rsp.ok() && rsp.error_code() == "ERR_PLAYER_NOT_FOUND", "unresolved name stored");
+
+    FriendStore::Instance().Execute(req, &rsp);
+    Expect(rsp.idempotent_hit() && !rsp.ok() && rsp.error_code() == "ERR_PLAYER_NOT_FOUND" &&
+               rsp.request_id() == 0 && rsp.peer_player_id() == 0,
+           "missing name replays the stored failure");
 
     req.Clear();
     req.set_op("APPLY");

@@ -208,6 +208,7 @@ IdemHit LoadIdempotency(Connection *conn, uint64_t actor, const std::string &key
         return IdemHit::Miss;
     }
     const std::string stored_op = row[0] ? row[0] : "";
+    const std::string stored_code = row[1] ? row[1] : "OK";
     const uint64_t stored_req = ParseU64(row[2]);
     const uint64_t stored_peer = ParseU64(row[3]);
     const std::string stored_name = row[4] ? row[4] : "";
@@ -230,10 +231,9 @@ IdemHit LoadIdempotency(Connection *conn, uint64_t actor, const std::string &key
         return IdemHit::Conflict;
     }
     rsp->set_idempotent_hit(true);
-    const std::string code = row[1] ? row[1] : "OK";
-    rsp->set_error_code(code);
-    rsp->set_ok(code == "OK");
-    rsp->set_message(code == "OK" ? "ok" : code);
+    rsp->set_error_code(stored_code);
+    rsp->set_ok(stored_code == "OK");
+    rsp->set_message(stored_code == "OK" ? "ok" : stored_code);
     rsp->set_request_id(stored_req);
     rsp->set_peer_player_id(stored_peer);
     return IdemHit::Hit;
