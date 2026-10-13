@@ -55,6 +55,7 @@ y.pub
 # Env / local secrets (keep *.cnf.example tracked)
 .env
 .env.*
+!.env.example
 config/*.secret
 config/*.local
 config/*.cnf

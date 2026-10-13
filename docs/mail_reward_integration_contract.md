@@ -1,35 +1,47 @@
 # 邮件奖励一致性合同
 
-协议文件 `proto/game.proto` 的 SHA-256 是 `47e6fbf688af61b31ad4d5e2ecf88a17e9891521ad9950bb79076456a87a8d1a`。本轮没有改字段号，也没有新增消息。
+`proto/game.proto` 的 SHA-256 是 `49479bbdb5f8f1c5e5a0b649f21bb5c265122b01f4656b18638c87a8f6102792`。这一轮只追加字段，没有改旧字段号。
 
-## 权威资产
+客户端需要重新导出协议：
 
-客户端确认到账用已有的 `WorldSnapshotReq`（`GameRequest.world_snapshot = 72`）。回包是 `GameResponse.full_snapshot = 54`：`player_id`、`asset_version`、`item_ids`、`item_counts`。Gateway 在 `GameService` 里用已认证会话覆盖请求里的 `player_id`，不一致则拒绝。
+```text
+./scripts/export_unity_protocol.sh <输出目录>
+```
 
-`asset_version` 来自 GameDB `player_asset_meta`。同版本重复应用不加道具。内存版本比已提交版本小，或中间缺版本时，服务端从 `player_asset_bag` 重载，不用增量相加。内存标脏且重载失败时，快照 `error_code` 为 `STATE_SYNC_REQUIRED`，不能把当时的内存数量当到账。
+不要覆盖 `docs/protocol/published/v1`。Hello 的 `schema_sha256` 必须换成上面的值，否则 `ERR_SCHEMA_MISMATCH`。
 
-`mailbox_version` 只描述邮箱，不能当作资产版本。
+## 领取回执
 
-登录时正式 GameLogic 通过 GameDB `LoadInventory` 装入背包和版本。重连后客户端发 `WorldSnapshotReq`。
+`MailClaimResult.receipt` 的字段号是 6。`MailDetail.receipt` 的字段号是 5。类型是 `MailClaimReceipt`：
 
-## 领取
+| 字段 | 编号 | 含义 |
+| --- | --- | --- |
+| `claim_tx_id` | 1 | 首次成功提交的资产事务号，形如 `mail:<mail_id>:<unix秒>` |
+| `asset_version_at_claim` | 2 | 那一次入账提交后的 `asset_version` |
+| `grants` | 3 | 原始附件清单，`asset_id` + `count`。相同物品不合并，背包里会合并 |
+| `claim_state` | 4 | `UNCLAIMED`、`IN_PROGRESS`（库存里的 `CLAIMING`）、`CLAIMED`、`UNKNOWN` |
+| `verifiable` | 5 | 首次 OK 日志里事务号、版本和 grants 都在。缺字段的旧邮件是 false |
 
-玩家领取走 `MailClaimReq`（34）或 `MailBatchClaimReq`（35）。`idempotency_key` 必填。真正入账在 GameDB 的一个 MySQL 事务里：锁邮件行和背包行，写 `player_asset_bag`、邮件 `CLAIMED`、附件 `CLAIMED`、`mail_operation_log`、`game_db_outbox`。任一步失败就回滚，邮件保持可领。
+查询入口是已有的 `MailGetReq`（32）。Gateway 用已认证会话覆盖 `player_id`。查别人的邮件返回 `PERMISSION_DENIED`，不带物品明细。
 
-同一封邮件只入账一次。第二把钥匙看到 `CLAIMED` 后返回 `ALREADY_CLAIMED`，`attachment_state=CLAIMED`，`ok=true`。这表示已经入账，不是再发一份道具。钥匙换角色、换邮件或换操作类型返回 `IDEMPOTENCY_CONFLICT`。
+同一封邮件换 `idempotency_key` 得到 `ALREADY_CLAIMED` 时，`receipt` 仍是第一次 OK 入账的事务号和版本。内部 GameDB 的 `ClaimMailRsp` 同步增加了 `claim_tx_id=10`、`asset_version_at_claim=11`、`receipt_verifiable=12`。
 
-`STATE_SYNC_REQUIRED` 表示数据库可能已经入账，内存没对齐。客户端重拉 `full_snapshot`，不要显示“未到账”，也不要换一把新钥匙再领。
+旧日志只有后来补上的当前版本、没有 grants 时，`verifiable=false`。服务端不会用 `LoadMeta` 的当前版本填这个字段。
 
-`INVENTORY_FULL` 和数量溢出的 `INVALID_ATTACHMENT` 会回滚，邮件仍是 `UNCLAIMED`。背包软上限默认 999999，以服务端 `MailService` 传入 GameDB 的值为准。
+## 怎么算这封邮件到账
 
-一键领取里，附件 payload 含 `need_confirm` 或 `COD` 的邮件会在 `results` 里返回 `INVALID_STATE` / `manual confirm required`，不会被静默跳过。
+三件同时成立：
+
+1. `claim_state=CLAIMED` 且 `verifiable=true`。
+2. `claim_tx_id` 和 `asset_version_at_claim` 与首次领取一致。
+3. 当前角色的 `full_snapshot` 成功，`asset_version` 不早于 `asset_version_at_claim`，并且内存没有标脏。
+
+快照版本变大，可能是任务、商城或另一封邮件。不能单凭版本前进把某一封邮件标成已到账。后续消费会让余额变小，不要用“余额仍大于当时发放量”来证明来源。
+
+`STATE_SYNC_REQUIRED` 表示数据库可能已经入账，内存没对齐。保留原钥匙重试，并拉 `WorldSnapshotReq`。回执仍以数据库里的首次 OK 日志为准。
+
+`INVENTORY_FULL` 和 `INVALID_ATTACHMENT`（含数量加总超过 `uint32`）会整笔回滚。邮件保持 `UNCLAIMED`，没有回执。累加恰好等于 `uint32` 上限时，聚合不回绕；是否入账再由背包软上限 999999 决定。
 
 ## 示例
 
-领取成功后，客户端用原 `idempotency_key` 重试，应看到 `error_code=OK` 或 `ALREADY_CLAIMED`，背包数量不变。然后发：
-
-```text
-WorldSnapshotReq { player_id 被 Gateway 覆盖 }
-```
-
-期望 `full_snapshot.ok=true`，`asset_version` 与领取后的 GameDB 版本一致，对应 `item_id` 的 `item_counts` 含本次数量。若 `error_code=STATE_SYNC_REQUIRED`，稍后再拉，不要本地加道具。
+领取成功后读 `result.receipt`。再发一笔其它来源的发奖，然后 `MailGet` 同一 `mail_id`。`claim_tx_id` 和 `asset_version_at_claim` 不变，此时 `Bag` 的当前版本可以更大。换一把钥匙再领，回执仍是原来那一对。

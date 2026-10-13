@@ -861,11 +861,14 @@ class ClaimMailRsp PROTOBUF_FINAL :
     kErrorCodeFieldNumber = 4,
     kMessageFieldNumber = 5,
     kAttachmentStateFieldNumber = 6,
+    kClaimTxIdFieldNumber = 10,
     kMailRowVersionFieldNumber = 7,
     kAssetVersionFieldNumber = 9,
+    kAssetVersionAtClaimFieldNumber = 11,
     kOkFieldNumber = 1,
     kIdempotentHitFieldNumber = 2,
     kShouldApplyMemoryFieldNumber = 3,
+    kReceiptVerifiableFieldNumber = 12,
   };
   // repeated .gdb.GrantedItem grants = 8;
   int grants_size() const;
@@ -960,6 +963,31 @@ class ClaimMailRsp PROTOBUF_FINAL :
   std::string* _internal_mutable_attachment_state();
   public:
 
+  // string claim_tx_id = 10;
+  void clear_claim_tx_id();
+  const std::string& claim_tx_id() const;
+  void set_claim_tx_id(const std::string& value);
+  void set_claim_tx_id(std::string&& value);
+  void set_claim_tx_id(const char* value);
+  void set_claim_tx_id(const char* value, size_t size);
+  std::string* mutable_claim_tx_id();
+  std::string* release_claim_tx_id();
+  void set_allocated_claim_tx_id(std::string* claim_tx_id);
+  GOOGLE_PROTOBUF_RUNTIME_DEPRECATED("The unsafe_arena_ accessors for"
+  "    string fields are deprecated and will be removed in a"
+  "    future release.")
+  std::string* unsafe_arena_release_claim_tx_id();
+  GOOGLE_PROTOBUF_RUNTIME_DEPRECATED("The unsafe_arena_ accessors for"
+  "    string fields are deprecated and will be removed in a"
+  "    future release.")
+  void unsafe_arena_set_allocated_claim_tx_id(
+      std::string* claim_tx_id);
+  private:
+  const std::string& _internal_claim_tx_id() const;
+  void _internal_set_claim_tx_id(const std::string& value);
+  std::string* _internal_mutable_claim_tx_id();
+  public:
+
   // int64 mail_row_version = 7;
   void clear_mail_row_version();
   ::PROTOBUF_NAMESPACE_ID::int64 mail_row_version() const;
@@ -976,6 +1004,15 @@ class ClaimMailRsp PROTOBUF_FINAL :
   private:
   ::PROTOBUF_NAMESPACE_ID::uint64 _internal_asset_version() const;
   void _internal_set_asset_version(::PROTOBUF_NAMESPACE_ID::uint64 value);
+  public:
+
+  // uint64 asset_version_at_claim = 11;
+  void clear_asset_version_at_claim();
+  ::PROTOBUF_NAMESPACE_ID::uint64 asset_version_at_claim() const;
+  void set_asset_version_at_claim(::PROTOBUF_NAMESPACE_ID::uint64 value);
+  private:
+  ::PROTOBUF_NAMESPACE_ID::uint64 _internal_asset_version_at_claim() const;
+  void _internal_set_asset_version_at_claim(::PROTOBUF_NAMESPACE_ID::uint64 value);
   public:
 
   // bool ok = 1;
@@ -1005,6 +1042,15 @@ class ClaimMailRsp PROTOBUF_FINAL :
   void _internal_set_should_apply_memory(bool value);
   public:
 
+  // bool receipt_verifiable = 12;
+  void clear_receipt_verifiable();
+  bool receipt_verifiable() const;
+  void set_receipt_verifiable(bool value);
+  private:
+  bool _internal_receipt_verifiable() const;
+  void _internal_set_receipt_verifiable(bool value);
+  public:
+
   // @@protoc_insertion_point(class_scope:gdb.ClaimMailRsp)
  private:
   class _Internal;
@@ -1016,11 +1062,14 @@ class ClaimMailRsp PROTOBUF_FINAL :
   ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr error_code_;
   ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr message_;
   ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr attachment_state_;
+  ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr claim_tx_id_;
   ::PROTOBUF_NAMESPACE_ID::int64 mail_row_version_;
   ::PROTOBUF_NAMESPACE_ID::uint64 asset_version_;
+  ::PROTOBUF_NAMESPACE_ID::uint64 asset_version_at_claim_;
   bool ok_;
   bool idempotent_hit_;
   bool should_apply_memory_;
+  bool receipt_verifiable_;
   mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
   friend struct ::TableStruct_gamedb_2eproto;
 };
@@ -9250,6 +9299,127 @@ inline void ClaimMailRsp::_internal_set_asset_version(::PROTOBUF_NAMESPACE_ID::u
 inline void ClaimMailRsp::set_asset_version(::PROTOBUF_NAMESPACE_ID::uint64 value) {
   _internal_set_asset_version(value);
   // @@protoc_insertion_point(field_set:gdb.ClaimMailRsp.asset_version)
+}
+
+// string claim_tx_id = 10;
+inline void ClaimMailRsp::clear_claim_tx_id() {
+  claim_tx_id_.ClearToEmpty(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
+}
+inline const std::string& ClaimMailRsp::claim_tx_id() const {
+  // @@protoc_insertion_point(field_get:gdb.ClaimMailRsp.claim_tx_id)
+  return _internal_claim_tx_id();
+}
+inline void ClaimMailRsp::set_claim_tx_id(const std::string& value) {
+  _internal_set_claim_tx_id(value);
+  // @@protoc_insertion_point(field_set:gdb.ClaimMailRsp.claim_tx_id)
+}
+inline std::string* ClaimMailRsp::mutable_claim_tx_id() {
+  // @@protoc_insertion_point(field_mutable:gdb.ClaimMailRsp.claim_tx_id)
+  return _internal_mutable_claim_tx_id();
+}
+inline const std::string& ClaimMailRsp::_internal_claim_tx_id() const {
+  return claim_tx_id_.Get();
+}
+inline void ClaimMailRsp::_internal_set_claim_tx_id(const std::string& value) {
+  
+  claim_tx_id_.Set(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), value, GetArena());
+}
+inline void ClaimMailRsp::set_claim_tx_id(std::string&& value) {
+  
+  claim_tx_id_.Set(
+    &::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), ::std::move(value), GetArena());
+  // @@protoc_insertion_point(field_set_rvalue:gdb.ClaimMailRsp.claim_tx_id)
+}
+inline void ClaimMailRsp::set_claim_tx_id(const char* value) {
+  GOOGLE_DCHECK(value != nullptr);
+  
+  claim_tx_id_.Set(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), ::std::string(value),
+              GetArena());
+  // @@protoc_insertion_point(field_set_char:gdb.ClaimMailRsp.claim_tx_id)
+}
+inline void ClaimMailRsp::set_claim_tx_id(const char* value,
+    size_t size) {
+  
+  claim_tx_id_.Set(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), ::std::string(
+      reinterpret_cast<const char*>(value), size), GetArena());
+  // @@protoc_insertion_point(field_set_pointer:gdb.ClaimMailRsp.claim_tx_id)
+}
+inline std::string* ClaimMailRsp::_internal_mutable_claim_tx_id() {
+  
+  return claim_tx_id_.Mutable(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
+}
+inline std::string* ClaimMailRsp::release_claim_tx_id() {
+  // @@protoc_insertion_point(field_release:gdb.ClaimMailRsp.claim_tx_id)
+  return claim_tx_id_.Release(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
+}
+inline void ClaimMailRsp::set_allocated_claim_tx_id(std::string* claim_tx_id) {
+  if (claim_tx_id != nullptr) {
+    
+  } else {
+    
+  }
+  claim_tx_id_.SetAllocated(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), claim_tx_id,
+      GetArena());
+  // @@protoc_insertion_point(field_set_allocated:gdb.ClaimMailRsp.claim_tx_id)
+}
+inline std::string* ClaimMailRsp::unsafe_arena_release_claim_tx_id() {
+  // @@protoc_insertion_point(field_unsafe_arena_release:gdb.ClaimMailRsp.claim_tx_id)
+  GOOGLE_DCHECK(GetArena() != nullptr);
+  
+  return claim_tx_id_.UnsafeArenaRelease(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(),
+      GetArena());
+}
+inline void ClaimMailRsp::unsafe_arena_set_allocated_claim_tx_id(
+    std::string* claim_tx_id) {
+  GOOGLE_DCHECK(GetArena() != nullptr);
+  if (claim_tx_id != nullptr) {
+    
+  } else {
+    
+  }
+  claim_tx_id_.UnsafeArenaSetAllocated(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(),
+      claim_tx_id, GetArena());
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:gdb.ClaimMailRsp.claim_tx_id)
+}
+
+// uint64 asset_version_at_claim = 11;
+inline void ClaimMailRsp::clear_asset_version_at_claim() {
+  asset_version_at_claim_ = PROTOBUF_ULONGLONG(0);
+}
+inline ::PROTOBUF_NAMESPACE_ID::uint64 ClaimMailRsp::_internal_asset_version_at_claim() const {
+  return asset_version_at_claim_;
+}
+inline ::PROTOBUF_NAMESPACE_ID::uint64 ClaimMailRsp::asset_version_at_claim() const {
+  // @@protoc_insertion_point(field_get:gdb.ClaimMailRsp.asset_version_at_claim)
+  return _internal_asset_version_at_claim();
+}
+inline void ClaimMailRsp::_internal_set_asset_version_at_claim(::PROTOBUF_NAMESPACE_ID::uint64 value) {
+  
+  asset_version_at_claim_ = value;
+}
+inline void ClaimMailRsp::set_asset_version_at_claim(::PROTOBUF_NAMESPACE_ID::uint64 value) {
+  _internal_set_asset_version_at_claim(value);
+  // @@protoc_insertion_point(field_set:gdb.ClaimMailRsp.asset_version_at_claim)
+}
+
+// bool receipt_verifiable = 12;
+inline void ClaimMailRsp::clear_receipt_verifiable() {
+  receipt_verifiable_ = false;
+}
+inline bool ClaimMailRsp::_internal_receipt_verifiable() const {
+  return receipt_verifiable_;
+}
+inline bool ClaimMailRsp::receipt_verifiable() const {
+  // @@protoc_insertion_point(field_get:gdb.ClaimMailRsp.receipt_verifiable)
+  return _internal_receipt_verifiable();
+}
+inline void ClaimMailRsp::_internal_set_receipt_verifiable(bool value) {
+  
+  receipt_verifiable_ = value;
+}
+inline void ClaimMailRsp::set_receipt_verifiable(bool value) {
+  _internal_set_receipt_verifiable(value);
+  // @@protoc_insertion_point(field_set:gdb.ClaimMailRsp.receipt_verifiable)
 }
 
 // -------------------------------------------------------------------

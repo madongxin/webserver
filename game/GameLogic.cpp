@@ -463,6 +463,14 @@ bool GameLogic::EnsureAssetsSynced(uint64_t player_id) {
     return false;
 }
 
+bool GameLogic::ReloadAuthoritativeAssets(uint64_t player_id) {
+    if (TryReloadAssets(player_id))
+        return true;
+    std::lock_guard<std::mutex> lk(mu_);
+    asset_dirty_[player_id] = true;
+    return false;
+}
+
 void GameLogic::SetAssetReloadBlockedForTest(bool v) {
     std::lock_guard<std::mutex> lk(mu_);
     reload_blocked_for_test_ = v;

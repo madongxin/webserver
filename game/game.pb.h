@@ -48,7 +48,7 @@ struct TableStruct_game_2eproto {
     PROTOBUF_SECTION_VARIABLE(protodesc_cold);
   static const ::PROTOBUF_NAMESPACE_ID::internal::AuxillaryParseTableField aux[]
     PROTOBUF_SECTION_VARIABLE(protodesc_cold);
-  static const ::PROTOBUF_NAMESPACE_ID::internal::ParseTable schema[124]
+  static const ::PROTOBUF_NAMESPACE_ID::internal::ParseTable schema[126]
     PROTOBUF_SECTION_VARIABLE(protodesc_cold);
   static const ::PROTOBUF_NAMESPACE_ID::internal::FieldMetadata field_metadata[];
   static const ::PROTOBUF_NAMESPACE_ID::internal::SerializationTable serialization_table[];
@@ -272,6 +272,12 @@ extern MailBatchReadRspDefaultTypeInternal _MailBatchReadRsp_default_instance_;
 class MailBrief;
 class MailBriefDefaultTypeInternal;
 extern MailBriefDefaultTypeInternal _MailBrief_default_instance_;
+class MailClaimGrant;
+class MailClaimGrantDefaultTypeInternal;
+extern MailClaimGrantDefaultTypeInternal _MailClaimGrant_default_instance_;
+class MailClaimReceipt;
+class MailClaimReceiptDefaultTypeInternal;
+extern MailClaimReceiptDefaultTypeInternal _MailClaimReceipt_default_instance_;
 class MailClaimReq;
 class MailClaimReqDefaultTypeInternal;
 extern MailClaimReqDefaultTypeInternal _MailClaimReq_default_instance_;
@@ -502,6 +508,8 @@ template<> ::game::MailBatchDeleteRsp* Arena::CreateMaybeMessage<::game::MailBat
 template<> ::game::MailBatchReadReq* Arena::CreateMaybeMessage<::game::MailBatchReadReq>(Arena*);
 template<> ::game::MailBatchReadRsp* Arena::CreateMaybeMessage<::game::MailBatchReadRsp>(Arena*);
 template<> ::game::MailBrief* Arena::CreateMaybeMessage<::game::MailBrief>(Arena*);
+template<> ::game::MailClaimGrant* Arena::CreateMaybeMessage<::game::MailClaimGrant>(Arena*);
+template<> ::game::MailClaimReceipt* Arena::CreateMaybeMessage<::game::MailClaimReceipt>(Arena*);
 template<> ::game::MailClaimReq* Arena::CreateMaybeMessage<::game::MailClaimReq>(Arena*);
 template<> ::game::MailClaimResult* Arena::CreateMaybeMessage<::game::MailClaimResult>(Arena*);
 template<> ::game::MailClaimRsp* Arena::CreateMaybeMessage<::game::MailClaimRsp>(Arena*);
@@ -6632,6 +6640,376 @@ class MailBrief PROTOBUF_FINAL :
 };
 // -------------------------------------------------------------------
 
+class MailClaimGrant PROTOBUF_FINAL :
+    public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:game.MailClaimGrant) */ {
+ public:
+  inline MailClaimGrant() : MailClaimGrant(nullptr) {};
+  virtual ~MailClaimGrant();
+
+  MailClaimGrant(const MailClaimGrant& from);
+  MailClaimGrant(MailClaimGrant&& from) noexcept
+    : MailClaimGrant() {
+    *this = ::std::move(from);
+  }
+
+  inline MailClaimGrant& operator=(const MailClaimGrant& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  inline MailClaimGrant& operator=(MailClaimGrant&& from) noexcept {
+    if (GetArena() == from.GetArena()) {
+      if (this != &from) InternalSwap(&from);
+    } else {
+      CopyFrom(from);
+    }
+    return *this;
+  }
+
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* descriptor() {
+    return GetDescriptor();
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* GetDescriptor() {
+    return GetMetadataStatic().descriptor;
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Reflection* GetReflection() {
+    return GetMetadataStatic().reflection;
+  }
+  static const MailClaimGrant& default_instance();
+
+  static void InitAsDefaultInstance();  // FOR INTERNAL USE ONLY
+  static inline const MailClaimGrant* internal_default_instance() {
+    return reinterpret_cast<const MailClaimGrant*>(
+               &_MailClaimGrant_default_instance_);
+  }
+  static constexpr int kIndexInFileMessages =
+    29;
+
+  friend void swap(MailClaimGrant& a, MailClaimGrant& b) {
+    a.Swap(&b);
+  }
+  inline void Swap(MailClaimGrant* other) {
+    if (other == this) return;
+    if (GetArena() == other->GetArena()) {
+      InternalSwap(other);
+    } else {
+      ::PROTOBUF_NAMESPACE_ID::internal::GenericSwap(this, other);
+    }
+  }
+  void UnsafeArenaSwap(MailClaimGrant* other) {
+    if (other == this) return;
+    GOOGLE_DCHECK(GetArena() == other->GetArena());
+    InternalSwap(other);
+  }
+
+  // implements Message ----------------------------------------------
+
+  inline MailClaimGrant* New() const final {
+    return CreateMaybeMessage<MailClaimGrant>(nullptr);
+  }
+
+  MailClaimGrant* New(::PROTOBUF_NAMESPACE_ID::Arena* arena) const final {
+    return CreateMaybeMessage<MailClaimGrant>(arena);
+  }
+  void CopyFrom(const ::PROTOBUF_NAMESPACE_ID::Message& from) final;
+  void MergeFrom(const ::PROTOBUF_NAMESPACE_ID::Message& from) final;
+  void CopyFrom(const MailClaimGrant& from);
+  void MergeFrom(const MailClaimGrant& from);
+  PROTOBUF_ATTRIBUTE_REINITIALIZES void Clear() final;
+  bool IsInitialized() const final;
+
+  size_t ByteSizeLong() const final;
+  const char* _InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::internal::ParseContext* ctx) final;
+  ::PROTOBUF_NAMESPACE_ID::uint8* _InternalSerialize(
+      ::PROTOBUF_NAMESPACE_ID::uint8* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const final;
+  int GetCachedSize() const final { return _cached_size_.Get(); }
+
+  private:
+  inline void SharedCtor();
+  inline void SharedDtor();
+  void SetCachedSize(int size) const final;
+  void InternalSwap(MailClaimGrant* other);
+  friend class ::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata;
+  static ::PROTOBUF_NAMESPACE_ID::StringPiece FullMessageName() {
+    return "game.MailClaimGrant";
+  }
+  protected:
+  explicit MailClaimGrant(::PROTOBUF_NAMESPACE_ID::Arena* arena);
+  private:
+  static void ArenaDtor(void* object);
+  inline void RegisterArenaDtor(::PROTOBUF_NAMESPACE_ID::Arena* arena);
+  public:
+
+  ::PROTOBUF_NAMESPACE_ID::Metadata GetMetadata() const final;
+  private:
+  static ::PROTOBUF_NAMESPACE_ID::Metadata GetMetadataStatic() {
+    ::PROTOBUF_NAMESPACE_ID::internal::AssignDescriptors(&::descriptor_table_game_2eproto);
+    return ::descriptor_table_game_2eproto.file_level_metadata[kIndexInFileMessages];
+  }
+
+  public:
+
+  // nested types ----------------------------------------------------
+
+  // accessors -------------------------------------------------------
+
+  enum : int {
+    kAssetIdFieldNumber = 1,
+    kCountFieldNumber = 2,
+  };
+  // uint64 asset_id = 1;
+  void clear_asset_id();
+  ::PROTOBUF_NAMESPACE_ID::uint64 asset_id() const;
+  void set_asset_id(::PROTOBUF_NAMESPACE_ID::uint64 value);
+  private:
+  ::PROTOBUF_NAMESPACE_ID::uint64 _internal_asset_id() const;
+  void _internal_set_asset_id(::PROTOBUF_NAMESPACE_ID::uint64 value);
+  public:
+
+  // uint32 count = 2;
+  void clear_count();
+  ::PROTOBUF_NAMESPACE_ID::uint32 count() const;
+  void set_count(::PROTOBUF_NAMESPACE_ID::uint32 value);
+  private:
+  ::PROTOBUF_NAMESPACE_ID::uint32 _internal_count() const;
+  void _internal_set_count(::PROTOBUF_NAMESPACE_ID::uint32 value);
+  public:
+
+  // @@protoc_insertion_point(class_scope:game.MailClaimGrant)
+ private:
+  class _Internal;
+
+  template <typename T> friend class ::PROTOBUF_NAMESPACE_ID::Arena::InternalHelper;
+  typedef void InternalArenaConstructable_;
+  typedef void DestructorSkippable_;
+  ::PROTOBUF_NAMESPACE_ID::uint64 asset_id_;
+  ::PROTOBUF_NAMESPACE_ID::uint32 count_;
+  mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
+  friend struct ::TableStruct_game_2eproto;
+};
+// -------------------------------------------------------------------
+
+class MailClaimReceipt PROTOBUF_FINAL :
+    public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:game.MailClaimReceipt) */ {
+ public:
+  inline MailClaimReceipt() : MailClaimReceipt(nullptr) {};
+  virtual ~MailClaimReceipt();
+
+  MailClaimReceipt(const MailClaimReceipt& from);
+  MailClaimReceipt(MailClaimReceipt&& from) noexcept
+    : MailClaimReceipt() {
+    *this = ::std::move(from);
+  }
+
+  inline MailClaimReceipt& operator=(const MailClaimReceipt& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  inline MailClaimReceipt& operator=(MailClaimReceipt&& from) noexcept {
+    if (GetArena() == from.GetArena()) {
+      if (this != &from) InternalSwap(&from);
+    } else {
+      CopyFrom(from);
+    }
+    return *this;
+  }
+
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* descriptor() {
+    return GetDescriptor();
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* GetDescriptor() {
+    return GetMetadataStatic().descriptor;
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Reflection* GetReflection() {
+    return GetMetadataStatic().reflection;
+  }
+  static const MailClaimReceipt& default_instance();
+
+  static void InitAsDefaultInstance();  // FOR INTERNAL USE ONLY
+  static inline const MailClaimReceipt* internal_default_instance() {
+    return reinterpret_cast<const MailClaimReceipt*>(
+               &_MailClaimReceipt_default_instance_);
+  }
+  static constexpr int kIndexInFileMessages =
+    30;
+
+  friend void swap(MailClaimReceipt& a, MailClaimReceipt& b) {
+    a.Swap(&b);
+  }
+  inline void Swap(MailClaimReceipt* other) {
+    if (other == this) return;
+    if (GetArena() == other->GetArena()) {
+      InternalSwap(other);
+    } else {
+      ::PROTOBUF_NAMESPACE_ID::internal::GenericSwap(this, other);
+    }
+  }
+  void UnsafeArenaSwap(MailClaimReceipt* other) {
+    if (other == this) return;
+    GOOGLE_DCHECK(GetArena() == other->GetArena());
+    InternalSwap(other);
+  }
+
+  // implements Message ----------------------------------------------
+
+  inline MailClaimReceipt* New() const final {
+    return CreateMaybeMessage<MailClaimReceipt>(nullptr);
+  }
+
+  MailClaimReceipt* New(::PROTOBUF_NAMESPACE_ID::Arena* arena) const final {
+    return CreateMaybeMessage<MailClaimReceipt>(arena);
+  }
+  void CopyFrom(const ::PROTOBUF_NAMESPACE_ID::Message& from) final;
+  void MergeFrom(const ::PROTOBUF_NAMESPACE_ID::Message& from) final;
+  void CopyFrom(const MailClaimReceipt& from);
+  void MergeFrom(const MailClaimReceipt& from);
+  PROTOBUF_ATTRIBUTE_REINITIALIZES void Clear() final;
+  bool IsInitialized() const final;
+
+  size_t ByteSizeLong() const final;
+  const char* _InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::internal::ParseContext* ctx) final;
+  ::PROTOBUF_NAMESPACE_ID::uint8* _InternalSerialize(
+      ::PROTOBUF_NAMESPACE_ID::uint8* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const final;
+  int GetCachedSize() const final { return _cached_size_.Get(); }
+
+  private:
+  inline void SharedCtor();
+  inline void SharedDtor();
+  void SetCachedSize(int size) const final;
+  void InternalSwap(MailClaimReceipt* other);
+  friend class ::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata;
+  static ::PROTOBUF_NAMESPACE_ID::StringPiece FullMessageName() {
+    return "game.MailClaimReceipt";
+  }
+  protected:
+  explicit MailClaimReceipt(::PROTOBUF_NAMESPACE_ID::Arena* arena);
+  private:
+  static void ArenaDtor(void* object);
+  inline void RegisterArenaDtor(::PROTOBUF_NAMESPACE_ID::Arena* arena);
+  public:
+
+  ::PROTOBUF_NAMESPACE_ID::Metadata GetMetadata() const final;
+  private:
+  static ::PROTOBUF_NAMESPACE_ID::Metadata GetMetadataStatic() {
+    ::PROTOBUF_NAMESPACE_ID::internal::AssignDescriptors(&::descriptor_table_game_2eproto);
+    return ::descriptor_table_game_2eproto.file_level_metadata[kIndexInFileMessages];
+  }
+
+  public:
+
+  // nested types ----------------------------------------------------
+
+  // accessors -------------------------------------------------------
+
+  enum : int {
+    kGrantsFieldNumber = 3,
+    kClaimTxIdFieldNumber = 1,
+    kClaimStateFieldNumber = 4,
+    kAssetVersionAtClaimFieldNumber = 2,
+    kVerifiableFieldNumber = 5,
+  };
+  // repeated .game.MailClaimGrant grants = 3;
+  int grants_size() const;
+  private:
+  int _internal_grants_size() const;
+  public:
+  void clear_grants();
+  ::game::MailClaimGrant* mutable_grants(int index);
+  ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::game::MailClaimGrant >*
+      mutable_grants();
+  private:
+  const ::game::MailClaimGrant& _internal_grants(int index) const;
+  ::game::MailClaimGrant* _internal_add_grants();
+  public:
+  const ::game::MailClaimGrant& grants(int index) const;
+  ::game::MailClaimGrant* add_grants();
+  const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::game::MailClaimGrant >&
+      grants() const;
+
+  // string claim_tx_id = 1;
+  void clear_claim_tx_id();
+  const std::string& claim_tx_id() const;
+  void set_claim_tx_id(const std::string& value);
+  void set_claim_tx_id(std::string&& value);
+  void set_claim_tx_id(const char* value);
+  void set_claim_tx_id(const char* value, size_t size);
+  std::string* mutable_claim_tx_id();
+  std::string* release_claim_tx_id();
+  void set_allocated_claim_tx_id(std::string* claim_tx_id);
+  GOOGLE_PROTOBUF_RUNTIME_DEPRECATED("The unsafe_arena_ accessors for"
+  "    string fields are deprecated and will be removed in a"
+  "    future release.")
+  std::string* unsafe_arena_release_claim_tx_id();
+  GOOGLE_PROTOBUF_RUNTIME_DEPRECATED("The unsafe_arena_ accessors for"
+  "    string fields are deprecated and will be removed in a"
+  "    future release.")
+  void unsafe_arena_set_allocated_claim_tx_id(
+      std::string* claim_tx_id);
+  private:
+  const std::string& _internal_claim_tx_id() const;
+  void _internal_set_claim_tx_id(const std::string& value);
+  std::string* _internal_mutable_claim_tx_id();
+  public:
+
+  // string claim_state = 4;
+  void clear_claim_state();
+  const std::string& claim_state() const;
+  void set_claim_state(const std::string& value);
+  void set_claim_state(std::string&& value);
+  void set_claim_state(const char* value);
+  void set_claim_state(const char* value, size_t size);
+  std::string* mutable_claim_state();
+  std::string* release_claim_state();
+  void set_allocated_claim_state(std::string* claim_state);
+  GOOGLE_PROTOBUF_RUNTIME_DEPRECATED("The unsafe_arena_ accessors for"
+  "    string fields are deprecated and will be removed in a"
+  "    future release.")
+  std::string* unsafe_arena_release_claim_state();
+  GOOGLE_PROTOBUF_RUNTIME_DEPRECATED("The unsafe_arena_ accessors for"
+  "    string fields are deprecated and will be removed in a"
+  "    future release.")
+  void unsafe_arena_set_allocated_claim_state(
+      std::string* claim_state);
+  private:
+  const std::string& _internal_claim_state() const;
+  void _internal_set_claim_state(const std::string& value);
+  std::string* _internal_mutable_claim_state();
+  public:
+
+  // uint64 asset_version_at_claim = 2;
+  void clear_asset_version_at_claim();
+  ::PROTOBUF_NAMESPACE_ID::uint64 asset_version_at_claim() const;
+  void set_asset_version_at_claim(::PROTOBUF_NAMESPACE_ID::uint64 value);
+  private:
+  ::PROTOBUF_NAMESPACE_ID::uint64 _internal_asset_version_at_claim() const;
+  void _internal_set_asset_version_at_claim(::PROTOBUF_NAMESPACE_ID::uint64 value);
+  public:
+
+  // bool verifiable = 5;
+  void clear_verifiable();
+  bool verifiable() const;
+  void set_verifiable(bool value);
+  private:
+  bool _internal_verifiable() const;
+  void _internal_set_verifiable(bool value);
+  public:
+
+  // @@protoc_insertion_point(class_scope:game.MailClaimReceipt)
+ private:
+  class _Internal;
+
+  template <typename T> friend class ::PROTOBUF_NAMESPACE_ID::Arena::InternalHelper;
+  typedef void InternalArenaConstructable_;
+  typedef void DestructorSkippable_;
+  ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::game::MailClaimGrant > grants_;
+  ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr claim_tx_id_;
+  ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr claim_state_;
+  ::PROTOBUF_NAMESPACE_ID::uint64 asset_version_at_claim_;
+  bool verifiable_;
+  mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
+  friend struct ::TableStruct_game_2eproto;
+};
+// -------------------------------------------------------------------
+
 class MailDetail PROTOBUF_FINAL :
     public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:game.MailDetail) */ {
  public:
@@ -6674,7 +7052,7 @@ class MailDetail PROTOBUF_FINAL :
                &_MailDetail_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    29;
+    31;
 
   friend void swap(MailDetail& a, MailDetail& b) {
     a.Swap(&b);
@@ -6749,6 +7127,7 @@ class MailDetail PROTOBUF_FINAL :
     kAllowedActionsFieldNumber = 4,
     kBodyFieldNumber = 2,
     kBriefFieldNumber = 1,
+    kReceiptFieldNumber = 5,
   };
   // repeated .game.MailAttachmentDto attachments = 3;
   int attachments_size() const;
@@ -6835,6 +7214,24 @@ class MailDetail PROTOBUF_FINAL :
       ::game::MailBrief* brief);
   ::game::MailBrief* unsafe_arena_release_brief();
 
+  // .game.MailClaimReceipt receipt = 5;
+  bool has_receipt() const;
+  private:
+  bool _internal_has_receipt() const;
+  public:
+  void clear_receipt();
+  const ::game::MailClaimReceipt& receipt() const;
+  ::game::MailClaimReceipt* release_receipt();
+  ::game::MailClaimReceipt* mutable_receipt();
+  void set_allocated_receipt(::game::MailClaimReceipt* receipt);
+  private:
+  const ::game::MailClaimReceipt& _internal_receipt() const;
+  ::game::MailClaimReceipt* _internal_mutable_receipt();
+  public:
+  void unsafe_arena_set_allocated_receipt(
+      ::game::MailClaimReceipt* receipt);
+  ::game::MailClaimReceipt* unsafe_arena_release_receipt();
+
   // @@protoc_insertion_point(class_scope:game.MailDetail)
  private:
   class _Internal;
@@ -6846,6 +7243,7 @@ class MailDetail PROTOBUF_FINAL :
   ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField<std::string> allowed_actions_;
   ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr body_;
   ::game::MailBrief* brief_;
+  ::game::MailClaimReceipt* receipt_;
   mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
   friend struct ::TableStruct_game_2eproto;
 };
@@ -6893,7 +7291,7 @@ class MailboxSummaryReq PROTOBUF_FINAL :
                &_MailboxSummaryReq_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    30;
+    32;
 
   friend void swap(MailboxSummaryReq& a, MailboxSummaryReq& b) {
     a.Swap(&b);
@@ -7030,7 +7428,7 @@ class MailboxSummaryRsp PROTOBUF_FINAL :
                &_MailboxSummaryRsp_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    31;
+    33;
 
   friend void swap(MailboxSummaryRsp& a, MailboxSummaryRsp& b) {
     a.Swap(&b);
@@ -7331,7 +7729,7 @@ class MailListReq PROTOBUF_FINAL :
                &_MailListReq_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    32;
+    34;
 
   friend void swap(MailListReq& a, MailListReq& b) {
     a.Swap(&b);
@@ -7615,7 +8013,7 @@ class MailListRsp PROTOBUF_FINAL :
                &_MailListRsp_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    33;
+    35;
 
   friend void swap(MailListRsp& a, MailListRsp& b) {
     a.Swap(&b);
@@ -7875,7 +8273,7 @@ class MailGetReq PROTOBUF_FINAL :
                &_MailGetReq_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    34;
+    36;
 
   friend void swap(MailGetReq& a, MailGetReq& b) {
     a.Swap(&b);
@@ -8023,7 +8421,7 @@ class MailGetRsp PROTOBUF_FINAL :
                &_MailGetRsp_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    35;
+    37;
 
   friend void swap(MailGetRsp& a, MailGetRsp& b) {
     a.Swap(&b);
@@ -8256,7 +8654,7 @@ class MailReadReq PROTOBUF_FINAL :
                &_MailReadReq_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    36;
+    38;
 
   friend void swap(MailReadReq& a, MailReadReq& b) {
     a.Swap(&b);
@@ -8431,7 +8829,7 @@ class MailReadRsp PROTOBUF_FINAL :
                &_MailReadRsp_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    37;
+    39;
 
   friend void swap(MailReadRsp& a, MailReadRsp& b) {
     a.Swap(&b);
@@ -8655,7 +9053,7 @@ class MailClaimReq PROTOBUF_FINAL :
                &_MailClaimReq_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    38;
+    40;
 
   friend void swap(MailClaimReq& a, MailClaimReq& b) {
     a.Swap(&b);
@@ -8857,7 +9255,7 @@ class MailClaimResult PROTOBUF_FINAL :
                &_MailClaimResult_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    39;
+    41;
 
   friend void swap(MailClaimResult& a, MailClaimResult& b) {
     a.Swap(&b);
@@ -8931,6 +9329,7 @@ class MailClaimResult PROTOBUF_FINAL :
     kErrorCodeFieldNumber = 3,
     kMessageFieldNumber = 4,
     kAttachmentStateFieldNumber = 5,
+    kReceiptFieldNumber = 6,
     kMailIdFieldNumber = 1,
     kOkFieldNumber = 2,
   };
@@ -9009,6 +9408,24 @@ class MailClaimResult PROTOBUF_FINAL :
   std::string* _internal_mutable_attachment_state();
   public:
 
+  // .game.MailClaimReceipt receipt = 6;
+  bool has_receipt() const;
+  private:
+  bool _internal_has_receipt() const;
+  public:
+  void clear_receipt();
+  const ::game::MailClaimReceipt& receipt() const;
+  ::game::MailClaimReceipt* release_receipt();
+  ::game::MailClaimReceipt* mutable_receipt();
+  void set_allocated_receipt(::game::MailClaimReceipt* receipt);
+  private:
+  const ::game::MailClaimReceipt& _internal_receipt() const;
+  ::game::MailClaimReceipt* _internal_mutable_receipt();
+  public:
+  void unsafe_arena_set_allocated_receipt(
+      ::game::MailClaimReceipt* receipt);
+  ::game::MailClaimReceipt* unsafe_arena_release_receipt();
+
   // uint64 mail_id = 1;
   void clear_mail_id();
   ::PROTOBUF_NAMESPACE_ID::uint64 mail_id() const;
@@ -9037,6 +9454,7 @@ class MailClaimResult PROTOBUF_FINAL :
   ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr error_code_;
   ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr message_;
   ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr attachment_state_;
+  ::game::MailClaimReceipt* receipt_;
   ::PROTOBUF_NAMESPACE_ID::uint64 mail_id_;
   bool ok_;
   mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
@@ -9086,7 +9504,7 @@ class MailClaimRsp PROTOBUF_FINAL :
                &_MailClaimRsp_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    40;
+    42;
 
   friend void swap(MailClaimRsp& a, MailClaimRsp& b) {
     a.Swap(&b);
@@ -9319,7 +9737,7 @@ class MailBatchClaimReq PROTOBUF_FINAL :
                &_MailBatchClaimReq_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    41;
+    43;
 
   friend void swap(MailBatchClaimReq& a, MailBatchClaimReq& b) {
     a.Swap(&b);
@@ -9535,7 +9953,7 @@ class MailBatchClaimRsp PROTOBUF_FINAL :
                &_MailBatchClaimRsp_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    42;
+    44;
 
   friend void swap(MailBatchClaimRsp& a, MailBatchClaimRsp& b) {
     a.Swap(&b);
@@ -9768,7 +10186,7 @@ class MailFavoriteReq PROTOBUF_FINAL :
                &_MailFavoriteReq_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    43;
+    45;
 
   friend void swap(MailFavoriteReq& a, MailFavoriteReq& b) {
     a.Swap(&b);
@@ -9954,7 +10372,7 @@ class MailFavoriteRsp PROTOBUF_FINAL :
                &_MailFavoriteRsp_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    44;
+    46;
 
   friend void swap(MailFavoriteRsp& a, MailFavoriteRsp& b) {
     a.Swap(&b);
@@ -10178,7 +10596,7 @@ class MailBatchReadReq PROTOBUF_FINAL :
                &_MailBatchReadReq_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    45;
+    47;
 
   friend void swap(MailBatchReadReq& a, MailBatchReadReq& b) {
     a.Swap(&b);
@@ -10367,7 +10785,7 @@ class MailBatchReadRsp PROTOBUF_FINAL :
                &_MailBatchReadRsp_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    46;
+    48;
 
   friend void swap(MailBatchReadRsp& a, MailBatchReadRsp& b) {
     a.Swap(&b);
@@ -10591,7 +11009,7 @@ class MailBatchDeleteReq PROTOBUF_FINAL :
                &_MailBatchDeleteReq_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    47;
+    49;
 
   friend void swap(MailBatchDeleteReq& a, MailBatchDeleteReq& b) {
     a.Swap(&b);
@@ -10780,7 +11198,7 @@ class MailBatchDeleteRsp PROTOBUF_FINAL :
                &_MailBatchDeleteRsp_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    48;
+    50;
 
   friend void swap(MailBatchDeleteRsp& a, MailBatchDeleteRsp& b) {
     a.Swap(&b);
@@ -11029,7 +11447,7 @@ class MailDeliverAttachment PROTOBUF_FINAL :
                &_MailDeliverAttachment_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    49;
+    51;
 
   friend void swap(MailDeliverAttachment& a, MailDeliverAttachment& b) {
     a.Swap(&b);
@@ -11258,7 +11676,7 @@ class MailDeliverReq PROTOBUF_FINAL :
                &_MailDeliverReq_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    50;
+    52;
 
   friend void swap(MailDeliverReq& a, MailDeliverReq& b) {
     a.Swap(&b);
@@ -11729,7 +12147,7 @@ class MailDeliverRsp PROTOBUF_FINAL :
                &_MailDeliverRsp_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    51;
+    53;
 
   friend void swap(MailDeliverRsp& a, MailDeliverRsp& b) {
     a.Swap(&b);
@@ -11953,7 +12371,7 @@ class EnterMapReq PROTOBUF_FINAL :
                &_EnterMapReq_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    52;
+    54;
 
   friend void swap(EnterMapReq& a, EnterMapReq& b) {
     a.Swap(&b);
@@ -12226,7 +12644,7 @@ class EnterMapRsp PROTOBUF_FINAL :
                &_EnterMapRsp_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    53;
+    55;
 
   friend void swap(EnterMapRsp& a, EnterMapRsp& b) {
     a.Swap(&b);
@@ -12726,7 +13144,7 @@ class MapLineInfo PROTOBUF_FINAL :
                &_MapLineInfo_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    54;
+    56;
 
   friend void swap(MapLineInfo& a, MapLineInfo& b) {
     a.Swap(&b);
@@ -12961,7 +13379,7 @@ class QueryMapLinesReq PROTOBUF_FINAL :
                &_QueryMapLinesReq_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    55;
+    57;
 
   friend void swap(QueryMapLinesReq& a, QueryMapLinesReq& b) {
     a.Swap(&b);
@@ -13120,7 +13538,7 @@ class QueryMapLinesRsp PROTOBUF_FINAL :
                &_QueryMapLinesRsp_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    56;
+    58;
 
   friend void swap(QueryMapLinesRsp& a, QueryMapLinesRsp& b) {
     a.Swap(&b);
@@ -13369,7 +13787,7 @@ class CreateDungeonReq PROTOBUF_FINAL :
                &_CreateDungeonReq_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    57;
+    59;
 
   friend void swap(CreateDungeonReq& a, CreateDungeonReq& b) {
     a.Swap(&b);
@@ -13602,7 +14020,7 @@ class CreateDungeonRsp PROTOBUF_FINAL :
                &_CreateDungeonRsp_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    58;
+    60;
 
   friend void swap(CreateDungeonRsp& a, CreateDungeonRsp& b) {
     a.Swap(&b);
@@ -13889,7 +14307,7 @@ class SwitchLineReq PROTOBUF_FINAL :
                &_SwitchLineReq_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    59;
+    61;
 
   friend void swap(SwitchLineReq& a, SwitchLineReq& b) {
     a.Swap(&b);
@@ -14086,7 +14504,7 @@ class SwitchLineRsp PROTOBUF_FINAL :
                &_SwitchLineRsp_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    60;
+    62;
 
   friend void swap(SwitchLineRsp& a, SwitchLineRsp& b) {
     a.Swap(&b);
@@ -14510,7 +14928,7 @@ class EnqueueMapReq PROTOBUF_FINAL :
                &_EnqueueMapReq_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    61;
+    63;
 
   friend void swap(EnqueueMapReq& a, EnqueueMapReq& b) {
     a.Swap(&b);
@@ -14707,7 +15125,7 @@ class EnqueueMapRsp PROTOBUF_FINAL :
                &_EnqueueMapRsp_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    62;
+    64;
 
   friend void swap(EnqueueMapRsp& a, EnqueueMapRsp& b) {
     a.Swap(&b);
@@ -14969,7 +15387,7 @@ class LeaveMapReq PROTOBUF_FINAL :
                &_LeaveMapReq_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    63;
+    65;
 
   friend void swap(LeaveMapReq& a, LeaveMapReq& b) {
     a.Swap(&b);
@@ -15117,7 +15535,7 @@ class LeaveMapRsp PROTOBUF_FINAL :
                &_LeaveMapRsp_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    64;
+    66;
 
   friend void swap(LeaveMapRsp& a, LeaveMapRsp& b) {
     a.Swap(&b);
@@ -15281,7 +15699,7 @@ class MapPingReq PROTOBUF_FINAL :
                &_MapPingReq_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    65;
+    67;
 
   friend void swap(MapPingReq& a, MapPingReq& b) {
     a.Swap(&b);
@@ -15429,7 +15847,7 @@ class MapPingRsp PROTOBUF_FINAL :
                &_MapPingRsp_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    66;
+    68;
 
   friend void swap(MapPingRsp& a, MapPingRsp& b) {
     a.Swap(&b);
@@ -15642,7 +16060,7 @@ class ChatSendReq PROTOBUF_FINAL :
                &_ChatSendReq_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    67;
+    69;
 
   friend void swap(ChatSendReq& a, ChatSendReq& b) {
     a.Swap(&b);
@@ -15844,7 +16262,7 @@ class ChatSendRsp PROTOBUF_FINAL :
                &_ChatSendRsp_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    68;
+    70;
 
   friend void swap(ChatSendRsp& a, ChatSendRsp& b) {
     a.Swap(&b);
@@ -16084,7 +16502,7 @@ class ChatNotify PROTOBUF_FINAL :
                &_ChatNotify_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    69;
+    71;
 
   friend void swap(ChatNotify& a, ChatNotify& b) {
     a.Swap(&b);
@@ -16335,7 +16753,7 @@ class FriendBrief PROTOBUF_FINAL :
                &_FriendBrief_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    70;
+    72;
 
   friend void swap(FriendBrief& a, FriendBrief& b) {
     a.Swap(&b);
@@ -16624,7 +17042,7 @@ class FriendListReq PROTOBUF_FINAL :
                &_FriendListReq_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    71;
+    73;
 
   friend void swap(FriendListReq& a, FriendListReq& b) {
     a.Swap(&b);
@@ -16799,7 +17217,7 @@ class FriendListRsp PROTOBUF_FINAL :
                &_FriendListRsp_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    72;
+    74;
 
   friend void swap(FriendListRsp& a, FriendListRsp& b) {
     a.Swap(&b);
@@ -17059,7 +17477,7 @@ class FriendSearchReq PROTOBUF_FINAL :
                &_FriendSearchReq_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    73;
+    75;
 
   friend void swap(FriendSearchReq& a, FriendSearchReq& b) {
     a.Swap(&b);
@@ -17234,7 +17652,7 @@ class FriendSearchRsp PROTOBUF_FINAL :
                &_FriendSearchRsp_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    74;
+    76;
 
   friend void swap(FriendSearchRsp& a, FriendSearchRsp& b) {
     a.Swap(&b);
@@ -17456,7 +17874,7 @@ class FriendApplyReq PROTOBUF_FINAL :
                &_FriendApplyReq_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    75;
+    77;
 
   friend void swap(FriendApplyReq& a, FriendApplyReq& b) {
     a.Swap(&b);
@@ -17658,7 +18076,7 @@ class FriendApplyRsp PROTOBUF_FINAL :
                &_FriendApplyRsp_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    76;
+    78;
 
   friend void swap(FriendApplyRsp& a, FriendApplyRsp& b) {
     a.Swap(&b);
@@ -17860,7 +18278,7 @@ class FriendRequestInfo PROTOBUF_FINAL :
                &_FriendRequestInfo_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    77;
+    79;
 
   friend void swap(FriendRequestInfo& a, FriendRequestInfo& b) {
     a.Swap(&b);
@@ -18039,7 +18457,7 @@ class FriendRequestListReq PROTOBUF_FINAL :
                &_FriendRequestListReq_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    78;
+    80;
 
   friend void swap(FriendRequestListReq& a, FriendRequestListReq& b) {
     a.Swap(&b);
@@ -18214,7 +18632,7 @@ class FriendRequestListRsp PROTOBUF_FINAL :
                &_FriendRequestListRsp_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    79;
+    81;
 
   friend void swap(FriendRequestListRsp& a, FriendRequestListRsp& b) {
     a.Swap(&b);
@@ -18452,7 +18870,7 @@ class FriendAcceptReq PROTOBUF_FINAL :
                &_FriendAcceptReq_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    80;
+    82;
 
   friend void swap(FriendAcceptReq& a, FriendAcceptReq& b) {
     a.Swap(&b);
@@ -18627,7 +19045,7 @@ class FriendAcceptRsp PROTOBUF_FINAL :
                &_FriendAcceptRsp_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    81;
+    83;
 
   friend void swap(FriendAcceptRsp& a, FriendAcceptRsp& b) {
     a.Swap(&b);
@@ -18838,7 +19256,7 @@ class FriendRejectReq PROTOBUF_FINAL :
                &_FriendRejectReq_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    82;
+    84;
 
   friend void swap(FriendRejectReq& a, FriendRejectReq& b) {
     a.Swap(&b);
@@ -19013,7 +19431,7 @@ class FriendRejectRsp PROTOBUF_FINAL :
                &_FriendRejectRsp_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    83;
+    85;
 
   friend void swap(FriendRejectRsp& a, FriendRejectRsp& b) {
     a.Swap(&b);
@@ -19204,7 +19622,7 @@ class FriendDeleteReq PROTOBUF_FINAL :
                &_FriendDeleteReq_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    84;
+    86;
 
   friend void swap(FriendDeleteReq& a, FriendDeleteReq& b) {
     a.Swap(&b);
@@ -19379,7 +19797,7 @@ class FriendDeleteRsp PROTOBUF_FINAL :
                &_FriendDeleteRsp_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    85;
+    87;
 
   friend void swap(FriendDeleteRsp& a, FriendDeleteRsp& b) {
     a.Swap(&b);
@@ -19570,7 +19988,7 @@ class FriendBlockReq PROTOBUF_FINAL :
                &_FriendBlockReq_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    86;
+    88;
 
   friend void swap(FriendBlockReq& a, FriendBlockReq& b) {
     a.Swap(&b);
@@ -19745,7 +20163,7 @@ class FriendBlockRsp PROTOBUF_FINAL :
                &_FriendBlockRsp_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    87;
+    89;
 
   friend void swap(FriendBlockRsp& a, FriendBlockRsp& b) {
     a.Swap(&b);
@@ -19936,7 +20354,7 @@ class FriendUnblockReq PROTOBUF_FINAL :
                &_FriendUnblockReq_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    88;
+    90;
 
   friend void swap(FriendUnblockReq& a, FriendUnblockReq& b) {
     a.Swap(&b);
@@ -20111,7 +20529,7 @@ class FriendUnblockRsp PROTOBUF_FINAL :
                &_FriendUnblockRsp_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    89;
+    91;
 
   friend void swap(FriendUnblockRsp& a, FriendUnblockRsp& b) {
     a.Swap(&b);
@@ -20302,7 +20720,7 @@ class FriendBlockListReq PROTOBUF_FINAL :
                &_FriendBlockListReq_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    90;
+    92;
 
   friend void swap(FriendBlockListReq& a, FriendBlockListReq& b) {
     a.Swap(&b);
@@ -20477,7 +20895,7 @@ class FriendBlockListRsp PROTOBUF_FINAL :
                &_FriendBlockListRsp_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    91;
+    93;
 
   friend void swap(FriendBlockListRsp& a, FriendBlockListRsp& b) {
     a.Swap(&b);
@@ -20715,7 +21133,7 @@ class FriendRequestPush PROTOBUF_FINAL :
                &_FriendRequestPush_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    92;
+    94;
 
   friend void swap(FriendRequestPush& a, FriendRequestPush& b) {
     a.Swap(&b);
@@ -20894,7 +21312,7 @@ class FriendAddedPush PROTOBUF_FINAL :
                &_FriendAddedPush_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    93;
+    95;
 
   friend void swap(FriendAddedPush& a, FriendAddedPush& b) {
     a.Swap(&b);
@@ -21040,7 +21458,7 @@ class FriendRemovedPush PROTOBUF_FINAL :
                &_FriendRemovedPush_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    94;
+    96;
 
   friend void swap(FriendRemovedPush& a, FriendRemovedPush& b) {
     a.Swap(&b);
@@ -21177,7 +21595,7 @@ class FriendPresencePush PROTOBUF_FINAL :
                &_FriendPresencePush_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    95;
+    97;
 
   friend void swap(FriendPresencePush& a, FriendPresencePush& b) {
     a.Swap(&b);
@@ -21336,7 +21754,7 @@ class Vec3 PROTOBUF_FINAL :
                &_Vec3_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    96;
+    98;
 
   friend void swap(Vec3& a, Vec3& b) {
     a.Swap(&b);
@@ -21495,7 +21913,7 @@ class PlayerAttributes PROTOBUF_FINAL :
                &_PlayerAttributes_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    97;
+    99;
 
   friend void swap(PlayerAttributes& a, PlayerAttributes& b) {
     a.Swap(&b);
@@ -21829,7 +22247,7 @@ class EntitySnapshot PROTOBUF_FINAL :
                &_EntitySnapshot_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    98;
+    100;
 
   friend void swap(EntitySnapshot& a, EntitySnapshot& b) {
     a.Swap(&b);
@@ -22057,7 +22475,7 @@ class GetSelfProfileReq PROTOBUF_FINAL :
                &_GetSelfProfileReq_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    99;
+    101;
 
   friend void swap(GetSelfProfileReq& a, GetSelfProfileReq& b) {
     a.Swap(&b);
@@ -22194,7 +22612,7 @@ class GetSelfProfileRsp PROTOBUF_FINAL :
                &_GetSelfProfileRsp_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    100;
+    102;
 
   friend void swap(GetSelfProfileRsp& a, GetSelfProfileRsp& b) {
     a.Swap(&b);
@@ -22405,7 +22823,7 @@ class PlayerBrief PROTOBUF_FINAL :
                &_PlayerBrief_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    101;
+    103;
 
   friend void swap(PlayerBrief& a, PlayerBrief& b) {
     a.Swap(&b);
@@ -22591,7 +23009,7 @@ class GetPlayerBriefReq PROTOBUF_FINAL :
                &_GetPlayerBriefReq_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    102;
+    104;
 
   friend void swap(GetPlayerBriefReq& a, GetPlayerBriefReq& b) {
     a.Swap(&b);
@@ -22766,7 +23184,7 @@ class GetPlayerBriefRsp PROTOBUF_FINAL :
                &_GetPlayerBriefRsp_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    103;
+    105;
 
   friend void swap(GetPlayerBriefRsp& a, GetPlayerBriefRsp& b) {
     a.Swap(&b);
@@ -22977,7 +23395,7 @@ class QueryOnlineStateReq PROTOBUF_FINAL :
                &_QueryOnlineStateReq_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    104;
+    106;
 
   friend void swap(QueryOnlineStateReq& a, QueryOnlineStateReq& b) {
     a.Swap(&b);
@@ -23125,7 +23543,7 @@ class QueryOnlineStateRsp PROTOBUF_FINAL :
                &_QueryOnlineStateRsp_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    105;
+    107;
 
   friend void swap(QueryOnlineStateRsp& a, QueryOnlineStateRsp& b) {
     a.Swap(&b);
@@ -23441,7 +23859,7 @@ class MoveReq PROTOBUF_FINAL :
                &_MoveReq_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    106;
+    108;
 
   friend void swap(MoveReq& a, MoveReq& b) {
     a.Swap(&b);
@@ -23631,7 +24049,7 @@ class MoveRsp PROTOBUF_FINAL :
                &_MoveRsp_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    107;
+    109;
 
   friend void swap(MoveRsp& a, MoveRsp& b) {
     a.Swap(&b);
@@ -23875,7 +24293,7 @@ class AoiEvent PROTOBUF_FINAL :
                &_AoiEvent_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    108;
+    110;
 
   friend void swap(AoiEvent& a, AoiEvent& b) {
     a.Swap(&b);
@@ -24032,7 +24450,7 @@ class AoiDelta PROTOBUF_FINAL :
                &_AoiDelta_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    109;
+    111;
 
   friend void swap(AoiDelta& a, AoiDelta& b) {
     a.Swap(&b);
@@ -24189,7 +24607,7 @@ class PlayerMailSendReq PROTOBUF_FINAL :
                &_PlayerMailSendReq_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    110;
+    112;
 
   friend void swap(PlayerMailSendReq& a, PlayerMailSendReq& b) {
     a.Swap(&b);
@@ -24418,7 +24836,7 @@ class PlayerMailSendRsp PROTOBUF_FINAL :
                &_PlayerMailSendRsp_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    111;
+    113;
 
   friend void swap(PlayerMailSendRsp& a, PlayerMailSendRsp& b) {
     a.Swap(&b);
@@ -24631,7 +25049,7 @@ class MailboxChangedNotify PROTOBUF_FINAL :
                &_MailboxChangedNotify_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    112;
+    114;
 
   friend void swap(MailboxChangedNotify& a, MailboxChangedNotify& b) {
     a.Swap(&b);
@@ -24790,7 +25208,7 @@ class ClientHelloReq PROTOBUF_FINAL :
                &_ClientHelloReq_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    113;
+    115;
 
   friend void swap(ClientHelloReq& a, ClientHelloReq& b) {
     a.Swap(&b);
@@ -25061,7 +25479,7 @@ class PortalDef PROTOBUF_FINAL :
                &_PortalDef_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    114;
+    116;
 
   friend void swap(PortalDef& a, PortalDef& b) {
     a.Swap(&b);
@@ -25278,7 +25696,7 @@ class MapManifestEntry PROTOBUF_FINAL :
                &_MapManifestEntry_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    115;
+    117;
 
   friend void swap(MapManifestEntry& a, MapManifestEntry& b) {
     a.Swap(&b);
@@ -25538,7 +25956,7 @@ class InteractPortalReq PROTOBUF_FINAL :
                &_InteractPortalReq_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    116;
+    118;
 
   friend void swap(InteractPortalReq& a, InteractPortalReq& b) {
     a.Swap(&b);
@@ -25778,7 +26196,7 @@ class InteractPortalRsp PROTOBUF_FINAL :
                &_InteractPortalRsp_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    117;
+    119;
 
   friend void swap(InteractPortalRsp& a, InteractPortalRsp& b) {
     a.Swap(&b);
@@ -26258,7 +26676,7 @@ class ServerHelloRsp PROTOBUF_FINAL :
                &_ServerHelloRsp_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    118;
+    120;
 
   friend void swap(ServerHelloRsp& a, ServerHelloRsp& b) {
     a.Swap(&b);
@@ -26626,7 +27044,7 @@ class SessionReplacedNotify PROTOBUF_FINAL :
                &_SessionReplacedNotify_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    119;
+    121;
 
   friend void swap(SessionReplacedNotify& a, SessionReplacedNotify& b) {
     a.Swap(&b);
@@ -26817,7 +27235,7 @@ class HeartbeatReq PROTOBUF_FINAL :
                &_HeartbeatReq_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    120;
+    122;
 
   friend void swap(HeartbeatReq& a, HeartbeatReq& b) {
     a.Swap(&b);
@@ -26976,7 +27394,7 @@ class HeartbeatRsp PROTOBUF_FINAL :
                &_HeartbeatRsp_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    121;
+    123;
 
   friend void swap(HeartbeatRsp& a, HeartbeatRsp& b) {
     a.Swap(&b);
@@ -27237,7 +27655,7 @@ class GameRequest PROTOBUF_FINAL :
                &_GameRequest_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    122;
+    124;
 
   friend void swap(GameRequest& a, GameRequest& b) {
     a.Swap(&b);
@@ -28502,7 +28920,7 @@ class GameResponse PROTOBUF_FINAL :
                &_GameResponse_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    123;
+    125;
 
   friend void swap(GameResponse& a, GameResponse& b) {
     a.Swap(&b);
@@ -36189,6 +36607,295 @@ inline void MailBrief::set_row_version(::PROTOBUF_NAMESPACE_ID::int64 value) {
 
 // -------------------------------------------------------------------
 
+// MailClaimGrant
+
+// uint64 asset_id = 1;
+inline void MailClaimGrant::clear_asset_id() {
+  asset_id_ = PROTOBUF_ULONGLONG(0);
+}
+inline ::PROTOBUF_NAMESPACE_ID::uint64 MailClaimGrant::_internal_asset_id() const {
+  return asset_id_;
+}
+inline ::PROTOBUF_NAMESPACE_ID::uint64 MailClaimGrant::asset_id() const {
+  // @@protoc_insertion_point(field_get:game.MailClaimGrant.asset_id)
+  return _internal_asset_id();
+}
+inline void MailClaimGrant::_internal_set_asset_id(::PROTOBUF_NAMESPACE_ID::uint64 value) {
+  
+  asset_id_ = value;
+}
+inline void MailClaimGrant::set_asset_id(::PROTOBUF_NAMESPACE_ID::uint64 value) {
+  _internal_set_asset_id(value);
+  // @@protoc_insertion_point(field_set:game.MailClaimGrant.asset_id)
+}
+
+// uint32 count = 2;
+inline void MailClaimGrant::clear_count() {
+  count_ = 0u;
+}
+inline ::PROTOBUF_NAMESPACE_ID::uint32 MailClaimGrant::_internal_count() const {
+  return count_;
+}
+inline ::PROTOBUF_NAMESPACE_ID::uint32 MailClaimGrant::count() const {
+  // @@protoc_insertion_point(field_get:game.MailClaimGrant.count)
+  return _internal_count();
+}
+inline void MailClaimGrant::_internal_set_count(::PROTOBUF_NAMESPACE_ID::uint32 value) {
+  
+  count_ = value;
+}
+inline void MailClaimGrant::set_count(::PROTOBUF_NAMESPACE_ID::uint32 value) {
+  _internal_set_count(value);
+  // @@protoc_insertion_point(field_set:game.MailClaimGrant.count)
+}
+
+// -------------------------------------------------------------------
+
+// MailClaimReceipt
+
+// string claim_tx_id = 1;
+inline void MailClaimReceipt::clear_claim_tx_id() {
+  claim_tx_id_.ClearToEmpty(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
+}
+inline const std::string& MailClaimReceipt::claim_tx_id() const {
+  // @@protoc_insertion_point(field_get:game.MailClaimReceipt.claim_tx_id)
+  return _internal_claim_tx_id();
+}
+inline void MailClaimReceipt::set_claim_tx_id(const std::string& value) {
+  _internal_set_claim_tx_id(value);
+  // @@protoc_insertion_point(field_set:game.MailClaimReceipt.claim_tx_id)
+}
+inline std::string* MailClaimReceipt::mutable_claim_tx_id() {
+  // @@protoc_insertion_point(field_mutable:game.MailClaimReceipt.claim_tx_id)
+  return _internal_mutable_claim_tx_id();
+}
+inline const std::string& MailClaimReceipt::_internal_claim_tx_id() const {
+  return claim_tx_id_.Get();
+}
+inline void MailClaimReceipt::_internal_set_claim_tx_id(const std::string& value) {
+  
+  claim_tx_id_.Set(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), value, GetArena());
+}
+inline void MailClaimReceipt::set_claim_tx_id(std::string&& value) {
+  
+  claim_tx_id_.Set(
+    &::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), ::std::move(value), GetArena());
+  // @@protoc_insertion_point(field_set_rvalue:game.MailClaimReceipt.claim_tx_id)
+}
+inline void MailClaimReceipt::set_claim_tx_id(const char* value) {
+  GOOGLE_DCHECK(value != nullptr);
+  
+  claim_tx_id_.Set(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), ::std::string(value),
+              GetArena());
+  // @@protoc_insertion_point(field_set_char:game.MailClaimReceipt.claim_tx_id)
+}
+inline void MailClaimReceipt::set_claim_tx_id(const char* value,
+    size_t size) {
+  
+  claim_tx_id_.Set(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), ::std::string(
+      reinterpret_cast<const char*>(value), size), GetArena());
+  // @@protoc_insertion_point(field_set_pointer:game.MailClaimReceipt.claim_tx_id)
+}
+inline std::string* MailClaimReceipt::_internal_mutable_claim_tx_id() {
+  
+  return claim_tx_id_.Mutable(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
+}
+inline std::string* MailClaimReceipt::release_claim_tx_id() {
+  // @@protoc_insertion_point(field_release:game.MailClaimReceipt.claim_tx_id)
+  return claim_tx_id_.Release(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
+}
+inline void MailClaimReceipt::set_allocated_claim_tx_id(std::string* claim_tx_id) {
+  if (claim_tx_id != nullptr) {
+    
+  } else {
+    
+  }
+  claim_tx_id_.SetAllocated(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), claim_tx_id,
+      GetArena());
+  // @@protoc_insertion_point(field_set_allocated:game.MailClaimReceipt.claim_tx_id)
+}
+inline std::string* MailClaimReceipt::unsafe_arena_release_claim_tx_id() {
+  // @@protoc_insertion_point(field_unsafe_arena_release:game.MailClaimReceipt.claim_tx_id)
+  GOOGLE_DCHECK(GetArena() != nullptr);
+  
+  return claim_tx_id_.UnsafeArenaRelease(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(),
+      GetArena());
+}
+inline void MailClaimReceipt::unsafe_arena_set_allocated_claim_tx_id(
+    std::string* claim_tx_id) {
+  GOOGLE_DCHECK(GetArena() != nullptr);
+  if (claim_tx_id != nullptr) {
+    
+  } else {
+    
+  }
+  claim_tx_id_.UnsafeArenaSetAllocated(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(),
+      claim_tx_id, GetArena());
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:game.MailClaimReceipt.claim_tx_id)
+}
+
+// uint64 asset_version_at_claim = 2;
+inline void MailClaimReceipt::clear_asset_version_at_claim() {
+  asset_version_at_claim_ = PROTOBUF_ULONGLONG(0);
+}
+inline ::PROTOBUF_NAMESPACE_ID::uint64 MailClaimReceipt::_internal_asset_version_at_claim() const {
+  return asset_version_at_claim_;
+}
+inline ::PROTOBUF_NAMESPACE_ID::uint64 MailClaimReceipt::asset_version_at_claim() const {
+  // @@protoc_insertion_point(field_get:game.MailClaimReceipt.asset_version_at_claim)
+  return _internal_asset_version_at_claim();
+}
+inline void MailClaimReceipt::_internal_set_asset_version_at_claim(::PROTOBUF_NAMESPACE_ID::uint64 value) {
+  
+  asset_version_at_claim_ = value;
+}
+inline void MailClaimReceipt::set_asset_version_at_claim(::PROTOBUF_NAMESPACE_ID::uint64 value) {
+  _internal_set_asset_version_at_claim(value);
+  // @@protoc_insertion_point(field_set:game.MailClaimReceipt.asset_version_at_claim)
+}
+
+// repeated .game.MailClaimGrant grants = 3;
+inline int MailClaimReceipt::_internal_grants_size() const {
+  return grants_.size();
+}
+inline int MailClaimReceipt::grants_size() const {
+  return _internal_grants_size();
+}
+inline void MailClaimReceipt::clear_grants() {
+  grants_.Clear();
+}
+inline ::game::MailClaimGrant* MailClaimReceipt::mutable_grants(int index) {
+  // @@protoc_insertion_point(field_mutable:game.MailClaimReceipt.grants)
+  return grants_.Mutable(index);
+}
+inline ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::game::MailClaimGrant >*
+MailClaimReceipt::mutable_grants() {
+  // @@protoc_insertion_point(field_mutable_list:game.MailClaimReceipt.grants)
+  return &grants_;
+}
+inline const ::game::MailClaimGrant& MailClaimReceipt::_internal_grants(int index) const {
+  return grants_.Get(index);
+}
+inline const ::game::MailClaimGrant& MailClaimReceipt::grants(int index) const {
+  // @@protoc_insertion_point(field_get:game.MailClaimReceipt.grants)
+  return _internal_grants(index);
+}
+inline ::game::MailClaimGrant* MailClaimReceipt::_internal_add_grants() {
+  return grants_.Add();
+}
+inline ::game::MailClaimGrant* MailClaimReceipt::add_grants() {
+  // @@protoc_insertion_point(field_add:game.MailClaimReceipt.grants)
+  return _internal_add_grants();
+}
+inline const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::game::MailClaimGrant >&
+MailClaimReceipt::grants() const {
+  // @@protoc_insertion_point(field_list:game.MailClaimReceipt.grants)
+  return grants_;
+}
+
+// string claim_state = 4;
+inline void MailClaimReceipt::clear_claim_state() {
+  claim_state_.ClearToEmpty(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
+}
+inline const std::string& MailClaimReceipt::claim_state() const {
+  // @@protoc_insertion_point(field_get:game.MailClaimReceipt.claim_state)
+  return _internal_claim_state();
+}
+inline void MailClaimReceipt::set_claim_state(const std::string& value) {
+  _internal_set_claim_state(value);
+  // @@protoc_insertion_point(field_set:game.MailClaimReceipt.claim_state)
+}
+inline std::string* MailClaimReceipt::mutable_claim_state() {
+  // @@protoc_insertion_point(field_mutable:game.MailClaimReceipt.claim_state)
+  return _internal_mutable_claim_state();
+}
+inline const std::string& MailClaimReceipt::_internal_claim_state() const {
+  return claim_state_.Get();
+}
+inline void MailClaimReceipt::_internal_set_claim_state(const std::string& value) {
+  
+  claim_state_.Set(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), value, GetArena());
+}
+inline void MailClaimReceipt::set_claim_state(std::string&& value) {
+  
+  claim_state_.Set(
+    &::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), ::std::move(value), GetArena());
+  // @@protoc_insertion_point(field_set_rvalue:game.MailClaimReceipt.claim_state)
+}
+inline void MailClaimReceipt::set_claim_state(const char* value) {
+  GOOGLE_DCHECK(value != nullptr);
+  
+  claim_state_.Set(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), ::std::string(value),
+              GetArena());
+  // @@protoc_insertion_point(field_set_char:game.MailClaimReceipt.claim_state)
+}
+inline void MailClaimReceipt::set_claim_state(const char* value,
+    size_t size) {
+  
+  claim_state_.Set(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), ::std::string(
+      reinterpret_cast<const char*>(value), size), GetArena());
+  // @@protoc_insertion_point(field_set_pointer:game.MailClaimReceipt.claim_state)
+}
+inline std::string* MailClaimReceipt::_internal_mutable_claim_state() {
+  
+  return claim_state_.Mutable(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
+}
+inline std::string* MailClaimReceipt::release_claim_state() {
+  // @@protoc_insertion_point(field_release:game.MailClaimReceipt.claim_state)
+  return claim_state_.Release(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
+}
+inline void MailClaimReceipt::set_allocated_claim_state(std::string* claim_state) {
+  if (claim_state != nullptr) {
+    
+  } else {
+    
+  }
+  claim_state_.SetAllocated(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), claim_state,
+      GetArena());
+  // @@protoc_insertion_point(field_set_allocated:game.MailClaimReceipt.claim_state)
+}
+inline std::string* MailClaimReceipt::unsafe_arena_release_claim_state() {
+  // @@protoc_insertion_point(field_unsafe_arena_release:game.MailClaimReceipt.claim_state)
+  GOOGLE_DCHECK(GetArena() != nullptr);
+  
+  return claim_state_.UnsafeArenaRelease(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(),
+      GetArena());
+}
+inline void MailClaimReceipt::unsafe_arena_set_allocated_claim_state(
+    std::string* claim_state) {
+  GOOGLE_DCHECK(GetArena() != nullptr);
+  if (claim_state != nullptr) {
+    
+  } else {
+    
+  }
+  claim_state_.UnsafeArenaSetAllocated(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(),
+      claim_state, GetArena());
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:game.MailClaimReceipt.claim_state)
+}
+
+// bool verifiable = 5;
+inline void MailClaimReceipt::clear_verifiable() {
+  verifiable_ = false;
+}
+inline bool MailClaimReceipt::_internal_verifiable() const {
+  return verifiable_;
+}
+inline bool MailClaimReceipt::verifiable() const {
+  // @@protoc_insertion_point(field_get:game.MailClaimReceipt.verifiable)
+  return _internal_verifiable();
+}
+inline void MailClaimReceipt::_internal_set_verifiable(bool value) {
+  
+  verifiable_ = value;
+}
+inline void MailClaimReceipt::set_verifiable(bool value) {
+  _internal_set_verifiable(value);
+  // @@protoc_insertion_point(field_set:game.MailClaimReceipt.verifiable)
+}
+
+// -------------------------------------------------------------------
+
 // MailDetail
 
 // .game.MailBrief brief = 1;
@@ -36464,6 +37171,87 @@ inline ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField<std::string>*
 MailDetail::mutable_allowed_actions() {
   // @@protoc_insertion_point(field_mutable_list:game.MailDetail.allowed_actions)
   return &allowed_actions_;
+}
+
+// .game.MailClaimReceipt receipt = 5;
+inline bool MailDetail::_internal_has_receipt() const {
+  return this != internal_default_instance() && receipt_ != nullptr;
+}
+inline bool MailDetail::has_receipt() const {
+  return _internal_has_receipt();
+}
+inline void MailDetail::clear_receipt() {
+  if (GetArena() == nullptr && receipt_ != nullptr) {
+    delete receipt_;
+  }
+  receipt_ = nullptr;
+}
+inline const ::game::MailClaimReceipt& MailDetail::_internal_receipt() const {
+  const ::game::MailClaimReceipt* p = receipt_;
+  return p != nullptr ? *p : *reinterpret_cast<const ::game::MailClaimReceipt*>(
+      &::game::_MailClaimReceipt_default_instance_);
+}
+inline const ::game::MailClaimReceipt& MailDetail::receipt() const {
+  // @@protoc_insertion_point(field_get:game.MailDetail.receipt)
+  return _internal_receipt();
+}
+inline void MailDetail::unsafe_arena_set_allocated_receipt(
+    ::game::MailClaimReceipt* receipt) {
+  if (GetArena() == nullptr) {
+    delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(receipt_);
+  }
+  receipt_ = receipt;
+  if (receipt) {
+    
+  } else {
+    
+  }
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:game.MailDetail.receipt)
+}
+inline ::game::MailClaimReceipt* MailDetail::release_receipt() {
+  auto temp = unsafe_arena_release_receipt();
+  if (GetArena() != nullptr) {
+    temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+  }
+  return temp;
+}
+inline ::game::MailClaimReceipt* MailDetail::unsafe_arena_release_receipt() {
+  // @@protoc_insertion_point(field_release:game.MailDetail.receipt)
+  
+  ::game::MailClaimReceipt* temp = receipt_;
+  receipt_ = nullptr;
+  return temp;
+}
+inline ::game::MailClaimReceipt* MailDetail::_internal_mutable_receipt() {
+  
+  if (receipt_ == nullptr) {
+    auto* p = CreateMaybeMessage<::game::MailClaimReceipt>(GetArena());
+    receipt_ = p;
+  }
+  return receipt_;
+}
+inline ::game::MailClaimReceipt* MailDetail::mutable_receipt() {
+  // @@protoc_insertion_point(field_mutable:game.MailDetail.receipt)
+  return _internal_mutable_receipt();
+}
+inline void MailDetail::set_allocated_receipt(::game::MailClaimReceipt* receipt) {
+  ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArena();
+  if (message_arena == nullptr) {
+    delete receipt_;
+  }
+  if (receipt) {
+    ::PROTOBUF_NAMESPACE_ID::Arena* submessage_arena =
+      ::PROTOBUF_NAMESPACE_ID::Arena::GetArena(receipt);
+    if (message_arena != submessage_arena) {
+      receipt = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
+          message_arena, receipt, submessage_arena);
+    }
+    
+  } else {
+    
+  }
+  receipt_ = receipt;
+  // @@protoc_insertion_point(field_set_allocated:game.MailDetail.receipt)
 }
 
 // -------------------------------------------------------------------
@@ -38822,6 +39610,87 @@ inline void MailClaimResult::unsafe_arena_set_allocated_attachment_state(
   attachment_state_.UnsafeArenaSetAllocated(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(),
       attachment_state, GetArena());
   // @@protoc_insertion_point(field_unsafe_arena_set_allocated:game.MailClaimResult.attachment_state)
+}
+
+// .game.MailClaimReceipt receipt = 6;
+inline bool MailClaimResult::_internal_has_receipt() const {
+  return this != internal_default_instance() && receipt_ != nullptr;
+}
+inline bool MailClaimResult::has_receipt() const {
+  return _internal_has_receipt();
+}
+inline void MailClaimResult::clear_receipt() {
+  if (GetArena() == nullptr && receipt_ != nullptr) {
+    delete receipt_;
+  }
+  receipt_ = nullptr;
+}
+inline const ::game::MailClaimReceipt& MailClaimResult::_internal_receipt() const {
+  const ::game::MailClaimReceipt* p = receipt_;
+  return p != nullptr ? *p : *reinterpret_cast<const ::game::MailClaimReceipt*>(
+      &::game::_MailClaimReceipt_default_instance_);
+}
+inline const ::game::MailClaimReceipt& MailClaimResult::receipt() const {
+  // @@protoc_insertion_point(field_get:game.MailClaimResult.receipt)
+  return _internal_receipt();
+}
+inline void MailClaimResult::unsafe_arena_set_allocated_receipt(
+    ::game::MailClaimReceipt* receipt) {
+  if (GetArena() == nullptr) {
+    delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(receipt_);
+  }
+  receipt_ = receipt;
+  if (receipt) {
+    
+  } else {
+    
+  }
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:game.MailClaimResult.receipt)
+}
+inline ::game::MailClaimReceipt* MailClaimResult::release_receipt() {
+  auto temp = unsafe_arena_release_receipt();
+  if (GetArena() != nullptr) {
+    temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+  }
+  return temp;
+}
+inline ::game::MailClaimReceipt* MailClaimResult::unsafe_arena_release_receipt() {
+  // @@protoc_insertion_point(field_release:game.MailClaimResult.receipt)
+  
+  ::game::MailClaimReceipt* temp = receipt_;
+  receipt_ = nullptr;
+  return temp;
+}
+inline ::game::MailClaimReceipt* MailClaimResult::_internal_mutable_receipt() {
+  
+  if (receipt_ == nullptr) {
+    auto* p = CreateMaybeMessage<::game::MailClaimReceipt>(GetArena());
+    receipt_ = p;
+  }
+  return receipt_;
+}
+inline ::game::MailClaimReceipt* MailClaimResult::mutable_receipt() {
+  // @@protoc_insertion_point(field_mutable:game.MailClaimResult.receipt)
+  return _internal_mutable_receipt();
+}
+inline void MailClaimResult::set_allocated_receipt(::game::MailClaimReceipt* receipt) {
+  ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArena();
+  if (message_arena == nullptr) {
+    delete receipt_;
+  }
+  if (receipt) {
+    ::PROTOBUF_NAMESPACE_ID::Arena* submessage_arena =
+      ::PROTOBUF_NAMESPACE_ID::Arena::GetArena(receipt);
+    if (message_arena != submessage_arena) {
+      receipt = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
+          message_arena, receipt, submessage_arena);
+    }
+    
+  } else {
+    
+  }
+  receipt_ = receipt;
+  // @@protoc_insertion_point(field_set_allocated:game.MailClaimResult.receipt)
 }
 
 // -------------------------------------------------------------------
@@ -67302,6 +68171,10 @@ inline GameResponse::BodyCase GameResponse::body_case() const {
 #ifdef __GNUC__
   #pragma GCC diagnostic pop
 #endif  // __GNUC__
+// -------------------------------------------------------------------
+
+// -------------------------------------------------------------------
+
 // -------------------------------------------------------------------
 
 // -------------------------------------------------------------------

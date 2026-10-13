@@ -41,6 +41,9 @@ void GameDbServiceImpl::ClaimMailAttachments(::google::protobuf::RpcController *
     response->set_attachment_state(result.attachment_state);
     response->set_mail_row_version(result.mail_row_version);
     response->set_asset_version(result.asset_version);
+    response->set_claim_tx_id(result.claim_tx_id);
+    response->set_asset_version_at_claim(result.asset_version_at_claim);
+    response->set_receipt_verifiable(result.receipt_verifiable);
     for (const auto &g : result.grants) {
         auto *out = response->add_grants();
         out->set_asset_id(g.asset_id);

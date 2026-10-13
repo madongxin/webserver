@@ -658,6 +658,211 @@ int main() {
         EXPECT_TRUE(BagCount(pid, item_id) == before + 1);
     }
 
+    // ---------- EDGE-02: 累加恰为 uint32 上限，软上限拒绝，不回绕入账 ----------
+    {
+        const uint64_t pid = 910070;
+        const uint32_t big_item = 2210;
+        const uint64_t ver_before = BagVersion(pid);
+        mail::DeliverRequest d;
+        d.source_system = "gamedb_test";
+        d.business_key = "edge02_" + std::to_string(NowMs());
+        d.receiver_type = "ROLE";
+        d.receiver_id = pid;
+        d.category = "SYSTEM";
+        d.title = "edge02";
+        d.body = "edge02";
+        d.sender_name = "Test";
+        for (int i = 0; i < 3; ++i) {
+            mail::DeliverAttachment a;
+            a.asset_type = "ITEM";
+            a.asset_id = big_item;
+            a.count = 1431655765;
+            d.attachments.push_back(a);
+        }
+        uint64_t mail_id = 0;
+        std::string ec, msg;
+        EXPECT_TRUE(MailService::Instance().Deliver(d, &mail_id, &ec, &msg));
+        game::MailClaimReq req;
+        req.set_player_id(pid);
+        req.set_mail_id(mail_id);
+        req.set_idempotency_key("edge02_" + std::to_string(mail_id));
+        req.set_trace_id("edge02");
+        game::GameResponse rsp;
+        EXPECT_TRUE(!MailService::Instance().HandleMailClaim(req, &rsp));
+        EXPECT_TRUE(rsp.mail_claim().result().error_code() == mail::err::kInventoryFull);
+        EXPECT_TRUE(BagCount(pid, big_item) == 0);
+        EXPECT_TRUE(BagVersion(pid) == ver_before);
+        EXPECT_TRUE(GameDbOutbox::Instance().CountByIdempotency(req.idempotency_key()) == 0);
+        game::MailGetReq get;
+        get.set_player_id(pid);
+        get.set_mail_id(mail_id);
+        game::GameResponse get_rsp;
+        EXPECT_TRUE(MailService::Instance().HandleMailGet(get, &get_rsp));
+        EXPECT_TRUE(get_rsp.mail_get().mail().brief().attachment_state() == "UNCLAIMED");
+        EXPECT_TRUE(!get_rsp.mail_get().mail().receipt().verifiable());
+    }
+
+    // ---------- EDGE-03: 多物品、重复物品、零数量、软上限边界 ----------
+    {
+        const uint64_t pid = 910071;
+        mail::DeliverRequest d;
+        d.source_system = "gamedb_test";
+        d.business_key = "edge03_multi_" + std::to_string(NowMs());
+        d.receiver_type = "ROLE";
+        d.receiver_id = pid;
+        d.category = "SYSTEM";
+        d.title = "edge03";
+        d.body = "edge03";
+        d.sender_name = "Test";
+        mail::DeliverAttachment a;
+        a.asset_type = "ITEM";
+        a.asset_id = 2211;
+        a.count = 2;
+        d.attachments.push_back(a);
+        a.asset_id = 2212;
+        a.count = 3;
+        d.attachments.push_back(a);
+        uint64_t multi = 0;
+        std::string ec, msg;
+        EXPECT_TRUE(MailService::Instance().Deliver(d, &multi, &ec, &msg));
+        game::MailClaimReq req;
+        req.set_player_id(pid);
+        req.set_mail_id(multi);
+        req.set_idempotency_key("edge03_multi_" + std::to_string(multi));
+        req.set_trace_id("edge03_multi");
+        game::GameResponse rsp;
+        EXPECT_TRUE(MailService::Instance().HandleMailClaim(req, &rsp));
+        EXPECT_TRUE(rsp.mail_claim().result().receipt().verifiable());
+        EXPECT_TRUE(rsp.mail_claim().result().receipt().grants_size() == 2);
+        EXPECT_TRUE(BagCount(pid, 2211) == 2);
+        EXPECT_TRUE(BagCount(pid, 2212) == 3);
+
+        d.business_key = "edge03_dup_" + std::to_string(NowMs());
+        d.attachments.clear();
+        a.asset_id = 2213;
+        a.count = 4;
+        d.attachments.push_back(a);
+        a.count = 5;
+        d.attachments.push_back(a);
+        uint64_t dup = 0;
+        EXPECT_TRUE(MailService::Instance().Deliver(d, &dup, &ec, &msg));
+        req.set_mail_id(dup);
+        req.set_idempotency_key("edge03_dup_" + std::to_string(dup));
+        EXPECT_TRUE(MailService::Instance().HandleMailClaim(req, &rsp));
+        EXPECT_TRUE(BagCount(pid, 2213) == 9);
+        EXPECT_TRUE(rsp.mail_claim().result().receipt().grants_size() == 2);
+        game::MailGetReq get;
+        get.set_player_id(pid);
+        get.set_mail_id(dup);
+        game::GameResponse get_rsp;
+        EXPECT_TRUE(MailService::Instance().HandleMailGet(get, &get_rsp));
+        EXPECT_TRUE(get_rsp.mail_get().mail().attachments_size() == 2);
+        EXPECT_TRUE(get_rsp.mail_get().mail().receipt().claim_tx_id() ==
+                    rsp.mail_claim().result().receipt().claim_tx_id());
+
+        d.business_key = "edge03_zero_" + std::to_string(NowMs());
+        d.attachments.clear();
+        a.asset_id = 2214;
+        a.count = 0;
+        d.attachments.push_back(a);
+        uint64_t zero = 1;
+        EXPECT_TRUE(!MailService::Instance().Deliver(d, &zero, &ec, &msg));
+        EXPECT_TRUE(ec == mail::err::kInvalidAttachment);
+
+        const uint32_t near_item = static_cast<uint32_t>(240000 + (NowMs() % 10000));
+        GameDbAssetStore::MutationResult seed;
+        EXPECT_TRUE(GameDbAssetStore::Instance().ApplyMutation(
+            pid, "edge03_near_" + std::to_string(NowMs()), 0, "GRANT", near_item, 999998, &seed));
+        EXPECT_TRUE(seed.ok);
+        const uint64_t near_mail = DeliverTestMail(pid, near_item, 2, "edge03_near_mail_" + std::to_string(NowMs()));
+        EXPECT_TRUE(near_mail > 0);
+        const uint32_t near_before = BagCount(pid, near_item);
+        req.set_mail_id(near_mail);
+        req.set_idempotency_key("edge03_near_" + std::to_string(near_mail));
+        EXPECT_TRUE(!MailService::Instance().HandleMailClaim(req, &rsp));
+        EXPECT_TRUE(rsp.mail_claim().result().error_code() == mail::err::kInventoryFull);
+        EXPECT_TRUE(BagCount(pid, near_item) == near_before);
+        const uint64_t one_mail = DeliverTestMail(pid, near_item, 1, "edge03_one_" + std::to_string(NowMs()));
+        req.set_mail_id(one_mail);
+        req.set_idempotency_key("edge03_one_" + std::to_string(one_mail));
+        EXPECT_TRUE(MailService::Instance().HandleMailClaim(req, &rsp));
+        EXPECT_TRUE(BagCount(pid, near_item) == near_before + 1);
+
+        const uint32_t max_item = near_item + 1;
+        const uint64_t max_mail = DeliverTestMail(pid, max_item, 999999, "edge03_max_" + std::to_string(NowMs()));
+        req.set_mail_id(max_mail);
+        req.set_idempotency_key("edge03_max_" + std::to_string(max_mail));
+        EXPECT_TRUE(MailService::Instance().HandleMailClaim(req, &rsp));
+        EXPECT_TRUE(BagCount(pid, max_item) == 999999);
+        EXPECT_TRUE(rsp.mail_claim().result().receipt().verifiable());
+    }
+
+    // ---------- EDGE-04/06/07: 后续资产变化不改写各封邮件的原始回执 ----------
+    {
+        const uint64_t pid = 910072;
+        const uint64_t other = 910073;
+        const uint64_t m1 = DeliverTestMail(pid, item_id, 3, "edge04_m1_" + std::to_string(NowMs()));
+        const uint64_t m2 = DeliverTestMail(pid, item_id, 4, "edge04_m2_" + std::to_string(NowMs()));
+        EXPECT_TRUE(m1 > 0 && m2 > 0);
+        game::MailClaimReq req;
+        req.set_player_id(pid);
+        req.set_mail_id(m1);
+        req.set_idempotency_key("edge04_" + std::to_string(m1));
+        req.set_trace_id("edge04");
+        game::GameResponse rsp1;
+        EXPECT_TRUE(MailService::Instance().HandleMailClaim(req, &rsp1));
+        const auto &r1 = rsp1.mail_claim().result().receipt();
+        EXPECT_TRUE(r1.verifiable());
+        EXPECT_TRUE(!r1.claim_tx_id().empty());
+        const uint64_t v1 = r1.asset_version_at_claim();
+        const std::string tx1 = r1.claim_tx_id();
+
+        req.set_mail_id(m2);
+        req.set_idempotency_key("edge06_" + std::to_string(m2));
+        game::GameResponse rsp2;
+        EXPECT_TRUE(MailService::Instance().HandleMailClaim(req, &rsp2));
+        const auto &r2 = rsp2.mail_claim().result().receipt();
+        EXPECT_TRUE(r2.verifiable());
+        EXPECT_TRUE(r2.claim_tx_id() != tx1);
+        const uint64_t v2 = r2.asset_version_at_claim();
+        EXPECT_TRUE(v2 != v1);
+
+        GameDbAssetStore::MutationResult task;
+        EXPECT_TRUE(GameDbAssetStore::Instance().ApplyMutation(
+            pid, "edge04_task_" + std::to_string(NowMs()), 0, "GRANT", 2219, 1, &task));
+        EXPECT_TRUE(task.ok);
+        EXPECT_TRUE(BagVersion(pid) > v2);
+
+        game::MailGetReq get;
+        get.set_player_id(pid);
+        get.set_mail_id(m1);
+        game::GameResponse get1;
+        EXPECT_TRUE(MailService::Instance().HandleMailGet(get, &get1));
+        EXPECT_TRUE(get1.mail_get().mail().receipt().claim_tx_id() == tx1);
+        EXPECT_TRUE(get1.mail_get().mail().receipt().asset_version_at_claim() == v1);
+        get.set_mail_id(m2);
+        game::GameResponse get2;
+        EXPECT_TRUE(MailService::Instance().HandleMailGet(get, &get2));
+        EXPECT_TRUE(get2.mail_get().mail().receipt().claim_tx_id() == r2.claim_tx_id());
+        EXPECT_TRUE(get2.mail_get().mail().receipt().asset_version_at_claim() == v2);
+
+        req.set_mail_id(m1);
+        req.set_idempotency_key("edge07_" + std::to_string(m1));
+        game::GameResponse again;
+        EXPECT_TRUE(MailService::Instance().HandleMailClaim(req, &again));
+        EXPECT_TRUE(again.mail_claim().result().error_code() == mail::err::kAlreadyClaimed);
+        EXPECT_TRUE(again.mail_claim().result().receipt().claim_tx_id() == tx1);
+        EXPECT_TRUE(again.mail_claim().result().receipt().asset_version_at_claim() == v1);
+        EXPECT_TRUE(BagVersion(pid) > v1);
+
+        get.set_player_id(other);
+        get.set_mail_id(m1);
+        game::GameResponse denied;
+        EXPECT_TRUE(!MailService::Instance().HandleMailGet(get, &denied));
+        EXPECT_TRUE(denied.mail_get().error_code() == mail::err::kPermissionDenied);
+        EXPECT_TRUE(denied.mail_get().mail().receipt().grants_size() == 0);
+    }
+
     AsyncMysqlGameDbRepository::Instance().Stop();
 
     if (g_fail) {

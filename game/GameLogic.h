@@ -40,6 +40,8 @@ public:
     bool IsAssetDirty(uint64_t player_id);
     /** dirty 时尝试权威重载；成功后允许资产写 */
     bool EnsureAssetsSynced(uint64_t player_id);
+    /** 从 GameDB 重载背包。失败时把角色标脏。 */
+    bool ReloadAuthoritativeAssets(uint64_t player_id);
     void SetAssetReloadBlockedForTest(bool v);
     void SetAssetApplyBlockedForTest(bool v);
     void SetAssetReloadOverrideForTest(const std::map<uint32_t, uint32_t> &bag, uint64_t ver);

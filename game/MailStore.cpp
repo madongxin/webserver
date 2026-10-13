@@ -4,6 +4,7 @@
 #include "ConnectionPool.h"
 #include "Logging.h"
 
+#include <json/json.h>
 #include <mysql/mysql.h>
 
 #include <cstdio>
@@ -505,6 +506,107 @@ MailLookup MailStore::FindByBusinessKey(const std::string &source_system,
     const bool ok = FillMailRow(row, out);
     mysql_free_result(res);
     return ok ? MailLookup::kHit : MailLookup::kError;
+}
+
+std::string MailStore::FormatClaimAfterState(const std::string &claim_tx_id, int64_t row_version,
+                                                uint64_t asset_version,
+                                                const std::vector<MailReceiptGrant> &grants) const {
+    Json::Value root;
+    root["attachment"] = "CLAIMED";
+    root["tx"] = claim_tx_id;
+    root["row_version"] = static_cast<Json::Int64>(row_version);
+    root["asset_version"] = static_cast<Json::UInt64>(asset_version);
+    root["verifiable"] = true;
+    Json::Value items(Json::arrayValue);
+    for (const auto &g : grants) {
+        Json::Value one;
+        one["asset_id"] = static_cast<Json::UInt64>(g.asset_id);
+        one["count"] = g.count;
+        items.append(std::move(one));
+    }
+    root["grants"] = items;
+    Json::StreamWriterBuilder builder;
+    builder["indentation"] = "";
+    return Json::writeString(builder, root);
+}
+
+bool MailStore::ParseClaimAfterState(const std::string &after, MailClaimReceiptData *out) const {
+    if (!out)
+        return false;
+    *out = MailClaimReceiptData{};
+    Json::CharReaderBuilder builder;
+    std::string errs;
+    std::istringstream in(after);
+    Json::Value root;
+    if (!Json::parseFromStream(builder, in, &root, &errs) || !root.isObject())
+        return false;
+    auto read_u64 = [](const Json::Value &v, uint64_t *dest) -> bool {
+        if (!dest)
+            return false;
+        if (v.isUInt64()) {
+            *dest = v.asUInt64();
+            return true;
+        }
+        if (v.isInt64() && v.asInt64() > 0) {
+            *dest = static_cast<uint64_t>(v.asInt64());
+            return true;
+        }
+        return false;
+    };
+    if (root.isMember("tx") && root["tx"].isString())
+        out->claim_tx_id = root["tx"].asString();
+    uint64_t ver = 0;
+    const bool has_ver = root.isMember("asset_version") && read_u64(root["asset_version"], &ver) && ver > 0;
+    if (has_ver)
+        out->asset_version_at_claim = ver;
+    bool grants_ok = root.isMember("grants") && root["grants"].isArray();
+    if (grants_ok) {
+        for (const auto &g : root["grants"]) {
+            uint64_t asset_id = 0;
+            uint64_t count = 0;
+            if (!g.isObject() || !read_u64(g["asset_id"], &asset_id) || !read_u64(g["count"], &count) ||
+                count > 0xFFFFFFFFu) {
+                grants_ok = false;
+                out->grants.clear();
+                break;
+            }
+            MailReceiptGrant item;
+            item.asset_id = asset_id;
+            item.count = static_cast<uint32_t>(count);
+            out->grants.push_back(item);
+        }
+    }
+    out->verifiable = grants_ok && !out->claim_tx_id.empty() && has_ver && !out->grants.empty();
+    return true;
+}
+
+MailLookup MailStore::FindOriginalClaimReceipt(uint64_t mail_id, uint64_t actor_id,
+                                               MailClaimReceiptData *out) {
+    if (!out || !EnsureTables())
+        return MailLookup::kError;
+    *out = MailClaimReceiptData{};
+    auto conn = GetConnection();
+    if (!conn)
+        return MailLookup::kError;
+    std::ostringstream sql;
+    sql << "SELECT after_state FROM mail_operation_log WHERE mail_id=" << mail_id
+        << " AND actor_id=" << actor_id
+        << " AND operation_type='CLAIM' AND result_code='OK' ORDER BY operation_id ASC LIMIT 1";
+    MYSQL_RES *res = conn->query(sql.str());
+    if (!res)
+        return MailLookup::kError;
+    MYSQL_ROW row = mysql_fetch_row(res);
+    if (!row) {
+        mysql_free_result(res);
+        return MailLookup::kMiss;
+    }
+    const std::string after = CellStr(row, 0);
+    mysql_free_result(res);
+    if (!ParseClaimAfterState(after, out)) {
+        *out = MailClaimReceiptData{};
+        return MailLookup::kHit;
+    }
+    return MailLookup::kHit;
 }
 
 MailLookup MailStore::FindOpByIdempotency(const std::string &key, MailOpLogRow *out) {

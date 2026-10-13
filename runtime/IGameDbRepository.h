@@ -39,8 +39,11 @@ struct GameDbMailClaimResult {
     std::string attachment_state;
     int64_t mail_row_version = 0;
     std::vector<GameDbGrantedItem> grants;
-    /** MySQL 提交后的 asset_version；幂等命中为该次操作已提交版本 */
+    /** 内存对齐用的版本。首次入账是提交后的版本；幂等命中是该邮件原始入账版本，不是玩家当前版本。 */
     uint64_t asset_version = 0;
+    std::string claim_tx_id;
+    uint64_t asset_version_at_claim = 0;
+    bool receipt_verifiable = false;
 };
 
 class IGameDbRepository {

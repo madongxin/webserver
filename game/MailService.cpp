@@ -121,6 +121,57 @@ void FillManualClaimSkip(uint64_t mail_id, game::MailClaimResult *result) {
     result->set_message("manual confirm required");
 }
 
+void FillClaimReceipt(const GameDbMailClaimResult &db, game::MailClaimResult *result) {
+    auto *receipt = result->mutable_receipt();
+    std::string state = db.attachment_state;
+    if (state == "CLAIMING")
+        state = "IN_PROGRESS";
+    else if (state.empty())
+        state = "UNKNOWN";
+    receipt->set_claim_state(state);
+    receipt->set_claim_tx_id(db.claim_tx_id);
+    receipt->set_asset_version_at_claim(db.asset_version_at_claim);
+    receipt->set_verifiable(db.receipt_verifiable);
+    if (!db.receipt_verifiable)
+        return;
+    for (const auto &g : db.grants) {
+        auto *item = receipt->add_grants();
+        item->set_asset_id(g.asset_id);
+        item->set_count(g.count);
+    }
+}
+
+bool FillDetailReceipt(uint64_t player_id, const mail::MailInstanceRow &row, game::MailDetail *detail) {
+    auto *receipt = detail->mutable_receipt();
+    if (row.attachment_state == "CLAIMED") {
+        MailClaimReceiptData data;
+        const MailLookup src =
+            MailStore::Instance().FindOriginalClaimReceipt(row.mail_id, player_id, &data);
+        if (src == MailLookup::kError)
+            return false;
+        receipt->set_claim_state("CLAIMED");
+        receipt->set_verifiable(src == MailLookup::kHit && data.verifiable);
+        if (!receipt->verifiable())
+            return true;
+        receipt->set_claim_tx_id(data.claim_tx_id);
+        receipt->set_asset_version_at_claim(data.asset_version_at_claim);
+        for (const auto &g : data.grants) {
+            auto *item = receipt->add_grants();
+            item->set_asset_id(g.asset_id);
+            item->set_count(g.count);
+        }
+        return true;
+    }
+    if (row.attachment_state == "CLAIMING")
+        receipt->set_claim_state("IN_PROGRESS");
+    else if (row.attachment_state == "UNCLAIMED")
+        receipt->set_claim_state("UNCLAIMED");
+    else
+        receipt->set_claim_state(row.attachment_state.empty() ? "UNKNOWN" : row.attachment_state);
+    receipt->set_verifiable(false);
+    return true;
+}
+
 std::string CanonicalMailIds(const google::protobuf::RepeatedField<uint64_t> &ids) {
     std::set<uint64_t> uniq(ids.begin(), ids.end());
     std::string out;
@@ -636,6 +687,14 @@ bool MailService::HandleMailGet(const game::MailGetReq &req, game::GameResponse 
         return false;
     }
     FillMailDetail(row, atts, body->mutable_mail());
+    if (!FillDetailReceipt(req.player_id(), row, body->mutable_mail())) {
+        rsp->set_ok(false);
+        body->set_ok(false);
+        body->set_error_code(mail::err::kInternal);
+        body->set_message("claim receipt lookup failed");
+        rsp->set_message(body->message());
+        return false;
+    }
     body->set_mailbox_version(MailboxVersion(req.player_id()));
     body->set_ok(true);
     body->set_error_code(mail::err::kOk);
@@ -819,6 +878,7 @@ bool MailService::ClaimOne(uint64_t player_id, uint64_t mail_id, const std::stri
     result->set_error_code(db_rsp.error_code);
     result->set_message(db_rsp.message);
     result->set_attachment_state(db_rsp.attachment_state);
+    FillClaimReceipt(db_rsp, result);
     if (!ApplyClaimMemory(player_id, db_rsp)) {
         result->set_ok(false);
         result->set_error_code(mail::err::kStateSyncRequired);
@@ -832,18 +892,21 @@ bool MailService::ApplyClaimMemory(uint64_t player_id, const GameDbMailClaimResu
     if (!db_rsp.ok)
         return true;
     bool aligned = false;
-    if (db_rsp.asset_version != 0) {
-        aligned = GameLogic::Instance().ApplyItemRewardsWithVersion(player_id, db_rsp.grants,
-                                                                    db_rsp.asset_version);
-    } else if (db_rsp.should_apply_memory) {
-        aligned = true;
-        for (const auto &g : db_rsp.grants) {
-            if (!GameLogic::Instance().ApplyItemReward(player_id, static_cast<uint32_t>(g.asset_id),
-                                                       g.count))
-                aligned = false;
+    if (db_rsp.should_apply_memory) {
+        if (db_rsp.asset_version != 0) {
+            aligned = GameLogic::Instance().ApplyItemRewardsWithVersion(player_id, db_rsp.grants,
+                                                                        db_rsp.asset_version);
+        } else {
+            aligned = true;
+            for (const auto &g : db_rsp.grants) {
+                if (!GameLogic::Instance().ApplyItemReward(player_id,
+                                                           static_cast<uint32_t>(g.asset_id),
+                                                           g.count))
+                    aligned = false;
+            }
         }
     } else {
-        aligned = GameLogic::Instance().EnsureAssetsSynced(player_id);
+        aligned = GameLogic::Instance().ReloadAuthoritativeAssets(player_id);
     }
     if (!aligned)
         return false;
@@ -911,6 +974,7 @@ bool MailService::BeginHandleMailClaimAsync(const game::MailClaimReq &req, game:
                     result.set_message(db_rsp.message);
                 }
                 result.set_attachment_state(db_rsp.attachment_state);
+                FillClaimReceipt(db_rsp, &result);
                 *body->mutable_result() = result;
                 body->set_ok(ok);
                 body->set_error_code(result.error_code());
@@ -1097,6 +1161,7 @@ bool MailService::BeginHandleMailBatchClaimAsync(const game::MailBatchClaimReq &
                                 r.set_message(db_rsp.message);
                             }
                             r.set_attachment_state(db_rsp.attachment_state);
+                            FillClaimReceipt(db_rsp, &r);
                             st->results.push_back(std::move(r));
                             ++st->index;
                             // Complete 已清 inflight；下一封 RPC 前重新标记

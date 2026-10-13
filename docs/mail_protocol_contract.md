@@ -1,8 +1,8 @@
 # 邮件协议合同（V1）
 
-供 Unity 客户端对接。协议以 `proto/game.proto` 为准，本文件不新增字段号。
+供 Unity 客户端对接。协议以 `proto/game.proto` 为准。新增字段只追加编号，不改旧编号。
 
-- `schema_sha256`：`47e6fbf688af61b31ad4d5e2ecf88a17e9891521ad9950bb79076456a87a8d1a`（`sha256sum proto/game.proto`）
+- `schema_sha256`：`49479bbdb5f8f1c5e5a0b649f21bb5c265122b01f4656b18638c87a8f6102792`（`sha256sum proto/game.proto`）
 - 时间：`server_time_utc`、`sent_at`、`expire_at`、`read_at` 都是 Unix 秒。
 - 身份：Gateway 用已认证连接覆盖 `player_id`。客户端填写的角色 ID 不是权威。
 - 收件人：V1 只有 `ROLE`。附件只有 `ITEM`。分类 `SYSTEM`、`ACTIVITY` 可投递；`SOCIAL`、`TRADE` 只是预留展示。
@@ -51,7 +51,7 @@
 
 批量领取要看每封 `MailClaimResult`。`MailBatchClaimRsp.ok` 只表示至少有一封领取调用返回成功，全部失败时它为 false。外层 `GameResponse.ok` 只表示这批请求已经处理完，不表示每封都成功。附件带 `need_confirm` 或 `COD` 的邮件不会被一键领取，该封结果是 `INVALID_STATE`，`message` 为 `manual confirm required`。
 
-`ALREADY_CLAIMED` 且 `ok=true` 表示这封邮件已经入账，调用方不得再把附件数量加进背包。权威道具数量和 `asset_version` 以 `WorldSnapshotReq` 的 `full_snapshot` 为准。`mailbox_version` 不是资产版本。
+`ALREADY_CLAIMED` 且 `ok=true` 表示这封邮件已经入账，调用方不得再把附件数量加进背包。原始回执在 `MailClaimResult.receipt` 和 `MailGetRsp.mail.receipt`：`claim_tx_id`、`asset_version_at_claim`、`grants`、`verifiable`。后来的任务或商城把背包版本往后推，也不改变这封邮件的回执。`verifiable=false` 的旧邮件不能当成已核对到账。权威背包仍用 `WorldSnapshotReq` 的 `full_snapshot`，快照版本前进本身不能证明某一封邮件到账。`mailbox_version` 不是资产版本。
 
 幂等查询失败返回 `INTERNAL_ERROR`，不会当成“没有这把钥匙”再执行一次。
 

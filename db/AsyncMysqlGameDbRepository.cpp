@@ -30,28 +30,54 @@ void FillFail(GameDbMailClaimResult *r, const char *code, const char *msg) {
     r->message = msg;
 }
 
-uint64_t ParseAssetVersionFromAfterState(const std::string &after) {
-    const char *key = "\"asset_version\":";
-    const auto p = after.find(key);
-    if (p == std::string::npos)
-        return 0;
-    return static_cast<uint64_t>(std::strtoull(after.c_str() + p + 16, nullptr, 10));
+void CopyReceipt(GameDbMailClaimResult *result, const MailClaimReceiptData &receipt) {
+    if (!result)
+        return;
+    result->grants.clear();
+    result->claim_tx_id = receipt.claim_tx_id;
+    result->asset_version_at_claim = receipt.asset_version_at_claim;
+    result->receipt_verifiable = receipt.verifiable;
+    result->asset_version = receipt.verifiable ? receipt.asset_version_at_claim : 0;
+    if (!receipt.verifiable)
+        return;
+    for (const auto &g : receipt.grants) {
+        GameDbGrantedItem item;
+        item.asset_id = g.asset_id;
+        item.count = g.count;
+        result->grants.push_back(item);
+    }
 }
 
-/** 幂等命中：优先 op log 中的 asset_version，旧日志回退 LoadMeta（可能略新于本次） */
+/** 幂等命中只认该邮件首次 OK 入账回执，不用玩家当前 asset_version。 */
 void FillIdempotentAssetVersion(GameDbMailClaimResult *result, const MailOpLogRow &existed) {
     if (!result)
         return;
-    result->asset_version = ParseAssetVersionFromAfterState(existed.after_state);
-    if (result->asset_version != 0)
-        return;
+    result->asset_version = 0;
+    result->asset_version_at_claim = 0;
+    result->claim_tx_id.clear();
+    result->receipt_verifiable = false;
+    result->grants.clear();
     if (!(existed.result_code == mail::err::kOk ||
           existed.result_code == mail::err::kAlreadyClaimed))
         return;
-    uint64_t ver = 0;
-    bool exists = false;
-    if (GameDbAssetStore::Instance().LoadMeta(existed.actor_id, &ver, &exists) && exists)
-        result->asset_version = ver;
+    MailClaimReceiptData parsed;
+    if (existed.result_code == mail::err::kOk &&
+        MailStore::Instance().ParseClaimAfterState(existed.after_state, &parsed) &&
+        parsed.verifiable) {
+        CopyReceipt(result, parsed);
+        return;
+    }
+    MailClaimReceiptData original;
+    const MailLookup src =
+        MailStore::Instance().FindOriginalClaimReceipt(existed.mail_id, existed.actor_id, &original);
+    if (src == MailLookup::kError) {
+        FillFail(result, mail::err::kInternal, "claim receipt lookup failed");
+        result->idempotent_hit = false;
+        result->should_apply_memory = false;
+        return;
+    }
+    if (src == MailLookup::kHit && original.verifiable)
+        CopyReceipt(result, original);
 }
 
 }  // namespace
@@ -302,18 +328,28 @@ GameDbMailClaimResult AsyncMysqlGameDbRepository::DoClaimMail(const GameDbMailCl
         return result;
     }
     if (row.attachment_state == "CLAIMED") {
-        // 已领取：尽量写幂等日志；冲突则读已有记录（并发同 key）
-        uint64_t cur_ver = 0;
-        bool meta_exists = false;
-        (void)GameDbAssetStore::Instance().LoadMeta(req.player_id, &cur_ver, &meta_exists);
+        // 已领取：回执只复制首次 OK 入账，不用当前背包版本冒充。
+        MailClaimReceiptData original;
+        const MailLookup src =
+            MailStore::Instance().FindOriginalClaimReceipt(req.mail_id, req.player_id, &original);
+        if (src == MailLookup::kError) {
+            MailStore::Instance().Rollback(conn.get());
+            FillFail(&result, mail::err::kInternal, "claim receipt lookup failed");
+            return result;
+        }
         MailOpLogRow op;
         op.mail_id = req.mail_id;
         op.actor_id = req.player_id;
         op.operation_type = "CLAIM";
         op.idempotency_key = req.idempotency_key;
         op.before_state = "{\"attachment\":\"CLAIMED\"}";
-        op.after_state = "{\"attachment\":\"CLAIMED\",\"asset_version\":" +
-                         std::to_string(cur_ver) + "}";
+        if (src == MailLookup::kHit && original.verifiable) {
+            op.after_state = MailStore::Instance().FormatClaimAfterState(
+                original.claim_tx_id, row.row_version, original.asset_version_at_claim,
+                original.grants);
+        } else {
+            op.after_state = "{\"attachment\":\"CLAIMED\",\"verifiable\":false}";
+        }
         op.result_code = mail::err::kAlreadyClaimed;
         op.trace_id = req.trace_id;
         op.created_at = now;
@@ -329,7 +365,8 @@ GameDbMailClaimResult AsyncMysqlGameDbRepository::DoClaimMail(const GameDbMailCl
             result.message = "already claimed";
             result.attachment_state = "CLAIMED";
             result.mail_row_version = row.row_version;
-            result.asset_version = cur_ver;
+            if (src == MailLookup::kHit && original.verifiable)
+                CopyReceipt(&result, original);
             return result;
         }
         MailStore::Instance().Rollback(conn.get());
@@ -350,7 +387,8 @@ GameDbMailClaimResult AsyncMysqlGameDbRepository::DoClaimMail(const GameDbMailCl
         result.message = "already claimed";
         result.attachment_state = "CLAIMED";
         result.mail_row_version = row.row_version;
-        result.asset_version = cur_ver;
+        if (src == MailLookup::kHit && original.verifiable)
+            CopyReceipt(&result, original);
         return result;
     }
     if (row.attachment_state == "CLAIMING") {
@@ -460,9 +498,16 @@ GameDbMailClaimResult AsyncMysqlGameDbRepository::DoClaimMail(const GameDbMailCl
     op.idempotency_key = req.idempotency_key;
     op.before_state = "{\"attachment\":\"UNCLAIMED\",\"row_version\":" +
                       std::to_string(version_before) + "}";
-    op.after_state = "{\"attachment\":\"CLAIMED\",\"tx\":\"" + asset_tx +
-                     "\",\"row_version\":" + std::to_string(row.row_version) +
-                     ",\"asset_version\":" + std::to_string(new_asset_ver) + "}";
+    std::vector<MailReceiptGrant> receipt_grants;
+    receipt_grants.reserve(grants.size());
+    for (const auto &g : grants) {
+        MailReceiptGrant item;
+        item.asset_id = g.asset_id;
+        item.count = g.count;
+        receipt_grants.push_back(item);
+    }
+    op.after_state = MailStore::Instance().FormatClaimAfterState(
+        asset_tx, row.row_version, new_asset_ver, receipt_grants);
     op.result_code = mail::err::kOk;
     op.trace_id = req.trace_id;
     op.created_at = now;
@@ -541,5 +586,8 @@ GameDbMailClaimResult AsyncMysqlGameDbRepository::DoClaimMail(const GameDbMailCl
     result.should_apply_memory = true;
     result.idempotent_hit = false;
     result.asset_version = new_asset_ver;
+    result.claim_tx_id = asset_tx;
+    result.asset_version_at_claim = new_asset_ver;
+    result.receipt_verifiable = true;
     return result;
 }

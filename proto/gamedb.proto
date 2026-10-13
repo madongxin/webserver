@@ -34,6 +34,9 @@ message ClaimMailRsp {
   repeated GrantedItem grants = 8;
   /** 本次领取事务提交后的正式资产版本（幂等命中返回当时已提交版本） */
   uint64 asset_version = 9;
+  string claim_tx_id = 10;
+  uint64 asset_version_at_claim = 11;
+  bool receipt_verifiable = 12;
 }
 
 message LookupAccountReq {

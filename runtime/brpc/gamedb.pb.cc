@@ -761,6 +761,9 @@ const ::PROTOBUF_NAMESPACE_ID::uint32 TableStruct_gamedb_2eproto::offsets[] PROT
   PROTOBUF_FIELD_OFFSET(::gdb::ClaimMailRsp, mail_row_version_),
   PROTOBUF_FIELD_OFFSET(::gdb::ClaimMailRsp, grants_),
   PROTOBUF_FIELD_OFFSET(::gdb::ClaimMailRsp, asset_version_),
+  PROTOBUF_FIELD_OFFSET(::gdb::ClaimMailRsp, claim_tx_id_),
+  PROTOBUF_FIELD_OFFSET(::gdb::ClaimMailRsp, asset_version_at_claim_),
+  PROTOBUF_FIELD_OFFSET(::gdb::ClaimMailRsp, receipt_verifiable_),
   ~0u,  // no _has_bits_
   PROTOBUF_FIELD_OFFSET(::gdb::LookupAccountReq, _internal_metadata_),
   ~0u,  // no _extensions_
@@ -1116,40 +1119,40 @@ static const ::PROTOBUF_NAMESPACE_ID::internal::MigrationSchema schemas[] PROTOB
   { 7, -1, sizeof(::gdb::BagEntry)},
   { 14, -1, sizeof(::gdb::ClaimMailReq)},
   { 25, -1, sizeof(::gdb::ClaimMailRsp)},
-  { 39, -1, sizeof(::gdb::LookupAccountReq)},
-  { 46, -1, sizeof(::gdb::LookupAccountRsp)},
-  { 62, -1, sizeof(::gdb::RegisterAccountReq)},
-  { 73, -1, sizeof(::gdb::RegisterAccountRsp)},
-  { 83, -1, sizeof(::gdb::LoadPlayerReq)},
-  { 89, -1, sizeof(::gdb::LoadPlayerRsp)},
-  { 100, -1, sizeof(::gdb::LoadInventoryReq)},
-  { 106, -1, sizeof(::gdb::LoadInventoryRsp)},
-  { 117, -1, sizeof(::gdb::AssetMutationReq)},
-  { 129, -1, sizeof(::gdb::AssetMutationRsp)},
-  { 140, -1, sizeof(::gdb::SavePlayerSnapshotReq)},
-  { 149, -1, sizeof(::gdb::SavePlayerSnapshotRsp)},
-  { 159, -1, sizeof(::gdb::FlushPlayerReq)},
-  { 166, -1, sizeof(::gdb::FlushPlayerRsp)},
-  { 175, -1, sizeof(::gdb::PlayerProfile)},
-  { 195, -1, sizeof(::gdb::LoadPlayerProfileReq)},
-  { 202, -1, sizeof(::gdb::LoadPlayerProfileRsp)},
-  { 212, -1, sizeof(::gdb::SavePlayerProfileReq)},
-  { 219, -1, sizeof(::gdb::SavePlayerProfileRsp)},
-  { 228, -1, sizeof(::gdb::QueryOperationResultReq)},
-  { 236, -1, sizeof(::gdb::QueryOperationResultRsp)},
-  { 251, -1, sizeof(::gdb::LastSafePosition)},
-  { 265, -1, sizeof(::gdb::LoadLastSafePositionReq)},
-  { 271, -1, sizeof(::gdb::LoadLastSafePositionRsp)},
-  { 281, -1, sizeof(::gdb::SaveLastSafePositionReq)},
-  { 288, -1, sizeof(::gdb::SaveLastSafePositionRsp)},
-  { 298, -1, sizeof(::gdb::LoadPlayerBriefReq)},
-  { 305, -1, sizeof(::gdb::LoadPlayerBriefRsp)},
-  { 319, -1, sizeof(::gdb::HandleGameFrameReq)},
-  { 326, -1, sizeof(::gdb::HandleGameFrameRsp)},
-  { 334, -1, sizeof(::gdb::FriendBriefDb)},
-  { 346, -1, sizeof(::gdb::FriendRequestDb)},
-  { 355, -1, sizeof(::gdb::FriendOpReq)},
-  { 368, -1, sizeof(::gdb::FriendOpRsp)},
+  { 42, -1, sizeof(::gdb::LookupAccountReq)},
+  { 49, -1, sizeof(::gdb::LookupAccountRsp)},
+  { 65, -1, sizeof(::gdb::RegisterAccountReq)},
+  { 76, -1, sizeof(::gdb::RegisterAccountRsp)},
+  { 86, -1, sizeof(::gdb::LoadPlayerReq)},
+  { 92, -1, sizeof(::gdb::LoadPlayerRsp)},
+  { 103, -1, sizeof(::gdb::LoadInventoryReq)},
+  { 109, -1, sizeof(::gdb::LoadInventoryRsp)},
+  { 120, -1, sizeof(::gdb::AssetMutationReq)},
+  { 132, -1, sizeof(::gdb::AssetMutationRsp)},
+  { 143, -1, sizeof(::gdb::SavePlayerSnapshotReq)},
+  { 152, -1, sizeof(::gdb::SavePlayerSnapshotRsp)},
+  { 162, -1, sizeof(::gdb::FlushPlayerReq)},
+  { 169, -1, sizeof(::gdb::FlushPlayerRsp)},
+  { 178, -1, sizeof(::gdb::PlayerProfile)},
+  { 198, -1, sizeof(::gdb::LoadPlayerProfileReq)},
+  { 205, -1, sizeof(::gdb::LoadPlayerProfileRsp)},
+  { 215, -1, sizeof(::gdb::SavePlayerProfileReq)},
+  { 222, -1, sizeof(::gdb::SavePlayerProfileRsp)},
+  { 231, -1, sizeof(::gdb::QueryOperationResultReq)},
+  { 239, -1, sizeof(::gdb::QueryOperationResultRsp)},
+  { 254, -1, sizeof(::gdb::LastSafePosition)},
+  { 268, -1, sizeof(::gdb::LoadLastSafePositionReq)},
+  { 274, -1, sizeof(::gdb::LoadLastSafePositionRsp)},
+  { 284, -1, sizeof(::gdb::SaveLastSafePositionReq)},
+  { 291, -1, sizeof(::gdb::SaveLastSafePositionRsp)},
+  { 301, -1, sizeof(::gdb::LoadPlayerBriefReq)},
+  { 308, -1, sizeof(::gdb::LoadPlayerBriefRsp)},
+  { 322, -1, sizeof(::gdb::HandleGameFrameReq)},
+  { 329, -1, sizeof(::gdb::HandleGameFrameRsp)},
+  { 337, -1, sizeof(::gdb::FriendBriefDb)},
+  { 349, -1, sizeof(::gdb::FriendRequestDb)},
+  { 358, -1, sizeof(::gdb::FriendOpReq)},
+  { 371, -1, sizeof(::gdb::FriendOpRsp)},
 };
 
 static ::PROTOBUF_NAMESPACE_ID::Message const * const file_default_instances[] = {
@@ -1200,150 +1203,152 @@ const char descriptor_table_protodef_gamedb_2eproto[] PROTOBUF_SECTION_VARIABLE(
   "mMailReq\022\021\n\tplayer_id\030\001 \001(\004\022\017\n\007mail_id\030\002"
   " \001(\004\022\027\n\017idempotency_key\030\003 \001(\t\022\020\n\010trace_i"
   "d\030\004 \001(\t\022\032\n\022inventory_soft_cap\030\005 \001(\003\022#\n\014b"
-  "ag_snapshot\030\006 \003(\0132\r.gdb.BagEntry\"\341\001\n\014Cla"
+  "ag_snapshot\030\006 \003(\0132\r.gdb.BagEntry\"\262\002\n\014Cla"
   "imMailRsp\022\n\n\002ok\030\001 \001(\010\022\026\n\016idempotent_hit\030"
   "\002 \001(\010\022\033\n\023should_apply_memory\030\003 \001(\010\022\022\n\ner"
   "ror_code\030\004 \001(\t\022\017\n\007message\030\005 \001(\t\022\030\n\020attac"
   "hment_state\030\006 \001(\t\022\030\n\020mail_row_version\030\007 "
   "\001(\003\022 \n\006grants\030\010 \003(\0132\020.gdb.GrantedItem\022\025\n"
-  "\rasset_version\030\t \001(\004\"8\n\020LookupAccountReq"
-  "\022\021\n\tplayer_id\030\001 \001(\004\022\021\n\tdevice_id\030\002 \001(\t\"\346"
-  "\001\n\020LookupAccountRsp\022\n\n\002ok\030\001 \001(\010\022\017\n\007messa"
-  "ge\030\002 \001(\t\022\022\n\nerror_code\030\003 \001(\t\022\016\n\006exists\030\004"
-  " \001(\010\022\016\n\006banned\030\005 \001(\010\022\022\n\naccount_id\030\006 \001(\004"
-  "\022\021\n\tplayer_id\030\007 \001(\004\022\025\n\rpassword_hash\030\010 \001"
-  "(\t\022\025\n\rpassword_salt\030\t \001(\t\022\026\n\016password_it"
-  "ers\030\n \001(\005\022\024\n\014has_password\030\013 \001(\010\"\234\001\n\022Regi"
-  "sterAccountReq\022\021\n\tdevice_id\030\001 \001(\t\022\024\n\014dis"
-  "play_name\030\002 \001(\t\022\025\n\rpassword_hash\030\003 \001(\t\022\025"
-  "\n\rpassword_salt\030\004 \001(\t\022\026\n\016password_iters\030"
-  "\005 \001(\005\022\027\n\017idempotency_key\030\006 \001(\t\"l\n\022Regist"
-  "erAccountRsp\022\n\n\002ok\030\001 \001(\010\022\017\n\007message\030\002 \001("
-  "\t\022\022\n\nerror_code\030\003 \001(\t\022\022\n\naccount_id\030\004 \001("
-  "\004\022\021\n\tplayer_id\030\005 \001(\004\"\"\n\rLoadPlayerReq\022\021\n"
-  "\tplayer_id\030\001 \001(\004\"z\n\rLoadPlayerRsp\022\n\n\002ok\030"
-  "\001 \001(\010\022\017\n\007message\030\002 \001(\t\022\022\n\nerror_code\030\003 \001"
-  "(\t\022\021\n\tplayer_id\030\004 \001(\004\022\025\n\rasset_version\030\005"
-  " \001(\004\022\016\n\006exists\030\006 \001(\010\"%\n\020LoadInventoryReq"
-  "\022\021\n\tplayer_id\030\001 \001(\004\"\211\001\n\020LoadInventoryRsp"
-  "\022\n\n\002ok\030\001 \001(\010\022\017\n\007message\030\002 \001(\t\022\022\n\nerror_c"
-  "ode\030\003 \001(\t\022\021\n\tplayer_id\030\004 \001(\004\022\025\n\rasset_ve"
-  "rsion\030\005 \001(\004\022\032\n\003bag\030\006 \003(\0132\r.gdb.BagEntry\""
-  "\241\001\n\020AssetMutationReq\022\021\n\tplayer_id\030\001 \001(\004\022"
-  "\027\n\017idempotency_key\030\002 \001(\t\022\030\n\020expected_ver"
-  "sion\030\003 \001(\004\022\025\n\rmutation_type\030\004 \001(\t\022\017\n\007ite"
-  "m_id\030\005 \001(\r\022\r\n\005count\030\006 \001(\r\022\020\n\010trace_id\030\007 "
-  "\001(\t\"\210\001\n\020AssetMutationRsp\022\n\n\002ok\030\001 \001(\010\022\017\n\007"
-  "message\030\002 \001(\t\022\022\n\nerror_code\030\003 \001(\t\022\026\n\016ide"
-  "mpotent_hit\030\004 \001(\010\022\025\n\rasset_version\030\005 \001(\004"
-  "\022\024\n\014remain_count\030\006 \001(\r\"y\n\025SavePlayerSnap"
-  "shotReq\022\021\n\tplayer_id\030\001 \001(\004\022\030\n\020expected_v"
-  "ersion\030\002 \001(\004\022\032\n\003bag\030\003 \003(\0132\r.gdb.BagEntry"
-  "\022\027\n\017idempotency_key\030\004 \001(\t\"w\n\025SavePlayerS"
-  "napshotRsp\022\n\n\002ok\030\001 \001(\010\022\017\n\007message\030\002 \001(\t\022"
-  "\022\n\nerror_code\030\003 \001(\t\022\025\n\rasset_version\030\004 \001"
-  "(\004\022\026\n\016idempotent_hit\030\005 \001(\010\"3\n\016FlushPlaye"
-  "rReq\022\021\n\tplayer_id\030\001 \001(\004\022\016\n\006reason\030\002 \001(\t\""
-  "X\n\016FlushPlayerRsp\022\n\n\002ok\030\001 \001(\010\022\017\n\007message"
-  "\030\002 \001(\t\022\022\n\nerror_code\030\003 \001(\t\022\025\n\rasset_vers"
-  "ion\030\004 \001(\004\"\252\002\n\rPlayerProfile\022\021\n\tplayer_id"
-  "\030\001 \001(\004\022\023\n\013player_name\030\002 \001(\t\022\n\n\002hp\030\003 \001(\005\022"
-  "\016\n\006max_hp\030\004 \001(\005\022\n\n\002mp\030\005 \001(\005\022\016\n\006max_mp\030\006 "
-  "\001(\005\022\016\n\006attack\030\007 \001(\005\022\023\n\013spell_power\030\010 \001(\005"
-  "\022\017\n\007defense\030\t \001(\005\022\030\n\020magic_resistance\030\n "
-  "\001(\005\022\023\n\013crit_chance\030\013 \001(\002\022\023\n\013crit_damage\030"
-  "\014 \001(\002\022\022\n\nmove_speed\030\r \001(\002\022\024\n\014attack_spee"
-  "d\030\016 \001(\002\022\025\n\rstats_version\030\017 \001(\004\"A\n\024LoadPl"
-  "ayerProfileReq\022\021\n\tplayer_id\030\001 \001(\004\022\026\n\016ens"
-  "ure_default\030\002 \001(\010\"|\n\024LoadPlayerProfileRs"
+  "\rasset_version\030\t \001(\004\022\023\n\013claim_tx_id\030\n \001("
+  "\t\022\036\n\026asset_version_at_claim\030\013 \001(\004\022\032\n\022rec"
+  "eipt_verifiable\030\014 \001(\010\"8\n\020LookupAccountRe"
+  "q\022\021\n\tplayer_id\030\001 \001(\004\022\021\n\tdevice_id\030\002 \001(\t\""
+  "\346\001\n\020LookupAccountRsp\022\n\n\002ok\030\001 \001(\010\022\017\n\007mess"
+  "age\030\002 \001(\t\022\022\n\nerror_code\030\003 \001(\t\022\016\n\006exists\030"
+  "\004 \001(\010\022\016\n\006banned\030\005 \001(\010\022\022\n\naccount_id\030\006 \001("
+  "\004\022\021\n\tplayer_id\030\007 \001(\004\022\025\n\rpassword_hash\030\010 "
+  "\001(\t\022\025\n\rpassword_salt\030\t \001(\t\022\026\n\016password_i"
+  "ters\030\n \001(\005\022\024\n\014has_password\030\013 \001(\010\"\234\001\n\022Reg"
+  "isterAccountReq\022\021\n\tdevice_id\030\001 \001(\t\022\024\n\014di"
+  "splay_name\030\002 \001(\t\022\025\n\rpassword_hash\030\003 \001(\t\022"
+  "\025\n\rpassword_salt\030\004 \001(\t\022\026\n\016password_iters"
+  "\030\005 \001(\005\022\027\n\017idempotency_key\030\006 \001(\t\"l\n\022Regis"
+  "terAccountRsp\022\n\n\002ok\030\001 \001(\010\022\017\n\007message\030\002 \001"
+  "(\t\022\022\n\nerror_code\030\003 \001(\t\022\022\n\naccount_id\030\004 \001"
+  "(\004\022\021\n\tplayer_id\030\005 \001(\004\"\"\n\rLoadPlayerReq\022\021"
+  "\n\tplayer_id\030\001 \001(\004\"z\n\rLoadPlayerRsp\022\n\n\002ok"
+  "\030\001 \001(\010\022\017\n\007message\030\002 \001(\t\022\022\n\nerror_code\030\003 "
+  "\001(\t\022\021\n\tplayer_id\030\004 \001(\004\022\025\n\rasset_version\030"
+  "\005 \001(\004\022\016\n\006exists\030\006 \001(\010\"%\n\020LoadInventoryRe"
+  "q\022\021\n\tplayer_id\030\001 \001(\004\"\211\001\n\020LoadInventoryRs"
   "p\022\n\n\002ok\030\001 \001(\010\022\017\n\007message\030\002 \001(\t\022\022\n\nerror_"
-  "code\030\003 \001(\t\022\016\n\006exists\030\004 \001(\010\022#\n\007profile\030\005 "
-  "\001(\0132\022.gdb.PlayerProfile\"[\n\024SavePlayerPro"
-  "fileReq\022#\n\007profile\030\001 \001(\0132\022.gdb.PlayerPro"
-  "file\022\036\n\026expected_stats_version\030\002 \001(\004\"^\n\024"
-  "SavePlayerProfileRsp\022\n\n\002ok\030\001 \001(\010\022\017\n\007mess"
-  "age\030\002 \001(\t\022\022\n\nerror_code\030\003 \001(\t\022\025\n\rstats_v"
-  "ersion\030\004 \001(\004\"]\n\027QueryOperationResultReq\022"
-  "\021\n\tplayer_id\030\001 \001(\004\022\027\n\017idempotency_key\030\002 "
-  "\001(\t\022\026\n\016operation_type\030\003 \001(\t\"\332\001\n\027QueryOpe"
-  "rationResultRsp\022\n\n\002ok\030\001 \001(\010\022\017\n\007message\030\002"
-  " \001(\t\022\022\n\nerror_code\030\003 \001(\t\022\r\n\005found\030\004 \001(\010\022"
-  "\024\n\014completed_ok\030\005 \001(\010\022\026\n\016idempotent_hit\030"
-  "\006 \001(\010\022\025\n\rasset_version\030\007 \001(\004\022\024\n\014remain_c"
-  "ount\030\010 \001(\r\022\024\n\014request_hash\030\t \001(\t\022\016\n\006stat"
-  "us\030\n \001(\t\"\261\001\n\020LastSafePosition\022\021\n\tplayer_"
-  "id\030\001 \001(\004\022\020\n\010realm_id\030\002 \001(\r\022\027\n\017map_templa"
-  "te_id\030\003 \001(\004\022\t\n\001x\030\004 \001(\002\022\t\n\001y\030\005 \001(\002\022\t\n\001z\030\006"
-  " \001(\002\022\013\n\003yaw\030\007 \001(\002\022\030\n\020position_version\030\010 "
-  "\001(\004\022\027\n\017updated_at_unix\030\t \001(\003\",\n\027LoadLast"
-  "SafePositionReq\022\021\n\tplayer_id\030\001 \001(\004\"~\n\027Lo"
-  "adLastSafePositionRsp\022\n\n\002ok\030\001 \001(\010\022\017\n\007mes"
-  "sage\030\002 \001(\t\022\022\n\nerror_code\030\003 \001(\t\022\016\n\006exists"
-  "\030\004 \001(\010\022\"\n\003pos\030\005 \001(\0132\025.gdb.LastSafePositi"
-  "on\"`\n\027SaveLastSafePositionReq\022\"\n\003pos\030\001 \001"
-  "(\0132\025.gdb.LastSafePosition\022!\n\031expected_po"
-  "sition_version\030\002 \001(\004\"u\n\027SaveLastSafePosi"
-  "tionRsp\022\n\n\002ok\030\001 \001(\010\022\017\n\007message\030\002 \001(\t\022\022\n\n"
-  "error_code\030\003 \001(\t\022\030\n\020position_version\030\004 \001"
-  "(\004\022\017\n\007skipped\030\005 \001(\010\"<\n\022LoadPlayerBriefRe"
-  "q\022\021\n\tplayer_id\030\001 \001(\004\022\023\n\013player_name\030\002 \001("
-  "\t\"\260\001\n\022LoadPlayerBriefRsp\022\n\n\002ok\030\001 \001(\010\022\017\n\007"
-  "message\030\002 \001(\t\022\022\n\nerror_code\030\003 \001(\t\022\016\n\006exi"
-  "sts\030\004 \001(\010\022\021\n\tambiguous\030\005 \001(\010\022\021\n\tplayer_i"
-  "d\030\006 \001(\004\022\023\n\013player_name\030\007 \001(\t\022\016\n\006max_hp\030\010"
-  " \001(\005\022\016\n\006max_mp\030\t \001(\005\"@\n\022HandleGameFrameR"
-  "eq\022\021\n\tplayer_id\030\001 \001(\004\022\027\n\017request_payload"
-  "\030\002 \001(\014\"I\n\022HandleGameFrameRsp\022\n\n\002ok\030\001 \001(\010"
-  "\022\017\n\007message\030\002 \001(\t\022\026\n\016response_frame\030\003 \001("
-  "\014\"\215\001\n\rFriendBriefDb\022\021\n\tplayer_id\030\001 \001(\004\022\014"
-  "\n\004name\030\002 \001(\t\022\r\n\005level\030\003 \001(\r\022\022\n\nprofessio"
-  "n\030\004 \001(\r\022\016\n\006avatar\030\005 \001(\t\022\030\n\020last_online_t"
-  "ime\030\006 \001(\004\022\016\n\006remark\030\007 \001(\t\"s\n\017FriendReque"
-  "stDb\022\022\n\nrequest_id\030\001 \001(\004\022%\n\tapplicant\030\002 "
-  "\001(\0132\022.gdb.FriendBriefDb\022\022\n\ncreated_at\030\003 "
-  "\001(\004\022\021\n\texpire_at\030\004 \001(\004\"\260\001\n\013FriendOpReq\022\n"
-  "\n\002op\030\001 \001(\t\022\027\n\017actor_player_id\030\002 \001(\004\022\030\n\020t"
-  "arget_player_id\030\003 \001(\004\022\022\n\nrequest_id\030\004 \001("
-  "\004\022\022\n\nexact_name\030\005 \001(\t\022\016\n\006cursor\030\006 \001(\t\022\021\n"
-  "\tpage_size\030\007 \001(\r\022\027\n\017idempotency_key\030\010 \001("
-  "\t\"\351\002\n\013FriendOpRsp\022\n\n\002ok\030\001 \001(\010\022\022\n\nerror_c"
-  "ode\030\002 \001(\t\022\017\n\007message\030\003 \001(\t\022\026\n\016idempotent"
-  "_hit\030\004 \001(\010\022#\n\007friends\030\005 \003(\0132\022.gdb.Friend"
-  "BriefDb\022&\n\010requests\030\006 \003(\0132\024.gdb.FriendRe"
-  "questDb\022\022\n\nrequest_id\030\007 \001(\004\022\"\n\006player\030\010 "
-  "\001(\0132\022.gdb.FriendBriefDb\022\020\n\010relation\030\t \001("
-  "\005\022\023\n\013next_cursor\030\n \001(\t\022\020\n\010friend_n\030\013 \001(\r"
-  "\022\022\n\nfriend_cap\030\014 \001(\r\022\026\n\016peer_player_id\030\r"
-  " \001(\004\022\023\n\013notify_kind\030\016 \001(\t\022\022\n\nprivacy_ok\030"
-  "\017 \001(\0102\335\010\n\rGameDbService\022<\n\024ClaimMailAtta"
-  "chments\022\021.gdb.ClaimMailReq\032\021.gdb.ClaimMa"
-  "ilRsp\022=\n\rLookupAccount\022\025.gdb.LookupAccou"
-  "ntReq\032\025.gdb.LookupAccountRsp\022C\n\017Register"
-  "Account\022\027.gdb.RegisterAccountReq\032\027.gdb.R"
-  "egisterAccountRsp\0224\n\nLoadPlayer\022\022.gdb.Lo"
-  "adPlayerReq\032\022.gdb.LoadPlayerRsp\022=\n\rLoadI"
-  "nventory\022\025.gdb.LoadInventoryReq\032\025.gdb.Lo"
-  "adInventoryRsp\022B\n\022ApplyAssetMutation\022\025.g"
-  "db.AssetMutationReq\032\025.gdb.AssetMutationR"
-  "sp\022L\n\022SavePlayerSnapshot\022\032.gdb.SavePlaye"
-  "rSnapshotReq\032\032.gdb.SavePlayerSnapshotRsp"
-  "\0227\n\013FlushPlayer\022\023.gdb.FlushPlayerReq\032\023.g"
-  "db.FlushPlayerRsp\022R\n\024QueryOperationResul"
-  "t\022\034.gdb.QueryOperationResultReq\032\034.gdb.Qu"
-  "eryOperationResultRsp\022I\n\021LoadPlayerProfi"
-  "le\022\031.gdb.LoadPlayerProfileReq\032\031.gdb.Load"
-  "PlayerProfileRsp\022I\n\021SavePlayerProfile\022\031."
-  "gdb.SavePlayerProfileReq\032\031.gdb.SavePlaye"
-  "rProfileRsp\022R\n\024LoadLastSafePosition\022\034.gd"
-  "b.LoadLastSafePositionReq\032\034.gdb.LoadLast"
-  "SafePositionRsp\022R\n\024SaveLastSafePosition\022"
-  "\034.gdb.SaveLastSafePositionReq\032\034.gdb.Save"
-  "LastSafePositionRsp\022C\n\017LoadPlayerBrief\022\027"
-  ".gdb.LoadPlayerBriefReq\032\027.gdb.LoadPlayer"
-  "BriefRsp\022C\n\017HandleGameFrame\022\027.gdb.Handle"
-  "GameFrameReq\032\027.gdb.HandleGameFrameRsp\022.\n"
-  "\010FriendOp\022\020.gdb.FriendOpReq\032\020.gdb.Friend"
-  "OpRspB\003\200\001\001b\006proto3"
+  "code\030\003 \001(\t\022\021\n\tplayer_id\030\004 \001(\004\022\025\n\rasset_v"
+  "ersion\030\005 \001(\004\022\032\n\003bag\030\006 \003(\0132\r.gdb.BagEntry"
+  "\"\241\001\n\020AssetMutationReq\022\021\n\tplayer_id\030\001 \001(\004"
+  "\022\027\n\017idempotency_key\030\002 \001(\t\022\030\n\020expected_ve"
+  "rsion\030\003 \001(\004\022\025\n\rmutation_type\030\004 \001(\t\022\017\n\007it"
+  "em_id\030\005 \001(\r\022\r\n\005count\030\006 \001(\r\022\020\n\010trace_id\030\007"
+  " \001(\t\"\210\001\n\020AssetMutationRsp\022\n\n\002ok\030\001 \001(\010\022\017\n"
+  "\007message\030\002 \001(\t\022\022\n\nerror_code\030\003 \001(\t\022\026\n\016id"
+  "empotent_hit\030\004 \001(\010\022\025\n\rasset_version\030\005 \001("
+  "\004\022\024\n\014remain_count\030\006 \001(\r\"y\n\025SavePlayerSna"
+  "pshotReq\022\021\n\tplayer_id\030\001 \001(\004\022\030\n\020expected_"
+  "version\030\002 \001(\004\022\032\n\003bag\030\003 \003(\0132\r.gdb.BagEntr"
+  "y\022\027\n\017idempotency_key\030\004 \001(\t\"w\n\025SavePlayer"
+  "SnapshotRsp\022\n\n\002ok\030\001 \001(\010\022\017\n\007message\030\002 \001(\t"
+  "\022\022\n\nerror_code\030\003 \001(\t\022\025\n\rasset_version\030\004 "
+  "\001(\004\022\026\n\016idempotent_hit\030\005 \001(\010\"3\n\016FlushPlay"
+  "erReq\022\021\n\tplayer_id\030\001 \001(\004\022\016\n\006reason\030\002 \001(\t"
+  "\"X\n\016FlushPlayerRsp\022\n\n\002ok\030\001 \001(\010\022\017\n\007messag"
+  "e\030\002 \001(\t\022\022\n\nerror_code\030\003 \001(\t\022\025\n\rasset_ver"
+  "sion\030\004 \001(\004\"\252\002\n\rPlayerProfile\022\021\n\tplayer_i"
+  "d\030\001 \001(\004\022\023\n\013player_name\030\002 \001(\t\022\n\n\002hp\030\003 \001(\005"
+  "\022\016\n\006max_hp\030\004 \001(\005\022\n\n\002mp\030\005 \001(\005\022\016\n\006max_mp\030\006"
+  " \001(\005\022\016\n\006attack\030\007 \001(\005\022\023\n\013spell_power\030\010 \001("
+  "\005\022\017\n\007defense\030\t \001(\005\022\030\n\020magic_resistance\030\n"
+  " \001(\005\022\023\n\013crit_chance\030\013 \001(\002\022\023\n\013crit_damage"
+  "\030\014 \001(\002\022\022\n\nmove_speed\030\r \001(\002\022\024\n\014attack_spe"
+  "ed\030\016 \001(\002\022\025\n\rstats_version\030\017 \001(\004\"A\n\024LoadP"
+  "layerProfileReq\022\021\n\tplayer_id\030\001 \001(\004\022\026\n\016en"
+  "sure_default\030\002 \001(\010\"|\n\024LoadPlayerProfileR"
+  "sp\022\n\n\002ok\030\001 \001(\010\022\017\n\007message\030\002 \001(\t\022\022\n\nerror"
+  "_code\030\003 \001(\t\022\016\n\006exists\030\004 \001(\010\022#\n\007profile\030\005"
+  " \001(\0132\022.gdb.PlayerProfile\"[\n\024SavePlayerPr"
+  "ofileReq\022#\n\007profile\030\001 \001(\0132\022.gdb.PlayerPr"
+  "ofile\022\036\n\026expected_stats_version\030\002 \001(\004\"^\n"
+  "\024SavePlayerProfileRsp\022\n\n\002ok\030\001 \001(\010\022\017\n\007mes"
+  "sage\030\002 \001(\t\022\022\n\nerror_code\030\003 \001(\t\022\025\n\rstats_"
+  "version\030\004 \001(\004\"]\n\027QueryOperationResultReq"
+  "\022\021\n\tplayer_id\030\001 \001(\004\022\027\n\017idempotency_key\030\002"
+  " \001(\t\022\026\n\016operation_type\030\003 \001(\t\"\332\001\n\027QueryOp"
+  "erationResultRsp\022\n\n\002ok\030\001 \001(\010\022\017\n\007message\030"
+  "\002 \001(\t\022\022\n\nerror_code\030\003 \001(\t\022\r\n\005found\030\004 \001(\010"
+  "\022\024\n\014completed_ok\030\005 \001(\010\022\026\n\016idempotent_hit"
+  "\030\006 \001(\010\022\025\n\rasset_version\030\007 \001(\004\022\024\n\014remain_"
+  "count\030\010 \001(\r\022\024\n\014request_hash\030\t \001(\t\022\016\n\006sta"
+  "tus\030\n \001(\t\"\261\001\n\020LastSafePosition\022\021\n\tplayer"
+  "_id\030\001 \001(\004\022\020\n\010realm_id\030\002 \001(\r\022\027\n\017map_templ"
+  "ate_id\030\003 \001(\004\022\t\n\001x\030\004 \001(\002\022\t\n\001y\030\005 \001(\002\022\t\n\001z\030"
+  "\006 \001(\002\022\013\n\003yaw\030\007 \001(\002\022\030\n\020position_version\030\010"
+  " \001(\004\022\027\n\017updated_at_unix\030\t \001(\003\",\n\027LoadLas"
+  "tSafePositionReq\022\021\n\tplayer_id\030\001 \001(\004\"~\n\027L"
+  "oadLastSafePositionRsp\022\n\n\002ok\030\001 \001(\010\022\017\n\007me"
+  "ssage\030\002 \001(\t\022\022\n\nerror_code\030\003 \001(\t\022\016\n\006exist"
+  "s\030\004 \001(\010\022\"\n\003pos\030\005 \001(\0132\025.gdb.LastSafePosit"
+  "ion\"`\n\027SaveLastSafePositionReq\022\"\n\003pos\030\001 "
+  "\001(\0132\025.gdb.LastSafePosition\022!\n\031expected_p"
+  "osition_version\030\002 \001(\004\"u\n\027SaveLastSafePos"
+  "itionRsp\022\n\n\002ok\030\001 \001(\010\022\017\n\007message\030\002 \001(\t\022\022\n"
+  "\nerror_code\030\003 \001(\t\022\030\n\020position_version\030\004 "
+  "\001(\004\022\017\n\007skipped\030\005 \001(\010\"<\n\022LoadPlayerBriefR"
+  "eq\022\021\n\tplayer_id\030\001 \001(\004\022\023\n\013player_name\030\002 \001"
+  "(\t\"\260\001\n\022LoadPlayerBriefRsp\022\n\n\002ok\030\001 \001(\010\022\017\n"
+  "\007message\030\002 \001(\t\022\022\n\nerror_code\030\003 \001(\t\022\016\n\006ex"
+  "ists\030\004 \001(\010\022\021\n\tambiguous\030\005 \001(\010\022\021\n\tplayer_"
+  "id\030\006 \001(\004\022\023\n\013player_name\030\007 \001(\t\022\016\n\006max_hp\030"
+  "\010 \001(\005\022\016\n\006max_mp\030\t \001(\005\"@\n\022HandleGameFrame"
+  "Req\022\021\n\tplayer_id\030\001 \001(\004\022\027\n\017request_payloa"
+  "d\030\002 \001(\014\"I\n\022HandleGameFrameRsp\022\n\n\002ok\030\001 \001("
+  "\010\022\017\n\007message\030\002 \001(\t\022\026\n\016response_frame\030\003 \001"
+  "(\014\"\215\001\n\rFriendBriefDb\022\021\n\tplayer_id\030\001 \001(\004\022"
+  "\014\n\004name\030\002 \001(\t\022\r\n\005level\030\003 \001(\r\022\022\n\nprofessi"
+  "on\030\004 \001(\r\022\016\n\006avatar\030\005 \001(\t\022\030\n\020last_online_"
+  "time\030\006 \001(\004\022\016\n\006remark\030\007 \001(\t\"s\n\017FriendRequ"
+  "estDb\022\022\n\nrequest_id\030\001 \001(\004\022%\n\tapplicant\030\002"
+  " \001(\0132\022.gdb.FriendBriefDb\022\022\n\ncreated_at\030\003"
+  " \001(\004\022\021\n\texpire_at\030\004 \001(\004\"\260\001\n\013FriendOpReq\022"
+  "\n\n\002op\030\001 \001(\t\022\027\n\017actor_player_id\030\002 \001(\004\022\030\n\020"
+  "target_player_id\030\003 \001(\004\022\022\n\nrequest_id\030\004 \001"
+  "(\004\022\022\n\nexact_name\030\005 \001(\t\022\016\n\006cursor\030\006 \001(\t\022\021"
+  "\n\tpage_size\030\007 \001(\r\022\027\n\017idempotency_key\030\010 \001"
+  "(\t\"\351\002\n\013FriendOpRsp\022\n\n\002ok\030\001 \001(\010\022\022\n\nerror_"
+  "code\030\002 \001(\t\022\017\n\007message\030\003 \001(\t\022\026\n\016idempoten"
+  "t_hit\030\004 \001(\010\022#\n\007friends\030\005 \003(\0132\022.gdb.Frien"
+  "dBriefDb\022&\n\010requests\030\006 \003(\0132\024.gdb.FriendR"
+  "equestDb\022\022\n\nrequest_id\030\007 \001(\004\022\"\n\006player\030\010"
+  " \001(\0132\022.gdb.FriendBriefDb\022\020\n\010relation\030\t \001"
+  "(\005\022\023\n\013next_cursor\030\n \001(\t\022\020\n\010friend_n\030\013 \001("
+  "\r\022\022\n\nfriend_cap\030\014 \001(\r\022\026\n\016peer_player_id\030"
+  "\r \001(\004\022\023\n\013notify_kind\030\016 \001(\t\022\022\n\nprivacy_ok"
+  "\030\017 \001(\0102\335\010\n\rGameDbService\022<\n\024ClaimMailAtt"
+  "achments\022\021.gdb.ClaimMailReq\032\021.gdb.ClaimM"
+  "ailRsp\022=\n\rLookupAccount\022\025.gdb.LookupAcco"
+  "untReq\032\025.gdb.LookupAccountRsp\022C\n\017Registe"
+  "rAccount\022\027.gdb.RegisterAccountReq\032\027.gdb."
+  "RegisterAccountRsp\0224\n\nLoadPlayer\022\022.gdb.L"
+  "oadPlayerReq\032\022.gdb.LoadPlayerRsp\022=\n\rLoad"
+  "Inventory\022\025.gdb.LoadInventoryReq\032\025.gdb.L"
+  "oadInventoryRsp\022B\n\022ApplyAssetMutation\022\025."
+  "gdb.AssetMutationReq\032\025.gdb.AssetMutation"
+  "Rsp\022L\n\022SavePlayerSnapshot\022\032.gdb.SavePlay"
+  "erSnapshotReq\032\032.gdb.SavePlayerSnapshotRs"
+  "p\0227\n\013FlushPlayer\022\023.gdb.FlushPlayerReq\032\023."
+  "gdb.FlushPlayerRsp\022R\n\024QueryOperationResu"
+  "lt\022\034.gdb.QueryOperationResultReq\032\034.gdb.Q"
+  "ueryOperationResultRsp\022I\n\021LoadPlayerProf"
+  "ile\022\031.gdb.LoadPlayerProfileReq\032\031.gdb.Loa"
+  "dPlayerProfileRsp\022I\n\021SavePlayerProfile\022\031"
+  ".gdb.SavePlayerProfileReq\032\031.gdb.SavePlay"
+  "erProfileRsp\022R\n\024LoadLastSafePosition\022\034.g"
+  "db.LoadLastSafePositionReq\032\034.gdb.LoadLas"
+  "tSafePositionRsp\022R\n\024SaveLastSafePosition"
+  "\022\034.gdb.SaveLastSafePositionReq\032\034.gdb.Sav"
+  "eLastSafePositionRsp\022C\n\017LoadPlayerBrief\022"
+  "\027.gdb.LoadPlayerBriefReq\032\027.gdb.LoadPlaye"
+  "rBriefRsp\022C\n\017HandleGameFrame\022\027.gdb.Handl"
+  "eGameFrameReq\032\027.gdb.HandleGameFrameRsp\022."
+  "\n\010FriendOp\022\020.gdb.FriendOpReq\032\020.gdb.Frien"
+  "dOpRspB\003\200\001\001b\006proto3"
   ;
 static const ::PROTOBUF_NAMESPACE_ID::internal::DescriptorTable*const descriptor_table_gamedb_2eproto_deps[1] = {
 };
@@ -1389,7 +1394,7 @@ static ::PROTOBUF_NAMESPACE_ID::internal::SCCInfoBase*const descriptor_table_gam
 };
 static ::PROTOBUF_NAMESPACE_ID::internal::once_flag descriptor_table_gamedb_2eproto_once;
 const ::PROTOBUF_NAMESPACE_ID::internal::DescriptorTable descriptor_table_gamedb_2eproto = {
-  false, false, descriptor_table_protodef_gamedb_2eproto, "gamedb.proto", 5978,
+  false, false, descriptor_table_protodef_gamedb_2eproto, "gamedb.proto", 6059,
   &descriptor_table_gamedb_2eproto_once, descriptor_table_gamedb_2eproto_sccs, descriptor_table_gamedb_2eproto_deps, 38, 0,
   schemas, file_default_instances, TableStruct_gamedb_2eproto::offsets,
   file_level_metadata_gamedb_2eproto, 38, file_level_enum_descriptors_gamedb_2eproto, file_level_service_descriptors_gamedb_2eproto,
@@ -2258,9 +2263,14 @@ ClaimMailRsp::ClaimMailRsp(const ClaimMailRsp& from)
     attachment_state_.Set(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), from._internal_attachment_state(),
       GetArena());
   }
+  claim_tx_id_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
+  if (!from._internal_claim_tx_id().empty()) {
+    claim_tx_id_.Set(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), from._internal_claim_tx_id(),
+      GetArena());
+  }
   ::memcpy(&mail_row_version_, &from.mail_row_version_,
-    static_cast<size_t>(reinterpret_cast<char*>(&should_apply_memory_) -
-    reinterpret_cast<char*>(&mail_row_version_)) + sizeof(should_apply_memory_));
+    static_cast<size_t>(reinterpret_cast<char*>(&receipt_verifiable_) -
+    reinterpret_cast<char*>(&mail_row_version_)) + sizeof(receipt_verifiable_));
   // @@protoc_insertion_point(copy_constructor:gdb.ClaimMailRsp)
 }
 
@@ -2269,9 +2279,10 @@ void ClaimMailRsp::SharedCtor() {
   error_code_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
   message_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
   attachment_state_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
+  claim_tx_id_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
   ::memset(&mail_row_version_, 0, static_cast<size_t>(
-      reinterpret_cast<char*>(&should_apply_memory_) -
-      reinterpret_cast<char*>(&mail_row_version_)) + sizeof(should_apply_memory_));
+      reinterpret_cast<char*>(&receipt_verifiable_) -
+      reinterpret_cast<char*>(&mail_row_version_)) + sizeof(receipt_verifiable_));
 }
 
 ClaimMailRsp::~ClaimMailRsp() {
@@ -2285,6 +2296,7 @@ void ClaimMailRsp::SharedDtor() {
   error_code_.DestroyNoArena(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
   message_.DestroyNoArena(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
   attachment_state_.DestroyNoArena(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
+  claim_tx_id_.DestroyNoArena(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
 }
 
 void ClaimMailRsp::ArenaDtor(void* object) {
@@ -2312,9 +2324,10 @@ void ClaimMailRsp::Clear() {
   error_code_.ClearToEmpty(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
   message_.ClearToEmpty(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
   attachment_state_.ClearToEmpty(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
+  claim_tx_id_.ClearToEmpty(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
   ::memset(&mail_row_version_, 0, static_cast<size_t>(
-      reinterpret_cast<char*>(&should_apply_memory_) -
-      reinterpret_cast<char*>(&mail_row_version_)) + sizeof(should_apply_memory_));
+      reinterpret_cast<char*>(&receipt_verifiable_) -
+      reinterpret_cast<char*>(&mail_row_version_)) + sizeof(receipt_verifiable_));
   _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
 }
 
@@ -2397,6 +2410,29 @@ const char* ClaimMailRsp::_InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_I
       case 9:
         if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 72)) {
           asset_version_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint64(&ptr);
+          CHK_(ptr);
+        } else goto handle_unusual;
+        continue;
+      // string claim_tx_id = 10;
+      case 10:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 82)) {
+          auto str = _internal_mutable_claim_tx_id();
+          ptr = ::PROTOBUF_NAMESPACE_ID::internal::InlineGreedyStringParser(str, ptr, ctx);
+          CHK_(::PROTOBUF_NAMESPACE_ID::internal::VerifyUTF8(str, "gdb.ClaimMailRsp.claim_tx_id"));
+          CHK_(ptr);
+        } else goto handle_unusual;
+        continue;
+      // uint64 asset_version_at_claim = 11;
+      case 11:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 88)) {
+          asset_version_at_claim_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint64(&ptr);
+          CHK_(ptr);
+        } else goto handle_unusual;
+        continue;
+      // bool receipt_verifiable = 12;
+      case 12:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 96)) {
+          receipt_verifiable_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint64(&ptr);
           CHK_(ptr);
         } else goto handle_unusual;
         continue;
@@ -2496,6 +2532,28 @@ failure:
     target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::WriteUInt64ToArray(9, this->_internal_asset_version(), target);
   }
 
+  // string claim_tx_id = 10;
+  if (this->claim_tx_id().size() > 0) {
+    ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::VerifyUtf8String(
+      this->_internal_claim_tx_id().data(), static_cast<int>(this->_internal_claim_tx_id().length()),
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::SERIALIZE,
+      "gdb.ClaimMailRsp.claim_tx_id");
+    target = stream->WriteStringMaybeAliased(
+        10, this->_internal_claim_tx_id(), target);
+  }
+
+  // uint64 asset_version_at_claim = 11;
+  if (this->asset_version_at_claim() != 0) {
+    target = stream->EnsureSpace(target);
+    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::WriteUInt64ToArray(11, this->_internal_asset_version_at_claim(), target);
+  }
+
+  // bool receipt_verifiable = 12;
+  if (this->receipt_verifiable() != 0) {
+    target = stream->EnsureSpace(target);
+    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::WriteBoolToArray(12, this->_internal_receipt_verifiable(), target);
+  }
+
   if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
     target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormat::InternalSerializeUnknownFieldsToArray(
         _internal_metadata_.unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(::PROTOBUF_NAMESPACE_ID::UnknownFieldSet::default_instance), target, stream);
@@ -2540,6 +2598,13 @@ size_t ClaimMailRsp::ByteSizeLong() const {
         this->_internal_attachment_state());
   }
 
+  // string claim_tx_id = 10;
+  if (this->claim_tx_id().size() > 0) {
+    total_size += 1 +
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::StringSize(
+        this->_internal_claim_tx_id());
+  }
+
   // int64 mail_row_version = 7;
   if (this->mail_row_version() != 0) {
     total_size += 1 +
@@ -2554,6 +2619,13 @@ size_t ClaimMailRsp::ByteSizeLong() const {
         this->_internal_asset_version());
   }
 
+  // uint64 asset_version_at_claim = 11;
+  if (this->asset_version_at_claim() != 0) {
+    total_size += 1 +
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::UInt64Size(
+        this->_internal_asset_version_at_claim());
+  }
+
   // bool ok = 1;
   if (this->ok() != 0) {
     total_size += 1 + 1;
@@ -2566,6 +2638,11 @@ size_t ClaimMailRsp::ByteSizeLong() const {
 
   // bool should_apply_memory = 3;
   if (this->should_apply_memory() != 0) {
+    total_size += 1 + 1;
+  }
+
+  // bool receipt_verifiable = 12;
+  if (this->receipt_verifiable() != 0) {
     total_size += 1 + 1;
   }
 
@@ -2610,11 +2687,17 @@ void ClaimMailRsp::MergeFrom(const ClaimMailRsp& from) {
   if (from.attachment_state().size() > 0) {
     _internal_set_attachment_state(from._internal_attachment_state());
   }
+  if (from.claim_tx_id().size() > 0) {
+    _internal_set_claim_tx_id(from._internal_claim_tx_id());
+  }
   if (from.mail_row_version() != 0) {
     _internal_set_mail_row_version(from._internal_mail_row_version());
   }
   if (from.asset_version() != 0) {
     _internal_set_asset_version(from._internal_asset_version());
+  }
+  if (from.asset_version_at_claim() != 0) {
+    _internal_set_asset_version_at_claim(from._internal_asset_version_at_claim());
   }
   if (from.ok() != 0) {
     _internal_set_ok(from._internal_ok());
@@ -2624,6 +2707,9 @@ void ClaimMailRsp::MergeFrom(const ClaimMailRsp& from) {
   }
   if (from.should_apply_memory() != 0) {
     _internal_set_should_apply_memory(from._internal_should_apply_memory());
+  }
+  if (from.receipt_verifiable() != 0) {
+    _internal_set_receipt_verifiable(from._internal_receipt_verifiable());
   }
 }
 
@@ -2652,9 +2738,10 @@ void ClaimMailRsp::InternalSwap(ClaimMailRsp* other) {
   error_code_.Swap(&other->error_code_, &::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
   message_.Swap(&other->message_, &::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
   attachment_state_.Swap(&other->attachment_state_, &::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
+  claim_tx_id_.Swap(&other->claim_tx_id_, &::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
   ::PROTOBUF_NAMESPACE_ID::internal::memswap<
-      PROTOBUF_FIELD_OFFSET(ClaimMailRsp, should_apply_memory_)
-      + sizeof(ClaimMailRsp::should_apply_memory_)
+      PROTOBUF_FIELD_OFFSET(ClaimMailRsp, receipt_verifiable_)
+      + sizeof(ClaimMailRsp::receipt_verifiable_)
       - PROTOBUF_FIELD_OFFSET(ClaimMailRsp, mail_row_version_)>(
           reinterpret_cast<char*>(&mail_row_version_),
           reinterpret_cast<char*>(&other->mail_row_version_));

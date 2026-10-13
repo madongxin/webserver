@@ -32,6 +32,19 @@ struct MailListItem {
 
 enum class MailLookup { kMiss, kHit, kError };
 
+struct MailReceiptGrant {
+    uint64_t asset_id = 0;
+    uint32_t count = 0;
+};
+
+/** 首次 CLAIM 成功日志里的原始回执。缺字段时 verifiable 为 false，不补当前资产版本。 */
+struct MailClaimReceiptData {
+    bool verifiable = false;
+    std::string claim_tx_id;
+    uint64_t asset_version_at_claim = 0;
+    std::vector<MailReceiptGrant> grants;
+};
+
 struct MailOpLogRow {
     uint64_t operation_id = 0;
     uint64_t mail_id = 0;
@@ -88,6 +101,13 @@ public:
 
     /** 查询失败是 kError，不能当成未命中后继续执行。 */
     MailLookup FindOpByIdempotency(const std::string &key, MailOpLogRow *out);
+    std::string FormatClaimAfterState(const std::string &claim_tx_id, int64_t row_version,
+                                      uint64_t asset_version,
+                                      const std::vector<MailReceiptGrant> &grants) const;
+    bool ParseClaimAfterState(const std::string &after, MailClaimReceiptData *out) const;
+    /** 同一封邮件最早一条 result_code=OK 的 CLAIM。后来的 ALREADY_CLAIMED 不能代替它。 */
+    MailLookup FindOriginalClaimReceipt(uint64_t mail_id, uint64_t actor_id,
+                                        MailClaimReceiptData *out);
     bool InsertOpLog(Connection *conn, const MailOpLogRow &row);
 
     /** 自动清理候选：按规则排序的 mail_id 列表 */
