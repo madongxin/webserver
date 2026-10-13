@@ -114,6 +114,13 @@ bool PayloadNeedsManualClaim(const std::vector<mail::MailAttachmentRow> &atts) {
     return false;
 }
 
+void FillManualClaimSkip(uint64_t mail_id, game::MailClaimResult *result) {
+    result->set_mail_id(mail_id);
+    result->set_ok(false);
+    result->set_error_code(mail::err::kInvalidState);
+    result->set_message("manual confirm required");
+}
+
 std::string CanonicalMailIds(const google::protobuf::RepeatedField<uint64_t> &ids) {
     std::set<uint64_t> uniq(ids.begin(), ids.end());
     std::string out;
@@ -1007,8 +1014,12 @@ bool MailService::BeginHandleMailBatchClaimAsync(const game::MailBatchClaimReq &
             st->results.push_back(denied);
             continue;
         }
-        if (PayloadNeedsManualClaim(atts))
+        if (PayloadNeedsManualClaim(atts)) {
+            game::MailClaimResult skipped;
+            FillManualClaimSkip(row.mail_id, &skipped);
+            st->results.push_back(skipped);
             continue;
+        }
         order.push_back({row.expire_at, row.mail_id});
     }
     std::sort(order.begin(), order.end());
@@ -1179,8 +1190,12 @@ bool MailService::HandleMailBatchClaim(const game::MailBatchClaimReq &req, game:
             *body->add_results() = denied;
             continue;
         }
-        if (PayloadNeedsManualClaim(atts))
+        if (PayloadNeedsManualClaim(atts)) {
+            game::MailClaimResult skipped;
+            FillManualClaimSkip(row.mail_id, &skipped);
+            *body->add_results() = skipped;
             continue;
+        }
         order.push_back({row.expire_at, row.mail_id});
     }
     std::sort(order.begin(), order.end());

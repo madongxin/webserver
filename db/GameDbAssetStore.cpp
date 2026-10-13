@@ -311,15 +311,23 @@ bool GameDbAssetStore::GrantItemsOnConnection(Connection *conn, uint64_t player_
                           "FOR UPDATE",
                           (unsigned long long)player_id, item_id);
             MYSQL_RES *res = conn->query(q);
-            if (res) {
-                MYSQL_ROW row = mysql_fetch_row(res);
-                if (row && row[0])
-                    cur = static_cast<uint32_t>(std::strtoul(row[0], nullptr, 10));
-                mysql_free_result(res);
+            if (!res)
+                return fail("DB_ERROR", "bag query");
+            MYSQL_ROW row = mysql_fetch_row(res);
+            if (row && row[0]) {
+                const unsigned long long raw = std::strtoull(row[0], nullptr, 10);
+                if (raw > 0xFFFFFFFFull) {
+                    mysql_free_result(res);
+                    return fail("INVENTORY_FULL", "count overflow");
+                }
+                cur = static_cast<uint32_t>(raw);
             }
+            mysql_free_result(res);
         }
-        const int64_t next = static_cast<int64_t>(cur) + static_cast<int64_t>(add);
-        if (soft_cap > 0 && next > soft_cap)
+        const uint64_t next = static_cast<uint64_t>(cur) + add;
+        if (next > 0xFFFFFFFFull)
+            return fail("INVENTORY_FULL", "count overflow");
+        if (soft_cap > 0 && next > static_cast<uint64_t>(soft_cap))
             return fail("INVENTORY_FULL", "inventory soft cap");
         const uint32_t remain = static_cast<uint32_t>(next);
         char ups[320];

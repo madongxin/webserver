@@ -262,9 +262,13 @@ GameDbMailClaimResult AsyncMysqlGameDbRepository::DoClaimMail(const GameDbMailCl
     }
 
     mail::MailInstanceRow row;
-    if (!MailStore::Instance().LoadMailForUpdate(conn.get(), req.mail_id, &row)) {
+    const MailLookup locked =
+        MailStore::Instance().LookupMailForUpdate(conn.get(), req.mail_id, &row);
+    if (locked != MailLookup::kHit) {
         MailStore::Instance().Rollback(conn.get());
-        FillFail(&result, mail::err::kMailNotFound, "not found");
+        FillFail(&result,
+                 locked == MailLookup::kError ? mail::err::kInternal : mail::err::kMailNotFound,
+                 locked == MailLookup::kError ? "mail lookup failed" : "not found");
         return result;
     }
     result.mail_row_version = row.row_version;
@@ -378,8 +382,12 @@ GameDbMailClaimResult AsyncMysqlGameDbRepository::DoClaimMail(const GameDbMailCl
     }
 
     std::vector<mail::MailAttachmentRow> atts;
-    if (!MailStore::Instance().LoadAttachmentsForUpdate(conn.get(), req.mail_id, &atts) ||
-        atts.empty()) {
+    if (!MailStore::Instance().LoadAttachmentsForUpdate(conn.get(), req.mail_id, &atts)) {
+        MailStore::Instance().Rollback(conn.get());
+        FillFail(&result, mail::err::kInternal, "attachment lookup failed");
+        return result;
+    }
+    if (atts.empty()) {
         MailStore::Instance().Rollback(conn.get());
         FillFail(&result, mail::err::kInvalidAttachment, "attachments missing");
         return result;
@@ -399,8 +407,14 @@ GameDbMailClaimResult AsyncMysqlGameDbRepository::DoClaimMail(const GameDbMailCl
             return result;
         }
         const uint32_t item_id = static_cast<uint32_t>(a.asset_id);
-        const uint32_t add = static_cast<uint32_t>(a.count);
-        grant_map[item_id] += add;
+        const uint32_t add = a.count;
+        const uint64_t sum = static_cast<uint64_t>(grant_map[item_id]) + add;
+        if (sum > 0xFFFFFFFFu) {
+            MailStore::Instance().Rollback(conn.get());
+            FillFail(&result, mail::err::kInvalidAttachment, "count overflow");
+            return result;
+        }
+        grant_map[item_id] = static_cast<uint32_t>(sum);
         GameDbGrantedItem g;
         g.asset_id = a.asset_id;
         g.count = add;

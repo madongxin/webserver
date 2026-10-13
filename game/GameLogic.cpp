@@ -504,15 +504,34 @@ bool GameLogic::ApplyItemRewardsWithVersion(uint64_t player_id,
             return true;
         } else if (cur > committed_asset_version) {
             return true;
-        } else if (!apply_blocked_for_test_ && committed_asset_version == cur + 1) {
+        } else if (!apply_blocked_for_test_ && committed_asset_version == cur + 1 &&
+                   !grants.empty()) {
+            std::map<uint32_t, uint32_t> next = inventory_[player_id];
+            bool overflow = false;
             for (const auto &g : grants) {
                 if (g.count == 0)
                     continue;
-                inventory_[player_id][static_cast<uint32_t>(g.asset_id)] += g.count;
+                if (g.asset_id > 0xFFFFFFFFu) {
+                    overflow = true;
+                    break;
+                }
+                const uint32_t item_id = static_cast<uint32_t>(g.asset_id);
+                const uint64_t sum = static_cast<uint64_t>(next[item_id]) + g.count;
+                if (sum > 0xFFFFFFFFu) {
+                    overflow = true;
+                    break;
+                }
+                next[item_id] = static_cast<uint32_t>(sum);
             }
-            asset_version_[player_id] = committed_asset_version;
-            asset_dirty_.erase(player_id);
-            return true;
+            if (!overflow) {
+                inventory_[player_id] = std::move(next);
+                asset_version_[player_id] = committed_asset_version;
+                asset_dirty_.erase(player_id);
+                return true;
+            }
+            need_reload = true;
+            LOG_WARN << "ApplyItemRewardsWithVersion overflow player=" << player_id
+                     << " -> reload";
         } else {
             need_reload = true;
             LOG_WARN << "ApplyItemRewardsWithVersion stale/gap player=" << player_id << " mem=" << cur
@@ -595,6 +614,14 @@ bool GameLogic::BuildFullStateSnapshot(uint64_t player_id, uint64_t baseline_ser
                                        game::FullStateSnapshotRsp *out) {
     if (!out || player_id == 0)
         return false;
+    if (IsAssetDirty(player_id) && !TryReloadAssets(player_id)) {
+        out->Clear();
+        out->set_ok(false);
+        out->set_player_id(player_id);
+        out->set_error_code("STATE_SYNC_REQUIRED");
+        out->set_message("STATE_SYNC_REQUIRED");
+        return false;
+    }
     out->Clear();
     game::PlayerAttributes attrs;
     const bool have_profile = GetPlayerAttributes(player_id, &attrs);
@@ -2572,6 +2599,7 @@ bool GameLogic::Handle(const game::GameRequest &req, game::GameResponse *rsp) {
         return false;
     rsp->Clear();
     rsp->set_seq(req.seq());  // 与请求 seq 对齐，便于客户端匹配异步响应
+#ifdef WEBSERVER_ENABLE_MYSQL
     // Redis/Session 不可用时拒绝邮件。只有非正式环境显式 GAMEMESH_MAIL_DEV_SKIP_SESSION=1 才放行。
     auto mail_session = [&](uint64_t player_id) -> bool {
         if (!MailDevSkipSession()) {
@@ -2595,6 +2623,7 @@ bool GameLogic::Handle(const game::GameRequest &req, game::GameResponse *rsp) {
         }
         return RequireSessionToken(req, player_id, rsp);
     };
+#endif
     switch (req.body_case()) {
     case game::GameRequest::kFriendList:
     case game::GameRequest::kFriendSearch:
