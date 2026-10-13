@@ -54,6 +54,22 @@ uint32_t BagCount(uint64_t player_id, uint32_t item_id) {
     return it == bag.end() ? 0 : it->second;
 }
 
+int CountOkClaims(uint64_t mail_id) {
+    auto conn = MailStore::Instance().GetConnection();
+    if (!conn)
+        return -1;
+    std::ostringstream sql;
+    sql << "SELECT COUNT(*) FROM mail_operation_log WHERE mail_id=" << mail_id
+        << " AND operation_type='CLAIM' AND result_code='OK'";
+    MYSQL_RES *res = conn->query(sql.str());
+    if (!res)
+        return -1;
+    MYSQL_ROW row = mysql_fetch_row(res);
+    const int n = row && row[0] ? std::atoi(row[0]) : -1;
+    mysql_free_result(res);
+    return n;
+}
+
 uint64_t BagVersion(uint64_t player_id) {
     uint64_t ver = 0;
     bool exists = false;
@@ -86,8 +102,85 @@ uint64_t DeliverTestMail(uint64_t player_id, uint32_t item_id, int count, const 
 
 }  // namespace
 
+void ExpectReceiptWire() {
+    EXPECT_TRUE(game::MailDetail::kReceiptFieldNumber == 5);
+    EXPECT_TRUE(game::MailClaimResult::kReceiptFieldNumber == 6);
+    EXPECT_TRUE(game::MailClaimReceipt::kClaimTxIdFieldNumber == 1);
+    EXPECT_TRUE(game::MailClaimReceipt::kAssetVersionAtClaimFieldNumber == 2);
+    EXPECT_TRUE(game::MailClaimReceipt::kGrantsFieldNumber == 3);
+    EXPECT_TRUE(game::MailClaimReceipt::kClaimStateFieldNumber == 4);
+    EXPECT_TRUE(game::MailClaimReceipt::kVerifiableFieldNumber == 5);
+    EXPECT_TRUE(game::GameRequest::kMailGetFieldNumber == 32);
+    EXPECT_TRUE(game::GameRequest::kMailClaimFieldNumber == 34);
+    EXPECT_TRUE(game::GameRequest::kMailBatchClaimFieldNumber == 35);
+
+    game::GameResponse claim;
+    auto *result = claim.mutable_mail_claim()->mutable_result();
+    result->set_mail_id(9);
+    result->set_ok(true);
+    result->set_error_code("OK");
+    auto *receipt = result->mutable_receipt();
+    receipt->set_claim_tx_id("mail:9:1");
+    receipt->set_asset_version_at_claim(4);
+    receipt->set_claim_state("CLAIMED");
+    receipt->set_verifiable(true);
+    auto *grant = receipt->add_grants();
+    grant->set_asset_id(2101);
+    grant->set_count(3);
+    std::string bytes;
+    EXPECT_TRUE(claim.SerializeToString(&bytes));
+    game::GameResponse back;
+    EXPECT_TRUE(back.ParseFromString(bytes));
+    EXPECT_TRUE(back.mail_claim().result().receipt().claim_tx_id() == "mail:9:1");
+    EXPECT_TRUE(back.mail_claim().result().receipt().asset_version_at_claim() == 4);
+    EXPECT_TRUE(back.mail_claim().result().receipt().grants(0).count() == 3);
+
+    game::MailClaimResult legacy;
+    legacy.set_mail_id(9);
+    legacy.set_attachment_state("CLAIMED");
+    std::string legacy_bytes;
+    EXPECT_TRUE(legacy.SerializeToString(&legacy_bytes));
+    game::MailClaimResult legacy_back;
+    EXPECT_TRUE(legacy_back.ParseFromString(legacy_bytes));
+    EXPECT_TRUE(legacy_back.attachment_state() == "CLAIMED");
+    EXPECT_TRUE(!legacy_back.receipt().verifiable());
+    EXPECT_TRUE(legacy_back.receipt().claim_tx_id().empty());
+
+    game::GameResponse batch;
+    auto *first = batch.mutable_mail_batch_claim()->add_results();
+    first->set_mail_id(1);
+    first->mutable_receipt()->set_claim_tx_id("mail:1:1");
+    first->mutable_receipt()->set_asset_version_at_claim(2);
+    first->mutable_receipt()->set_verifiable(true);
+    auto *second = batch.mutable_mail_batch_claim()->add_results();
+    second->set_mail_id(2);
+    second->mutable_receipt()->set_claim_tx_id("mail:2:9");
+    second->mutable_receipt()->set_asset_version_at_claim(8);
+    second->mutable_receipt()->set_verifiable(true);
+    std::string batch_bytes;
+    EXPECT_TRUE(batch.SerializeToString(&batch_bytes));
+    game::GameResponse batch_back;
+    EXPECT_TRUE(batch_back.ParseFromString(batch_bytes));
+    EXPECT_TRUE(batch_back.mail_batch_claim().results(0).receipt().claim_tx_id() == "mail:1:1");
+    EXPECT_TRUE(batch_back.mail_batch_claim().results(1).receipt().asset_version_at_claim() == 8);
+    EXPECT_TRUE(batch_back.mail_batch_claim().results(0).receipt().claim_tx_id() !=
+                batch_back.mail_batch_claim().results(1).receipt().claim_tx_id());
+
+    game::GameResponse detail;
+    detail.mutable_mail_get()->mutable_mail()->mutable_receipt()->set_claim_tx_id("mail:9:1");
+    detail.mutable_mail_get()->mutable_mail()->mutable_receipt()->set_verifiable(true);
+    detail.mutable_mail_get()->mutable_mail()->mutable_receipt()->set_asset_version_at_claim(4);
+    std::string detail_bytes;
+    EXPECT_TRUE(detail.SerializeToString(&detail_bytes));
+    game::GameResponse detail_back;
+    EXPECT_TRUE(detail_back.ParseFromString(detail_bytes));
+    EXPECT_TRUE(detail_back.has_mail_get());
+    EXPECT_TRUE(detail_back.mail_get().mail().receipt().claim_tx_id() == "mail:9:1");
+}
+
 int main() {
     Logger::setLogLevel(Logger::WARN);
+    ExpectReceiptWire();
 
     if (!ConnectionPool::getconnectionPool()->isInitialized()) {
         std::fprintf(stderr, "FAIL: MySQL pool not initialized (config/mysql.cnf)\n");
@@ -404,6 +497,15 @@ int main() {
         req.set_trace_id("sync1");
         EXPECT_TRUE(!MailService::Instance().HandleMailClaim(req, &rsp));
         EXPECT_TRUE(rsp.mail_claim().result().error_code() == mail::err::kStateSyncRequired);
+        EXPECT_TRUE(rsp.mail_claim().result().receipt().verifiable());
+        EXPECT_TRUE(!rsp.mail_claim().result().receipt().claim_tx_id().empty());
+        const std::string sync_tx = rsp.mail_claim().result().receipt().claim_tx_id();
+        EXPECT_TRUE(rsp.mail_claim().result().receipt().asset_version_at_claim() == BagVersion(pid));
+        std::string sync_wire;
+        EXPECT_TRUE(rsp.SerializeToString(&sync_wire));
+        game::GameResponse sync_back;
+        EXPECT_TRUE(sync_back.ParseFromString(sync_wire));
+        EXPECT_TRUE(sync_back.mail_claim().result().receipt().claim_tx_id() == sync_tx);
         EXPECT_TRUE(BagCount(pid, item_id) == db_before + 3);
         EXPECT_TRUE(GameLogic::Instance().GetItemCount(pid, item_id) == mem_before);
         EXPECT_TRUE(GameLogic::Instance().IsAssetDirty(pid));
@@ -430,6 +532,15 @@ int main() {
         EXPECT_TRUE(GameLogic::Instance().GetItemCount(pid, item_id) == db_before + 3);
         EXPECT_TRUE(GameLogic::Instance().GetAssetVersion(pid) == BagVersion(pid));
         EXPECT_TRUE(!GameLogic::Instance().IsAssetDirty(pid));
+        EXPECT_TRUE(rsp3.mail_claim().result().receipt().claim_tx_id() == sync_tx);
+        game::MailGetReq sync_get;
+        sync_get.set_player_id(pid);
+        sync_get.set_mail_id(mail_id);
+        game::GameResponse sync_detail;
+        EXPECT_TRUE(MailService::Instance().HandleMailGet(sync_get, &sync_detail));
+        EXPECT_TRUE(sync_detail.mail_get().mail().receipt().verifiable());
+        EXPECT_TRUE(sync_detail.mail_get().mail().receipt().claim_tx_id() == sync_tx);
+        EXPECT_TRUE(CountOkClaims(mail_id) == 1);
     }
 
     // ---------- G: 同一封邮件换 idempotency key，只入账一次 ----------
@@ -725,6 +836,8 @@ int main() {
         uint64_t multi = 0;
         std::string ec, msg;
         EXPECT_TRUE(MailService::Instance().Deliver(d, &multi, &ec, &msg));
+        const uint32_t before_2211 = BagCount(pid, 2211);
+        const uint32_t before_2212 = BagCount(pid, 2212);
         game::MailClaimReq req;
         req.set_player_id(pid);
         req.set_mail_id(multi);
@@ -734,8 +847,8 @@ int main() {
         EXPECT_TRUE(MailService::Instance().HandleMailClaim(req, &rsp));
         EXPECT_TRUE(rsp.mail_claim().result().receipt().verifiable());
         EXPECT_TRUE(rsp.mail_claim().result().receipt().grants_size() == 2);
-        EXPECT_TRUE(BagCount(pid, 2211) == 2);
-        EXPECT_TRUE(BagCount(pid, 2212) == 3);
+        EXPECT_TRUE(BagCount(pid, 2211) == before_2211 + 2);
+        EXPECT_TRUE(BagCount(pid, 2212) == before_2212 + 3);
 
         d.business_key = "edge03_dup_" + std::to_string(NowMs());
         d.attachments.clear();
@@ -745,11 +858,12 @@ int main() {
         a.count = 5;
         d.attachments.push_back(a);
         uint64_t dup = 0;
+        const uint32_t before_2213 = BagCount(pid, 2213);
         EXPECT_TRUE(MailService::Instance().Deliver(d, &dup, &ec, &msg));
         req.set_mail_id(dup);
         req.set_idempotency_key("edge03_dup_" + std::to_string(dup));
         EXPECT_TRUE(MailService::Instance().HandleMailClaim(req, &rsp));
-        EXPECT_TRUE(BagCount(pid, 2213) == 9);
+        EXPECT_TRUE(BagCount(pid, 2213) == before_2213 + 9);
         EXPECT_TRUE(rsp.mail_claim().result().receipt().grants_size() == 2);
         game::MailGetReq get;
         get.set_player_id(pid);
@@ -861,6 +975,73 @@ int main() {
         EXPECT_TRUE(!MailService::Instance().HandleMailGet(get, &denied));
         EXPECT_TRUE(denied.mail_get().error_code() == mail::err::kPermissionDenied);
         EXPECT_TRUE(denied.mail_get().mail().receipt().grants_size() == 0);
+    }
+
+    // ---------- 批量两封各自回执；缺 grants 的旧日志不能当成已核对到账 ----------
+    {
+        const uint64_t pid = 910080;
+        const uint64_t left = DeliverTestMail(pid, item_id, 2, "wire_batch_l_" + std::to_string(NowMs()));
+        const uint64_t right = DeliverTestMail(pid, item_id, 5, "wire_batch_r_" + std::to_string(NowMs()));
+        EXPECT_TRUE(left > 0 && right > 0);
+        const uint32_t before = BagCount(pid, item_id);
+        game::MailBatchClaimReq batch;
+        batch.set_player_id(pid);
+        batch.add_mail_ids(left);
+        batch.add_mail_ids(right);
+        batch.set_idempotency_key_prefix("wire_batch_" + std::to_string(NowMs()));
+        batch.set_trace_id("wire_batch");
+        game::GameResponse batch_rsp;
+        EXPECT_TRUE(MailService::Instance().HandleMailBatchClaim(batch, &batch_rsp));
+        EXPECT_TRUE(batch_rsp.mail_batch_claim().results_size() == 2);
+        std::string tx_left, tx_right;
+        for (int i = 0; i < batch_rsp.mail_batch_claim().results_size(); ++i) {
+            const auto &one = batch_rsp.mail_batch_claim().results(i);
+            EXPECT_TRUE(one.receipt().verifiable());
+            EXPECT_TRUE(one.receipt().claim_state() == "CLAIMED");
+            if (one.mail_id() == left)
+                tx_left = one.receipt().claim_tx_id();
+            if (one.mail_id() == right)
+                tx_right = one.receipt().claim_tx_id();
+        }
+        EXPECT_TRUE(!tx_left.empty() && !tx_right.empty() && tx_left != tx_right);
+        EXPECT_TRUE(BagCount(pid, item_id) == before + 7);
+        EXPECT_TRUE(CountOkClaims(left) == 1);
+        EXPECT_TRUE(CountOkClaims(right) == 1);
+        std::string batch_wire;
+        EXPECT_TRUE(batch_rsp.SerializeToString(&batch_wire));
+        game::GameResponse batch_back;
+        EXPECT_TRUE(batch_back.ParseFromString(batch_wire));
+        EXPECT_TRUE(batch_back.mail_batch_claim().results_size() == 2);
+
+        auto conn = MailStore::Instance().GetConnection();
+        EXPECT_TRUE(static_cast<bool>(conn));
+        std::ostringstream sql;
+        sql << "UPDATE mail_operation_log SET after_state="
+               "'{\"attachment\":\"CLAIMED\",\"asset_version\":1}' WHERE mail_id="
+            << left << " AND result_code='OK'";
+        if (conn)
+            EXPECT_TRUE(conn->update(sql.str()));
+        game::MailGetReq get;
+        get.set_player_id(pid);
+        get.set_mail_id(left);
+        game::GameResponse old_get;
+        EXPECT_TRUE(MailService::Instance().HandleMailGet(get, &old_get));
+        EXPECT_TRUE(old_get.mail_get().mail().receipt().claim_state() == "UNKNOWN");
+        EXPECT_TRUE(!old_get.mail_get().mail().receipt().verifiable());
+        EXPECT_TRUE(old_get.mail_get().mail().receipt().grants_size() == 0);
+        EXPECT_TRUE(old_get.mail_get().mail().receipt().claim_tx_id().empty());
+        const uint32_t mid = BagCount(pid, item_id);
+        game::MailClaimReq again;
+        again.set_player_id(pid);
+        again.set_mail_id(left);
+        again.set_idempotency_key("wire_old_" + std::to_string(left));
+        again.set_trace_id("wire_old");
+        game::GameResponse again_rsp;
+        EXPECT_TRUE(MailService::Instance().HandleMailClaim(again, &again_rsp));
+        EXPECT_TRUE(again_rsp.mail_claim().result().error_code() == mail::err::kAlreadyClaimed);
+        EXPECT_TRUE(again_rsp.mail_claim().result().receipt().claim_state() == "UNKNOWN");
+        EXPECT_TRUE(!again_rsp.mail_claim().result().receipt().verifiable());
+        EXPECT_TRUE(BagCount(pid, item_id) == mid);
     }
 
     AsyncMysqlGameDbRepository::Instance().Stop();

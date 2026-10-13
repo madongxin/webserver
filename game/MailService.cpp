@@ -126,7 +126,7 @@ void FillClaimReceipt(const GameDbMailClaimResult &db, game::MailClaimResult *re
     std::string state = db.attachment_state;
     if (state == "CLAIMING")
         state = "IN_PROGRESS";
-    else if (state.empty())
+    else if (state.empty() || (state == "CLAIMED" && !db.receipt_verifiable))
         state = "UNKNOWN";
     receipt->set_claim_state(state);
     receipt->set_claim_tx_id(db.claim_tx_id);
@@ -149,9 +149,10 @@ bool FillDetailReceipt(uint64_t player_id, const mail::MailInstanceRow &row, gam
             MailStore::Instance().FindOriginalClaimReceipt(row.mail_id, player_id, &data);
         if (src == MailLookup::kError)
             return false;
-        receipt->set_claim_state("CLAIMED");
-        receipt->set_verifiable(src == MailLookup::kHit && data.verifiable);
-        if (!receipt->verifiable())
+        const bool verifiable = src == MailLookup::kHit && data.verifiable;
+        receipt->set_claim_state(verifiable ? "CLAIMED" : "UNKNOWN");
+        receipt->set_verifiable(verifiable);
+        if (!verifiable)
             return true;
         receipt->set_claim_tx_id(data.claim_tx_id);
         receipt->set_asset_version_at_claim(data.asset_version_at_claim);
