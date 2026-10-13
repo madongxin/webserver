@@ -65,7 +65,10 @@ public:
     bool CountFavorites(uint64_t receiver_id, int *count);
 
     bool LoadMail(uint64_t mail_id, mail::MailInstanceRow *out);
+    MailLookup LookupMail(uint64_t mail_id, mail::MailInstanceRow *out);
     bool LoadMailForUpdate(Connection *conn, uint64_t mail_id, mail::MailInstanceRow *out);
+    MailLookup LookupMailForUpdate(Connection *conn, uint64_t mail_id, mail::MailInstanceRow *out);
+    bool CountFavoritesForUpdate(Connection *conn, uint64_t receiver_id, int *count);
     bool LoadAttachments(uint64_t mail_id, std::vector<mail::MailAttachmentRow> *out);
     bool LoadAttachmentsForUpdate(Connection *conn, uint64_t mail_id,
                                   std::vector<mail::MailAttachmentRow> *out);

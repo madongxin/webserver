@@ -307,37 +307,71 @@ bool MailStore::CountFavorites(uint64_t receiver_id, int *count) {
     return true;
 }
 
-bool MailStore::LoadMail(uint64_t mail_id, mail::MailInstanceRow *out) {
+MailLookup MailStore::LookupMail(uint64_t mail_id, mail::MailInstanceRow *out) {
     if (!out || !EnsureTables())
-        return false;
+        return MailLookup::kError;
     auto conn = GetConnection();
     if (!conn)
-        return false;
+        return MailLookup::kError;
     std::ostringstream sql;
     sql << "SELECT " << kMailSelectCols << " FROM mail_instance WHERE mail_id=" << mail_id
         << " LIMIT 1";
     MYSQL_RES *res = conn->query(sql.str());
     if (!res)
-        return false;
+        return MailLookup::kError;
     MYSQL_ROW row = mysql_fetch_row(res);
+    if (!row) {
+        mysql_free_result(res);
+        return MailLookup::kMiss;
+    }
     const bool ok = FillMailRow(row, out);
     mysql_free_result(res);
-    return ok;
+    return ok ? MailLookup::kHit : MailLookup::kError;
 }
 
-bool MailStore::LoadMailForUpdate(Connection *conn, uint64_t mail_id, mail::MailInstanceRow *out) {
+bool MailStore::LoadMail(uint64_t mail_id, mail::MailInstanceRow *out) {
+    return LookupMail(mail_id, out) == MailLookup::kHit;
+}
+
+MailLookup MailStore::LookupMailForUpdate(Connection *conn, uint64_t mail_id,
+                                          mail::MailInstanceRow *out) {
     if (!conn || !out)
-        return false;
+        return MailLookup::kError;
     std::ostringstream sql;
     sql << "SELECT " << kMailSelectCols << " FROM mail_instance WHERE mail_id=" << mail_id
         << " LIMIT 1 FOR UPDATE";
     MYSQL_RES *res = conn->query(sql.str());
     if (!res)
-        return false;
+        return MailLookup::kError;
     MYSQL_ROW row = mysql_fetch_row(res);
+    if (!row) {
+        mysql_free_result(res);
+        return MailLookup::kMiss;
+    }
     const bool ok = FillMailRow(row, out);
     mysql_free_result(res);
-    return ok;
+    return ok ? MailLookup::kHit : MailLookup::kError;
+}
+
+bool MailStore::LoadMailForUpdate(Connection *conn, uint64_t mail_id, mail::MailInstanceRow *out) {
+    return LookupMailForUpdate(conn, mail_id, out) == MailLookup::kHit;
+}
+
+bool MailStore::CountFavoritesForUpdate(Connection *conn, uint64_t receiver_id, int *count) {
+    if (!conn || !count)
+        return false;
+    std::ostringstream sql;
+    sql << "SELECT mail_id FROM mail_instance WHERE receiver_id=" << receiver_id
+        << " AND visible_state='ACTIVE' AND is_favorite=1 FOR UPDATE";
+    MYSQL_RES *res = conn->query(sql.str());
+    if (!res)
+        return false;
+    int n = 0;
+    while (mysql_fetch_row(res))
+        ++n;
+    mysql_free_result(res);
+    *count = n;
+    return true;
 }
 
 bool MailStore::LoadAttachments(uint64_t mail_id, std::vector<mail::MailAttachmentRow> *out) {

@@ -37,7 +37,9 @@
 - 可见：`ACTIVE` / `SOFT_DELETED` / `EXPIRED` / `REVOKED`
 - 附件：`NONE` / `UNCLAIMED` / `CLAIMING` / `CLAIMED` / `PARTIAL` / `RETURNED` / `DESTROYED`
 
-按钮以 `MailGetRsp.mail.allowed_actions` 为准。未领附件的删除会进入 `failed_mail_ids`，不会删掉道具。
+按钮以 `MailGetRsp.mail.allowed_actions` 为准。未收藏是 `FAVORITE`，已收藏是 `UNFAVORITE`。未领附件的删除会进入 `failed_mail_ids`，`success_count` 只计真正软删的封数。附件查询失败返回 `INTERNAL_ERROR`，不会伪装成没有附件的成功详情。
+
+收藏和批量删除的状态与幂等日志在同一个 MySQL 事务里提交。事务没提交成功就不会返回成功。同一删除钥匙按邮件 ID 集合比较，顺序和重复 ID 会先归一化。
 
 未领（`UNCLAIMED`）或领取中（`CLAIMING`）的邮件到期后仍保持 `ACTIVE`，玩家可以继续领取。无附件或已领完的邮件才会被标成 `EXPIRED`。退回和补偿流程还没有产品规则。
 

@@ -118,6 +118,61 @@ int main() {
     Expect(ec == "IDEMPOTENCY_CONFLICT", "attachment conflict");
     Expect(delivered2 == 0, "no second mail id");
 
+    game::MailGetReq get;
+    get.set_player_id(b);
+    get.set_mail_id(delivered);
+    game::GameResponse get_rsp;
+    Expect(MailService::Instance().HandleMailGet(get, &get_rsp), "get attachment mail");
+    Expect(get_rsp.mail_get().ok() && get_rsp.mail_get().mail().attachments_size() == 1,
+           "attachment visible");
+    get.set_mail_id(9000000000001ull);
+    game::GameResponse missing_get;
+    Expect(!MailService::Instance().HandleMailGet(get, &missing_get), "missing mail");
+    Expect(missing_get.mail_get().error_code() == "MAIL_NOT_FOUND", "not found");
+
+    game::MailFavoriteReq fav;
+    fav.set_player_id(b);
+    fav.set_mail_id(mid);
+    fav.set_favorite(true);
+    fav.set_idempotency_key("fav_" + tag);
+    game::GameResponse fav_rsp;
+    Expect(MailService::Instance().HandleMailFavorite(fav, &fav_rsp), "favorite");
+    get.set_mail_id(mid);
+    game::GameResponse fav_get;
+    Expect(MailService::Instance().HandleMailGet(get, &fav_get), "get favorite");
+    bool unfav = false;
+    for (int i = 0; i < fav_get.mail_get().mail().allowed_actions_size(); ++i) {
+        if (fav_get.mail_get().mail().allowed_actions(i) == "UNFAVORITE")
+            unfav = true;
+    }
+    Expect(unfav, "unfavorite action");
+    fav.set_favorite(false);
+    fav.set_idempotency_key("unfav_" + tag);
+    Expect(MailService::Instance().HandleMailFavorite(fav, &fav_rsp), "unfavorite");
+
+    game::MailBatchDeleteReq keep;
+    keep.set_player_id(b);
+    keep.add_mail_ids(delivered);
+    keep.set_idempotency_key("del_att_" + tag);
+    game::GameResponse keep_rsp;
+    Expect(MailService::Instance().HandleMailBatchDelete(keep, &keep_rsp), "delete unclaimed call");
+    Expect(keep_rsp.mail_batch_delete().success_count() == 0, "unclaimed not deleted");
+    Expect(keep_rsp.mail_batch_delete().failed_mail_ids_size() == 1, "unclaimed failed id");
+    get.set_mail_id(delivered);
+    Expect(MailService::Instance().HandleMailGet(get, &get_rsp), "unclaimed still readable");
+    Expect(get_rsp.mail_get().mail().brief().visible_state() == "ACTIVE", "still active");
+
+    game::MailBatchDeleteReq drop;
+    drop.set_player_id(b);
+    drop.add_mail_ids(mid);
+    drop.set_idempotency_key("del_plain_" + tag);
+    game::GameResponse drop_rsp;
+    Expect(MailService::Instance().HandleMailBatchDelete(drop, &drop_rsp), "delete plain");
+    Expect(drop_rsp.mail_batch_delete().success_count() == 1, "deleted one");
+    game::GameResponse drop_retry;
+    Expect(MailService::Instance().HandleMailBatchDelete(drop, &drop_retry), "delete replay");
+    Expect(drop_retry.mail_batch_delete().success_count() == 1, "replay count");
+
     game::PlayerMailSendReq bad;
     bad.set_sender_player_id(a);
     bad.set_receiver_player_id(a);

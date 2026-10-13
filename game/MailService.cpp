@@ -27,7 +27,9 @@
 #include <algorithm>
 #include <chrono>
 #include <cstdio>
+#include <cstdlib>
 #include <ctime>
+#include <set>
 #include <sstream>
 #include <utility>
 #include <vector>
@@ -101,6 +103,45 @@ bool ReplayOpOrConflict(const MailOpLogRow &existed, uint64_t actor, uint64_t ma
     if (message)
         *message = "idempotent";
     return existed.result_code == mail::err::kOk;
+}
+
+bool PayloadNeedsManualClaim(const std::vector<mail::MailAttachmentRow> &atts) {
+    for (const auto &a : atts) {
+        if (a.payload.find("need_confirm") != std::string::npos ||
+            a.payload.find("COD") != std::string::npos)
+            return true;
+    }
+    return false;
+}
+
+std::string CanonicalMailIds(const google::protobuf::RepeatedField<uint64_t> &ids) {
+    std::set<uint64_t> uniq(ids.begin(), ids.end());
+    std::string out;
+    for (uint64_t id : uniq) {
+        if (!out.empty())
+            out.push_back(',');
+        out += std::to_string(id);
+    }
+    return out;
+}
+
+void FillBatchDeleteReplay(const std::string &after, game::MailBatchDeleteRsp *body) {
+    const std::string mark = ";failed=";
+    const auto pos = after.find(mark);
+    if (pos == std::string::npos)
+        return;
+    const std::string failed = after.substr(pos + mark.size());
+    std::stringstream ss(failed);
+    std::string item;
+    while (std::getline(ss, item, ',')) {
+        if (!item.empty())
+            body->add_failed_mail_ids(std::strtoull(item.c_str(), nullptr, 10));
+    }
+    const auto okpos = after.find(";ok=");
+    if (okpos != std::string::npos) {
+        body->set_success_count(static_cast<uint32_t>(std::strtoul(
+            after.c_str() + okpos + 4, nullptr, 10)));
+    }
 }
 
 }  // namespace
@@ -552,7 +593,16 @@ bool MailService::HandleMailGet(const game::MailGetReq &req, game::GameResponse 
     const int64_t now = NowUtc();
     body->set_server_time_utc(now);
     mail::MailInstanceRow row;
-    if (!MailStore::Instance().LoadMail(req.mail_id(), &row)) {
+    const MailLookup loaded = MailStore::Instance().LookupMail(req.mail_id(), &row);
+    if (loaded == MailLookup::kError) {
+        rsp->set_ok(false);
+        body->set_ok(false);
+        body->set_error_code(mail::err::kInternal);
+        body->set_message("mail lookup failed");
+        rsp->set_message(body->message());
+        return false;
+    }
+    if (loaded == MailLookup::kMiss) {
         rsp->set_ok(false);
         body->set_ok(false);
         body->set_error_code(mail::err::kMailNotFound);
@@ -570,7 +620,14 @@ bool MailService::HandleMailGet(const game::MailGetReq &req, game::GameResponse 
     }
     TouchExpireIfNeeded(&row, now);
     std::vector<mail::MailAttachmentRow> atts;
-    MailStore::Instance().LoadAttachments(row.mail_id, &atts);
+    if (!MailStore::Instance().LoadAttachments(row.mail_id, &atts)) {
+        rsp->set_ok(false);
+        body->set_ok(false);
+        body->set_error_code(mail::err::kInternal);
+        body->set_message("attachment lookup failed");
+        rsp->set_message(body->message());
+        return false;
+    }
     FillMailDetail(row, atts, body->mutable_mail());
     body->set_mailbox_version(MailboxVersion(req.player_id()));
     body->set_ok(true);
@@ -922,20 +979,35 @@ bool MailService::BeginHandleMailBatchClaimAsync(const game::MailBatchClaimReq &
     std::vector<std::pair<int64_t, uint64_t>> order;
     for (int i = 0; i < req.mail_ids_size(); ++i) {
         mail::MailInstanceRow row;
-        if (!MailStore::Instance().LoadMail(req.mail_ids(i), &row) ||
-            row.receiver_id != req.player_id())
-            continue;
-        std::vector<mail::MailAttachmentRow> atts;
-        MailStore::Instance().LoadAttachments(row.mail_id, &atts);
-        bool skip = false;
-        for (const auto &a : atts) {
-            if (a.payload.find("need_confirm") != std::string::npos ||
-                a.payload.find("COD") != std::string::npos) {
-                skip = true;
-                break;
+        const MailLookup loaded = MailStore::Instance().LookupMail(req.mail_ids(i), &row);
+        if (loaded != MailLookup::kHit || row.receiver_id != req.player_id()) {
+            game::MailClaimResult denied;
+            denied.set_mail_id(req.mail_ids(i));
+            denied.set_ok(false);
+            if (loaded == MailLookup::kError) {
+                denied.set_error_code(mail::err::kInternal);
+                denied.set_message("mail lookup failed");
+            } else if (loaded == MailLookup::kMiss) {
+                denied.set_error_code(mail::err::kMailNotFound);
+                denied.set_message("not found");
+            } else {
+                denied.set_error_code(mail::err::kPermissionDenied);
+                denied.set_message("permission denied");
             }
+            st->results.push_back(denied);
+            continue;
         }
-        if (skip)
+        std::vector<mail::MailAttachmentRow> atts;
+        if (!MailStore::Instance().LoadAttachments(row.mail_id, &atts)) {
+            game::MailClaimResult denied;
+            denied.set_mail_id(row.mail_id);
+            denied.set_ok(false);
+            denied.set_error_code(mail::err::kInternal);
+            denied.set_message("attachment lookup failed");
+            st->results.push_back(denied);
+            continue;
+        }
+        if (PayloadNeedsManualClaim(atts))
             continue;
         order.push_back({row.expire_at, row.mail_id});
     }
@@ -1079,21 +1151,35 @@ bool MailService::HandleMailBatchClaim(const game::MailBatchClaimReq &req, game:
     std::vector<std::pair<int64_t, uint64_t>> order;
     for (int i = 0; i < req.mail_ids_size(); ++i) {
         mail::MailInstanceRow row;
-        if (!MailStore::Instance().LoadMail(req.mail_ids(i), &row) ||
-            row.receiver_id != req.player_id())
-            continue;
-        // 选择箱/高价值确认：payload 含 need_confirm 不进批量
-        std::vector<mail::MailAttachmentRow> atts;
-        MailStore::Instance().LoadAttachments(row.mail_id, &atts);
-        bool skip = false;
-        for (const auto &a : atts) {
-            if (a.payload.find("need_confirm") != std::string::npos ||
-                a.payload.find("COD") != std::string::npos) {
-                skip = true;
-                break;
+        const MailLookup loaded = MailStore::Instance().LookupMail(req.mail_ids(i), &row);
+        if (loaded != MailLookup::kHit || row.receiver_id != req.player_id()) {
+            game::MailClaimResult denied;
+            denied.set_mail_id(req.mail_ids(i));
+            denied.set_ok(false);
+            if (loaded == MailLookup::kError) {
+                denied.set_error_code(mail::err::kInternal);
+                denied.set_message("mail lookup failed");
+            } else if (loaded == MailLookup::kMiss) {
+                denied.set_error_code(mail::err::kMailNotFound);
+                denied.set_message("not found");
+            } else {
+                denied.set_error_code(mail::err::kPermissionDenied);
+                denied.set_message("permission denied");
             }
+            *body->add_results() = denied;
+            continue;
         }
-        if (skip)
+        std::vector<mail::MailAttachmentRow> atts;
+        if (!MailStore::Instance().LoadAttachments(row.mail_id, &atts)) {
+            game::MailClaimResult denied;
+            denied.set_mail_id(row.mail_id);
+            denied.set_ok(false);
+            denied.set_error_code(mail::err::kInternal);
+            denied.set_message("attachment lookup failed");
+            *body->add_results() = denied;
+            continue;
+        }
+        if (PayloadNeedsManualClaim(atts))
             continue;
         order.push_back({row.expire_at, row.mail_id});
     }
@@ -1160,10 +1246,41 @@ bool MailService::HandleMailFavorite(const game::MailFavoriteReq &req, game::Gam
         rsp->set_message(body->message());
         return false;
     }
-    if (req.favorite()) {
+    auto conn = MailStore::Instance().GetConnection();
+    if (!conn || !MailStore::Instance().Begin(conn.get())) {
+        rsp->set_ok(false);
+        body->set_ok(false);
+        body->set_error_code(mail::err::kInternal);
+        body->set_message("db");
+        rsp->set_message(body->message());
+        return false;
+    }
+    mail::MailInstanceRow locked;
+    const MailLookup locked_lookup =
+        MailStore::Instance().LookupMailForUpdate(conn.get(), req.mail_id(), &locked);
+    if (locked_lookup != MailLookup::kHit || locked.receiver_id != req.player_id()) {
+        MailStore::Instance().Rollback(conn.get());
+        rsp->set_ok(false);
+        body->set_ok(false);
+        body->set_error_code(locked_lookup == MailLookup::kError ? mail::err::kInternal
+                                                                 : mail::err::kPermissionDenied);
+        body->set_message("denied");
+        rsp->set_message(body->message());
+        return false;
+    }
+    if (req.favorite() && !locked.is_favorite) {
         int fav = 0;
-        MailStore::Instance().CountFavorites(req.player_id(), &fav);
-        if (!row.is_favorite && fav >= MailConfig::Instance().Values().favorite_max) {
+        if (!MailStore::Instance().CountFavoritesForUpdate(conn.get(), req.player_id(), &fav)) {
+            MailStore::Instance().Rollback(conn.get());
+            rsp->set_ok(false);
+            body->set_ok(false);
+            body->set_error_code(mail::err::kInternal);
+            body->set_message("favorite count failed");
+            rsp->set_message(body->message());
+            return false;
+        }
+        if (fav >= MailConfig::Instance().Values().favorite_max) {
+            MailStore::Instance().Rollback(conn.get());
             rsp->set_ok(false);
             body->set_ok(false);
             body->set_error_code(mail::err::kFavoriteLimit);
@@ -1172,19 +1289,11 @@ bool MailService::HandleMailFavorite(const game::MailFavoriteReq &req, game::Gam
             return false;
         }
     }
-    auto conn = MailStore::Instance().GetConnection();
-    if (!conn) {
-        rsp->set_ok(false);
-        body->set_ok(false);
-        body->set_error_code(mail::err::kInternal);
-        body->set_message("db");
-        rsp->set_message(body->message());
-        return false;
-    }
-    row.is_favorite = req.favorite();
-    row.updated_at = NowUtc();
-    row.row_version += 1;
-    if (!MailStore::Instance().UpdateMailRow(conn.get(), row)) {
+    locked.is_favorite = req.favorite();
+    locked.updated_at = NowUtc();
+    locked.row_version += 1;
+    if (!MailStore::Instance().UpdateMailRow(conn.get(), locked)) {
+        MailStore::Instance().Rollback(conn.get());
         rsp->set_ok(false);
         body->set_ok(false);
         body->set_error_code(mail::err::kInternal);
@@ -1194,16 +1303,34 @@ bool MailService::HandleMailFavorite(const game::MailFavoriteReq &req, game::Gam
     }
     if (!req.idempotency_key().empty()) {
         MailOpLogRow op;
-        op.mail_id = row.mail_id;
+        op.mail_id = locked.mail_id;
         op.actor_id = req.player_id();
-        op.operation_type = req.favorite() ? "FAVORITE" : "UNFAVORITE";
+        op.operation_type = fav_op;
         op.idempotency_key = req.idempotency_key();
         op.before_state = "{}";
         op.after_state = req.favorite() ? "{\"favorite\":1}" : "{\"favorite\":0}";
         op.result_code = mail::err::kOk;
         op.created_at = NowUtc();
-        MailStore::Instance().InsertOpLog(conn.get(), op);
+        if (!MailStore::Instance().InsertOpLog(conn.get(), op)) {
+            MailStore::Instance().Rollback(conn.get());
+            rsp->set_ok(false);
+            body->set_ok(false);
+            body->set_error_code(mail::err::kInternal);
+            body->set_message("idempotency write failed");
+            rsp->set_message(body->message());
+            return false;
+        }
     }
+    if (!MailStore::Instance().Commit(conn.get())) {
+        MailStore::Instance().Rollback(conn.get());
+        rsp->set_ok(false);
+        body->set_ok(false);
+        body->set_error_code(mail::err::kInternal);
+        body->set_message("commit failed");
+        rsp->set_message(body->message());
+        return false;
+    }
+    row = locked;
     BumpVersion(req.player_id());
     body->set_ok(true);
     body->set_error_code(mail::err::kOk);
@@ -1261,12 +1388,10 @@ bool MailService::HandleMailBatchDelete(const game::MailBatchDeleteReq &req,
         rsp->set_message(body->message());
         return false;
     }
-    std::string fingerprint;
-    for (int i = 0; i < req.mail_ids_size(); ++i) {
-        if (i)
-            fingerprint.push_back(',');
-        fingerprint += std::to_string(req.mail_ids(i));
-    }
+    const std::string fingerprint = CanonicalMailIds(req.mail_ids());
+    const uint64_t anchor = fingerprint.empty()
+                                ? 0
+                                : static_cast<uint64_t>(std::strtoull(fingerprint.c_str(), nullptr, 10));
     if (!req.idempotency_key().empty()) {
         MailOpLogRow existed;
         const MailLookup prior =
@@ -1281,8 +1406,8 @@ bool MailService::HandleMailBatchDelete(const game::MailBatchDeleteReq &req,
         }
         if (prior == MailLookup::kHit) {
             if (!mail::OpIntentMatches(existed.actor_id, existed.mail_id, existed.operation_type,
-                                       req.player_id(), req.mail_ids(0), "BATCH_DELETE") ||
-                existed.after_state != "ids=" + fingerprint) {
+                                       req.player_id(), anchor, "BATCH_DELETE") ||
+                existed.after_state.find("ids=" + fingerprint + ";") != 0) {
                 rsp->set_ok(false);
                 body->set_ok(false);
                 body->set_error_code(mail::err::kIdempotencyConflict);
@@ -1290,6 +1415,7 @@ bool MailService::HandleMailBatchDelete(const game::MailBatchDeleteReq &req,
                 rsp->set_message(body->message());
                 return false;
             }
+            FillBatchDeleteReplay(existed.after_state, body);
             body->set_ok(existed.result_code == mail::err::kOk);
             body->set_error_code(existed.result_code);
             body->set_message("idempotent");
@@ -1299,74 +1425,90 @@ bool MailService::HandleMailBatchDelete(const game::MailBatchDeleteReq &req,
             return body->ok();
         }
     }
-    uint32_t ok_n = 0;
     const int64_t now = NowUtc();
+    auto conn = MailStore::Instance().GetConnection();
+    if (!conn || !MailStore::Instance().Begin(conn.get())) {
+        rsp->set_ok(false);
+        body->set_ok(false);
+        body->set_error_code(mail::err::kInternal);
+        body->set_message("db");
+        rsp->set_message(body->message());
+        return false;
+    }
+    uint32_t ok_n = 0;
     std::vector<uint64_t> failed;
-    std::vector<uint64_t> victims;
-    for (int i = 0; i < req.mail_ids_size(); ++i) {
-        const uint64_t mid = req.mail_ids(i);
+    std::set<uint64_t> seen;
+    for (int i = 0; i < req.mail_ids_size(); ++i)
+        seen.insert(req.mail_ids(i));
+    for (uint64_t mid : seen) {
         mail::MailInstanceRow row;
-        if (!MailStore::Instance().LoadMail(mid, &row) || row.receiver_id != req.player_id()) {
+        const MailLookup loaded = MailStore::Instance().LookupMailForUpdate(conn.get(), mid, &row);
+        if (loaded == MailLookup::kError) {
+            MailStore::Instance().Rollback(conn.get());
+            rsp->set_ok(false);
+            body->set_ok(false);
+            body->set_error_code(mail::err::kInternal);
+            body->set_message("mail lookup failed");
+            rsp->set_message(body->message());
+            return false;
+        }
+        if (loaded != MailLookup::kHit || row.receiver_id != req.player_id() ||
+            row.attachment_state == "UNCLAIMED" || row.attachment_state == "CLAIMING" ||
+            row.visible_state != "ACTIVE") {
             failed.push_back(mid);
             continue;
         }
-        if (row.attachment_state == "UNCLAIMED" || row.attachment_state == "CLAIMING") {
-            failed.push_back(mid);
-            continue;
+        row.visible_state = "SOFT_DELETED";
+        row.deleted_at = now;
+        row.updated_at = now;
+        row.row_version += 1;
+        if (!MailStore::Instance().UpdateMailRow(conn.get(), row)) {
+            MailStore::Instance().Rollback(conn.get());
+            rsp->set_ok(false);
+            body->set_ok(false);
+            body->set_error_code(mail::err::kInternal);
+            body->set_message("delete failed");
+            rsp->set_message(body->message());
+            return false;
         }
-        victims.push_back(mid);
+        ++ok_n;
+    }
+    std::string failed_text;
+    for (uint64_t mid : failed) {
+        if (!failed_text.empty())
+            failed_text.push_back(',');
+        failed_text += std::to_string(mid);
+        body->add_failed_mail_ids(mid);
     }
     if (!req.idempotency_key().empty()) {
         MailOpLogRow op;
-        op.mail_id = req.mail_ids(0);
+        op.mail_id = anchor;
         op.actor_id = req.player_id();
         op.operation_type = "BATCH_DELETE";
         op.idempotency_key = req.idempotency_key();
         op.before_state = "{}";
-        op.after_state = "ids=" + fingerprint;
+        op.after_state = "ids=" + fingerprint + ";ok=" + std::to_string(ok_n) + ";failed=" + failed_text;
         op.result_code = mail::err::kOk;
         op.created_at = now;
-        auto conn = MailStore::Instance().GetConnection();
-        if (!conn || !MailStore::Instance().InsertOpLog(conn.get(), op)) {
-            MailOpLogRow existed;
-            const MailLookup again =
-                MailStore::Instance().FindOpByIdempotency(req.idempotency_key(), &existed);
-            if (again == MailLookup::kError) {
-                rsp->set_ok(false);
-                body->set_ok(false);
-                body->set_error_code(mail::err::kInternal);
-                body->set_message("idempotency lookup failed");
-                rsp->set_message(body->message());
-                return false;
-            }
-            if (again == MailLookup::kHit &&
-                mail::OpIntentMatches(existed.actor_id, existed.mail_id, existed.operation_type,
-                                      req.player_id(), req.mail_ids(0), "BATCH_DELETE") &&
-                existed.after_state == "ids=" + fingerprint) {
-                body->set_ok(true);
-                body->set_error_code(mail::err::kOk);
-                body->set_message("idempotent");
-                body->set_mailbox_version(MailboxVersion(req.player_id()));
-                rsp->set_ok(true);
-                rsp->set_message(body->message());
-                return true;
-            }
+        if (!MailStore::Instance().InsertOpLog(conn.get(), op)) {
+            MailStore::Instance().Rollback(conn.get());
             rsp->set_ok(false);
             body->set_ok(false);
-            body->set_error_code(mail::err::kIdempotencyConflict);
-            body->set_message("idempotency key reused");
+            body->set_error_code(mail::err::kInternal);
+            body->set_message("idempotency write failed");
             rsp->set_message(body->message());
             return false;
         }
     }
-    for (uint64_t mid : victims) {
-        if (SoftDeleteMail(mid, req.player_id(), now))
-            ++ok_n;
-        else
-            failed.push_back(mid);
+    if (!MailStore::Instance().Commit(conn.get())) {
+        MailStore::Instance().Rollback(conn.get());
+        rsp->set_ok(false);
+        body->set_ok(false);
+        body->set_error_code(mail::err::kInternal);
+        body->set_message("commit failed");
+        rsp->set_message(body->message());
+        return false;
     }
-    for (uint64_t mid : failed)
-        body->add_failed_mail_ids(mid);
     BumpVersion(req.player_id());
     body->set_ok(true);
     body->set_error_code(mail::err::kOk);
