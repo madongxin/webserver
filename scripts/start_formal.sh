@@ -209,7 +209,8 @@ if [[ -n "${SESSION2}" ]]; then
   GAMEMESH_INSTANCE_ID=sess-1 start_proc "$SESSION_BIN" session "$RUN_DIR/logs/session1.log" \
     sess-1 "127.0.0.1:${SESSION2}" "$HTTP_S2" - "$HTTP_S2" "$SESSION2"
 fi
-GAMEMESH_INSTANCE_ID=gamedb-0 start_proc "$GAMEDB_BIN" gamedb "$RUN_DIR/logs/gamedb0.log" \
+# 监控页需从公网 EIP:8094 打开；仅 gamedb-0 的 HTTP 管理口离开 loopback
+GAMEMESH_HTTP_BIND=0.0.0.0 GAMEMESH_INSTANCE_ID=gamedb-0 start_proc "$GAMEDB_BIN" gamedb "$RUN_DIR/logs/gamedb0.log" \
   gamedb-0 "127.0.0.1:${GAMEDB0}" "$HTTP_D0" - "$HTTP_D0" "$GAMEDB0"
 GAMEMESH_INSTANCE_ID=gamedb-1 start_proc "$GAMEDB_BIN" gamedb "$RUN_DIR/logs/gamedb1.log" \
   gamedb-1 "127.0.0.1:${GAMEDB1}" "$HTTP_D1" - "$HTTP_D1" "$GAMEDB1"

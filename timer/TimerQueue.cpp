@@ -60,6 +60,8 @@ void TimerQueue::HandleRead(){
 
 
 void TimerQueue::AddTimer(TimeStamp timestamp, std::function<void()> const &cb, double interval){
+    // timers_ 是 std::set，只能由所属 EventLoop 线程改。跨线程插入会在 erase 时 SIGSEGV。
+    assert(loop_->IsInLoopThread());
     Timer * timer = new Timer(timestamp, cb, interval);
 
     if (Insert(timer))

@@ -77,6 +77,10 @@ void EventLoop::UpdateChannel(Channel *ch) { poller_->UpdateChannel(ch); }
 void EventLoop::DeleteChannel(Channel *ch) { poller_->DeleteChannel(ch); }
 
 void EventLoop::RunAt(TimeStamp timestamp, std::function<void()> const &cb) {
+    if (!IsInLoopThread()) {
+        QueueOneFunc([this, timestamp, cb]() { timer_queue_->AddTimer(timestamp, cb, 0.0); });
+        return;
+    }
     timer_queue_->AddTimer(timestamp, cb, 0.0);
 }
 
@@ -85,6 +89,12 @@ void EventLoop::RunAfter(double wait_time, std::function<void()> const &cb) {
 }
 
 void EventLoop::RunEvery(double interval, std::function<void()> const &cb) {
+    if (!IsInLoopThread()) {
+        QueueOneFunc([this, interval, cb]() {
+            timer_queue_->AddTimer(TimeStamp::Now(), cb, interval);
+        });
+        return;
+    }
     timer_queue_->AddTimer(TimeStamp::Now(), cb, interval);
 }
 

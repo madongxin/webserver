@@ -37,6 +37,7 @@ public:
     void UpdateChannel(Channel *ch);
     void DeleteChannel(Channel *ch);
 
+    /** 定时器红黑树只在本 loop 线程改。其它线程调用会投递到本线程再插入。 */
     void RunAt(TimeStamp timestamp, std::function<void()> const &cb);
     void RunAfter(double wait_time, std::function<void()> const &cb);
     void RunEvery(double interval, std::function<void()> const &cb);
