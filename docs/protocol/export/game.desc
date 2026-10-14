@@ -1,5 +1,5 @@
 
-…è
+…ë
 
 game.protogame"Æ
 LoginReq
@@ -204,13 +204,26 @@ isFavorite
 sent_at (RsentAt
 	expire_at (RexpireAt
 row_version (R
-rowVersion"«
+rowVersion"A
+MailClaimGrant
+asset_id (RassetId
+count (Rcount"Ö
+MailClaimReceipt
+claim_tx_id (	R	claimTxId3
+asset_version_at_claim (RassetVersionAtClaim,
+grants (2.game.MailClaimGrantRgrants
+claim_state (	R
+claimState
+
+verifiable (R
+verifiable"Ý
 
 MailDetail%
 brief (2.game.MailBriefRbrief
 body (	Rbody9
 attachments (2.game.MailAttachmentDtoRattachments'
-allowed_actions (	RallowedActions"0
+allowed_actions (	RallowedActions0
+receipt (2.game.MailClaimReceiptRreceipt"0
 MailboxSummaryReq
 	player_id (RplayerId"ã
 MailboxSummaryRsp
@@ -280,14 +293,15 @@ error_code (	R	errorCode
 	player_id (RplayerId
 mail_id (RmailId'
 idempotency_key (	RidempotencyKey
-trace_id (	RtraceId"ž
+trace_id (	RtraceId"Ð
 MailClaimResult
 mail_id (RmailId
 ok (Rok
 
 error_code (	R	errorCode
 message (	Rmessage)
-attachment_state (	RattachmentState"×
+attachment_state (	RattachmentState0
+receipt (2.game.MailClaimReceiptRreceipt"×
 MailClaimRsp
 ok (Rok
 message (	Rmessage

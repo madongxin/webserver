@@ -242,11 +242,27 @@ message MailBrief {
   int64 row_version = 13;
 }
 
+message MailClaimGrant {
+  uint64 asset_id = 1;
+  uint32 count = 2;
+}
+
+// 首次成功入账的原始回执。后来的任务或商城把 asset_version 往后推，也不改变这里的值。
+message MailClaimReceipt {
+  string claim_tx_id = 1;
+  uint64 asset_version_at_claim = 2;
+  repeated MailClaimGrant grants = 3;
+  // UNCLAIMED | IN_PROGRESS | CLAIMED | UNKNOWN
+  string claim_state = 4;
+  bool verifiable = 5;
+}
+
 message MailDetail {
   MailBrief brief = 1;
   string body = 2;
   repeated MailAttachmentDto attachments = 3;
   repeated string allowed_actions = 4;
+  MailClaimReceipt receipt = 5;
 }
 
 message MailboxSummaryReq {
@@ -334,6 +350,7 @@ message MailClaimResult {
   string error_code = 3;
   string message = 4;
   string attachment_state = 5;
+  MailClaimReceipt receipt = 6;
 }
 
 message MailClaimRsp {
