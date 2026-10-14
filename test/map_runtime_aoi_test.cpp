@@ -155,6 +155,22 @@ int main() {
     Expect(rt.Unload(11), "unload instance");
     Expect(!rt.HasPlayer(11, 21) && !rt.HasPlayer(11, 22), "unloaded players gone");
 
+    // 同一格超过 50 人时，只同步最近的 50 个（距离相同按 player_id）。
+    rt.ClearForTest();
+    rt.SetViewRadiusCells(1);
+    pushes = {};
+    for (uint64_t id = 1; id <= 60; ++id) {
+        pushes = {};
+        Expect(rt.Enter(9, data, Ent(id, 1, 1), &self, &snap, &pushes, &err), "enter crowd");
+    }
+    Expect(snap.size() == 50, "enter snapshot capped at 50");
+    int enter_n = 0;
+    for (const auto &ev : pushes.events) {
+        if (ev.op == 1)
+            ++enter_n;
+    }
+    Expect(enter_n == 50, "enter notifies 50 neighbors");
+
     if (fails) {
         std::printf("map_runtime_aoi_test FAIL count=%d\n", fails);
         return 1;

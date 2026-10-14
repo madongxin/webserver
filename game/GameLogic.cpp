@@ -73,6 +73,15 @@ int64_t NowMs() {
     return duration_cast<milliseconds>(steady_clock::now().time_since_epoch()).count();
 }
 
+// 1002 进图出生点用客户端面板上的坐标。不改地图文件，避免地形哈希和客户端对不上。
+void ApplyTemplateSpawn(uint64_t map_template_id, float *x, float *y, float *z) {
+    if (map_template_id != 1002 || !x || !y || !z)
+        return;
+    *x = 179.30f;
+    *y = -18.62f;
+    *z = 324.20f;
+}
+
 #ifdef WEBSERVER_ENABLE_REDIS
 bool FetchAuthorityPlacement(uint64_t map_instance_id, PlacementRecord *out, std::string *err) {
     if (!out || map_instance_id == 0) {
@@ -153,19 +162,70 @@ bool g_aoi_draining = false;
 
 void PublishAoiBatch(const AoiPushBatch &batch);
 
+// 同一收件人、同一实体的连续移动只留最后一帧。进出视野原样保留。
+void CollapseMoves(std::vector<AoiRecipientEvent> *events) {
+    if (!events || events->size() < 2)
+        return;
+    std::vector<AoiRecipientEvent> out;
+    out.reserve(events->size());
+    std::unordered_map<uint64_t, std::unordered_map<uint64_t, size_t>> move_at;
+    for (auto &ev : *events) {
+        const uint64_t ent = ev.snapshot.player_id;
+        if (ev.op == 2) {
+            auto rit = move_at.find(ev.recipient_id);
+            if (rit != move_at.end()) {
+                auto eit = rit->second.find(ent);
+                if (eit != rit->second.end()) {
+                    out[eit->second] = std::move(ev);
+                    continue;
+                }
+            }
+            move_at[ev.recipient_id][ent] = out.size();
+            out.push_back(std::move(ev));
+        } else {
+            auto rit = move_at.find(ev.recipient_id);
+            if (rit != move_at.end())
+                rit->second.erase(ent);
+            out.push_back(std::move(ev));
+        }
+    }
+    *events = std::move(out);
+}
+
 void DrainAoiQueue() {
     for (;;) {
-        AoiPushBatch batch;
+        std::vector<AoiPushBatch> taken;
         {
             std::lock_guard<std::mutex> lk(g_aoi_mu);
             if (g_aoi_q.empty()) {
                 g_aoi_draining = false;
                 return;
             }
-            batch = std::move(g_aoi_q.front());
+            taken.push_back(std::move(g_aoi_q.front()));
             g_aoi_q.pop_front();
+            // 队列里还有积压：整段一起取出，移动帧在发出前合并。仍由这一个线程排空。
+            if (!g_aoi_q.empty()) {
+                while (!g_aoi_q.empty()) {
+                    taken.push_back(std::move(g_aoi_q.front()));
+                    g_aoi_q.pop_front();
+                }
+            }
         }
-        PublishAoiBatch(batch);
+        if (taken.size() == 1) {
+            PublishAoiBatch(taken[0]);
+            continue;
+        }
+        std::unordered_map<uint64_t, AoiPushBatch> merged;
+        for (auto &b : taken) {
+            auto &dst = merged[b.map_instance_id];
+            dst.map_instance_id = b.map_instance_id;
+            dst.events.insert(dst.events.end(), std::make_move_iterator(b.events.begin()),
+                              std::make_move_iterator(b.events.end()));
+        }
+        for (auto &kv : merged) {
+            CollapseMoves(&kv.second.events);
+            PublishAoiBatch(kv.second);
+        }
     }
 }
 
@@ -219,6 +279,8 @@ void PublishAoiBatch(const AoiPushBatch &batch) {
         if (route[ev.recipient_id].first.empty())
             route[ev.recipient_id] = {ev.gateway_instance_id, ev.session_id};
     }
+    std::vector<GameLogicPush::GatewayPushItem> items;
+    items.reserve(by_player.size());
     for (auto &kv : by_player) {
         bool has_el = false;
         bool has_move = false;
@@ -232,18 +294,22 @@ void PublishAoiBatch(const AoiPushBatch &batch) {
         notify.set_ok(true);
         notify.set_message("aoi");
         *notify.mutable_aoi_delta() = kv.second;
-        std::string payload;
-        if (!notify.SerializeToString(&payload))
+        GameLogicPush::GatewayPushItem item;
+        if (!notify.SerializeToString(&item.payload)) {
+            LOG_WARN << "PublishAoiBatch serialize failed player=" << kv.first;
             continue;
+        }
         const auto &rt = route[kv.first];
-        const bool reliable = has_el;
-        const bool coalescable = has_move && !has_el;
-        const bool pok = GameLogicPush::PushToBoundGateway(
-            rt.first, kv.first, rt.second, "aoi.delta.v1", payload, reliable, coalescable, 0);
-        LOG_INFO << "PublishAoiBatch player=" << kv.first << " gw=" << rt.first
-                 << " sid=" << rt.second << " ok=" << pok
-                 << " events=" << kv.second.events_size() << " reliable=" << reliable;
+        item.gateway_instance_id = rt.first;
+        item.player_id = kv.first;
+        item.session_id = rt.second;
+        item.message_type = "aoi.delta.v1";
+        item.reliable = has_el;
+        item.coalescable = has_move && !has_el;
+        items.push_back(std::move(item));
     }
+    if (!items.empty())
+        GameLogicPush::PushGrouped(std::move(items));
 }
 #endif
 
@@ -1869,6 +1935,10 @@ bool GameLogic::HandleEnterMap(const game::EnterMapReq &req, game::GameResponse 
                 sz = nz;
             }
         }
+        if (place.map_template_id == 1002) {
+            ApplyTemplateSpawn(place.map_template_id, &sx, &sy, &sz);
+            recovery = "SPAWN_FALLBACK";
+        }
         const int view_r = (have_pol && pol.aoi_view_radius_cells >= 0) ? pol.aoi_view_radius_cells
                                                                        : -1;
         MapEntity me;
@@ -2548,6 +2618,7 @@ bool GameLogic::HandleRespawn(const game::RespawnReq &req, game::GameResponse *r
         y = sp.position.y;
         z = sp.position.z;
         yaw = sp.yaw;
+        ApplyTemplateSpawn(tpl, &x, &y, &z);
     }
     MapEntity confirmed;
     AoiPushBatch pushes;

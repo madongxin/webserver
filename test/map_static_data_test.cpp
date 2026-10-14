@@ -146,7 +146,7 @@ int main() {
         Expect(MapCatalog::Instance().GetScenePolicy(1002, &pol) &&
                    pol.kind == SceneKind::Line && pol.soft_cap == 100 &&
                    pol.hard_cap == 400 && pol.aoi_view_radius_cells == 1 &&
-                   pol.spawn_scatter_radius == 160.f,
+                   pol.spawn_scatter_radius == 0.f,
                "1002 LINE 100/400");
         Expect(MapCatalog::Instance().GetScenePolicy(1001, &pol) &&
                    pol.spawn_scatter_radius == 4.f,

@@ -3,8 +3,10 @@
 #include "Logging.h"
 #include "ServerStats.h"
 
+#include <algorithm>
 #include <chrono>
 #include <cmath>
+#include <vector>
 
 namespace {
 
@@ -70,9 +72,15 @@ void MapRuntime::RemoveFromCell(InstanceState *st, const MapEntity &e) {
 
 std::unordered_set<uint64_t> MapRuntime::VisibleIds(const InstanceState &st,
                                                     const MapEntity &e) const {
-    std::unordered_set<uint64_t> out;
+    // 视野格子里只同步最近的 50 人。距离相同按 player_id，避免叠点时名单来回抖动。
+    constexpr size_t kAoiSyncCap = 50;
+    struct Cand {
+        uint64_t id = 0;
+        float d2 = 0.f;
+    };
+    std::vector<Cand> cands;
     if (!st.data)
-        return out;
+        return {};
     int cx = 0, cz = 0;
     st.data->WorldToAoiCell(e.x, e.z, &cx, &cz);
     const int r = st.view_radius >= 0 ? st.view_radius : view_radius_;
@@ -85,11 +93,29 @@ std::unordered_set<uint64_t> MapRuntime::VisibleIds(const InstanceState &st,
                 if (pid == e.player_id)
                     continue;
                 auto eit = st.entities.find(pid);
-                if (eit != st.entities.end() && eit->second.connected)
-                    out.insert(pid);
+                if (eit == st.entities.end() || !eit->second.connected)
+                    continue;
+                const float ddx = eit->second.x - e.x;
+                const float ddz = eit->second.z - e.z;
+                cands.push_back(Cand{pid, ddx * ddx + ddz * ddz});
             }
         }
     }
+    if (cands.size() > kAoiSyncCap) {
+        std::nth_element(cands.begin(), cands.begin() + static_cast<std::ptrdiff_t>(kAoiSyncCap),
+                         cands.end(), [](const Cand &a, const Cand &b) {
+                             if (a.d2 < b.d2)
+                                 return true;
+                             if (b.d2 < a.d2)
+                                 return false;
+                             return a.id < b.id;
+                         });
+        cands.resize(kAoiSyncCap);
+    }
+    std::unordered_set<uint64_t> out;
+    out.reserve(cands.size());
+    for (const auto &c : cands)
+        out.insert(c.id);
     return out;
 }
 
