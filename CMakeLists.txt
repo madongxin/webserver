@@ -116,6 +116,7 @@ if(ENABLE_GAME_PROTOBUF)
     runtime/PublicError.cpp
     runtime/ProtocolHandshake.cpp
     runtime/GatewayConnGuard.cpp
+    runtime/LoginAdmission.cpp
     runtime/GameRequestPlayerId.cpp
     runtime/GameRequestTransport.cpp
     runtime/MapPlacement.cpp
@@ -486,6 +487,44 @@ target_include_directories(map_runtime_aoi_test PRIVATE
   runtime base log timer ${OPENSSL_INCLUDE_DIR} ${JSONCPP_INCLUDE_DIRS})
 target_link_libraries(map_runtime_aoi_test
   ${CMAKE_THREAD_LIBS_INIT} ${OPENSSL_CRYPTO_LIB} ${JSONCPP_LIBRARIES})
+
+add_executable(aoi_subscription_invariant_test
+  test/aoi_subscription_invariant_test.cpp
+  runtime/MapRuntime.cpp
+  runtime/MapStaticData.cpp
+  runtime/MapCatalog.cpp
+  base/FileHash.cpp
+  base/CurrentThread.cpp
+  log/Logging.cpp
+  log/LogStream.cpp
+  log/LogFile.cpp
+  log/AsyncLogging.cpp)
+target_include_directories(aoi_subscription_invariant_test PRIVATE
+  runtime base log timer ${OPENSSL_INCLUDE_DIR} ${JSONCPP_INCLUDE_DIRS})
+target_link_libraries(aoi_subscription_invariant_test
+  ${CMAKE_THREAD_LIBS_INIT} ${OPENSSL_CRYPTO_LIB} ${JSONCPP_LIBRARIES})
+
+add_executable(aoi_interest_bench
+  test/aoi_interest_bench.cpp
+  runtime/MapRuntime.cpp
+  runtime/MapStaticData.cpp
+  runtime/MapCatalog.cpp
+  base/FileHash.cpp
+  base/CurrentThread.cpp
+  log/Logging.cpp
+  log/LogStream.cpp
+  log/LogFile.cpp
+  log/AsyncLogging.cpp)
+target_include_directories(aoi_interest_bench PRIVATE
+  runtime base log timer ${OPENSSL_INCLUDE_DIR} ${JSONCPP_INCLUDE_DIRS})
+target_link_libraries(aoi_interest_bench
+  ${CMAKE_THREAD_LIBS_INIT} ${OPENSSL_CRYPTO_LIB} ${JSONCPP_LIBRARIES})
+
+add_executable(login_admission_test
+  test/login_admission_test.cpp
+  runtime/LoginAdmission.cpp)
+target_include_directories(login_admission_test PRIVATE runtime)
+target_link_libraries(login_admission_test ${CMAKE_THREAD_LIBS_INIT})
 
 # 阶段 6：消息类型 → World / Logic 路由分类
 if(ENABLE_GAME_PROTOBUF)

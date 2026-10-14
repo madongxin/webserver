@@ -21,6 +21,7 @@
 #include "HealthProbe.h"
 #include "InProcessTransport.h"
 #include "Logging.h"
+#include "LoginAdmission.h"
 #include "MapCatalog.h"
 #include "OpsMetrics.h"
 #include "PlayerSerialQueue.h"
@@ -663,7 +664,18 @@ void GameTcpGateway::OnMessage(const std::shared_ptr<TcpConnection> &conn) {
             // Register/Logout 不占用 Login/Reconnect 流程槽；Login/Reconnect 同时仅一个
             uint64_t flow_gen = 0;
             const bool needs_flow = peek.has_login() || peek.has_reconnect();
+            bool admission_held = false;
+            if (needs_flow) {
+                if (!LoginAdmission::Instance().TryAcquire(peek.has_reconnect())) {
+                    SendPublicErr(tcp_sink, conn->id(), peek.seq(), gameproto::kErrOverloaded,
+                                  "login admission");
+                    continue;
+                }
+                admission_held = true;
+            }
             if (needs_flow && !GatewayAuthFlow::Instance().TryBegin(conn_id, &flow_gen)) {
+                if (admission_held)
+                    LoginAdmission::Instance().Release();
                 SendPublicErr(tcp_sink, conn->id(), peek.seq(), gameproto::kErrOverloaded,
                               "auth flow in progress");
                 continue;
@@ -733,8 +745,10 @@ void GameTcpGateway::OnMessage(const std::shared_ptr<TcpConnection> &conn) {
                         }
                     }
                 }
-                if (needs_flow)
+                if (needs_flow) {
                     GatewayAuthFlow::Instance().End(conn_id, flow_gen);
+                    LoginAdmission::Instance().Release();
+                }
                 if (!out.empty() && sink &&
                     (!needs_flow || GatewayAuthFlow::Instance().Alive(conn_id))) {
                     sink->SendFrame(out);
@@ -793,8 +807,10 @@ void GameTcpGateway::OnMessage(const std::shared_ptr<TcpConnection> &conn) {
                     });
             }
             if (!started) {
-                if (needs_flow)
+                if (needs_flow) {
                     GatewayAuthFlow::Instance().End(conn_id, flow_gen);
+                    LoginAdmission::Instance().Release();
+                }
                 OpsMetrics::Instance().IncQueueOverload();
                 SendPublicErr(tcp_sink, conn->id(), peek.seq(), gameproto::kErrOverloaded,
                               "queue overloaded");

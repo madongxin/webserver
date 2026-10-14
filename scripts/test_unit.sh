@@ -21,6 +21,8 @@ run_one message_route_test
 run_one map_placement_test
 run_one map_static_data_test
 run_one map_runtime_aoi_test
+run_one aoi_subscription_invariant_test
+run_one login_admission_test
 run_one player_serial_queue_test
 run_one player_serial_shutdown_test
 run_one secure_random_test

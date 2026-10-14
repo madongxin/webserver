@@ -166,10 +166,18 @@ int main() {
     Expect(snap.size() == 50, "enter snapshot capped at 50");
     int enter_n = 0;
     for (const auto &ev : pushes.events) {
-        if (ev.op == 1)
+        if (ev.op == 1 && ev.snapshot.player_id == 60)
             ++enter_n;
     }
-    Expect(enter_n == 50, "enter notifies 50 neighbors");
+    Expect(enter_n == 0, "player 60 is outside every viewer's nearest 50");
+    std::vector<MapEntity> snap1;
+    Expect(rt.SnapshotView(1, nullptr, &snap1, nullptr), "snapshot p1");
+    bool sees60 = false;
+    for (const auto &e : snap1) {
+        if (e.player_id == 60)
+            sees60 = true;
+    }
+    Expect(!sees60 && snap1.size() == 50, "p1 subscribes to 50 nearer players");
 
     if (fails) {
         std::printf("map_runtime_aoi_test FAIL count=%d\n", fails);

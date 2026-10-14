@@ -18,6 +18,7 @@
 #include <memory>
 #include <mutex>
 #include <unordered_map>
+#include <vector>
 
 namespace {
 
@@ -48,7 +49,22 @@ std::string ReadCnfValue(const std::string &path, const char *key) {
     return {};
 }
 
-std::string ResolveGamedbAddr() {
+std::vector<std::string> SplitAddrs(const std::string &gamedb) {
+    std::vector<std::string> out;
+    std::size_t i = 0;
+    while (i < gamedb.size()) {
+        const auto comma = gamedb.find(',', i);
+        const auto part = Trim(gamedb.substr(i, comma == std::string::npos ? std::string::npos : comma - i));
+        if (!part.empty())
+            out.push_back(part);
+        if (comma == std::string::npos)
+            break;
+        i = comma + 1;
+    }
+    return out;
+}
+
+std::string ReadGamedbList() {
     std::string session_cnf = "../config/session.cnf";
     std::string resolved;
     if (GameMeshPaths::ResolveProjectSubdir("config/session.cnf", &resolved))
@@ -60,35 +76,37 @@ std::string ResolveGamedbAddr() {
             gw = resolved;
         gamedb = ReadCnfValue(gw, "gamedb_addrs");
     }
-    if (gamedb.empty())
-        return {};
-    const auto comma = gamedb.find(',');
-    if (comma != std::string::npos)
-        gamedb = gamedb.substr(0, comma);
-    return Trim(gamedb);
+    return gamedb;
 }
 
 brpc::Channel *CachedGameDbChannel() {
     static std::mutex mu;
     static std::unique_ptr<brpc::Channel> ch;
     static std::string cached_addr;
-    const std::string addr = ResolveGamedbAddr();
-    if (addr.empty())
+    const auto addrs = SplitAddrs(ReadGamedbList());
+    if (addrs.empty())
         return nullptr;
     std::lock_guard<std::mutex> lk(mu);
-    if (ch && cached_addr == addr)
-        return ch.get();
-    auto neu = std::unique_ptr<brpc::Channel>(new brpc::Channel());
-    brpc::ChannelOptions opt;
-    opt.timeout_ms = 2000;
-    opt.max_retry = 0;
-    if (neu->Init(addr.c_str(), &opt) != 0) {
-        LOG_WARN << "AuthService GameDB channel init failed addr=" << addr;
+    if (ch) {
+        for (const auto &a : addrs) {
+            if (a == cached_addr)
+                return ch.get();
+        }
+    }
+    for (const auto &addr : addrs) {
+        auto neu = std::unique_ptr<brpc::Channel>(new brpc::Channel());
+        brpc::ChannelOptions opt;
+        opt.timeout_ms = 2000;
+        opt.max_retry = 0;
+        if (neu->Init(addr.c_str(), &opt) != 0) {
+            LOG_WARN << "AuthService GameDB channel init failed addr=" << addr;
+            continue;
+        }
+        ch = std::move(neu);
+        cached_addr = addr;
+        LOG_INFO << "AuthService GameDB channel ready " << addr;
         return ch.get();
     }
-    ch = std::move(neu);
-    cached_addr = addr;
-    LOG_INFO << "AuthService GameDB channel ready " << addr;
     return ch.get();
 }
 

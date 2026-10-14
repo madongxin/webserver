@@ -91,12 +91,25 @@ private:
         std::shared_ptr<const MapStaticData> data;
         std::unordered_map<uint64_t, MapEntity> entities;
         std::unordered_map<uint64_t, std::unordered_set<uint64_t>> cells;
+        // viewer -> targets this viewer currently subscribes to (cap applied here).
+        std::unordered_map<uint64_t, std::unordered_set<uint64_t>> visible_targets;
+        // target -> viewers who subscribed to that target. MOVE uses this, not the mover's own set.
+        std::unordered_map<uint64_t, std::unordered_set<uint64_t>> watchers;
         int view_radius = -1;
     };
 
     static uint64_t CellKey(int cx, int cz);
     static int64_t NowMs();
     std::unordered_set<uint64_t> VisibleIds(const InstanceState &st, const MapEntity &e) const;
+    std::vector<uint64_t> NeighborhoodIds(const InstanceState &st, float x, float z) const;
+    void ForgetViewer(InstanceState *st, uint64_t viewer_id);
+    // silent_viewer updates indexes but does not receive ENTER/LEAVE (enter snapshot covers them).
+    // mover_id != 0 emits MOVE to viewers who already subscribed and still subscribe.
+    void RefreshViewers(InstanceState *st, const std::vector<uint64_t> &viewer_ids, uint64_t mover_id,
+                        uint64_t silent_viewer, uint64_t map_instance_id, AoiPushBatch *pushes);
+    void RemovePlayerInterest(InstanceState *st, uint64_t map_instance_id, uint64_t player_id,
+                              AoiPushBatch *pushes, bool erase_entity);
+    void FillSnapshot(const InstanceState &st, uint64_t viewer_id, std::vector<MapEntity> *aoi_snapshot) const;
     void PlaceInCell(InstanceState *st, const MapEntity &e);
     void RemoveFromCell(InstanceState *st, const MapEntity &e);
     void EmitTo(AoiPushBatch *pushes, uint64_t map_id, const MapEntity &recipient, int op,
