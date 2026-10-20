@@ -3,7 +3,9 @@
 #include "BrpcChannelManager.h"
 #include "FormalMode.h"
 #include "GameRequestTransport.h"
+#include "GatewayConnRegistry.h"
 #include "Logging.h"
+#include "TcpConnection.h"
 #include "MapInstanceRegistry.h"
 #include "MapPlacement.h"
 #include "MessageRoute.h"
@@ -66,6 +68,27 @@ struct WorldForwardCallContext {
     std::string request_payload;
 };
 
+void ApplySnapshotRoute(const std::shared_ptr<ReplySink> &sink, const std::string &frame) {
+    if (!sink)
+        return;
+    const auto conn = sink->tcp_connection();
+    if (!conn)
+        return;
+    std::string buf = frame;
+    std::string payload;
+    if (gameproto::DecodeOneFrame(&buf, &payload) != gameproto::FrameDecodeResult::Complete)
+        return;
+    game::GameResponse gr;
+    if (!gr.ParseFromString(payload) || !gr.ok() || !gr.has_full_snapshot())
+        return;
+    const auto &fs = gr.full_snapshot();
+    if (!fs.ok() || fs.map_instance_id() == 0 || fs.gamelogic_instance_id().empty())
+        return;
+    GatewayConnRegistry::Instance().ApplyRoute(conn->id(), fs.gamelogic_instance_id(),
+                                              fs.map_instance_id(), fs.owner_epoch(),
+                                              fs.route_version());
+}
+
 void OnDispatchDone(DispatchCallContext *ctx) {
     std::unique_ptr<DispatchCallContext> guard(ctx);
     if (!ctx->sink)
@@ -88,6 +111,7 @@ void OnDispatchDone(DispatchCallContext *ctx) {
             ctx->sink->SendFrame(err);
         return;
     }
+    ApplySnapshotRoute(ctx->sink, ctx->rsp.response_frame());
     ctx->sink->SendFrame(ctx->rsp.response_frame());
 }
 
@@ -118,7 +142,9 @@ void ApplyPlacementToHandle(const MapPlacementRecord &p, SessionHandle *handle) 
     handle->map_instance_id = p.map_instance_id;
     handle->owner_epoch = p.owner_epoch;
     handle->route_version = p.route_version;
-    handle->gamelogic_instance_id = p.owner_gamelogic_id;
+    // 空 owner 不得覆盖 Login/Reconnect 已写入的 sticky（否则 Move 路径会刷 missing sticky）。
+    if (!p.owner_gamelogic_id.empty())
+        handle->gamelogic_instance_id = p.owner_gamelogic_id;
 }
 
 bool PlacementFromPb(const sess::PlacementRecord &pb, MapPlacementRecord *out) {
@@ -341,6 +367,21 @@ void BrpcTransport::PostPlayerRequest(const SessionHandle &handle, std::string r
 
     // 正式业务：异步 Dispatch（不再走 GameLogicForward）
     const bool is_register = parsed_ok && parsed.body_case() == game::GameRequest::kRegister;
+    if (route.gamelogic_instance_id.empty() && !is_register) {
+        // 二次兜底：连接 registry 上的 sticky（Login 已绑、Placement owner 为空时）。
+        GatewayConnRegistry::Bind sticky;
+        if (route.connection_id != 0 &&
+            GatewayConnRegistry::Instance().FindByConnection(route.connection_id, &sticky) &&
+            !sticky.gamelogic_instance_id.empty()) {
+            route.gamelogic_instance_id = sticky.gamelogic_instance_id;
+            if (route.map_instance_id == 0)
+                route.map_instance_id = sticky.map_instance_id;
+            if (route.owner_epoch == 0)
+                route.owner_epoch = sticky.map_owner_epoch;
+            if (route.route_version == 0)
+                route.route_version = sticky.route_version;
+        }
+    }
     if (route.gamelogic_instance_id.empty() && !is_register) {
         LOG_ERROR << "BrpcTransport: missing sticky gamelogic_instance_id player_id="
                   << route.player_id;

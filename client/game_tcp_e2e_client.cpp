@@ -2336,6 +2336,11 @@ int CmdLinePress(int argc, char **argv) {
         if ((i + 1) % 50 == 0 || i + 1 == n) {
             PrintKv("press_opened", static_cast<uint64_t>(opened));
         }
+        if (const char *gap = std::getenv("PRESS_SPACING_MS")) {
+            const int ms = std::atoi(gap);
+            if (ms > 0 && i + 1 < n)
+                std::this_thread::sleep_for(std::chrono::milliseconds(ms));
+        }
     }
     uint32_t aoi_max = 0, aoi_p95 = 0;
     if (!aoi_ns.empty()) {
@@ -2363,6 +2368,22 @@ int CmdLinePress(int argc, char **argv) {
     PrintKv("press_max_line_n", static_cast<uint64_t>(max_n));
     const bool ok = opened == n && !counts.empty() && max_n <= 400;
     PrintKv("line_press_ok", ok);
+    const int move_steps = std::getenv("PRESS_MOVE_STEPS") ? std::atoi(std::getenv("PRESS_MOVE_STEPS")) : 0;
+    const int move_gap = std::getenv("PRESS_MOVE_GAP_MS") ? std::atoi(std::getenv("PRESS_MOVE_GAP_MS")) : 100;
+    if (move_steps > 0) {
+        for (int step = 0; step < move_steps; ++step) {
+            for (auto &c : ss) {
+                if (c.fd < 0)
+                    continue;
+                game::MoveRsp mv;
+                const float x = 1.f + static_cast<float>(step % 5);
+                (void)DoMoveTo(&c, x, 0.f, 1.f, 0.f, &mv);
+            }
+            if (move_gap > 0)
+                std::this_thread::sleep_for(std::chrono::milliseconds(move_gap));
+        }
+        PrintKv("press_move_steps", static_cast<uint64_t>(move_steps));
+    }
     const int hold_ms = std::getenv("PRESS_HOLD_MS") ? std::atoi(std::getenv("PRESS_HOLD_MS")) : 0;
     if (hold_ms > 0)
         std::this_thread::sleep_for(std::chrono::milliseconds(hold_ms));

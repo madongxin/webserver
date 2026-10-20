@@ -132,6 +132,11 @@ bool MapCatalog::LoadDirectory(const std::string &dir, std::string *err) {
         ent.policy.min_lines = m.get("min_lines", 0).asUInt();
         ent.policy.empty_close_delay = m.get("empty_close_delay", 0).asUInt();
         ent.policy.aoi_view_radius_cells = m.get("aoi_view_radius_cells", -1).asInt();
+        ent.policy.aoi_max_visible = m.get("aoi_max_visible", 200).asInt();
+        if (ent.policy.aoi_max_visible < 1)
+            ent.policy.aoi_max_visible = 200;
+        if (ent.policy.aoi_max_visible > 200)
+            ent.policy.aoi_max_visible = 200;
         ent.policy.spawn_scatter_radius = m.get("spawn_scatter_radius", 0).asFloat();
         ent.policy.portal_gated = m.get("portal_gated", false).asBool();
         if (ent.policy.kind == SceneKind::Line) {

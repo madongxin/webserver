@@ -127,7 +127,8 @@ std::string GuessFromMessage(const std::string &msg) {
         return kErrOverloaded;
     if (ContainsFold(msg, "rate limit"))
         return kErrRateLimited;
-    if (ContainsFold(msg, "fence"))
+    if (ContainsFold(msg, "fence") || ContainsFold(msg, "session_id mismatch") ||
+        ContainsFold(msg, "generation rejected"))
         return kErrFenceStale;
     if (ContainsFold(msg, "not bound") || ContainsFold(msg, "not on a line"))
         return kErrNotOnMap;
@@ -174,8 +175,8 @@ std::string NormalizePublicErrorCode(const std::string &code) {
 
 bool ErrorCodeRetryable(const std::string &code) {
     return code == kErrRateLimited || code == kErrOverloaded || code == kErrDependencyUnavailable ||
-           code == kErrAoiResyncRequired || code == "ERR_OPERATION_TOO_FREQUENT" ||
-           code == "ERR_RELATION_CONFLICT";
+           code == kErrAoiResyncRequired || code == kErrFenceStale ||
+           code == "ERR_OPERATION_TOO_FREQUENT" || code == "ERR_RELATION_CONFLICT";
 }
 
 int64_t PublicNowMs() {

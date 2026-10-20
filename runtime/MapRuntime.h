@@ -2,6 +2,7 @@
 
 #include "MapStaticData.h"
 
+#include <atomic>
 #include <cstdint>
 #include <memory>
 #include <mutex>
@@ -58,12 +59,16 @@ public:
 
     void SetViewRadiusCells(int n);
     int view_radius_cells() const { return view_radius_; }
+    // 新实例冻结的可见人数。已创建的实例不随后续调用改变。范围 1..200。
+    void SetMaxVisible(int n);
+    int max_visible() const { return max_visible_; }
 
     /** EnterMap / 重连之后把移动序号窗口清零，下一个合法 seq 从 1 起。 */
     void ResetClientSeq(uint64_t player_id);
     bool Enter(uint64_t map_instance_id, std::shared_ptr<const MapStaticData> data,
                MapEntity entity, MapEntity *self_out, std::vector<MapEntity> *aoi_snapshot,
-               AoiPushBatch *pushes, std::string *err, int view_radius_cells = -1);
+               AoiPushBatch *pushes, std::string *err, int view_radius_cells = -1,
+               int max_visible = -1);
     /** 关闭已回收实例（空线/空本 CLOSED） */
     bool Unload(uint64_t map_instance_id);
     MapMoveReject Move(uint64_t map_instance_id, uint64_t player_id, float x, float y, float z,
@@ -76,6 +81,12 @@ public:
                    const std::string &session_id, MapEntity *self_out,
                    std::vector<MapEntity> *aoi_snapshot, AoiPushBatch *pushes);
 
+    /**
+     * 删掉不在 keep 里的实体并发 LEAVE。
+     * 宽限到期只清 Redis occ、不 Leave 时，内存里的 bot 会进下一次 EnterMap 快照。
+     */
+    size_t DropExcept(uint64_t map_instance_id, const std::unordered_set<uint64_t> &keep,
+                      AoiPushBatch *pushes);
     bool HasPlayer(uint64_t map_instance_id, uint64_t player_id) const;
     uint32_t ConnectedCount(uint64_t map_instance_id) const;
     uint64_t PlayerMap(uint64_t player_id) const;
@@ -88,6 +99,7 @@ private:
     MapRuntime() = default;
 
     struct InstanceState {
+        mutable std::mutex mu;
         std::shared_ptr<const MapStaticData> data;
         std::unordered_map<uint64_t, MapEntity> entities;
         std::unordered_map<uint64_t, std::unordered_set<uint64_t>> cells;
@@ -96,6 +108,10 @@ private:
         // target -> viewers who subscribed to that target. MOVE uses this, not the mover's own set.
         std::unordered_map<uint64_t, std::unordered_set<uint64_t>> watchers;
         int view_radius = -1;
+        int max_visible = 200;  // frozen when the instance is created
+        uint64_t epoch = 0;
+        std::atomic<bool> unloaded{false};
+        std::atomic<int> entity_count{0};
     };
 
     static uint64_t CellKey(int cx, int cz);
@@ -115,8 +131,17 @@ private:
     void EmitTo(AoiPushBatch *pushes, uint64_t map_id, const MapEntity &recipient, int op,
                 const MapEntity &snapshot) const;
 
-    mutable std::mutex mu_;
+    int ResolvedRadius(const InstanceState &st) const;
+    std::unique_lock<std::mutex> LockInst(const std::shared_ptr<InstanceState> &st) const;
+    // Registry only. Does not take the instance lock.
+    bool PublishPlayer(uint64_t player_id, uint64_t map_instance_id,
+                       const std::shared_ptr<InstanceState> &st);
+    void RetireIfEmpty(uint64_t map_instance_id, const std::shared_ptr<InstanceState> &st);
+
+    mutable std::mutex mu_;  // maps_ + player_map_ only; not held across AOI scans
     int view_radius_ = 2;
-    std::unordered_map<uint64_t, std::unique_ptr<InstanceState>> maps_;
+    int max_visible_ = 200;
+    uint64_t next_epoch_ = 1;
+    std::unordered_map<uint64_t, std::shared_ptr<InstanceState>> maps_;
     std::unordered_map<uint64_t, uint64_t> player_map_;
 };

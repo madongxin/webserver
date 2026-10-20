@@ -65,8 +65,11 @@ public:
 
     void SetLimits(size_t max_per_shard, size_t max_global);
 
-    /** 投递成功返回 true；队列满或非 RUNNING 返回 false（不 inline 执行） */
-    bool TryPost(uint64_t player_id, std::function<void()> task);
+    /**
+     * 投递成功返回 true；队列满或非 RUNNING 返回 false（不 inline 执行）。
+     * ignore_global_cap：断线 Unbind 不受全局积压限制，仍受单分片上限约束。
+     */
+    bool TryPost(uint64_t player_id, std::function<void()> task, bool ignore_global_cap = false);
 
     /** 兼容旧路径：满时丢弃并打日志（Gateway 编排应改用 TryPost） */
     void Post(uint64_t player_id, std::function<void()> task);

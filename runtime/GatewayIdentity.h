@@ -23,9 +23,12 @@ public:
      * Redis 不可用时仅校验非空并返回 true。
      */
     bool ClaimOrFail(std::string *err);
+    /** 刷新 gw_claim TTL（应在 Gateway 主循环周期调用，避免误杀 ONLINE）。 */
+    bool RenewClaim();
 
 private:
     GatewayIdentity() = default;
+    std::string ClaimKey() const;
     std::string id_;
 };
 

@@ -361,6 +361,7 @@ void GameLogicServiceImpl::BindPlayer(::google::protobuf::RpcController *control
     bp.transfer_id = request->transfer_id();
     bp.frozen = false;
     bp.last_client_seq = 0;
+    bool idempotent_bind = false;
     {
         std::lock_guard<std::mutex> lk(g_bound_mu);
         auto it = g_bound.find(player_id);
@@ -373,6 +374,13 @@ void GameLogicServiceImpl::BindPlayer(::google::protobuf::RpcController *control
         }
         if (it != g_bound.end() && !bp.transfer_id.empty() &&
             it->second.transfer_id == bp.transfer_id && !it->second.frozen) {
+            // 同一 transfer 重登：刷新 session/fence，否则随后 Dispatch 报 session_id mismatch。
+            it->second.session_id = bp.session_id;
+            it->second.fence_token = bp.fence_token;
+            it->second.generation = bp.generation;
+            it->second.gateway_instance_id = bp.gateway_instance_id;
+            if (bp.map_instance_id != 0)
+                it->second.map_instance_id = bp.map_instance_id;
             response->set_ok(true);
             response->set_message("prepare idempotent");
             response->set_bag_item_kinds(0);
@@ -382,10 +390,27 @@ void GameLogicServiceImpl::BindPlayer(::google::protobuf::RpcController *control
                 if (attrs.SerializeToString(&pb))
                     response->set_profile_pb(pb);
             }
-            return;
+            idempotent_bind = true;
+        } else {
+            // 新 fence/session：重置 client_seq
+            g_bound[player_id] = bp;
         }
-        // 新 fence/session：重置 client_seq
-        g_bound[player_id] = bp;
+    }
+    if (idempotent_bind) {
+        // 只刷新 session 就返回会让实体一直 connected=false：分线人数还在，视野快照是空的。
+        AoiPushBatch pushes;
+        MapEntity self;
+        std::vector<MapEntity> snap;
+        bool on_map = MapRuntime::Instance().Reconnect(player_id, bp.gateway_instance_id,
+                                                       bp.session_id, &self, &snap, &pushes);
+        if (on_map)
+            GameLogic::Instance().EmitAoi(pushes);
+        if (!on_map && bp.map_instance_id != 0 &&
+            MapRuntime::Instance().HasPlayer(bp.map_instance_id, player_id))
+            on_map = true;
+        response->set_on_map(on_map);
+        response->set_map_instance_id(bp.map_instance_id);
+        return;
     }
     done_guard.release();
     auto *rsp = response;
@@ -413,15 +438,27 @@ void GameLogicServiceImpl::BindPlayer(::google::protobuf::RpcController *control
                 if (attrs.SerializeToString(&pb))
                     rsp->set_profile_pb(pb);
             }
-            LOG_INFO << "BindPlayer ok player_id=" << player_id
-                     << " session=" << req_copy.session_id() << " gen=" << req_copy.generation()
-                     << " gw=" << req_copy.gateway_instance_id();
             AoiPushBatch pushes;
             MapEntity self;
             std::vector<MapEntity> snap;
-            if (MapRuntime::Instance().Reconnect(player_id, req_copy.gateway_instance_id(),
-                                                 req_copy.session_id(), &self, &snap, &pushes))
+            bool on_map = MapRuntime::Instance().Reconnect(player_id, req_copy.gateway_instance_id(),
+                                                           req_copy.session_id(), &self, &snap,
+                                                           &pushes);
+            if (on_map)
                 GameLogic::Instance().EmitAoi(pushes);
+            if (!on_map && req_copy.map_instance_id() != 0 &&
+                MapRuntime::Instance().HasPlayer(req_copy.map_instance_id(), player_id))
+                on_map = true;
+            rsp->set_on_map(on_map);
+            rsp->set_map_instance_id(req_copy.map_instance_id());
+#ifdef WEBSERVER_ENABLE_REDIS
+            // 仅在真正回到地图时 Resume；on_map=false 时保持 parked，避免幽灵占 softcap。
+            if (on_map && req_copy.map_instance_id() != 0)
+                PlacementStore::Instance().ResumeParked(player_id);
+#endif
+            LOG_INFO << "BindPlayer ok player_id=" << player_id
+                     << " session=" << req_copy.session_id() << " gen=" << req_copy.generation()
+                     << " gw=" << req_copy.gateway_instance_id() << " on_map=" << on_map;
         })) {
         brpc::ClosureGuard g(closure);
         {
@@ -549,13 +586,13 @@ void GameLogicServiceImpl::UnbindPlayer(::google::protobuf::RpcController *contr
         auto it = g_bound.find(request->player_id());
         if (it != g_bound.end()) {
             if (!request->session_id().empty() && it->second.session_id != request->session_id()) {
-                response->set_ok(false);
-                response->set_message("session_id mismatch");
+                response->set_ok(true);
+                response->set_message("stale unbind skipped (session replaced)");
                 return;
             }
             if (!request->fence_token().empty() && it->second.fence_token != request->fence_token()) {
-                response->set_ok(false);
-                response->set_message("fence_token rejected");
+                response->set_ok(true);
+                response->set_message("stale unbind skipped (fence replaced)");
                 return;
             }
         }
@@ -564,14 +601,40 @@ void GameLogicServiceImpl::UnbindPlayer(::google::protobuf::RpcController *contr
     // 串行队列上收尾，避免与在途 Dispatch 竞态
     const uint64_t pid = request->player_id();
     const std::string reason = request->reason().empty() ? "unbind" : request->reason();
+    const std::string expect_sid = request->session_id();
+    const std::string expect_fence = request->fence_token();
+    const uint64_t expect_gen = request->generation();
     done_guard.release();
     auto *rsp = response;
     auto *closure = done;
-    if (!PlayerSerialQueue::Instance().TryPost(pid, [pid, reason, rsp, closure]() {
+    const bool urgent_unbind = reason == "tcp_disconnect" || reason == "transfer_finalize";
+    if (!PlayerSerialQueue::Instance().TryPost(
+            pid, [pid, reason, expect_sid, expect_fence, expect_gen, rsp, closure]() {
             brpc::ClosureGuard g(closure);
             {
                 std::lock_guard<std::mutex> lk(g_bound_mu);
-                g_bound.erase(pid);
+                auto it = g_bound.find(pid);
+                if (it != g_bound.end()) {
+                    // 重连已写入新 fence/generation：旧 TCP 的迟到 Unbind 必须跳过，
+                    // 否则会在 Reconnect 成功后再次 Disconnect，客户端表现为 reconnect failed。
+                    if (!expect_sid.empty() && it->second.session_id != expect_sid) {
+                        rsp->set_ok(true);
+                        rsp->set_message("stale unbind skipped (session replaced)");
+                        return;
+                    }
+                    if (!expect_fence.empty() && it->second.fence_token != expect_fence) {
+                        rsp->set_ok(true);
+                        rsp->set_message("stale unbind skipped (fence replaced)");
+                        return;
+                    }
+                    if (expect_gen != 0 && it->second.generation != 0 &&
+                        expect_gen < it->second.generation) {
+                        rsp->set_ok(true);
+                        rsp->set_message("stale unbind skipped (generation)");
+                        return;
+                    }
+                    g_bound.erase(it);
+                }
             }
             AoiPushBatch pushes;
             if (reason == "tcp_disconnect") {
@@ -591,7 +654,7 @@ void GameLogicServiceImpl::UnbindPlayer(::google::protobuf::RpcController *contr
             GameLogic::Instance().FlushBag(pid, reason);
             rsp->set_ok(true);
             rsp->set_message("unbound");
-        })) {
+        }, urgent_unbind)) {
         brpc::ClosureGuard g(closure);
         rsp->set_ok(false);
         rsp->set_message("ERR_OVERLOAD: player serial queue full; unbind not applied");

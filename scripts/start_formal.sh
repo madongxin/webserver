@@ -14,6 +14,11 @@ export GAMEMESH_IDLE_TIMEOUT_MS="${GAMEMESH_IDLE_TIMEOUT_MS:-3600000}"
 export GAMEMESH_FORMAL="${GAMEMESH_FORMAL:-1}"
 export GAMEMESH_LOG_JSON="${GAMEMESH_LOG_JSON:-1}"
 export GAMEMESH_SESSION_REPLACE_GRACE_SEC="${GAMEMESH_SESSION_REPLACE_GRACE_SEC:-3}"
+# 重连风暴：抬高 Login/Reconnect 并发与 reconnect 预留，避免「账在线满却连不回来」。
+export GAMEMESH_LOGIN_INFLIGHT_MAX="${GAMEMESH_LOGIN_INFLIGHT_MAX:-512}"
+export GAMEMESH_LOGIN_RECONNECT_RESERVE="${GAMEMESH_LOGIN_RECONNECT_RESERVE:-128}"
+export GAMEMESH_LOGIN_BIND_INFLIGHT="${GAMEMESH_LOGIN_BIND_INFLIGHT:-512}"
+export GAMEMESH_LOGIN_ENTER_INFLIGHT="${GAMEMESH_LOGIN_ENTER_INFLIGHT:-512}"
 
 RUN_DIR="${GAMEMESH_RUN_DIR:-$ROOT/run/formal}"
 mkdir -p "$RUN_DIR/logs"
@@ -75,6 +80,12 @@ if [[ -f "$RUN_DIR/pids" ]]; then
   echo "已有正式实例在跑（$RUN_DIR/pids）。请先："
   echo "  ./scripts/stop_formal.sh"
   exit 1
+fi
+
+# 防御：上次被 kill -9 / 崩溃停机时 stop 未跑，Redis 仍可能有幽灵 ONLINE/分线。
+# 启动前再清一次运行时态（保留 friend/svc）；并清 gw_claim 以便本轮 ClaimOrFail。
+if [[ -x "$ROOT/scripts/redis_clear_runtime.sh" ]]; then
+  CLEAR_GW_CLAIM=1 "$ROOT/scripts/redis_clear_runtime.sh" || true
 fi
 
 # player_profile 等表由 versioned SQL 升级；Formal 运行期不做隐式 DDL

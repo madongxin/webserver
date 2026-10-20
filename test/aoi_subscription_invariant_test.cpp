@@ -94,6 +94,7 @@ int main() {
         return 1;
     auto &rt = MapRuntime::Instance();
     rt.SetViewRadiusCells(1);
+    rt.SetMaxVisible(50);
     MapEntity self;
     std::vector<MapEntity> snap;
     AoiPushBatch pushes;

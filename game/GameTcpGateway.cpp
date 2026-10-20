@@ -50,6 +50,7 @@
 #endif
 #endif
 
+#include <algorithm>
 #include <atomic>
 #include <cstdlib>
 #include <functional>
@@ -102,23 +103,31 @@ void RememberBind(uint64_t conn_id, uint64_t player_id, const std::string &token
     }
     if (sink) {
         std::weak_ptr<TcpConnection> weak_conn = sink->tcp_connection();
-        gb.send_frame = [weak_conn](const std::string &frame) {
-            auto c = weak_conn.lock();
-            if (!c || !c->loop())
-                return;
-            auto do_send = [weak_conn, frame]() {
-                auto live = weak_conn.lock();
-                if (!live || live->state() != TcpConnection::Connected)
+        auto make_try_send = [weak_conn](bool urgent) {
+            return [weak_conn, urgent](const std::string &frame) {
+                auto c = weak_conn.lock();
+                if (!c || !c->loop())
                     return;
-                OpsMetrics::Instance().AddGatewayTxBytes(frame.size());
-                OpsMetrics::Instance().AddGatewayTxFrames(1);
-                live->Send(frame);
+                // 推送路径用 TrySend：队列满丢帧，禁止背压关连接（否则 MarkDisconnected 雪崩）。
+                auto do_send = [weak_conn, frame, urgent]() {
+                    auto live = weak_conn.lock();
+                    if (!live || live->state() != TcpConnection::Connected)
+                        return;
+                    const bool ok =
+                        urgent ? live->TrySendUrgent(frame) : live->TrySend(frame);
+                    if (!ok)
+                        return;
+                    OpsMetrics::Instance().AddGatewayTxBytes(frame.size());
+                    OpsMetrics::Instance().AddGatewayTxFrames(1);
+                };
+                if (c->loop()->IsInLoopThread())
+                    do_send();
+                else
+                    c->loop()->QueueOneFunc(std::move(do_send));
             };
-            if (c->loop()->IsInLoopThread())
-                do_send();
-            else
-                c->loop()->QueueOneFunc(std::move(do_send));
         };
+        gb.send_frame = make_try_send(false);
+        gb.send_frame_urgent = make_try_send(true);
         gb.close_conn = [weak_conn]() {
             auto c = weak_conn.lock();
             if (!c)
@@ -431,6 +440,7 @@ void GameTcpGateway::Run() {
                 ureq.set_player_id(bind.player_id);
                 ureq.set_session_id(bind.session_id);
                 ureq.set_fence_token(bind.token);
+                ureq.set_generation(bind.generation);
                 ureq.set_reason("tcp_disconnect");
                 GatewayAuthClients::Instance().UnbindPlayerAsync(reg.gamelogic_instance_id, ureq);
             }
@@ -450,8 +460,26 @@ void GameTcpGateway::Run() {
                 SessionHandle h;
                 h.player_id = bind.player_id;
                 h.connection_id = c->id();
-                GameRequestTransport::Get().PostPlayerRequest(h, std::move(payload),
-                                                             std::make_shared<DropSink>());
+                h.generation = bind.generation;
+                h.session_id = bind.session_id;
+                h.fence_token = bind.token;
+#ifdef WEBSERVER_ENABLE_BRPC
+                if (has_reg) {
+                    h.gamelogic_instance_id = reg.gamelogic_instance_id;
+                    h.map_instance_id = reg.map_instance_id;
+                    h.owner_epoch = reg.map_owner_epoch;
+                    h.route_version = reg.route_version;
+                    if (h.session_id.empty())
+                        h.session_id = reg.session_id;
+                    if (h.fence_token.empty())
+                        h.fence_token = reg.token;
+                }
+#endif
+                // 无 sticky 时跳过 flush，避免 BrpcTransport missing sticky 刷屏。
+                if (!h.gamelogic_instance_id.empty()) {
+                    GameRequestTransport::Get().PostPlayerRequest(
+                        h, std::move(payload), std::make_shared<DropSink>());
+                }
             }
         }
         LOG_INFO << "Gateway disconnect conn#" << c->id() << " player_id=" << bind.player_id
@@ -503,6 +531,23 @@ void GameTcpGateway::OnMessage(const std::shared_ptr<TcpConnection> &conn) {
             return;
         }
         break;  // Incomplete
+    }
+    // 同一读批次里心跳/重连先处理，避免排在 Move/EnterMap 后面拖过客户端时限。
+    if (frames.size() > 1) {
+        std::stable_sort(frames.begin(), frames.end(), [](const std::string &a, const std::string &b) {
+            auto rank = [](const std::string &frame) {
+                game::GameRequest peek;
+                if (!peek.ParseFromString(frame))
+                    return 2;
+                if (peek.has_heartbeat() || peek.has_client_hello())
+                    return 0;
+                if (peek.has_reconnect() || peek.has_login() || peek.has_register_() ||
+                    peek.has_logout())
+                    return 1;
+                return 2;
+            };
+            return rank(a) < rank(b);
+        });
     }
     // 恶意半包堆积：超过读缓冲上限则关连
     if (buf.size() > conn->max_read_buf_bytes()) {
@@ -611,9 +656,19 @@ void GameTcpGateway::OnMessage(const std::shared_ptr<TcpConnection> &conn) {
             hb->set_jitter_hint_ms(gameproto::HeartbeatIntervalMs() / 5);
             gameproto::PromotePublicError(&outer, conn->id());
             std::string body, out;
-            if (outer.SerializeToString(&body) && gameproto::EncodeFrame(body, &out))
-                tcp_sink->SendFrame(out);
-            OpsMetrics::Instance().IncHeartbeatOk();
+            // 心跳在本连接 EventLoop 同步应答：TrySendUrgent，绝不 Hard Send/踢连接。
+            if (outer.SerializeToString(&body) && gameproto::EncodeFrame(body, &out)) {
+                if (conn->TrySendControl(out)) {
+                    OpsMetrics::Instance().AddGatewayTxBytes(out.size());
+                    OpsMetrics::Instance().AddGatewayTxFrames(1);
+                    OpsMetrics::Instance().IncHeartbeatOk();
+                } else {
+                    OpsMetrics::Instance().IncHeartbeatSoftDrop();
+                    LOG_WARN << "heartbeat soft-drop conn#" << conn->id()
+                             << " send_buf="
+                             << (conn->send_buf() ? conn->send_buf()->readablebytes() : 0);
+                }
+            }
             continue;
         }
 

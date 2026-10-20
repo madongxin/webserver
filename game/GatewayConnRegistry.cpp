@@ -26,12 +26,27 @@ void GatewayConnRegistry::Remember(uint64_t connection_id, Bind bind) {
                 player_to_conn_.erase(pit);
         }
     }
+    std::function<void()> close_previous;
+    if (bind.player_id != 0) {
+        auto pit = player_to_conn_.find(bind.player_id);
+        if (pit != player_to_conn_.end() && pit->second != connection_id) {
+            auto old = by_conn_.find(pit->second);
+            if (old != by_conn_.end() && old->second.close_conn)
+                close_previous = old->second.close_conn;
+        }
+    }
     bind.connection_id = connection_id;
     if (!bind.session_id.empty())
         session_to_conn_[bind.session_id] = connection_id;
     if (bind.player_id != 0)
         player_to_conn_[bind.player_id] = connection_id;
     by_conn_[connection_id] = std::move(bind);
+    if (close_previous) {
+        // 新绑定已接管 player_to_conn_。旧 TCP 关闭时 HasNewerBinding 为真，不会 MarkDisconnected。
+        LOG_INFO << "GatewayConnRegistry close previous conn player_id="
+                 << by_conn_[connection_id].player_id << " new_conn=" << connection_id;
+        close_previous();
+    }
 }
 
 void GatewayConnRegistry::Forget(uint64_t connection_id) {
@@ -72,6 +87,28 @@ bool GatewayConnRegistry::ApplyRoute(uint64_t connection_id, const std::string &
     it->second.map_owner_epoch = map_owner_epoch;
     if (route_version != 0)
         it->second.route_version = route_version;
+    return true;
+}
+
+bool GatewayConnRegistry::RetargetSession(uint64_t connection_id, uint64_t player_id,
+                                         const std::string &session_id, uint64_t generation,
+                                         const std::string &token) {
+    std::lock_guard<std::mutex> lk(mu_);
+    auto it = by_conn_.find(connection_id);
+    if (it == by_conn_.end() || it->second.player_id != player_id || player_id == 0)
+        return false;
+    if (!it->second.session_id.empty() && it->second.session_id != session_id) {
+        auto sit = session_to_conn_.find(it->second.session_id);
+        if (sit != session_to_conn_.end() && sit->second == connection_id)
+            session_to_conn_.erase(sit);
+    }
+    it->second.session_id = session_id;
+    it->second.generation = generation;
+    if (!token.empty())
+        it->second.token = token;
+    if (!session_id.empty())
+        session_to_conn_[session_id] = connection_id;
+    player_to_conn_[player_id] = connection_id;
     return true;
 }
 
@@ -124,11 +161,15 @@ bool GatewayConnRegistry::FindByPlayer(uint64_t player_id, Bind *out) {
     return true;
 }
 
-bool GatewayConnRegistry::SendBySession(const std::string &session_id, const std::string &frame) {
+bool GatewayConnRegistry::SendBySession(const std::string &session_id, const std::string &frame,
+                                        bool urgent) {
     Bind b;
     if (!FindBySession(session_id, &b) || !b.send_frame)
         return false;
-    b.send_frame(frame);
+    if (urgent && b.send_frame_urgent)
+        b.send_frame_urgent(frame);
+    else
+        b.send_frame(frame);
     return true;
 }
 

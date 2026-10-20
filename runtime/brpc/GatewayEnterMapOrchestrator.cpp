@@ -3,6 +3,7 @@
 #include "GatewayAuthClients.h"
 #include "GatewayIdentity.h"
 #include "Logging.h"
+#include "LoginAdmission.h"
 #include "MapCatalog.h"
 #include "MapLineView.h"
 #include "PlacementStore.h"
@@ -22,6 +23,9 @@ namespace gameproto {
 
 namespace {
 
+bool FailEnter(const game::GameRequest &req, const std::string &msg, std::string *frame,
+               const std::string &error_code = {});
+
 bool EncodeErr(const game::GameRequest &req, const std::string &msg, std::string *frame,
                const std::string &error_code = {}) {
     game::GameResponse rsp;
@@ -38,6 +42,12 @@ bool EncodeErr(const game::GameRequest &req, const std::string &msg, std::string
     gameproto::PromotePublicError(&rsp, 0);
     std::string raw;
     return rsp.SerializeToString(&raw) && EncodeFrame(raw, frame);
+}
+
+bool FailEnter(const game::GameRequest &req, const std::string &msg, std::string *frame,
+               const std::string &error_code) {
+    EncodeErr(req, msg, frame, error_code);
+    return false;
 }
 
 void ApplyEnterMapScenePolicy(const game::EnterMapReq &e, sess::ResolveOrCreateMapRequest *req,
@@ -156,6 +166,52 @@ void AbortTransfer(uint64_t player_id, const std::string &fence, const std::stri
     (void)from_logic;
 }
 
+// 客户端按请求 seq 匹配 EnterMap 回包。帧丢失或序号不对时补一帧，避免一直等到超时。
+void EnsureEnterReplyFrame(const std::string &request_payload, bool ok, std::string *frame) {
+    if (!frame)
+        return;
+    game::GameRequest req;
+    const bool have_req = req.ParseFromString(request_payload) && req.has_enter_map();
+    if (!frame->empty()) {
+        std::string buf = *frame;
+        std::string payload;
+        if (DecodeOneFrame(&buf, &payload) == FrameDecodeResult::Complete) {
+            game::GameResponse gr;
+            if (gr.ParseFromString(payload) && gr.has_enter_map()) {
+                if (!have_req || gr.seq() == req.seq())
+                    return;
+                gr.set_seq(req.seq());
+                std::string raw;
+                if (gr.SerializeToString(&raw) && EncodeFrame(raw, frame))
+                    return;
+            }
+        }
+    }
+    if (!have_req)
+        return;
+    game::GameResponse rsp;
+    rsp.set_seq(req.seq());
+    rsp.set_ok(false);
+    rsp.set_message(ok ? "enter_map reply missing" : "enter_map failed");
+    auto *body = rsp.mutable_enter_map();
+    body->set_ok(false);
+    body->set_message(rsp.message());
+    std::string raw;
+    if (rsp.SerializeToString(&raw))
+        EncodeFrame(raw, frame);
+}
+
+uint64_t FrameSeq(const std::string &frame) {
+    std::string buf = frame;
+    std::string payload;
+    if (DecodeOneFrame(&buf, &payload) != FrameDecodeResult::Complete)
+        return 0;
+    game::GameResponse gr;
+    if (!gr.ParseFromString(payload))
+        return 0;
+    return gr.seq();
+}
+
 }  // namespace
 
 bool OrchestrateGatewayEnterMap(const SessionHandle &sticky, const std::string &request_payload,
@@ -172,8 +228,11 @@ bool OrchestrateGatewayEnterMap(const SessionHandle &sticky, const std::string &
     }
     if (sticky.player_id == 0 || sticky.fence_token.empty() ||
         sticky.gamelogic_instance_id.empty()) {
-        return EncodeErr(req, "unauthenticated_or_no_route", response_frame);
+        return FailEnter(req, "unauthenticated_or_no_route", response_frame);
     }
+    auto enter_budget = LoginAdmission::StagePermit::Try(LoginAdmission::Stage::Enter, false);
+    if (!enter_budget)
+        return FailEnter(req, "login admission", response_frame, gameproto::kErrOverloaded);
 
     std::string target_logic;
     uint64_t map_id = 0, epoch = 0, placement_rv = 0;
@@ -186,7 +245,7 @@ bool OrchestrateGatewayEnterMap(const SessionHandle &sticky, const std::string &
                  << " tpl=" << enter.map_template_id() << " req_line=" << enter.line_no()
                  << " req_inst=" << enter.map_instance_id() << " code=" << err_code
                  << " msg=" << err;
-        return EncodeErr(req, err, response_frame, err_code);
+        return FailEnter(req, err, response_frame, err_code);
     }
     LOG_INFO << "EnterMap resolve player=" << sticky.player_id << " tpl=" << enter.map_template_id()
              << " req_line=" << enter.line_no() << " req_inst=" << enter.map_instance_id()
@@ -202,7 +261,7 @@ bool OrchestrateGatewayEnterMap(const SessionHandle &sticky, const std::string &
         const bool sess_rpc = GatewayAuthClients::Instance().ready();
         const bool sess_local = SessionStore::Instance().Available();
         if (!sess_rpc && !sess_local)
-            return EncodeErr(req, "session not ready for transfer", response_frame);
+            return FailEnter(req, "session not ready for transfer", response_frame);
 
         if (sess_rpc) {
             sess::BeginPlayerTransferRequest breq;
@@ -216,7 +275,7 @@ bool OrchestrateGatewayEnterMap(const SessionHandle &sticky, const std::string &
             breq.set_gateway_instance_id(gw_id);
             sess::BeginPlayerTransferResponse brsp;
             if (!GatewayAuthClients::Instance().BeginPlayerTransfer(breq, &brsp) || !brsp.ok()) {
-                return EncodeErr(req,
+                return FailEnter(req,
                                  brsp.message().empty() ? "begin transfer failed" : brsp.message(),
                                  response_frame, brsp.error_code());
             }
@@ -233,7 +292,7 @@ bool OrchestrateGatewayEnterMap(const SessionHandle &sticky, const std::string &
             in.gateway_instance_id = gw_id;
             SessionStore::TransferBeginOut out;
             if (!SessionStore::Instance().BeginPlayerTransfer(in, &out) || !out.ok)
-                return EncodeErr(req, out.message.empty() ? "begin transfer failed" : out.message,
+                return FailEnter(req, out.message.empty() ? "begin transfer failed" : out.message,
                                  response_frame, out.error_code);
             transfer_id = out.transfer_id;
         }
@@ -248,7 +307,7 @@ bool OrchestrateGatewayEnterMap(const SessionHandle &sticky, const std::string &
         glrpc::FreezePlayerResponse frsp;
         if (!GatewayAuthClients::Instance().FreezePlayer(from_logic, freq, &frsp) || !frsp.ok()) {
             AbortTransfer(sticky.player_id, sticky.fence_token, transfer_id, from_logic);
-            return EncodeErr(req, frsp.message().empty() ? "freeze failed" : frsp.message(),
+            return FailEnter(req, frsp.message().empty() ? "freeze failed" : frsp.message(),
                              response_frame, frsp.error_code());
         }
 
@@ -266,7 +325,7 @@ bool OrchestrateGatewayEnterMap(const SessionHandle &sticky, const std::string &
         if (!GatewayAuthClients::Instance().ExportPlayerSnapshot(from_logic, xreq, &xrsp) ||
             !xrsp.ok() || !xrsp.has_snapshot()) {
             AbortTransfer(sticky.player_id, sticky.fence_token, transfer_id, from_logic);
-            return EncodeErr(req, xrsp.message().empty() ? "export snapshot failed" : xrsp.message(),
+            return FailEnter(req, xrsp.message().empty() ? "export snapshot failed" : xrsp.message(),
                              response_frame, xrsp.error_code());
         }
 
@@ -294,7 +353,7 @@ bool OrchestrateGatewayEnterMap(const SessionHandle &sticky, const std::string &
             thaw.set_map_owner_epoch(sticky.owner_epoch);
             glrpc::BindPlayerResponse tr;
             GatewayAuthClients::Instance().BindPlayer(from_logic, thaw, &tr);
-            return EncodeErr(req, prsp.message().empty() ? "prepare/bind failed" : prsp.message(),
+            return FailEnter(req, prsp.message().empty() ? "prepare/bind failed" : prsp.message(),
                              response_frame, prsp.error_code());
         }
 
@@ -320,7 +379,7 @@ bool OrchestrateGatewayEnterMap(const SessionHandle &sticky, const std::string &
             thaw.set_map_owner_epoch(sticky.owner_epoch);
             glrpc::BindPlayerResponse tr;
             GatewayAuthClients::Instance().BindPlayer(from_logic, thaw, &tr);
-            return EncodeErr(req, irsp.message().empty() ? "import snapshot failed" : irsp.message(),
+            return FailEnter(req, irsp.message().empty() ? "import snapshot failed" : irsp.message(),
                              response_frame, irsp.error_code());
         }
         LOG_INFO << "EnterMap snapshot imported player=" << sticky.player_id
@@ -358,7 +417,7 @@ bool OrchestrateGatewayEnterMap(const SessionHandle &sticky, const std::string &
                 thaw.set_generation(sticky.generation);
                 glrpc::BindPlayerResponse tr;
                 GatewayAuthClients::Instance().BindPlayer(from_logic, thaw, &tr);
-                return EncodeErr(
+                return FailEnter(
                     req, crsp.message().empty() ? "commit transfer failed" : crsp.message(),
                     response_frame);
             }
@@ -381,7 +440,7 @@ bool OrchestrateGatewayEnterMap(const SessionHandle &sticky, const std::string &
             SessionStore::TransferCommitOut cout;
             if (!SessionStore::Instance().CommitPlayerTransfer(cin, &cout) || !cout.ok) {
                 AbortTransfer(sticky.player_id, sticky.fence_token, transfer_id, from_logic);
-                return EncodeErr(req, cout.message.empty() ? "commit failed" : cout.message,
+                return FailEnter(req, cout.message.empty() ? "commit failed" : cout.message,
                                  response_frame);
             }
             committed_rv = cout.route_version;
@@ -409,7 +468,7 @@ bool OrchestrateGatewayEnterMap(const SessionHandle &sticky, const std::string &
             ureq.set_gateway_instance_id(gw_id);
             sess::UpdatePlayerRouteResponse ursp;
             if (!GatewayAuthClients::Instance().UpdatePlayerRoute(ureq, &ursp)) {
-                return EncodeErr(req,
+                return FailEnter(req,
                                  ursp.message().empty() ? "update route failed" : ursp.message(),
                                  response_frame);
             }
@@ -419,10 +478,10 @@ bool OrchestrateGatewayEnterMap(const SessionHandle &sticky, const std::string &
             if (!SessionStore::Instance().UpdatePlayerRoute(
                     sticky.player_id, sticky.fence_token, target_logic, map_id, epoch, 0, gw_id, "",
                     &new_rv, &uerr)) {
-                return EncodeErr(req, uerr.empty() ? "update route failed" : uerr, response_frame);
+                return FailEnter(req, uerr.empty() ? "update route failed" : uerr, response_frame);
             }
         } else {
-            return EncodeErr(req, "session not ready for route update", response_frame);
+            return FailEnter(req, "session not ready for route update", response_frame);
         }
         if (route_out) {
             route_out->gamelogic_instance_id = target_logic;
@@ -475,8 +534,16 @@ bool OrchestrateGatewayEnterMap(const SessionHandle &sticky, const std::string &
             *response_frame = result.response_frame();
             return false;
         }
-        return EncodeErr(req, result.message().empty() ? "enter_map dispatch failed" : result.message(),
-                         response_frame);
+        const std::string &why =
+            result.message().empty() ? std::string("enter_map dispatch failed") : result.message();
+        std::string code;
+        if (why.find("session_id mismatch") != std::string::npos ||
+            why.find("fence_token") != std::string::npos ||
+            why.find("generation rejected") != std::string::npos)
+            code = gameproto::kErrFenceStale;
+        else if (why.find("overload") != std::string::npos || why.find("queue full") != std::string::npos)
+            code = gameproto::kErrOverloaded;
+        return FailEnter(req, why, response_frame, code);
     }
     *response_frame = result.response_frame();
 
@@ -538,13 +605,16 @@ bool BeginOrchestrateGatewayEnterMap(const SessionHandle &sticky, const std::str
             std::string out;
             SessionHandle route = h->sticky;
             const bool ok = OrchestrateGatewayEnterMap(h->sticky, h->payload, &out, &route);
-            if (!PlayerSerialQueue::Instance().CompleteAsyncInFlight(
-                    h->shard_key, [h, ok, out = std::move(out),
-                                   route = std::move(route)]() mutable {
-                        h->done(ok, std::move(out), std::move(route));
-                    })) {
-                (void)ok;
-            }
+            // 回包直接写回这条连接，不等玩家队列。队列卡住时客户端收不到 seq，
+            // 只会看到先进去的 enter_map_notify，然后把请求判超时。
+            EnsureEnterReplyFrame(h->payload, ok, &out);
+            LOG_INFO << "EnterMap reply player=" << h->sticky.player_id
+                     << " conn=" << h->sticky.connection_id << " seq=" << FrameSeq(out)
+                     << " bytes=" << out.size() << " ok=" << ok
+                     << " map=" << route.map_instance_id;
+            if (h->done)
+                h->done(ok, std::move(out), std::move(route));
+            PlayerSerialQueue::Instance().ClearAsyncInFlight(h->shard_key);
         })) {
         PlayerSerialQueue::Instance().ClearAsyncInFlight(shard_key);
         return false;

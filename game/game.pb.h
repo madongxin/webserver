@@ -1419,10 +1419,14 @@ class ReconnectRsp PROTOBUF_FINAL :
     kMessageFieldNumber = 2,
     kTokenFieldNumber = 3,
     kSessionIdFieldNumber = 4,
+    kGamelogicInstanceIdFieldNumber = 9,
     kGenerationFieldNumber = 5,
     kReplayFromSeqFieldNumber = 7,
+    kMapInstanceIdFieldNumber = 8,
     kOkFieldNumber = 1,
     kNeedFullSnapshotFieldNumber = 6,
+    kNeedEnterMapFieldNumber = 10,
+    kOnMapFieldNumber = 11,
   };
   // string message = 2;
   void clear_message();
@@ -1499,6 +1503,31 @@ class ReconnectRsp PROTOBUF_FINAL :
   std::string* _internal_mutable_session_id();
   public:
 
+  // string gamelogic_instance_id = 9;
+  void clear_gamelogic_instance_id();
+  const std::string& gamelogic_instance_id() const;
+  void set_gamelogic_instance_id(const std::string& value);
+  void set_gamelogic_instance_id(std::string&& value);
+  void set_gamelogic_instance_id(const char* value);
+  void set_gamelogic_instance_id(const char* value, size_t size);
+  std::string* mutable_gamelogic_instance_id();
+  std::string* release_gamelogic_instance_id();
+  void set_allocated_gamelogic_instance_id(std::string* gamelogic_instance_id);
+  GOOGLE_PROTOBUF_RUNTIME_DEPRECATED("The unsafe_arena_ accessors for"
+  "    string fields are deprecated and will be removed in a"
+  "    future release.")
+  std::string* unsafe_arena_release_gamelogic_instance_id();
+  GOOGLE_PROTOBUF_RUNTIME_DEPRECATED("The unsafe_arena_ accessors for"
+  "    string fields are deprecated and will be removed in a"
+  "    future release.")
+  void unsafe_arena_set_allocated_gamelogic_instance_id(
+      std::string* gamelogic_instance_id);
+  private:
+  const std::string& _internal_gamelogic_instance_id() const;
+  void _internal_set_gamelogic_instance_id(const std::string& value);
+  std::string* _internal_mutable_gamelogic_instance_id();
+  public:
+
   // uint64 generation = 5;
   void clear_generation();
   ::PROTOBUF_NAMESPACE_ID::uint64 generation() const;
@@ -1515,6 +1544,15 @@ class ReconnectRsp PROTOBUF_FINAL :
   private:
   ::PROTOBUF_NAMESPACE_ID::uint64 _internal_replay_from_seq() const;
   void _internal_set_replay_from_seq(::PROTOBUF_NAMESPACE_ID::uint64 value);
+  public:
+
+  // uint64 map_instance_id = 8;
+  void clear_map_instance_id();
+  ::PROTOBUF_NAMESPACE_ID::uint64 map_instance_id() const;
+  void set_map_instance_id(::PROTOBUF_NAMESPACE_ID::uint64 value);
+  private:
+  ::PROTOBUF_NAMESPACE_ID::uint64 _internal_map_instance_id() const;
+  void _internal_set_map_instance_id(::PROTOBUF_NAMESPACE_ID::uint64 value);
   public:
 
   // bool ok = 1;
@@ -1535,6 +1573,24 @@ class ReconnectRsp PROTOBUF_FINAL :
   void _internal_set_need_full_snapshot(bool value);
   public:
 
+  // bool need_enter_map = 10;
+  void clear_need_enter_map();
+  bool need_enter_map() const;
+  void set_need_enter_map(bool value);
+  private:
+  bool _internal_need_enter_map() const;
+  void _internal_set_need_enter_map(bool value);
+  public:
+
+  // bool on_map = 11;
+  void clear_on_map();
+  bool on_map() const;
+  void set_on_map(bool value);
+  private:
+  bool _internal_on_map() const;
+  void _internal_set_on_map(bool value);
+  public:
+
   // @@protoc_insertion_point(class_scope:game.ReconnectRsp)
  private:
   class _Internal;
@@ -1545,10 +1601,14 @@ class ReconnectRsp PROTOBUF_FINAL :
   ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr message_;
   ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr token_;
   ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr session_id_;
+  ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr gamelogic_instance_id_;
   ::PROTOBUF_NAMESPACE_ID::uint64 generation_;
   ::PROTOBUF_NAMESPACE_ID::uint64 replay_from_seq_;
+  ::PROTOBUF_NAMESPACE_ID::uint64 map_instance_id_;
   bool ok_;
   bool need_full_snapshot_;
+  bool need_enter_map_;
+  bool on_map_;
   mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
   friend struct ::TableStruct_game_2eproto;
 };
@@ -24365,6 +24425,7 @@ class AoiEvent PROTOBUF_FINAL :
 
   enum : int {
     kEntityFieldNumber = 2,
+    kServerTimeMsFieldNumber = 3,
     kOpFieldNumber = 1,
   };
   // .game.EntitySnapshot entity = 2;
@@ -24385,6 +24446,15 @@ class AoiEvent PROTOBUF_FINAL :
       ::game::EntitySnapshot* entity);
   ::game::EntitySnapshot* unsafe_arena_release_entity();
 
+  // int64 server_time_ms = 3;
+  void clear_server_time_ms();
+  ::PROTOBUF_NAMESPACE_ID::int64 server_time_ms() const;
+  void set_server_time_ms(::PROTOBUF_NAMESPACE_ID::int64 value);
+  private:
+  ::PROTOBUF_NAMESPACE_ID::int64 _internal_server_time_ms() const;
+  void _internal_set_server_time_ms(::PROTOBUF_NAMESPACE_ID::int64 value);
+  public:
+
   // int32 op = 1;
   void clear_op();
   ::PROTOBUF_NAMESPACE_ID::int32 op() const;
@@ -24402,6 +24472,7 @@ class AoiEvent PROTOBUF_FINAL :
   typedef void InternalArenaConstructable_;
   typedef void DestructorSkippable_;
   ::game::EntitySnapshot* entity_;
+  ::PROTOBUF_NAMESPACE_ID::int64 server_time_ms_;
   ::PROTOBUF_NAMESPACE_ID::int32 op_;
   mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
   friend struct ::TableStruct_game_2eproto;
@@ -31567,6 +31638,147 @@ inline void ReconnectRsp::_internal_set_replay_from_seq(::PROTOBUF_NAMESPACE_ID:
 inline void ReconnectRsp::set_replay_from_seq(::PROTOBUF_NAMESPACE_ID::uint64 value) {
   _internal_set_replay_from_seq(value);
   // @@protoc_insertion_point(field_set:game.ReconnectRsp.replay_from_seq)
+}
+
+// uint64 map_instance_id = 8;
+inline void ReconnectRsp::clear_map_instance_id() {
+  map_instance_id_ = PROTOBUF_ULONGLONG(0);
+}
+inline ::PROTOBUF_NAMESPACE_ID::uint64 ReconnectRsp::_internal_map_instance_id() const {
+  return map_instance_id_;
+}
+inline ::PROTOBUF_NAMESPACE_ID::uint64 ReconnectRsp::map_instance_id() const {
+  // @@protoc_insertion_point(field_get:game.ReconnectRsp.map_instance_id)
+  return _internal_map_instance_id();
+}
+inline void ReconnectRsp::_internal_set_map_instance_id(::PROTOBUF_NAMESPACE_ID::uint64 value) {
+  
+  map_instance_id_ = value;
+}
+inline void ReconnectRsp::set_map_instance_id(::PROTOBUF_NAMESPACE_ID::uint64 value) {
+  _internal_set_map_instance_id(value);
+  // @@protoc_insertion_point(field_set:game.ReconnectRsp.map_instance_id)
+}
+
+// string gamelogic_instance_id = 9;
+inline void ReconnectRsp::clear_gamelogic_instance_id() {
+  gamelogic_instance_id_.ClearToEmpty(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
+}
+inline const std::string& ReconnectRsp::gamelogic_instance_id() const {
+  // @@protoc_insertion_point(field_get:game.ReconnectRsp.gamelogic_instance_id)
+  return _internal_gamelogic_instance_id();
+}
+inline void ReconnectRsp::set_gamelogic_instance_id(const std::string& value) {
+  _internal_set_gamelogic_instance_id(value);
+  // @@protoc_insertion_point(field_set:game.ReconnectRsp.gamelogic_instance_id)
+}
+inline std::string* ReconnectRsp::mutable_gamelogic_instance_id() {
+  // @@protoc_insertion_point(field_mutable:game.ReconnectRsp.gamelogic_instance_id)
+  return _internal_mutable_gamelogic_instance_id();
+}
+inline const std::string& ReconnectRsp::_internal_gamelogic_instance_id() const {
+  return gamelogic_instance_id_.Get();
+}
+inline void ReconnectRsp::_internal_set_gamelogic_instance_id(const std::string& value) {
+  
+  gamelogic_instance_id_.Set(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), value, GetArena());
+}
+inline void ReconnectRsp::set_gamelogic_instance_id(std::string&& value) {
+  
+  gamelogic_instance_id_.Set(
+    &::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), ::std::move(value), GetArena());
+  // @@protoc_insertion_point(field_set_rvalue:game.ReconnectRsp.gamelogic_instance_id)
+}
+inline void ReconnectRsp::set_gamelogic_instance_id(const char* value) {
+  GOOGLE_DCHECK(value != nullptr);
+  
+  gamelogic_instance_id_.Set(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), ::std::string(value),
+              GetArena());
+  // @@protoc_insertion_point(field_set_char:game.ReconnectRsp.gamelogic_instance_id)
+}
+inline void ReconnectRsp::set_gamelogic_instance_id(const char* value,
+    size_t size) {
+  
+  gamelogic_instance_id_.Set(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), ::std::string(
+      reinterpret_cast<const char*>(value), size), GetArena());
+  // @@protoc_insertion_point(field_set_pointer:game.ReconnectRsp.gamelogic_instance_id)
+}
+inline std::string* ReconnectRsp::_internal_mutable_gamelogic_instance_id() {
+  
+  return gamelogic_instance_id_.Mutable(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
+}
+inline std::string* ReconnectRsp::release_gamelogic_instance_id() {
+  // @@protoc_insertion_point(field_release:game.ReconnectRsp.gamelogic_instance_id)
+  return gamelogic_instance_id_.Release(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
+}
+inline void ReconnectRsp::set_allocated_gamelogic_instance_id(std::string* gamelogic_instance_id) {
+  if (gamelogic_instance_id != nullptr) {
+    
+  } else {
+    
+  }
+  gamelogic_instance_id_.SetAllocated(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), gamelogic_instance_id,
+      GetArena());
+  // @@protoc_insertion_point(field_set_allocated:game.ReconnectRsp.gamelogic_instance_id)
+}
+inline std::string* ReconnectRsp::unsafe_arena_release_gamelogic_instance_id() {
+  // @@protoc_insertion_point(field_unsafe_arena_release:game.ReconnectRsp.gamelogic_instance_id)
+  GOOGLE_DCHECK(GetArena() != nullptr);
+  
+  return gamelogic_instance_id_.UnsafeArenaRelease(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(),
+      GetArena());
+}
+inline void ReconnectRsp::unsafe_arena_set_allocated_gamelogic_instance_id(
+    std::string* gamelogic_instance_id) {
+  GOOGLE_DCHECK(GetArena() != nullptr);
+  if (gamelogic_instance_id != nullptr) {
+    
+  } else {
+    
+  }
+  gamelogic_instance_id_.UnsafeArenaSetAllocated(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(),
+      gamelogic_instance_id, GetArena());
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:game.ReconnectRsp.gamelogic_instance_id)
+}
+
+// bool need_enter_map = 10;
+inline void ReconnectRsp::clear_need_enter_map() {
+  need_enter_map_ = false;
+}
+inline bool ReconnectRsp::_internal_need_enter_map() const {
+  return need_enter_map_;
+}
+inline bool ReconnectRsp::need_enter_map() const {
+  // @@protoc_insertion_point(field_get:game.ReconnectRsp.need_enter_map)
+  return _internal_need_enter_map();
+}
+inline void ReconnectRsp::_internal_set_need_enter_map(bool value) {
+  
+  need_enter_map_ = value;
+}
+inline void ReconnectRsp::set_need_enter_map(bool value) {
+  _internal_set_need_enter_map(value);
+  // @@protoc_insertion_point(field_set:game.ReconnectRsp.need_enter_map)
+}
+
+// bool on_map = 11;
+inline void ReconnectRsp::clear_on_map() {
+  on_map_ = false;
+}
+inline bool ReconnectRsp::_internal_on_map() const {
+  return on_map_;
+}
+inline bool ReconnectRsp::on_map() const {
+  // @@protoc_insertion_point(field_get:game.ReconnectRsp.on_map)
+  return _internal_on_map();
+}
+inline void ReconnectRsp::_internal_set_on_map(bool value) {
+  
+  on_map_ = value;
+}
+inline void ReconnectRsp::set_on_map(bool value) {
+  _internal_set_on_map(value);
+  // @@protoc_insertion_point(field_set:game.ReconnectRsp.on_map)
 }
 
 // -------------------------------------------------------------------
@@ -55977,6 +56189,26 @@ inline void AoiEvent::set_allocated_entity(::game::EntitySnapshot* entity) {
   }
   entity_ = entity;
   // @@protoc_insertion_point(field_set_allocated:game.AoiEvent.entity)
+}
+
+// int64 server_time_ms = 3;
+inline void AoiEvent::clear_server_time_ms() {
+  server_time_ms_ = PROTOBUF_LONGLONG(0);
+}
+inline ::PROTOBUF_NAMESPACE_ID::int64 AoiEvent::_internal_server_time_ms() const {
+  return server_time_ms_;
+}
+inline ::PROTOBUF_NAMESPACE_ID::int64 AoiEvent::server_time_ms() const {
+  // @@protoc_insertion_point(field_get:game.AoiEvent.server_time_ms)
+  return _internal_server_time_ms();
+}
+inline void AoiEvent::_internal_set_server_time_ms(::PROTOBUF_NAMESPACE_ID::int64 value) {
+  
+  server_time_ms_ = value;
+}
+inline void AoiEvent::set_server_time_ms(::PROTOBUF_NAMESPACE_ID::int64 value) {
+  _internal_set_server_time_ms(value);
+  // @@protoc_insertion_point(field_set:game.AoiEvent.server_time_ms)
 }
 
 // -------------------------------------------------------------------

@@ -12,7 +12,7 @@ Gateway 下发的 `ServerPushEnvelope.server_seq` 对每个 session 单调递增
 | 事件 | reliable | coalescable | 缺口时 |
 | --- | --- | --- | --- |
 | AOI Enter / Leave | 是 | 否 | 必须回放或走快照 |
-| AOI Move | 否（可合并） | 是 | 可用快照覆盖 |
+| AOI Move | 否（可合并） | 是 | 可用快照覆盖；服务端积压按 ≥10Hz 抽样，不长时间压成一次大跳；`AoiEvent.server_time_ms` 便于插值 |
 | EnterMap 通知 / 全量快照 | 是 | 否 | 快照 `baseline_server_seq` 对齐 ReplayStore |
 
 过旧 `PushAck` 或 Replay 无法回放时，Gateway 返回顶层 `ERR_AOI_RESYNC_REQUIRED`（可重试：先拉世界快照）。不允许只回 `need_full_snapshot=true` 却没有 `WorldSnapshotReq` / 重连快照路径。

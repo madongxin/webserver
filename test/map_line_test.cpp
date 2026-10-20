@@ -178,6 +178,30 @@ int main() {
             return Fail("no line code");
     }
 
+    // 线索引丢失后，指定 line_no 仍回到原 READY 实例，而不是报 ERR_MAP_NO_LINE。
+    {
+        const uint64_t tpl_heal = tpl + 80;
+        ResolveOrCreateResult created;
+        if (!PlacementStore::Instance().ResolveOrCreate(LineIn(tpl_heal, 99001), &created) || !created.ok)
+            return Fail("heal create");
+        if (created.placement.line_no != 1)
+            return Fail("heal create line");
+        auto lease = RedisPool::Instance().Acquire();
+        if (!lease)
+            return Fail("heal redis");
+        const std::string line_key =
+            prefix + "map:line:1:" + std::to_string(tpl_heal) + ":1";
+        if (!lease->Del(line_key))
+            return Fail("heal del index");
+        ResolveOrCreateResult again;
+        if (!PlacementStore::Instance().ResolveOrCreate(LineIn(tpl_heal, 99002, 1), &again) || !again.ok)
+            return Fail("heal reenter");
+        if (again.placement.map_instance_id != created.placement.map_instance_id ||
+            again.placement.line_no != 1)
+            return Fail("heal same instance");
+        std::printf("ok: rebuild missing line index\n");
+    }
+
     // 4. 并发开线：无重复 line_no，不超 hard
     {
         const uint64_t tpl3 = tpl + 3;

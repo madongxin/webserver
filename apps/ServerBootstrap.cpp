@@ -800,9 +800,15 @@ void HttpResponseCallback(const HttpRequest &request, HttpResponse *response) {
         }
         if (g_process_role == "session" || g_process_role == "all") {
 #ifdef WEBSERVER_ENABLE_REDIS
-            if (SessionStore::Instance().Available())
-                OpsMetrics::Instance().SetSessionOnlinePlayers(
-                    SessionStore::Instance().OnlinePlayerCount());
+            if (SessionStore::Instance().Available()) {
+                const int64_t online = SessionStore::Instance().OnlinePlayerCount();
+                OpsMetrics::Instance().SetSessionOnlinePlayers(online);
+                if (PlacementStore::Instance().Available()) {
+                    const int64_t occ = PlacementStore::Instance().SumAllOccupancy(64);
+                    OpsMetrics::Instance().SetLineOccupancyTotal(occ);
+                    OpsMetrics::Instance().SetGhostOccupancy(occ > online ? occ - online : 0);
+                }
+            }
 #endif
         }
         SendPrometheusMetrics(response, BuildPrometheusMetricsText(), head_only);
@@ -1649,6 +1655,11 @@ int RunServer(const LaunchOpts &launch) {
                 LOG_ERROR << "GatewayIdentity claim failed: " << id_err;
                 return 1;
             }
+            // claim TTL=120s；周期续租，避免 Session 误判 Gateway 已死而清 ONLINE。
+            loop.RunEvery(30.0, []() {
+                if (!GatewayIdentity::Instance().RenewClaim())
+                    LOG_WARN << "GatewayIdentity RenewClaim failed";
+            });
         }
         const std::string &gw_id = GatewayIdentity::Instance().id();
         // GatewayPush 内网口：listen 与 advertise 分离；身份用 gw_id 而非端口拼接
@@ -1915,32 +1926,61 @@ int RunServer(const LaunchOpts &launch) {
         std::string map_err;
         if (!MapCatalog::Instance().EnsureDefault(&map_err))
             LOG_WARN << "MapCatalog load on session: " << map_err;
-#ifdef WEBSERVER_ENABLE_BRPC
-        MapLineSync::Install();
-#endif
+        // 故意不在 Session 安装 MapLineSync：Park/Resume 风暴下会 O(occupants) PushBatch
+        // 把 Session CPU 打满（本轮压测 sess ~100%），拖死 MarkDisconnected → ONLINE/分线幽灵。
+        // 分线推送只由 GameLogic 侧 MapLineSync 负责。
 #endif
         if (const char *pfx = std::getenv("GAMEMESH_REDIS_PREFIX"))
             PlacementRecoveryScheduler::Instance().SetKeyPrefix(pfx);
-        const double idle_iv =
-            (std::getenv("GAMEMESH_PLACEMENT_IDLE_IV") != nullptr)
-                ? std::atof(std::getenv("GAMEMESH_PLACEMENT_IDLE_IV"))
-                : 5.0;
-        const double iv = idle_iv > 0.5 ? idle_iv : 5.0;
-        loop.RunEvery(iv, []() {
-            std::vector<uint64_t> closed;
-            if (PlacementStore::Instance().CloseIdleInstances(0, 64, &closed) && !closed.empty())
-                LOG_INFO << "PlacementIdleCloser: closed idle maps n=" << closed.size();
-            const size_t expired = SessionStore::Instance().ExpireDueDisconnected(100);
-            const size_t aborted = SessionStore::Instance().ExpireDueTransfers(100);
-            if (aborted > 0)
-                LOG_WARN << "SessionTransferSweeper: aborted n=" << aborted;
-            if (expired > 0)
-                LOG_INFO << "SessionGraceSweeper: expired n=" << expired;
-            const size_t orphans = SessionStore::Instance().ReclaimOrphanMapReservations(64);
-            if (orphans > 0)
-                LOG_INFO << "PlacementOrphanReclaim: released n=" << orphans;
-        });
-        LOG_INFO << "PlacementIdleCloser interval_sec=" << iv;
+        // 双 Session 时仅 leader 跑 idle/grace/orphan 清扫，避免双倍 Redis 扫描。
+        // leader：role=all，或 GAMEMESH_SESSION_SWEEP=1，或 instance_id 缺省/sess-0。
+        bool session_sweep_leader = (role == "all");
+        if (const char *force = std::getenv("GAMEMESH_SESSION_SWEEP")) {
+            session_sweep_leader = (force[0] == '1' || force[0] == 'y' || force[0] == 'Y');
+        } else if (!session_sweep_leader) {
+            const char *iid = std::getenv("GAMEMESH_INSTANCE_ID");
+            session_sweep_leader =
+                (iid == nullptr || iid[0] == '\0' || std::string(iid) == "sess-0");
+        }
+        if (session_sweep_leader) {
+            const double idle_iv =
+                (std::getenv("GAMEMESH_PLACEMENT_IDLE_IV") != nullptr)
+                    ? std::atof(std::getenv("GAMEMESH_PLACEMENT_IDLE_IV"))
+                    : 5.0;
+            const double iv = idle_iv > 0.5 ? idle_iv : 5.0;
+            loop.RunEvery(iv, []() {
+                static int sweep_tick = 0;
+                ++sweep_tick;
+                std::vector<uint64_t> closed;
+                if (PlacementStore::Instance().CloseIdleInstances(0, 64, &closed) &&
+                    !closed.empty())
+                    LOG_INFO << "PlacementIdleCloser: closed idle maps n=" << closed.size();
+                const size_t expired = SessionStore::Instance().ExpireDueDisconnected(100);
+                const size_t aborted = SessionStore::Instance().ExpireDueTransfers(100);
+                if (aborted > 0)
+                    LOG_WARN << "SessionTransferSweeper: aborted n=" << aborted;
+                if (expired > 0)
+                    LOG_INFO << "SessionGraceSweeper: expired n=" << expired;
+                // Gateway 进程被杀且 claim 过期后：清幽灵 ONLINE + 分线占位。
+                const size_t gw_orphans =
+                    SessionStore::Instance().ExpireOnlineMissingGatewayClaim(100);
+                if (gw_orphans > 0)
+                    LOG_INFO << "SessionGwClaimSweeper: expired n=" << gw_orphans;
+                const size_t orphans = SessionStore::Instance().ReclaimOrphanMapReservations(64);
+                if (orphans > 0)
+                    LOG_INFO << "PlacementOrphanReclaim: released n=" << orphans;
+                // occ 对账较重：每 3 个 tick（默认 ~15s）跑一次，避免与 MarkDisconnected 抢 Redis。
+                if (sweep_tick % 3 == 0) {
+                    const size_t ghost_occ =
+                        SessionStore::Instance().ReconcileGhostMapOccupancy(64);
+                    if (ghost_occ > 0)
+                        LOG_INFO << "PlacementOccReconcile: parked ghost n=" << ghost_occ;
+                }
+            });
+            LOG_INFO << "PlacementIdleCloser interval_sec=" << iv << " leader=1";
+        } else {
+            LOG_INFO << "PlacementIdleCloser skipped (non-leader session)";
+        }
     }
     if (role == "gamelogic" || role == "all") {
 #if defined(WEBSERVER_ENABLE_GAME_PROTOBUF) && defined(WEBSERVER_ENABLE_BRPC)

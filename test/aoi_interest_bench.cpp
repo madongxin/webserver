@@ -94,6 +94,7 @@ int main() {
     auto data = MakeOpen();
     if (!data)
         return 1;
+    std::printf("max_visible=%d\n", MapRuntime::Instance().max_visible());
     const int populations[] = {100, 200, 400, 1000};
     for (int n : populations)
         Bench(data, 1, n);

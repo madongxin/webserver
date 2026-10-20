@@ -39,7 +39,18 @@ public:
     void IncHelloFail() { hello_fail_.fetch_add(1, std::memory_order_relaxed); }
     void IncHeartbeatOk() { heartbeat_ok_.fetch_add(1, std::memory_order_relaxed); }
     void IncHeartbeatLimited() { heartbeat_limited_.fetch_add(1, std::memory_order_relaxed); }
+    void IncHeartbeatSoftDrop() { heartbeat_soft_drop_.fetch_add(1, std::memory_order_relaxed); }
+    void IncReplySoftDrop() { reply_soft_drop_.fetch_add(1, std::memory_order_relaxed); }
     void IncIdleTimeout() { idle_timeout_.fetch_add(1, std::memory_order_relaxed); }
+    void SetLineOccupancyTotal(int64_t n) {
+        line_occupancy_total_.store(n, std::memory_order_relaxed);
+    }
+    void SetGhostOccupancy(int64_t n) {
+        ghost_occupancy_.store(n, std::memory_order_relaxed);
+    }
+    void SetAoiPushBacklog(int64_t n) {
+        aoi_push_backlog_.store(n, std::memory_order_relaxed);
+    }
     void IncConnRateLimited() { conn_rate_limited_.fetch_add(1, std::memory_order_relaxed); }
     void IncErrorCode(const std::string &code);
 
@@ -60,6 +71,10 @@ public:
     }
     void SetOutboxBacklog(int64_t n) { outbox_backlog_.store(n, std::memory_order_relaxed); }
     void SetMailboxPending(int64_t n) { mailbox_pending_.store(n, std::memory_order_relaxed); }
+    void SetRpcOffloadPending(int64_t slow, int64_t fast) {
+        rpc_offload_pending_.store(slow, std::memory_order_relaxed);
+        rpc_offload_fast_pending_.store(fast, std::memory_order_relaxed);
+    }
     void IncPlacementRecoverOk() { placement_recover_ok_.fetch_add(1, std::memory_order_relaxed); }
     void IncPlacementRecoverFail() {
         placement_recover_fail_.fetch_add(1, std::memory_order_relaxed);
@@ -122,10 +137,15 @@ private:
     std::atomic<uint64_t> hello_fail_{0};
     std::atomic<uint64_t> heartbeat_ok_{0};
     std::atomic<uint64_t> heartbeat_limited_{0};
+    std::atomic<uint64_t> heartbeat_soft_drop_{0};
+    std::atomic<uint64_t> reply_soft_drop_{0};
     std::atomic<uint64_t> idle_timeout_{0};
     std::atomic<uint64_t> conn_rate_limited_{0};
     std::atomic<int64_t> online_players_{0};
     std::atomic<int64_t> session_online_players_{0};
+    std::atomic<int64_t> line_occupancy_total_{0};
+    std::atomic<int64_t> ghost_occupancy_{0};
+    std::atomic<int64_t> aoi_push_backlog_{0};
     std::atomic<int64_t> gateway_tcp_connections_{0};
     std::atomic<uint64_t> gateway_rx_bytes_{0};
     std::atomic<uint64_t> gateway_tx_bytes_{0};
@@ -133,6 +153,8 @@ private:
     std::atomic<uint64_t> gateway_tx_frames_{0};
     std::atomic<int64_t> outbox_backlog_{0};
     std::atomic<int64_t> mailbox_pending_{0};
+    std::atomic<int64_t> rpc_offload_pending_{0};
+    std::atomic<int64_t> rpc_offload_fast_pending_{0};
     std::atomic<uint64_t> placement_recover_ok_{0};
     std::atomic<uint64_t> placement_recover_fail_{0};
     std::atomic<uint64_t> gamedb_unknown_result_{0};

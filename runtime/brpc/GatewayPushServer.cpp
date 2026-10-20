@@ -93,7 +93,8 @@ void GatewayPushServiceImpl::PushBatch(::google::protobuf::RpcController *contro
                 continue;
             }
         }
-        if (!GatewayConnRegistry::Instance().SendBySession(m.session_id(), frame)) {
+        // reliable（含 AOI ENTER/LEAVE）用更高软丢水位，避免断线后客户端幽灵模型。
+        if (!GatewayConnRegistry::Instance().SendBySession(m.session_id(), frame, m.reliable())) {
             ++rejected;
             continue;
         }

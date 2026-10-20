@@ -526,6 +526,22 @@ add_executable(login_admission_test
 target_include_directories(login_admission_test PRIVATE runtime)
 target_link_libraries(login_admission_test ${CMAKE_THREAD_LIBS_INIT})
 
+add_executable(aoi200_subscription_test
+  test/aoi200_subscription_test.cpp
+  runtime/MapRuntime.cpp
+  runtime/MapStaticData.cpp
+  runtime/MapCatalog.cpp
+  base/FileHash.cpp
+  base/CurrentThread.cpp
+  log/Logging.cpp
+  log/LogStream.cpp
+  log/LogFile.cpp
+  log/AsyncLogging.cpp)
+target_include_directories(aoi200_subscription_test PRIVATE
+  runtime base log timer ${OPENSSL_INCLUDE_DIR} ${JSONCPP_INCLUDE_DIRS})
+target_link_libraries(aoi200_subscription_test
+  ${CMAKE_THREAD_LIBS_INIT} ${OPENSSL_CRYPTO_LIB} ${JSONCPP_LIBRARIES})
+
 # 阶段 6：消息类型 → World / Logic 路由分类
 if(ENABLE_GAME_PROTOBUF)
   add_executable(message_route_test

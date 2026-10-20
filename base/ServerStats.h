@@ -6,6 +6,10 @@
 /** 进程内计数。头文件内联，避免网关单测再链一套指标对象。 */
 struct ServerStats {
     static inline std::atomic<uint64_t> move_err_stale_seq{0};
+    /** Move 请求超速被钳到本帧合法距离（仍接受并推送）。 */
+    static inline std::atomic<uint64_t> move_speed_clamp{0};
+    /** Move 落点不可走，沿方向收到可行走格后仍接受。 */
+    static inline std::atomic<uint64_t> move_walk_slide{0};
     static inline std::atomic<uint64_t> session_grace_expire{0};
     static inline std::atomic<uint64_t> player_transfer_abort{0};
     static inline std::atomic<uint64_t> route_apply_rejected{0};
@@ -55,6 +59,42 @@ struct ServerStats {
     static inline std::atomic<uint64_t> friend_presence_queue_drop{0};
     static inline std::atomic<uint64_t> friend_presence_coalesced{0};
     static inline std::atomic<uint64_t> friend_presence_batch_size{0};
+
+    static inline std::atomic<uint64_t> aoi_candidate_sum{0};
+    static inline std::atomic<uint64_t> aoi_candidate_count{0};
+    static inline std::atomic<uint64_t> aoi_selected_sum{0};
+    static inline std::atomic<uint64_t> aoi_visible_query_us_sum{0};
+    static inline std::atomic<uint64_t> aoi_visible_query_count{0};
+    static inline std::atomic<uint64_t> aoi_query_le_100{0};
+    static inline std::atomic<uint64_t> aoi_query_le_500{0};
+    static inline std::atomic<uint64_t> aoi_query_le_2000{0};
+    static inline std::atomic<uint64_t> aoi_query_le_inf{0};
+    static inline std::atomic<uint64_t> aoi_refresh_us_sum{0};
+    static inline std::atomic<uint64_t> aoi_refresh_count{0};
+    static inline std::atomic<uint64_t> aoi_refresh_viewers_sum{0};
+    static inline std::atomic<uint64_t> aoi_sub_enter{0};
+    static inline std::atomic<uint64_t> aoi_sub_leave{0};
+    static inline std::atomic<uint64_t> aoi_move_events{0};
+    static inline std::atomic<uint64_t> aoi_fast_move{0};
+    static inline std::atomic<uint64_t> aoi_lock_wait_us_sum{0};
+    static inline std::atomic<uint64_t> aoi_lock_hold_us_sum{0};
+    static inline std::atomic<uint64_t> aoi_lock_samples{0};
+    static inline std::atomic<uint64_t> login_stage_reject_auth{0};
+    static inline std::atomic<uint64_t> login_stage_reject_session{0};
+    static inline std::atomic<uint64_t> login_stage_reject_bind{0};
+    static inline std::atomic<uint64_t> login_stage_reject_enter{0};
+
+    static void ObserveAoiQueryUs(uint64_t us) {
+        aoi_visible_query_us_sum.fetch_add(us, std::memory_order_relaxed);
+        aoi_visible_query_count.fetch_add(1, std::memory_order_relaxed);
+        aoi_query_le_inf.fetch_add(1, std::memory_order_relaxed);
+        if (us <= 2000)
+            aoi_query_le_2000.fetch_add(1, std::memory_order_relaxed);
+        if (us <= 500)
+            aoi_query_le_500.fetch_add(1, std::memory_order_relaxed);
+        if (us <= 100)
+            aoi_query_le_100.fetch_add(1, std::memory_order_relaxed);
+    }
 
     static void ObserveDbWaitMs(uint64_t ms) {
         db_pool_wait_count.fetch_add(1, std::memory_order_relaxed);

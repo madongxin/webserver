@@ -162,6 +162,28 @@ void TestNotifyAndCloseIfMatch() {
     reg.Forget(32);
 }
 
+void TestRetargetSkipsSelfKick() {
+    auto &reg = GatewayConnRegistry::Instance();
+    reg.Forget(33);
+    bool closed = false;
+    GatewayConnRegistry::Bind b;
+    b.player_id = 819;
+    b.session_id = "sess-old";
+    b.generation = 9;
+    b.token = "old-fence";
+    b.close_conn = [&]() { closed = true; };
+    b.send_frame = [](const std::string &) {};
+    b.run_after = [](double, std::function<void()> cb) { cb(); };
+    reg.Remember(33, b);
+    Expect(reg.RetargetSession(33, 819, "sess-new", 10, "new-fence"), "retarget same conn");
+    Expect(!reg.NotifyAndCloseIfMatch(819, "sess-old", 9, "frame", 0.0), "old gen no longer matches");
+    Expect(!closed, "login conn not closed");
+    GatewayConnRegistry::Bind now;
+    Expect(reg.FindByConnection(33, &now), "conn remains");
+    Expect(now.generation == 10 && now.session_id == "sess-new", "new session installed");
+    reg.Forget(33);
+}
+
 void TestNotifyQueuesOnLoop() {
     auto &reg = GatewayConnRegistry::Instance();
     reg.Forget(41);
@@ -208,6 +230,7 @@ int main() {
     TestAuthFlowGeneration();
     TestCloseIfMatchGeneration();
     TestNotifyAndCloseIfMatch();
+    TestRetargetSkipsSelfKick();
     TestNotifyQueuesOnLoop();
     TestGatewayIdentityEnv();
     if (g_fail) {

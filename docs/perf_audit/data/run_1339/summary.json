@@ -1,0 +1,123 @@
+{
+  "window_start": "2026-10-15T13:35:00",
+  "window_end": "2026-10-15T14:10:00",
+  "unique_login": 409,
+  "unique_acquire": 409,
+  "unique_bind": 409,
+  "unique_enter_reply": 409,
+  "unique_disconnect": 176,
+  "unique_logout": 250,
+  "enter_ok_counter": {
+    "1": 428
+  },
+  "enter_by_req_line": {
+    "0": 328,
+    "1": 100
+  },
+  "enter_by_map_top": [
+    [
+      "resolve->0",
+      428
+    ],
+    [
+      "96",
+      113
+    ],
+    [
+      "95",
+      104
+    ],
+    [
+      "87",
+      102
+    ],
+    [
+      "97",
+      102
+    ],
+    [
+      "98",
+      7
+    ]
+  ],
+  "error_codes_in_window": [],
+  "disconnect_lifetime_buckets": {
+    "<1m": 18,
+    "1-3m": 28,
+    "3-5m": 15,
+    "5-7m": 9,
+    "7-15m": 17,
+    "15-25m": 89
+  },
+  "push_rejected_sum": 3301,
+  "push_accepted_sum": 79448,
+  "push_batch_log_lines": 2270,
+  "push_batches_with_reject": 2270,
+  "peak_online_proxy_10s": 399,
+  "file_ranges": {
+    "gw0.log": {
+      "path": "run/formal/logs/gw0.log",
+      "first": "2026-10-15T11:47:32",
+      "last": "2026-10-15T15:22:53",
+      "size": 3169140,
+      "lines_scanned_note": "full file scanned streamingly"
+    },
+    "gw1.log": {
+      "path": "run/formal/logs/gw1.log",
+      "first": "2026-10-15T11:47:32",
+      "last": "2026-10-15T15:22:55",
+      "size": 3511443,
+      "lines_scanned_note": "full file scanned streamingly"
+    },
+    "logic0.log": {
+      "path": "run/formal/logs/logic0.log",
+      "first": "2026-10-15T11:47:31",
+      "last": "2026-10-15T15:22:51",
+      "size": 4287995,
+      "lines_scanned_note": "full file scanned streamingly"
+    },
+    "logic1.log": {
+      "path": "run/formal/logs/logic1.log",
+      "first": "2026-10-15T11:47:31",
+      "last": "2026-10-15T15:22:52",
+      "size": 3764150,
+      "lines_scanned_note": "full file scanned streamingly"
+    },
+    "session.log": {
+      "path": "run/formal/logs/session.log",
+      "first": "2026-10-15T11:47:30",
+      "last": "2026-10-15T15:22:55",
+      "size": 1490032,
+      "lines_scanned_note": "full file scanned streamingly"
+    },
+    "session1.log": {
+      "path": "run/formal/logs/session1.log",
+      "first": "2026-10-15T11:47:30",
+      "last": "2026-10-15T15:22:56",
+      "size": 1492016,
+      "lines_scanned_note": "full file scanned streamingly"
+    },
+    "gamedb0.log": {
+      "path": "run/formal/logs/gamedb0.log",
+      "first": "2026-10-15T11:47:30",
+      "last": "2026-10-15T15:22:55",
+      "size": 3686452,
+      "lines_scanned_note": "full file scanned streamingly"
+    },
+    "gamedb1.log": {
+      "path": "run/formal/logs/gamedb1.log",
+      "first": "2026-10-15T11:47:30",
+      "last": "2026-10-15T15:22:54",
+      "size": 1058017,
+      "lines_scanned_note": "full file scanned streamingly"
+    },
+    "world.log": {
+      "path": "run/formal/logs/world.log",
+      "first": "2026-10-15T11:47:31",
+      "last": "2026-10-15T15:22:56",
+      "size": 1123979,
+      "lines_scanned_note": "full file scanned streamingly"
+    }
+  },
+  "evidence": "OBSERVED from stream parse of run/formal/logs"
+}

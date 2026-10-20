@@ -33,7 +33,8 @@
       "min_lines": 1,
       "empty_close_delay": 300,
       "aoi_view_radius_cells": 1,
-      "spawn_scatter_radius": 0
+      "aoi_max_visible": 200,
+      "spawn_scatter_radius": 4
     },
     {
       "map_template_id": 1101,

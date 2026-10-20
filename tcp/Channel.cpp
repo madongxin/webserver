@@ -38,7 +38,8 @@ void Channel::HandleEventWithGuard() const {
         if (read_callback_)
             read_callback_();
     }
-    if (ready_events_ & EPOLLOUT) {
+    // 读回调里可能已 HandleClose/DisableAll；同一轮 ready 仍带 EPOLLOUT 时不要再写。
+    if ((ready_events_ & EPOLLOUT) && (listen_events_ & EPOLLOUT) != 0) {
         if (write_callback_)
             write_callback_();
     }
@@ -64,6 +65,12 @@ void Channel::DisableWrite() {
     loop_->UpdateChannel(this);
 }
 
+void Channel::DisableAll() {
+    listen_events_ = 0;
+    if (in_epoll_)
+        loop_->UpdateChannel(this);
+}
+
 void Channel::EnableET() {
     listen_events_ |= EPOLLET;
     loop_->UpdateChannel(this);
@@ -73,6 +80,7 @@ int Channel::fd() const { return fd_; }
 short Channel::listen_events() const { return listen_events_; }
 short Channel::ready_events() const { return ready_events_; }
 bool Channel::IsWriting() const { return (listen_events_ & EPOLLOUT) != 0; }
+bool Channel::IsReading() const { return (listen_events_ & (EPOLLIN | EPOLLPRI)) != 0; }
 bool Channel::IsInEpoll() const { return in_epoll_; }
 void Channel::SetInEpoll(bool in) { in_epoll_ = in; }
 void Channel::SetReadyEvents(int ev) { ready_events_ = ev; }

@@ -23,6 +23,7 @@
 #include "GameLogicPush.h"
 #include "GameLogicServiceImpl.h"
 #include "GatewayPushClient.h"
+#include "OpsMetrics.h"
 #include "RpcOffloadPool.h"
 #include "SessionRpcClient.h"
 #include "session.pb.h"
@@ -48,6 +49,7 @@
 #include <mutex>
 #include <sstream>
 #include <unordered_map>
+#include <unordered_set>
 #include <unordered_set>
 #include <utility>
 #include <vector>
@@ -162,25 +164,36 @@ bool g_aoi_draining = false;
 
 void PublishAoiBatch(const AoiPushBatch &batch);
 
-// 同一收件人、同一实体的连续移动只留最后一帧。进出视野原样保留。
-void CollapseMoves(std::vector<AoiRecipientEvent> *events) {
+// 积压时对同一收件人+实体的 MOVE 按约 100ms 抽样（≥10 次/秒），保留递增 state_seq。
+// 100ms 内的密采样只留最新；跨窗的样本都发出，避免长时间合并成一次大跳。
+// ENTER/LEAVE 原样保留，并打断该实体的 MOVE 合并窗口。
+// 600 同线压测：100ms 仍易打满出站；200ms 合并 Move，ENTER/LEAVE 仍原样保留。
+constexpr int64_t kAoiMoveSampleMs = 200;
+
+void SampleMoveEvents(std::vector<AoiRecipientEvent> *events) {
     if (!events || events->size() < 2)
         return;
     std::vector<AoiRecipientEvent> out;
     out.reserve(events->size());
-    std::unordered_map<uint64_t, std::unordered_map<uint64_t, size_t>> move_at;
+    // recipient -> entity -> {out_index, last_kept_server_ms}
+    std::unordered_map<uint64_t, std::unordered_map<uint64_t, std::pair<size_t, int64_t>>> move_at;
     for (auto &ev : *events) {
         const uint64_t ent = ev.snapshot.player_id;
         if (ev.op == 2) {
+            const int64_t t = ev.snapshot.last_move_server_ms;
             auto rit = move_at.find(ev.recipient_id);
             if (rit != move_at.end()) {
                 auto eit = rit->second.find(ent);
                 if (eit != rit->second.end()) {
-                    out[eit->second] = std::move(ev);
-                    continue;
+                    const int64_t prev_t = eit->second.second;
+                    if (t > 0 && prev_t > 0 && (t - prev_t) < kAoiMoveSampleMs) {
+                        out[eit->second.first] = std::move(ev);
+                        eit->second.second = t;
+                        continue;
+                    }
                 }
             }
-            move_at[ev.recipient_id][ent] = out.size();
+            move_at[ev.recipient_id][ent] = {out.size(), t};
             out.push_back(std::move(ev));
         } else {
             auto rit = move_at.find(ev.recipient_id);
@@ -199,6 +212,7 @@ void DrainAoiQueue() {
             std::lock_guard<std::mutex> lk(g_aoi_mu);
             if (g_aoi_q.empty()) {
                 g_aoi_draining = false;
+                OpsMetrics::Instance().SetAoiPushBacklog(0);
                 return;
             }
             taken.push_back(std::move(g_aoi_q.front()));
@@ -223,7 +237,6 @@ void DrainAoiQueue() {
                               std::make_move_iterator(b.events.end()));
         }
         for (auto &kv : merged) {
-            CollapseMoves(&kv.second.events);
             PublishAoiBatch(kv.second);
         }
     }
@@ -236,6 +249,7 @@ void EnqueueAoi(AoiPushBatch batch) {
     {
         std::lock_guard<std::mutex> lk(g_aoi_mu);
         g_aoi_q.push_back(std::move(batch));
+        OpsMetrics::Instance().SetAoiPushBacklog(static_cast<int64_t>(g_aoi_q.size()));
         if (!g_aoi_draining) {
             g_aoi_draining = true;
             start = true;
@@ -268,6 +282,8 @@ void PublishAoiBatch(const AoiPushBatch &batch) {
     }
     if (live.events.empty())
         return;
+    SampleMoveEvents(&live.events);
+    const int64_t emit_ms = NowMs();
     std::unordered_map<uint64_t, game::AoiDelta> by_player;
     std::unordered_map<uint64_t, std::pair<std::string, std::string>> route;
     for (const auto &ev : live.events) {
@@ -276,6 +292,9 @@ void PublishAoiBatch(const AoiPushBatch &batch) {
         auto *pe = delta.add_events();
         pe->set_op(ev.op);
         FillEntitySnapshot(ev.snapshot, pe->mutable_entity());
+        const int64_t t =
+            ev.snapshot.last_move_server_ms > 0 ? ev.snapshot.last_move_server_ms : emit_ms;
+        pe->set_server_time_ms(t);
         if (route[ev.recipient_id].first.empty())
             route[ev.recipient_id] = {ev.gateway_instance_id, ev.session_id};
     }
@@ -699,7 +718,7 @@ bool GameLogic::BuildFullStateSnapshot(uint64_t player_id, uint64_t baseline_ser
     out->Clear();
     game::PlayerAttributes attrs;
     const bool have_profile = GetPlayerAttributes(player_id, &attrs);
-    std::lock_guard<std::mutex> lk(mu_);
+    std::unique_lock<std::mutex> lk(mu_);
     EnsurePlayer(player_id);
     out->set_player_id(player_id);
     out->set_asset_version(asset_version_[player_id]);
@@ -721,7 +740,33 @@ bool GameLogic::BuildFullStateSnapshot(uint64_t player_id, uint64_t baseline_ser
     MapEntity self;
     std::vector<MapEntity> aoi;
     uint64_t mid = 0;
-    const bool on_map = MapRuntime::Instance().SnapshotView(player_id, &self, &aoi, &mid);
+    bool on_map = MapRuntime::Instance().SnapshotView(player_id, &self, &aoi, &mid);
+    if (on_map && !self.connected) {
+        lk.unlock();
+        std::string gw, sid;
+        GameLogicGetBoundMeta(player_id, &gw, &sid, nullptr, nullptr);
+        AoiPushBatch pushes;
+        if (MapRuntime::Instance().Reconnect(player_id, gw, sid, &self, &aoi, &pushes)) {
+            EmitAoi(pushes);
+            on_map = MapRuntime::Instance().SnapshotView(player_id, &self, &aoi, &mid);
+        }
+        lk.lock();
+    }
+#ifdef WEBSERVER_ENABLE_REDIS
+    PlacementRecord live_place;
+    bool have_live_place = false;
+    if (!on_map) {
+        lk.unlock();
+        if (PlacementStore::Instance().Available()) {
+            uint64_t presence_mid = 0;
+            if (PlacementStore::Instance().GetPlayerPresence(player_id, &presence_mid) &&
+                presence_mid != 0 && PlacementStore::Instance().Get(presence_mid, &live_place) &&
+                live_place.state == PlacementState::Ready && live_place.map_instance_id != 0)
+                have_live_place = true;
+        }
+        lk.lock();
+    }
+#endif
     uint32_t aoi_max = 128;
     if (const char *e = std::getenv("GAMEMESH_SNAPSHOT_AOI_MAX")) {
         const int v = std::atoi(e);
@@ -770,7 +815,26 @@ bool GameLogic::BuildFullStateSnapshot(uint64_t player_id, uint64_t baseline_ser
             out->mutable_self()->mutable_position()->set_z(sit->second.z);
             out->mutable_self()->set_yaw(sit->second.yaw);
             out->set_recovery_reason("REENTER_FROM_SAFE_POS");
+            if (sit->second.map_instance_id != 0)
+                out->set_map_instance_id(sit->second.map_instance_id);
         }
+#ifdef WEBSERVER_ENABLE_REDIS
+        // 人已经在线上时，本逻辑的 MapRuntime 可能还没有他（登录绑到了另一台 GameLogic）。
+        // 快照不带真实 map_instance_id 的话，客户端只能再发一次 EnterMap。
+        if (have_live_place) {
+            out->set_map_instance_id(live_place.map_instance_id);
+            if (live_place.map_template_id != 0)
+                out->set_map_template_id(live_place.map_template_id);
+            if (live_place.realm_id != 0)
+                out->set_realm_id(live_place.realm_id);
+            if (live_place.owner_epoch != 0)
+                out->set_owner_epoch(live_place.owner_epoch);
+            if (live_place.route_version != 0)
+                out->set_route_version(live_place.route_version);
+            if (!live_place.owner_logic_server_id.empty())
+                out->set_gamelogic_instance_id(live_place.owner_logic_server_id);
+        }
+#endif
     }
     out->set_ok(true);
     out->set_error_code("OK");
@@ -1737,6 +1801,26 @@ bool GameLogic::HandleEnterMap(const game::EnterMapReq &req, game::GameResponse 
     }
     MapInstanceRegistry::Instance().AddPlayer(place.map_instance_id, req.player_id());
 
+#ifdef WEBSERVER_ENABLE_REDIS
+    // Redis occ 是分线权威。GameLogic 进程内 entity 在宽限过期后可能仍在，
+    // 进图快照会把已下线 bot 同步给客户端（监控 1 人、画面几十个模型）。
+    if (PlacementStore::Instance().Available()) {
+        std::vector<uint64_t> occ;
+        if (PlacementStore::Instance().ListOccupants(place.map_instance_id, &occ)) {
+            std::unordered_set<uint64_t> keep(occ.begin(), occ.end());
+            keep.insert(req.player_id());
+            AoiPushBatch drops;
+            const size_t n =
+                MapRuntime::Instance().DropExcept(place.map_instance_id, keep, &drops);
+            if (n > 0) {
+                EmitAoi(drops);
+                LOG_INFO << "EnterMap drop ghost entities map=" << place.map_instance_id
+                         << " n=" << n << " occ=" << occ.size();
+            }
+        }
+    }
+#endif
+
     auto rollback_enter = [&]() {
         MapInstanceRegistry::Instance().RemovePlayer(place.map_instance_id, req.player_id());
 #ifdef WEBSERVER_ENABLE_REDIS
@@ -1853,6 +1937,16 @@ bool GameLogic::HandleEnterMap(const game::EnterMapReq &req, game::GameResponse 
             std::vector<MapEntity> aoi_now;
             uint64_t mid_now = 0;
             if (MapRuntime::Instance().SnapshotView(req.player_id(), &self_now, &aoi_now, &mid_now)) {
+                if (!self_now.connected) {
+                    std::string gw, sid;
+                    GameLogicGetBoundMeta(req.player_id(), &gw, &sid, nullptr, nullptr);
+                    if (have_meta && !meta_snap.session_id.empty())
+                        sid = meta_snap.session_id;
+                    AoiPushBatch pushes;
+                    if (MapRuntime::Instance().Reconnect(req.player_id(), gw, sid, &self_now,
+                                                         &aoi_now, &pushes))
+                        EmitAoi(pushes);
+                }
                 body->set_ok(true);
                 body->set_message("entered");
                 body->set_map_template_id(place.map_template_id);
@@ -1926,6 +2020,11 @@ bool GameLogic::HandleEnterMap(const game::EnterMapReq &req, game::GameResponse 
         }
         MapScenePolicy pol;
         const bool have_pol = MapCatalog::Instance().GetScenePolicy(place.map_template_id, &pol);
+        // 1002 先落到模板出生点，再按 spawn_scatter_radius 打散，避免全员叠同一坐标。
+        if (place.map_template_id == 1002) {
+            ApplyTemplateSpawn(place.map_template_id, &sx, &sy, &sz);
+            recovery = "SPAWN_FALLBACK";
+        }
         if (recovery == "SPAWN_FALLBACK" && have_pol && pol.spawn_scatter_radius > 0.f) {
             float nx = sx, ny = sy, nz = sz;
             if (static_data->FindScatteredSpawn(sx, sy, sz, pol.spawn_scatter_radius,
@@ -1935,12 +2034,9 @@ bool GameLogic::HandleEnterMap(const game::EnterMapReq &req, game::GameResponse 
                 sz = nz;
             }
         }
-        if (place.map_template_id == 1002) {
-            ApplyTemplateSpawn(place.map_template_id, &sx, &sy, &sz);
-            recovery = "SPAWN_FALLBACK";
-        }
         const int view_r = (have_pol && pol.aoi_view_radius_cells >= 0) ? pol.aoi_view_radius_cells
                                                                        : -1;
+        const int max_vis = have_pol ? pol.aoi_max_visible : -1;
         MapEntity me;
         me.player_id = req.player_id();
         me.player_name = attrs.player_name();
@@ -1962,7 +2058,7 @@ bool GameLogic::HandleEnterMap(const game::EnterMapReq &req, game::GameResponse 
         AoiPushBatch pushes;
         std::string rerr;
         if (!MapRuntime::Instance().Enter(place.map_instance_id, static_data, me, &self, &snap,
-                                          &pushes, &rerr, view_r)) {
+                                          &pushes, &rerr, view_r, max_vis)) {
             rollback_enter();
             body->set_ok(false);
             body->set_message(rerr.empty() ? "map runtime enter failed" : rerr);
@@ -2001,22 +2097,9 @@ bool GameLogic::HandleEnterMap(const game::EnterMapReq &req, game::GameResponse 
     LOG_INFO << "[enter_map] player=" << req.player_id() << " map=" << place.map_instance_id
              << " epoch=" << place.owner_epoch
              << " gl=" << MapInstanceRegistry::Instance().local_instance_id();
-#if defined(WEBSERVER_ENABLE_BRPC)
-    // 真实业务可靠 Push：进图结果按 gateway_instance_id 推送（非广播）
-    {
-        game::GameResponse notify;
-        notify.set_ok(true);
-        notify.set_message("enter_map_notify");
-        *notify.mutable_enter_map() = *body;
-        std::string payload;
-        if (notify.SerializeToString(&payload)) {
-            const bool pushed = GameLogicPush::PushToBoundGateway(
-                "", req.player_id(), "", "enter_map_notify", payload, true, false, 0);
-            LOG_INFO << "[enter_map] PushToBoundGateway player=" << req.player_id()
-                     << " ok=" << pushed;
-        }
-    }
-#endif
+    // 进图结果只走这次 Dispatch 的 EnterMapRsp（客户端按请求 seq 匹配）。
+    // 先 Push enter_map_notify 会在同一条 Gateway 连接上排到回包前面；那一帧若只写进
+    // 用户态 send_buf，后面的 seq 回包和心跳都出不去，关闭时未读请求还会让 close() 发 RST。
     return true;
 }
 
@@ -2538,6 +2621,19 @@ bool GameLogic::HandleMove(const game::MoveReq &req, game::GameResponse *rsp) {
     if (st != MapMoveReject::Ok) {
         body->set_error_code(code.empty() ? "ERR_MOVE_REJECTED" : code);
         body->set_message(body->error_code());
+        // 拒绝时仍回写权威坐标，避免客户端本地飞远后再被大跳拉回。
+        MapEntity cur;
+        std::vector<MapEntity> ignore_aoi;
+        uint64_t mid = 0;
+        if (MapRuntime::Instance().SnapshotView(req.player_id(), &cur, &ignore_aoi, &mid) &&
+            mid == req.map_instance_id()) {
+            body->mutable_position()->set_x(cur.x);
+            body->mutable_position()->set_y(cur.y);
+            body->mutable_position()->set_z(cur.z);
+            body->set_yaw(cur.yaw);
+            body->set_state_seq(cur.state_seq);
+            body->set_server_time_ms(NowMs());
+        }
         rsp->set_ok(false);
         rsp->set_message(body->message());
         return false;

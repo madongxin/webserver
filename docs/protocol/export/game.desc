@@ -1,5 +1,5 @@
 
-…ë
+Äì
 
 game.protogame"Æ
 LoginReq
@@ -29,7 +29,7 @@ generation0
 
 session_id (	R	sessionId)
 reconnect_ticket (	RreconnectTicket&
-last_server_seq (RlastServerSeq"ã
+last_server_seq (RlastServerSeq"ü
 ReconnectRsp
 ok (Rok
 message (	Rmessage
@@ -40,7 +40,12 @@ session_id (	R	sessionId
 generation (R
 generation,
 need_full_snapshot (RneedFullSnapshot&
-replay_from_seq (RreplayFromSeq"¯
+replay_from_seq (RreplayFromSeq&
+map_instance_id (RmapInstanceId2
+gamelogic_instance_id	 (	RgamelogicInstanceId$
+need_enter_map
+ (RneedEnterMap
+on_map (RonMap"¯
 
 PushAckReq
 	player_id (RplayerId$
@@ -810,10 +815,11 @@ error_code (	R	errorCode&
 .game.Vec3Rposition
 yaw (Ryaw
 	state_seq (RstateSeq$
-server_time_ms (RserverTimeMs"H
+server_time_ms (RserverTimeMs"n
 AoiEvent
 op (Rop,
-entity (2.game.EntitySnapshotRentity"Z
+entity (2.game.EntitySnapshotRentity$
+server_time_ms (RserverTimeMs"Z
 AoiDelta&
 map_instance_id (RmapInstanceId&
 events (2.game.AoiEventRevents"¸

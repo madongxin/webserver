@@ -47,6 +47,12 @@ public:
     /** col = floor((x-min_x)/step)，row = floor((z-min_z)/step) */
     bool WorldToWalkableCell(float x, float z, int *col, int *row) const;
     bool IsWalkable(float x, float z) const;
+    /**
+     * 目标格不可走时，沿 from→to 收到最后一格可行走的位置。
+     * from 也不可走时，在目标附近 2 格内取最近的格子中心。找不到则返回 false。
+     */
+    bool ClampOntoWalkable(float from_x, float from_z, float to_x, float to_z, float *ox,
+                           float *oz) const;
     bool CellWalkable(int col, int row) const;
     bool InBounds(float x, float y, float z) const;
     void WorldToAoiCell(float x, float z, int *cell_x, int *cell_z) const;

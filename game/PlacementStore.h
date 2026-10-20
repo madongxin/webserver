@@ -172,12 +172,26 @@ public:
     bool ConfirmSlot(uint64_t player_id, uint64_t map_instance_id);
     bool ReleaseByPlayer(uint64_t player_id);
     /**
+     * 断线宽限：从 map:occ 摘除以释放 softcap（幽灵人数），保留 map:pres。
+     * 重连成功后调用 ResumeParked 加回 occ。
+     */
+    bool ParkForGrace(uint64_t player_id);
+    bool ResumeParked(uint64_t player_id);
+    /**
      * 扫 map:pres:*：keep_reservation(pid)==false 则 ReleaseByPlayer。
      * 用于下线/重启后 Session 已没、占位还在的幽灵 occupancy。
      */
     size_t ReclaimStaleReservations(const std::function<bool(uint64_t player_id)> &keep_reservation,
                                     size_t limit = 64);
+    /**
+     * 扫 map:occ:*：keep_online(pid)==false 则 SREM，并把 map:pres 标为 parked。
+     * 用于 DISCONNECTED/缺失 Session 仍占 softcap 的幽灵人数。
+     */
+    size_t ReconcileGhostOccupancy(const std::function<bool(uint64_t player_id)> &keep_online,
+                                   size_t limit = 128);
     uint32_t Occupancy(uint64_t map_instance_id);
+    /** 粗算全部 map:occ:* 人数（metrics / 幽灵对账用，有缓存上限）。 */
+    int64_t SumAllOccupancy(size_t max_keys = 64);
     void SetPublicMapCapacity(uint32_t n);
     uint32_t public_map_capacity() const { return public_capacity_; }
 

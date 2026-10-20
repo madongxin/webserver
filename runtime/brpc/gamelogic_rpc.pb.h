@@ -625,7 +625,9 @@ class BindPlayerResponse PROTOBUF_FINAL :
     kErrorCodeFieldNumber = 3,
     kProfilePbFieldNumber = 5,
     kOkFieldNumber = 1,
+    kOnMapFieldNumber = 6,
     kBagItemKindsFieldNumber = 4,
+    kMapInstanceIdFieldNumber = 7,
   };
   // string message = 2;
   void clear_message();
@@ -711,6 +713,15 @@ class BindPlayerResponse PROTOBUF_FINAL :
   void _internal_set_ok(bool value);
   public:
 
+  // bool on_map = 6;
+  void clear_on_map();
+  bool on_map() const;
+  void set_on_map(bool value);
+  private:
+  bool _internal_on_map() const;
+  void _internal_set_on_map(bool value);
+  public:
+
   // uint32 bag_item_kinds = 4;
   void clear_bag_item_kinds();
   ::PROTOBUF_NAMESPACE_ID::uint32 bag_item_kinds() const;
@@ -718,6 +729,15 @@ class BindPlayerResponse PROTOBUF_FINAL :
   private:
   ::PROTOBUF_NAMESPACE_ID::uint32 _internal_bag_item_kinds() const;
   void _internal_set_bag_item_kinds(::PROTOBUF_NAMESPACE_ID::uint32 value);
+  public:
+
+  // uint64 map_instance_id = 7;
+  void clear_map_instance_id();
+  ::PROTOBUF_NAMESPACE_ID::uint64 map_instance_id() const;
+  void set_map_instance_id(::PROTOBUF_NAMESPACE_ID::uint64 value);
+  private:
+  ::PROTOBUF_NAMESPACE_ID::uint64 _internal_map_instance_id() const;
+  void _internal_set_map_instance_id(::PROTOBUF_NAMESPACE_ID::uint64 value);
   public:
 
   // @@protoc_insertion_point(class_scope:glrpc.BindPlayerResponse)
@@ -731,7 +751,9 @@ class BindPlayerResponse PROTOBUF_FINAL :
   ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr error_code_;
   ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr profile_pb_;
   bool ok_;
+  bool on_map_;
   ::PROTOBUF_NAMESPACE_ID::uint32 bag_item_kinds_;
+  ::PROTOBUF_NAMESPACE_ID::uint64 map_instance_id_;
   mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
   friend struct ::TableStruct_gamelogic_5frpc_2eproto;
 };
@@ -855,6 +877,7 @@ class UnbindPlayerRequest PROTOBUF_FINAL :
     kReasonFieldNumber = 4,
     kIdempotencyKeyFieldNumber = 5,
     kPlayerIdFieldNumber = 1,
+    kGenerationFieldNumber = 6,
   };
   // string session_id = 2;
   void clear_session_id();
@@ -965,6 +988,15 @@ class UnbindPlayerRequest PROTOBUF_FINAL :
   void _internal_set_player_id(::PROTOBUF_NAMESPACE_ID::uint64 value);
   public:
 
+  // uint64 generation = 6;
+  void clear_generation();
+  ::PROTOBUF_NAMESPACE_ID::uint64 generation() const;
+  void set_generation(::PROTOBUF_NAMESPACE_ID::uint64 value);
+  private:
+  ::PROTOBUF_NAMESPACE_ID::uint64 _internal_generation() const;
+  void _internal_set_generation(::PROTOBUF_NAMESPACE_ID::uint64 value);
+  public:
+
   // @@protoc_insertion_point(class_scope:glrpc.UnbindPlayerRequest)
  private:
   class _Internal;
@@ -977,6 +1009,7 @@ class UnbindPlayerRequest PROTOBUF_FINAL :
   ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr reason_;
   ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr idempotency_key_;
   ::PROTOBUF_NAMESPACE_ID::uint64 player_id_;
+  ::PROTOBUF_NAMESPACE_ID::uint64 generation_;
   mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
   friend struct ::TableStruct_gamelogic_5frpc_2eproto;
 };
@@ -5126,6 +5159,46 @@ inline void BindPlayerResponse::unsafe_arena_set_allocated_profile_pb(
   // @@protoc_insertion_point(field_unsafe_arena_set_allocated:glrpc.BindPlayerResponse.profile_pb)
 }
 
+// bool on_map = 6;
+inline void BindPlayerResponse::clear_on_map() {
+  on_map_ = false;
+}
+inline bool BindPlayerResponse::_internal_on_map() const {
+  return on_map_;
+}
+inline bool BindPlayerResponse::on_map() const {
+  // @@protoc_insertion_point(field_get:glrpc.BindPlayerResponse.on_map)
+  return _internal_on_map();
+}
+inline void BindPlayerResponse::_internal_set_on_map(bool value) {
+  
+  on_map_ = value;
+}
+inline void BindPlayerResponse::set_on_map(bool value) {
+  _internal_set_on_map(value);
+  // @@protoc_insertion_point(field_set:glrpc.BindPlayerResponse.on_map)
+}
+
+// uint64 map_instance_id = 7;
+inline void BindPlayerResponse::clear_map_instance_id() {
+  map_instance_id_ = PROTOBUF_ULONGLONG(0);
+}
+inline ::PROTOBUF_NAMESPACE_ID::uint64 BindPlayerResponse::_internal_map_instance_id() const {
+  return map_instance_id_;
+}
+inline ::PROTOBUF_NAMESPACE_ID::uint64 BindPlayerResponse::map_instance_id() const {
+  // @@protoc_insertion_point(field_get:glrpc.BindPlayerResponse.map_instance_id)
+  return _internal_map_instance_id();
+}
+inline void BindPlayerResponse::_internal_set_map_instance_id(::PROTOBUF_NAMESPACE_ID::uint64 value) {
+  
+  map_instance_id_ = value;
+}
+inline void BindPlayerResponse::set_map_instance_id(::PROTOBUF_NAMESPACE_ID::uint64 value) {
+  _internal_set_map_instance_id(value);
+  // @@protoc_insertion_point(field_set:glrpc.BindPlayerResponse.map_instance_id)
+}
+
 // -------------------------------------------------------------------
 
 // UnbindPlayerRequest
@@ -5472,6 +5545,26 @@ inline void UnbindPlayerRequest::unsafe_arena_set_allocated_idempotency_key(
   idempotency_key_.UnsafeArenaSetAllocated(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(),
       idempotency_key, GetArena());
   // @@protoc_insertion_point(field_unsafe_arena_set_allocated:glrpc.UnbindPlayerRequest.idempotency_key)
+}
+
+// uint64 generation = 6;
+inline void UnbindPlayerRequest::clear_generation() {
+  generation_ = PROTOBUF_ULONGLONG(0);
+}
+inline ::PROTOBUF_NAMESPACE_ID::uint64 UnbindPlayerRequest::_internal_generation() const {
+  return generation_;
+}
+inline ::PROTOBUF_NAMESPACE_ID::uint64 UnbindPlayerRequest::generation() const {
+  // @@protoc_insertion_point(field_get:glrpc.UnbindPlayerRequest.generation)
+  return _internal_generation();
+}
+inline void UnbindPlayerRequest::_internal_set_generation(::PROTOBUF_NAMESPACE_ID::uint64 value) {
+  
+  generation_ = value;
+}
+inline void UnbindPlayerRequest::set_generation(::PROTOBUF_NAMESPACE_ID::uint64 value) {
+  _internal_set_generation(value);
+  // @@protoc_insertion_point(field_set:glrpc.UnbindPlayerRequest.generation)
 }
 
 // -------------------------------------------------------------------

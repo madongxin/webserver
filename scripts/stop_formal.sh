@@ -30,8 +30,11 @@ done <"$RUN_DIR/pids"
 
 rm -f "$RUN_DIR/pids"
 
-# 释放 GatewayIdentity 短租约，避免重启同 ID 时 duplicate claim（TTL=120s）
-if command -v redis-cli >/dev/null 2>&1 && [[ -f "$ROOT/config/redis.cnf" ]]; then
+# 冷停必须清 Redis 运行时态，否则观察页仍显示 Session ONLINE / 分线人数。
+# CLEAR_GW_CLAIM=1：一并删 gw_claim，避免重启同 ID 时 duplicate claim。
+if [[ -x "$ROOT/scripts/redis_clear_runtime.sh" ]]; then
+  CLEAR_GW_CLAIM=1 "$ROOT/scripts/redis_clear_runtime.sh" || true
+elif command -v redis-cli >/dev/null 2>&1 && [[ -f "$ROOT/config/redis.cnf" ]]; then
   REDIS_PASS="$(grep -E '^password=' "$ROOT/config/redis.cnf" | head -1 | cut -d= -f2- || true)"
   if [[ -n "$REDIS_PASS" ]]; then
     redis-cli -a "$REDIS_PASS" DEL 'gamemesh:dev:gw_claim:gw-0' 'gamemesh:dev:gw_claim:gw-1' >/dev/null 2>&1 || true

@@ -14,8 +14,14 @@ public:
     void Start(int n = 0);
     void Stop();
 
-    /** 队列满或未启动返回 false */
+    /** 队列满或未启动返回 false。EnterMap 等慢编排走这条。 */
     bool TryPost(std::function<void()> fn);
+
+    /**
+     * Login/Reconnect 专用快队列：独立 worker，不排在 EnterMap 后面。
+     * 满了立刻返回 false，调用方必须回 ERR_OVERLOADED，不能挂着不答。
+     */
+    bool TryPostFast(std::function<void()> fn);
 
     bool started() const;
 

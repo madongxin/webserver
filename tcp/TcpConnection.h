@@ -60,6 +60,18 @@ public:
     void Send(const std::string &msg);
     void Send(const char *msg, int len);
     void Send(const char *msg);
+    /**
+     * 尽力发送；发送队列将超限时返回 false 且不关闭连接。
+     * 用于 AOI/分线等可丢弃推送，避免背压杀连接导致 MarkDisconnected 雪崩。
+     */
+    bool TrySend(const std::string &msg);
+    bool TrySend(const char *msg, int len);
+    /** 可靠推送（ENTER/LEAVE）：软丢水位更高（约 90%），尽量送达，仍不关连接。 */
+    bool TrySendUrgent(const std::string &msg);
+    bool TrySendUrgent(const char *msg, int len);
+    /** 心跳应答：用满发送缓冲仍不关连接。缓冲已满才返回 false。 */
+    bool TrySendControl(const std::string &msg);
+    bool TrySendControl(const char *msg, int len);
     void SendFile(int filefd, int size);
 
     /** epoll 读就绪：读 socket -> 调 on_message_ */
@@ -92,6 +104,7 @@ private:
     size_t max_read_buf_bytes_;
     size_t max_send_buf_bytes_;
     bool force_closed_for_backpressure_;
+    bool in_close_;
 
     std::function<void(const std::shared_ptr<TcpConnection> &)> on_close_;
     std::function<void(const std::shared_ptr<TcpConnection> &)> on_message_;
@@ -99,7 +112,13 @@ private:
 
     void ReadNonBlocking();
     void WriteNonBlocking();
+    /** 关闭路径专用：只写 socket，失败不回调 HandleClose。 */
+    void FlushSendBufBestEffort();
     void CloseForBackpressure(const char *reason);
+    /** soft_drop=true：队列将满时丢弃本帧并返回 false；false：关连接（背压）。
+     *  urgent：软丢水位约 90%（ENTER/LEAVE）。control：心跳，水位 100%。 */
+    bool SendInternal(const char *msg, int len, bool soft_drop, bool urgent = false,
+                      bool control = false);
 
     std::unique_ptr<HttpContext> context_;
     TimeStamp timestamp_;

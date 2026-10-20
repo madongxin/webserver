@@ -9,7 +9,10 @@
 #include <memory>
 #include <unistd.h>
 #include <cassert>
+#include <cerrno>
 #include <cstring>
+#include <netinet/in.h>
+#include <netinet/tcp.h>
 #include <sys/socket.h>
 #include <sys/sendfile.h>
 
@@ -20,7 +23,8 @@ TcpConnection::TcpConnection(EventLoop *loop, int connfd, uint64_t connid)
       loop_(loop),
       max_read_buf_bytes_(static_cast<size_t>(kDefaultMaxReadBufBytes)),
       max_send_buf_bytes_(static_cast<size_t>(kDefaultMaxSendBufBytes)),
-      force_closed_for_backpressure_(false) {
+      force_closed_for_backpressure_(false),
+      in_close_(false) {
     if (loop != nullptr) {
         channel_ = std::make_unique<Channel>(connfd, loop);
         channel_->set_read_callback(std::bind(&TcpConnection::HandleMessage, this));
@@ -37,6 +41,8 @@ TcpConnection::~TcpConnection() {
 
 void TcpConnection::ConnectionEstablished() {
     state_ = ConnectionState::Connected;
+    int nodelay = 1;
+    ::setsockopt(connfd_, IPPROTO_TCP, TCP_NODELAY, &nodelay, sizeof(nodelay));
     channel_->Tie(shared_from_this());
     // 先跑 on_connect_（限流/摘流可能立刻 HandleClose）。未通过时不要
     // EnableRead：限流洪泛下 Channel 进 epoll 再关，会 SIGSEGV。
@@ -44,18 +50,21 @@ void TcpConnection::ConnectionEstablished() {
         on_connect_(shared_from_this());
     if (state_ != ConnectionState::Connected)
         return;
-    channel_->EnableET();
+    // 水平触发。EPOLLET 在「write 返回 EAGAIN 之后、注册 EPOLLOUT 之前窗口又打开」
+    // 时不会再通知，send_buf 里的 EnterMapRsp 会一直留到关闭，关闭时若接收缓冲还有
+    // 客户端后续请求，close() 会发 RST。
     channel_->EnableRead();
 }
 
 void TcpConnection::ConnectionDestructor() {
     proto_stream_.clear();
-    read_buf_->RetrieveAll();
-    send_buf_->RetrieveAll();
+    if (read_buf_)
+        read_buf_->RetrieveAll();
+    if (send_buf_)
+        send_buf_->RetrieveAll();
     if (!channel_ || !channel_->IsInEpoll())
         return;
-    if (channel_->IsWriting())
-        channel_->DisableWrite();
+    channel_->DisableAll();
     loop_->DeleteChannel(channel_.get());
 }
 
@@ -73,15 +82,37 @@ void TcpConnection::set_message_callback(
 }
 
 void TcpConnection::HandleClose() {
-    if (state_ != ConnectionState::Disconected) {
-        state_ = ConnectionState::Disconected;
-        proto_stream_.clear();
-        if (channel_ && channel_->IsWriting())
-            channel_->DisableWrite();
-        if (on_close_) {
-            on_close_(shared_from_this());
+    if (state_ == ConnectionState::Disconected || in_close_)
+        return;
+    in_close_ = true;
+    // 持有 self，避免 on_close_ 链路里最后一次 shared_ptr 释放导致中途析构。
+    const auto self = shared_from_this();
+    // 先摘掉 epoll 兴趣，避免同一轮 EPOLLIN|EPOLLOUT 在读关闭后再进写回调。
+    if (channel_)
+        channel_->DisableAll();
+
+    // 尽力冲一次发送队列；关闭路径禁止再递归进 HandleClose。
+    FlushSendBufBestEffort();
+    if (send_buf_ && send_buf_->readablebytes() > 0) {
+        LOG_WARN << "TcpConnection close drops unsent id#" << connid_
+                 << " bytes=" << send_buf_->readablebytes();
+        send_buf_->RetrieveAll();
+    }
+    if (connfd_ >= 0) {
+        char dump[4096];
+        while (true) {
+            const ssize_t n = ::read(connfd_, dump, sizeof(dump));
+            if (n > 0)
+                continue;
+            if (n < 0 && errno == EINTR)
+                continue;
+            break;
         }
     }
+    state_ = ConnectionState::Disconected;
+    proto_stream_.clear();
+    if (on_close_)
+        on_close_(self);
 }
 
 void TcpConnection::CloseForBackpressure(const char *reason) {
@@ -92,15 +123,18 @@ void TcpConnection::CloseForBackpressure(const char *reason) {
 }
 
 void TcpConnection::HandleMessage() {
-    Read();
-    if (state_ == ConnectionState::Disconected)
+    if (state_ != ConnectionState::Connected || in_close_)
         return;
-    if (on_message_) {
+    Read();
+    if (state_ != ConnectionState::Connected || in_close_)
+        return;
+    if (on_message_)
         on_message_(shared_from_this());
-    }
 }
 
 void TcpConnection::HandleWrite() {
+    if (state_ != ConnectionState::Connected || in_close_)
+        return;
     WriteNonBlocking();
 }
 
@@ -129,8 +163,38 @@ void TcpConnection::Send(const char *msg) {
 }
 
 void TcpConnection::Send(const char *msg, int len) {
-    if (state_ != ConnectionState::Connected || !msg || len < 0)
-        return;
+    (void)SendInternal(msg, len, false);
+}
+
+bool TcpConnection::TrySend(const std::string &msg) {
+    return TrySend(msg.data(), static_cast<int>(msg.size()));
+}
+
+bool TcpConnection::TrySend(const char *msg, int len) {
+    return SendInternal(msg, len, true);
+}
+
+bool TcpConnection::TrySendUrgent(const std::string &msg) {
+    return TrySendUrgent(msg.data(), static_cast<int>(msg.size()));
+}
+
+bool TcpConnection::TrySendUrgent(const char *msg, int len) {
+    // soft_drop=true 且 urgent：SendInternal 用 90% 水位。
+    return SendInternal(msg, len, true, true);
+}
+
+bool TcpConnection::TrySendControl(const std::string &msg) {
+    return TrySendControl(msg.data(), static_cast<int>(msg.size()));
+}
+
+bool TcpConnection::TrySendControl(const char *msg, int len) {
+    return SendInternal(msg, len, true, true, true);
+}
+
+bool TcpConnection::SendInternal(const char *msg, int len, bool soft_drop, bool urgent,
+                                 bool control) {
+    if (state_ != ConnectionState::Connected || in_close_ || !channel_ || !msg || len < 0)
+        return false;
 
     int remaining = len;
     int send_size = 0;
@@ -146,20 +210,33 @@ void TcpConnection::Send(const char *msg, int len) {
         } else {
             LOG_ERROR << "TcpConnection::Send write error id#" << connid_;
             HandleClose();
-            return;
+            return false;
         }
     }
 
-    assert(remaining <= len);
     if (remaining > 0) {
+        // 普通可丢帧 50%；ENTER/LEAVE 等 urgent 用 90%；心跳 control 用满缓冲。都不 Hard Close。
+        size_t limit = max_send_buf_bytes_;
+        if (soft_drop && !control) {
+            limit = urgent ? (max_send_buf_bytes_ - max_send_buf_bytes_ / 10)
+                           : (max_send_buf_bytes_ / 2);
+        }
         if (static_cast<size_t>(send_buf_->readablebytes()) + static_cast<size_t>(remaining) >
-            max_send_buf_bytes_) {
+            limit) {
+            if (soft_drop)
+                return false;
             CloseForBackpressure("send_queue_limit");
-            return;
+            return false;
         }
         send_buf_->Append(msg + send_size, remaining);
-        channel_->EnableWrite();
     }
+    if (send_buf_->readablebytes() > 0) {
+        WriteNonBlocking();
+        if (state_ == ConnectionState::Connected && !in_close_ && channel_ &&
+            send_buf_->readablebytes() > 0)
+            channel_->EnableWrite();
+    }
+    return true;
 }
 
 void TcpConnection::Read() { ReadNonBlocking(); }
@@ -167,6 +244,8 @@ void TcpConnection::Read() { ReadNonBlocking(); }
 void TcpConnection::Write() { WriteNonBlocking(); }
 
 void TcpConnection::ReadNonBlocking() {
+    if (state_ != ConnectionState::Connected || in_close_ || connfd_ < 0)
+        return;
     char buf[1024];
     while (true) {
         ssize_t bytes_read = ::read(connfd_, buf, sizeof(buf));
@@ -190,7 +269,27 @@ void TcpConnection::ReadNonBlocking() {
     }
 }
 
+void TcpConnection::FlushSendBufBestEffort() {
+    if (!send_buf_ || connfd_ < 0)
+        return;
+    while (send_buf_->readablebytes() > 0) {
+        const int remaining = send_buf_->readablebytes();
+        const ssize_t send_size =
+            ::write(connfd_, send_buf_->Peek(), static_cast<size_t>(remaining));
+        if (send_size > 0) {
+            send_buf_->Retrieve(static_cast<int>(send_size));
+            continue;
+        }
+        if (send_size == -1 && errno == EINTR)
+            continue;
+        // EAGAIN / 硬错误：关闭路径不再递归 HandleClose，由调用方丢弃剩余字节。
+        break;
+    }
+}
+
 void TcpConnection::WriteNonBlocking() {
+    if (!send_buf_ || !channel_ || state_ == ConnectionState::Disconected || in_close_)
+        return;
     while (send_buf_->readablebytes() > 0) {
         const int remaining = send_buf_->readablebytes();
         const ssize_t send_size =
@@ -208,9 +307,10 @@ void TcpConnection::WriteNonBlocking() {
         HandleClose();
         return;
     }
-    if (send_buf_->readablebytes() == 0 && channel_->IsWriting()) {
+    if (state_ != ConnectionState::Connected || in_close_ || !channel_)
+        return;
+    if (send_buf_->readablebytes() == 0 && channel_->IsWriting())
         channel_->DisableWrite();
-    }
 }
 
 HttpContext *TcpConnection::context() const { return context_.get(); }

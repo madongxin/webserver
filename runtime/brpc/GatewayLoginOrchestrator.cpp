@@ -4,6 +4,7 @@
 #include "GatewayAuthClients.h"
 #include "GatewayConnRegistry.h"
 #include "Logging.h"
+#include "LoginAdmission.h"
 #include "PlayerSerialQueue.h"
 #include "ProtoFraming.h"
 #include "PublicError.h"
@@ -100,6 +101,15 @@ bool OrchestrateGatewayLogin(const std::string &gateway_instance_id, uint64_t co
     areq.set_server_id(req.login().server_id());
     areq.set_credential(req.login().credential());
     auth::LoginResponse arsp;
+    auto auth_budget = LoginAdmission::StagePermit::Try(LoginAdmission::Stage::Auth, false);
+    if (!auth_budget) {
+        login_body->set_ok(false);
+        login_body->set_message("login admission");
+        rsp.set_ok(false);
+        rsp.set_message(login_body->message());
+        rsp.set_error_code(gameproto::kErrOverloaded);
+        return EncodeResponse(rsp, response_frame, connection_id);
+    }
     if (!GatewayAuthClients::Instance().AuthLogin(areq, &arsp) || !arsp.ok()) {
         login_body->set_ok(false);
         login_body->set_message(arsp.message().empty() ? "auth failed" : arsp.message());
@@ -121,6 +131,15 @@ bool OrchestrateGatewayLogin(const std::string &gateway_instance_id, uint64_t co
     sreq.set_operation_id("acq:" + gateway_instance_id + ":" + std::to_string(connection_id) + ":" +
                           std::to_string(arsp.player_id()) + ":" + req.login().device_id());
     sess::AcquireSessionResponse srsp;
+    auto session_budget = LoginAdmission::StagePermit::Try(LoginAdmission::Stage::Session, false);
+    if (!session_budget) {
+        login_body->set_ok(false);
+        login_body->set_message("login admission");
+        rsp.set_ok(false);
+        rsp.set_message(login_body->message());
+        rsp.set_error_code(gameproto::kErrOverloaded);
+        return EncodeResponse(rsp, response_frame, connection_id);
+    }
     if (!GatewayAuthClients::Instance().AcquireSession(sreq, &srsp) || !srsp.ok()) {
         login_body->set_ok(false);
         login_body->set_message(srsp.message().empty() ? "acquire session failed" : srsp.message());
@@ -173,6 +192,15 @@ bool OrchestrateGatewayLogin(const std::string &gateway_instance_id, uint64_t co
     breq.set_generation(srsp.generation());
     breq.set_idempotency_key(srsp.session_id() + ":bind");
     glrpc::BindPlayerResponse brsp;
+    auto bind_budget = LoginAdmission::StagePermit::Try(LoginAdmission::Stage::Bind, false);
+    if (!bind_budget) {
+        login_body->set_ok(false);
+        login_body->set_message("login admission");
+        rsp.set_ok(false);
+        rsp.set_message(login_body->message());
+        rsp.set_error_code(gameproto::kErrOverloaded);
+        return EncodeResponse(rsp, response_frame, connection_id);
+    }
     if (!GatewayAuthClients::Instance().BindPlayer(srsp.gamelogic_instance_id(), breq, &brsp) ||
         !brsp.ok()) {
         if (!srsp.previous_session_id().empty()) {
@@ -204,6 +232,12 @@ bool OrchestrateGatewayLogin(const std::string &gateway_instance_id, uint64_t co
         rsp.set_message(login_body->message());
         rsp.set_error_code(brsp.error_code());
         return EncodeResponse(rsp, response_frame, connection_id);
+    }
+
+    if (connection_id != 0) {
+        GatewayConnRegistry::Instance().RetargetSession(
+            connection_id, arsp.player_id(), srsp.session_id(), srsp.generation(),
+            srsp.fence_token());
     }
 
     if (!srsp.previous_gateway_instance_id().empty() &&
@@ -356,6 +390,15 @@ bool OrchestrateGatewayReconnect(const std::string &gateway_instance_id, uint64_
     breq.set_generation(prsp.candidate_generation());
     breq.set_idempotency_key(prsp.session_id() + ":rebind");
     glrpc::BindPlayerResponse brsp;
+    auto bind_budget = LoginAdmission::StagePermit::Try(LoginAdmission::Stage::Bind, true);
+    if (!bind_budget) {
+        body->set_ok(false);
+        body->set_message("login admission");
+        rsp.set_ok(false);
+        rsp.set_message(body->message());
+        rsp.set_error_code(gameproto::kErrOverloaded);
+        return EncodeResponse(rsp, response_frame);
+    }
     if (!GatewayAuthClients::Instance().BindPlayer(prsp.gamelogic_instance_id(), breq, &brsp) ||
         !brsp.ok()) {
         sess::AbortReconnectRequest areq;
@@ -419,6 +462,15 @@ bool OrchestrateGatewayReconnect(const std::string &gateway_instance_id, uint64_
     body->set_token(crsp.fence_token());
     body->set_session_id(crsp.session_id());
     body->set_generation(crsp.generation());
+    body->set_map_instance_id(crsp.map_instance_id());
+    body->set_gamelogic_instance_id(crsp.gamelogic_instance_id());
+    // BindPlayer.on_map：false 时客户端必须再 EnterMap，不能直接 Move。
+    // 注意：map_instance_id==0 且 on_map=true 时不要误标 need_enter_map（会逼客户端再进图撞 softcap）。
+    const bool on_map = brsp.on_map();
+    body->set_on_map(on_map);
+    body->set_need_enter_map(!on_map);
+    if (body->need_enter_map())
+        body->set_message("reconnect ok; not_on_map_enter_map_required");
 
     // 可靠 Push 回放（跨 Gateway Redis）；缺口则 NeedFullSnapshot，禁止伪成功补发
     const uint64_t last_seq = req.reconnect().last_server_seq();
@@ -439,6 +491,21 @@ bool OrchestrateGatewayReconnect(const std::string &gateway_instance_id, uint64_
                                                      &need_snap) &&
             last_seq != 0) {
             need_snap = true;
+        }
+    }
+    // 回放过大时改走全量快照，避免重连瞬间把 send_buf 打满（本轮压测 close drops 主因之一）。
+    constexpr size_t kMaxReconnectReplay = 8;
+    constexpr size_t kMaxReconnectReplayBytes = 48 * 1024;
+    if (!need_snap && replay.size() > kMaxReconnectReplay) {
+        need_snap = true;
+        replay.clear();
+    } else if (!need_snap && !replay.empty()) {
+        size_t bytes = 0;
+        for (const auto &e : replay)
+            bytes += e.payload.size();
+        if (bytes > kMaxReconnectReplayBytes) {
+            need_snap = true;
+            replay.clear();
         }
     }
     body->set_need_full_snapshot(need_snap);
@@ -566,10 +633,13 @@ bool OrchestrateGatewayReconnect(const std::string &gateway_instance_id, uint64_
     }
 
     rsp.set_ok(true);
-    rsp.set_message(need_snap ? "reconnect ok need_full_snapshot" : "reconnect ok");
+    if (need_snap && body->message().find("enter_map") == std::string::npos)
+        body->set_message(std::string(body->message()) + "; need_full_snapshot");
+    rsp.set_message(body->message());
     LOG_INFO << "Gateway reconnect orchestrated player=" << req.reconnect().player_id()
              << " logic=" << crsp.gamelogic_instance_id() << " conn=" << connection_id
-             << " need_snap=" << need_snap << " replay_n=" << replay.size();
+             << " need_snap=" << need_snap << " on_map=" << on_map
+             << " need_enter_map=" << body->need_enter_map() << " replay_n=" << replay.size();
     return EncodeResponse(rsp, response_frame);
 }
 
@@ -706,7 +776,7 @@ template <typename Fn>
 bool LaunchRpcOffload(uint64_t shard_key, Fn fn) {
     PlayerSerialQueue::Instance().MarkAsyncInFlight(shard_key);
     auto heap = std::make_shared<Fn>(std::move(fn));
-    if (!RpcOffloadPool::Instance().TryPost([heap]() { (*heap)(); })) {
+    if (!RpcOffloadPool::Instance().TryPostFast([heap]() { (*heap)(); })) {
         PlayerSerialQueue::Instance().ClearAsyncInFlight(shard_key);
         return false;
     }
@@ -727,15 +797,9 @@ bool BeginOrchestrateGatewayLogin(const std::string &gateway_instance_id, uint64
         const bool ok =
             OrchestrateGatewayLogin(gateway_instance_id, connection_id, request_payload, &out,
                                     &route);
-        if (!PlayerSerialQueue::Instance().CompleteAsyncInFlight(
-                shard_key, [done = std::move(done), ok, out = std::move(out),
-                            route = std::move(route)]() mutable {
-                    done(ok, std::move(out), std::move(route));
-                })) {
-            if (ok && route.player_id != 0)
-                CompensateGatewaySession(route.player_id, route.session_id, route.fence_token,
-                                        route.generation);
-        }
+        // 回包直接写回这条连接。完成回调再进玩家队列时，600 人重连会拖过客户端时限。
+        done(ok, std::move(out), std::move(route));
+        PlayerSerialQueue::Instance().ClearAsyncInFlight(shard_key);
     });
 }
 
@@ -746,12 +810,8 @@ bool BeginOrchestrateGatewayRegister(const std::string &request_payload, uint64_
     return LaunchRpcOffload(shard_key, [request_payload, shard_key, done = std::move(done)]() mutable {
         std::string out;
         const bool ok = OrchestrateGatewayRegister(request_payload, &out);
-        if (!PlayerSerialQueue::Instance().CompleteAsyncInFlight(
-                shard_key, [done = std::move(done), ok, out = std::move(out)]() mutable {
-                    done(ok, std::move(out), GatewayLoginRoute{});
-                })) {
-            (void)ok;
-        }
+        done(ok, std::move(out), GatewayLoginRoute{});
+        PlayerSerialQueue::Instance().ClearAsyncInFlight(shard_key);
     });
 }
 
@@ -766,15 +826,8 @@ bool BeginOrchestrateGatewayReconnect(const std::string &gateway_instance_id, ui
         GatewayLoginRoute route;
         const bool ok = OrchestrateGatewayReconnect(gateway_instance_id, connection_id,
                                                     request_payload, &out, &route);
-        if (!PlayerSerialQueue::Instance().CompleteAsyncInFlight(
-                shard_key, [done = std::move(done), ok, out = std::move(out),
-                            route = std::move(route)]() mutable {
-                    done(ok, std::move(out), std::move(route));
-                })) {
-            if (ok && route.player_id != 0)
-                CompensateGatewaySession(route.player_id, route.session_id, route.fence_token,
-                                        route.generation);
-        }
+        done(ok, std::move(out), std::move(route));
+        PlayerSerialQueue::Instance().ClearAsyncInFlight(shard_key);
     });
 }
 

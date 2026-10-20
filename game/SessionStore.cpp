@@ -1109,6 +1109,9 @@ bool SessionStore::AcquireSessionUnlocked(const AcquireSessionInput &in, Acquire
     int ttl = static_cast<int>(in.ttl_sec);
     if (ttl <= 0)
         ttl = default_ttl_sec_;
+    // 客户端/机器人写过短 TTL（如 300s）会导致压测中途会话键过期；短于默认时抬到 default。
+    else if (ttl < default_ttl_sec_)
+        ttl = default_ttl_sec_;
     if (ttl > long_ttl_sec_)
         ttl = long_ttl_sec_;
 
@@ -1571,6 +1574,8 @@ bool SessionStore::MarkDisconnected(uint64_t player_id, const std::string &token
     LOG_INFO << "SessionStore: DISCONNECTED player_id=" << player_id << " grace_sec=" << grace_sec_;
     lease = RedisPool::Lease();
     UntrackOnline(player_id);
+    // 宽限内仍保留 map:pres，但立刻从 occ 摘除，避免分线 softcap 幽灵占满。
+    PlacementStore::Instance().ParkForGrace(player_id);
     int64_t deadline = NowUnixSec() + grace_sec_;
     if (reply.size() > 2)
         deadline = ParseI64(reply[2]);
@@ -2040,30 +2045,61 @@ std::string SessionStore::OnlineSetKey() const {
 int64_t SessionStore::OnlinePlayerCount() {
     if (!available_)
         return 0;
+    // /metrics 高频刮取：禁止每次 SMEMBERS+逐成员 HGET（600 人时把 Session 打满）。
+    // 热路径用 SCARD；对账最多 2s 一次。
+    static std::mutex cache_mu;
+    static int64_t cached = 0;
+    static int64_t last_reconcile_ms = 0;
+    const int64_t now_ms =
+        std::chrono::duration_cast<std::chrono::milliseconds>(
+            std::chrono::steady_clock::now().time_since_epoch())
+            .count();
+    {
+        std::lock_guard<std::mutex> lk(cache_mu);
+        if (last_reconcile_ms != 0 && now_ms - last_reconcile_ms < 2000)
+            return cached;
+    }
     auto lease = RedisPool::Instance().Acquire();
     if (!lease)
         return 0;
-    // Session key 靠 Redis TTL 过期时不会 SREM；对账只保留 state=ONLINE 的成员。
+    int64_t scard = 0;
+    if (!lease->SCard(OnlineSetKey(), &scard))
+        scard = 0;
+    lease = RedisPool::Lease();
+    int64_t n = scard < 0 ? 0 : scard;
+    // 低频轻量对账：最多扫 64 个成员，避免 metrics 路径 O(N) Redis。
     static const char kLua[] = R"LUA(
 local setkey = KEYS[1]
 local prefix = ARGV[1]
-local members = redis.call('SMEMBERS', setkey)
-local n = 0
+local lim = tonumber(ARGV[2]) or 64
+local members = redis.call('SRANDMEMBER', setkey, lim)
+if type(members) ~= 'table' then return {tostring(redis.call('SCARD', setkey))} end
 for _, pid in ipairs(members) do
   local st = redis.call('HGET', prefix .. 'session:' .. pid, 'state')
-  if st == 'ONLINE' then
-    n = n + 1
-  else
+  if st ~= 'ONLINE' then
     redis.call('SREM', setkey, pid)
   end
 end
-return n
+return {tostring(redis.call('SCARD', setkey))}
 )LUA";
-    std::vector<std::string> reply;
-    if (!lease->Eval(kLua, {OnlineSetKey()}, {key_prefix_}, &reply) || reply.empty())
-        return 0;
-    const int64_t n = ParseI64(reply[0]);
-    return n < 0 ? 0 : n;
+    {
+        auto lease2 = RedisPool::Instance().Acquire();
+        if (lease2) {
+            std::vector<std::string> reply;
+            if (lease2->Eval(kLua, {OnlineSetKey()}, {key_prefix_, "64"}, &reply) &&
+                !reply.empty()) {
+                const int64_t cleaned = ParseI64(reply[0]);
+                if (cleaned >= 0)
+                    n = cleaned;
+            }
+        }
+    }
+    {
+        std::lock_guard<std::mutex> lk(cache_mu);
+        cached = n;
+        last_reconcile_ms = now_ms;
+    }
+    return n;
 }
 
 void SessionStore::TrackOnline(uint64_t player_id) {
@@ -2215,6 +2251,95 @@ size_t SessionStore::ReclaimOrphanMapReservations(size_t limit) {
             return reply[0] == "1";
         },
         limit);
+}
+
+size_t SessionStore::ReconcileGhostMapOccupancy(size_t limit) {
+    if (!available_ || !PlacementStore::Instance().Available())
+        return 0;
+    return PlacementStore::Instance().ReconcileGhostOccupancy(
+        [this](uint64_t player_id) {
+            SessionRecord rec;
+            if (!LoadSession(player_id, &rec))
+                return false;
+            return rec.state == SessionState::Online;
+        },
+        limit);
+}
+
+size_t SessionStore::ExpireOnlineMissingGatewayClaim(size_t limit) {
+    if (!available_)
+        return 0;
+    size_t n = limit > 0 ? limit : 100;
+    if (n > 200)
+        n = 200;
+    auto lease = RedisPool::Instance().Acquire();
+    if (!lease)
+        return 0;
+    std::vector<std::string> members;
+    if (!lease->SMembers(OnlineSetKey(), &members))
+        return 0;
+    lease = RedisPool::Lease();
+    size_t expired = 0;
+    static const char kLua[] = R"LUA(
+local skey = KEYS[1]
+local claim = KEYS[2]
+local expect_gw = ARGV[1]
+if redis.call('EXISTS', claim) == 1 then
+  return {'0', 'CLAIM_ALIVE'}
+end
+local raw = redis.call('HGETALL', skey)
+if #raw == 0 then return {'1', 'NOT_FOUND'} end
+local f = {}
+for i = 1, #raw, 2 do f[raw[i]] = raw[i + 1] end
+if (f['state'] or '') ~= 'ONLINE' then return {'0', 'NOT_ONLINE'} end
+if (f['gatewayId'] or '') ~= expect_gw then return {'0', 'GW_CHANGED'} end
+redis.call('DEL', skey)
+return {'1', 'EXPIRED'}
+)LUA";
+    for (const auto &m : members) {
+        if (expired >= n)
+            break;
+        const uint64_t pid = ParseU64(m);
+        if (pid == 0)
+            continue;
+        SessionRecord rec;
+        if (!LoadSession(pid, &rec)) {
+            UntrackOnline(pid);
+            PlacementStore::Instance().ReleaseByPlayer(pid);
+            ClearGraceIndex(pid);
+            ++expired;
+            continue;
+        }
+        if (rec.state != SessionState::Online) {
+            UntrackOnline(pid);
+            continue;
+        }
+        // Login→BindConnection 窗口内 gateway 可能为空，勿误杀。
+        if (rec.gateway_id.empty())
+            continue;
+        const std::string claim = key_prefix_ + "gw_claim:" + rec.gateway_id;
+        auto cas = RedisPool::Instance().Acquire();
+        if (!cas)
+            continue;
+        std::vector<std::string> reply;
+        if (!cas->Eval(kLua, {SessionKey(pid), claim}, {rec.gateway_id}, &reply) ||
+            reply.empty())
+            continue;
+        if (reply[0] != "1")
+            continue;
+        cas = RedisPool::Lease();
+        UntrackOnline(pid);
+        ClearGraceIndex(pid);
+        PlacementStore::Instance().ReleaseByPlayer(pid);
+        if (friend_presence_fn_)
+            friend_presence_fn_(pid, false);
+        ++expired;
+        LOG_INFO << "SessionStore: ONLINE orphan expired (no gw_claim) player_id=" << pid
+                 << " gw=" << rec.gateway_id;
+    }
+    if (expired > 0)
+        ServerStats::session_grace_expire.fetch_add(expired, std::memory_order_relaxed);
+    return expired;
 }
 
 void SessionStore::UntrackOnline(uint64_t player_id) {
@@ -2689,7 +2814,8 @@ bool SessionStore::GetOnlinePushTarget(uint64_t player_id, OnlinePushTarget *out
     SessionRecord rec;
     if (!LoadSession(player_id, &rec))
         return false;
-    if (ExpireIfGraceElapsed(player_id, &rec) || rec.state != SessionState::Online)
+    // 推送热路径不做 grace CAS（Lua EVAL）；到期由 ExpireDueDisconnected 清扫。
+    if (rec.state != SessionState::Online)
         return false;
     if (rec.gateway_id.empty() || rec.session_id.empty())
         return false;

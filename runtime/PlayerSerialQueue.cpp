@@ -1,6 +1,7 @@
 #include "PlayerSerialQueue.h"
 
 #include "Logging.h"
+#include "OpsMetrics.h"
 
 #include <utility>
 
@@ -245,6 +246,8 @@ void PlayerSerialQueue::WorkerLoop(Shard *shard) {
             LOG_ERROR << "PlayerSerialQueue: task threw";
         }
         pending_global_.fetch_sub(1, std::memory_order_relaxed);
+        OpsMetrics::Instance().SetMailboxPending(
+            static_cast<int64_t>(pending_global_.load(std::memory_order_relaxed)));
         {
             std::lock_guard<std::mutex> lk(shard->mu);
             --shard->inflight;
@@ -254,10 +257,11 @@ void PlayerSerialQueue::WorkerLoop(Shard *shard) {
     }
 }
 
-bool PlayerSerialQueue::TryPost(uint64_t player_id, std::function<void()> task) {
+bool PlayerSerialQueue::TryPost(uint64_t player_id, std::function<void()> task,
+                                bool ignore_global_cap) {
     if (life_.load(std::memory_order_acquire) != LifeState::kRunning)
         return false;
-    if (pending_global_.load(std::memory_order_relaxed) >= max_global_)
+    if (!ignore_global_cap && pending_global_.load(std::memory_order_relaxed) >= max_global_)
         return false;
     Shard *shard = ShardFor(player_id);
     if (!shard)
@@ -271,19 +275,24 @@ bool PlayerSerialQueue::TryPost(uint64_t player_id, std::function<void()> task) 
         if (shard->stop)
             return false;
         entry.submit_seq = shard->next_submit_seq++;
+        const size_t shard_limit = ignore_global_cap ? max_per_shard_ + 128 : max_per_shard_;
         const auto dit = shard->async_depth.find(player_id);
         if (dit != shard->async_depth.end() && dit->second > 0) {
             auto &dq = shard->deferred[player_id];
-            if (dq.size() + shard->q.size() >= max_per_shard_)
+            if (dq.size() + shard->q.size() >= shard_limit)
                 return false;
             dq.push_back(std::move(entry));
             pending_global_.fetch_add(1, std::memory_order_relaxed);
+            OpsMetrics::Instance().SetMailboxPending(
+                static_cast<int64_t>(pending_global_.load(std::memory_order_relaxed)));
             return true;
         }
-        if (shard->q.size() >= max_per_shard_)
+        if (shard->q.size() >= shard_limit)
             return false;
         shard->q.push_back(std::move(entry));
         pending_global_.fetch_add(1, std::memory_order_relaxed);
+        OpsMetrics::Instance().SetMailboxPending(
+            static_cast<int64_t>(pending_global_.load(std::memory_order_relaxed)));
     }
     shard->cv.notify_one();
     return true;

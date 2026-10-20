@@ -346,6 +346,8 @@ const ::PROTOBUF_NAMESPACE_ID::uint32 TableStruct_gamelogic_5frpc_2eproto::offse
   PROTOBUF_FIELD_OFFSET(::glrpc::BindPlayerResponse, error_code_),
   PROTOBUF_FIELD_OFFSET(::glrpc::BindPlayerResponse, bag_item_kinds_),
   PROTOBUF_FIELD_OFFSET(::glrpc::BindPlayerResponse, profile_pb_),
+  PROTOBUF_FIELD_OFFSET(::glrpc::BindPlayerResponse, on_map_),
+  PROTOBUF_FIELD_OFFSET(::glrpc::BindPlayerResponse, map_instance_id_),
   ~0u,  // no _has_bits_
   PROTOBUF_FIELD_OFFSET(::glrpc::UnbindPlayerRequest, _internal_metadata_),
   ~0u,  // no _extensions_
@@ -356,6 +358,7 @@ const ::PROTOBUF_NAMESPACE_ID::uint32 TableStruct_gamelogic_5frpc_2eproto::offse
   PROTOBUF_FIELD_OFFSET(::glrpc::UnbindPlayerRequest, fence_token_),
   PROTOBUF_FIELD_OFFSET(::glrpc::UnbindPlayerRequest, reason_),
   PROTOBUF_FIELD_OFFSET(::glrpc::UnbindPlayerRequest, idempotency_key_),
+  PROTOBUF_FIELD_OFFSET(::glrpc::UnbindPlayerRequest, generation_),
   ~0u,  // no _has_bits_
   PROTOBUF_FIELD_OFFSET(::glrpc::UnbindPlayerResponse, _internal_metadata_),
   ~0u,  // no _extensions_
@@ -498,20 +501,20 @@ const ::PROTOBUF_NAMESPACE_ID::uint32 TableStruct_gamelogic_5frpc_2eproto::offse
 static const ::PROTOBUF_NAMESPACE_ID::internal::MigrationSchema schemas[] PROTOBUF_SECTION_VARIABLE(protodesc_cold) = {
   { 0, -1, sizeof(::glrpc::BindPlayerRequest)},
   { 18, -1, sizeof(::glrpc::BindPlayerResponse)},
-  { 28, -1, sizeof(::glrpc::UnbindPlayerRequest)},
-  { 38, -1, sizeof(::glrpc::UnbindPlayerResponse)},
-  { 45, -1, sizeof(::glrpc::FreezePlayerRequest)},
-  { 56, -1, sizeof(::glrpc::FreezePlayerResponse)},
-  { 64, -1, sizeof(::glrpc::BagItemEntry)},
-  { 71, -1, sizeof(::glrpc::SkillCdEntry)},
-  { 78, -1, sizeof(::glrpc::PlayerRuntimeState)},
-  { 87, -1, sizeof(::glrpc::PlayerTransferSnapshot)},
-  { 106, -1, sizeof(::glrpc::ExportPlayerSnapshotRequest)},
-  { 119, -1, sizeof(::glrpc::ExportPlayerSnapshotResponse)},
-  { 129, -1, sizeof(::glrpc::ImportPlayerSnapshotRequest)},
-  { 136, -1, sizeof(::glrpc::ImportPlayerSnapshotResponse)},
-  { 145, -1, sizeof(::glrpc::ClientCommand)},
-  { 166, -1, sizeof(::glrpc::CommandResult)},
+  { 30, -1, sizeof(::glrpc::UnbindPlayerRequest)},
+  { 41, -1, sizeof(::glrpc::UnbindPlayerResponse)},
+  { 48, -1, sizeof(::glrpc::FreezePlayerRequest)},
+  { 59, -1, sizeof(::glrpc::FreezePlayerResponse)},
+  { 67, -1, sizeof(::glrpc::BagItemEntry)},
+  { 74, -1, sizeof(::glrpc::SkillCdEntry)},
+  { 81, -1, sizeof(::glrpc::PlayerRuntimeState)},
+  { 90, -1, sizeof(::glrpc::PlayerTransferSnapshot)},
+  { 109, -1, sizeof(::glrpc::ExportPlayerSnapshotRequest)},
+  { 122, -1, sizeof(::glrpc::ExportPlayerSnapshotResponse)},
+  { 132, -1, sizeof(::glrpc::ImportPlayerSnapshotRequest)},
+  { 139, -1, sizeof(::glrpc::ImportPlayerSnapshotResponse)},
+  { 148, -1, sizeof(::glrpc::ClientCommand)},
+  { 169, -1, sizeof(::glrpc::CommandResult)},
 };
 
 static ::PROTOBUF_NAMESPACE_ID::Message const * const file_default_instances[] = {
@@ -542,75 +545,77 @@ const char descriptor_table_protodef_gamelogic_5frpc_2eproto[] PROTOBUF_SECTION_
   "epoch\030\007 \001(\004\022\025\n\rroute_version\030\010 \001(\004\022\033\n\023ga"
   "teway_instance_id\030\t \001(\t\022\027\n\017idempotency_k"
   "ey\030\n \001(\t\022\025\n\rtrace_context\030\013 \001(\t\022\022\n\ngener"
-  "ation\030\014 \001(\004\022\023\n\013transfer_id\030\r \001(\t\"q\n\022Bind"
-  "PlayerResponse\022\n\n\002ok\030\001 \001(\010\022\017\n\007message\030\002 "
-  "\001(\t\022\022\n\nerror_code\030\003 \001(\t\022\026\n\016bag_item_kind"
-  "s\030\004 \001(\r\022\022\n\nprofile_pb\030\005 \001(\014\"z\n\023UnbindPla"
-  "yerRequest\022\021\n\tplayer_id\030\001 \001(\004\022\022\n\nsession"
-  "_id\030\002 \001(\t\022\023\n\013fence_token\030\003 \001(\t\022\016\n\006reason"
-  "\030\004 \001(\t\022\027\n\017idempotency_key\030\005 \001(\t\"3\n\024Unbin"
+  "ation\030\014 \001(\004\022\023\n\013transfer_id\030\r \001(\t\"\232\001\n\022Bin"
   "dPlayerResponse\022\n\n\002ok\030\001 \001(\010\022\017\n\007message\030\002"
-  " \001(\t\"\217\001\n\023FreezePlayerRequest\022\021\n\tplayer_i"
-  "d\030\001 \001(\004\022\022\n\nsession_id\030\002 \001(\t\022\023\n\013fence_tok"
-  "en\030\003 \001(\t\022\023\n\013transfer_id\030\004 \001(\t\022\016\n\006reason\030"
-  "\005 \001(\t\022\027\n\017idempotency_key\030\006 \001(\t\"G\n\024Freeze"
-  "PlayerResponse\022\n\n\002ok\030\001 \001(\010\022\017\n\007message\030\002 "
-  "\001(\t\022\022\n\nerror_code\030\003 \001(\t\".\n\014BagItemEntry\022"
-  "\017\n\007item_id\030\001 \001(\r\022\r\n\005count\030\002 \001(\r\"5\n\014Skill"
-  "CdEntry\022\020\n\010skill_id\030\001 \001(\r\022\023\n\013cd_until_ms"
-  "\030\002 \001(\003\"\216\001\n\022PlayerRuntimeState\022 \n\003bag\030\001 \003"
-  "(\0132\023.glrpc.BagItemEntry\022&\n\tskill_cds\030\002 \003"
-  "(\0132\023.glrpc.SkillCdEntry\022\027\n\017last_client_s"
-  "eq\030\003 \001(\004\022\025\n\rasset_version\030\004 \001(\004\"\200\003\n\026Play"
-  "erTransferSnapshot\022\021\n\tplayer_id\030\001 \001(\004\022\022\n"
-  "\nsession_id\030\002 \001(\t\022\023\n\013fence_token\030\003 \001(\t\022\022"
-  "\n\ngeneration\030\004 \001(\004\022\033\n\023source_gamelogic_i"
-  "d\030\005 \001(\t\022\033\n\023target_gamelogic_id\030\006 \001(\t\022\036\n\026"
-  "source_map_instance_id\030\007 \001(\004\022\036\n\026target_m"
-  "ap_instance_id\030\010 \001(\004\022\032\n\022target_owner_epo"
-  "ch\030\t \001(\004\022\025\n\rroute_version\030\n \001(\004\022\030\n\020snaps"
-  "hot_version\030\013 \001(\004\022(\n\005state\030\014 \001(\0132\031.glrpc"
-  ".PlayerRuntimeState\022\020\n\010checksum\030\r \001(\t\022\023\n"
-  "\013transfer_id\030\016 \001(\t\"\340\001\n\033ExportPlayerSnaps"
-  "hotRequest\022\021\n\tplayer_id\030\001 \001(\004\022\022\n\nsession"
-  "_id\030\002 \001(\t\022\023\n\013fence_token\030\003 \001(\t\022\023\n\013transf"
-  "er_id\030\004 \001(\t\022\033\n\023target_gamelogic_id\030\005 \001(\t"
-  "\022\036\n\026target_map_instance_id\030\006 \001(\004\022\032\n\022targ"
-  "et_owner_epoch\030\007 \001(\004\022\027\n\017idempotency_key\030"
-  "\010 \001(\t\"\236\001\n\034ExportPlayerSnapshotResponse\022\n"
-  "\n\002ok\030\001 \001(\010\022\017\n\007message\030\002 \001(\t\022\022\n\nerror_cod"
-  "e\030\003 \001(\t\022/\n\010snapshot\030\004 \001(\0132\035.glrpc.Player"
-  "TransferSnapshot\022\034\n\024public_full_snapshot"
-  "\030\005 \001(\014\"g\n\033ImportPlayerSnapshotRequest\022/\n"
-  "\010snapshot\030\001 \001(\0132\035.glrpc.PlayerTransferSn"
-  "apshot\022\027\n\017idempotency_key\030\002 \001(\t\"h\n\034Impor"
-  "tPlayerSnapshotResponse\022\n\n\002ok\030\001 \001(\010\022\017\n\007m"
-  "essage\030\002 \001(\t\022\022\n\nerror_code\030\003 \001(\t\022\027\n\017alre"
-  "ady_applied\030\004 \001(\010\"\355\002\n\rClientCommand\022\022\n\nr"
-  "equest_id\030\001 \001(\004\022\021\n\tplayer_id\030\002 \001(\004\022\022\n\nse"
-  "ssion_id\030\003 \001(\t\022\023\n\013fence_token\030\004 \001(\t\022\035\n\025g"
-  "amelogic_instance_id\030\005 \001(\t\022\027\n\017map_instan"
-  "ce_id\030\006 \001(\004\022\027\n\017map_owner_epoch\030\007 \001(\004\022\022\n\n"
-  "client_seq\030\010 \001(\004\022\024\n\014message_type\030\t \001(\t\022\017"
-  "\n\007payload\030\n \001(\014\022\025\n\rtrace_context\030\013 \001(\t\022\027"
-  "\n\017idempotency_key\030\014 \001(\t\022\022\n\ngeneration\030\r "
-  "\001(\004\022\025\n\rroute_version\030\016 \001(\004\022\023\n\013deadline_m"
-  "s\030\017 \001(\005\022\020\n\010trace_id\030\020 \001(\t\"l\n\rCommandResu"
-  "lt\022\n\n\002ok\030\001 \001(\010\022\017\n\007message\030\002 \001(\t\022\022\n\nerror"
-  "_code\030\003 \001(\t\022\026\n\016response_frame\030\004 \001(\014\022\022\n\ns"
-  "erver_seq\030\005 \001(\0042\341\003\n\020GameLogicService\022A\n\n"
-  "BindPlayer\022\030.glrpc.BindPlayerRequest\032\031.g"
-  "lrpc.BindPlayerResponse\0226\n\010Dispatch\022\024.gl"
-  "rpc.ClientCommand\032\024.glrpc.CommandResult\022"
-  "G\n\014UnbindPlayer\022\032.glrpc.UnbindPlayerRequ"
-  "est\032\033.glrpc.UnbindPlayerResponse\022G\n\014Free"
-  "zePlayer\022\032.glrpc.FreezePlayerRequest\032\033.g"
-  "lrpc.FreezePlayerResponse\022_\n\024ExportPlaye"
-  "rSnapshot\022\".glrpc.ExportPlayerSnapshotRe"
-  "quest\032#.glrpc.ExportPlayerSnapshotRespon"
-  "se\022_\n\024ImportPlayerSnapshot\022\".glrpc.Impor"
-  "tPlayerSnapshotRequest\032#.glrpc.ImportPla"
-  "yerSnapshotResponseB\003\200\001\001b\006proto3"
+  " \001(\t\022\022\n\nerror_code\030\003 \001(\t\022\026\n\016bag_item_kin"
+  "ds\030\004 \001(\r\022\022\n\nprofile_pb\030\005 \001(\014\022\016\n\006on_map\030\006"
+  " \001(\010\022\027\n\017map_instance_id\030\007 \001(\004\"\216\001\n\023Unbind"
+  "PlayerRequest\022\021\n\tplayer_id\030\001 \001(\004\022\022\n\nsess"
+  "ion_id\030\002 \001(\t\022\023\n\013fence_token\030\003 \001(\t\022\016\n\006rea"
+  "son\030\004 \001(\t\022\027\n\017idempotency_key\030\005 \001(\t\022\022\n\nge"
+  "neration\030\006 \001(\004\"3\n\024UnbindPlayerResponse\022\n"
+  "\n\002ok\030\001 \001(\010\022\017\n\007message\030\002 \001(\t\"\217\001\n\023FreezePl"
+  "ayerRequest\022\021\n\tplayer_id\030\001 \001(\004\022\022\n\nsessio"
+  "n_id\030\002 \001(\t\022\023\n\013fence_token\030\003 \001(\t\022\023\n\013trans"
+  "fer_id\030\004 \001(\t\022\016\n\006reason\030\005 \001(\t\022\027\n\017idempote"
+  "ncy_key\030\006 \001(\t\"G\n\024FreezePlayerResponse\022\n\n"
+  "\002ok\030\001 \001(\010\022\017\n\007message\030\002 \001(\t\022\022\n\nerror_code"
+  "\030\003 \001(\t\".\n\014BagItemEntry\022\017\n\007item_id\030\001 \001(\r\022"
+  "\r\n\005count\030\002 \001(\r\"5\n\014SkillCdEntry\022\020\n\010skill_"
+  "id\030\001 \001(\r\022\023\n\013cd_until_ms\030\002 \001(\003\"\216\001\n\022Player"
+  "RuntimeState\022 \n\003bag\030\001 \003(\0132\023.glrpc.BagIte"
+  "mEntry\022&\n\tskill_cds\030\002 \003(\0132\023.glrpc.SkillC"
+  "dEntry\022\027\n\017last_client_seq\030\003 \001(\004\022\025\n\rasset"
+  "_version\030\004 \001(\004\"\200\003\n\026PlayerTransferSnapsho"
+  "t\022\021\n\tplayer_id\030\001 \001(\004\022\022\n\nsession_id\030\002 \001(\t"
+  "\022\023\n\013fence_token\030\003 \001(\t\022\022\n\ngeneration\030\004 \001("
+  "\004\022\033\n\023source_gamelogic_id\030\005 \001(\t\022\033\n\023target"
+  "_gamelogic_id\030\006 \001(\t\022\036\n\026source_map_instan"
+  "ce_id\030\007 \001(\004\022\036\n\026target_map_instance_id\030\010 "
+  "\001(\004\022\032\n\022target_owner_epoch\030\t \001(\004\022\025\n\rroute"
+  "_version\030\n \001(\004\022\030\n\020snapshot_version\030\013 \001(\004"
+  "\022(\n\005state\030\014 \001(\0132\031.glrpc.PlayerRuntimeSta"
+  "te\022\020\n\010checksum\030\r \001(\t\022\023\n\013transfer_id\030\016 \001("
+  "\t\"\340\001\n\033ExportPlayerSnapshotRequest\022\021\n\tpla"
+  "yer_id\030\001 \001(\004\022\022\n\nsession_id\030\002 \001(\t\022\023\n\013fenc"
+  "e_token\030\003 \001(\t\022\023\n\013transfer_id\030\004 \001(\t\022\033\n\023ta"
+  "rget_gamelogic_id\030\005 \001(\t\022\036\n\026target_map_in"
+  "stance_id\030\006 \001(\004\022\032\n\022target_owner_epoch\030\007 "
+  "\001(\004\022\027\n\017idempotency_key\030\010 \001(\t\"\236\001\n\034ExportP"
+  "layerSnapshotResponse\022\n\n\002ok\030\001 \001(\010\022\017\n\007mes"
+  "sage\030\002 \001(\t\022\022\n\nerror_code\030\003 \001(\t\022/\n\010snapsh"
+  "ot\030\004 \001(\0132\035.glrpc.PlayerTransferSnapshot\022"
+  "\034\n\024public_full_snapshot\030\005 \001(\014\"g\n\033ImportP"
+  "layerSnapshotRequest\022/\n\010snapshot\030\001 \001(\0132\035"
+  ".glrpc.PlayerTransferSnapshot\022\027\n\017idempot"
+  "ency_key\030\002 \001(\t\"h\n\034ImportPlayerSnapshotRe"
+  "sponse\022\n\n\002ok\030\001 \001(\010\022\017\n\007message\030\002 \001(\t\022\022\n\ne"
+  "rror_code\030\003 \001(\t\022\027\n\017already_applied\030\004 \001(\010"
+  "\"\355\002\n\rClientCommand\022\022\n\nrequest_id\030\001 \001(\004\022\021"
+  "\n\tplayer_id\030\002 \001(\004\022\022\n\nsession_id\030\003 \001(\t\022\023\n"
+  "\013fence_token\030\004 \001(\t\022\035\n\025gamelogic_instance"
+  "_id\030\005 \001(\t\022\027\n\017map_instance_id\030\006 \001(\004\022\027\n\017ma"
+  "p_owner_epoch\030\007 \001(\004\022\022\n\nclient_seq\030\010 \001(\004\022"
+  "\024\n\014message_type\030\t \001(\t\022\017\n\007payload\030\n \001(\014\022\025"
+  "\n\rtrace_context\030\013 \001(\t\022\027\n\017idempotency_key"
+  "\030\014 \001(\t\022\022\n\ngeneration\030\r \001(\004\022\025\n\rroute_vers"
+  "ion\030\016 \001(\004\022\023\n\013deadline_ms\030\017 \001(\005\022\020\n\010trace_"
+  "id\030\020 \001(\t\"l\n\rCommandResult\022\n\n\002ok\030\001 \001(\010\022\017\n"
+  "\007message\030\002 \001(\t\022\022\n\nerror_code\030\003 \001(\t\022\026\n\016re"
+  "sponse_frame\030\004 \001(\014\022\022\n\nserver_seq\030\005 \001(\0042\341"
+  "\003\n\020GameLogicService\022A\n\nBindPlayer\022\030.glrp"
+  "c.BindPlayerRequest\032\031.glrpc.BindPlayerRe"
+  "sponse\0226\n\010Dispatch\022\024.glrpc.ClientCommand"
+  "\032\024.glrpc.CommandResult\022G\n\014UnbindPlayer\022\032"
+  ".glrpc.UnbindPlayerRequest\032\033.glrpc.Unbin"
+  "dPlayerResponse\022G\n\014FreezePlayer\022\032.glrpc."
+  "FreezePlayerRequest\032\033.glrpc.FreezePlayer"
+  "Response\022_\n\024ExportPlayerSnapshot\022\".glrpc"
+  ".ExportPlayerSnapshotRequest\032#.glrpc.Exp"
+  "ortPlayerSnapshotResponse\022_\n\024ImportPlaye"
+  "rSnapshot\022\".glrpc.ImportPlayerSnapshotRe"
+  "quest\032#.glrpc.ImportPlayerSnapshotRespon"
+  "seB\003\200\001\001b\006proto3"
   ;
 static const ::PROTOBUF_NAMESPACE_ID::internal::DescriptorTable*const descriptor_table_gamelogic_5frpc_2eproto_deps[1] = {
 };
@@ -634,7 +639,7 @@ static ::PROTOBUF_NAMESPACE_ID::internal::SCCInfoBase*const descriptor_table_gam
 };
 static ::PROTOBUF_NAMESPACE_ID::internal::once_flag descriptor_table_gamelogic_5frpc_2eproto_once;
 const ::PROTOBUF_NAMESPACE_ID::internal::DescriptorTable descriptor_table_gamelogic_5frpc_2eproto = {
-  false, false, descriptor_table_protodef_gamelogic_5frpc_2eproto, "gamelogic_rpc.proto", 3072,
+  false, false, descriptor_table_protodef_gamelogic_5frpc_2eproto, "gamelogic_rpc.proto", 3135,
   &descriptor_table_gamelogic_5frpc_2eproto_once, descriptor_table_gamelogic_5frpc_2eproto_sccs, descriptor_table_gamelogic_5frpc_2eproto_deps, 16, 0,
   schemas, file_default_instances, TableStruct_gamelogic_5frpc_2eproto::offsets,
   file_level_metadata_gamelogic_5frpc_2eproto, 16, file_level_enum_descriptors_gamelogic_5frpc_2eproto, file_level_service_descriptors_gamelogic_5frpc_2eproto,
@@ -1267,8 +1272,8 @@ BindPlayerResponse::BindPlayerResponse(const BindPlayerResponse& from)
       GetArena());
   }
   ::memcpy(&ok_, &from.ok_,
-    static_cast<size_t>(reinterpret_cast<char*>(&bag_item_kinds_) -
-    reinterpret_cast<char*>(&ok_)) + sizeof(bag_item_kinds_));
+    static_cast<size_t>(reinterpret_cast<char*>(&map_instance_id_) -
+    reinterpret_cast<char*>(&ok_)) + sizeof(map_instance_id_));
   // @@protoc_insertion_point(copy_constructor:glrpc.BindPlayerResponse)
 }
 
@@ -1278,8 +1283,8 @@ void BindPlayerResponse::SharedCtor() {
   error_code_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
   profile_pb_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
   ::memset(&ok_, 0, static_cast<size_t>(
-      reinterpret_cast<char*>(&bag_item_kinds_) -
-      reinterpret_cast<char*>(&ok_)) + sizeof(bag_item_kinds_));
+      reinterpret_cast<char*>(&map_instance_id_) -
+      reinterpret_cast<char*>(&ok_)) + sizeof(map_instance_id_));
 }
 
 BindPlayerResponse::~BindPlayerResponse() {
@@ -1320,8 +1325,8 @@ void BindPlayerResponse::Clear() {
   error_code_.ClearToEmpty(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
   profile_pb_.ClearToEmpty(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
   ::memset(&ok_, 0, static_cast<size_t>(
-      reinterpret_cast<char*>(&bag_item_kinds_) -
-      reinterpret_cast<char*>(&ok_)) + sizeof(bag_item_kinds_));
+      reinterpret_cast<char*>(&map_instance_id_) -
+      reinterpret_cast<char*>(&ok_)) + sizeof(map_instance_id_));
   _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
 }
 
@@ -1370,6 +1375,20 @@ const char* BindPlayerResponse::_InternalParse(const char* ptr, ::PROTOBUF_NAMES
         if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 42)) {
           auto str = _internal_mutable_profile_pb();
           ptr = ::PROTOBUF_NAMESPACE_ID::internal::InlineGreedyStringParser(str, ptr, ctx);
+          CHK_(ptr);
+        } else goto handle_unusual;
+        continue;
+      // bool on_map = 6;
+      case 6:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 48)) {
+          on_map_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint64(&ptr);
+          CHK_(ptr);
+        } else goto handle_unusual;
+        continue;
+      // uint64 map_instance_id = 7;
+      case 7:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 56)) {
+          map_instance_id_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint64(&ptr);
           CHK_(ptr);
         } else goto handle_unusual;
         continue;
@@ -1439,6 +1458,18 @@ failure:
         5, this->_internal_profile_pb(), target);
   }
 
+  // bool on_map = 6;
+  if (this->on_map() != 0) {
+    target = stream->EnsureSpace(target);
+    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::WriteBoolToArray(6, this->_internal_on_map(), target);
+  }
+
+  // uint64 map_instance_id = 7;
+  if (this->map_instance_id() != 0) {
+    target = stream->EnsureSpace(target);
+    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::WriteUInt64ToArray(7, this->_internal_map_instance_id(), target);
+  }
+
   if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
     target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormat::InternalSerializeUnknownFieldsToArray(
         _internal_metadata_.unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(::PROTOBUF_NAMESPACE_ID::UnknownFieldSet::default_instance), target, stream);
@@ -1481,11 +1512,23 @@ size_t BindPlayerResponse::ByteSizeLong() const {
     total_size += 1 + 1;
   }
 
+  // bool on_map = 6;
+  if (this->on_map() != 0) {
+    total_size += 1 + 1;
+  }
+
   // uint32 bag_item_kinds = 4;
   if (this->bag_item_kinds() != 0) {
     total_size += 1 +
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::UInt32Size(
         this->_internal_bag_item_kinds());
+  }
+
+  // uint64 map_instance_id = 7;
+  if (this->map_instance_id() != 0) {
+    total_size += 1 +
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::UInt64Size(
+        this->_internal_map_instance_id());
   }
 
   if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
@@ -1531,8 +1574,14 @@ void BindPlayerResponse::MergeFrom(const BindPlayerResponse& from) {
   if (from.ok() != 0) {
     _internal_set_ok(from._internal_ok());
   }
+  if (from.on_map() != 0) {
+    _internal_set_on_map(from._internal_on_map());
+  }
   if (from.bag_item_kinds() != 0) {
     _internal_set_bag_item_kinds(from._internal_bag_item_kinds());
+  }
+  if (from.map_instance_id() != 0) {
+    _internal_set_map_instance_id(from._internal_map_instance_id());
   }
 }
 
@@ -1561,8 +1610,8 @@ void BindPlayerResponse::InternalSwap(BindPlayerResponse* other) {
   error_code_.Swap(&other->error_code_, &::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
   profile_pb_.Swap(&other->profile_pb_, &::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
   ::PROTOBUF_NAMESPACE_ID::internal::memswap<
-      PROTOBUF_FIELD_OFFSET(BindPlayerResponse, bag_item_kinds_)
-      + sizeof(BindPlayerResponse::bag_item_kinds_)
+      PROTOBUF_FIELD_OFFSET(BindPlayerResponse, map_instance_id_)
+      + sizeof(BindPlayerResponse::map_instance_id_)
       - PROTOBUF_FIELD_OFFSET(BindPlayerResponse, ok_)>(
           reinterpret_cast<char*>(&ok_),
           reinterpret_cast<char*>(&other->ok_));
@@ -1610,7 +1659,9 @@ UnbindPlayerRequest::UnbindPlayerRequest(const UnbindPlayerRequest& from)
     idempotency_key_.Set(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), from._internal_idempotency_key(),
       GetArena());
   }
-  player_id_ = from.player_id_;
+  ::memcpy(&player_id_, &from.player_id_,
+    static_cast<size_t>(reinterpret_cast<char*>(&generation_) -
+    reinterpret_cast<char*>(&player_id_)) + sizeof(generation_));
   // @@protoc_insertion_point(copy_constructor:glrpc.UnbindPlayerRequest)
 }
 
@@ -1620,7 +1671,9 @@ void UnbindPlayerRequest::SharedCtor() {
   fence_token_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
   reason_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
   idempotency_key_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
-  player_id_ = PROTOBUF_ULONGLONG(0);
+  ::memset(&player_id_, 0, static_cast<size_t>(
+      reinterpret_cast<char*>(&generation_) -
+      reinterpret_cast<char*>(&player_id_)) + sizeof(generation_));
 }
 
 UnbindPlayerRequest::~UnbindPlayerRequest() {
@@ -1662,7 +1715,9 @@ void UnbindPlayerRequest::Clear() {
   fence_token_.ClearToEmpty(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
   reason_.ClearToEmpty(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
   idempotency_key_.ClearToEmpty(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
-  player_id_ = PROTOBUF_ULONGLONG(0);
+  ::memset(&player_id_, 0, static_cast<size_t>(
+      reinterpret_cast<char*>(&generation_) -
+      reinterpret_cast<char*>(&player_id_)) + sizeof(generation_));
   _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
 }
 
@@ -1714,6 +1769,13 @@ const char* UnbindPlayerRequest::_InternalParse(const char* ptr, ::PROTOBUF_NAME
           auto str = _internal_mutable_idempotency_key();
           ptr = ::PROTOBUF_NAMESPACE_ID::internal::InlineGreedyStringParser(str, ptr, ctx);
           CHK_(::PROTOBUF_NAMESPACE_ID::internal::VerifyUTF8(str, "glrpc.UnbindPlayerRequest.idempotency_key"));
+          CHK_(ptr);
+        } else goto handle_unusual;
+        continue;
+      // uint64 generation = 6;
+      case 6:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 48)) {
+          generation_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint64(&ptr);
           CHK_(ptr);
         } else goto handle_unusual;
         continue;
@@ -1791,6 +1853,12 @@ failure:
         5, this->_internal_idempotency_key(), target);
   }
 
+  // uint64 generation = 6;
+  if (this->generation() != 0) {
+    target = stream->EnsureSpace(target);
+    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::WriteUInt64ToArray(6, this->_internal_generation(), target);
+  }
+
   if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
     target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormat::InternalSerializeUnknownFieldsToArray(
         _internal_metadata_.unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(::PROTOBUF_NAMESPACE_ID::UnknownFieldSet::default_instance), target, stream);
@@ -1842,6 +1910,13 @@ size_t UnbindPlayerRequest::ByteSizeLong() const {
         this->_internal_player_id());
   }
 
+  // uint64 generation = 6;
+  if (this->generation() != 0) {
+    total_size += 1 +
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::UInt64Size(
+        this->_internal_generation());
+  }
+
   if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
     return ::PROTOBUF_NAMESPACE_ID::internal::ComputeUnknownFieldsSize(
         _internal_metadata_, total_size, &_cached_size_);
@@ -1888,6 +1963,9 @@ void UnbindPlayerRequest::MergeFrom(const UnbindPlayerRequest& from) {
   if (from.player_id() != 0) {
     _internal_set_player_id(from._internal_player_id());
   }
+  if (from.generation() != 0) {
+    _internal_set_generation(from._internal_generation());
+  }
 }
 
 void UnbindPlayerRequest::CopyFrom(const ::PROTOBUF_NAMESPACE_ID::Message& from) {
@@ -1915,7 +1993,12 @@ void UnbindPlayerRequest::InternalSwap(UnbindPlayerRequest* other) {
   fence_token_.Swap(&other->fence_token_, &::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
   reason_.Swap(&other->reason_, &::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
   idempotency_key_.Swap(&other->idempotency_key_, &::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
-  swap(player_id_, other->player_id_);
+  ::PROTOBUF_NAMESPACE_ID::internal::memswap<
+      PROTOBUF_FIELD_OFFSET(UnbindPlayerRequest, generation_)
+      + sizeof(UnbindPlayerRequest::generation_)
+      - PROTOBUF_FIELD_OFFSET(UnbindPlayerRequest, player_id_)>(
+          reinterpret_cast<char*>(&player_id_),
+          reinterpret_cast<char*>(&other->player_id_));
 }
 
 ::PROTOBUF_NAMESPACE_ID::Metadata UnbindPlayerRequest::GetMetadata() const {

@@ -16,6 +16,7 @@ HOLD_SECONDS=0
 MAP_TEMPLATE_ID=1002
 SPAWN_DISTRIBUTION="stacked"
 MOVE_HZ=0
+RECONNECT_RATIO=0
 GATEWAY_ENDPOINTS="127.0.0.1:8081"
 CHAOS_ENABLED=0
 EXECUTE=0
@@ -51,6 +52,7 @@ while [[ $# -gt 0 ]]; do
     --ramp-seconds) RAMP_SECONDS="$2"; shift 2 ;;
     --target-login-rps) TARGET_LOGIN_RPS="$2"; shift 2 ;;
     --hold-seconds) HOLD_SECONDS="$2"; shift 2 ;;
+    --reconnect-ratio) RECONNECT_RATIO="$2"; shift 2 ;;
     --map-template-id) MAP_TEMPLATE_ID="$2"; shift 2 ;;
     --spawn-distribution) SPAWN_DISTRIBUTION="$2"; shift 2 ;;
     --move-hz) MOVE_HZ="$2"; shift 2 ;;
@@ -81,6 +83,7 @@ write_report() {
   "ramp_seconds": ${RAMP_SECONDS},
   "target_login_rps": ${TARGET_LOGIN_RPS},
   "hold_seconds": ${HOLD_SECONDS},
+  "reconnect_ratio": ${RECONNECT_RATIO},
   "map_template_id": ${MAP_TEMPLATE_ID},
   "spawn_distribution": "${SPAWN_DISTRIBUTION}",
   "move_hz": ${MOVE_HZ},
@@ -135,6 +138,25 @@ if [[ "$CHAOS_ENABLED" -ne 0 ]]; then
 fi
 
 export PRESS_HOLD_MS=$((HOLD_SECONDS * 1000))
+SPACING=0
+if [[ "$TARGET_LOGIN_RPS" -gt 0 ]]; then
+  SPACING=$((1000 / TARGET_LOGIN_RPS))
+  if [[ "$SPACING" -lt 1 ]]; then SPACING=1; fi
+fi
+if [[ "$RAMP_SECONDS" -gt 0 && "$USERS" -gt 1 ]]; then
+  RAMP_GAP=$((RAMP_SECONDS * 1000 / USERS))
+  if [[ "$RAMP_GAP" -gt "$SPACING" ]]; then SPACING=$RAMP_GAP; fi
+fi
+export PRESS_SPACING_MS="$SPACING"
+if [[ "$MOVE_HZ" -gt 0 ]]; then
+  export PRESS_MOVE_STEPS="$MOVE_HZ"
+  export PRESS_MOVE_GAP_MS=$((1000 / MOVE_HZ))
+else
+  export PRESS_MOVE_STEPS=0
+fi
+# PRESS_SPACING_MS paces connects from ramp and target RPS. PRESS_MOVE_* paces moves.
+# reconnect_ratio is recorded only. line-press opens fresh logins and does not
+# synthesize reconnects.
 set +e
 "$CLIENT" line-press "$HOST" "$PORT" "$MAP_TEMPLATE_ID" "$USERS" 0 >"${OUT}.client.log" 2>&1
 RC=$?

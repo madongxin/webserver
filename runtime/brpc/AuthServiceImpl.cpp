@@ -2,6 +2,7 @@
 
 #include "AuthTokenStore.h"
 #include "AuthLoginRateLimit.h"
+#include "BrpcNamingUtil.h"
 #include "FormalMode.h"
 #include "GameMeshPaths.h"
 #include "Logging.h"
@@ -82,31 +83,30 @@ std::string ReadGamedbList() {
 brpc::Channel *CachedGameDbChannel() {
     static std::mutex mu;
     static std::unique_ptr<brpc::Channel> ch;
-    static std::string cached_addr;
+    static std::string cached_naming;
     const auto addrs = SplitAddrs(ReadGamedbList());
-    if (addrs.empty())
-        return nullptr;
     std::lock_guard<std::mutex> lk(mu);
-    if (ch) {
-        for (const auto &a : addrs) {
-            if (a == cached_addr)
-                return ch.get();
-        }
-    }
-    for (const auto &addr : addrs) {
-        auto neu = std::unique_ptr<brpc::Channel>(new brpc::Channel());
-        brpc::ChannelOptions opt;
-        opt.timeout_ms = 2000;
-        opt.max_retry = 0;
-        if (neu->Init(addr.c_str(), &opt) != 0) {
-            LOG_WARN << "AuthService GameDB channel init failed addr=" << addr;
-            continue;
-        }
-        ch = std::move(neu);
-        cached_addr = addr;
-        LOG_INFO << "AuthService GameDB channel ready " << addr;
+    // 配置路径暂时解析失败时保留已经连上的 channel，避免健康检查把 GameDB 判死。
+    if (addrs.empty())
+        return ch.get();
+    const std::string naming = BuildListNamingUrl(addrs);
+    const std::string lb = SessionLoadBalancerName(addrs.size());
+    if (ch && cached_naming == naming)
+        return ch.get();
+    auto neu = std::unique_ptr<brpc::Channel>(new brpc::Channel());
+    brpc::ChannelOptions opt;
+    opt.timeout_ms = 2000;
+    opt.max_retry = 0;
+    const int rc = lb.empty() ? neu->Init(naming.c_str(), &opt)
+                              : neu->Init(naming.c_str(), lb.c_str(), &opt);
+    if (rc != 0) {
+        LOG_WARN << "AuthService GameDB channel init failed naming=" << naming;
         return ch.get();
     }
+    ch = std::move(neu);
+    cached_naming = naming;
+    LOG_INFO << "AuthService GameDB channel ready " << naming
+             << " lb=" << (lb.empty() ? "none" : lb);
     return ch.get();
 }
 

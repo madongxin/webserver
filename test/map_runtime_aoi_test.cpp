@@ -1,5 +1,5 @@
 /**
- * S2：AOI 同格/跨格/进出视野/跨图隔离；Move 拒绝 NaN/越界/不可走/超速/旧 seq。
+ * S2：AOI 同格/跨格/进出视野/跨图隔离；Move 拒绝 NaN/越界/不可走/旧 seq；超速钳位接受。
  */
 #include "MapRuntime.h"
 #include "MapStaticData.h"
@@ -76,6 +76,7 @@ int main() {
     auto &rt = MapRuntime::Instance();
     rt.ClearForTest();
     rt.SetViewRadiusCells(1);  // 3x3 AOI cells of size 10 → view ~30m
+    rt.SetMaxVisible(50);      // 这条用例钉住旧的 50 人裁剪；进程默认是 200
 
     MapEntity self;
     std::vector<MapEntity> snap;
@@ -132,16 +133,22 @@ int main() {
     Expect(MapStaticData::LoadFromJson(hole, &hd, &err), "hole map");
     rt.ClearForTest();
     Expect(rt.Enter(3, hd, Ent(8, 1, 1), &self, &snap, &pushes, &err), "enter hole");
-    // row 5 (z=5.5) first 10 cells of that row are the 0-run starting at index 50
-    Expect(rt.Move(3, 8, 0.5f, 0, 5.5f, 0, 1, 2000, &conf, &pushes, &err) ==
-               MapMoveReject::Unwalkable,
-           "unwalkable rejected");
+    // row 5 (z=5.5) 整行不可走：沿方向收到洞边，接受并回权威坐标，不整包拒绝。
+    Expect(rt.Move(3, 8, 0.5f, 0, 5.5f, 0, 1, 2000, &conf, &pushes, &err) == MapMoveReject::Ok,
+           "unwalkable slid ok");
+    Expect(hd->IsWalkable(conf.x, conf.z), "slid point walkable");
+    Expect(conf.z > 1.f && conf.z < 5.f, "stopped before hole row");
+    rt.ClearForTest();
+    Expect(rt.Enter(3, hd, Ent(8, 1, 1), &self, &snap, &pushes, &err), "reenter hole");
     Expect(rt.Move(3, 8, 2, 0, 1, 0, 1, 2000, &conf, &pushes, &err) == MapMoveReject::Ok,
            "small step ok");
     Expect(rt.Move(3, 8, 9, 0, 1, 0, 1, 2001, &conf, &pushes, &err) == MapMoveReject::StaleSeq,
            "stale seq rejected");
-    Expect(rt.Move(3, 8, 9, 0, 1, 0, 2, 2100, &conf, &pushes, &err) == MapMoveReject::TooFast,
-           "too fast rejected");
+    // 超速：沿方向钳到本帧合法距离后接受，避免大跳拉回。
+    Expect(rt.Move(3, 8, 9, 0, 1, 0, 2, 2100, &conf, &pushes, &err) == MapMoveReject::Ok,
+           "too fast clamped ok");
+    Expect(conf.x > 2.f && conf.x < 9.f, "clamped x between start and target");
+    Expect(std::fabs(conf.z - 1.f) < 1e-3f, "clamped z unchanged");
 
     // 每实例 AOI 半径 + Unload
     rt.ClearForTest();

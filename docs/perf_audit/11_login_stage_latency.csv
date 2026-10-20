@@ -1,0 +1,6 @@
+stage,samples,p50_ms,p90_ms,p95_ms,p99_ms,max_ms,evidence
+TCP_to_Hello,0,,,,,,NOT_OBSERVABLE_no_paired_timestamps
+Hello_to_AuthLogin,0,,,,,,NOT_OBSERVABLE
+AuthLogin_to_AcquireSession,0,,,,,,NOT_OBSERVABLE
+AcquireSession_to_BindPlayer,0,,,,,,NOT_OBSERVABLE
+BindPlayer_to_EnterMapReply,0,,,,,,NOT_OBSERVABLE_same_10s_bucket_only_DERIVED

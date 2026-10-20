@@ -701,11 +701,27 @@ if op ~= '' then
   end
 end
 
+-- 线号指针只在创建时写入。进图时若指针空或仍指向本实例，则补回并续期，
+-- 避免 TTL 到期或误删后，指定分线找不到仍 READY 的实例。
+local function touch_line(L)
+  local ln = tonumber(L[11]) or 0
+  if ln <= 0 then return end
+  local lk = line_key(ln)
+  local cur = redis.call('GET', lk)
+  local id = tostring(L[1])
+  if not cur or cur == '' or cur == id then
+    redis.call('SET', lk, id)
+    redis.call('EXPIRE', lk, 86400)
+  end
+  redis.call('EXPIRE', lines_key, 86400)
+end
+
 local function try_join(id, cap)
   local L = ensure_ready(load_inst(id))
   if not L then return nil, 'NOT_READY' end
   local ok = occ_key(id)
   if redis.call('SISMEMBER', ok, player) == 1 then
+    touch_line(L)
     return L, tonumber(redis.call('SCARD', ok))
   end
   local n = tonumber(redis.call('SCARD', ok)) or 0
@@ -713,6 +729,7 @@ local function try_join(id, cap)
   redis.call('SADD', ok, player)
   redis.call('EXPIRE', ok, 86400)
   redis.call('ZREM', prefix .. 'map:idle', tostring(id))
+  touch_line(L)
   return L, n + 1
 end
 
@@ -787,6 +804,19 @@ end
 if want_line > 0 then
   local id = redis.call('GET', line_key(want_line))
   if not id or id == '' then
+    local ids = redis.call('ZRANGE', lines_key, 0, -1)
+    for _, cand in ipairs(ids) do
+      local L = ensure_ready(load_inst(cand))
+      if L and (tonumber(L[11]) or 0) == want_line then
+        id = tostring(L[1])
+        redis.call('SET', line_key(want_line), id)
+        redis.call('EXPIRE', line_key(want_line), 86400)
+        redis.call('EXPIRE', lines_key, 86400)
+        break
+      end
+    end
+  end
+  if not id or id == '' then
     return {'0', 'ERR_MAP_NO_LINE', 'map line not found'}
   end
   local L, n = try_join(id, hard)
@@ -828,9 +858,13 @@ for _, id in ipairs(members) do
     local st = L[7] or ''
     local ln = tonumber(L[11]) or 0
     -- CLOSED 不得占线号，否则系统选线会跳过 1 线直接开 2 线
-    if st == 'CLOSED' then
-      redis.call('ZREM', lines_key, id)
-      if ln > 0 then redis.call('DEL', line_key(ln)) end
+      if st == 'CLOSED' then
+        redis.call('ZREM', lines_key, id)
+        if ln > 0 then
+          local lk = line_key(ln)
+          local cur = redis.call('GET', lk)
+          if cur == id then redis.call('DEL', lk) end
+        end
     elseif ln > 0 then
       used[ln] = true
     end
@@ -1112,10 +1146,24 @@ end
 local line_realm = tostring(old[2] or realm)
 if line_realm == '' or line_realm == '0' then line_realm = realm end
 local lkey = prefix .. 'map:line:' .. line_realm .. ':' .. tpl .. ':' .. tostring(want_line)
+local lines_key = prefix .. 'map:lines:' .. line_realm .. ':' .. tpl
 local target = redis.call('GET', lkey)
+if not target or target == '' then
+  local ids = redis.call('ZRANGE', lines_key, 0, -1)
+  for _, cand in ipairs(ids) do
+    local L = ensure_ready(load_inst(cand))
+    if L and (tonumber(L[11]) or 0) == want_line then
+      target = tostring(L[1])
+      redis.call('SET', lkey, target)
+      break
+    end
+  end
+end
 if not target or target == '' then
   return {'0', 'ERR_MAP_NO_LINE', 'map line not found'}
 end
+redis.call('EXPIRE', lkey, 86400)
+redis.call('EXPIRE', lines_key, 86400)
 local rawL = load_inst(target)
 local L = ensure_ready(rawL)
 if not L then
@@ -1315,6 +1363,50 @@ redis.call('DEL', pres_key)
 if op ~= '' then
   redis.call('DEL', prefix .. 'map:op:' .. player .. ':' .. op)
 end
+return {'1', 'OK', inst}
+)LUA";
+
+/** 宽限停泊：SREM occ 释放 softcap，保留 pres 供重连 Resume。 */
+const char kLuaParkForGrace[] = R"LUA(
+local pres_key = KEYS[1]
+local prefix = ARGV[1]
+local player = ARGV[2]
+local now = tonumber(ARGV[3]) or 0
+local raw = redis.call('HGETALL', pres_key)
+if #raw == 0 then return {'0', 'NOT_FOUND', '0'} end
+local f = {}
+for i = 1, #raw, 2 do f[raw[i]] = raw[i + 1] end
+local inst = f['mapInstanceId'] or '0'
+local st = f['state'] or ''
+if st == 'parked' then return {'1', 'ALREADY', inst} end
+if inst ~= '0' and inst ~= '' then
+  redis.call('SREM', prefix .. 'map:occ:' .. inst, player)
+  local n = tonumber(redis.call('SCARD', prefix .. 'map:occ:' .. inst)) or 0
+  if n == 0 then
+    local ikey = prefix .. 'map:inst:' .. inst
+    redis.call('HSET', ikey, 'lastOccupiedAt', tostring(now))
+    redis.call('ZADD', prefix .. 'map:idle', now, inst)
+  end
+end
+redis.call('HSET', pres_key, 'state', 'parked', 'parkedAt', tostring(now))
+return {'1', 'OK', inst}
+)LUA";
+
+const char kLuaResumeParked[] = R"LUA(
+local pres_key = KEYS[1]
+local prefix = ARGV[1]
+local player = ARGV[2]
+local raw = redis.call('HGETALL', pres_key)
+if #raw == 0 then return {'0', 'NOT_FOUND', '0'} end
+local f = {}
+for i = 1, #raw, 2 do f[raw[i]] = raw[i + 1] end
+local inst = f['mapInstanceId'] or '0'
+if inst == '0' or inst == '' then return {'0', 'NO_MAP', '0'} end
+redis.call('SADD', prefix .. 'map:occ:' .. inst, player)
+redis.call('EXPIRE', prefix .. 'map:occ:' .. inst, 86400)
+redis.call('HSET', pres_key, 'state', 'confirmed')
+redis.call('HDEL', pres_key, 'parkedAt')
+redis.call('ZREM', prefix .. 'map:idle', inst)
 return {'1', 'OK', inst}
 )LUA";
 
@@ -1612,7 +1704,9 @@ for i = 1, #rows, 2 do
           local realm = f['realmId'] or '0'
           local tpl = f['mapTemplateId'] or '0'
           local ln = f['lineNo'] or '0'
-          redis.call('DEL', prefix .. 'map:line:' .. realm .. ':' .. tpl .. ':' .. ln)
+          local lk = prefix .. 'map:line:' .. realm .. ':' .. tpl .. ':' .. ln
+          local cur = redis.call('GET', lk)
+          if cur == id then redis.call('DEL', lk) end
           redis.call('ZREM', prefix .. 'map:lines:' .. realm .. ':' .. tpl, id)
         end
         redis.call('DEL', prefix .. 'map:members:' .. tostring(id))
@@ -1634,12 +1728,20 @@ return closed
 const char kLuaConfirmSlot[] = R"LUA(
 local pres_key = KEYS[1]
 local want = ARGV[1]
+local prefix = ARGV[2] or ''
 if redis.call('EXISTS', pres_key) == 0 then return {'0', 'NOT_FOUND'} end
 local inst = redis.call('HGET', pres_key, 'mapInstanceId') or '0'
 if want ~= '0' and want ~= '' and inst ~= want then
   return {'0', 'MISMATCH'}
 end
+local player = string.match(pres_key, '(%d+)$') or ''
+if inst ~= '0' and inst ~= '' and player ~= '' and prefix ~= '' then
+  redis.call('SADD', prefix .. 'map:occ:' .. inst, player)
+  redis.call('EXPIRE', prefix .. 'map:occ:' .. inst, 86400)
+  redis.call('ZREM', prefix .. 'map:idle', inst)
+end
 redis.call('HSET', pres_key, 'state', 'confirmed')
+redis.call('HDEL', pres_key, 'parkedAt')
 return {'1', 'OK', inst}
 )LUA";
 
@@ -1909,11 +2011,17 @@ bool PlacementStore::ConfirmSlot(uint64_t player_id, uint64_t map_instance_id) {
     if (!lease)
         return false;
     std::vector<std::string> keys{PresKey(player_id)};
-    std::vector<std::string> args{std::to_string(map_instance_id)};
+    std::vector<std::string> args{std::to_string(map_instance_id), key_prefix_};
     std::vector<std::string> reply;
     if (!lease->Eval(kLuaConfirmSlot, keys, args, &reply) || reply.empty())
         return false;
-    return reply[0] == "1";
+    const bool ok = reply[0] == "1";
+    if (ok && map_instance_id != 0) {
+        PlacementRecord rec;
+        if (Get(map_instance_id, &rec) && rec.map_template_id != 0)
+            FireLineStatus(rec.realm_id, rec.map_template_id);
+    }
+    return ok;
 }
 
 bool PlacementStore::ReleaseByPlayer(uint64_t player_id) {
@@ -1936,6 +2044,142 @@ bool PlacementStore::ReleaseByPlayer(uint64_t player_id) {
             FireLineStatus(rec.realm_id, rec.map_template_id);
     }
     return ok;
+}
+
+bool PlacementStore::ParkForGrace(uint64_t player_id) {
+    if (!available_ || player_id == 0)
+        return false;
+    auto lease = RedisPool::Instance().Acquire();
+    if (!lease)
+        return false;
+    std::vector<std::string> keys{PresKey(player_id)};
+    std::vector<std::string> args{key_prefix_, std::to_string(player_id),
+                                  std::to_string(NowUnixSec())};
+    std::vector<std::string> reply;
+    if (!lease->Eval(kLuaParkForGrace, keys, args, &reply) || reply.empty())
+        return false;
+    const bool ok = reply[0] == "1";
+    if (ok && reply.size() > 2) {
+        const uint64_t inst = ParseU64(reply[2]);
+        PlacementRecord rec;
+        if (inst != 0 && Get(inst, &rec) && rec.map_template_id != 0)
+            FireLineStatus(rec.realm_id, rec.map_template_id);
+    }
+    return ok;
+}
+
+bool PlacementStore::ResumeParked(uint64_t player_id) {
+    if (!available_ || player_id == 0)
+        return false;
+    auto lease = RedisPool::Instance().Acquire();
+    if (!lease)
+        return false;
+    std::vector<std::string> keys{PresKey(player_id)};
+    std::vector<std::string> args{key_prefix_, std::to_string(player_id)};
+    std::vector<std::string> reply;
+    if (!lease->Eval(kLuaResumeParked, keys, args, &reply) || reply.empty())
+        return false;
+    const bool ok = reply[0] == "1";
+    if (ok && reply.size() > 2) {
+        const uint64_t inst = ParseU64(reply[2]);
+        PlacementRecord rec;
+        if (inst != 0 && Get(inst, &rec) && rec.map_template_id != 0)
+            FireLineStatus(rec.realm_id, rec.map_template_id);
+    }
+    return ok;
+}
+
+size_t PlacementStore::ReconcileGhostOccupancy(
+    const std::function<bool(uint64_t player_id)> &keep_online, size_t limit) {
+    if (!available_)
+        return 0;
+    const size_t cap = limit > 0 ? limit : 128;
+    size_t n = 0;
+    std::string cursor = "0";
+    const std::string match = key_prefix_ + "map:occ:*";
+    static const char kScanOcc[] = R"LUA(
+local cursor = ARGV[1]
+local match = ARGV[2]
+local cnt = tonumber(ARGV[3]) or 16
+local r = redis.call('SCAN', cursor, 'MATCH', match, 'COUNT', cnt)
+local nextc = r[1]
+local keys = r[2]
+local out = {tostring(nextc)}
+for _, k in ipairs(keys) do
+  out[#out + 1] = k
+end
+return out
+)LUA";
+    static const char kSremPark[] = R"LUA(
+local occ = KEYS[1]
+local pres = KEYS[2]
+local prefix = ARGV[1]
+local player = ARGV[2]
+local now = tonumber(ARGV[3]) or 0
+local removed = redis.call('SREM', occ, player)
+if removed == 0 then return {'0', 'MISS'} end
+local inst = string.match(occ, 'map:occ:(%d+)$') or '0'
+if redis.call('EXISTS', pres) == 1 then
+  redis.call('HSET', pres, 'state', 'parked', 'parkedAt', tostring(now))
+end
+local left = tonumber(redis.call('SCARD', occ)) or 0
+if left == 0 and inst ~= '0' then
+  redis.call('HSET', prefix .. 'map:inst:' .. inst, 'lastOccupiedAt', tostring(now))
+  redis.call('ZADD', prefix .. 'map:idle', now, inst)
+end
+return {'1', 'OK', inst}
+)LUA";
+    int rounds = 0;
+    do {
+        auto lease = RedisPool::Instance().Acquire();
+        if (!lease)
+            break;
+        std::vector<std::string> reply;
+        if (!lease->Eval(kScanOcc, {}, {cursor, match, "16"}, &reply) || reply.empty())
+            break;
+        cursor = reply[0];
+        lease = RedisPool::Lease();
+        for (size_t i = 1; i < reply.size(); ++i) {
+            const std::string &occ_key = reply[i];
+            auto lease2 = RedisPool::Instance().Acquire();
+            if (!lease2)
+                break;
+            std::vector<std::string> members;
+            if (!lease2->SMembers(occ_key, &members)) {
+                lease2 = RedisPool::Lease();
+                continue;
+            }
+            lease2 = RedisPool::Lease();
+            for (const auto &ms : members) {
+                const uint64_t pid = ParseU64(ms);
+                if (pid == 0)
+                    continue;
+                if (keep_online && keep_online(pid))
+                    continue;
+                auto lease3 = RedisPool::Instance().Acquire();
+                if (!lease3)
+                    break;
+                std::vector<std::string> r2;
+                if (lease3->Eval(kSremPark, {occ_key, PresKey(pid)},
+                                 {key_prefix_, ms, std::to_string(NowUnixSec())}, &r2) &&
+                    !r2.empty() && r2[0] == "1") {
+                    ++n;
+                    if (r2.size() > 2) {
+                        const uint64_t inst = ParseU64(r2[2]);
+                        PlacementRecord rec;
+                        if (inst != 0 && Get(inst, &rec) && rec.map_template_id != 0)
+                            FireLineStatus(rec.realm_id, rec.map_template_id);
+                    }
+                }
+                lease3 = RedisPool::Lease();
+                if (n >= cap)
+                    return n;
+            }
+        }
+        if (++rounds > 256)
+            break;
+    } while (cursor != "0");
+    return n;
 }
 
 size_t PlacementStore::ReclaimStaleReservations(
@@ -2212,6 +2456,37 @@ uint32_t PlacementStore::Occupancy(uint64_t map_instance_id) {
     if (!lease->Eval("return redis.call('SCARD', KEYS[1])", keys, args, &reply) || reply.empty())
         return 0;
     return static_cast<uint32_t>(ParseU64(reply[0]));
+}
+
+int64_t PlacementStore::SumAllOccupancy(size_t max_keys) {
+    if (!available_)
+        return 0;
+    const size_t lim = max_keys > 0 ? max_keys : 64;
+    static const char kLua[] = R"LUA(
+local cursor = '0'
+local match = ARGV[1]
+local lim = tonumber(ARGV[2]) or 64
+local total = 0
+local nkeys = 0
+repeat
+  local r = redis.call('SCAN', cursor, 'MATCH', match, 'COUNT', 16)
+  cursor = r[1]
+  for _, k in ipairs(r[2]) do
+    total = total + (tonumber(redis.call('SCARD', k)) or 0)
+    nkeys = nkeys + 1
+    if nkeys >= lim then return {tostring(total)} end
+  end
+until cursor == '0'
+return {tostring(total)}
+)LUA";
+    auto lease = RedisPool::Instance().Acquire();
+    if (!lease)
+        return 0;
+    std::vector<std::string> reply;
+    if (!lease->Eval(kLua, {}, {key_prefix_ + "map:occ:*", std::to_string(lim)}, &reply) ||
+        reply.empty())
+        return 0;
+    return ParseI64(reply[0]);
 }
 
 std::string PlacementStore::LinesKey(uint32_t realm, uint64_t tpl) const {

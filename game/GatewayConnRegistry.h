@@ -25,6 +25,8 @@ public:
         uint64_t route_version = 0;
         std::string gateway_instance_id;
         std::function<void(const std::string &frame)> send_frame;
+        /** ENTER/LEAVE 等可靠 AOI：更高软丢水位，仍不关连接。 */
+        std::function<void(const std::string &frame)> send_frame_urgent;
         std::function<void()> close_conn;
         std::function<void(double delay_sec, std::function<void()> cb)> run_after;
         /** 把任务投到该连接 EventLoop；缺省则在调用线程同步执行（单测）。 */
@@ -41,6 +43,13 @@ public:
      */
     bool ApplyRoute(uint64_t connection_id, const std::string &gamelogic_instance_id,
                     uint64_t map_instance_id, uint64_t map_owner_epoch, uint64_t route_version);
+    /**
+     * 同一条 TCP 上再次登录时，先把这条连接改到新 session/generation，
+     * 随后对旧 generation 的顶号通知就不会打到正在登录的这条连接。
+     * 连接不存在或玩家不是这条连接时返回 false。
+     */
+    bool RetargetSession(uint64_t connection_id, uint64_t player_id, const std::string &session_id,
+                         uint64_t generation, const std::string &token);
     bool FindBySession(const std::string &session_id, Bind *out);
     bool FindByConnection(uint64_t connection_id, Bind *out);
     bool FindByPlayer(uint64_t player_id, Bind *out);
@@ -48,7 +57,8 @@ public:
     int64_t BoundPlayerCount();
     /** 该 player 已由其它 connection 接管（重连/顶号后关旧连接不得拆 Session）。 */
     bool HasNewerBinding(uint64_t connection_id, uint64_t player_id);
-    bool SendBySession(const std::string &session_id, const std::string &frame);
+    bool SendBySession(const std::string &session_id, const std::string &frame,
+                       bool urgent = false);
     /** 仅关闭匹配 player_id+session_id+generation 的旧连接；generation=0 时忽略 generation */
     bool CloseIfMatch(uint64_t player_id, const std::string &session_id, uint64_t generation);
     /**

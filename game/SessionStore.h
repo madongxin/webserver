@@ -151,6 +151,14 @@ public:
      * 释放没有 ONLINE/DISCONNECTED Session 的地图占位（切线失败、进程被杀留下的幽灵 occupancy）。
      */
     size_t ReclaimOrphanMapReservations(size_t limit = 64);
+    /** map:occ 对账：非 ONLINE Session 立刻摘除 softcap。 */
+    size_t ReconcileGhostMapOccupancy(size_t limit = 128);
+    /**
+     * 集群冷杀/Gateway 宕机后：ONLINE 且 gatewayId 非空，但 `gw_claim:{gw}` 已不存在时，
+     * 删 Session、UntrackOnline、ReleaseByPlayer（不等于 Logout，也无重连宽限——对端 Gateway 已死）。
+     * Session leader 定时调用；单次最多 limit 条。
+     */
+    size_t ExpireOnlineMissingGatewayClaim(size_t limit = 100);
     struct KickResult {
         bool ok = false;
         std::string message;

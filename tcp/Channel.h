@@ -31,7 +31,10 @@ public:
     void DisableRead();
     void EnableWrite();
     void DisableWrite();
+    /** 清掉全部兴趣事件；未入 epoll 时只改本地 listen_events_，避免误 ADD。 */
+    void DisableAll();
     void EnableET();
+    bool IsReading() const;
 
     int fd() const;
     short listen_events() const;

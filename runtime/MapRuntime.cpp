@@ -17,15 +17,20 @@ bool Finite4(float a, float b, float c, float d) {
 }  // namespace
 
 void MapRuntime::ResetClientSeq(uint64_t player_id) {
-    std::lock_guard<std::mutex> lk(mu_);
-    auto mit = player_map_.find(player_id);
-    if (mit == player_map_.end())
-        return;
-    auto iit = maps_.find(mit->second);
-    if (iit == maps_.end() || !iit->second)
-        return;
-    auto eit = iit->second->entities.find(player_id);
-    if (eit != iit->second->entities.end())
+    std::shared_ptr<InstanceState> st;
+    {
+        std::lock_guard<std::mutex> lk(mu_);
+        auto mit = player_map_.find(player_id);
+        if (mit == player_map_.end())
+            return;
+        auto iit = maps_.find(mit->second);
+        if (iit == maps_.end() || !iit->second)
+            return;
+        st = iit->second;
+    }
+    auto inst = LockInst(st);
+    auto eit = st->entities.find(player_id);
+    if (eit != st->entities.end())
         eit->second.last_client_seq = 0;
 }
 
@@ -37,6 +42,52 @@ MapRuntime &MapRuntime::Instance() {
 void MapRuntime::SetViewRadiusCells(int n) {
     if (n >= 0)
         view_radius_ = n;
+}
+
+void MapRuntime::SetMaxVisible(int n) {
+    if (n < 1)
+        n = 1;
+    if (n > 200)
+        n = 200;
+    max_visible_ = n;
+}
+
+int MapRuntime::ResolvedRadius(const InstanceState &st) const {
+    return st.view_radius >= 0 ? st.view_radius : view_radius_;
+}
+
+std::unique_lock<std::mutex> MapRuntime::LockInst(const std::shared_ptr<InstanceState> &st) const {
+    const auto t0 = std::chrono::steady_clock::now();
+    std::unique_lock<std::mutex> lk(st->mu);
+    const auto us = std::chrono::duration_cast<std::chrono::microseconds>(
+                        std::chrono::steady_clock::now() - t0)
+                        .count();
+    ServerStats::aoi_lock_wait_us_sum.fetch_add(static_cast<uint64_t>(us < 0 ? 0 : us),
+                                                std::memory_order_relaxed);
+    ServerStats::aoi_lock_samples.fetch_add(1, std::memory_order_relaxed);
+    return lk;
+}
+
+bool MapRuntime::PublishPlayer(uint64_t player_id, uint64_t map_instance_id,
+                               const std::shared_ptr<InstanceState> &st) {
+    std::lock_guard<std::mutex> reg(mu_);
+    auto it = maps_.find(map_instance_id);
+    if (it == maps_.end() || it->second != st || st->unloaded)
+        return false;
+    player_map_[player_id] = map_instance_id;
+    return true;
+}
+
+void MapRuntime::RetireIfEmpty(uint64_t map_instance_id, const std::shared_ptr<InstanceState> &st) {
+    if (!st)
+        return;
+    std::lock_guard<std::mutex> reg(mu_);
+    auto it = maps_.find(map_instance_id);
+    if (it == maps_.end() || it->second != st)
+        return;
+    if (st->entity_count.load(std::memory_order_relaxed) != 0)
+        return;
+    maps_.erase(it);
 }
 
 uint64_t MapRuntime::CellKey(int cx, int cz) {
@@ -72,8 +123,8 @@ void MapRuntime::RemoveFromCell(InstanceState *st, const MapEntity &e) {
 
 std::unordered_set<uint64_t> MapRuntime::VisibleIds(const InstanceState &st,
                                                     const MapEntity &e) const {
-    // 视野格子里只同步最近的 50 人。距离相同按 player_id，避免叠点时名单来回抖动。
-    constexpr size_t kAoiSyncCap = 50;
+    const auto t0 = std::chrono::steady_clock::now();
+    const size_t cap = static_cast<size_t>(st.max_visible > 0 ? st.max_visible : max_visible_);
     struct Cand {
         uint64_t id = 0;
         float d2 = 0.f;
@@ -83,7 +134,7 @@ std::unordered_set<uint64_t> MapRuntime::VisibleIds(const InstanceState &st,
         return {};
     int cx = 0, cz = 0;
     st.data->WorldToAoiCell(e.x, e.z, &cx, &cz);
-    const int r = st.view_radius >= 0 ? st.view_radius : view_radius_;
+    const int r = ResolvedRadius(st);
     for (int dx = -r; dx <= r; ++dx) {
         for (int dz = -r; dz <= r; ++dz) {
             auto it = st.cells.find(CellKey(cx + dx, cz + dz));
@@ -101,8 +152,10 @@ std::unordered_set<uint64_t> MapRuntime::VisibleIds(const InstanceState &st,
             }
         }
     }
-    if (cands.size() > kAoiSyncCap) {
-        std::nth_element(cands.begin(), cands.begin() + static_cast<std::ptrdiff_t>(kAoiSyncCap),
+    ServerStats::aoi_candidate_sum.fetch_add(cands.size(), std::memory_order_relaxed);
+    ServerStats::aoi_candidate_count.fetch_add(1, std::memory_order_relaxed);
+    if (cands.size() > cap) {
+        std::nth_element(cands.begin(), cands.begin() + static_cast<std::ptrdiff_t>(cap),
                          cands.end(), [](const Cand &a, const Cand &b) {
                              if (a.d2 < b.d2)
                                  return true;
@@ -110,8 +163,13 @@ std::unordered_set<uint64_t> MapRuntime::VisibleIds(const InstanceState &st,
                                  return false;
                              return a.id < b.id;
                          });
-        cands.resize(kAoiSyncCap);
+        cands.resize(cap);
     }
+    ServerStats::aoi_selected_sum.fetch_add(cands.size(), std::memory_order_relaxed);
+    const auto us = std::chrono::duration_cast<std::chrono::microseconds>(
+                        std::chrono::steady_clock::now() - t0)
+                        .count();
+    ServerStats::ObserveAoiQueryUs(static_cast<uint64_t>(us < 0 ? 0 : us));
     std::unordered_set<uint64_t> out;
     out.reserve(cands.size());
     for (const auto &c : cands)
@@ -121,13 +179,16 @@ std::unordered_set<uint64_t> MapRuntime::VisibleIds(const InstanceState &st,
 
 std::vector<uint64_t> MapRuntime::NeighborhoodIds(const InstanceState &st, float x, float z) const {
     std::vector<uint64_t> ids;
-    if (!st.data || st.view_radius <= 0)
+    if (!st.data)
         return ids;
-    const float cell = st.data->aoi_cell_size() > 0.f ? st.data->aoi_cell_size() : 32.f;
-    const int cx = static_cast<int>(std::floor(x / cell));
-    const int cz = static_cast<int>(std::floor(z / cell));
-    for (int dz = -st.view_radius; dz <= st.view_radius; ++dz) {
-        for (int dx = -st.view_radius; dx <= st.view_radius; ++dx) {
+    const int r = ResolvedRadius(st);
+    if (r < 0)
+        return ids;
+    int cx = 0, cz = 0;
+    st.data->WorldToAoiCell(x, z, &cx, &cz);
+    // r == 0 只包含当前格子，与 VisibleIds 相同。
+    for (int dz = -r; dz <= r; ++dz) {
+        for (int dx = -r; dx <= r; ++dx) {
             const uint64_t key = CellKey(cx + dx, cz + dz);
             auto cit = st.cells.find(key);
             if (cit == st.cells.end())
@@ -161,6 +222,7 @@ void MapRuntime::RefreshViewers(InstanceState *st, const std::vector<uint64_t> &
                                 AoiPushBatch *pushes) {
     if (!st)
         return;
+    const auto t0 = std::chrono::steady_clock::now();
     std::unordered_set<uint64_t> uniq(viewer_ids.begin(), viewer_ids.end());
     for (uint64_t viewer_id : uniq) {
         auto eit = st->entities.find(viewer_id);
@@ -180,8 +242,10 @@ void MapRuntime::RefreshViewers(InstanceState *st, const std::vector<uint64_t> &
             if (!emit)
                 continue;
             auto tit = st->entities.find(tid);
-            if (tit != st->entities.end())
+            if (tit != st->entities.end()) {
                 EmitTo(pushes, map_instance_id, viewer, 1, tit->second);
+                ServerStats::aoi_sub_enter.fetch_add(1, std::memory_order_relaxed);
+            }
         }
         for (uint64_t tid : old) {
             if (neu.count(tid))
@@ -201,6 +265,7 @@ void MapRuntime::RefreshViewers(InstanceState *st, const std::vector<uint64_t> &
             else
                 snap.player_id = tid;
             EmitTo(pushes, map_instance_id, viewer, 3, snap);
+            ServerStats::aoi_sub_leave.fetch_add(1, std::memory_order_relaxed);
         }
         if (neu.empty())
             st->visible_targets.erase(viewer_id);
@@ -208,10 +273,19 @@ void MapRuntime::RefreshViewers(InstanceState *st, const std::vector<uint64_t> &
             st->visible_targets[viewer_id] = neu;
         if (mover_id != 0 && mover_id != viewer_id && old.count(mover_id) && neu.count(mover_id)) {
             auto mit = st->entities.find(mover_id);
-            if (mit != st->entities.end())
+            if (mit != st->entities.end()) {
                 EmitTo(pushes, map_instance_id, viewer, 2, mit->second);
+                ServerStats::aoi_move_events.fetch_add(1, std::memory_order_relaxed);
+            }
         }
     }
+    const auto us = std::chrono::duration_cast<std::chrono::microseconds>(
+                        std::chrono::steady_clock::now() - t0)
+                        .count();
+    ServerStats::aoi_refresh_us_sum.fetch_add(static_cast<uint64_t>(us < 0 ? 0 : us),
+                                              std::memory_order_relaxed);
+    ServerStats::aoi_refresh_count.fetch_add(1, std::memory_order_relaxed);
+    ServerStats::aoi_refresh_viewers_sum.fetch_add(uniq.size(), std::memory_order_relaxed);
 }
 
 void MapRuntime::FillSnapshot(const InstanceState &st, uint64_t viewer_id,
@@ -260,6 +334,7 @@ void MapRuntime::RemovePlayerInterest(InstanceState *st, uint64_t map_instance_i
     RemoveFromCell(st, gone);
     if (erase_entity) {
         st->entities.erase(player_id);
+        st->entity_count.fetch_sub(1, std::memory_order_relaxed);
     } else {
         auto left = st->entities.find(player_id);
         if (left != st->entities.end())
@@ -284,7 +359,8 @@ void MapRuntime::EmitTo(AoiPushBatch *pushes, uint64_t map_id, const MapEntity &
 
 bool MapRuntime::Enter(uint64_t map_instance_id, std::shared_ptr<const MapStaticData> data,
                        MapEntity entity, MapEntity *self_out, std::vector<MapEntity> *aoi_snapshot,
-                       AoiPushBatch *pushes, std::string *err, int view_radius_cells) {
+                       AoiPushBatch *pushes, std::string *err, int view_radius_cells,
+                       int max_visible) {
     if (map_instance_id == 0 || entity.player_id == 0 || !data) {
         if (err)
             *err = "invalid enter";
@@ -295,30 +371,62 @@ bool MapRuntime::Enter(uint64_t map_instance_id, std::shared_ptr<const MapStatic
             *err = "ERR_INVALID_POSITION";
         return false;
     }
-    std::lock_guard<std::mutex> lk(mu_);
-    auto &slot = maps_[map_instance_id];
-    if (!slot) {
-        slot.reset(new InstanceState());
-        slot->data = std::move(data);
-        slot->view_radius = view_radius_cells >= 0 ? view_radius_cells : view_radius_;
-    } else if (!slot->data) {
-        slot->data = std::move(data);
-        if (slot->view_radius < 0)
+    std::shared_ptr<InstanceState> st;
+    std::shared_ptr<InstanceState> old;
+    uint64_t old_id = 0;
+    {
+        std::lock_guard<std::mutex> reg(mu_);
+        auto &slot = maps_[map_instance_id];
+        if (!slot) {
+            slot = std::make_shared<InstanceState>();
+            slot->data = data;
             slot->view_radius = view_radius_cells >= 0 ? view_radius_cells : view_radius_;
-    }
-    InstanceState &st = *slot;
-    const auto old_map = player_map_.find(entity.player_id);
-    if (old_map != player_map_.end() && old_map->second != map_instance_id) {
-        auto oit = maps_.find(old_map->second);
-        if (oit != maps_.end() && oit->second) {
-            RemovePlayerInterest(oit->second.get(), old_map->second, entity.player_id, pushes, true);
-            if (oit->second->entities.empty())
-                maps_.erase(oit);
+            int cap = max_visible >= 0 ? max_visible : max_visible_;
+            if (cap < 1)
+                cap = 1;
+            if (cap > 200)
+                cap = 200;
+            slot->max_visible = cap;
+            slot->epoch = next_epoch_++;
+        } else if (!slot->data) {
+            slot->data = data;
+            if (slot->view_radius < 0)
+                slot->view_radius = view_radius_cells >= 0 ? view_radius_cells : view_radius_;
         }
-        player_map_.erase(entity.player_id);
+        st = slot;
+        auto pit = player_map_.find(entity.player_id);
+        if (pit != player_map_.end() && pit->second != map_instance_id) {
+            old_id = pit->second;
+            auto oit = maps_.find(old_id);
+            if (oit != maps_.end())
+                old = oit->second;
+        }
     }
-    auto existing = st.entities.find(entity.player_id);
-    if (existing != st.entities.end()) {
+    std::unique_lock<std::mutex> lock_a;
+    std::unique_lock<std::mutex> lock_b;
+    if (old && old_id != map_instance_id) {
+        if (old_id < map_instance_id) {
+            lock_a = LockInst(old);
+            lock_b = LockInst(st);
+        } else {
+            lock_a = LockInst(st);
+            lock_b = LockInst(old);
+        }
+    } else {
+        lock_a = LockInst(st);
+    }
+    if (!st || st->unloaded) {
+        if (err)
+            *err = "map unloaded";
+        return false;
+    }
+    bool old_empty = false;
+    if (old && old_id != map_instance_id && !old->unloaded) {
+        RemovePlayerInterest(old.get(), old_id, entity.player_id, pushes, true);
+        old_empty = old->entity_count.load(std::memory_order_relaxed) == 0;
+    }
+    auto existing = st->entities.find(entity.player_id);
+    if (existing != st->entities.end()) {
         entity.state_seq = existing->second.state_seq;
         entity.last_client_seq = 0;
         entity.last_move_server_ms = existing->second.last_move_server_ms;
@@ -328,20 +436,46 @@ bool MapRuntime::Enter(uint64_t map_instance_id, std::shared_ptr<const MapStatic
             entity.z = existing->second.z;
             entity.yaw = existing->second.yaw;
         }
-        RemovePlayerInterest(&st, map_instance_id, entity.player_id, pushes, true);
+        RemovePlayerInterest(st.get(), map_instance_id, entity.player_id, pushes, true);
     }
     entity.connected = true;
     if (entity.state_seq == 0)
         entity.state_seq = 1;
-    st.entities[entity.player_id] = entity;
-    PlaceInCell(&st, entity);
-    player_map_[entity.player_id] = map_instance_id;
-    std::vector<uint64_t> viewers = NeighborhoodIds(st, entity.x, entity.z);
+    st->entities[entity.player_id] = entity;
+    st->entity_count.fetch_add(1, std::memory_order_relaxed);
+    PlaceInCell(st.get(), entity);
+    std::vector<uint64_t> viewers = NeighborhoodIds(*st, entity.x, entity.z);
     viewers.push_back(entity.player_id);
-    RefreshViewers(&st, viewers, 0, entity.player_id, map_instance_id, pushes);
-    FillSnapshot(st, entity.player_id, aoi_snapshot);
+    RefreshViewers(st.get(), viewers, 0, entity.player_id, map_instance_id, pushes);
+    FillSnapshot(*st, entity.player_id, aoi_snapshot);
     if (self_out)
         *self_out = entity;
+    if (lock_a.owns_lock())
+        lock_a.unlock();
+    if (lock_b.owns_lock())
+        lock_b.unlock();
+    if (old_id != 0) {
+        std::lock_guard<std::mutex> reg(mu_);
+        auto pit = player_map_.find(entity.player_id);
+        if (pit != player_map_.end() && pit->second == old_id)
+            player_map_.erase(pit);
+    }
+    if (old_empty)
+        RetireIfEmpty(old_id, old);
+    if (!PublishPlayer(entity.player_id, map_instance_id, st)) {
+        {
+            auto rollback = LockInst(st);
+            if (st->entities.count(entity.player_id) != 0)
+                RemovePlayerInterest(st.get(), map_instance_id, entity.player_id, pushes, true);
+        }
+        std::lock_guard<std::mutex> reg(mu_);
+        auto pit = player_map_.find(entity.player_id);
+        if (pit != player_map_.end() && pit->second == map_instance_id)
+            player_map_.erase(pit);
+        if (err)
+            *err = "map unloaded";
+        return false;
+    }
     return true;
 }
 
@@ -356,13 +490,20 @@ MapMoveReject MapRuntime::Move(uint64_t map_instance_id, uint64_t player_id, flo
     };
     if (!Finite4(x, y, z, yaw))
         return fail(MapMoveReject::NotFinite, "ERR_INVALID_POSITION");
-    std::lock_guard<std::mutex> lk(mu_);
-    auto mit = maps_.find(map_instance_id);
-    if (mit == maps_.end() || !mit->second)
+    std::shared_ptr<InstanceState> st;
+    {
+        std::lock_guard<std::mutex> reg(mu_);
+        auto mit = maps_.find(map_instance_id);
+        if (mit == maps_.end() || !mit->second)
+            return fail(MapMoveReject::NotOnMap, "ERR_NOT_ON_MAP");
+        st = mit->second;
+    }
+    const auto hold0 = std::chrono::steady_clock::now();
+    auto inst = LockInst(st);
+    if (st->unloaded)
         return fail(MapMoveReject::NotOnMap, "ERR_NOT_ON_MAP");
-    InstanceState &st = *mit->second;
-    auto eit = st.entities.find(player_id);
-    if (eit == st.entities.end())
+    auto eit = st->entities.find(player_id);
+    if (eit == st->entities.end())
         return fail(MapMoveReject::NotOnMap, "ERR_NOT_ON_MAP");
     MapEntity &e = eit->second;
     if (!e.connected)
@@ -377,13 +518,21 @@ MapMoveReject MapRuntime::Move(uint64_t map_instance_id, uint64_t player_id, flo
         SetLogErrorCode("");
         return fail(MapMoveReject::StaleSeq, "ERR_STALE_SEQ");
     }
-    if (!st.data)
+    if (!st->data)
         return fail(MapMoveReject::NotOnMap, "ERR_MAP_RUNTIME_NOT_READY");
-    if (!st.data->InBounds(x, y, z))
+    if (!st->data->InBounds(x, y, z))
         return fail(MapMoveReject::OutOfBounds, "ERR_OUT_OF_BOUNDS");
-    if (!st.data->IsWalkable(x, z))
-        return fail(MapMoveReject::Unwalkable, "ERR_UNWALKABLE");
-    const float dx = x - e.x, dy = y - e.y, dz = z - e.z;
+    float want_x = x, want_y = y, want_z = z;
+    bool walked_slide = false;
+    if (!st->data->IsWalkable(want_x, want_z)) {
+        float sx = want_x, sz = want_z;
+        if (!st->data->ClampOntoWalkable(e.x, e.z, want_x, want_z, &sx, &sz))
+            return fail(MapMoveReject::Unwalkable, "ERR_UNWALKABLE");
+        want_x = sx;
+        want_z = sz;
+        walked_slide = true;
+    }
+    const float dx = want_x - e.x, dy = want_y - e.y, dz = want_z - e.z;
     const float dist = std::sqrt(dx * dx + dy * dy + dz * dz);
     const int64_t t1 = now_ms > 0 ? now_ms : NowMs();
     float dt = 1.f;
@@ -391,105 +540,230 @@ MapMoveReject MapRuntime::Move(uint64_t map_instance_id, uint64_t player_id, flo
         dt = static_cast<float>(t1 - e.last_move_server_ms) / 1000.f;
     const float speed = e.move_speed > 0.f ? e.move_speed : 10.f;
     const float max_dist = speed * dt * 1.25f + 0.5f;
-    if (!ignore_speed && dist > max_dist)
-        return fail(MapMoveReject::TooFast, "ERR_MOVE_TOO_FAST");
+    // 超速不整包拒绝：沿请求方向钳到本帧合法距离，避免客户端大跳拉回。
+    if (!ignore_speed && dist > max_dist && dist > 1e-6f) {
+        const float scale = max_dist / dist;
+        want_x = e.x + dx * scale;
+        want_y = e.y + dy * scale;
+        want_z = e.z + dz * scale;
+        if (!st->data->InBounds(want_x, want_y, want_z))
+            return fail(MapMoveReject::TooFast, "ERR_MOVE_TOO_FAST");
+        if (!st->data->IsWalkable(want_x, want_z)) {
+            float sx = want_x, sz = want_z;
+            if (!st->data->ClampOntoWalkable(e.x, e.z, want_x, want_z, &sx, &sz))
+                return fail(MapMoveReject::TooFast, "ERR_MOVE_TOO_FAST");
+            want_x = sx;
+            want_z = sz;
+            walked_slide = true;
+        }
+        ServerStats::move_speed_clamp.fetch_add(1, std::memory_order_relaxed);
+    }
+    if (walked_slide)
+        ServerStats::move_walk_slide.fetch_add(1, std::memory_order_relaxed);
 
     const float old_x = e.x;
     const float old_z = e.z;
-    RemoveFromCell(&st, e);
-    e.x = x;
-    e.y = y;
-    e.z = z;
+    int old_cx = 0, old_cz = 0, new_cx = 0, new_cz = 0;
+    st->data->WorldToAoiCell(old_x, old_z, &old_cx, &old_cz);
+    st->data->WorldToAoiCell(want_x, want_z, &new_cx, &new_cz);
+    RemoveFromCell(st.get(), e);
+    e.x = want_x;
+    e.y = want_y;
+    e.z = want_z;
     e.yaw = yaw;
     e.state_seq += 1;
     if (client_seq != 0)
         e.last_client_seq = client_seq;
     e.last_move_server_ms = t1;
-    PlaceInCell(&st, e);
-    std::vector<uint64_t> viewers = NeighborhoodIds(st, old_x, old_z);
-    const auto neu_n = NeighborhoodIds(st, e.x, e.z);
-    viewers.insert(viewers.end(), neu_n.begin(), neu_n.end());
-    auto wit = st.watchers.find(player_id);
-    if (wit != st.watchers.end())
-        viewers.insert(viewers.end(), wit->second.begin(), wit->second.end());
-    viewers.push_back(player_id);
-    RefreshViewers(&st, viewers, player_id, 0, map_instance_id, pushes);
+    PlaceInCell(st.get(), e);
+    const bool same_cell = old_cx == new_cx && old_cz == new_cz;
+    const auto neigh = NeighborhoodIds(*st, e.x, e.z);
+    auto self_vis = st->visible_targets.find(player_id);
+    bool membership_stable = same_cell && neigh.size() <= static_cast<size_t>(st->max_visible) + 1 &&
+                             self_vis != st->visible_targets.end();
+    if (membership_stable) {
+        for (uint64_t pid : neigh) {
+            if (pid == player_id)
+                continue;
+            if (self_vis->second.count(pid) == 0) {
+                membership_stable = false;
+                break;
+            }
+        }
+        if (self_vis->second.size() + 1 != neigh.size())
+            membership_stable = false;
+    }
+    if (membership_stable) {
+        auto wit = st->watchers.find(player_id);
+        if (wit != st->watchers.end()) {
+            for (uint64_t vid : wit->second) {
+                auto rit = st->entities.find(vid);
+                if (rit == st->entities.end() || !rit->second.connected)
+                    continue;
+                EmitTo(pushes, map_instance_id, rit->second, 2, e);
+                ServerStats::aoi_move_events.fetch_add(1, std::memory_order_relaxed);
+                ServerStats::aoi_fast_move.fetch_add(1, std::memory_order_relaxed);
+            }
+        }
+    } else {
+        std::vector<uint64_t> viewers = NeighborhoodIds(*st, old_x, old_z);
+        viewers.insert(viewers.end(), neigh.begin(), neigh.end());
+        auto wit = st->watchers.find(player_id);
+        if (wit != st->watchers.end())
+            viewers.insert(viewers.end(), wit->second.begin(), wit->second.end());
+        viewers.push_back(player_id);
+        RefreshViewers(st.get(), viewers, player_id, 0, map_instance_id, pushes);
+    }
     if (confirmed)
         *confirmed = e;
+    const auto hold_us = std::chrono::duration_cast<std::chrono::microseconds>(
+                             std::chrono::steady_clock::now() - hold0)
+                             .count();
+    ServerStats::aoi_lock_hold_us_sum.fetch_add(static_cast<uint64_t>(hold_us < 0 ? 0 : hold_us),
+                                                std::memory_order_relaxed);
     return MapMoveReject::Ok;
 }
 
 bool MapRuntime::Leave(uint64_t map_instance_id, uint64_t player_id, AoiPushBatch *pushes) {
-    std::lock_guard<std::mutex> lk(mu_);
-    auto mit = maps_.find(map_instance_id);
-    if (mit == maps_.end() || !mit->second)
-        return false;
-    InstanceState &st = *mit->second;
-    auto eit = st.entities.find(player_id);
-    if (eit == st.entities.end())
-        return false;
-    RemovePlayerInterest(&st, map_instance_id, player_id, pushes, true);
-    player_map_.erase(player_id);
-    if (st.entities.empty())
-        maps_.erase(mit);
+    std::shared_ptr<InstanceState> st;
+    {
+        std::lock_guard<std::mutex> reg(mu_);
+        auto mit = maps_.find(map_instance_id);
+        if (mit == maps_.end() || !mit->second)
+            return false;
+        st = mit->second;
+    }
+    bool empty = false;
+    {
+        auto inst = LockInst(st);
+        if (st->unloaded || st->entities.count(player_id) == 0)
+            return false;
+        RemovePlayerInterest(st.get(), map_instance_id, player_id, pushes, true);
+        empty = st->entity_count.load(std::memory_order_relaxed) == 0;
+    }
+    {
+        std::lock_guard<std::mutex> reg(mu_);
+        auto pit = player_map_.find(player_id);
+        if (pit != player_map_.end() && pit->second == map_instance_id)
+            player_map_.erase(pit);
+    }
+    if (empty)
+        RetireIfEmpty(map_instance_id, st);
     return true;
 }
 
-void MapRuntime::LeaveAll(uint64_t player_id, AoiPushBatch *pushes) {
-    std::lock_guard<std::mutex> lk(mu_);
-    auto pit = player_map_.find(player_id);
-    if (pit == player_map_.end())
-        return;
-    const uint64_t mid = pit->second;
-    auto mit = maps_.find(mid);
-    if (mit == maps_.end() || !mit->second)
-        return;
-    InstanceState &st = *mit->second;
-    auto eit = st.entities.find(player_id);
-    if (eit == st.entities.end()) {
-        player_map_.erase(pit);
-        return;
+size_t MapRuntime::DropExcept(uint64_t map_instance_id, const std::unordered_set<uint64_t> &keep,
+                              AoiPushBatch *pushes) {
+    std::vector<uint64_t> drop;
+    {
+        std::shared_ptr<InstanceState> st;
+        {
+            std::lock_guard<std::mutex> reg(mu_);
+            auto mit = maps_.find(map_instance_id);
+            if (mit == maps_.end() || !mit->second)
+                return 0;
+            st = mit->second;
+        }
+        auto inst = LockInst(st);
+        if (st->unloaded)
+            return 0;
+        drop.reserve(st->entities.size());
+        for (const auto &kv : st->entities) {
+            if (keep.count(kv.first) == 0)
+                drop.push_back(kv.first);
+        }
     }
-    RemovePlayerInterest(&st, mid, player_id, pushes, true);
-    player_map_.erase(player_id);
-    if (st.entities.empty())
-        maps_.erase(mit);
+    size_t n = 0;
+    for (uint64_t pid : drop) {
+        if (Leave(map_instance_id, pid, pushes))
+            ++n;
+    }
+    return n;
+}
+
+void MapRuntime::LeaveAll(uint64_t player_id, AoiPushBatch *pushes) {
+    uint64_t mid = 0;
+    std::shared_ptr<InstanceState> st;
+    {
+        std::lock_guard<std::mutex> reg(mu_);
+        auto pit = player_map_.find(player_id);
+        if (pit == player_map_.end())
+            return;
+        mid = pit->second;
+        auto mit = maps_.find(mid);
+        if (mit == maps_.end() || !mit->second) {
+            player_map_.erase(pit);
+            return;
+        }
+        st = mit->second;
+    }
+    bool empty = false;
+    {
+        auto inst = LockInst(st);
+        if (st->unloaded || st->entities.count(player_id) == 0)
+            return;
+        RemovePlayerInterest(st.get(), mid, player_id, pushes, true);
+        empty = st->entity_count.load(std::memory_order_relaxed) == 0;
+    }
+    {
+        std::lock_guard<std::mutex> reg(mu_);
+        auto pit = player_map_.find(player_id);
+        if (pit != player_map_.end() && pit->second == mid)
+            player_map_.erase(pit);
+    }
+    if (empty)
+        RetireIfEmpty(mid, st);
 }
 
 bool MapRuntime::Disconnect(uint64_t player_id, AoiPushBatch *pushes) {
-    std::lock_guard<std::mutex> lk(mu_);
-    auto pit = player_map_.find(player_id);
-    if (pit == player_map_.end())
+    // 必须对邻居发 LEAVE：否则客户端 AOI 模型永不消失（静默断线已在实机压测验证为幽灵模型根因）。
+    // entity 保留（erase_entity=false）以便宽限内 Reconnect；LEAVE 走 reliable 推送。
+    uint64_t mid = 0;
+    std::shared_ptr<InstanceState> st;
+    {
+        std::lock_guard<std::mutex> reg(mu_);
+        auto pit = player_map_.find(player_id);
+        if (pit == player_map_.end())
+            return false;
+        mid = pit->second;
+        auto mit = maps_.find(mid);
+        if (mit == maps_.end() || !mit->second)
+            return false;
+        st = mit->second;
+    }
+    auto inst = LockInst(st);
+    if (st->unloaded)
         return false;
-    const uint64_t mid = pit->second;
-    auto mit = maps_.find(mid);
-    if (mit == maps_.end() || !mit->second)
+    auto eit = st->entities.find(player_id);
+    if (eit == st->entities.end())
         return false;
-    InstanceState &st = *mit->second;
-    auto eit = st.entities.find(player_id);
-    if (eit == st.entities.end())
-        return false;
-    MapEntity &e = eit->second;
-    if (!e.connected)
+    if (!eit->second.connected)
         return true;
-    RemovePlayerInterest(&st, mid, player_id, pushes, false);
+    RemovePlayerInterest(st.get(), mid, player_id, pushes, false);
     return true;
 }
 
 bool MapRuntime::Reconnect(uint64_t player_id, const std::string &gateway_instance_id,
                            const std::string &session_id, MapEntity *self_out,
                            std::vector<MapEntity> *aoi_snapshot, AoiPushBatch *pushes) {
-    std::lock_guard<std::mutex> lk(mu_);
-    auto pit = player_map_.find(player_id);
-    if (pit == player_map_.end())
+    uint64_t mid = 0;
+    std::shared_ptr<InstanceState> st;
+    {
+        std::lock_guard<std::mutex> reg(mu_);
+        auto pit = player_map_.find(player_id);
+        if (pit == player_map_.end())
+            return false;
+        mid = pit->second;
+        auto mit = maps_.find(mid);
+        if (mit == maps_.end() || !mit->second)
+            return false;
+        st = mit->second;
+    }
+    auto inst = LockInst(st);
+    if (st->unloaded)
         return false;
-    const uint64_t mid = pit->second;
-    auto mit = maps_.find(mid);
-    if (mit == maps_.end() || !mit->second)
-        return false;
-    InstanceState &st = *mit->second;
-    auto eit = st.entities.find(player_id);
-    if (eit == st.entities.end())
+    auto eit = st->entities.find(player_id);
+    if (eit == st->entities.end())
         return false;
     MapEntity &e = eit->second;
     e.connected = true;
@@ -497,31 +771,51 @@ bool MapRuntime::Reconnect(uint64_t player_id, const std::string &gateway_instan
         e.gateway_instance_id = gateway_instance_id;
     if (!session_id.empty())
         e.session_id = session_id;
-    PlaceInCell(&st, e);
-    std::vector<uint64_t> viewers = NeighborhoodIds(st, e.x, e.z);
+    PlaceInCell(st.get(), e);
+    // 重连者本人：静默建可见集 + 快照 ENTER。
+    // 邻居：RefreshViewers 发 ENTER（断线已 LEAVE，必须补回；可丢弃推送靠 TrySend 背压）。
+    std::vector<uint64_t> viewers = NeighborhoodIds(*st, e.x, e.z);
     viewers.push_back(player_id);
-    RefreshViewers(&st, viewers, 0, player_id, mid, pushes);
-    FillSnapshot(st, player_id, aoi_snapshot);
+    RefreshViewers(st.get(), viewers, 0, player_id, mid, pushes);
+    FillSnapshot(*st, player_id, aoi_snapshot);
+    if (pushes && aoi_snapshot) {
+        for (const auto &other : *aoi_snapshot)
+            EmitTo(pushes, mid, e, 1, other);
+    }
     if (self_out)
         *self_out = e;
     return true;
 }
 
 bool MapRuntime::HasPlayer(uint64_t map_instance_id, uint64_t player_id) const {
-    std::lock_guard<std::mutex> lk(mu_);
-    auto mit = maps_.find(map_instance_id);
-    if (mit == maps_.end() || !mit->second)
+    std::shared_ptr<InstanceState> st;
+    {
+        std::lock_guard<std::mutex> reg(mu_);
+        auto mit = maps_.find(map_instance_id);
+        if (mit == maps_.end() || !mit->second)
+            return false;
+        st = mit->second;
+    }
+    auto inst = LockInst(st);
+    if (st->unloaded)
         return false;
-    return mit->second->entities.count(player_id) != 0;
+    return st->entities.count(player_id) != 0;
 }
 
 uint32_t MapRuntime::ConnectedCount(uint64_t map_instance_id) const {
-    std::lock_guard<std::mutex> lk(mu_);
-    auto mit = maps_.find(map_instance_id);
-    if (mit == maps_.end() || !mit->second)
+    std::shared_ptr<InstanceState> st;
+    {
+        std::lock_guard<std::mutex> reg(mu_);
+        auto mit = maps_.find(map_instance_id);
+        if (mit == maps_.end() || !mit->second)
+            return 0;
+        st = mit->second;
+    }
+    auto inst = LockInst(st);
+    if (st->unloaded)
         return 0;
     uint32_t n = 0;
-    for (const auto &kv : mit->second->entities) {
+    for (const auto &kv : st->entities) {
         if (kv.second.connected)
             ++n;
     }
@@ -537,17 +831,24 @@ uint64_t MapRuntime::PlayerMap(uint64_t player_id) const {
 bool MapRuntime::SnapshotView(uint64_t player_id, MapEntity *self_out,
                               std::vector<MapEntity> *aoi_snapshot,
                               uint64_t *map_instance_id) const {
-    std::lock_guard<std::mutex> lk(mu_);
-    auto pit = player_map_.find(player_id);
-    if (pit == player_map_.end())
+    uint64_t mid = 0;
+    std::shared_ptr<InstanceState> st;
+    {
+        std::lock_guard<std::mutex> reg(mu_);
+        auto pit = player_map_.find(player_id);
+        if (pit == player_map_.end())
+            return false;
+        mid = pit->second;
+        auto mit = maps_.find(mid);
+        if (mit == maps_.end() || !mit->second)
+            return false;
+        st = mit->second;
+    }
+    auto inst = LockInst(st);
+    if (st->unloaded)
         return false;
-    const uint64_t mid = pit->second;
-    auto mit = maps_.find(mid);
-    if (mit == maps_.end() || !mit->second)
-        return false;
-    const InstanceState &st = *mit->second;
-    auto eit = st.entities.find(player_id);
-    if (eit == st.entities.end())
+    auto eit = st->entities.find(player_id);
+    if (eit == st->entities.end())
         return false;
     if (map_instance_id)
         *map_instance_id = mid;
@@ -558,7 +859,7 @@ bool MapRuntime::SnapshotView(uint64_t player_id, MapEntity *self_out,
             aoi_snapshot->clear();
         return true;
     }
-    FillSnapshot(st, player_id, aoi_snapshot);
+    FillSnapshot(*st, player_id, aoi_snapshot);
     return true;
 }
 
@@ -572,20 +873,57 @@ std::vector<uint64_t> MapRuntime::ListPlayers() const {
 }
 
 void MapRuntime::ClearForTest() {
-    std::lock_guard<std::mutex> lk(mu_);
-    maps_.clear();
-    player_map_.clear();
+    std::vector<std::shared_ptr<InstanceState>> all;
+    {
+        std::lock_guard<std::mutex> lk(mu_);
+        for (auto &kv : maps_)
+            all.push_back(kv.second);
+        maps_.clear();
+        player_map_.clear();
+    }
+    for (auto &st : all) {
+        if (!st)
+            continue;
+        auto inst = LockInst(st);
+        st->unloaded = true;
+        st->entities.clear();
+        st->cells.clear();
+        st->visible_targets.clear();
+        st->watchers.clear();
+        st->entity_count.store(0, std::memory_order_relaxed);
+    }
 }
 
 bool MapRuntime::Unload(uint64_t map_instance_id) {
     if (map_instance_id == 0)
         return false;
-    std::lock_guard<std::mutex> lk(mu_);
-    auto it = maps_.find(map_instance_id);
-    if (it == maps_.end() || !it->second)
-        return false;
-    for (const auto &kv : it->second->entities)
-        player_map_.erase(kv.first);
-    maps_.erase(it);
+    std::shared_ptr<InstanceState> st;
+    {
+        std::lock_guard<std::mutex> reg(mu_);
+        auto it = maps_.find(map_instance_id);
+        if (it == maps_.end() || !it->second)
+            return false;
+        st = it->second;
+        maps_.erase(it);
+    }
+    std::vector<uint64_t> ids;
+    {
+        auto inst = LockInst(st);
+        st->unloaded = true;
+        ids.reserve(st->entities.size());
+        for (const auto &kv : st->entities)
+            ids.push_back(kv.first);
+        st->entities.clear();
+        st->cells.clear();
+        st->visible_targets.clear();
+        st->watchers.clear();
+        st->entity_count.store(0, std::memory_order_relaxed);
+    }
+    std::lock_guard<std::mutex> reg(mu_);
+    for (uint64_t id : ids) {
+        auto pit = player_map_.find(id);
+        if (pit != player_map_.end() && pit->second == map_instance_id)
+            player_map_.erase(pit);
+    }
     return true;
 }

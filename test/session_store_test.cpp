@@ -448,6 +448,49 @@ int main() {
         SessionStore::Instance().Logout(slo, &slor);
     }
 
+    // Gateway claim 消失后清幽灵 ONLINE + 分线占位（集群冷杀/Gateway 宕机）
+    {
+        const uint64_t gpid = 900078;
+        game::LogoutReq glo;
+        glo.set_player_id(gpid);
+        game::LogoutRsp glor;
+        SessionStore::Instance().Logout(glo, &glor);
+        if (!PlacementStore::Instance().Available() &&
+            !PlacementStore::Instance().InitFromSessionPrefix(SessionStore::Instance().key_prefix()))
+            return Fail("gwclaim placement init");
+        PlacementStore::Instance().SetLogicOwners({"gl-0", "gl-1"});
+        game::LoginReq gl;
+        gl.set_player_id(gpid);
+        gl.set_device_id("gwclaim-dev");
+        gl.set_server_id(1);
+        gl.set_kick_other_device(true);
+        game::LoginRsp glr;
+        if (!SessionStore::Instance().Login(gl, &glr) || !glr.ok())
+            return Fail("gwclaim login");
+        if (!SessionStore::Instance().BindConnection(gpid, glr.token(), "gw-test-orphan", 1))
+            return Fail("gwclaim bind");
+        ResolveOrCreateInput gpin;
+        gpin.realm_id = 1;
+        gpin.map_template_id = 10020078;
+        gpin.player_id = gpid;
+        gpin.kind = "LINE";
+        gpin.soft_cap = 200;
+        gpin.hard_cap = 400;
+        gpin.max_lines = 8;
+        gpin.operation_id = "gwclaim-enter";
+        ResolveOrCreateResult gpout;
+        if (!PlacementStore::Instance().ResolveOrCreate(gpin, &gpout) || !gpout.ok)
+            return Fail("gwclaim reserve");
+        // 不写入 gw_claim，模拟 Gateway 已死
+        if (SessionStore::Instance().ExpireOnlineMissingGatewayClaim(16) < 1)
+            return Fail("gwclaim expire count");
+        if (SessionStore::Instance().IsPlayerOnline(gpid))
+            return Fail("gwclaim still online");
+        if (PlacementStore::Instance().Occupancy(gpout.placement.map_instance_id) != 0)
+            return Fail("gwclaim occ not released");
+        SessionStore::Instance().Logout(glo, &glor);
+    }
+
     {
         const uint64_t rpid = 900211;
         game::LoginReq rlogin;
@@ -489,7 +532,7 @@ int main() {
     }
 
     for (uint64_t id : {pid, pid2, pid3, uint64_t{900004}, uint64_t{900088}, uint64_t{900099},
-                        uint64_t{900077}, uint64_t{900211}}) {
+                        uint64_t{900077}, uint64_t{900078}, uint64_t{900211}}) {
         game::LogoutReq clo;
         clo.set_player_id(id);
         game::LogoutRsp cr;

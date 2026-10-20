@@ -29,6 +29,9 @@ message BindPlayerResponse {
   // PlayerReady 摘要（兼容外网可再包装为 GameResponse）
   uint32 bag_item_kinds = 4;
   bytes profile_pb = 5;  // 序列化的 game.PlayerAttributes
+  // 重连 Bind：MapRuntime 是否已恢复实体（false → Gateway 填 need_enter_map）
+  bool on_map = 6;
+  uint64 map_instance_id = 7;
 }
 
 message UnbindPlayerRequest {
@@ -37,6 +40,7 @@ message UnbindPlayerRequest {
   string fence_token = 3;
   string reason = 4;
   string idempotency_key = 5;
+  uint64 generation = 6;  // 非 0：异步 Unbind 必须仍匹配当前 Bind，防重连竞态
 }
 
 message UnbindPlayerResponse {

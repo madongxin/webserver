@@ -79,6 +79,12 @@ std::string OpsMetrics::PrometheusText() const {
         heartbeat_ok_.load(std::memory_order_relaxed));
     ctr("gamemesh_heartbeat_limited_total", "Heartbeat rate-limited.",
         heartbeat_limited_.load(std::memory_order_relaxed));
+    ctr("gamemesh_heartbeat_soft_drop_total",
+        "Heartbeat reply soft-dropped (send_buf high water; TCP kept).",
+        heartbeat_soft_drop_.load(std::memory_order_relaxed));
+    ctr("gamemesh_reply_soft_drop_total",
+        "RPC/auth reply soft-dropped instead of closing TCP for backpressure.",
+        reply_soft_drop_.load(std::memory_order_relaxed));
     ctr("gamemesh_idle_timeout_total", "TCP idle timeout closes.",
         idle_timeout_.load(std::memory_order_relaxed));
     ctr("gamemesh_conn_rate_limited_total", "Per-IP connect rate rejects.",
@@ -96,6 +102,13 @@ std::string OpsMetrics::PrometheusText() const {
     gauge("gamemesh_session_online_players",
           "Redis Session ONLINE set size (meaningful on role=session).",
           session_online_players_.load(std::memory_order_relaxed));
+    gauge("gamemesh_line_occupancy_total", "Sum of map:occ SCARD across LINE instances.",
+          line_occupancy_total_.load(std::memory_order_relaxed));
+    gauge("gamemesh_ghost_occupancy",
+          "max(0, line_occupancy_total - session_online); softcap ghosts.",
+          ghost_occupancy_.load(std::memory_order_relaxed));
+    gauge("gamemesh_aoi_push_backlog", "AOI enqueue depth awaiting PushBatch.",
+          aoi_push_backlog_.load(std::memory_order_relaxed));
     gauge("gamemesh_gateway_tcp_connections", "Current game TCP sockets (including pre-auth).",
           gateway_tcp_connections_.load(std::memory_order_relaxed));
     ctr("gamemesh_gateway_rx_bytes_total", "Game TCP bytes received (client → Gateway).",
@@ -110,6 +123,10 @@ std::string OpsMetrics::PrometheusText() const {
           outbox_backlog_.load(std::memory_order_relaxed));
     gauge("gamemesh_mailbox_pending", "PlayerSerialQueue pending_global.",
           mailbox_pending_.load(std::memory_order_relaxed));
+    gauge("gamemesh_rpc_offload_pending", "Gateway EnterMap offload queue depth.",
+          rpc_offload_pending_.load(std::memory_order_relaxed));
+    gauge("gamemesh_rpc_offload_fast_pending", "Gateway Login/Reconnect fast-queue depth.",
+          rpc_offload_fast_pending_.load(std::memory_order_relaxed));
     ctr("gamemesh_placement_recover_ok_total", "Placement auto recover success.",
         placement_recover_ok_.load(std::memory_order_relaxed));
     ctr("gamemesh_placement_recover_fail_total", "Placement auto recover failure.",
@@ -138,6 +155,24 @@ std::string OpsMetrics::PrometheusText() const {
         kick_gateway_attempt_.load(std::memory_order_relaxed));
     ctr("gamemesh_move_err_stale_seq_total", "Move or dispatch rejected with ERR_STALE_SEQ.",
         ServerStats::move_err_stale_seq.load(std::memory_order_relaxed));
+    ctr("gamemesh_move_speed_clamp_total",
+        "Move requests clamped to legal distance instead of ERR_MOVE_TOO_FAST.",
+        ServerStats::move_speed_clamp.load(std::memory_order_relaxed));
+    ctr("gamemesh_move_walk_slide_total",
+        "Move landing cell unwalkable; accepted after sliding onto the walk grid.",
+        ServerStats::move_walk_slide.load(std::memory_order_relaxed));
+    ctr("gamemesh_aoi_candidate_sum", "Sum of AOI candidate counts.",
+        ServerStats::aoi_candidate_sum.load(std::memory_order_relaxed));
+    ctr("gamemesh_aoi_visible_query_us_sum", "Sum of VisibleIds microseconds.",
+        ServerStats::aoi_visible_query_us_sum.load(std::memory_order_relaxed));
+    ctr("gamemesh_aoi_sub_enter_total", "AOI subscription ENTER events.",
+        ServerStats::aoi_sub_enter.load(std::memory_order_relaxed));
+    ctr("gamemesh_aoi_sub_leave_total", "AOI subscription LEAVE events.",
+        ServerStats::aoi_sub_leave.load(std::memory_order_relaxed));
+    ctr("gamemesh_aoi_move_events_total", "AOI MOVE events emitted.",
+        ServerStats::aoi_move_events.load(std::memory_order_relaxed));
+    ctr("gamemesh_login_stage_reject_auth_total", "Auth stage admission rejects.",
+        ServerStats::login_stage_reject_auth.load(std::memory_order_relaxed));
     ctr("gamemesh_session_grace_expire_total", "Disconnected sessions past grace.",
         ServerStats::session_grace_expire.load(std::memory_order_relaxed));
     ctr("gamemesh_player_transfer_abort_total", "Player transfers rolled back after TTL.",

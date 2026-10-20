@@ -269,6 +269,72 @@ bool MapStaticData::IsWalkable(float x, float z) const {
     return WorldToWalkableCell(x, z, &col, &row) && CellWalkable(col, row);
 }
 
+bool MapStaticData::ClampOntoWalkable(float from_x, float from_z, float to_x, float to_z, float *ox,
+                                      float *oz) const {
+    if (IsWalkable(to_x, to_z)) {
+        if (ox)
+            *ox = to_x;
+        if (oz)
+            *oz = to_z;
+        return true;
+    }
+    if (IsWalkable(from_x, from_z)) {
+        float lo = 0.f;
+        float hi = 1.f;
+        for (int i = 0; i < 8; ++i) {
+            const float mid = (lo + hi) * 0.5f;
+            const float x = from_x + (to_x - from_x) * mid;
+            const float z = from_z + (to_z - from_z) * mid;
+            if (IsWalkable(x, z))
+                lo = mid;
+            else
+                hi = mid;
+        }
+        const float x = from_x + (to_x - from_x) * lo;
+        const float z = from_z + (to_z - from_z) * lo;
+        if (ox)
+            *ox = x;
+        if (oz)
+            *oz = z;
+        return IsWalkable(x, z);
+    }
+    int col = 0, row = 0;
+    if (!WorldToWalkableCell(to_x, to_z, &col, &row) &&
+        !WorldToWalkableCell(from_x, from_z, &col, &row))
+        return false;
+    const float step = nav_sample_step_ > 0.f ? nav_sample_step_ : 1.f;
+    constexpr int kRadius = 2;
+    float best = 0.f;
+    float bx = 0.f, bz = 0.f;
+    bool found = false;
+    for (int dr = -kRadius; dr <= kRadius; ++dr) {
+        for (int dc = -kRadius; dc <= kRadius; ++dc) {
+            const int c = col + dc;
+            const int r = row + dr;
+            if (!CellWalkable(c, r))
+                continue;
+            const float cx = bounds_min_.x + (static_cast<float>(c) + 0.5f) * step;
+            const float cz = bounds_min_.z + (static_cast<float>(r) + 0.5f) * step;
+            const float dx = cx - to_x;
+            const float dz = cz - to_z;
+            const float d2 = dx * dx + dz * dz;
+            if (!found || d2 < best) {
+                best = d2;
+                bx = cx;
+                bz = cz;
+                found = true;
+            }
+        }
+    }
+    if (!found)
+        return false;
+    if (ox)
+        *ox = bx;
+    if (oz)
+        *oz = bz;
+    return true;
+}
+
 bool MapStaticData::InBounds(float x, float y, float z) const {
     const float y_slop = 2.f;
     return x >= bounds_min_.x && x <= bounds_max_.x && z >= bounds_min_.z && z <= bounds_max_.z &&
