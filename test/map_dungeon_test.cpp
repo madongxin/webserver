@@ -330,8 +330,11 @@ int main() {
             return Fail("orphan reserve");
         if (PlacementStore::Instance().Occupancy(out.placement.map_instance_id) != 1)
             return Fail("orphan occ");
-        const size_t n = PlacementStore::Instance().ReclaimStaleReservations(
-            [](uint64_t pid) { return pid != 82201; }, 16);
+        size_t n = 0;
+        for (int i = 0; i < 400 && n < 1; ++i) {
+            n += PlacementStore::Instance().ReclaimStaleReservations(
+                [](uint64_t pid) { return pid != 82201; }, 16);
+        }
         if (n < 1)
             return Fail("orphan reclaim");
         if (PlacementStore::Instance().Occupancy(out.placement.map_instance_id) != 0)

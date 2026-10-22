@@ -18,9 +18,12 @@
 #endif
 
 #include <brpc/controller.h>
+#include <bthread/countdown_event.h>
 
+#include <atomic>
 #include <condition_variable>
 #include <cstdio>
+#include <functional>
 #include <map>
 #include <memory>
 #include <mutex>
@@ -265,24 +268,41 @@ void ExecuteDispatch(const glrpc::ClientCommand &request, glrpc::CommandResult *
     bool ok = false;
     const uint64_t map_key = request.map_instance_id();
     if (map_key != 0 && PlayerSerialQueue::MapMailbox().started()) {
-        std::mutex wait_mu;
-        std::condition_variable wait_cv;
-        bool done = false;
-        if (!PlayerSerialQueue::MapMailbox().TryPost(map_key, [&]() {
-                ForwardMetaContext::Set(meta);
-                ok = gameproto::HandleFrame(request.payload(), &out_frame);
-                ForwardMetaContext::Clear();
-                std::lock_guard<std::mutex> lk(wait_mu);
-                done = true;
-                wait_cv.notify_one();
-            })) {
+        // 同一条线的 Move 堆在邮箱里时，继续排只会在客户端丢掉序号之后才回。
+        // 立刻 ERR_OVERLOADED，序号还对得上，客户端可以发下一条。
+        constexpr size_t kMoveQueueReject = 8;
+        if (request.message_type() == "move" &&
+            PlayerSerialQueue::MapMailbox().QueuedOnShard(map_key) >= kMoveQueueReject) {
             response->set_ok(false);
             response->set_error_code("ERR_OVERLOADED");
             response->set_message("map mailbox overloaded");
             return;
         }
-        std::unique_lock<std::mutex> lk(wait_mu);
-        wait_cv.wait(lk, [&] { return done; });
+        // std::condition_variable 会占死 brpc 的 pthread，后面的 Move 都进不来。
+        // 只把信号放在任务对象里：任务跑完或被丢掉时才 signal，等待方让出 worker。
+        auto ev = std::make_shared<bthread::CountdownEvent>();
+        std::atomic<bool> ran{false};
+        std::function<void()> task = [&, ev, guard = std::shared_ptr<void>(nullptr, [ev](void *) {
+                                          ev->signal();
+                                      })]() {
+            ForwardMetaContext::Set(meta);
+            ok = gameproto::HandleFrame(request.payload(), &out_frame);
+            ForwardMetaContext::Clear();
+            ran.store(true, std::memory_order_release);
+        };
+        if (!PlayerSerialQueue::MapMailbox().TryPost(map_key, std::move(task))) {
+            response->set_ok(false);
+            response->set_error_code("ERR_OVERLOADED");
+            response->set_message("map mailbox overloaded");
+            return;
+        }
+        ev->wait();
+        if (!ran.load(std::memory_order_acquire)) {
+            response->set_ok(false);
+            response->set_error_code("ERR_OVERLOADED");
+            response->set_message("map mailbox dropped");
+            return;
+        }
     } else {
         ForwardMetaContext::Set(meta);
         ok = gameproto::HandleFrame(request.payload(), &out_frame);

@@ -42,6 +42,14 @@ std::string BuildErrorFrame(const std::string &request_payload, const std::strin
         code = message == "ERR_CLIENT_SEQ_OUT_OF_ORDER" ? "ERR_STALE_SEQ" : message;
     if (!code.empty())
         rsp.set_error_code(code);
+    // 客户端按 MoveRsp 对序号。只有顶层 error_code 时，超时的那一侧仍会一直等。
+    if (req.has_move()) {
+        auto *mv = rsp.mutable_move();
+        mv->set_ok(false);
+        const std::string c = code.empty() ? message : code;
+        mv->set_error_code(c);
+        mv->set_message(c);
+    }
     std::string body;
     if (!rsp.SerializeToString(&body))
         return {};
@@ -243,6 +251,17 @@ bool FillMapRouteFromRequest(const game::GameRequest &req, SessionHandle *handle
         mid = req.move().map_instance_id();
     if (mid == 0)
         return false;
+    // 这条连接已经在该实例上：Move 直接用进图时写入的路由。
+    // 每次同步 GetPlacement 会占住 Gateway 收包线程，心跳和别的连接的回包要等十几秒。
+    // 路由过期由 Logic 的 epoch 拒绝，客户端再进图，不在这里刷新。
+    if (req.body_case() == game::GameRequest::kMove && handle->map_instance_id == mid &&
+        !handle->gamelogic_instance_id.empty() && handle->owner_epoch != 0) {
+        placement->map_instance_id = mid;
+        placement->owner_gamelogic_id = handle->gamelogic_instance_id;
+        placement->owner_epoch = handle->owner_epoch;
+        placement->route_version = handle->route_version;
+        return true;
+    }
     if (ResolvePlacementAuthority(0, 0, mid, placement)) {
         ApplyPlacementToHandle(*placement, handle);
         return true;
@@ -424,7 +443,9 @@ void BrpcTransport::PostPlayerRequest(const SessionHandle &handle, std::string r
     ctx->req.set_route_version(route.route_version);
     ctx->req.set_generation(route.generation);
     ctx->req.set_client_seq(parsed_ok ? parsed.seq() : 0);
-    if (parsed_ok) {
+    if (parsed_ok && parsed.body_case() == game::GameRequest::kMove) {
+        ctx->req.set_message_type("move");
+    } else if (parsed_ok) {
         std::ostringstream os;
         os << "body_" << static_cast<int>(parsed.body_case());
         ctx->req.set_message_type(os.str());

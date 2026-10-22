@@ -208,6 +208,8 @@ if(ENABLE_BRPC)
   if(NOT BRPC_INCLUDE_DIR OR NOT BRPC_LIB)
     message(FATAL_ERROR "ENABLE_BRPC=ON but brpc not found. Install to /usr/local (libbrpc).")
   endif()
+  # 本机 /usr/local/include 里有一份不带 butil 的 brpc 头。deps 路径必须排在它前面。
+  include_directories(BEFORE ${BRPC_INCLUDE_DIR})
   if(NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/runtime/brpc/forward.pb.cc")
     message(FATAL_ERROR "Run: protoc -I proto --cpp_out=runtime/brpc proto/forward.proto")
   endif()

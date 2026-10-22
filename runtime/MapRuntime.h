@@ -37,6 +37,7 @@ struct MapEntity {
     std::string session_id;
     uint64_t last_client_seq = 0;
     int64_t last_move_server_ms = 0;
+    int64_t last_client_time_ms = 0;
     float move_speed = 10.f;
 };
 
@@ -73,7 +74,8 @@ public:
     bool Unload(uint64_t map_instance_id);
     MapMoveReject Move(uint64_t map_instance_id, uint64_t player_id, float x, float y, float z,
                        float yaw, uint64_t client_seq, int64_t now_ms, MapEntity *confirmed,
-                       AoiPushBatch *pushes, std::string *err_code, bool ignore_speed = false);
+                       AoiPushBatch *pushes, std::string *err_code, bool ignore_speed = false,
+                       int64_t client_time_ms = 0);
     bool Leave(uint64_t map_instance_id, uint64_t player_id, AoiPushBatch *pushes);
     void LeaveAll(uint64_t player_id, AoiPushBatch *pushes);
     bool Disconnect(uint64_t player_id, AoiPushBatch *pushes);
@@ -92,6 +94,24 @@ public:
     uint64_t PlayerMap(uint64_t player_id) const;
     bool SnapshotView(uint64_t player_id, MapEntity *self_out, std::vector<MapEntity> *aoi_snapshot,
                       uint64_t *map_instance_id) const;
+
+    /**
+     * 全量快照用的兴趣集合，与 AOI 推送的 VisibleIds 同一套规则。
+     * 不读 visible_targets 缓存（那份可能还没写上人），也不用分线人数。
+     * ready=false 时调用方必须回可重试错误，不能把 interest 空列表当成“周围没人”。
+     */
+    struct FullView {
+        bool ready = false;
+        MapEntity self;
+        std::vector<MapEntity> interest;
+        uint64_t map_instance_id = 0;
+        float radius_m = 32.f;
+        float cell_m = 0.f;
+        int radius_cells = 0;
+        size_t cache_n = 0;
+        const char *step = "not_on_map";
+    };
+    bool CollectFullView(uint64_t player_id, FullView *out) const;
     std::vector<uint64_t> ListPlayers() const;
     void ClearForTest();
 

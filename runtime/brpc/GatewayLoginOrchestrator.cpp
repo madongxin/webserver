@@ -4,6 +4,7 @@
 #include "GatewayAuthClients.h"
 #include "GatewayConnRegistry.h"
 #include "Logging.h"
+#include "PacketTiming.h"
 #include "LoginAdmission.h"
 #include "PlayerSerialQueue.h"
 #include "ProtoFraming.h"
@@ -19,6 +20,7 @@
 #include "session.pb.h"
 
 #include <atomic>
+#include <chrono>
 #include <memory>
 #include <utility>
 
@@ -554,19 +556,11 @@ bool OrchestrateGatewayReconnect(const std::string &gateway_instance_id, uint64_
             snap_rsp.set_message("full_snapshot");
             auto *fs = snap_rsp.mutable_full_snapshot();
             bool filled = false;
+            // 解析失败时不要另造一份 ok=true、没有 aoi_entities 的壳。客户端会按全量替换，空列表等于把视野里的人删掉。
             if (!xrsp.public_full_snapshot().empty() &&
-                fs->ParseFromString(xrsp.public_full_snapshot()) && fs->ok()) {
+                fs->ParseFromString(xrsp.public_full_snapshot()) && fs->ok() &&
+                fs->player_id() != 0) {
                 filled = true;
-            } else {
-                fs->set_ok(true);
-                fs->set_message("FULL_SNAPSHOT");
-                fs->set_player_id(req.reconnect().player_id());
-                fs->set_asset_version(xrsp.snapshot().state().asset_version());
-                for (const auto &it : xrsp.snapshot().state().bag()) {
-                    fs->add_item_ids(it.item_id());
-                    fs->add_item_counts(it.count());
-                }
-                filled = fs->ok() && (fs->player_id() != 0);
             }
             if (!filled) {
                 body->set_need_full_snapshot(true);
@@ -794,9 +788,15 @@ bool BeginOrchestrateGatewayLogin(const std::string &gateway_instance_id, uint64
                                         shard_key, done = std::move(done)]() mutable {
         std::string out;
         GatewayLoginRoute route;
+        const auto rpc_t0 = std::chrono::steady_clock::now();
         const bool ok =
             OrchestrateGatewayLogin(gateway_instance_id, connection_id, request_payload, &out,
                                     &route);
+        NotePktStage("login", "rpc",
+                     std::chrono::duration_cast<std::chrono::milliseconds>(
+                         std::chrono::steady_clock::now() - rpc_t0)
+                         .count(),
+                     connection_id, 0, 0, 0, 0);
         // 回包直接写回这条连接。完成回调再进玩家队列时，600 人重连会拖过客户端时限。
         done(ok, std::move(out), std::move(route));
         PlayerSerialQueue::Instance().ClearAsyncInFlight(shard_key);
@@ -809,7 +809,13 @@ bool BeginOrchestrateGatewayRegister(const std::string &request_payload, uint64_
         return false;
     return LaunchRpcOffload(shard_key, [request_payload, shard_key, done = std::move(done)]() mutable {
         std::string out;
+        const auto rpc_t0 = std::chrono::steady_clock::now();
         const bool ok = OrchestrateGatewayRegister(request_payload, &out);
+        NotePktStage("register", "rpc",
+                     std::chrono::duration_cast<std::chrono::milliseconds>(
+                         std::chrono::steady_clock::now() - rpc_t0)
+                         .count(),
+                     0, 0, 0, 0, 0);
         done(ok, std::move(out), GatewayLoginRoute{});
         PlayerSerialQueue::Instance().ClearAsyncInFlight(shard_key);
     });
@@ -824,8 +830,14 @@ bool BeginOrchestrateGatewayReconnect(const std::string &gateway_instance_id, ui
                                         shard_key, done = std::move(done)]() mutable {
         std::string out;
         GatewayLoginRoute route;
+        const auto rpc_t0 = std::chrono::steady_clock::now();
         const bool ok = OrchestrateGatewayReconnect(gateway_instance_id, connection_id,
                                                     request_payload, &out, &route);
+        NotePktStage("reconnect", "rpc",
+                     std::chrono::duration_cast<std::chrono::milliseconds>(
+                         std::chrono::steady_clock::now() - rpc_t0)
+                         .count(),
+                     connection_id, 0, 0, 0, 0);
         done(ok, std::move(out), std::move(route));
         PlayerSerialQueue::Instance().ClearAsyncInFlight(shard_key);
     });

@@ -430,6 +430,7 @@ bool MapRuntime::Enter(uint64_t map_instance_id, std::shared_ptr<const MapStatic
         entity.state_seq = existing->second.state_seq;
         entity.last_client_seq = 0;
         entity.last_move_server_ms = existing->second.last_move_server_ms;
+        entity.last_client_time_ms = existing->second.last_client_time_ms;
         if (entity.x == 0 && entity.y == 0 && entity.z == 0) {
             entity.x = existing->second.x;
             entity.y = existing->second.y;
@@ -482,7 +483,7 @@ bool MapRuntime::Enter(uint64_t map_instance_id, std::shared_ptr<const MapStatic
 MapMoveReject MapRuntime::Move(uint64_t map_instance_id, uint64_t player_id, float x, float y,
                                float z, float yaw, uint64_t client_seq, int64_t now_ms,
                                MapEntity *confirmed, AoiPushBatch *pushes, std::string *err_code,
-                               bool ignore_speed) {
+                               bool ignore_speed, int64_t client_time_ms) {
     auto fail = [&](MapMoveReject r, const char *code) {
         if (err_code)
             *err_code = code;
@@ -520,28 +521,45 @@ MapMoveReject MapRuntime::Move(uint64_t map_instance_id, uint64_t player_id, flo
     }
     if (!st->data)
         return fail(MapMoveReject::NotOnMap, "ERR_MAP_RUNTIME_NOT_READY");
-    if (!st->data->InBounds(x, y, z))
-        return fail(MapMoveReject::OutOfBounds, "ERR_OUT_OF_BOUNDS");
-    float want_x = x, want_y = y, want_z = z;
-    bool walked_slide = false;
-    if (!st->data->IsWalkable(want_x, want_z)) {
-        float sx = want_x, sz = want_z;
-        if (!st->data->ClampOntoWalkable(e.x, e.z, want_x, want_z, &sx, &sz))
-            return fail(MapMoveReject::Unwalkable, "ERR_UNWALKABLE");
-        want_x = sx;
-        want_z = sz;
-        walked_slide = true;
+    // 贴着 Y 盒底的是被确认过的坠落，不是地表。先抬回出生高度，拒绝回包才不会停在盒子底。
+    if (e.y <= st->data->bounds_min().y + 2.f)
+        e.y = st->data->default_spawn().position.y;
+    float use_y = y;
+    if (!st->data->InBounds(x, use_y, z)) {
+        if (st->data->InBounds(x, e.y, z))
+            use_y = e.y;
+        else
+            return fail(MapMoveReject::OutOfBounds, "ERR_OUT_OF_BOUNDS");
+    }
+    float want_x = x, want_y = use_y, want_z = z;
+    // 几乎没有水平位移时，不允许把高度掉下去。沿路走可以按坡度下降。
+    if (!ignore_speed) {
+        const float hx = want_x - e.x;
+        const float hz = want_z - e.z;
+        const float horiz = std::sqrt(hx * hx + hz * hz);
+        const float max_drop = horiz < 0.5f ? 0.4f : horiz + 0.5f;
+        if (want_y < e.y - max_drop)
+            want_y = e.y - max_drop;
     }
     const float dx = want_x - e.x, dy = want_y - e.y, dz = want_z - e.z;
     const float dist = std::sqrt(dx * dx + dy * dy + dz * dz);
     const int64_t t1 = now_ms > 0 ? now_ms : NowMs();
-    float dt = 1.f;
+    float dt_server = 1.f;
     if (e.last_move_server_ms > 0 && t1 > e.last_move_server_ms)
-        dt = static_cast<float>(t1 - e.last_move_server_ms) / 1000.f;
+        dt_server = static_cast<float>(t1 - e.last_move_server_ms) / 1000.f;
+    float dt_client = 0.f;
+    if (client_time_ms > 0 && e.last_client_time_ms > 0 && client_time_ms > e.last_client_time_ms)
+        dt_client = static_cast<float>(client_time_ms - e.last_client_time_ms) / 1000.f;
+    // 客户端按自己的时间算位移。收包间隔往往只有几毫秒，用它做分母会把 5.5 米/秒收成出生点。
+    const float dt = dt_client > 0.f ? dt_client : dt_server;
     const float speed = e.move_speed > 0.f ? e.move_speed : 10.f;
+    const bool within_speed = dt > 1e-4f && dist <= speed * dt + 1e-3f;
     const float max_dist = speed * dt * 1.25f + 0.5f;
-    // 超速不整包拒绝：沿请求方向钳到本帧合法距离，避免客户端大跳拉回。
-    if (!ignore_speed && dist > max_dist && dist > 1e-6f) {
+    bool walked_slide = false;
+    // 不超过 move_speed 的请求原样接受，包括 8 米导航格标成不可走的点。
+    // 先滑回格子边会把人钉在边上，回包还是旧坐标，机器人就停住。
+    // 只有超速才沿方向缩短，缩短后的落点再收回收可走格。
+    if (!ignore_speed && !within_speed && dist > max_dist && dist > 1e-6f) {
         const float scale = max_dist / dist;
         want_x = e.x + dx * scale;
         want_y = e.y + dy * scale;
@@ -575,6 +593,8 @@ MapMoveReject MapRuntime::Move(uint64_t map_instance_id, uint64_t player_id, flo
     if (client_seq != 0)
         e.last_client_seq = client_seq;
     e.last_move_server_ms = t1;
+    if (client_time_ms > 0)
+        e.last_client_time_ms = client_time_ms;
     PlaceInCell(st.get(), e);
     const bool same_cell = old_cx == new_cx && old_cz == new_cz;
     const auto neigh = NeighborhoodIds(*st, e.x, e.z);
@@ -593,9 +613,10 @@ MapMoveReject MapRuntime::Move(uint64_t map_instance_id, uint64_t player_id, flo
         if (self_vis->second.size() + 1 != neigh.size())
             membership_stable = false;
     }
+    bool emitted_fast = false;
     if (membership_stable) {
         auto wit = st->watchers.find(player_id);
-        if (wit != st->watchers.end()) {
+        if (wit != st->watchers.end() && !wit->second.empty()) {
             for (uint64_t vid : wit->second) {
                 auto rit = st->entities.find(vid);
                 if (rit == st->entities.end() || !rit->second.connected)
@@ -603,9 +624,11 @@ MapMoveReject MapRuntime::Move(uint64_t map_instance_id, uint64_t player_id, flo
                 EmitTo(pushes, map_instance_id, rit->second, 2, e);
                 ServerStats::aoi_move_events.fetch_add(1, std::memory_order_relaxed);
                 ServerStats::aoi_fast_move.fetch_add(1, std::memory_order_relaxed);
+                emitted_fast = true;
             }
         }
-    } else {
+    }
+    if (!emitted_fast) {
         std::vector<uint64_t> viewers = NeighborhoodIds(*st, old_x, old_z);
         viewers.insert(viewers.end(), neigh.begin(), neigh.end());
         auto wit = st->watchers.find(player_id);
@@ -826,6 +849,129 @@ uint64_t MapRuntime::PlayerMap(uint64_t player_id) const {
     std::lock_guard<std::mutex> lk(mu_);
     auto it = player_map_.find(player_id);
     return it == player_map_.end() ? 0 : it->second;
+}
+
+bool MapRuntime::CollectFullView(uint64_t player_id, FullView *out) const {
+    if (out)
+        *out = FullView{};
+    if (!out || player_id == 0)
+        return false;
+    out->radius_m = 32.f;
+    uint64_t mid = 0;
+    std::shared_ptr<InstanceState> st;
+    {
+        std::lock_guard<std::mutex> reg(mu_);
+        auto pit = player_map_.find(player_id);
+        if (pit == player_map_.end()) {
+            out->step = "not_on_map";
+            return true;
+        }
+        mid = pit->second;
+        auto mit = maps_.find(mid);
+        if (mit == maps_.end() || !mit->second) {
+            out->step = "not_on_map";
+            return true;
+        }
+        st = mit->second;
+    }
+    auto inst = LockInst(st);
+    out->map_instance_id = mid;
+    if (st->unloaded || !st->data) {
+        out->step = "no_map_data";
+        return true;
+    }
+    auto eit = st->entities.find(player_id);
+    if (eit == st->entities.end()) {
+        out->step = "not_on_map";
+        return true;
+    }
+    out->self = eit->second;
+    out->cell_m = st->data->aoi_cell_size();
+    out->radius_cells = ResolvedRadius(*st);
+    auto cit = st->visible_targets.find(player_id);
+    out->cache_n = cit == st->visible_targets.end() ? 0 : cit->second.size();
+    // 断线后实体还在，但已经从格子里摘掉，推送兴趣也不再维护。
+    // 这时缓存一定是空的；回 ok 加空列表会让客户端把还在画面里的人删掉。
+    if (!eit->second.connected) {
+        out->step = "viewer_not_online";
+        return true;
+    }
+    const auto ids = VisibleIds(*st, eit->second);
+    struct Near {
+        uint64_t id = 0;
+        float d2 = 0.f;
+        MapEntity entity;
+    };
+    std::vector<Near> picked;
+    picked.reserve(ids.size() + 8);
+    auto consider = [&](const MapEntity &other) {
+        if (other.player_id == player_id || other.player_id == 0 || !other.connected)
+            return;
+        const float dx = other.x - eit->second.x;
+        const float dz = other.z - eit->second.z;
+        const float d2 = dx * dx + dz * dz;
+        const bool in_push = ids.count(other.player_id) != 0;
+        const bool within_32 = d2 <= out->radius_m * out->radius_m;
+        if (!in_push && !within_32)
+            return;
+        for (const auto &n : picked) {
+            if (n.id == other.player_id)
+                return;
+        }
+        picked.push_back(Near{other.player_id, d2, other});
+    };
+    for (uint64_t tid : ids) {
+        auto tit = st->entities.find(tid);
+        if (tit != st->entities.end())
+            consider(tit->second);
+    }
+    for (const auto &kv : st->entities)
+        consider(kv.second);
+    const size_t cap = static_cast<size_t>(st->max_visible > 0 ? st->max_visible : max_visible_);
+    if (picked.size() > cap) {
+        std::nth_element(picked.begin(), picked.begin() + static_cast<std::ptrdiff_t>(cap),
+                         picked.end(), [](const Near &a, const Near &b) {
+                             if (a.d2 < b.d2)
+                                 return true;
+                             if (b.d2 < a.d2)
+                                 return false;
+                             return a.id < b.id;
+                         });
+        picked.resize(cap);
+    }
+    out->interest.reserve(picked.size());
+    for (const auto &n : picked)
+        out->interest.push_back(n.entity);
+    // 格子里还有在线的人，但兴趣集是空的：不能回 ok 加空列表。客户端会按全量替换，
+    // 把画面上的人删掉。让它重试，而不是把「周围有人」写成空视野。
+    if (out->interest.empty()) {
+        // 第一遍漏掉的在线邻居也要补上。周围有人时不能回空表，快照会把人拉回出生点或删掉。
+        for (const auto &kv : st->entities) {
+            if (kv.first == player_id || !kv.second.connected)
+                continue;
+            const float dx = kv.second.x - eit->second.x;
+            const float dz = kv.second.z - eit->second.z;
+            if (dx * dx + dz * dz > out->radius_m * out->radius_m)
+                continue;
+            out->interest.push_back(kv.second);
+        }
+    }
+    if (out->interest.empty()) {
+        const auto neigh = NeighborhoodIds(*st, eit->second.x, eit->second.z);
+        for (uint64_t id : neigh) {
+            if (id == player_id)
+                continue;
+            auto nit = st->entities.find(id);
+            if (nit != st->entities.end() && nit->second.connected) {
+                out->ready = false;
+                out->step = "view_inconsistent";
+                return true;
+            }
+        }
+    }
+    out->ready = true;
+    out->step = out->interest.empty() ? "view_empty" : "interest_live";
+    return true;
 }
 
 bool MapRuntime::SnapshotView(uint64_t player_id, MapEntity *self_out,

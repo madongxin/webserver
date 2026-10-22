@@ -365,6 +365,14 @@ void PlayerSerialQueue::Post(uint64_t player_id, std::function<void()> task) {
     }
 }
 
+size_t PlayerSerialQueue::QueuedOnShard(uint64_t key) const {
+    if (!started() || shards_.empty())
+        return 0;
+    Shard *shard = shards_[ShardIndex(key, shards_.size())].get();
+    std::lock_guard<std::mutex> lk(shard->mu);
+    return shard->q.size();
+}
+
 void PlayerSerialQueue::DrainForTest() {
     if (!started())
         return;

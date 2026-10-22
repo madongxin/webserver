@@ -20,6 +20,7 @@
 #include "MapLeaseKeeper.h"
 #include "PlacementRecoveryScheduler.h"
 #include "OpsMetrics.h"
+#include "PacketTiming.h"
 #include "ServiceHealth.h"
 
 #include <csignal>
@@ -2049,6 +2050,7 @@ int RunServer(const LaunchOpts &launch) {
 #endif
     // EventLoop 心跳：刷新 /health/live
     loop.RunEvery(1.0, []() { ServiceHealth::Instance().MarkAlive(); });
+    loop.RunEvery(10.0, []() { PacketTimingLogWindow(); });
     loop.RunEvery(2.0, [role]() { HealthProbeStore::Instance().Refresh(role); });
     HealthProbeStore::Instance().Refresh(role);
 #ifdef WEBSERVER_ENABLE_MYSQL

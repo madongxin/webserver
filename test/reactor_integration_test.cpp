@@ -5,8 +5,10 @@
 #include "EventLoop.h"
 #include "TcpConnection.h"
 
+#include <arpa/inet.h>
 #include <fcntl.h>
 #include <iostream>
+#include <netinet/in.h>
 #include <string>
 #include <unistd.h>
 #include <sys/socket.h>
@@ -133,6 +135,88 @@ void TestDisableWriteAfterDrain() {
     ::close(fds[1]);
 }
 
+void TestLatestMoveSendsWhenIdle() {
+    int fds[2];
+    Expect(MakeNonBlockingPair(fds), "socketpair latest idle");
+    EventLoop loop;
+    auto conn = std::make_shared<TcpConnection>(&loop, fds[0], 12);
+    conn->set_close_callback([](const std::shared_ptr<TcpConnection> &) {});
+    conn->set_message_callback([](const std::shared_ptr<TcpConnection> &) {});
+    conn->ConnectionEstablished();
+    const std::string frame(32, 'm');
+    Expect(conn->TrySendLatestMove(frame), "idle latest move accepted");
+    char tmp[64];
+    const ssize_t n = ::read(fds[1], tmp, sizeof(tmp));
+    Expect(n == static_cast<ssize_t>(frame.size()), "idle latest move reached peer");
+    Expect(conn->send_buf()->readablebytes() == 0, "idle latest move not held");
+    conn->HandleClose();
+    conn->ConnectionDestructor();
+    ::close(fds[1]);
+}
+
+void TestLatestMoveHeldWhileKernelBusy() {
+    int lfd = ::socket(AF_INET, SOCK_STREAM, 0);
+    Expect(lfd >= 0, "tcp listen");
+    int yes = 1;
+    ::setsockopt(lfd, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(yes));
+    sockaddr_in addr{};
+    addr.sin_family = AF_INET;
+    addr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+    addr.sin_port = 0;
+    Expect(::bind(lfd, reinterpret_cast<sockaddr *>(&addr), sizeof(addr)) == 0, "bind");
+    Expect(::listen(lfd, 1) == 0, "listen");
+    socklen_t alen = sizeof(addr);
+    Expect(::getsockname(lfd, reinterpret_cast<sockaddr *>(&addr), &alen) == 0, "getsockname");
+
+    int cfd = ::socket(AF_INET, SOCK_STREAM, 0);
+    Expect(cfd >= 0, "tcp client");
+    Expect(::connect(cfd, reinterpret_cast<sockaddr *>(&addr), sizeof(addr)) == 0, "connect");
+    int afd = ::accept(lfd, nullptr, nullptr);
+    Expect(afd >= 0, "accept");
+    int flags = ::fcntl(cfd, F_GETFL, 0);
+    ::fcntl(cfd, F_SETFL, flags | O_NONBLOCK);
+    flags = ::fcntl(afd, F_GETFL, 0);
+    ::fcntl(afd, F_SETFL, flags | O_NONBLOCK);
+
+    std::string block(4096, 'B');
+    while (true) {
+        const ssize_t n = ::write(cfd, block.data(), block.size());
+        if (n > 0)
+            continue;
+        break;
+    }
+
+    EventLoop loop;
+    auto conn = std::make_shared<TcpConnection>(&loop, cfd, 11);
+    conn->set_close_callback([](const std::shared_ptr<TcpConnection> &) {});
+    conn->set_message_callback([](const std::shared_ptr<TcpConnection> &) {});
+    conn->ConnectionEstablished();
+    Expect(conn->unsent_bytes() > 8 * 1024, "kernel unsent above move budget");
+
+    const std::string frame(128, 'M');
+    Expect(conn->TrySendLatestMove(frame), "latest move parked while kernel busy");
+    Expect(conn->send_buf()->readablebytes() == static_cast<int>(frame.size()),
+           "one latest frame in app buffer");
+    Expect(!conn->IsWriting(), "held move does not arm EPOLLOUT");
+    const int unsent_before = conn->unsent_bytes();
+    conn->Write();
+    Expect(conn->send_buf()->readablebytes() == static_cast<int>(frame.size()),
+           "write leaves held move in app buffer");
+    Expect(conn->unsent_bytes() >= unsent_before, "held move not pushed into kernel");
+
+    const std::string ack(16, 'A');
+    Expect(conn->TrySendControl(ack), "ack prepended ahead of held move");
+    const std::string left = conn->CopySendBuf();
+    Expect(left.size() >= frame.size() &&
+               left.compare(left.size() - frame.size(), frame.size(), frame) == 0,
+           "move frame stays at the tail");
+
+    conn->HandleClose();
+    conn->ConnectionDestructor();
+    ::close(afd);
+    ::close(lfd);
+}
+
 }  // namespace
 
 int main() {
@@ -140,6 +224,8 @@ int main() {
     TestCleanupOnClose();
     TestSendQueueLimitCloses();
     TestDisableWriteAfterDrain();
+    TestLatestMoveSendsWhenIdle();
+    TestLatestMoveHeldWhileKernelBusy();
     if (g_fail) {
         std::cerr << "reactor_integration_test failures=" << g_fail << "\n";
         return 1;

@@ -6,6 +6,7 @@
 #include "HttpContext.h"
 #include "TimeStamp.h"
 #include "Logging.h"
+#include <algorithm>
 #include <memory>
 #include <unistd.h>
 #include <cassert>
@@ -13,8 +14,18 @@
 #include <cstring>
 #include <netinet/in.h>
 #include <netinet/tcp.h>
+#include <sys/ioctl.h>
 #include <sys/socket.h>
 #include <sys/sendfile.h>
+#include <arpa/inet.h>
+
+#ifndef SIOCOUTQNSD
+#define SIOCOUTQNSD 0x894B
+#endif
+
+// 内核里还没交给网卡的字节超过这个值时，最新移动帧只留在应用缓冲，不再 write。
+// 再写进去的话，移动回包会排在这批旧坐标后面，客户端要读完才发下一步，人会越走越慢。
+constexpr int kLatestMoveKernelBudget = 8 * 1024;
 
 TcpConnection::TcpConnection(EventLoop *loop, int connfd, uint64_t connid)
     : connfd_(connfd),
@@ -36,7 +47,22 @@ TcpConnection::TcpConnection(EventLoop *loop, int connfd, uint64_t connid)
 }
 
 TcpConnection::~TcpConnection() {
-    ::close(connfd_);
+    if (connfd_ >= 0) {
+        // 接收缓冲里还有客户端的移动包时，直接 close 会发 RST，
+        // 对端看到「远程主机强迫关闭」后就不再发 Move。
+        char dump[4096];
+        while (true) {
+            const ssize_t n = ::read(connfd_, dump, sizeof(dump));
+            if (n > 0)
+                continue;
+            if (n < 0 && errno == EINTR)
+                continue;
+            break;
+        }
+        ::shutdown(connfd_, SHUT_WR);
+        ::close(connfd_);
+        connfd_ = -1;
+    }
 }
 
 void TcpConnection::ConnectionEstablished() {
@@ -140,10 +166,105 @@ void TcpConnection::HandleWrite() {
 
 EventLoop *TcpConnection::loop() const { return loop_; }
 int TcpConnection::fd() const { return connfd_; }
+int TcpConnection::unsent_bytes() const { return UnsentBytes(); }
 uint64_t TcpConnection::id() const { return connid_; }
 TcpConnection::ConnectionState TcpConnection::state() const { return state_; }
 Buffer *TcpConnection::read_buf() { return read_buf_.get(); }
 Buffer *TcpConnection::send_buf() { return send_buf_.get(); }
+
+std::string TcpConnection::CopySendBuf() {
+    if (!send_buf_)
+        return {};
+    return send_buf_->PeekAllAsString();
+}
+
+void TcpConnection::ReplaceSendBuf(const std::string &bytes) {
+    if (!send_buf_)
+        return;
+    send_buf_->RetrieveAll();
+    if (!bytes.empty())
+        send_buf_->Append(bytes);
+    send_partial_prefix_ = 0;
+    send_hold_move_ = false;
+    send_move_hold_off_ = 0;
+}
+
+size_t TcpConnection::send_partial_prefix() const { return send_partial_prefix_; }
+
+void TcpConnection::ReplaceQueuedAfterPrefix(const std::string &queued) {
+    if (!send_buf_)
+        return;
+    const std::string raw = send_buf_->PeekAllAsString();
+    const size_t prefix = std::min(send_partial_prefix_, raw.size());
+    std::string next;
+    next.reserve(prefix + queued.size());
+    next.append(raw.data(), prefix);
+    next.append(queued);
+    send_buf_->RetrieveAll();
+    if (!next.empty())
+        send_buf_->Append(next);
+    send_partial_prefix_ = prefix;
+    send_hold_move_ = false;
+    send_move_hold_off_ = 0;
+    if (send_buf_->readablebytes() == 0)
+        send_partial_prefix_ = 0;
+}
+
+void TcpConnection::ConsumeSendPrefix(int n) {
+    if (n <= 0 || send_partial_prefix_ == 0)
+        return;
+    if (static_cast<size_t>(n) >= send_partial_prefix_)
+        send_partial_prefix_ = 0;
+    else
+        send_partial_prefix_ -= static_cast<size_t>(n);
+}
+
+void TcpConnection::NoteWriteConsumed(const char *data, size_t data_len, size_t written) {
+    if (!data || written == 0 || written >= data_len) {
+        send_partial_prefix_ = 0;
+        return;
+    }
+    const size_t prefix = std::min(send_partial_prefix_, data_len);
+    if (written < prefix) {
+        send_partial_prefix_ = prefix - written;
+        return;
+    }
+    size_t into = written - prefix;
+    size_t off = prefix;
+    while (into > 0 && off + 4 <= data_len) {
+        uint32_t be = 0;
+        std::memcpy(&be, data + off, 4);
+        const uint32_t flen = ntohl(be);
+        if (flen == 0 || flen > 16u * 1024u * 1024u) {
+            send_partial_prefix_ = 0;
+            return;
+        }
+        const size_t frame = static_cast<size_t>(4u + flen);
+        const size_t have = data_len - off;
+        if (into < frame && into < have) {
+            send_partial_prefix_ = std::min(frame, have) - into;
+            return;
+        }
+        if (have < frame) {
+            send_partial_prefix_ = into < have ? have - into : 0;
+            return;
+        }
+        into -= frame;
+        off += frame;
+    }
+    send_partial_prefix_ = 0;
+}
+
+int TcpConnection::UnsentBytes() const {
+    int n = 0;
+    if (connfd_ < 0)
+        return 0;
+    // 只要还没写进内核发送队列的字节。TIOCOUTQ 把已经在路上的未确认字节也算进去，
+    // 链路本身有几十 KB 在飞时会把后续移动全部丢掉。
+    if (::ioctl(connfd_, SIOCOUTQNSD, &n) != 0 || n < 0)
+        return 0;
+    return n;
+}
 std::string &TcpConnection::proto_stream() { return proto_stream_; }
 void TcpConnection::set_max_read_buf_bytes(size_t n) { max_read_buf_bytes_ = n; }
 void TcpConnection::set_max_send_buf_bytes(size_t n) { max_send_buf_bytes_ = n; }
@@ -183,18 +304,83 @@ bool TcpConnection::TrySendUrgent(const char *msg, int len) {
     return SendInternal(msg, len, true, true);
 }
 
-bool TcpConnection::TrySendControl(const std::string &msg) {
-    return TrySendControl(msg.data(), static_cast<int>(msg.size()));
+bool TcpConnection::TrySendControl(const std::string &msg, bool over_cap) {
+    return TrySendControl(msg.data(), static_cast<int>(msg.size()), over_cap);
 }
 
-bool TcpConnection::TrySendControl(const char *msg, int len) {
-    return SendInternal(msg, len, true, true, true);
+bool TcpConnection::TrySendControl(const char *msg, int len, bool over_cap) {
+    return SendInternal(msg, len, true, true, true, false, over_cap);
+}
+
+bool TcpConnection::TrySendLatestMove(const std::string &msg) {
+    if (state_ != ConnectionState::Connected || in_close_ || !send_buf_ || msg.empty())
+        return false;
+    const int queued = send_buf_->readablebytes();
+    // 非移动数据已经堆过 64KB，这一帧先不追加。调用方留着位置，200ms 后再试。
+    if (queued > 64 * 1024)
+        return false;
+    // 调用方已经清掉缓冲里的旧移动帧。内核里还有没送出的字节时，不要再 write：
+    // 回包插不到已经进内核的字节前面，客户端会一直读旧坐标，步子越来越慢直到停下。
+    // 这一帧留在缓冲末尾，下一轮先丢掉再换成更新的位置，所以不会一帧帧叠上去。
+    if (UnsentBytes() > kLatestMoveKernelBudget) {
+        send_buf_->Append(msg);
+        send_move_hold_off_ = static_cast<size_t>(queued);
+        send_hold_move_ = true;
+        // 移动帧前面若还有回包，注册写事件把回包送走；只剩移动帧时不注册，避免空转。
+        ArmWriteIfNeeded();
+        return true;
+    }
+    send_hold_move_ = false;
+    send_move_hold_off_ = 0;
+    return SendInternal(msg.data(), static_cast<int>(msg.size()), true, false, false, true);
 }
 
 bool TcpConnection::SendInternal(const char *msg, int len, bool soft_drop, bool urgent,
-                                 bool control) {
+                                 bool control, bool ignore_unsent_cap, bool control_over_cap) {
     if (state_ != ConnectionState::Connected || in_close_ || !channel_ || !msg || len < 0)
         return false;
+
+    // 心跳和请求回包插到已经排好的完整帧前面。已经写进内核的字节挪不走，
+    // 应用缓冲开头若是半帧，必须先把这半帧写完，否则客户端会拆错帧。
+    // 心跳和回包可以插到移动帧前面，但不能在内核写不出去时无限往应用缓冲里叠。
+    // 已经超过 64KB 的非移动数据留下，这一帧软丢，连接保持。
+    // 心跳可以越过普通回包的 64KB。静默丢掉心跳时连接还在，客户端要等十几秒。
+    const int control_cap = control_over_cap ? (256 * 1024) : (64 * 1024);
+    if (control && send_buf_ && send_buf_->readablebytes() > control_cap)
+        return false;
+
+    if (control && send_buf_ && send_buf_->readablebytes() > 0 && len > 0) {
+        const std::string raw = send_buf_->PeekAllAsString();
+        const size_t prefix = std::min(send_partial_prefix_, raw.size());
+        std::string next;
+        next.reserve(raw.size() + static_cast<size_t>(len));
+        next.append(raw.data(), prefix);
+        next.append(msg, static_cast<size_t>(len));
+        next.append(raw.data() + prefix, raw.size() - prefix);
+        send_buf_->RetrieveAll();
+        send_buf_->Append(next);
+        if (send_hold_move_ && send_move_hold_off_ >= prefix)
+            send_move_hold_off_ += static_cast<size_t>(len);
+        WriteNonBlocking();
+        ArmWriteIfNeeded();
+        return true;
+    }
+
+    // 移动包只看「还没离开本机的字节」：内核未发送队列 + 本连接缓冲。
+    // 超过水位直接丢掉这一帧。已经在路上的未确认字节不占这个水位。
+    // 最新位置由 TrySendLatestMove 在内核未发送字节还多时先压住，不在这里按 32KB 整帧丢掉。
+    // 应用缓冲里的非移动数据已经超过 64KB 时不再追加。
+    if (!control && soft_drop && send_buf_) {
+        if (ignore_unsent_cap) {
+            if (send_buf_->readablebytes() > 64 * 1024)
+                return false;
+        } else {
+            const int pending = UnsentBytes() + send_buf_->readablebytes();
+            const int cap = urgent ? (32 * 1024) : (8 * 1024);
+            if (pending > 0 && pending + len > cap)
+                return false;
+        }
+    }
 
     int remaining = len;
     int send_size = 0;
@@ -223,18 +409,22 @@ bool TcpConnection::SendInternal(const char *msg, int len, bool soft_drop, bool 
         }
         if (static_cast<size_t>(send_buf_->readablebytes()) + static_cast<size_t>(remaining) >
             limit) {
-            if (soft_drop)
+            // 软丢和最新移动都不关连接。人还在图上时拆连接，客户端就停在最后一帧。
+            if (soft_drop || ignore_unsent_cap)
                 return false;
             CloseForBackpressure("send_queue_limit");
             return false;
         }
+        const bool was_empty = send_buf_->readablebytes() == 0;
         send_buf_->Append(msg + send_size, remaining);
+        // 只有已经把帧头写进内核时，缓冲里剩下的才是半帧。一次都没写出的完整帧
+        // 不能算半帧，否则心跳会被插到这整帧后面。
+        if (was_empty && send_size > 0)
+            send_partial_prefix_ = static_cast<size_t>(remaining);
     }
     if (send_buf_->readablebytes() > 0) {
         WriteNonBlocking();
-        if (state_ == ConnectionState::Connected && !in_close_ && channel_ &&
-            send_buf_->readablebytes() > 0)
-            channel_->EnableWrite();
+        ArmWriteIfNeeded();
     }
     return true;
 }
@@ -277,6 +467,8 @@ void TcpConnection::FlushSendBufBestEffort() {
         const ssize_t send_size =
             ::write(connfd_, send_buf_->Peek(), static_cast<size_t>(remaining));
         if (send_size > 0) {
+            NoteWriteConsumed(send_buf_->Peek(), static_cast<size_t>(remaining),
+                              static_cast<size_t>(send_size));
             send_buf_->Retrieve(static_cast<int>(send_size));
             continue;
         }
@@ -291,26 +483,73 @@ void TcpConnection::WriteNonBlocking() {
     if (!send_buf_ || !channel_ || state_ == ConnectionState::Disconected || in_close_)
         return;
     while (send_buf_->readablebytes() > 0) {
-        const int remaining = send_buf_->readablebytes();
+        int writable = send_buf_->readablebytes();
+        bool hold_limit = false;
+        if (send_hold_move_ && UnsentBytes() > kLatestMoveKernelBudget) {
+            const size_t front =
+                std::min(send_move_hold_off_, static_cast<size_t>(writable));
+            // 前面没有回包或半帧时，最新移动先留着，等内核队列掉下来再写。
+            if (front == 0)
+                break;
+            writable = static_cast<int>(front);
+            hold_limit = true;
+        }
         const ssize_t send_size =
-            ::write(connfd_, send_buf_->Peek(), static_cast<size_t>(remaining));
+            ::write(connfd_, send_buf_->Peek(), static_cast<size_t>(writable));
         if (send_size > 0) {
+            NoteWriteConsumed(send_buf_->Peek(), static_cast<size_t>(send_buf_->readablebytes()),
+                              static_cast<size_t>(send_size));
+            if (send_move_hold_off_ > 0) {
+                if (static_cast<size_t>(send_size) >= send_move_hold_off_)
+                    send_move_hold_off_ = 0;
+                else
+                    send_move_hold_off_ -= static_cast<size_t>(send_size);
+            }
+            if (!hold_limit)
+                send_hold_move_ = false;
             send_buf_->Retrieve(static_cast<int>(send_size));
+            if (hold_limit)
+                break;
             continue;
         }
         if (send_size == -1 && errno == EINTR)
             continue;
-        if (send_size == -1 && (errno == EAGAIN || errno == EWOULDBLOCK)) {
+        if (send_size == -1 && (errno == EAGAIN || errno == EWOULDBLOCK))
             break;
-        }
         LOG_ERROR << "TcpConnection::WriteNonBlocking error id#" << connid_;
         HandleClose();
         return;
     }
-    if (state_ != ConnectionState::Connected || in_close_ || !channel_)
+    if (state_ != ConnectionState::Connected || in_close_ || !channel_ || !send_buf_)
         return;
-    if (send_buf_->readablebytes() == 0 && channel_->IsWriting())
+    if (send_buf_->readablebytes() == 0) {
+        send_hold_move_ = false;
+        send_move_hold_off_ = 0;
+        if (channel_->IsWriting())
+            channel_->DisableWrite();
+        return;
+    }
+    // 只剩压住的最新移动帧时关掉写兴趣。水平触发下一直可写会空转。
+    if (send_hold_move_ && send_move_hold_off_ == 0 &&
+        UnsentBytes() > kLatestMoveKernelBudget && channel_->IsWriting())
         channel_->DisableWrite();
+}
+
+void TcpConnection::ArmWriteIfNeeded() {
+    if (!channel_ || state_ != ConnectionState::Connected || in_close_ || !send_buf_)
+        return;
+    if (send_buf_->readablebytes() == 0) {
+        if (channel_->IsWriting())
+            channel_->DisableWrite();
+        return;
+    }
+    if (send_hold_move_ && send_move_hold_off_ == 0 &&
+        UnsentBytes() > kLatestMoveKernelBudget) {
+        if (channel_->IsWriting())
+            channel_->DisableWrite();
+        return;
+    }
+    channel_->EnableWrite();
 }
 
 HttpContext *TcpConnection::context() const { return context_.get(); }

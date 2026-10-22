@@ -3,6 +3,7 @@
 #include "GatewayAuthClients.h"
 #include "GatewayIdentity.h"
 #include "Logging.h"
+#include "PacketTiming.h"
 #include "LoginAdmission.h"
 #include "MapCatalog.h"
 #include "MapLineView.h"
@@ -16,6 +17,7 @@
 #include "game.pb.h"
 #include "session.pb.h"
 
+#include <chrono>
 #include <memory>
 #include <utility>
 
@@ -604,7 +606,13 @@ bool BeginOrchestrateGatewayEnterMap(const SessionHandle &sticky, const std::str
     if (!RpcOffloadPool::Instance().TryPost([h]() {
             std::string out;
             SessionHandle route = h->sticky;
+            const auto rpc_t0 = std::chrono::steady_clock::now();
             const bool ok = OrchestrateGatewayEnterMap(h->sticky, h->payload, &out, &route);
+            NotePktStage("enter_map", "rpc",
+                         std::chrono::duration_cast<std::chrono::milliseconds>(
+                             std::chrono::steady_clock::now() - rpc_t0)
+                             .count(),
+                         h->sticky.connection_id, h->sticky.player_id, 0, 0, 0);
             // 回包直接写回这条连接，不等玩家队列。队列卡住时客户端收不到 seq，
             // 只会看到先进去的 enter_map_notify，然后把请求判超时。
             EnsureEnterReplyFrame(h->payload, ok, &out);
@@ -704,7 +712,13 @@ bool BeginOrchestrateGatewayQueryMapLines(const SessionHandle &sticky,
     if (!RpcOffloadPool::Instance().TryPost([h]() {
             std::string out;
             SessionHandle route = h->sticky;
+            const auto rpc_t0 = std::chrono::steady_clock::now();
             const bool ok = OrchestrateGatewayQueryMapLines(h->sticky, h->payload, &out);
+            NotePktStage("query_lines", "rpc",
+                         std::chrono::duration_cast<std::chrono::milliseconds>(
+                             std::chrono::steady_clock::now() - rpc_t0)
+                             .count(),
+                         h->sticky.connection_id, h->sticky.player_id, 0, 0, 0);
             if (!PlayerSerialQueue::Instance().CompleteAsyncInFlight(
                     h->shard_key, [h, ok, out = std::move(out),
                                    route = std::move(route)]() mutable {

@@ -1804,6 +1804,11 @@ void PlacementStore::SetLineStatusHook(LineStatusHook hook) {
     line_status_hook_ = hook;
 }
 
+bool PlacementStore::HasLineStatusHook() const {
+    std::lock_guard<std::mutex> lk(cfg_mu_);
+    return static_cast<bool>(line_status_hook_);
+}
+
 void PlacementStore::FireLineStatus(uint32_t realm_id, uint64_t map_template_id) {
     LineStatusHook hook = nullptr;
     {
@@ -2016,7 +2021,7 @@ bool PlacementStore::ConfirmSlot(uint64_t player_id, uint64_t map_instance_id) {
     if (!lease->Eval(kLuaConfirmSlot, keys, args, &reply) || reply.empty())
         return false;
     const bool ok = reply[0] == "1";
-    if (ok && map_instance_id != 0) {
+    if (ok && map_instance_id != 0 && HasLineStatusHook()) {
         PlacementRecord rec;
         if (Get(map_instance_id, &rec) && rec.map_template_id != 0)
             FireLineStatus(rec.realm_id, rec.map_template_id);
@@ -2037,7 +2042,7 @@ bool PlacementStore::ReleaseByPlayer(uint64_t player_id) {
     if (!lease->Eval(kLuaReleaseSlot, keys, args, &reply) || reply.empty())
         return false;
     const bool ok = reply[0] == "1";
-    if (ok && reply.size() > 2) {
+    if (ok && reply.size() > 2 && HasLineStatusHook()) {
         const uint64_t inst = ParseU64(reply[2]);
         PlacementRecord rec;
         if (inst != 0 && Get(inst, &rec) && rec.map_template_id != 0)
@@ -2059,7 +2064,7 @@ bool PlacementStore::ParkForGrace(uint64_t player_id) {
     if (!lease->Eval(kLuaParkForGrace, keys, args, &reply) || reply.empty())
         return false;
     const bool ok = reply[0] == "1";
-    if (ok && reply.size() > 2) {
+    if (ok && reply.size() > 2 && HasLineStatusHook()) {
         const uint64_t inst = ParseU64(reply[2]);
         PlacementRecord rec;
         if (inst != 0 && Get(inst, &rec) && rec.map_template_id != 0)
@@ -2080,7 +2085,7 @@ bool PlacementStore::ResumeParked(uint64_t player_id) {
     if (!lease->Eval(kLuaResumeParked, keys, args, &reply) || reply.empty())
         return false;
     const bool ok = reply[0] == "1";
-    if (ok && reply.size() > 2) {
+    if (ok && reply.size() > 2 && HasLineStatusHook()) {
         const uint64_t inst = ParseU64(reply[2]);
         PlacementRecord rec;
         if (inst != 0 && Get(inst, &rec) && rec.map_template_id != 0)
@@ -2095,7 +2100,9 @@ size_t PlacementStore::ReconcileGhostOccupancy(
         return 0;
     const size_t cap = limit > 0 ? limit : 128;
     size_t n = 0;
-    std::string cursor = "0";
+    size_t inspected = 0;
+    static std::string cursor_hold = "0";
+    std::string cursor = cursor_hold;
     const std::string match = key_prefix_ + "map:occ:*";
     static const char kScanOcc[] = R"LUA(
 local cursor = ARGV[1]
@@ -2135,17 +2142,22 @@ return {'1', 'OK', inst}
         if (!lease)
             break;
         std::vector<std::string> reply;
-        if (!lease->Eval(kScanOcc, {}, {cursor, match, "16"}, &reply) || reply.empty())
+        if (!lease->Eval(kScanOcc, {}, {cursor, match, "256"}, &reply) || reply.empty())
             break;
         cursor = reply[0];
         lease = RedisPool::Lease();
-        for (size_t i = 1; i < reply.size(); ++i) {
+        for (size_t i = 1; i < reply.size() && inspected < cap && n < cap; ++i) {
             const std::string &occ_key = reply[i];
             auto lease2 = RedisPool::Instance().Acquire();
             if (!lease2)
                 break;
+            // 抽样，禁止 SMEMBERS 整条分线。在线玩家也计入 inspected，避免 600 人时扫完整集。
             std::vector<std::string> members;
-            if (!lease2->SMembers(occ_key, &members)) {
+            const size_t want = cap - inspected;
+            if (!lease2->Eval(
+                    "local m = redis.call('SRANDMEMBER', KEYS[1], tonumber(ARGV[1])) "
+                    "if type(m) ~= 'table' then if m then return {m} else return {} end end return m",
+                    {occ_key}, {std::to_string(want)}, &members)) {
                 lease2 = RedisPool::Lease();
                 continue;
             }
@@ -2154,8 +2166,12 @@ return {'1', 'OK', inst}
                 const uint64_t pid = ParseU64(ms);
                 if (pid == 0)
                     continue;
-                if (keep_online && keep_online(pid))
+                ++inspected;
+                if (keep_online && keep_online(pid)) {
+                    if (inspected >= cap)
+                        break;
                     continue;
+                }
                 auto lease3 = RedisPool::Instance().Acquire();
                 if (!lease3)
                     break;
@@ -2164,7 +2180,7 @@ return {'1', 'OK', inst}
                                  {key_prefix_, ms, std::to_string(NowUnixSec())}, &r2) &&
                     !r2.empty() && r2[0] == "1") {
                     ++n;
-                    if (r2.size() > 2) {
+                    if (r2.size() > 2 && HasLineStatusHook()) {
                         const uint64_t inst = ParseU64(r2[2]);
                         PlacementRecord rec;
                         if (inst != 0 && Get(inst, &rec) && rec.map_template_id != 0)
@@ -2172,13 +2188,16 @@ return {'1', 'OK', inst}
                     }
                 }
                 lease3 = RedisPool::Lease();
-                if (n >= cap)
-                    return n;
+                if (n >= cap || inspected >= cap)
+                    break;
             }
         }
-        if (++rounds > 256)
+        if (inspected >= cap || n >= cap)
             break;
-    } while (cursor != "0");
+        if (++rounds > 8)
+            break;
+    } while (cursor != "0" && inspected < cap && n < cap);
+    cursor_hold = cursor;
     return n;
 }
 
@@ -2188,7 +2207,10 @@ size_t PlacementStore::ReclaimStaleReservations(
         return 0;
     const size_t cap = limit > 0 ? limit : 64;
     size_t n = 0;
-    std::string cursor = "0";
+    size_t inspected = 0;
+    // 页内没看完的 pid 留到下一次，避免 SCAN 游标已经跳过它们。
+    static std::string cursor_hold = "0";
+    static std::vector<std::string> pending;
     const std::string match = key_prefix_ + "map:pres:*";
     static const char kScanPres[] = R"LUA(
 local cursor = ARGV[1]
@@ -2204,30 +2226,28 @@ for _, k in ipairs(keys) do
 end
 return out
 )LUA";
-    int rounds = 0;
-    do {
+    if (pending.empty()) {
         auto lease = RedisPool::Instance().Acquire();
         if (!lease)
-            break;
+            return 0;
         std::vector<std::string> reply;
-        if (!lease->Eval(kScanPres, {}, {cursor, match, "32"}, &reply) || reply.empty())
-            break;
-        cursor = reply[0];
-        lease = RedisPool::Lease();
-        for (size_t i = 1; i < reply.size(); ++i) {
-            const uint64_t pid = ParseU64(reply[i]);
-            if (pid == 0)
-                continue;
-            if (keep_reservation && keep_reservation(pid))
-                continue;
-            if (ReleaseByPlayer(pid))
-                ++n;
-            if (n >= cap)
-                return n;
-        }
-        if (++rounds > 256)
-            break;
-    } while (cursor != "0");
+        // COUNT 是字典抽样，不是命中数。库里有几万个键时，小 COUNT 几乎扫不到目标。
+        if (!lease->Eval(kScanPres, {}, {cursor_hold, match, "256"}, &reply) || reply.empty())
+            return 0;
+        cursor_hold = reply[0];
+        pending.assign(reply.begin() + 1, reply.end());
+    }
+    while (!pending.empty() && inspected < cap && n < cap) {
+        const uint64_t pid = ParseU64(pending.back());
+        pending.pop_back();
+        if (pid == 0)
+            continue;
+        ++inspected;
+        if (keep_reservation && keep_reservation(pid))
+            continue;
+        if (ReleaseByPlayer(pid))
+            ++n;
+    }
     return n;
 }
 

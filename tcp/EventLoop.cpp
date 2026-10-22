@@ -99,10 +99,13 @@ void EventLoop::RunEvery(double interval, std::function<void()> const &cb) {
 }
 
 void EventLoop::QueueOneFunc(std::function<void()> fn) {
+    int depth = 0;
     {
         std::lock_guard<std::mutex> lock(mutex_);
         to_do_list_.push_back(std::move(fn));
+        depth = static_cast<int>(to_do_list_.size());
     }
+    EventLoopMetrics::RecordTodoDepth(depth);
     if (!IsInLoopThread()) {
         uint64_t one = 1;
         ssize_t n = ::write(wakeup_fd_, &one, sizeof(one));
@@ -126,9 +129,17 @@ void EventLoop::DoToDoList() {
         std::lock_guard<std::mutex> lock(mutex_);
         functors.swap(to_do_list_);
     }
+    const auto t0 = std::chrono::steady_clock::now();
     for (auto &f : functors)
         f();
+    const auto t1 = std::chrono::steady_clock::now();
     calling_functors_ = false;
+    if (!functors.empty()) {
+        EventLoopMetrics::RecordBatch(
+            static_cast<int>(functors.size()),
+            std::chrono::duration<double>(t1 - t0).count());
+        EventLoopMetrics::RecordTodoDepth(0);
+    }
 }
 
 void EventLoop::HandleRead() {

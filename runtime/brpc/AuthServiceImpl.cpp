@@ -15,9 +15,13 @@
 #include "gamedb.pb.h"
 
 #include <chrono>
+#include <condition_variable>
+#include <deque>
 #include <fstream>
+#include <functional>
 #include <memory>
 #include <mutex>
+#include <thread>
 #include <unordered_map>
 #include <vector>
 
@@ -202,6 +206,74 @@ void ClearLoginFail(uint64_t player_id) {
     AuthLoginRateLimit::Instance().Clear(player_id);
 }
 
+// PBKDF2 一次大约几百毫秒。放在 brpc 工作线程上会把同进程的进图、改路由全部排在后面。
+class PasswordExec {
+public:
+    static PasswordExec &Instance() {
+        static PasswordExec exec;
+        return exec;
+    }
+
+    bool Post(std::function<void()> fn) {
+        if (!fn)
+            return false;
+        std::lock_guard<std::mutex> lk(mu_);
+        if (q_.size() >= 4096)
+            return false;
+        q_.push_back(std::move(fn));
+        cv_.notify_one();
+        return true;
+    }
+
+private:
+    PasswordExec() {
+        for (int i = 0; i < 2; ++i) {
+            std::thread([this] { Loop(); }).detach();
+        }
+    }
+
+    void Loop() {
+        for (;;) {
+            std::function<void()> fn;
+            {
+                std::unique_lock<std::mutex> lk(mu_);
+                cv_.wait(lk, [&] { return !q_.empty(); });
+                fn = std::move(q_.front());
+                q_.pop_front();
+            }
+            fn();
+        }
+    }
+
+    std::mutex mu_;
+    std::condition_variable cv_;
+    std::deque<std::function<void()>> q_;
+};
+
+void FinishLoginOk(uint64_t player_id, uint64_t account_id, ::auth::LoginResponse *response) {
+    std::string access;
+    std::string refresh;
+    if (AuthTokenStore::Instance().Available()) {
+        if (!AuthTokenStore::Instance().IssueTokenPair(player_id, account_id, 3600, 86400 * 7,
+                                                       &access, &refresh)) {
+            LOG_WARN << "AuthTokenStore IssueTokenPair failed; continue without tokens";
+        }
+    }
+    ClearLoginFail(player_id);
+    response->set_ok(true);
+    response->set_message("auth ok");
+    response->set_account_id(account_id);
+    response->set_player_id(player_id);
+    response->set_banned(false);
+    if (!access.empty()) {
+        response->set_access_token(access);
+        response->set_refresh_token(refresh);
+    }
+    LOG_INFO << "AuthService Login ok player_id=" << player_id
+             << " access=" << PasswordHash::RedactSecret(access)
+             << " refresh=" << PasswordHash::RedactSecret(refresh);
+}
+
 }  // namespace
 
 bool AuthGameDbReachable(int timeout_ms) {
@@ -262,11 +334,10 @@ void AuthServiceImpl::Login(::google::protobuf::RpcController *controller,
         return;
     }
 
-    // 有密码的账号必须校验；无密码旧账号仅在非正式模式允许空凭证
+    // 有密码的账号必须校验；无密码旧账号仅在非正式模式允许空凭证。
+    // 校验放到独立线程，归还 brpc 工作线程，进图和改路由不再排在密码哈希后面。
     if (lu.has_password) {
-        if (request->credential().empty() ||
-            !PasswordHash::VerifyPassword(request->credential(), lu.password_salt, lu.password_iters,
-                                          lu.password_hash)) {
+        if (request->credential().empty()) {
             response->set_ok(false);
             response->set_error_code("BAD_CREDENTIAL");
             response->set_message("invalid credential");
@@ -275,35 +346,39 @@ void AuthServiceImpl::Login(::google::protobuf::RpcController *controller,
                      << " reason=bad_credential";
             return;
         }
-    } else if (FormalModeEnabled()) {
+        const uint64_t player_id = request->player_id();
+        const uint64_t account_id = lu.account_id;
+        const std::string credential = request->credential();
+        const std::string salt = lu.password_salt;
+        const std::string hash = lu.password_hash;
+        const int iters = lu.password_iters;
+        done_guard.release();
+        auto *rsp = response;
+        auto finish = [player_id, account_id, credential, salt, hash, iters, rsp, done]() {
+            if (!PasswordHash::VerifyPassword(credential, salt, iters, hash)) {
+                rsp->set_ok(false);
+                rsp->set_error_code("BAD_CREDENTIAL");
+                rsp->set_message("invalid credential");
+                RecordLoginFail(player_id);
+                LOG_INFO << "AuthService Login fail player_id=" << player_id
+                         << " reason=bad_credential";
+            } else {
+                FinishLoginOk(player_id, account_id, rsp);
+            }
+            if (done)
+                done->Run();
+        };
+        if (!PasswordExec::Instance().Post(finish))
+            finish();
+        return;
+    }
+    if (FormalModeEnabled()) {
         response->set_ok(false);
         response->set_error_code("PASSWORD_REQUIRED");
         response->set_message("account has no password; re-register in formal mode");
         return;
     }
-
-    std::string access;
-    std::string refresh;
-    if (AuthTokenStore::Instance().Available()) {
-        if (!AuthTokenStore::Instance().IssueTokenPair(request->player_id(), lu.account_id, 3600,
-                                                       86400 * 7, &access, &refresh)) {
-            LOG_WARN << "AuthTokenStore IssueTokenPair failed; continue without tokens";
-        }
-    }
-
-    ClearLoginFail(request->player_id());
-    response->set_ok(true);
-    response->set_message("auth ok");
-    response->set_account_id(lu.account_id);
-    response->set_player_id(request->player_id());
-    response->set_banned(false);
-    if (!access.empty()) {
-        response->set_access_token(access);
-        response->set_refresh_token(refresh);
-    }
-    LOG_INFO << "AuthService Login ok player_id=" << request->player_id()
-             << " access=" << PasswordHash::RedactSecret(access)
-             << " refresh=" << PasswordHash::RedactSecret(refresh);
+    FinishLoginOk(request->player_id(), lu.account_id, response);
 }
 
 void AuthServiceImpl::Register(::google::protobuf::RpcController *controller,
@@ -320,82 +395,102 @@ void AuthServiceImpl::Register(::google::protobuf::RpcController *controller,
         return;
     }
 
-    std::string salt;
-    std::string hash;
-    if (!PasswordHash::GenerateSalt(&salt) ||
-        !PasswordHash::HashPassword(request->password(), salt, PasswordHash::kDefaultIterations,
-                                    &hash)) {
-        response->set_ok(false);
-        response->set_error_code("HASH_FAILED");
-        response->set_message("password hash failed");
-        return;
-    }
-
-    brpc::Channel *ch = CachedGameDbChannel();
-    if (!ch) {
-        if (FormalModeEnabled()) {
-            response->set_ok(false);
-            response->set_error_code("GAMEDB_REQUIRED");
-            response->set_message("formal mode: register requires GameDB");
-            return;
-        }
-#ifdef WEBSERVER_ENABLE_MYSQL
-        uint64_t pid = 0;
-        std::string err;
-        if (!PlayerAccountStore::Instance().RegisterWithPassword(
-                request->device_id(), request->display_name(), hash, salt,
-                PasswordHash::kDefaultIterations, &pid, &err)) {
-            response->set_ok(false);
-            response->set_error_code("REGISTER_FAILED");
-            response->set_message(err);
-            return;
-        }
-        response->set_ok(true);
-        response->set_message("ok");
-        response->set_player_id(pid);
-        response->set_account_id(pid);
-        LOG_WARN << "AuthService Register DEV local MySQL player_id=" << pid;
-        return;
-#else
-        response->set_ok(false);
-        response->set_error_code("MYSQL_DISABLED");
-        response->set_message("mysql not enabled");
-        return;
-#endif
-    }
-
-    gdb::GameDbService_Stub stub(ch);
-    gdb::RegisterAccountReq req;
-    req.set_device_id(request->device_id());
-    req.set_display_name(request->display_name());
-    req.set_password_hash(hash);
-    req.set_password_salt(salt);
-    req.set_password_iters(PasswordHash::kDefaultIterations);
+    const std::string device_id = request->device_id();
+    const std::string display_name = request->display_name();
+    const std::string password = request->password();
     std::string idem = request->idempotency_key();
-    if (idem.empty()) {
-        std::string fp;
-        if (PasswordHash::Sha256Hex(request->device_id() + "|" + request->password(), &fp))
-            idem = "reg:" + request->device_id() + ":" + fp.substr(0, 16);
-        else
-            idem = "reg:" + request->device_id();
-    }
-    req.set_idempotency_key(idem);
-    gdb::RegisterAccountRsp rsp;
-    brpc::Controller cntl;
-    cntl.set_timeout_ms(2000);
-    stub.RegisterAccount(&cntl, &req, &rsp, nullptr);
-    if (cntl.Failed() || !rsp.ok()) {
-        response->set_ok(false);
-        response->set_error_code(rsp.error_code().empty() ? "REGISTER_FAILED" : rsp.error_code());
-        response->set_message(cntl.Failed() ? cntl.ErrorText() : rsp.message());
-        return;
-    }
-    response->set_ok(true);
-    response->set_message("ok");
-    response->set_player_id(rsp.player_id());
-    response->set_account_id(rsp.account_id());
-    LOG_INFO << "AuthService Register ok player_id=" << rsp.player_id()
-             << " device=" << request->device_id();
+    done_guard.release();
+    auto *rsp = response;
+    auto finish = [device_id, display_name, password, idem, rsp, done]() mutable {
+        std::string salt;
+        std::string hash;
+        if (!PasswordHash::GenerateSalt(&salt) ||
+            !PasswordHash::HashPassword(password, salt, PasswordHash::kDefaultIterations, &hash)) {
+            rsp->set_ok(false);
+            rsp->set_error_code("HASH_FAILED");
+            rsp->set_message("password hash failed");
+            if (done)
+                done->Run();
+            return;
+        }
+        brpc::Channel *ch = CachedGameDbChannel();
+        if (!ch) {
+            if (FormalModeEnabled()) {
+                rsp->set_ok(false);
+                rsp->set_error_code("GAMEDB_REQUIRED");
+                rsp->set_message("formal mode: register requires GameDB");
+                if (done)
+                    done->Run();
+                return;
+            }
+#ifdef WEBSERVER_ENABLE_MYSQL
+            uint64_t pid = 0;
+            std::string err;
+            if (!PlayerAccountStore::Instance().RegisterWithPassword(
+                    device_id, display_name, hash, salt, PasswordHash::kDefaultIterations, &pid,
+                    &err)) {
+                rsp->set_ok(false);
+                rsp->set_error_code("REGISTER_FAILED");
+                rsp->set_message(err);
+                if (done)
+                    done->Run();
+                return;
+            }
+            rsp->set_ok(true);
+            rsp->set_message("ok");
+            rsp->set_player_id(pid);
+            rsp->set_account_id(pid);
+            LOG_WARN << "AuthService Register DEV local MySQL player_id=" << pid;
+            if (done)
+                done->Run();
+            return;
+#else
+            rsp->set_ok(false);
+            rsp->set_error_code("MYSQL_DISABLED");
+            rsp->set_message("mysql not enabled");
+            if (done)
+                done->Run();
+            return;
+#endif
+        }
+        gdb::GameDbService_Stub stub(ch);
+        gdb::RegisterAccountReq req;
+        req.set_device_id(device_id);
+        req.set_display_name(display_name);
+        req.set_password_hash(hash);
+        req.set_password_salt(salt);
+        req.set_password_iters(PasswordHash::kDefaultIterations);
+        if (idem.empty()) {
+            std::string fp;
+            if (PasswordHash::Sha256Hex(device_id + "|" + password, &fp))
+                idem = "reg:" + device_id + ":" + fp.substr(0, 16);
+            else
+                idem = "reg:" + device_id;
+        }
+        req.set_idempotency_key(idem);
+        gdb::RegisterAccountRsp grsp;
+        brpc::Controller cntl;
+        cntl.set_timeout_ms(2000);
+        stub.RegisterAccount(&cntl, &req, &grsp, nullptr);
+        if (cntl.Failed() || !grsp.ok()) {
+            rsp->set_ok(false);
+            rsp->set_error_code(grsp.error_code().empty() ? "REGISTER_FAILED" : grsp.error_code());
+            rsp->set_message(cntl.Failed() ? cntl.ErrorText() : grsp.message());
+            if (done)
+                done->Run();
+            return;
+        }
+        rsp->set_ok(true);
+        rsp->set_message("ok");
+        rsp->set_player_id(grsp.player_id());
+        rsp->set_account_id(grsp.account_id());
+        LOG_INFO << "AuthService Register ok player_id=" << grsp.player_id()
+                 << " device=" << device_id;
+        if (done)
+            done->Run();
+    };
+    if (!PasswordExec::Instance().Post(finish))
+        finish();
 }
 
 void AuthServiceImpl::VerifyToken(::google::protobuf::RpcController *controller,

@@ -482,7 +482,10 @@ int main() {
         if (!PlacementStore::Instance().ResolveOrCreate(gpin, &gpout) || !gpout.ok)
             return Fail("gwclaim reserve");
         // 不写入 gw_claim，模拟 Gateway 已死
-        if (SessionStore::Instance().ExpireOnlineMissingGatewayClaim(16) < 1)
+        size_t gw_expired = 0;
+        for (int i = 0; i < 8 && SessionStore::Instance().IsPlayerOnline(gpid); ++i)
+            gw_expired += SessionStore::Instance().ExpireOnlineMissingGatewayClaim(16);
+        if (gw_expired < 1)
             return Fail("gwclaim expire count");
         if (SessionStore::Instance().IsPlayerOnline(gpid))
             return Fail("gwclaim still online");

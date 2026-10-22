@@ -11,9 +11,28 @@
 
 #include <brpc/controller.h>
 
+#include <chrono>
+#include <mutex>
 #include <vector>
 
 namespace {
+
+void RefreshHealthyLogicOwnersHot() {
+    using clock = std::chrono::steady_clock;
+    static std::mutex mu;
+    static clock::time_point last{};
+    const auto now = clock::now();
+    {
+        std::lock_guard<std::mutex> lk(mu);
+        if (last.time_since_epoch().count() != 0 && now - last < std::chrono::seconds(1))
+            return;
+    }
+    const HealthyLogicRefreshResult r = RefreshHealthyLogicOwners();
+    if (r.status != HealthyLogicRefreshStatus::kApplied)
+        return;
+    std::lock_guard<std::mutex> lk(mu);
+    last = now;
+}
 
 void FillPlacementPb(const PlacementRecord &r, sess::PlacementRecord *pb) {
     if (!pb)
@@ -85,7 +104,7 @@ void SessionServiceImpl::AcquireSession(::google::protobuf::RpcController *contr
     in.gateway_instance_id = request->gateway_instance_id();
     in.preferred_gamelogic_instance_id = request->preferred_gamelogic_instance_id();
     in.operation_id = request->operation_id();
-    RefreshHealthyLogicOwners();
+    RefreshHealthyLogicOwnersHot();
     AcquireSessionResult out;
     SessionStore::Instance().AcquireSession(in, &out);
     FillAcquirePb(out, response);
@@ -339,7 +358,7 @@ void SessionServiceImpl::ResolveOrCreateMap(::google::protobuf::RpcController *c
     (void)controller;
     brpc::ClosureGuard done_guard(done);
     response->Clear();
-    RefreshHealthyLogicOwners();
+    RefreshHealthyLogicOwnersHot();
     ResolveOrCreateInput in;
     in.realm_id = request->realm_id();
     in.map_template_id = request->map_template_id();

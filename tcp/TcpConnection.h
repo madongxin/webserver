@@ -45,6 +45,18 @@ public:
 
     Buffer *read_buf();
     Buffer *send_buf();
+    /** 拷贝尚未写出的字节。只在所属 EventLoop 上调用。 */
+    std::string CopySendBuf();
+    /** 用 bytes 替换尚未写出的字节。只在所属 EventLoop 上调用。 */
+    void ReplaceSendBuf(const std::string &bytes);
+    /**
+     * 已经写进内核、但应用缓冲里还剩尾巴的那一帧必须先写完。
+     * 这个长度之后的字节才是完整帧，可以丢掉或插到心跳前面。
+     * 只在所属 EventLoop 上调用。
+     */
+    size_t send_partial_prefix() const;
+    /** 保留未写完的帧头，用 queued 换掉后面的完整帧。只在所属 EventLoop 上调用。 */
+    void ReplaceQueuedAfterPrefix(const std::string &queued);
     /** 应用层帧流缓冲（如 ProtoFraming），随连接生命周期清理 */
     std::string &proto_stream();
 
@@ -70,8 +82,15 @@ public:
     bool TrySendUrgent(const std::string &msg);
     bool TrySendUrgent(const char *msg, int len);
     /** 心跳应答：用满发送缓冲仍不关连接。缓冲已满才返回 false。 */
-    bool TrySendControl(const std::string &msg);
-    bool TrySendControl(const char *msg, int len);
+    bool TrySendControl(const std::string &msg, bool over_cap = false);
+    bool TrySendControl(const char *msg, int len, bool over_cap = false);
+    /**
+     * 每个连接最多挂一帧最新移动。调用方先丢掉缓冲里的旧移动帧。
+     * 内核里还没送出的字节超过 8KB 时，这一帧只留在应用缓冲末尾，不写进内核，
+     * 避免回包排在旧坐标后面。下一轮会先丢掉这一帧再换成更新的位置。
+     * 非移动数据已经超过 64KB 时返回 false，调用方 200ms 后再试。不关连接。
+     */
+    bool TrySendLatestMove(const std::string &msg);
     void SendFile(int filefd, int size);
 
     /** epoll 读就绪：读 socket -> 调 on_message_ */
@@ -83,6 +102,10 @@ public:
     ConnectionState state() const;
     EventLoop *loop() const;
     int fd() const;
+    /** 内核里还没交给网卡的字节。只在所属 EventLoop 上调用。 */
+    int unsent_bytes() const;
+    /** 最新移动帧正压在应用缓冲末尾，还没 write。只在所属 EventLoop 上调用。 */
+    bool holding_latest_move() const { return send_hold_move_; }
     uint64_t id() const;
     HttpContext *context() const;
     bool IsWriting() const;
@@ -105,6 +128,14 @@ private:
     size_t max_send_buf_bytes_;
     bool force_closed_for_backpressure_;
     bool in_close_;
+    /** send_buf_ 开头有多少字节属于已经部分写进内核的那一帧。 */
+    size_t send_partial_prefix_ = 0;
+    /**
+     * 应用缓冲末尾有一帧最新移动。内核未发送字节还多时先不写它。
+     * send_move_hold_off_ 是这帧在缓冲里的起点；前面的字节仍要写出（半帧或回包）。
+     */
+    bool send_hold_move_ = false;
+    size_t send_move_hold_off_ = 0;
 
     std::function<void(const std::shared_ptr<TcpConnection> &)> on_close_;
     std::function<void(const std::shared_ptr<TcpConnection> &)> on_message_;
@@ -112,13 +143,21 @@ private:
 
     void ReadNonBlocking();
     void WriteNonBlocking();
+    /** 还有必须写出的字节才注册 EPOLLOUT。只剩压住的移动帧则关掉，避免水平触发空转。 */
+    void ArmWriteIfNeeded();
     /** 关闭路径专用：只写 socket，失败不回调 HandleClose。 */
     void FlushSendBufBestEffort();
     void CloseForBackpressure(const char *reason);
+    void ConsumeSendPrefix(int n);
+    /** write 跨过帧边界时，把缓冲开头仍未写完的那一帧记成半帧前缀。 */
+    void NoteWriteConsumed(const char *data, size_t data_len, size_t written);
+    /** 内核里还没交给网卡的字节。拿不到时返回 0，不用未确认字节充数。 */
+    int UnsentBytes() const;
     /** soft_drop=true：队列将满时丢弃本帧并返回 false；false：关连接（背压）。
      *  urgent：软丢水位约 90%（ENTER/LEAVE）。control：心跳，水位 100%。 */
     bool SendInternal(const char *msg, int len, bool soft_drop, bool urgent = false,
-                      bool control = false);
+                      bool control = false, bool ignore_unsent_cap = false,
+                      bool control_over_cap = false);
 
     std::unique_ptr<HttpContext> context_;
     TimeStamp timestamp_;

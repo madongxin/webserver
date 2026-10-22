@@ -122,7 +122,11 @@ int main() {
            "nan rejected");
     Expect(rt.Move(1, 2, 99, 0, 2, 0, 3, 5000, &conf, &pushes, &err) == MapMoveReject::OutOfBounds,
            "oob rejected");
-    // 不可走：另造带洞图
+    // 原地把 Y 掉出盒子：接受水平位置，高度留在站立处，不落到盒底。
+    Expect(rt.Move(1, 2, 12, -10, 2, 0, 4, 6000, &conf, &pushes, &err) == MapMoveReject::Ok,
+           "fall through kept standing");
+    Expect(conf.y > -0.5f && conf.y < 0.5f, "fall y stays at stand");
+    // 不可走：另造带洞图。速度以内的请求按客户端坐标接受，不能滑回格子边把人钉住。
     const std::string hole = R"JSON({
       "schema_version": 1, "map_template_id": 9102, "scene_name": "Hole", "data_version": 1,
       "bounds_min": [0,0,0], "bounds_max": [10,2,10], "aoi_cell_size": 5, "nav_sample_step": 1,
@@ -133,11 +137,10 @@ int main() {
     Expect(MapStaticData::LoadFromJson(hole, &hd, &err), "hole map");
     rt.ClearForTest();
     Expect(rt.Enter(3, hd, Ent(8, 1, 1), &self, &snap, &pushes, &err), "enter hole");
-    // row 5 (z=5.5) 整行不可走：沿方向收到洞边，接受并回权威坐标，不整包拒绝。
     Expect(rt.Move(3, 8, 0.5f, 0, 5.5f, 0, 1, 2000, &conf, &pushes, &err) == MapMoveReject::Ok,
-           "unwalkable slid ok");
-    Expect(hd->IsWalkable(conf.x, conf.z), "slid point walkable");
-    Expect(conf.z > 1.f && conf.z < 5.f, "stopped before hole row");
+           "within speed crosses unwalkable");
+    Expect(std::fabs(conf.x - 0.5f) < 0.05f && std::fabs(conf.z - 5.5f) < 0.05f,
+           "accepted requested point");
     rt.ClearForTest();
     Expect(rt.Enter(3, hd, Ent(8, 1, 1), &self, &snap, &pushes, &err), "reenter hole");
     Expect(rt.Move(3, 8, 2, 0, 1, 0, 1, 2000, &conf, &pushes, &err) == MapMoveReject::Ok,
@@ -185,6 +188,39 @@ int main() {
             sees60 = true;
     }
     Expect(!sees60 && snap1.size() == 50, "p1 subscribes to 50 nearer players");
+
+    // 全量视野不读 visible_targets。人还在这张图上、在线、32 米内，即使站着不动也要进列表。
+    rt.ClearForTest();
+    rt.SetViewRadiusCells(1);
+    pushes = {};
+    Expect(rt.Enter(21, data, Ent(819, 1, 1), &self, &snap, &pushes, &err), "enter 819");
+    Expect(rt.Enter(21, data, Ent(820, 8, 1), &self, &snap, &pushes, &err), "enter standing neighbor");
+    MapRuntime::FullView full;
+    Expect(rt.CollectFullView(819, &full) && full.ready, "full view ready");
+    Expect(full.map_instance_id == 21, "full view instance");
+    Expect(full.interest.size() == 1 && full.interest[0].player_id == 820, "standing neighbor in full view");
+    bool self_in = false;
+    for (const auto &e : full.interest) {
+        if (e.player_id == 819)
+            self_in = true;
+    }
+    Expect(!self_in, "self not in aoi list");
+    Expect(rt.Disconnect(819, &pushes), "disconnect 819");
+    MapRuntime::FullView down;
+    Expect(rt.CollectFullView(819, &down), "collect while disconnected");
+    Expect(!down.ready && std::string(down.step) == "viewer_not_online",
+           "disconnected viewer is not an empty view");
+    Expect(down.interest.empty(), "not-ready view has no entities");
+
+    // 格子半径为 0 时，AOI 推送看不见邻格，但 32 米内仍要进全量。
+    rt.ClearForTest();
+    pushes = {};
+    Expect(rt.Enter(22, data, Ent(1, 1, 1), &self, &snap, &pushes, &err, 0), "enter radius 0");
+    Expect(rt.Enter(22, data, Ent(2, 12, 1), &self, &snap, &pushes, &err, 0), "enter other cell");
+    Expect(snap.empty(), "radius 0 enter snap stays empty");
+    MapRuntime::FullView near;
+    Expect(rt.CollectFullView(1, &near) && near.ready, "32m full view ready");
+    Expect(near.interest.size() == 1 && near.interest[0].player_id == 2, "32m neighbor included");
 
     if (fails) {
         std::printf("map_runtime_aoi_test FAIL count=%d\n", fails);

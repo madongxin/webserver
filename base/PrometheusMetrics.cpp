@@ -1,6 +1,7 @@
 #include "PrometheusMetrics.h"
 
 #include "OpsMetrics.h"
+#include "PacketTiming.h"
 #include "ProcessMetricsSnapshot.h"
 
 #if defined(WEBSERVER_ENABLE_REDIS) && defined(WEBSERVER_ENABLE_GAME_PROTOBUF)
@@ -99,6 +100,7 @@ std::string BuildPrometheusMetricsText() {
     }
 
     os << OpsMetrics::Instance().PrometheusText();
+    os << PacketTimingPrometheus();
 #if defined(WEBSERVER_ENABLE_REDIS) && defined(WEBSERVER_ENABLE_GAME_PROTOBUF)
     {
         std::string owner_only;

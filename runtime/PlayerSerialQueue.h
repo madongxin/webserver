@@ -95,6 +95,9 @@ public:
 
     size_t pending_global() const { return pending_global_.load(std::memory_order_relaxed); }
 
+    /** 该 key 所在分片主队列长度。Move 积压时用来立刻拒绝，而不是排队等到客户端超时。 */
+    size_t QueuedOnShard(uint64_t key) const;
+
     /** 测试用：等待所有分片队列变空且无在飞任务 */
     void DrainForTest();
 

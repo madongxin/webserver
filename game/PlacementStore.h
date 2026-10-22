@@ -242,6 +242,7 @@ private:
     std::string IdleKey() const;
     std::string QueueKey(uint32_t realm, uint64_t tpl, uint32_t line_no) const;
     void FireLineStatus(uint32_t realm_id, uint64_t map_template_id);
+    bool HasLineStatusHook() const;
 
     bool available_ = false;
     int default_lease_sec_ = 30;

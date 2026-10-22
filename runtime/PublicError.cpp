@@ -1,5 +1,6 @@
 #include "PublicError.h"
 
+#include "Logging.h"
 #include "OpsMetrics.h"
 #include "ProtoFraming.h"
 
@@ -113,8 +114,15 @@ std::string GuessFromMessage(const std::string &msg) {
         return kErrInvalidArgument;
     if (ContainsFold(msg, "unauthenticated") || ContainsFold(msg, "hello required"))
         return kErrUnauthenticated;
-    if (ContainsFold(msg, "session not found"))
+    if (ContainsFold(msg, "session not found") || ContainsFold(msg, "not logged in") ||
+        ContainsFold(msg, "session expired"))
         return kErrSessionExpired;
+    // 旧会话已登出、人还在原图上。不能收成 ERR_INTERNAL，否则客户端只会反复拉快照。
+    if (ContainsFold(msg, "not online") || ContainsFold(msg, "disconnected") ||
+        ContainsFold(msg, "session invalid") || ContainsFold(msg, "invalid session token"))
+        return kErrFenceStale;
+    if (ContainsFold(msg, "not on map"))
+        return kErrNotOnMap;
     if (ContainsFold(msg, "map line not found"))
         return kErrMapNoLine;
     if (ContainsFold(msg, "map instance not found"))
@@ -257,6 +265,10 @@ void PromotePublicError(game::GameResponse *rsp, uint64_t conn_id) {
             code = kErrInternal;
     }
     code = NormalizePublicErrorCode(code);
+    if (code == kErrInternal) {
+        LOG_WARN << "public ERR_INTERNAL seq=" << rsp->seq() << " orig=" << orig_code
+                 << " inner=" << inner_code << " msg=" << SanitizePublicMessage(rsp->message());
+    }
     rsp->set_error_code(code);
     rsp->set_retryable(ErrorCodeRetryable(code));
     if (rsp->message().empty() && !inner_msg.empty())

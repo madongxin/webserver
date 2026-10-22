@@ -21,6 +21,7 @@
 #include "HealthProbe.h"
 #include "InProcessTransport.h"
 #include "Logging.h"
+#include "PacketTiming.h"
 #include "LoginAdmission.h"
 #include "MapCatalog.h"
 #include "OpsMetrics.h"
@@ -52,6 +53,7 @@
 
 #include <algorithm>
 #include <atomic>
+#include <chrono>
 #include <cstdlib>
 #include <functional>
 #include <memory>
@@ -72,6 +74,181 @@ struct ConnBind {
 
 std::mutex g_bind_mu;
 std::unordered_map<uint64_t, ConnBind> g_conn_bind;  // connection_id -> bind
+
+// 一条连接上的移动推送只留每个实体的最新位置，并且最多每 200ms 写出一帧。
+// 否则 100 人挤在同一视野时，每次移动都会往这条连接的事件循环里排一个发送回调，
+// 心跳和重连回包排在这些回调后面，要等整段队列跑完才能写到 socket。
+struct MoveCoalesceSlot {
+    std::mutex mu;
+    uint64_t map_instance_id = 0;
+    std::unordered_map<uint64_t, game::AoiEvent> by_entity;
+    bool scheduled = false;
+    int64_t last_flush_ms = 0;
+};
+
+std::mutex g_move_slots_mu;
+std::unordered_map<uint64_t, std::shared_ptr<MoveCoalesceSlot>> g_move_slots;
+
+int64_t SteadyMs() {
+    return std::chrono::duration_cast<std::chrono::milliseconds>(
+               std::chrono::steady_clock::now().time_since_epoch())
+        .count();
+}
+
+bool IsMoveOnlyAoi(const game::GameResponse &gr) {
+    if (!gr.has_aoi_delta() || gr.aoi_delta().events_size() <= 0)
+        return false;
+    for (const auto &ev : gr.aoi_delta().events()) {
+        if (ev.op() != 2)
+            return false;
+    }
+    return true;
+}
+
+void EraseMoveSlot(uint64_t conn_id) {
+    std::lock_guard<std::mutex> lk(g_move_slots_mu);
+    g_move_slots.erase(conn_id);
+}
+
+void FlushMoveSlot(const std::shared_ptr<MoveCoalesceSlot> &slot,
+                   const std::weak_ptr<TcpConnection> &weak, uint64_t conn_id) {
+    auto live = weak.lock();
+    if (!slot || !live || live->state() != TcpConnection::Connected || !live->loop()) {
+        if (slot) {
+            std::lock_guard<std::mutex> lk(slot->mu);
+            slot->by_entity.clear();
+            slot->scheduled = false;
+        }
+        EraseMoveSlot(conn_id);
+        return;
+    }
+    constexpr int64_t kIntervalMs = 200;
+    int64_t wait_ms = 0;
+    game::AoiDelta delta;
+    {
+        std::lock_guard<std::mutex> lk(slot->mu);
+        const int64_t now = SteadyMs();
+        if (slot->last_flush_ms != 0 && now - slot->last_flush_ms < kIntervalMs &&
+            !slot->by_entity.empty()) {
+            wait_ms = kIntervalMs - (now - slot->last_flush_ms);
+        } else {
+            delta.set_map_instance_id(slot->map_instance_id);
+            for (auto &kv : slot->by_entity)
+                *delta.add_events() = std::move(kv.second);
+            slot->by_entity.clear();
+            slot->last_flush_ms = now;
+            slot->scheduled = false;
+        }
+    }
+    if (wait_ms > 0) {
+        live->loop()->RunAfter(static_cast<double>(wait_ms) / 1000.0,
+                               [slot, weak, conn_id]() { FlushMoveSlot(slot, weak, conn_id); });
+        return;
+    }
+    if (delta.events_size() == 0)
+        return;
+    const int event_n = delta.events_size();
+    auto restore = [&](game::AoiDelta pending) {
+        std::lock_guard<std::mutex> lk(slot->mu);
+        if (pending.map_instance_id() != 0)
+            slot->map_instance_id = pending.map_instance_id();
+        for (auto &ev : *pending.mutable_events()) {
+            const uint64_t id = ev.entity().player_id();
+            if (id == 0)
+                continue;
+            auto &kept = slot->by_entity[id];
+            if (kept.has_entity() && ev.entity().state_seq() < kept.entity().state_seq())
+                continue;
+            kept = std::move(ev);
+        }
+        if (!slot->scheduled && !slot->by_entity.empty())
+            slot->scheduled = true;
+    };
+    // 先丢掉缓冲里的旧移动帧，再放这一帧最新位置。
+    // 内核里已经有没送出的字节时，TrySendLatestMove 不会再把这一帧写进去。
+    // 否则回包排在旧坐标后面，客户端要读完才走下一步，人会越走越慢直到停下。
+    DropQueuedAoiMoveFrames(live.get(), false);
+    game::GameResponse notify;
+    notify.set_ok(true);
+    notify.set_message("aoi");
+    *notify.mutable_aoi_delta() = delta;
+    std::string body;
+    std::string frame;
+    if (!notify.SerializeToString(&body) || !gameproto::EncodeFrame(body, &frame)) {
+        restore(std::move(delta));
+        NoteMoveFlush(false, event_n);
+        live->loop()->RunAfter(0.2, [slot, weak, conn_id]() { FlushMoveSlot(slot, weak, conn_id); });
+        return;
+    }
+    const bool sent = live->TrySendLatestMove(frame);
+    const bool held = sent && live->holding_latest_move();
+    if (held)
+        NoteMoveHold(event_n);
+    else
+        NoteMoveFlush(sent, event_n);
+    if (live->send_buf())
+        NoteSendPending(live->send_buf()->readablebytes(), live->unsent_bytes());
+    if (!sent) {
+        restore(std::move(delta));
+        NoteMovePendingEntities(event_n);
+        live->loop()->RunAfter(0.2, [slot, weak, conn_id]() { FlushMoveSlot(slot, weak, conn_id); });
+        return;
+    }
+    NoteMovePendingEntities(0);
+    OpsMetrics::Instance().AddGatewayTxBytes(frame.size());
+    OpsMetrics::Instance().AddGatewayTxFrames(1);
+}
+
+// 纯移动帧被合并后返回 true。ENTER/LEAVE 或解析不了的帧返回 false，调用方照旧立刻发送。
+bool OfferCoalescedMove(const std::shared_ptr<TcpConnection> &c, const std::string &frame) {
+    if (!c || !c->loop() || frame.empty())
+        return false;
+    std::string buf = frame;
+    std::string payload;
+    if (gameproto::DecodeOneFrame(&buf, &payload) != gameproto::FrameDecodeResult::Complete)
+        return false;
+    game::GameResponse gr;
+    if (!gr.ParseFromString(payload) || !IsMoveOnlyAoi(gr))
+        return false;
+    std::shared_ptr<MoveCoalesceSlot> slot;
+    {
+        std::lock_guard<std::mutex> lk(g_move_slots_mu);
+        auto &found = g_move_slots[c->id()];
+        if (!found)
+            found = std::make_shared<MoveCoalesceSlot>();
+        slot = found;
+    }
+    bool schedule = false;
+    {
+        std::lock_guard<std::mutex> lk(slot->mu);
+        if (gr.aoi_delta().map_instance_id() != 0)
+            slot->map_instance_id = gr.aoi_delta().map_instance_id();
+        for (const auto &ev : gr.aoi_delta().events()) {
+            const uint64_t id = ev.entity().player_id();
+            if (id == 0)
+                continue;
+            auto &kept = slot->by_entity[id];
+            // 序号不增加的移动客户端会整条丢掉。只保留更大的 state_seq。
+            if (kept.has_entity() && ev.entity().state_seq() < kept.entity().state_seq())
+                continue;
+            kept = ev;
+        }
+        if (slot->by_entity.empty())
+            return true;
+        if (!slot->scheduled) {
+            slot->scheduled = true;
+            schedule = true;
+        }
+        NoteMovePendingEntities(static_cast<int>(slot->by_entity.size()));
+    }
+    NoteMoveOffer(schedule);
+    if (!schedule)
+        return true;
+    const uint64_t conn_id = c->id();
+    std::weak_ptr<TcpConnection> weak = c;
+    c->loop()->QueueOneFunc([slot, weak, conn_id]() { FlushMoveSlot(slot, weak, conn_id); });
+    return true;
+}
 std::unordered_set<uint64_t> g_authoritative_logout;  // conn_id：主动 Logout 成功，断线不得 MarkDisconnected
 std::string g_gateway_id = "gw-0";
 std::atomic<bool> g_tcp_listening{false};
@@ -113,8 +290,18 @@ void RememberBind(uint64_t conn_id, uint64_t player_id, const std::string &token
                     auto live = weak_conn.lock();
                     if (!live || live->state() != TcpConnection::Connected)
                         return;
-                    const bool ok =
-                        urgent ? live->TrySendUrgent(frame) : live->TrySend(frame);
+                    if (urgent)
+                        MakeRoomForControl(live.get());
+                    bool ok = urgent ? live->TrySendUrgent(frame) : live->TrySend(frame);
+                    // ENTER/LEAVE 发不出去时丢掉排队的移动包再试一次。不改这一帧的内容。
+                    if (!ok && urgent) {
+                        const size_t dropped = DropQueuedAoiMoveFrames(live.get());
+                        if (dropped != 0 && live->TrySendUrgent(frame)) {
+                            LOG_INFO << "Gateway dropped move frames for aoi conn#" << live->id()
+                                     << " moves=" << dropped << " bytes=" << frame.size();
+                            ok = true;
+                        }
+                    }
                     if (!ok)
                         return;
                     OpsMetrics::Instance().AddGatewayTxBytes(frame.size());
@@ -126,7 +313,15 @@ void RememberBind(uint64_t conn_id, uint64_t player_id, const std::string &token
                     c->loop()->QueueOneFunc(std::move(do_send));
             };
         };
-        gb.send_frame = make_try_send(false);
+        auto send_move_now = make_try_send(false);
+        gb.send_frame = [weak_conn, send_move_now](const std::string &frame) {
+            auto c = weak_conn.lock();
+            if (!c || !c->loop())
+                return;
+            if (OfferCoalescedMove(c, frame))
+                return;
+            send_move_now(frame);
+        };
         gb.send_frame_urgent = make_try_send(true);
         gb.close_conn = [weak_conn]() {
             auto c = weak_conn.lock();
@@ -580,6 +775,60 @@ void GameTcpGateway::OnMessage(const std::shared_ptr<TcpConnection> &conn) {
             return;
         }
 
+        const char *pkt_kind = "other";
+        if (peek.has_heartbeat())
+            pkt_kind = "heartbeat";
+        else if (peek.has_reconnect())
+            pkt_kind = "reconnect";
+        else if (peek.has_login())
+            pkt_kind = "login";
+        else if (peek.has_register_())
+            pkt_kind = "register";
+        else if (peek.has_enter_map())
+            pkt_kind = "enter_map";
+        else if (peek.has_query_map_lines())
+            pkt_kind = "query_lines";
+        else if (peek.has_move())
+            pkt_kind = "move";
+        else if (peek.has_world_snapshot())
+            pkt_kind = "snapshot";
+        else if (peek.has_friend_list())
+            pkt_kind = "friend";
+        else if (peek.has_push_ack())
+            pkt_kind = "push_ack";
+        struct HandlerSpan {
+            const char *kind = "other";
+            uint64_t conn_id = 0;
+            uint64_t player = 0;
+            uint64_t seq = 0;
+            TcpConnection *live = nullptr;
+            bool sample = false;
+            std::chrono::steady_clock::time_point t0 = std::chrono::steady_clock::now();
+            ~HandlerSpan() {
+                if (!live)
+                    return;
+                const auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(
+                                    std::chrono::steady_clock::now() - t0)
+                                    .count();
+                int app = 0;
+                int unsent = 0;
+                if (ms >= 50 || sample) {
+                    app = live->send_buf() ? live->send_buf()->readablebytes() : 0;
+                    unsent = live->unsent_bytes();
+                    NoteSendPending(app, unsent);
+                }
+                NotePktStage(kind, "handler", ms, conn_id, player, seq, app, unsent);
+            }
+        } handler_span;
+        handler_span.kind = pkt_kind;
+        handler_span.conn_id = conn->id();
+        handler_span.player = bound ? sticky.player_id : 0;
+        handler_span.seq = peek.seq();
+        handler_span.live = conn.get();
+        handler_span.sample = peek.has_heartbeat() || peek.has_reconnect() || peek.has_login() ||
+                              peek.has_enter_map() || peek.has_query_map_lines() ||
+                              peek.has_world_snapshot() || peek.has_friend_list();
+
         if (peek.has_client_hello()) {
             game::GameResponse outer;
             outer.set_seq(peek.seq());
@@ -658,7 +907,8 @@ void GameTcpGateway::OnMessage(const std::shared_ptr<TcpConnection> &conn) {
             std::string body, out;
             // 心跳在本连接 EventLoop 同步应答：TrySendUrgent，绝不 Hard Send/踢连接。
             if (outer.SerializeToString(&body) && gameproto::EncodeFrame(body, &out)) {
-                if (conn->TrySendControl(out)) {
+                MakeRoomForControl(conn.get());
+                if (conn->TrySendControl(out, true)) {
                     OpsMetrics::Instance().AddGatewayTxBytes(out.size());
                     OpsMetrics::Instance().AddGatewayTxFrames(1);
                     OpsMetrics::Instance().IncHeartbeatOk();

@@ -392,13 +392,39 @@ return {'1', 'OK'}
 
 const char kLuaMarkDisconnected[] = R"LUA(
 local key = KEYS[1]
+local online = KEYS[2]
+local grace_z = KEYS[3]
+local pres = KEYS[4]
 local token = ARGV[1]
 local gen = ARGV[2]
 local grace = tonumber(ARGV[3])
 local now = tonumber(ARGV[4])
 local ttl = tonumber(ARGV[5])
+local player = ARGV[6]
+local prefix = ARGV[7]
+local function park_occ()
+  if pres == nil or pres == '' or player == nil or player == '' then return end
+  local rawp = redis.call('HGETALL', pres)
+  if #rawp == 0 then return end
+  local pf = {}
+  for i = 1, #rawp, 2 do pf[rawp[i]] = rawp[i + 1] end
+  if (pf['state'] or '') == 'parked' then return end
+  local inst = pf['mapInstanceId'] or '0'
+  if inst ~= '0' and inst ~= '' then
+    redis.call('SREM', prefix .. 'map:occ:' .. inst, player)
+    local n = tonumber(redis.call('SCARD', prefix .. 'map:occ:' .. inst)) or 0
+    if n == 0 then
+      redis.call('HSET', prefix .. 'map:inst:' .. inst, 'lastOccupiedAt', tostring(now))
+      redis.call('ZADD', prefix .. 'map:idle', now, inst)
+    end
+  end
+  redis.call('HSET', pres, 'state', 'parked', 'parkedAt', tostring(now))
+end
 local raw = redis.call('HGETALL', key)
-if #raw == 0 then return {'0', 'NOT_FOUND'} end
+if #raw == 0 then
+  if online ~= nil and online ~= '' and player ~= '' then redis.call('SREM', online, player) end
+  return {'0', 'NOT_FOUND'}
+end
 local f = {}
 for i = 1, #raw, 2 do f[raw[i]] = raw[i + 1] end
 if (f['token'] or '') ~= token or (f['generation'] or '') ~= gen then
@@ -406,14 +432,19 @@ if (f['token'] or '') ~= token or (f['generation'] or '') ~= gen then
 end
 local state = f['state'] or 'ONLINE'
 if state ~= 'ONLINE' then
+  if online ~= nil and online ~= '' and player ~= '' then redis.call('SREM', online, player) end
   return {'1', 'NOOP'}
 end
+local deadline = now + grace
 redis.call('HMSET', key,
   'state', 'DISCONNECTED',
-  'disconnectDeadline', tostring(now + grace),
+  'disconnectDeadline', tostring(deadline),
   'connectionId', '0')
 redis.call('EXPIRE', key, ttl)
-return {'1', 'OK', tostring(now + grace)}
+if online ~= nil and online ~= '' and player ~= '' then redis.call('SREM', online, player) end
+if grace_z ~= nil and grace_z ~= '' and player ~= '' then redis.call('ZADD', grace_z, deadline, player) end
+park_occ()
+return {'1', 'OK', tostring(deadline)}
 )LUA";
 
 const char kLuaKick[] = R"LUA(
@@ -1556,30 +1587,22 @@ bool SessionStore::MarkDisconnected(uint64_t player_id, const std::string &token
     auto lease = RedisPool::Instance().Acquire();
     if (!lease)
         return false;
-    std::vector<std::string> keys{SessionKey(player_id)};
+    char pres_key[96];
+    std::snprintf(pres_key, sizeof(pres_key), "%smap:pres:%llu", key_prefix_.c_str(),
+                  static_cast<unsigned long long>(player_id));
+    std::vector<std::string> keys{SessionKey(player_id), OnlineSetKey(), GraceIndexKey(), pres_key};
     std::vector<std::string> args{token, std::to_string(generation), std::to_string(grace_sec_),
-                                  std::to_string(NowUnixSec()), std::to_string(default_ttl_sec_)};
+                                  std::to_string(NowUnixSec()), std::to_string(default_ttl_sec_),
+                                  std::to_string(player_id), key_prefix_};
     std::vector<std::string> reply;
     if (!lease->Eval(kLuaMarkDisconnected, keys, args, &reply) || reply.size() < 2)
         return false;
     if (reply[0] != "1") {
         LOG_INFO << "SessionStore: MarkDisconnected ignored player_id=" << player_id
                  << " reason=" << reply[1];
-        const bool gone = reply[1] == "NOT_FOUND";
-        lease = RedisPool::Lease();
-        if (gone)
-            UntrackOnline(player_id);
         return false;
     }
     LOG_INFO << "SessionStore: DISCONNECTED player_id=" << player_id << " grace_sec=" << grace_sec_;
-    lease = RedisPool::Lease();
-    UntrackOnline(player_id);
-    // 宽限内仍保留 map:pres，但立刻从 occ 摘除，避免分线 softcap 幽灵占满。
-    PlacementStore::Instance().ParkForGrace(player_id);
-    int64_t deadline = NowUnixSec() + grace_sec_;
-    if (reply.size() > 2)
-        deadline = ParseI64(reply[2]);
-    IndexGraceDeadline(player_id, deadline);
     return true;
 }
 
@@ -2269,73 +2292,75 @@ size_t SessionStore::ReconcileGhostMapOccupancy(size_t limit) {
 size_t SessionStore::ExpireOnlineMissingGatewayClaim(size_t limit) {
     if (!available_)
         return 0;
-    size_t n = limit > 0 ? limit : 100;
-    if (n > 200)
-        n = 200;
+    size_t n = limit > 0 ? limit : 64;
+    if (n > 64)
+        n = 64;
     auto lease = RedisPool::Instance().Acquire();
     if (!lease)
         return 0;
-    std::vector<std::string> members;
-    if (!lease->SMembers(OnlineSetKey(), &members))
+    // 一次只抽一页。旧实现 SMEMBERS 后对每个在线玩家各打一次 Redis，
+    // claim 还活着时 expired 一直是 0，600 人会把这一轮扫完，Session 事件循环卡住 1s 以上。
+    static std::string cursor = "0";
+    static const char kLua[] = R"LUA(
+local setkey = KEYS[1]
+local prefix = ARGV[1]
+local lim = tonumber(ARGV[2]) or 64
+local cursor = ARGV[3] or '0'
+local page = redis.call('SSCAN', setkey, cursor, 'COUNT', lim)
+local nextc = page[1]
+local members = page[2]
+local expired = {}
+local claims = {}
+local inspected = 0
+for _, pid in ipairs(members) do
+  inspected = inspected + 1
+  if inspected > lim then break end
+  local skey = prefix .. 'session:' .. pid
+  local st = redis.call('HGET', skey, 'state')
+  if not st then
+    redis.call('SREM', setkey, pid)
+    redis.call('ZREM', prefix .. 'session:grace', pid)
+    expired[#expired + 1] = pid
+  elseif st ~= 'ONLINE' then
+    redis.call('SREM', setkey, pid)
+  else
+    local gw = redis.call('HGET', skey, 'gatewayId') or ''
+    if gw ~= '' then
+      local alive = claims[gw]
+      if alive == nil then
+        alive = redis.call('EXISTS', prefix .. 'gw_claim:' .. gw)
+        claims[gw] = alive
+      end
+      if alive == 0 then
+        redis.call('DEL', skey)
+        redis.call('SREM', setkey, pid)
+        redis.call('ZREM', prefix .. 'session:grace', pid)
+        expired[#expired + 1] = pid
+      end
+    end
+  end
+end
+local out = {tostring(nextc)}
+for _, pid in ipairs(expired) do out[#out + 1] = pid end
+return out
+)LUA";
+    std::vector<std::string> reply;
+    if (!lease->Eval(kLua, {OnlineSetKey()},
+                     {key_prefix_, std::to_string(n), cursor}, &reply) ||
+        reply.empty())
         return 0;
+    cursor = reply[0];
     lease = RedisPool::Lease();
     size_t expired = 0;
-    static const char kLua[] = R"LUA(
-local skey = KEYS[1]
-local claim = KEYS[2]
-local expect_gw = ARGV[1]
-if redis.call('EXISTS', claim) == 1 then
-  return {'0', 'CLAIM_ALIVE'}
-end
-local raw = redis.call('HGETALL', skey)
-if #raw == 0 then return {'1', 'NOT_FOUND'} end
-local f = {}
-for i = 1, #raw, 2 do f[raw[i]] = raw[i + 1] end
-if (f['state'] or '') ~= 'ONLINE' then return {'0', 'NOT_ONLINE'} end
-if (f['gatewayId'] or '') ~= expect_gw then return {'0', 'GW_CHANGED'} end
-redis.call('DEL', skey)
-return {'1', 'EXPIRED'}
-)LUA";
-    for (const auto &m : members) {
-        if (expired >= n)
-            break;
-        const uint64_t pid = ParseU64(m);
+    for (size_t i = 1; i < reply.size(); ++i) {
+        const uint64_t pid = ParseU64(reply[i]);
         if (pid == 0)
             continue;
-        SessionRecord rec;
-        if (!LoadSession(pid, &rec)) {
-            UntrackOnline(pid);
-            PlacementStore::Instance().ReleaseByPlayer(pid);
-            ClearGraceIndex(pid);
-            ++expired;
-            continue;
-        }
-        if (rec.state != SessionState::Online) {
-            UntrackOnline(pid);
-            continue;
-        }
-        // Login→BindConnection 窗口内 gateway 可能为空，勿误杀。
-        if (rec.gateway_id.empty())
-            continue;
-        const std::string claim = key_prefix_ + "gw_claim:" + rec.gateway_id;
-        auto cas = RedisPool::Instance().Acquire();
-        if (!cas)
-            continue;
-        std::vector<std::string> reply;
-        if (!cas->Eval(kLua, {SessionKey(pid), claim}, {rec.gateway_id}, &reply) ||
-            reply.empty())
-            continue;
-        if (reply[0] != "1")
-            continue;
-        cas = RedisPool::Lease();
-        UntrackOnline(pid);
-        ClearGraceIndex(pid);
         PlacementStore::Instance().ReleaseByPlayer(pid);
         if (friend_presence_fn_)
             friend_presence_fn_(pid, false);
         ++expired;
-        LOG_INFO << "SessionStore: ONLINE orphan expired (no gw_claim) player_id=" << pid
-                 << " gw=" << rec.gateway_id;
+        LOG_INFO << "SessionStore: ONLINE orphan expired (no gw_claim) player_id=" << pid;
     }
     if (expired > 0)
         ServerStats::session_grace_expire.fetch_add(expired, std::memory_order_relaxed);

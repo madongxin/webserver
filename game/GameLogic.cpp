@@ -4,6 +4,7 @@
 #include "ForwardMetaContext.h"
 #include "FriendService.h"
 #include "LogicMetrics.h"
+#include "PacketTiming.h"
 #include "MapCatalog.h"
 #include "MapInstanceRegistry.h"
 #include "MapPlacement.h"
@@ -187,8 +188,11 @@ void SampleMoveEvents(std::vector<AoiRecipientEvent> *events) {
                 if (eit != rit->second.end()) {
                     const int64_t prev_t = eit->second.second;
                     if (t > 0 && prev_t > 0 && (t - prev_t) < kAoiMoveSampleMs) {
-                        out[eit->second.first] = std::move(ev);
-                        eit->second.second = t;
+                        // state_seq 变小的帧客户端会整条丢掉，人就停在上一帧。
+                        if (ev.snapshot.state_seq >= out[eit->second.first].snapshot.state_seq) {
+                            out[eit->second.first] = std::move(ev);
+                            eit->second.second = t;
+                        }
                         continue;
                     }
                 }
@@ -737,25 +741,26 @@ bool GameLogic::BuildFullStateSnapshot(uint64_t player_id, uint64_t baseline_ser
     out->set_baseline_server_seq(baseline_server_seq);
     out->set_gamelogic_instance_id(MapInstanceRegistry::Instance().local_instance_id());
 
-    MapEntity self;
-    std::vector<MapEntity> aoi;
-    uint64_t mid = 0;
-    bool on_map = MapRuntime::Instance().SnapshotView(player_id, &self, &aoi, &mid);
-    if (on_map && !self.connected) {
+    // last_applied_server_seq 只记在 baseline 上，不能拿来裁 aoi_entities。
+    // 客户端已经应用到这个 seq 时，增量是空的，全量视野不能跟着变成空列表。
+    MapRuntime::FullView view;
+    MapRuntime::Instance().CollectFullView(player_id, &view);
+    if (!view.ready && std::string(view.step) == "viewer_not_online") {
         lk.unlock();
         std::string gw, sid;
         GameLogicGetBoundMeta(player_id, &gw, &sid, nullptr, nullptr);
         AoiPushBatch pushes;
-        if (MapRuntime::Instance().Reconnect(player_id, gw, sid, &self, &aoi, &pushes)) {
+        MapEntity self;
+        std::vector<MapEntity> snap;
+        if (MapRuntime::Instance().Reconnect(player_id, gw, sid, &self, &snap, &pushes))
             EmitAoi(pushes);
-            on_map = MapRuntime::Instance().SnapshotView(player_id, &self, &aoi, &mid);
-        }
+        MapRuntime::Instance().CollectFullView(player_id, &view);
         lk.lock();
     }
 #ifdef WEBSERVER_ENABLE_REDIS
     PlacementRecord live_place;
     bool have_live_place = false;
-    if (!on_map) {
+    if (!view.ready && std::string(view.step) == "not_on_map") {
         lk.unlock();
         if (PlacementStore::Instance().Available()) {
             uint64_t presence_mid = 0;
@@ -773,20 +778,33 @@ bool GameLogic::BuildFullStateSnapshot(uint64_t player_id, uint64_t baseline_ser
         if (v > 0 && v <= 4096)
             aoi_max = static_cast<uint32_t>(v);
     }
-    if (on_map) {
-        if (aoi.size() > aoi_max) {
+    if (view.ready) {
+        if (view.interest.size() > aoi_max) {
             out->set_ok(false);
             out->set_error_code("ERR_SNAPSHOT_TOO_LARGE");
             out->set_message("ERR_SNAPSHOT_TOO_LARGE");
-            out->set_map_instance_id(mid);
+            out->set_map_instance_id(view.map_instance_id);
+            LOG_INFO << "full snapshot player=" << player_id << " map=" << view.map_instance_id
+                     << " radius_m=" << view.radius_m << " radius_cells=" << view.radius_cells
+                     << " interest=" << view.interest.size() << " aoi=0"
+                     << " ver=" << out->snapshot_version() << " baseline=" << baseline_server_seq
+                     << " step=too_large cache=" << view.cache_n;
             return false;
         }
-        FillEntitySnapshot(self, out->mutable_self());
-        for (const auto &e : aoi)
+        FillEntitySnapshot(view.self, out->mutable_self());
+        for (const auto &e : view.interest) {
+            if (e.player_id == player_id)
+                continue;
             FillEntitySnapshot(e, out->add_aoi_entities());
-        out->set_map_instance_id(mid);
-        out->set_map_template_id(MapInstanceRegistry::Instance().TemplateId(mid));
-        out->set_owner_epoch(MapInstanceRegistry::Instance().Epoch(mid));
+        }
+        out->set_map_instance_id(view.map_instance_id);
+        LOG_INFO << "full snapshot player=" << player_id << " map=" << view.map_instance_id
+                 << " radius_m=" << view.radius_m << " radius_cells=" << view.radius_cells
+                 << " interest=" << view.interest.size() << " aoi=" << out->aoi_entities_size()
+                 << " ver=" << out->snapshot_version() << " baseline=" << baseline_server_seq
+                 << " step=" << view.step << " cache=" << view.cache_n;
+        out->set_map_template_id(MapInstanceRegistry::Instance().TemplateId(view.map_instance_id));
+        out->set_owner_epoch(MapInstanceRegistry::Instance().Epoch(view.map_instance_id));
         auto sit = last_safe_.find(player_id);
         if (sit != last_safe_.end()) {
             out->set_realm_id(sit->second.realm_id);
@@ -803,6 +821,19 @@ bool GameLogic::BuildFullStateSnapshot(uint64_t player_id, uint64_t baseline_ser
         }
 #endif
         out->set_recovery_reason("INSTANCE_LIVE");
+    } else if (std::string(view.step) != "not_on_map") {
+        out->set_ok(false);
+        out->set_error_code(gameproto::kErrAoiResyncRequired);
+        out->set_message("AOI interest not ready");
+        out->set_player_id(player_id);
+        if (view.map_instance_id != 0)
+            out->set_map_instance_id(view.map_instance_id);
+        LOG_INFO << "full snapshot player=" << player_id << " map=" << view.map_instance_id
+                 << " radius_m=" << view.radius_m << " radius_cells=" << view.radius_cells
+                 << " interest=0 aoi=0 ver=" << out->snapshot_version()
+                 << " baseline=" << baseline_server_seq << " step=" << view.step
+                 << " cache=" << view.cache_n;
+        return false;
     } else {
         out->set_recovery_reason("NOT_ON_MAP");
         auto sit = last_safe_.find(player_id);
@@ -1272,8 +1303,17 @@ bool GameLogic::RequireSessionToken(const game::GameRequest &req, uint64_t playe
 #ifdef WEBSERVER_ENABLE_BRPC
     if (SessionRpcClient::Instance().ready()) {
         if (!SessionRpcClient::Instance().ValidateToken(player_id, req.session_token(), &err)) {
+            const std::string why = err.empty() ? "session invalid" : err;
             rsp->set_ok(false);
-            rsp->set_message(err.empty() ? "session invalid" : err);
+            rsp->set_message(why);
+            if (why.find("ONLINE") != std::string::npos || why.find("disconnected") != std::string::npos ||
+                why.find("session invalid") != std::string::npos ||
+                why.find("invalid session token") != std::string::npos)
+                rsp->set_error_code(gameproto::kErrFenceStale);
+            else if (why.find("expired") != std::string::npos || why.find("not logged") != std::string::npos ||
+                     why.find("not found") != std::string::npos)
+                rsp->set_error_code(gameproto::kErrSessionExpired);
+            LOG_WARN << "session token rejected player_id=" << player_id << " msg=" << why;
             return false;
         }
         return true;
@@ -1282,8 +1322,17 @@ bool GameLogic::RequireSessionToken(const game::GameRequest &req, uint64_t playe
     if (!SessionStore::Instance().Available())
         return true;
     if (!SessionStore::Instance().ValidateToken(player_id, req.session_token(), &err)) {
+        const std::string why = err.empty() ? "session invalid" : err;
         rsp->set_ok(false);
-        rsp->set_message(err);
+        rsp->set_message(why);
+        if (why.find("ONLINE") != std::string::npos || why.find("disconnected") != std::string::npos ||
+            why.find("session invalid") != std::string::npos ||
+            why.find("invalid session token") != std::string::npos)
+            rsp->set_error_code(gameproto::kErrFenceStale);
+        else if (why.find("expired") != std::string::npos || why.find("not logged") != std::string::npos ||
+                 why.find("not found") != std::string::npos)
+            rsp->set_error_code(gameproto::kErrSessionExpired);
+        LOG_WARN << "session token rejected player_id=" << player_id << " msg=" << why;
         return false;
     }
 #else
@@ -2014,6 +2063,9 @@ bool GameLogic::HandleEnterMap(const game::EnterMapReq &req, game::GameResponse 
             sy = cached.y;
             sz = cached.z;
             syaw = cached.yaw;
+            // 上次安全点若贴在 Y 盒底，那是坠落被记下来的，进图时抬回出生高度。
+            if (sy <= static_data->bounds_min().y + 2.f)
+                sy = static_data->default_spawn().position.y;
             recovery = "REENTER_FROM_SAFE_POS";
         } else if (have_cached) {
             recovery = "SPAWN_FALLBACK";
@@ -2021,7 +2073,8 @@ bool GameLogic::HandleEnterMap(const game::EnterMapReq &req, game::GameResponse 
         MapScenePolicy pol;
         const bool have_pol = MapCatalog::Instance().GetScenePolicy(place.map_template_id, &pol);
         // 1002 先落到模板出生点，再按 spawn_scatter_radius 打散，避免全员叠同一坐标。
-        if (place.map_template_id == 1002) {
+        // 已经有可走的安全点时不再拉回模板出生点。全量快照会整表替换，旧出生点会把人拽回去。
+        if (place.map_template_id == 1002 && recovery != "REENTER_FROM_SAFE_POS") {
             ApplyTemplateSpawn(place.map_template_id, &sx, &sy, &sz);
             recovery = "SPAWN_FALLBACK";
         }
@@ -2554,6 +2607,19 @@ bool GameLogic::HandleGetSelfProfile(const game::GetSelfProfileReq &req, game::G
 }
 
 bool GameLogic::HandleMove(const game::MoveReq &req, game::GameResponse *rsp) {
+    const auto move_t0 = std::chrono::steady_clock::now();
+    struct MoveSpan {
+        uint64_t player = 0;
+        std::chrono::steady_clock::time_point t0;
+        ~MoveSpan() {
+            const auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(
+                                std::chrono::steady_clock::now() - t0)
+                                .count();
+            NotePktStage("move", "rpc", ms, 0, player, 0, 0, 0);
+        }
+    } move_span;
+    move_span.player = req.player_id();
+    move_span.t0 = move_t0;
     auto *body = rsp->mutable_move();
     body->set_ok(false);
     if (req.player_id() == 0 || req.map_instance_id() == 0 || !req.has_position()) {
@@ -2617,7 +2683,8 @@ bool GameLogic::HandleMove(const game::MoveReq &req, game::GameResponse *rsp) {
     std::string code;
     const MapMoveReject st = MapRuntime::Instance().Move(
         req.map_instance_id(), req.player_id(), req.position().x(), req.position().y(),
-        req.position().z(), req.yaw(), rsp->seq(), NowMs(), &confirmed, &pushes, &code);
+        req.position().z(), req.yaw(), rsp->seq(), NowMs(), &confirmed, &pushes, &code, false,
+        req.client_time_ms());
     if (st != MapMoveReject::Ok) {
         body->set_error_code(code.empty() ? "ERR_MOVE_REJECTED" : code);
         body->set_message(body->error_code());
@@ -2636,6 +2703,12 @@ bool GameLogic::HandleMove(const game::MoveReq &req, game::GameResponse *rsp) {
         }
         rsp->set_ok(false);
         rsp->set_message(body->message());
+        LOG_INFO << "move player_id=" << req.player_id() << " req=" << req.position().x() << ","
+                 << req.position().y() << "," << req.position().z() << " accepted="
+                 << (body->has_position() ? body->position().x() : 0) << ","
+                 << (body->has_position() ? body->position().y() : 0) << ","
+                 << (body->has_position() ? body->position().z() : 0)
+                 << " error_code=" << body->error_code();
         return false;
     }
     EmitAoi(pushes);
@@ -2651,6 +2724,14 @@ bool GameLogic::HandleMove(const game::MoveReq &req, game::GameResponse *rsp) {
     body->set_server_time_ms(NowMs());
     rsp->set_ok(true);
     rsp->set_message("ok");
+    const float adx = confirmed.x - req.position().x();
+    const float ady = confirmed.y - req.position().y();
+    const float adz = confirmed.z - req.position().z();
+    if (adx * adx + ady * ady + adz * adz > 0.05f * 0.05f) {
+        LOG_INFO << "move player_id=" << req.player_id() << " req=" << req.position().x() << ","
+                 << req.position().y() << "," << req.position().z() << " accepted=" << confirmed.x
+                 << "," << confirmed.y << "," << confirmed.z << " error_code=OK";
+    }
     return true;
 }
 
@@ -2668,9 +2749,12 @@ bool GameLogic::HandleWorldSnapshot(const game::WorldSnapshotReq &req, game::Gam
     if (req.last_applied_server_seq() > 0 && baseline == 0)
         baseline = req.last_applied_server_seq();
     if (!BuildFullStateSnapshot(req.player_id(), baseline, fs) || !fs->ok()) {
+        const std::string code = fs->error_code().empty() ? "ERR_INTERNAL" : fs->error_code();
+        const std::string msg = fs->message().empty() ? "snapshot failed" : fs->message();
+        rsp->clear_full_snapshot();
         rsp->set_ok(false);
-        rsp->set_error_code(fs->error_code().empty() ? "ERR_INTERNAL" : fs->error_code());
-        rsp->set_message(fs->message().empty() ? "snapshot failed" : fs->message());
+        rsp->set_error_code(code);
+        rsp->set_message(msg);
         return false;
     }
     rsp->set_ok(true);
@@ -2951,8 +3035,18 @@ bool GameLogic::Handle(const game::GameRequest &req, game::GameResponse *rsp) {
                 return false;
             return HandleMove(req.move(), rsp);
         case game::GameRequest::kWorldSnapshot:
-            if (!RequireSessionToken(req, req.world_snapshot().player_id(), rsp))
-                return false;
+            if (!RequireSessionToken(req, req.world_snapshot().player_id(), rsp)) {
+                // 会话已断开、人还在这张图上：客户端会先拉全量快照，不要再回 ERR_INTERNAL。
+                const bool still_on_map =
+                    MapRuntime::Instance().PlayerMap(req.world_snapshot().player_id()) != 0;
+                if (!(still_on_map && rsp->error_code() == gameproto::kErrFenceStale))
+                    return false;
+                const uint64_t seq = req.seq();
+                rsp->Clear();
+                rsp->set_seq(seq);
+                LOG_INFO << "world snapshot while session disconnected player="
+                         << req.world_snapshot().player_id();
+            }
             return HandleWorldSnapshot(req.world_snapshot(), rsp);
         case game::GameRequest::kRespawn:
             if (!RequireSessionToken(req, req.respawn().player_id(), rsp))
