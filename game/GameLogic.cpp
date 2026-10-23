@@ -359,6 +359,7 @@ void PublishAoiBatch(const AoiPushBatch &batch) {
         item.player_id = kv.first;
         item.session_id = rt.second;
         item.message_type = "aoi.delta.v1";
+        // 纯移动不占可靠序号。只有进入、离开或其它状态变更才写入回放列表。
         item.reliable = has_el;
         item.coalescable = has_move && !has_el;
         items.push_back(std::move(item));
@@ -2827,6 +2828,18 @@ bool GameLogic::HandleWorldSnapshot(const game::WorldSnapshotReq &req, game::Gam
         rsp->set_message(msg);
         return false;
     }
+#ifdef WEBSERVER_ENABLE_REDIS
+    if (fs->baseline_server_seq() > 0) {
+        if (const ForwardRouteMeta *m = ForwardMetaContext::Get()) {
+            if (PushReplayStore::Instance().Available() && !m->session_id.empty() &&
+                !PushReplayStore::Instance().CommitSnapshot(req.player_id(), m->session_id,
+                                                            fs->baseline_server_seq())) {
+                LOG_WARN << "WorldSnapshot commit baseline failed player_id=" << req.player_id()
+                         << " baseline=" << fs->baseline_server_seq();
+            }
+        }
+    }
+#endif
     rsp->set_ok(true);
     rsp->set_error_code("OK");
     rsp->set_message("ok");

@@ -22,7 +22,7 @@ class PushReplayCache {
 public:
     static PushReplayCache &Instance();
 
-    void Configure(size_t per_player_cap = 64);
+    void Configure(size_t per_player_cap = 1024);
 
     uint64_t NextSeq(uint64_t player_id);
     void Store(uint64_t player_id, const PushReplayEntry &entry);
@@ -36,7 +36,7 @@ public:
 private:
     PushReplayCache() = default;
     std::mutex mu_;
-    size_t cap_ = 64;
+    size_t cap_ = 1024;
     std::unordered_map<uint64_t, uint64_t> next_seq_;
     std::unordered_map<uint64_t, std::deque<PushReplayEntry>> by_player_;
 };

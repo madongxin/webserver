@@ -34,6 +34,8 @@ public:
     void IncPushAckStaleRejected() {
         push_ack_stale_rejected_.fetch_add(1, std::memory_order_relaxed);
     }
+    void IncPushAckGap() { push_ack_gap_.fetch_add(1, std::memory_order_relaxed); }
+    void IncPushSendDeferred() { push_send_deferred_.fetch_add(1, std::memory_order_relaxed); }
     void IncIdentityMismatch() { identity_mismatch_.fetch_add(1, std::memory_order_relaxed); }
     void IncQueueOverload() { queue_overload_.fetch_add(1, std::memory_order_relaxed); }
     void IncCommandForbidden() { command_forbidden_.fetch_add(1, std::memory_order_relaxed); }
@@ -159,6 +161,8 @@ private:
     std::atomic<uint64_t> push_ack_duplicate_{0};
     std::atomic<uint64_t> push_ack_ahead_rejected_{0};
     std::atomic<uint64_t> push_ack_stale_rejected_{0};
+    std::atomic<uint64_t> push_ack_gap_{0};
+    std::atomic<uint64_t> push_send_deferred_{0};
     std::atomic<uint64_t> identity_mismatch_{0};
     std::atomic<uint64_t> queue_overload_{0};
     std::atomic<uint64_t> command_forbidden_{0};

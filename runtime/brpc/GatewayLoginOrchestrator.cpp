@@ -588,6 +588,11 @@ bool OrchestrateGatewayReconnect(const std::string &gateway_instance_id, uint64_
                         body->set_need_full_snapshot(true);
                         body->set_message("reconnect ok; full_snapshot_store_failed_retry");
                         stored = false;
+                    } else if (!PushReplayStore::Instance().CommitSnapshot(
+                                   req.reconnect().player_id(), sid, seq)) {
+                        body->set_need_full_snapshot(true);
+                        body->set_message("reconnect ok; full_snapshot_commit_failed_retry");
+                        stored = false;
                     }
                 }
             } else if (!snap_rsp.SerializeToString(&snap_payload)) {

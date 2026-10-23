@@ -146,18 +146,28 @@ if ack == last then
   redis.call('EXPIRE', meta_key, ttl)
   return {'1', 'DUP', tostring(ack)}
 end
--- 连续性：last+1 .. ack 每一个序号都必须已成功写入；禁止跳过空洞
+-- 已被 cap 截掉的前缀不构成空洞。列表里还能看到的区间若缺号，仍要快照。
+-- 最近一次成功快照的 baseline 及以前，客户端已经用全量状态对齐，直接接受。
 local present = {}
+local oldest = nil
 local entries = redis.call('LRANGE', list_key, 0, -1)
 for _, v in ipairs(entries) do
   local seq = tonumber(string.match(v, '^(%d+)'))
-  if seq and seq > last and seq <= ack then
-    present[seq] = true
+  if seq then
+    if not oldest or seq < oldest then oldest = seq end
+    if seq > last and seq <= ack then
+      present[seq] = true
+    end
   end
 end
-for s = last + 1, ack do
-  if not present[s] then
-    return {'0', 'NEED_SNAPSHOT', tostring(cur), tostring(last)}
+local snap = tonumber(redis.call('HGET', meta_key, 'snapBaseline') or '0') or 0
+if ack > snap then
+  local start = last + 1
+  if oldest and oldest > start then start = oldest end
+  for s = start, ack do
+    if not present[s] then
+      return {'0', 'NEED_SNAPSHOT', tostring(cur), tostring(last)}
+    end
   end
 end
 while true do
@@ -172,6 +182,35 @@ redis.call('EXPIRE', meta_key, ttl)
 redis.call('EXPIRE', list_key, ttl)
 redis.call('EXPIRE', seq_key, ttl)
 return {'1', 'OK', tostring(ack)}
+)LUA";
+
+const char kLuaCommitSnapshot[] = R"LUA(
+local list_key = KEYS[1]
+local meta_key = KEYS[2]
+local seq_key = KEYS[3]
+local baseline = tonumber(ARGV[1]) or 0
+local ttl = tonumber(ARGV[2])
+local cur = tonumber(redis.call('GET', seq_key) or '0') or 0
+local last = tonumber(redis.call('HGET', meta_key, 'lastAck') or '0') or 0
+local snap = tonumber(redis.call('HGET', meta_key, 'snapBaseline') or '0') or 0
+if baseline > cur then baseline = cur end
+if baseline < 0 then baseline = 0 end
+local ack = last
+if baseline > ack then ack = baseline end
+if baseline > snap then snap = baseline end
+redis.call('HSET', meta_key, 'lastAck', tostring(ack))
+redis.call('HSET', meta_key, 'snapBaseline', tostring(snap))
+while true do
+  local v = redis.call('LINDEX', list_key, 0)
+  if not v then break end
+  local seq = tonumber(string.match(v, '^(%d+)'))
+  if not seq or seq > ack then break end
+  redis.call('LPOP', list_key)
+end
+redis.call('EXPIRE', meta_key, ttl)
+redis.call('EXPIRE', list_key, ttl)
+redis.call('EXPIRE', seq_key, ttl)
+return {'1', tostring(ack), tostring(snap)}
 )LUA";
 
 const char kLuaGetSeq[] = R"LUA(
@@ -337,6 +376,22 @@ PushReplayStore::AckResult PushReplayStore::Ack(uint64_t player_id, const std::s
     else
         r.status = AckStatus::Invalid;
     return r;
+}
+
+bool PushReplayStore::CommitSnapshot(uint64_t player_id, const std::string &session_id,
+                                     uint64_t baseline) {
+    if (!available_ || player_id == 0 || session_id.empty() || baseline == 0)
+        return false;
+    auto lease = RedisPool::Instance().Acquire();
+    if (!lease)
+        return false;
+    std::vector<std::string> keys{ListKey(player_id, session_id), MetaKey(player_id, session_id),
+                                  SeqKey(player_id, session_id)};
+    std::vector<std::string> args{std::to_string(baseline), std::to_string(ttl_sec_)};
+    std::vector<std::string> reply;
+    if (!lease->Eval(kLuaCommitSnapshot, keys, args, &reply) || reply.empty())
+        return false;
+    return reply[0] == "1";
 }
 
 uint64_t PushReplayStore::CurrentSeq(uint64_t player_id, const std::string &session_id) {

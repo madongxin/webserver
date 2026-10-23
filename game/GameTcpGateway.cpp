@@ -318,18 +318,17 @@ void RememberBind(uint64_t conn_id, uint64_t player_id, const std::string &token
                     return do_send();
 #ifdef WEBSERVER_ENABLE_BRPC
                 // 等的是入队结果，不是 TCP ACK。不能在连接自己的 EventLoop 上等，否则死锁。
-                // 超时后取消还没开始的回调，避免调用方记失败时帧又被写进缓冲。
+                // 超时后不取消回调：序号已经写入回放，取消会在 TCP 仍存活时留下跳号。
+                // 回调按入队顺序执行，后到的推送排在这一帧后面。
                 auto done = std::make_shared<bthread::CountdownEvent>();
                 auto queued = std::make_shared<std::atomic<int>>(0);
-                auto cancelled = std::make_shared<std::atomic<bool>>(false);
-                c->loop()->QueueOneFunc([do_send, done, queued, cancelled]() {
-                    if (!cancelled->load(std::memory_order_acquire))
-                        queued->store(do_send(), std::memory_order_release);
+                c->loop()->QueueOneFunc([do_send, done, queued]() {
+                    queued->store(do_send(), std::memory_order_release);
                     done->signal();
                 });
                 if (done->timed_wait(butil::milliseconds_from_now(200)) != 0) {
-                    cancelled->store(true, std::memory_order_release);
-                    return 0;
+                    OpsMetrics::Instance().IncPushSendDeferred();
+                    return 1;
                 }
                 return queued->load(std::memory_order_acquire);
 #else
@@ -1247,6 +1246,7 @@ void GameTcpGateway::OnMessage(const std::shared_ptr<TcpConnection> &conn) {
                             OpsMetrics::Instance().IncPushAckStaleRejected();
                             ack_msg = gameproto::kErrAoiResyncRequired;
                         } else if (ar.status == PushReplayStore::AckStatus::Gap) {
+                            OpsMetrics::Instance().IncPushAckGap();
                             ack_msg = gameproto::kErrAoiResyncRequired;
                         } else {
                             ack_msg = ar.error_code.empty() ? "ack rejected" : ar.error_code;

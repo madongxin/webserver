@@ -242,6 +242,63 @@ int main() {
             return Fail("pb baseline mismatch");
     }
 
+    // 7) cap 截掉的前缀不再算空洞；窗口内缺号仍然拒绝
+    {
+        if (!PushReplayStore::Instance().InitFromSessionPrefix(prefix, 4, 600))
+            return Fail("reinit cap4");
+        const uint64_t p = player + 7;
+        const std::string s = sid + "-trim";
+        PushReplayStore::Instance().InvalidateSession(p, s);
+        for (int i = 0; i < 6; ++i) {
+            if (PushReplayStore::Instance().AppendReliable(p, s, "t", "x") == 0)
+                return Fail("trim append");
+        }
+        auto ar = PushReplayStore::Instance().Ack(p, s, 6);
+        if (!ar.ok())
+            return Fail("trim prefix ack");
+
+        const uint64_t q = player + 8;
+        const std::string qs = sid + "-inwindow";
+        PushReplayStore::Instance().InvalidateSession(q, qs);
+        for (int i = 0; i < 6; ++i) {
+            if (PushReplayStore::Instance().AppendReliable(q, qs, "t", "x") == 0)
+                return Fail("window append");
+        }
+        if (PushReplayStore::Instance().ReserveSeq(q, qs) != 7)
+            return Fail("window reserve");
+        if (PushReplayStore::Instance().AppendReliable(q, qs, "t", "z") != 8)
+            return Fail("window append8");
+        auto hole = PushReplayStore::Instance().Ack(q, qs, 8);
+        if (hole.ok() || hole.status != PushReplayStore::AckStatus::Gap)
+            return Fail("in-window hole rejected");
+    }
+
+    // 8) 快照提交 baseline 后，紧接着的 PushAck(baseline) 成功，即使中间有空洞
+    {
+        if (!PushReplayStore::Instance().InitFromSessionPrefix(prefix, 64, 600))
+            return Fail("reinit cap64");
+        const uint64_t p = player + 9;
+        const std::string s = sid + "-snapack";
+        PushReplayStore::Instance().InvalidateSession(p, s);
+        if (PushReplayStore::Instance().AppendReliable(p, s, "t", "a") != 1)
+            return Fail("snap append1");
+        if (PushReplayStore::Instance().ReserveSeq(p, s) != 2)
+            return Fail("snap reserve2");
+        if (PushReplayStore::Instance().AppendReliable(p, s, "t", "c") != 3)
+            return Fail("snap append3");
+        auto before = PushReplayStore::Instance().Ack(p, s, 3);
+        if (before.ok())
+            return Fail("hole before snapshot");
+        const uint64_t baseline = PushReplayStore::Instance().CurrentSeq(p, s);
+        if (baseline != 3)
+            return Fail("snap baseline");
+        if (!PushReplayStore::Instance().CommitSnapshot(p, s, baseline))
+            return Fail("commit snapshot");
+        auto after = PushReplayStore::Instance().Ack(p, s, baseline);
+        if (!after.ok())
+            return Fail("ack baseline after snapshot");
+    }
+
     std::printf("OK push_full_snapshot_test\n");
     return 0;
 }

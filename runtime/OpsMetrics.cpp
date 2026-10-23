@@ -81,6 +81,10 @@ std::string OpsMetrics::PrometheusText() const {
         push_ack_ahead_rejected_.load(std::memory_order_relaxed));
     ctr("gamemesh_push_ack_stale_rejected_total", "Reliable push ACK behind last_ack.",
         push_ack_stale_rejected_.load(std::memory_order_relaxed));
+    ctr("gamemesh_push_ack_gap_total", "Reliable push ACK rejected because a seq is missing inside the replay window.",
+        push_ack_gap_.load(std::memory_order_relaxed));
+    ctr("gamemesh_push_send_deferred_total", "Reliable push accepted onto the connection loop after the enqueue wait.",
+        push_send_deferred_.load(std::memory_order_relaxed));
     ctr("gamemesh_identity_mismatch_total", "Client player_id mismatch vs trusted binding.",
         identity_mismatch_.load(std::memory_order_relaxed));
     ctr("gamemesh_queue_overload_total", "PlayerSerialQueue TryPost rejected.",

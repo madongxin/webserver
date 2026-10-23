@@ -14,7 +14,7 @@ class PushReplayStore {
 public:
     static PushReplayStore &Instance();
 
-    bool InitFromSessionPrefix(const std::string &key_prefix, size_t cap = 64,
+    bool InitFromSessionPrefix(const std::string &key_prefix, size_t cap = 1024,
                                int ttl_sec = 7200);
     bool Available() const { return available_; }
 
@@ -55,6 +55,13 @@ public:
     /** 原子校验 current_seq / last_ack 后裁剪；Redis 不可用返回 Unavailable（失败）。 */
     AckResult Ack(uint64_t player_id, const std::string &session_id, uint64_t ack_seq);
 
+    /**
+     * 全量快照已经成功交给客户端之后调用。
+     * 原子地把 lastAck、snapBaseline 抬到 max(原值, baseline)，并丢掉 seq ≤ 该水位的回放条目。
+     * baseline 超过当前 seq 时夹到当前 seq，不会把光标推到尚未分配的序号。
+     */
+    bool CommitSnapshot(uint64_t player_id, const std::string &session_id, uint64_t baseline);
+
     uint64_t CurrentSeq(uint64_t player_id, const std::string &session_id);
 
     /** 顶号/新 Session：删除旧 session 回放（可选） */
@@ -68,6 +75,6 @@ private:
 
     bool available_ = false;
     std::string key_prefix_ = "gamemesh:dev:";
-    size_t cap_ = 64;
+    size_t cap_ = 1024;
     int ttl_sec_ = 7200;
 };
