@@ -51,6 +51,19 @@ public:
     void SetAoiPushBacklog(int64_t n) {
         aoi_push_backlog_.store(n, std::memory_order_relaxed);
     }
+    void AddAoiMoveShed(uint64_t n) { aoi_move_shed_.fetch_add(n, std::memory_order_relaxed); }
+    void IncSafePosDeferred() { safe_pos_deferred_.fetch_add(1, std::memory_order_relaxed); }
+    void IncSafePosDeferFail() { safe_pos_defer_fail_.fetch_add(1, std::memory_order_relaxed); }
+    void IncMoveOverloaded() { move_overloaded_.fetch_add(1, std::memory_order_relaxed); }
+    void NotePushBatch(int64_t ms) {
+        if (ms < 0)
+            ms = 0;
+        pushbatch_total_.fetch_add(1, std::memory_order_relaxed);
+        pushbatch_ms_sum_.fetch_add(static_cast<uint64_t>(ms), std::memory_order_relaxed);
+        pushbatch_last_ms_.store(ms, std::memory_order_relaxed);
+        if (ms >= 200)
+            pushbatch_slow_.fetch_add(1, std::memory_order_relaxed);
+    }
     void IncConnRateLimited() { conn_rate_limited_.fetch_add(1, std::memory_order_relaxed); }
     void IncErrorCode(const std::string &code);
 
@@ -146,6 +159,14 @@ private:
     std::atomic<int64_t> line_occupancy_total_{0};
     std::atomic<int64_t> ghost_occupancy_{0};
     std::atomic<int64_t> aoi_push_backlog_{0};
+    std::atomic<uint64_t> aoi_move_shed_{0};
+    std::atomic<uint64_t> safe_pos_deferred_{0};
+    std::atomic<uint64_t> safe_pos_defer_fail_{0};
+    std::atomic<uint64_t> move_overloaded_{0};
+    std::atomic<uint64_t> pushbatch_total_{0};
+    std::atomic<uint64_t> pushbatch_ms_sum_{0};
+    std::atomic<uint64_t> pushbatch_slow_{0};
+    std::atomic<int64_t> pushbatch_last_ms_{0};
     std::atomic<int64_t> gateway_tcp_connections_{0};
     std::atomic<uint64_t> gateway_rx_bytes_{0};
     std::atomic<uint64_t> gateway_tx_bytes_{0};

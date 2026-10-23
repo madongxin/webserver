@@ -67,6 +67,7 @@
 #include "GatewayAuthClients.h"
 #include "GatewayPushServer.h"
 #include "GatewayPushClient.h"
+#include "RpcOffloadPool.h"
 #include "IServiceRegistry.h"
 #include "AdvertiseAddr.h"
 #include "BrpcChannelManager.h"
@@ -2099,6 +2100,9 @@ int RunServer(const LaunchOpts &launch) {
 #ifdef WEBSERVER_ENABLE_GAME_PROTOBUF
     if (role == "gamelogic" || role == "all")
         GameLogic::Instance().FlushAllLastSafe("graceful_shutdown");
+    GameLogic::Instance().StopAoiPublisher();
+    if (role == "gamelogic")
+        RpcOffloadPool::Instance().Stop();
 #endif
     if (role == "session" || role == "all")
         SessionBrpcServer::Instance().Stop();

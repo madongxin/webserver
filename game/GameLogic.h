@@ -68,6 +68,8 @@ public:
     bool FlushBag(uint64_t player_id, const std::string &reason);
     /** 锁外推送 AOI（brpc/Redis 不得在 MapRuntime 锁内） */
     void EmitAoi(const AoiPushBatch &batch);
+    /** 进程退出前排空并收回 AOI 发布线程。没启动过则什么都不做。 */
+    void StopAoiPublisher();
     /** 转移冻结期间暂存该玩家的 AOI，Commit/Import 后按原顺序重放。 */
     void SetAoiHold(uint64_t player_id, bool hold);
 

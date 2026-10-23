@@ -6,6 +6,7 @@
 #include "OpsMetrics.h"
 #include "PushReplayCache.h"
 
+#include <chrono>
 #include <unordered_map>
 
 #ifdef WEBSERVER_ENABLE_REDIS
@@ -109,7 +110,13 @@ bool PushGrouped(std::vector<GatewayPushItem> items) {
             m->set_generation(item.generation);
         }
         gwpush::PushBatchResponse rsp;
-        if (!GatewayPushClient::Instance().PushBatch(gw, req, &rsp) || !rsp.ok()) {
+        const auto push_t0 = std::chrono::steady_clock::now();
+        const bool pushed = GatewayPushClient::Instance().PushBatch(gw, req, &rsp);
+        const auto push_ms = std::chrono::duration_cast<std::chrono::milliseconds>(
+                                 std::chrono::steady_clock::now() - push_t0)
+                                 .count();
+        OpsMetrics::Instance().NotePushBatch(push_ms);
+        if (!pushed || !rsp.ok()) {
             for (size_t i = 0; i < bucket.size(); ++i)
                 OpsMetrics::Instance().IncPushRejected();
             LOG_WARN << "PushBatch failed target_gw=" << gw << " messages=" << bucket.size()

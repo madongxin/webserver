@@ -1,5 +1,6 @@
 #include "GameLogic.h"
 
+#include "AoiPublishQueue.h"
 #include "FormalMode.h"
 #include "ForwardMetaContext.h"
 #include "FriendService.h"
@@ -43,11 +44,14 @@
 #include "SocialText.h"
 
 #include <algorithm>
+#include <atomic>
 #include <chrono>
 #include <cmath>
+#include <condition_variable>
 #include <cstdlib>
 #include <deque>
 #include <mutex>
+#include <thread>
 #include <sstream>
 #include <unordered_map>
 #include <unordered_set>
@@ -158,10 +162,14 @@ void FillEntitySnapshot(const MapEntity &e, game::EntitySnapshot *out) {
 
 #ifdef WEBSERVER_ENABLE_BRPC
 std::mutex g_aoi_mu;
+std::condition_variable g_aoi_cv;
 std::unordered_set<uint64_t> g_aoi_held;
 std::unordered_map<uint64_t, AoiPushBatch> g_aoi_held_batch;
 std::deque<AoiPushBatch> g_aoi_q;
-bool g_aoi_draining = false;
+std::thread g_aoi_worker;
+std::once_flag g_aoi_start_once;
+std::atomic<bool> g_aoi_stop{false};
+constexpr size_t kAoiQueueCap = 64;
 
 void PublishAoiBatch(const AoiPushBatch &batch);
 
@@ -209,62 +217,75 @@ void SampleMoveEvents(std::vector<AoiRecipientEvent> *events) {
     *events = std::move(out);
 }
 
-void DrainAoiQueue() {
+void PublishTaken(std::vector<AoiPushBatch> taken) {
+    if (taken.empty())
+        return;
+    if (taken.size() == 1) {
+        PublishAoiBatch(taken[0]);
+        return;
+    }
+    std::unordered_map<uint64_t, AoiPushBatch> merged;
+    for (auto &b : taken) {
+        auto &dst = merged[b.map_instance_id];
+        dst.map_instance_id = b.map_instance_id;
+        dst.events.insert(dst.events.end(), std::make_move_iterator(b.events.begin()),
+                          std::make_move_iterator(b.events.end()));
+    }
+    for (auto &kv : merged)
+        PublishAoiBatch(kv.second);
+}
+
+void AoiWorkerMain() {
     for (;;) {
         std::vector<AoiPushBatch> taken;
         {
-            std::lock_guard<std::mutex> lk(g_aoi_mu);
-            if (g_aoi_q.empty()) {
-                g_aoi_draining = false;
-                OpsMetrics::Instance().SetAoiPushBacklog(0);
+            std::unique_lock<std::mutex> lk(g_aoi_mu);
+            g_aoi_cv.wait(lk, [] {
+                return g_aoi_stop.load(std::memory_order_relaxed) || !g_aoi_q.empty();
+            });
+            if (g_aoi_q.empty())
                 return;
+            taken.reserve(g_aoi_q.size());
+            while (!g_aoi_q.empty()) {
+                taken.push_back(std::move(g_aoi_q.front()));
+                g_aoi_q.pop_front();
             }
-            taken.push_back(std::move(g_aoi_q.front()));
-            g_aoi_q.pop_front();
-            // 队列里还有积压：整段一起取出，移动帧在发出前合并。仍由这一个线程排空。
-            if (!g_aoi_q.empty()) {
-                while (!g_aoi_q.empty()) {
-                    taken.push_back(std::move(g_aoi_q.front()));
-                    g_aoi_q.pop_front();
-                }
-            }
+            OpsMetrics::Instance().SetAoiPushBacklog(0);
         }
-        if (taken.size() == 1) {
-            PublishAoiBatch(taken[0]);
-            continue;
-        }
-        std::unordered_map<uint64_t, AoiPushBatch> merged;
-        for (auto &b : taken) {
-            auto &dst = merged[b.map_instance_id];
-            dst.map_instance_id = b.map_instance_id;
-            dst.events.insert(dst.events.end(), std::make_move_iterator(b.events.begin()),
-                              std::make_move_iterator(b.events.end()));
-        }
-        for (auto &kv : merged) {
-            PublishAoiBatch(kv.second);
-        }
+        PublishTaken(std::move(taken));
     }
+}
+
+void EnsureAoiWorker() {
+    std::call_once(g_aoi_start_once, [] { g_aoi_worker = std::thread(AoiWorkerMain); });
 }
 
 void EnqueueAoi(AoiPushBatch batch) {
     if (batch.events.empty())
         return;
-    bool start = false;
+    if (g_aoi_stop.load(std::memory_order_acquire))
+        return;
     {
         std::lock_guard<std::mutex> lk(g_aoi_mu);
         g_aoi_q.push_back(std::move(batch));
+        const size_t shed = ShedAoiMoveBatches(&g_aoi_q, kAoiQueueCap);
+        if (shed != 0)
+            OpsMetrics::Instance().AddAoiMoveShed(static_cast<uint64_t>(shed));
         OpsMetrics::Instance().SetAoiPushBacklog(static_cast<int64_t>(g_aoi_q.size()));
-        if (!g_aoi_draining) {
-            g_aoi_draining = true;
-            start = true;
-        }
     }
-    if (!start)
-        return;
-    if (RpcOffloadPool::Instance().started() &&
-        RpcOffloadPool::Instance().TryPost([] { DrainAoiQueue(); }))
-        return;
-    DrainAoiQueue();
+    // 发布线程自己做同步 PushBatch。地图邮箱线程不能在回 MoveRsp 之前排空这条队列。
+    EnsureAoiWorker();
+    g_aoi_cv.notify_one();
+}
+
+void StopAoiWorker() {
+    {
+        std::lock_guard<std::mutex> lk(g_aoi_mu);
+        g_aoi_stop.store(true, std::memory_order_release);
+    }
+    g_aoi_cv.notify_all();
+    if (g_aoi_worker.joinable())
+        g_aoi_worker.join();
 }
 
 void PublishAoiBatch(const AoiPushBatch &batch) {
@@ -348,6 +369,12 @@ void GameLogic::EmitAoi(const AoiPushBatch &batch) {
     EnqueueAoi(batch);
 #else
     (void)batch;
+#endif
+}
+
+void GameLogic::StopAoiPublisher() {
+#ifdef WEBSERVER_ENABLE_BRPC
+    StopAoiWorker();
 #endif
 }
 
@@ -920,10 +947,27 @@ void GameLogic::MaybePersistLastSafe(uint64_t player_id, const MapEntity &e,
         if (!force && slot.last_flush_ms != 0 && (now - slot.last_flush_ms) < flush_ms &&
             dist < flush_dist)
             return;
+        if (!force)
+            slot.last_flush_ms = now;
         mem = slot;
     }
-    FlushLastSafe(player_id, force ? "force" : "throttle");
     (void)mem;
+#ifdef WEBSERVER_ENABLE_BRPC
+    // 权威坐标已经写进 MapRuntime。节流落库走卸载池，避免同步 GameDB 占住这条线的 MoveRsp。
+    if (!force) {
+        if (RpcOffloadPool::Instance().TryPost([player_id] {
+                GameLogic::Instance().FlushLastSafe(player_id, "throttle");
+            })) {
+            OpsMetrics::Instance().IncSafePosDeferred();
+            return;
+        }
+        OpsMetrics::Instance().IncSafePosDeferFail();
+        std::lock_guard<std::mutex> lk(mu_);
+        last_safe_[player_id].last_flush_ms = 0;
+        return;
+    }
+#endif
+    FlushLastSafe(player_id, force ? "force" : "throttle");
 }
 
 void GameLogic::FlushLastSafe(uint64_t player_id, const char *reason) {
@@ -955,8 +999,6 @@ void GameLogic::FlushLastSafe(uint64_t player_id, const char *reason) {
             slot.position_version = ver;
             slot.last_flush_ms = NowMs();
             slot.dirty = false;
-            LOG_INFO << "FlushLastSafe player=" << player_id << " reason=" << (reason ? reason : "")
-                     << " ver=" << ver;
             return;
         }
         if (!err.empty())
@@ -2138,8 +2180,10 @@ bool GameLogic::HandleEnterMap(const game::EnterMapReq &req, game::GameResponse 
             slot.z = self.z;
             slot.yaw = self.yaw;
             slot.dirty = true;
+            // 清掉节流时间，让下面这次异步落库一定会发出。不能在地图线程里同步写库。
+            slot.last_flush_ms = 0;
         }
-        MaybePersistLastSafe(req.player_id(), self, place.map_instance_id, true);
+        MaybePersistLastSafe(req.player_id(), self, place.map_instance_id, false);
         LOG_INFO << "[enter_map] recovery=" << recovery << " player=" << req.player_id();
     }
 #ifdef WEBSERVER_ENABLE_REDIS

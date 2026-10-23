@@ -6,6 +6,7 @@
 #include "GameLogic.h"
 #include "GameService.h"
 #include "Logging.h"
+#include "OpsMetrics.h"
 #include "ServerStats.h"
 #include "MapInstanceRegistry.h"
 #include "MapRuntime.h"
@@ -276,6 +277,7 @@ void ExecuteDispatch(const glrpc::ClientCommand &request, glrpc::CommandResult *
             response->set_ok(false);
             response->set_error_code("ERR_OVERLOADED");
             response->set_message("map mailbox overloaded");
+            OpsMetrics::Instance().IncMoveOverloaded();
             return;
         }
         // std::condition_variable 会占死 brpc 的 pthread，后面的 Move 都进不来。
@@ -294,6 +296,8 @@ void ExecuteDispatch(const glrpc::ClientCommand &request, glrpc::CommandResult *
             response->set_ok(false);
             response->set_error_code("ERR_OVERLOADED");
             response->set_message("map mailbox overloaded");
+            if (request.message_type() == "move")
+                OpsMetrics::Instance().IncMoveOverloaded();
             return;
         }
         ev->wait();
@@ -301,6 +305,8 @@ void ExecuteDispatch(const glrpc::ClientCommand &request, glrpc::CommandResult *
             response->set_ok(false);
             response->set_error_code("ERR_OVERLOADED");
             response->set_message("map mailbox dropped");
+            if (request.message_type() == "move")
+                OpsMetrics::Instance().IncMoveOverloaded();
             return;
         }
     } else {

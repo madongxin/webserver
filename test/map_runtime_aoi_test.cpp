@@ -1,11 +1,13 @@
 /**
  * S2：AOI 同格/跨格/进出视野/跨图隔离；Move 拒绝 NaN/越界/不可走/旧 seq；超速钳位接受。
  */
+#include "AoiPublishQueue.h"
 #include "MapRuntime.h"
 #include "MapStaticData.h"
 
 #include <cmath>
 #include <cstdio>
+#include <deque>
 #include <limits>
 #include <string>
 
@@ -221,6 +223,37 @@ int main() {
     MapRuntime::FullView near;
     Expect(rt.CollectFullView(1, &near) && near.ready, "32m full view ready");
     Expect(near.interest.size() == 1 && near.interest[0].player_id == 2, "32m neighbor included");
+
+    std::deque<AoiPushBatch> q;
+    for (int i = 0; i < 4; ++i) {
+        AoiPushBatch b;
+        b.map_instance_id = 1;
+        AoiRecipientEvent ev;
+        ev.op = 2;
+        ev.recipient_id = 1;
+        ev.snapshot.player_id = static_cast<uint64_t>(i + 1);
+        b.events.push_back(ev);
+        q.push_back(std::move(b));
+    }
+    AoiPushBatch reliable;
+    reliable.map_instance_id = 1;
+    AoiRecipientEvent leave;
+    leave.op = 3;
+    leave.recipient_id = 9;
+    leave.snapshot.player_id = 9;
+    reliable.events.push_back(leave);
+    q.push_front(std::move(reliable));
+    const size_t shed = ShedAoiMoveBatches(&q, 2);
+    Expect(shed == 3, "shed oldest move-only batches down to cap");
+    Expect(q.size() == 2, "queue stays at cap");
+    Expect(!q.empty() && q.front().events.size() == 1 && q.front().events[0].op == 3,
+           "ENTER/LEAVE batch is kept");
+    std::deque<AoiPushBatch> only_reliable;
+    only_reliable.push_back(q.front());
+    only_reliable.push_back(q.front());
+    only_reliable.push_back(q.front());
+    Expect(ShedAoiMoveBatches(&only_reliable, 1) == 0, "reliable batches are not shed");
+    Expect(only_reliable.size() == 3, "reliable queue may exceed cap");
 
     if (fails) {
         std::printf("map_runtime_aoi_test FAIL count=%d\n", fails);

@@ -25,7 +25,9 @@
 
 // 内核里还没交给网卡的字节超过这个值时，最新移动帧只留在应用缓冲，不再 write。
 // 再写进去的话，移动回包会排在这批旧坐标后面，客户端要读完才发下一步，人会越走越慢。
-constexpr int kLatestMoveKernelBudget = 8 * 1024;
+// 只统计还没离开本机的字节。预算太大时，移动回包会排在已经进内核的 AOI 后面，
+// 慢读的连接要几秒才读到 MoveRsp。1KB 足够躲开空窗口，又不会把应答挡过客户端时限。
+constexpr int kLatestMoveKernelBudget = 1024;
 
 TcpConnection::TcpConnection(EventLoop *loop, int connfd, uint64_t connid)
     : connfd_(connfd),

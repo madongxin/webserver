@@ -107,8 +107,28 @@ std::string OpsMetrics::PrometheusText() const {
     gauge("gamemesh_ghost_occupancy",
           "max(0, line_occupancy_total - session_online); softcap ghosts.",
           ghost_occupancy_.load(std::memory_order_relaxed));
-    gauge("gamemesh_aoi_push_backlog", "AOI enqueue depth awaiting PushBatch.",
+    gauge("gamemesh_aoi_push_backlog", "AOI enqueue depth awaiting PushBatch. Instantaneous batch count.",
           aoi_push_backlog_.load(std::memory_order_relaxed));
+    ctr("gamemesh_aoi_move_shed_total",
+        "AOI MOVE events dropped because the publish queue exceeded its cap. Cumulative events.",
+        aoi_move_shed_.load(std::memory_order_relaxed));
+    ctr("gamemesh_safe_pos_deferred_total",
+        "Last-safe flushes posted off the map mailbox. Cumulative.",
+        safe_pos_deferred_.load(std::memory_order_relaxed));
+    ctr("gamemesh_safe_pos_defer_fail_total",
+        "Last-safe flushes left dirty because the offload queue was full. Cumulative.",
+        safe_pos_defer_fail_.load(std::memory_order_relaxed));
+    ctr("gamemesh_move_overloaded_total",
+        "Move dispatches rejected with ERR_OVERLOADED before HandleMove. Cumulative.",
+        move_overloaded_.load(std::memory_order_relaxed));
+    ctr("gamemesh_pushbatch_total", "Synchronous Gateway PushBatch calls from GameLogic. Cumulative.",
+        pushbatch_total_.load(std::memory_order_relaxed));
+    ctr("gamemesh_pushbatch_ms_sum", "Sum of PushBatch call durations. Cumulative milliseconds.",
+        pushbatch_ms_sum_.load(std::memory_order_relaxed));
+    ctr("gamemesh_pushbatch_slow_total", "PushBatch calls that took at least 200ms. Cumulative.",
+        pushbatch_slow_.load(std::memory_order_relaxed));
+    gauge("gamemesh_pushbatch_last_ms", "Duration of the most recent PushBatch call. Milliseconds.",
+          pushbatch_last_ms_.load(std::memory_order_relaxed));
     gauge("gamemesh_gateway_tcp_connections", "Current game TCP sockets (including pre-auth).",
           gateway_tcp_connections_.load(std::memory_order_relaxed));
     ctr("gamemesh_gateway_rx_bytes_total", "Game TCP bytes received (client → Gateway).",
