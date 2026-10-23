@@ -23,11 +23,37 @@ message PushBatchRequest {
   repeated PushMessage messages = 2;
 }
 
+// 低基数。指标标签只用这些名字，不要带 player_id / session。
+enum PushRejectReason {
+  PUSH_OK = 0;
+  NO_SESSION = 1;
+  PLAYER_ID_MISMATCH = 2;
+  GATEWAY_MISMATCH = 3;
+  FENCE_MISMATCH = 4;
+  GENERATION_MISMATCH = 5;
+  SEQ_ALLOCATION_FAILED = 6;
+  BAD_FRAME = 7;
+  SEND_FAILED = 8;
+  CLOSED = 9;
+  // 可靠序号已经写入回放，这一帧没有进入发送缓冲。不得回滚序号。
+  REPLAY_PENDING = 10;
+}
+
+message PushItemResult {
+  uint64 player_id = 1;
+  uint64 server_seq = 2;
+  // true：进了应用发送缓冲或移动合并槽。不是内核写完，也不是客户端已应用。
+  bool queued = 3;
+  PushRejectReason reason = 4;
+  bool replay_pending = 5;
+}
+
 message PushBatchResponse {
   bool ok = 1;
   string message = 2;
   uint32 accepted = 3;
   uint32 rejected = 4;
+  repeated PushItemResult results = 5;
 }
 
 message KickConnectionRequest {

@@ -256,6 +256,8 @@ if(ENABLE_BRPC)
     runtime/brpc/GatewayPushServer.cpp
     runtime/brpc/GatewayPushClient.cpp
     runtime/brpc/GameLogicPush.cpp
+    runtime/PushAdmit.cpp
+    runtime/AoiRecipientGate.cpp
     runtime/MapLineSync.cpp
     runtime/PushReplayCache.cpp
     runtime/brpc/gamedb.pb.cc
@@ -883,6 +885,13 @@ if(ENABLE_GAME_PROTOBUF)
     log/AsyncLogging.cpp)
   target_include_directories(gateway_conn_race_test PRIVATE runtime game base log timer)
   target_link_libraries(gateway_conn_race_test ${CMAKE_THREAD_LIBS_INIT})
+
+  add_executable(push_admit_test
+    test/push_admit_test.cpp
+    runtime/PushAdmit.cpp
+    runtime/AoiRecipientGate.cpp)
+  target_include_directories(push_admit_test PRIVATE runtime)
+  target_link_libraries(push_admit_test ${CMAKE_THREAD_LIBS_INIT})
 
   add_executable(gateway_logout_policy_test
     test/gateway_logout_policy_test.cpp)

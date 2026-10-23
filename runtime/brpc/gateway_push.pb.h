@@ -31,6 +31,7 @@
 #include <google/protobuf/message.h>
 #include <google/protobuf/repeated_field.h>  // IWYU pragma: export
 #include <google/protobuf/extension_set.h>  // IWYU pragma: export
+#include <google/protobuf/generated_enum_reflection.h>
 #include <google/protobuf/service.h>
 #include <google/protobuf/unknown_field_set.h>
 // @@protoc_insertion_point(includes)
@@ -48,7 +49,7 @@ struct TableStruct_gateway_5fpush_2eproto {
     PROTOBUF_SECTION_VARIABLE(protodesc_cold);
   static const ::PROTOBUF_NAMESPACE_ID::internal::AuxillaryParseTableField aux[]
     PROTOBUF_SECTION_VARIABLE(protodesc_cold);
-  static const ::PROTOBUF_NAMESPACE_ID::internal::ParseTable schema[5]
+  static const ::PROTOBUF_NAMESPACE_ID::internal::ParseTable schema[6]
     PROTOBUF_SECTION_VARIABLE(protodesc_cold);
   static const ::PROTOBUF_NAMESPACE_ID::internal::FieldMetadata field_metadata[];
   static const ::PROTOBUF_NAMESPACE_ID::internal::SerializationTable serialization_table[];
@@ -68,6 +69,9 @@ extern PushBatchRequestDefaultTypeInternal _PushBatchRequest_default_instance_;
 class PushBatchResponse;
 class PushBatchResponseDefaultTypeInternal;
 extern PushBatchResponseDefaultTypeInternal _PushBatchResponse_default_instance_;
+class PushItemResult;
+class PushItemResultDefaultTypeInternal;
+extern PushItemResultDefaultTypeInternal _PushItemResult_default_instance_;
 class PushMessage;
 class PushMessageDefaultTypeInternal;
 extern PushMessageDefaultTypeInternal _PushMessage_default_instance_;
@@ -77,10 +81,45 @@ template<> ::gwpush::KickConnectionRequest* Arena::CreateMaybeMessage<::gwpush::
 template<> ::gwpush::KickConnectionResponse* Arena::CreateMaybeMessage<::gwpush::KickConnectionResponse>(Arena*);
 template<> ::gwpush::PushBatchRequest* Arena::CreateMaybeMessage<::gwpush::PushBatchRequest>(Arena*);
 template<> ::gwpush::PushBatchResponse* Arena::CreateMaybeMessage<::gwpush::PushBatchResponse>(Arena*);
+template<> ::gwpush::PushItemResult* Arena::CreateMaybeMessage<::gwpush::PushItemResult>(Arena*);
 template<> ::gwpush::PushMessage* Arena::CreateMaybeMessage<::gwpush::PushMessage>(Arena*);
 PROTOBUF_NAMESPACE_CLOSE
 namespace gwpush {
 
+enum PushRejectReason : int {
+  PUSH_OK = 0,
+  NO_SESSION = 1,
+  PLAYER_ID_MISMATCH = 2,
+  GATEWAY_MISMATCH = 3,
+  FENCE_MISMATCH = 4,
+  GENERATION_MISMATCH = 5,
+  SEQ_ALLOCATION_FAILED = 6,
+  BAD_FRAME = 7,
+  SEND_FAILED = 8,
+  CLOSED = 9,
+  REPLAY_PENDING = 10,
+  PushRejectReason_INT_MIN_SENTINEL_DO_NOT_USE_ = std::numeric_limits<::PROTOBUF_NAMESPACE_ID::int32>::min(),
+  PushRejectReason_INT_MAX_SENTINEL_DO_NOT_USE_ = std::numeric_limits<::PROTOBUF_NAMESPACE_ID::int32>::max()
+};
+bool PushRejectReason_IsValid(int value);
+constexpr PushRejectReason PushRejectReason_MIN = PUSH_OK;
+constexpr PushRejectReason PushRejectReason_MAX = REPLAY_PENDING;
+constexpr int PushRejectReason_ARRAYSIZE = PushRejectReason_MAX + 1;
+
+const ::PROTOBUF_NAMESPACE_ID::EnumDescriptor* PushRejectReason_descriptor();
+template<typename T>
+inline const std::string& PushRejectReason_Name(T enum_t_value) {
+  static_assert(::std::is_same<T, PushRejectReason>::value ||
+    ::std::is_integral<T>::value,
+    "Incorrect type passed to function PushRejectReason_Name.");
+  return ::PROTOBUF_NAMESPACE_ID::internal::NameOfEnum(
+    PushRejectReason_descriptor(), enum_t_value);
+}
+inline bool PushRejectReason_Parse(
+    const std::string& name, PushRejectReason* value) {
+  return ::PROTOBUF_NAMESPACE_ID::internal::ParseNamedEnum<PushRejectReason>(
+    PushRejectReason_descriptor(), name, value);
+}
 // ===================================================================
 
 class PushMessage PROTOBUF_FINAL :
@@ -545,6 +584,187 @@ class PushBatchRequest PROTOBUF_FINAL :
 };
 // -------------------------------------------------------------------
 
+class PushItemResult PROTOBUF_FINAL :
+    public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:gwpush.PushItemResult) */ {
+ public:
+  inline PushItemResult() : PushItemResult(nullptr) {};
+  virtual ~PushItemResult();
+
+  PushItemResult(const PushItemResult& from);
+  PushItemResult(PushItemResult&& from) noexcept
+    : PushItemResult() {
+    *this = ::std::move(from);
+  }
+
+  inline PushItemResult& operator=(const PushItemResult& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  inline PushItemResult& operator=(PushItemResult&& from) noexcept {
+    if (GetArena() == from.GetArena()) {
+      if (this != &from) InternalSwap(&from);
+    } else {
+      CopyFrom(from);
+    }
+    return *this;
+  }
+
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* descriptor() {
+    return GetDescriptor();
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* GetDescriptor() {
+    return GetMetadataStatic().descriptor;
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Reflection* GetReflection() {
+    return GetMetadataStatic().reflection;
+  }
+  static const PushItemResult& default_instance();
+
+  static void InitAsDefaultInstance();  // FOR INTERNAL USE ONLY
+  static inline const PushItemResult* internal_default_instance() {
+    return reinterpret_cast<const PushItemResult*>(
+               &_PushItemResult_default_instance_);
+  }
+  static constexpr int kIndexInFileMessages =
+    2;
+
+  friend void swap(PushItemResult& a, PushItemResult& b) {
+    a.Swap(&b);
+  }
+  inline void Swap(PushItemResult* other) {
+    if (other == this) return;
+    if (GetArena() == other->GetArena()) {
+      InternalSwap(other);
+    } else {
+      ::PROTOBUF_NAMESPACE_ID::internal::GenericSwap(this, other);
+    }
+  }
+  void UnsafeArenaSwap(PushItemResult* other) {
+    if (other == this) return;
+    GOOGLE_DCHECK(GetArena() == other->GetArena());
+    InternalSwap(other);
+  }
+
+  // implements Message ----------------------------------------------
+
+  inline PushItemResult* New() const final {
+    return CreateMaybeMessage<PushItemResult>(nullptr);
+  }
+
+  PushItemResult* New(::PROTOBUF_NAMESPACE_ID::Arena* arena) const final {
+    return CreateMaybeMessage<PushItemResult>(arena);
+  }
+  void CopyFrom(const ::PROTOBUF_NAMESPACE_ID::Message& from) final;
+  void MergeFrom(const ::PROTOBUF_NAMESPACE_ID::Message& from) final;
+  void CopyFrom(const PushItemResult& from);
+  void MergeFrom(const PushItemResult& from);
+  PROTOBUF_ATTRIBUTE_REINITIALIZES void Clear() final;
+  bool IsInitialized() const final;
+
+  size_t ByteSizeLong() const final;
+  const char* _InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::internal::ParseContext* ctx) final;
+  ::PROTOBUF_NAMESPACE_ID::uint8* _InternalSerialize(
+      ::PROTOBUF_NAMESPACE_ID::uint8* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const final;
+  int GetCachedSize() const final { return _cached_size_.Get(); }
+
+  private:
+  inline void SharedCtor();
+  inline void SharedDtor();
+  void SetCachedSize(int size) const final;
+  void InternalSwap(PushItemResult* other);
+  friend class ::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata;
+  static ::PROTOBUF_NAMESPACE_ID::StringPiece FullMessageName() {
+    return "gwpush.PushItemResult";
+  }
+  protected:
+  explicit PushItemResult(::PROTOBUF_NAMESPACE_ID::Arena* arena);
+  private:
+  static void ArenaDtor(void* object);
+  inline void RegisterArenaDtor(::PROTOBUF_NAMESPACE_ID::Arena* arena);
+  public:
+
+  ::PROTOBUF_NAMESPACE_ID::Metadata GetMetadata() const final;
+  private:
+  static ::PROTOBUF_NAMESPACE_ID::Metadata GetMetadataStatic() {
+    ::PROTOBUF_NAMESPACE_ID::internal::AssignDescriptors(&::descriptor_table_gateway_5fpush_2eproto);
+    return ::descriptor_table_gateway_5fpush_2eproto.file_level_metadata[kIndexInFileMessages];
+  }
+
+  public:
+
+  // nested types ----------------------------------------------------
+
+  // accessors -------------------------------------------------------
+
+  enum : int {
+    kPlayerIdFieldNumber = 1,
+    kServerSeqFieldNumber = 2,
+    kReasonFieldNumber = 4,
+    kQueuedFieldNumber = 3,
+    kReplayPendingFieldNumber = 5,
+  };
+  // uint64 player_id = 1;
+  void clear_player_id();
+  ::PROTOBUF_NAMESPACE_ID::uint64 player_id() const;
+  void set_player_id(::PROTOBUF_NAMESPACE_ID::uint64 value);
+  private:
+  ::PROTOBUF_NAMESPACE_ID::uint64 _internal_player_id() const;
+  void _internal_set_player_id(::PROTOBUF_NAMESPACE_ID::uint64 value);
+  public:
+
+  // uint64 server_seq = 2;
+  void clear_server_seq();
+  ::PROTOBUF_NAMESPACE_ID::uint64 server_seq() const;
+  void set_server_seq(::PROTOBUF_NAMESPACE_ID::uint64 value);
+  private:
+  ::PROTOBUF_NAMESPACE_ID::uint64 _internal_server_seq() const;
+  void _internal_set_server_seq(::PROTOBUF_NAMESPACE_ID::uint64 value);
+  public:
+
+  // .gwpush.PushRejectReason reason = 4;
+  void clear_reason();
+  ::gwpush::PushRejectReason reason() const;
+  void set_reason(::gwpush::PushRejectReason value);
+  private:
+  ::gwpush::PushRejectReason _internal_reason() const;
+  void _internal_set_reason(::gwpush::PushRejectReason value);
+  public:
+
+  // bool queued = 3;
+  void clear_queued();
+  bool queued() const;
+  void set_queued(bool value);
+  private:
+  bool _internal_queued() const;
+  void _internal_set_queued(bool value);
+  public:
+
+  // bool replay_pending = 5;
+  void clear_replay_pending();
+  bool replay_pending() const;
+  void set_replay_pending(bool value);
+  private:
+  bool _internal_replay_pending() const;
+  void _internal_set_replay_pending(bool value);
+  public:
+
+  // @@protoc_insertion_point(class_scope:gwpush.PushItemResult)
+ private:
+  class _Internal;
+
+  template <typename T> friend class ::PROTOBUF_NAMESPACE_ID::Arena::InternalHelper;
+  typedef void InternalArenaConstructable_;
+  typedef void DestructorSkippable_;
+  ::PROTOBUF_NAMESPACE_ID::uint64 player_id_;
+  ::PROTOBUF_NAMESPACE_ID::uint64 server_seq_;
+  int reason_;
+  bool queued_;
+  bool replay_pending_;
+  mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
+  friend struct ::TableStruct_gateway_5fpush_2eproto;
+};
+// -------------------------------------------------------------------
+
 class PushBatchResponse PROTOBUF_FINAL :
     public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:gwpush.PushBatchResponse) */ {
  public:
@@ -587,7 +807,7 @@ class PushBatchResponse PROTOBUF_FINAL :
                &_PushBatchResponse_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    2;
+    3;
 
   friend void swap(PushBatchResponse& a, PushBatchResponse& b) {
     a.Swap(&b);
@@ -658,11 +878,30 @@ class PushBatchResponse PROTOBUF_FINAL :
   // accessors -------------------------------------------------------
 
   enum : int {
+    kResultsFieldNumber = 5,
     kMessageFieldNumber = 2,
     kOkFieldNumber = 1,
     kAcceptedFieldNumber = 3,
     kRejectedFieldNumber = 4,
   };
+  // repeated .gwpush.PushItemResult results = 5;
+  int results_size() const;
+  private:
+  int _internal_results_size() const;
+  public:
+  void clear_results();
+  ::gwpush::PushItemResult* mutable_results(int index);
+  ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::gwpush::PushItemResult >*
+      mutable_results();
+  private:
+  const ::gwpush::PushItemResult& _internal_results(int index) const;
+  ::gwpush::PushItemResult* _internal_add_results();
+  public:
+  const ::gwpush::PushItemResult& results(int index) const;
+  ::gwpush::PushItemResult* add_results();
+  const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::gwpush::PushItemResult >&
+      results() const;
+
   // string message = 2;
   void clear_message();
   const std::string& message() const;
@@ -722,6 +961,7 @@ class PushBatchResponse PROTOBUF_FINAL :
   template <typename T> friend class ::PROTOBUF_NAMESPACE_ID::Arena::InternalHelper;
   typedef void InternalArenaConstructable_;
   typedef void DestructorSkippable_;
+  ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::gwpush::PushItemResult > results_;
   ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr message_;
   bool ok_;
   ::PROTOBUF_NAMESPACE_ID::uint32 accepted_;
@@ -773,7 +1013,7 @@ class KickConnectionRequest PROTOBUF_FINAL :
                &_KickConnectionRequest_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    3;
+    4;
 
   friend void swap(KickConnectionRequest& a, KickConnectionRequest& b) {
     a.Swap(&b);
@@ -975,7 +1215,7 @@ class KickConnectionResponse PROTOBUF_FINAL :
                &_KickConnectionResponse_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    4;
+    5;
 
   friend void swap(KickConnectionResponse& a, KickConnectionResponse& b) {
     a.Swap(&b);
@@ -1734,6 +1974,110 @@ PushBatchRequest::messages() const {
 
 // -------------------------------------------------------------------
 
+// PushItemResult
+
+// uint64 player_id = 1;
+inline void PushItemResult::clear_player_id() {
+  player_id_ = PROTOBUF_ULONGLONG(0);
+}
+inline ::PROTOBUF_NAMESPACE_ID::uint64 PushItemResult::_internal_player_id() const {
+  return player_id_;
+}
+inline ::PROTOBUF_NAMESPACE_ID::uint64 PushItemResult::player_id() const {
+  // @@protoc_insertion_point(field_get:gwpush.PushItemResult.player_id)
+  return _internal_player_id();
+}
+inline void PushItemResult::_internal_set_player_id(::PROTOBUF_NAMESPACE_ID::uint64 value) {
+  
+  player_id_ = value;
+}
+inline void PushItemResult::set_player_id(::PROTOBUF_NAMESPACE_ID::uint64 value) {
+  _internal_set_player_id(value);
+  // @@protoc_insertion_point(field_set:gwpush.PushItemResult.player_id)
+}
+
+// uint64 server_seq = 2;
+inline void PushItemResult::clear_server_seq() {
+  server_seq_ = PROTOBUF_ULONGLONG(0);
+}
+inline ::PROTOBUF_NAMESPACE_ID::uint64 PushItemResult::_internal_server_seq() const {
+  return server_seq_;
+}
+inline ::PROTOBUF_NAMESPACE_ID::uint64 PushItemResult::server_seq() const {
+  // @@protoc_insertion_point(field_get:gwpush.PushItemResult.server_seq)
+  return _internal_server_seq();
+}
+inline void PushItemResult::_internal_set_server_seq(::PROTOBUF_NAMESPACE_ID::uint64 value) {
+  
+  server_seq_ = value;
+}
+inline void PushItemResult::set_server_seq(::PROTOBUF_NAMESPACE_ID::uint64 value) {
+  _internal_set_server_seq(value);
+  // @@protoc_insertion_point(field_set:gwpush.PushItemResult.server_seq)
+}
+
+// bool queued = 3;
+inline void PushItemResult::clear_queued() {
+  queued_ = false;
+}
+inline bool PushItemResult::_internal_queued() const {
+  return queued_;
+}
+inline bool PushItemResult::queued() const {
+  // @@protoc_insertion_point(field_get:gwpush.PushItemResult.queued)
+  return _internal_queued();
+}
+inline void PushItemResult::_internal_set_queued(bool value) {
+  
+  queued_ = value;
+}
+inline void PushItemResult::set_queued(bool value) {
+  _internal_set_queued(value);
+  // @@protoc_insertion_point(field_set:gwpush.PushItemResult.queued)
+}
+
+// .gwpush.PushRejectReason reason = 4;
+inline void PushItemResult::clear_reason() {
+  reason_ = 0;
+}
+inline ::gwpush::PushRejectReason PushItemResult::_internal_reason() const {
+  return static_cast< ::gwpush::PushRejectReason >(reason_);
+}
+inline ::gwpush::PushRejectReason PushItemResult::reason() const {
+  // @@protoc_insertion_point(field_get:gwpush.PushItemResult.reason)
+  return _internal_reason();
+}
+inline void PushItemResult::_internal_set_reason(::gwpush::PushRejectReason value) {
+  
+  reason_ = value;
+}
+inline void PushItemResult::set_reason(::gwpush::PushRejectReason value) {
+  _internal_set_reason(value);
+  // @@protoc_insertion_point(field_set:gwpush.PushItemResult.reason)
+}
+
+// bool replay_pending = 5;
+inline void PushItemResult::clear_replay_pending() {
+  replay_pending_ = false;
+}
+inline bool PushItemResult::_internal_replay_pending() const {
+  return replay_pending_;
+}
+inline bool PushItemResult::replay_pending() const {
+  // @@protoc_insertion_point(field_get:gwpush.PushItemResult.replay_pending)
+  return _internal_replay_pending();
+}
+inline void PushItemResult::_internal_set_replay_pending(bool value) {
+  
+  replay_pending_ = value;
+}
+inline void PushItemResult::set_replay_pending(bool value) {
+  _internal_set_replay_pending(value);
+  // @@protoc_insertion_point(field_set:gwpush.PushItemResult.replay_pending)
+}
+
+// -------------------------------------------------------------------
+
 // PushBatchResponse
 
 // bool ok = 1;
@@ -1875,6 +2219,45 @@ inline void PushBatchResponse::_internal_set_rejected(::PROTOBUF_NAMESPACE_ID::u
 inline void PushBatchResponse::set_rejected(::PROTOBUF_NAMESPACE_ID::uint32 value) {
   _internal_set_rejected(value);
   // @@protoc_insertion_point(field_set:gwpush.PushBatchResponse.rejected)
+}
+
+// repeated .gwpush.PushItemResult results = 5;
+inline int PushBatchResponse::_internal_results_size() const {
+  return results_.size();
+}
+inline int PushBatchResponse::results_size() const {
+  return _internal_results_size();
+}
+inline void PushBatchResponse::clear_results() {
+  results_.Clear();
+}
+inline ::gwpush::PushItemResult* PushBatchResponse::mutable_results(int index) {
+  // @@protoc_insertion_point(field_mutable:gwpush.PushBatchResponse.results)
+  return results_.Mutable(index);
+}
+inline ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::gwpush::PushItemResult >*
+PushBatchResponse::mutable_results() {
+  // @@protoc_insertion_point(field_mutable_list:gwpush.PushBatchResponse.results)
+  return &results_;
+}
+inline const ::gwpush::PushItemResult& PushBatchResponse::_internal_results(int index) const {
+  return results_.Get(index);
+}
+inline const ::gwpush::PushItemResult& PushBatchResponse::results(int index) const {
+  // @@protoc_insertion_point(field_get:gwpush.PushBatchResponse.results)
+  return _internal_results(index);
+}
+inline ::gwpush::PushItemResult* PushBatchResponse::_internal_add_results() {
+  return results_.Add();
+}
+inline ::gwpush::PushItemResult* PushBatchResponse::add_results() {
+  // @@protoc_insertion_point(field_add:gwpush.PushBatchResponse.results)
+  return _internal_add_results();
+}
+inline const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::gwpush::PushItemResult >&
+PushBatchResponse::results() const {
+  // @@protoc_insertion_point(field_list:gwpush.PushBatchResponse.results)
+  return results_;
 }
 
 // -------------------------------------------------------------------
@@ -2219,10 +2602,22 @@ inline void KickConnectionResponse::set_closed(bool value) {
 
 // -------------------------------------------------------------------
 
+// -------------------------------------------------------------------
+
 
 // @@protoc_insertion_point(namespace_scope)
 
 }  // namespace gwpush
+
+PROTOBUF_NAMESPACE_OPEN
+
+template <> struct is_proto_enum< ::gwpush::PushRejectReason> : ::std::true_type {};
+template <>
+inline const EnumDescriptor* GetEnumDescriptor< ::gwpush::PushRejectReason>() {
+  return ::gwpush::PushRejectReason_descriptor();
+}
+
+PROTOBUF_NAMESPACE_CLOSE
 
 // @@protoc_insertion_point(global_scope)
 

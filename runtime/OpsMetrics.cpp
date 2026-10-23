@@ -1,5 +1,7 @@
 #include "OpsMetrics.h"
 
+#include "PushAdmit.h"
+
 #include "ServerStats.h"
 
 #include <mutex>
@@ -14,6 +16,12 @@ std::unordered_map<std::string, uint64_t> g_err_counts;
 OpsMetrics &OpsMetrics::Instance() {
     static OpsMetrics g;
     return g;
+}
+
+void OpsMetrics::IncReliablePushReject(int reason) {
+    if (reason < 1 || reason > 10)
+        return;
+    reliable_push_reject_[reason].fetch_add(1, std::memory_order_relaxed);
 }
 
 void OpsMetrics::IncErrorCode(const std::string &code) {
@@ -57,6 +65,14 @@ std::string OpsMetrics::PrometheusText() const {
         push_accepted_.load(std::memory_order_relaxed));
     ctr("gamemesh_push_rejected_total", "Push rejected.",
         push_rejected_.load(std::memory_order_relaxed));
+    os << "# HELP gamemesh_reliable_push_reject_total Reliable AOI/push rejects by reason.\n"
+          "# TYPE gamemesh_reliable_push_reject_total counter\n";
+    for (int reason = 1; reason <= 10; ++reason) {
+        os << "gamemesh_reliable_push_reject_total{reason=\""
+           << PushAdmitReasonName(static_cast<PushAdmitReason>(reason)) << "\"} "
+           << reliable_push_reject_[reason].load(std::memory_order_relaxed) << "\n";
+    }
+    os << "\n";
     ctr("gamemesh_push_ack_ok_total", "Reliable push ACK ok.",
         push_ack_ok_.load(std::memory_order_relaxed));
     ctr("gamemesh_push_ack_duplicate_total", "Reliable push ACK duplicate.",

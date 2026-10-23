@@ -21,6 +21,7 @@
 #include "SessionStore.h"
 #endif
 #ifdef WEBSERVER_ENABLE_BRPC
+#include "AoiRecipientGate.h"
 #include "BrpcGameDbRepository.h"
 #include "GameLogicPush.h"
 #include "GameLogicServiceImpl.h"
@@ -320,6 +321,8 @@ void PublishAoiBatch(const AoiPushBatch &batch) {
     std::unordered_map<uint64_t, game::AoiDelta> by_player;
     std::unordered_map<uint64_t, std::pair<std::string, std::string>> route;
     for (const auto &ev : live.events) {
+        if (!AoiRecipientGate::Instance().Allowed(ev.recipient_id))
+            continue;
         auto &delta = by_player[ev.recipient_id];
         delta.set_map_instance_id(live.map_instance_id);
         auto *pe = delta.add_events();

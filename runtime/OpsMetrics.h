@@ -24,6 +24,8 @@ public:
     void IncDrainReject() { drain_reject_.fetch_add(1, std::memory_order_relaxed); }
     void IncPushAccepted() { push_accepted_.fetch_add(1, std::memory_order_relaxed); }
     void IncPushRejected() { push_rejected_.fetch_add(1, std::memory_order_relaxed); }
+    /** reason 与 PushAdmitReason 的整数值一致，范围 1..10。 */
+    void IncReliablePushReject(int reason);
     void IncPushAckOk() { push_ack_ok_.fetch_add(1, std::memory_order_relaxed); }
     void IncPushAckDuplicate() { push_ack_duplicate_.fetch_add(1, std::memory_order_relaxed); }
     void IncPushAckAheadRejected() {
@@ -152,6 +154,7 @@ private:
     std::atomic<uint64_t> drain_reject_{0};
     std::atomic<uint64_t> push_accepted_{0};
     std::atomic<uint64_t> push_rejected_{0};
+    std::atomic<uint64_t> reliable_push_reject_[11]{};
     std::atomic<uint64_t> push_ack_ok_{0};
     std::atomic<uint64_t> push_ack_duplicate_{0};
     std::atomic<uint64_t> push_ack_ahead_rejected_{0};

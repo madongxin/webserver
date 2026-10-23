@@ -14,6 +14,7 @@
 #include <google/protobuf/wire_format.h>
 // @@protoc_insertion_point(includes)
 #include <google/protobuf/port_def.inc>
+extern PROTOBUF_INTERNAL_EXPORT_gateway_5fpush_2eproto ::PROTOBUF_NAMESPACE_ID::internal::SCCInfo<0> scc_info_PushItemResult_gateway_5fpush_2eproto;
 extern PROTOBUF_INTERNAL_EXPORT_gateway_5fpush_2eproto ::PROTOBUF_NAMESPACE_ID::internal::SCCInfo<0> scc_info_PushMessage_gateway_5fpush_2eproto;
 namespace gwpush {
 class PushMessageDefaultTypeInternal {
@@ -24,6 +25,10 @@ class PushBatchRequestDefaultTypeInternal {
  public:
   ::PROTOBUF_NAMESPACE_ID::internal::ExplicitlyConstructed<PushBatchRequest> _instance;
 } _PushBatchRequest_default_instance_;
+class PushItemResultDefaultTypeInternal {
+ public:
+  ::PROTOBUF_NAMESPACE_ID::internal::ExplicitlyConstructed<PushItemResult> _instance;
+} _PushItemResult_default_instance_;
 class PushBatchResponseDefaultTypeInternal {
  public:
   ::PROTOBUF_NAMESPACE_ID::internal::ExplicitlyConstructed<PushBatchResponse> _instance;
@@ -91,8 +96,23 @@ static void InitDefaultsscc_info_PushBatchResponse_gateway_5fpush_2eproto() {
   ::gwpush::PushBatchResponse::InitAsDefaultInstance();
 }
 
-::PROTOBUF_NAMESPACE_ID::internal::SCCInfo<0> scc_info_PushBatchResponse_gateway_5fpush_2eproto =
-    {{ATOMIC_VAR_INIT(::PROTOBUF_NAMESPACE_ID::internal::SCCInfoBase::kUninitialized), 0, 0, InitDefaultsscc_info_PushBatchResponse_gateway_5fpush_2eproto}, {}};
+::PROTOBUF_NAMESPACE_ID::internal::SCCInfo<1> scc_info_PushBatchResponse_gateway_5fpush_2eproto =
+    {{ATOMIC_VAR_INIT(::PROTOBUF_NAMESPACE_ID::internal::SCCInfoBase::kUninitialized), 1, 0, InitDefaultsscc_info_PushBatchResponse_gateway_5fpush_2eproto}, {
+      &scc_info_PushItemResult_gateway_5fpush_2eproto.base,}};
+
+static void InitDefaultsscc_info_PushItemResult_gateway_5fpush_2eproto() {
+  GOOGLE_PROTOBUF_VERIFY_VERSION;
+
+  {
+    void* ptr = &::gwpush::_PushItemResult_default_instance_;
+    new (ptr) ::gwpush::PushItemResult();
+    ::PROTOBUF_NAMESPACE_ID::internal::OnShutdownDestroyMessage(ptr);
+  }
+  ::gwpush::PushItemResult::InitAsDefaultInstance();
+}
+
+::PROTOBUF_NAMESPACE_ID::internal::SCCInfo<0> scc_info_PushItemResult_gateway_5fpush_2eproto =
+    {{ATOMIC_VAR_INIT(::PROTOBUF_NAMESPACE_ID::internal::SCCInfoBase::kUninitialized), 0, 0, InitDefaultsscc_info_PushItemResult_gateway_5fpush_2eproto}, {}};
 
 static void InitDefaultsscc_info_PushMessage_gateway_5fpush_2eproto() {
   GOOGLE_PROTOBUF_VERIFY_VERSION;
@@ -108,8 +128,8 @@ static void InitDefaultsscc_info_PushMessage_gateway_5fpush_2eproto() {
 ::PROTOBUF_NAMESPACE_ID::internal::SCCInfo<0> scc_info_PushMessage_gateway_5fpush_2eproto =
     {{ATOMIC_VAR_INIT(::PROTOBUF_NAMESPACE_ID::internal::SCCInfoBase::kUninitialized), 0, 0, InitDefaultsscc_info_PushMessage_gateway_5fpush_2eproto}, {}};
 
-static ::PROTOBUF_NAMESPACE_ID::Metadata file_level_metadata_gateway_5fpush_2eproto[5];
-static constexpr ::PROTOBUF_NAMESPACE_ID::EnumDescriptor const** file_level_enum_descriptors_gateway_5fpush_2eproto = nullptr;
+static ::PROTOBUF_NAMESPACE_ID::Metadata file_level_metadata_gateway_5fpush_2eproto[6];
+static const ::PROTOBUF_NAMESPACE_ID::EnumDescriptor* file_level_enum_descriptors_gateway_5fpush_2eproto[1];
 static const ::PROTOBUF_NAMESPACE_ID::ServiceDescriptor* file_level_service_descriptors_gateway_5fpush_2eproto[1];
 
 const ::PROTOBUF_NAMESPACE_ID::uint32 TableStruct_gateway_5fpush_2eproto::offsets[] PROTOBUF_SECTION_VARIABLE(protodesc_cold) = {
@@ -135,6 +155,16 @@ const ::PROTOBUF_NAMESPACE_ID::uint32 TableStruct_gateway_5fpush_2eproto::offset
   PROTOBUF_FIELD_OFFSET(::gwpush::PushBatchRequest, gateway_instance_id_),
   PROTOBUF_FIELD_OFFSET(::gwpush::PushBatchRequest, messages_),
   ~0u,  // no _has_bits_
+  PROTOBUF_FIELD_OFFSET(::gwpush::PushItemResult, _internal_metadata_),
+  ~0u,  // no _extensions_
+  ~0u,  // no _oneof_case_
+  ~0u,  // no _weak_field_map_
+  PROTOBUF_FIELD_OFFSET(::gwpush::PushItemResult, player_id_),
+  PROTOBUF_FIELD_OFFSET(::gwpush::PushItemResult, server_seq_),
+  PROTOBUF_FIELD_OFFSET(::gwpush::PushItemResult, queued_),
+  PROTOBUF_FIELD_OFFSET(::gwpush::PushItemResult, reason_),
+  PROTOBUF_FIELD_OFFSET(::gwpush::PushItemResult, replay_pending_),
+  ~0u,  // no _has_bits_
   PROTOBUF_FIELD_OFFSET(::gwpush::PushBatchResponse, _internal_metadata_),
   ~0u,  // no _extensions_
   ~0u,  // no _oneof_case_
@@ -143,6 +173,7 @@ const ::PROTOBUF_NAMESPACE_ID::uint32 TableStruct_gateway_5fpush_2eproto::offset
   PROTOBUF_FIELD_OFFSET(::gwpush::PushBatchResponse, message_),
   PROTOBUF_FIELD_OFFSET(::gwpush::PushBatchResponse, accepted_),
   PROTOBUF_FIELD_OFFSET(::gwpush::PushBatchResponse, rejected_),
+  PROTOBUF_FIELD_OFFSET(::gwpush::PushBatchResponse, results_),
   ~0u,  // no _has_bits_
   PROTOBUF_FIELD_OFFSET(::gwpush::KickConnectionRequest, _internal_metadata_),
   ~0u,  // no _extensions_
@@ -164,14 +195,16 @@ const ::PROTOBUF_NAMESPACE_ID::uint32 TableStruct_gateway_5fpush_2eproto::offset
 static const ::PROTOBUF_NAMESPACE_ID::internal::MigrationSchema schemas[] PROTOBUF_SECTION_VARIABLE(protodesc_cold) = {
   { 0, -1, sizeof(::gwpush::PushMessage)},
   { 14, -1, sizeof(::gwpush::PushBatchRequest)},
-  { 21, -1, sizeof(::gwpush::PushBatchResponse)},
-  { 30, -1, sizeof(::gwpush::KickConnectionRequest)},
-  { 39, -1, sizeof(::gwpush::KickConnectionResponse)},
+  { 21, -1, sizeof(::gwpush::PushItemResult)},
+  { 31, -1, sizeof(::gwpush::PushBatchResponse)},
+  { 41, -1, sizeof(::gwpush::KickConnectionRequest)},
+  { 50, -1, sizeof(::gwpush::KickConnectionResponse)},
 };
 
 static ::PROTOBUF_NAMESPACE_ID::Message const * const file_default_instances[] = {
   reinterpret_cast<const ::PROTOBUF_NAMESPACE_ID::Message*>(&::gwpush::_PushMessage_default_instance_),
   reinterpret_cast<const ::PROTOBUF_NAMESPACE_ID::Message*>(&::gwpush::_PushBatchRequest_default_instance_),
+  reinterpret_cast<const ::PROTOBUF_NAMESPACE_ID::Message*>(&::gwpush::_PushItemResult_default_instance_),
   reinterpret_cast<const ::PROTOBUF_NAMESPACE_ID::Message*>(&::gwpush::_PushBatchResponse_default_instance_),
   reinterpret_cast<const ::PROTOBUF_NAMESPACE_ID::Message*>(&::gwpush::_KickConnectionRequest_default_instance_),
   reinterpret_cast<const ::PROTOBUF_NAMESPACE_ID::Message*>(&::gwpush::_KickConnectionResponse_default_instance_),
@@ -185,39 +218,74 @@ const char descriptor_table_protodef_gateway_5fpush_2eproto[] PROTOBUF_SECTION_V
   "\022\023\n\013coalescable\030\007 \001(\010\022\023\n\013fence_token\030\010 \001"
   "(\t\022\022\n\ngeneration\030\t \001(\004\"V\n\020PushBatchReque"
   "st\022\033\n\023gateway_instance_id\030\001 \001(\t\022%\n\010messa"
-  "ges\030\002 \003(\0132\023.gwpush.PushMessage\"T\n\021PushBa"
-  "tchResponse\022\n\n\002ok\030\001 \001(\010\022\017\n\007message\030\002 \001(\t"
-  "\022\020\n\010accepted\030\003 \001(\r\022\020\n\010rejected\030\004 \001(\r\"b\n\025"
-  "KickConnectionRequest\022\021\n\tplayer_id\030\001 \001(\004"
-  "\022\022\n\nsession_id\030\002 \001(\t\022\022\n\ngeneration\030\003 \001(\004"
-  "\022\016\n\006reason\030\004 \001(\t\"E\n\026KickConnectionRespon"
-  "se\022\n\n\002ok\030\001 \001(\010\022\017\n\007message\030\002 \001(\t\022\016\n\006close"
-  "d\030\003 \001(\0102\247\001\n\022GatewayPushService\022@\n\tPushBa"
-  "tch\022\030.gwpush.PushBatchRequest\032\031.gwpush.P"
-  "ushBatchResponse\022O\n\016KickConnection\022\035.gwp"
-  "ush.KickConnectionRequest\032\036.gwpush.KickC"
-  "onnectionResponseB\003\200\001\001b\006proto3"
+  "ges\030\002 \003(\0132\023.gwpush.PushMessage\"\211\001\n\016PushI"
+  "temResult\022\021\n\tplayer_id\030\001 \001(\004\022\022\n\nserver_s"
+  "eq\030\002 \001(\004\022\016\n\006queued\030\003 \001(\010\022(\n\006reason\030\004 \001(\016"
+  "2\030.gwpush.PushRejectReason\022\026\n\016replay_pen"
+  "ding\030\005 \001(\010\"}\n\021PushBatchResponse\022\n\n\002ok\030\001 "
+  "\001(\010\022\017\n\007message\030\002 \001(\t\022\020\n\010accepted\030\003 \001(\r\022\020"
+  "\n\010rejected\030\004 \001(\r\022\'\n\007results\030\005 \003(\0132\026.gwpu"
+  "sh.PushItemResult\"b\n\025KickConnectionReque"
+  "st\022\021\n\tplayer_id\030\001 \001(\004\022\022\n\nsession_id\030\002 \001("
+  "\t\022\022\n\ngeneration\030\003 \001(\004\022\016\n\006reason\030\004 \001(\t\"E\n"
+  "\026KickConnectionResponse\022\n\n\002ok\030\001 \001(\010\022\017\n\007m"
+  "essage\030\002 \001(\t\022\016\n\006closed\030\003 \001(\010*\345\001\n\020PushRej"
+  "ectReason\022\013\n\007PUSH_OK\020\000\022\016\n\nNO_SESSION\020\001\022\026"
+  "\n\022PLAYER_ID_MISMATCH\020\002\022\024\n\020GATEWAY_MISMAT"
+  "CH\020\003\022\022\n\016FENCE_MISMATCH\020\004\022\027\n\023GENERATION_M"
+  "ISMATCH\020\005\022\031\n\025SEQ_ALLOCATION_FAILED\020\006\022\r\n\t"
+  "BAD_FRAME\020\007\022\017\n\013SEND_FAILED\020\010\022\n\n\006CLOSED\020\t"
+  "\022\022\n\016REPLAY_PENDING\020\n2\247\001\n\022GatewayPushServ"
+  "ice\022@\n\tPushBatch\022\030.gwpush.PushBatchReque"
+  "st\032\031.gwpush.PushBatchResponse\022O\n\016KickCon"
+  "nection\022\035.gwpush.KickConnectionRequest\032\036"
+  ".gwpush.KickConnectionResponseB\003\200\001\001b\006pro"
+  "to3"
   ;
 static const ::PROTOBUF_NAMESPACE_ID::internal::DescriptorTable*const descriptor_table_gateway_5fpush_2eproto_deps[1] = {
 };
-static ::PROTOBUF_NAMESPACE_ID::internal::SCCInfoBase*const descriptor_table_gateway_5fpush_2eproto_sccs[5] = {
+static ::PROTOBUF_NAMESPACE_ID::internal::SCCInfoBase*const descriptor_table_gateway_5fpush_2eproto_sccs[6] = {
   &scc_info_KickConnectionRequest_gateway_5fpush_2eproto.base,
   &scc_info_KickConnectionResponse_gateway_5fpush_2eproto.base,
   &scc_info_PushBatchRequest_gateway_5fpush_2eproto.base,
   &scc_info_PushBatchResponse_gateway_5fpush_2eproto.base,
+  &scc_info_PushItemResult_gateway_5fpush_2eproto.base,
   &scc_info_PushMessage_gateway_5fpush_2eproto.base,
 };
 static ::PROTOBUF_NAMESPACE_ID::internal::once_flag descriptor_table_gateway_5fpush_2eproto_once;
 const ::PROTOBUF_NAMESPACE_ID::internal::DescriptorTable descriptor_table_gateway_5fpush_2eproto = {
-  false, false, descriptor_table_protodef_gateway_5fpush_2eproto, "gateway_push.proto", 750,
-  &descriptor_table_gateway_5fpush_2eproto_once, descriptor_table_gateway_5fpush_2eproto_sccs, descriptor_table_gateway_5fpush_2eproto_deps, 5, 0,
+  false, false, descriptor_table_protodef_gateway_5fpush_2eproto, "gateway_push.proto", 1163,
+  &descriptor_table_gateway_5fpush_2eproto_once, descriptor_table_gateway_5fpush_2eproto_sccs, descriptor_table_gateway_5fpush_2eproto_deps, 6, 0,
   schemas, file_default_instances, TableStruct_gateway_5fpush_2eproto::offsets,
-  file_level_metadata_gateway_5fpush_2eproto, 5, file_level_enum_descriptors_gateway_5fpush_2eproto, file_level_service_descriptors_gateway_5fpush_2eproto,
+  file_level_metadata_gateway_5fpush_2eproto, 6, file_level_enum_descriptors_gateway_5fpush_2eproto, file_level_service_descriptors_gateway_5fpush_2eproto,
 };
 
 // Force running AddDescriptors() at dynamic initialization time.
 static bool dynamic_init_dummy_gateway_5fpush_2eproto = (static_cast<void>(::PROTOBUF_NAMESPACE_ID::internal::AddDescriptors(&descriptor_table_gateway_5fpush_2eproto)), true);
 namespace gwpush {
+const ::PROTOBUF_NAMESPACE_ID::EnumDescriptor* PushRejectReason_descriptor() {
+  ::PROTOBUF_NAMESPACE_ID::internal::AssignDescriptors(&descriptor_table_gateway_5fpush_2eproto);
+  return file_level_enum_descriptors_gateway_5fpush_2eproto[0];
+}
+bool PushRejectReason_IsValid(int value) {
+  switch (value) {
+    case 0:
+    case 1:
+    case 2:
+    case 3:
+    case 4:
+    case 5:
+    case 6:
+    case 7:
+    case 8:
+    case 9:
+    case 10:
+      return true;
+    default:
+      return false;
+  }
+}
+
 
 // ===================================================================
 
@@ -906,6 +974,303 @@ void PushBatchRequest::InternalSwap(PushBatchRequest* other) {
 
 // ===================================================================
 
+void PushItemResult::InitAsDefaultInstance() {
+}
+class PushItemResult::_Internal {
+ public:
+};
+
+PushItemResult::PushItemResult(::PROTOBUF_NAMESPACE_ID::Arena* arena)
+  : ::PROTOBUF_NAMESPACE_ID::Message(arena) {
+  SharedCtor();
+  RegisterArenaDtor(arena);
+  // @@protoc_insertion_point(arena_constructor:gwpush.PushItemResult)
+}
+PushItemResult::PushItemResult(const PushItemResult& from)
+  : ::PROTOBUF_NAMESPACE_ID::Message() {
+  _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
+  ::memcpy(&player_id_, &from.player_id_,
+    static_cast<size_t>(reinterpret_cast<char*>(&replay_pending_) -
+    reinterpret_cast<char*>(&player_id_)) + sizeof(replay_pending_));
+  // @@protoc_insertion_point(copy_constructor:gwpush.PushItemResult)
+}
+
+void PushItemResult::SharedCtor() {
+  ::memset(&player_id_, 0, static_cast<size_t>(
+      reinterpret_cast<char*>(&replay_pending_) -
+      reinterpret_cast<char*>(&player_id_)) + sizeof(replay_pending_));
+}
+
+PushItemResult::~PushItemResult() {
+  // @@protoc_insertion_point(destructor:gwpush.PushItemResult)
+  SharedDtor();
+  _internal_metadata_.Delete<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
+}
+
+void PushItemResult::SharedDtor() {
+  GOOGLE_DCHECK(GetArena() == nullptr);
+}
+
+void PushItemResult::ArenaDtor(void* object) {
+  PushItemResult* _this = reinterpret_cast< PushItemResult* >(object);
+  (void)_this;
+}
+void PushItemResult::RegisterArenaDtor(::PROTOBUF_NAMESPACE_ID::Arena*) {
+}
+void PushItemResult::SetCachedSize(int size) const {
+  _cached_size_.Set(size);
+}
+const PushItemResult& PushItemResult::default_instance() {
+  ::PROTOBUF_NAMESPACE_ID::internal::InitSCC(&::scc_info_PushItemResult_gateway_5fpush_2eproto.base);
+  return *internal_default_instance();
+}
+
+
+void PushItemResult::Clear() {
+// @@protoc_insertion_point(message_clear_start:gwpush.PushItemResult)
+  ::PROTOBUF_NAMESPACE_ID::uint32 cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void) cached_has_bits;
+
+  ::memset(&player_id_, 0, static_cast<size_t>(
+      reinterpret_cast<char*>(&replay_pending_) -
+      reinterpret_cast<char*>(&player_id_)) + sizeof(replay_pending_));
+  _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
+}
+
+const char* PushItemResult::_InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::internal::ParseContext* ctx) {
+#define CHK_(x) if (PROTOBUF_PREDICT_FALSE(!(x))) goto failure
+  ::PROTOBUF_NAMESPACE_ID::Arena* arena = GetArena(); (void)arena;
+  while (!ctx->Done(&ptr)) {
+    ::PROTOBUF_NAMESPACE_ID::uint32 tag;
+    ptr = ::PROTOBUF_NAMESPACE_ID::internal::ReadTag(ptr, &tag);
+    CHK_(ptr);
+    switch (tag >> 3) {
+      // uint64 player_id = 1;
+      case 1:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 8)) {
+          player_id_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint64(&ptr);
+          CHK_(ptr);
+        } else goto handle_unusual;
+        continue;
+      // uint64 server_seq = 2;
+      case 2:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 16)) {
+          server_seq_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint64(&ptr);
+          CHK_(ptr);
+        } else goto handle_unusual;
+        continue;
+      // bool queued = 3;
+      case 3:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 24)) {
+          queued_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint64(&ptr);
+          CHK_(ptr);
+        } else goto handle_unusual;
+        continue;
+      // .gwpush.PushRejectReason reason = 4;
+      case 4:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 32)) {
+          ::PROTOBUF_NAMESPACE_ID::uint64 val = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint64(&ptr);
+          CHK_(ptr);
+          _internal_set_reason(static_cast<::gwpush::PushRejectReason>(val));
+        } else goto handle_unusual;
+        continue;
+      // bool replay_pending = 5;
+      case 5:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 40)) {
+          replay_pending_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint64(&ptr);
+          CHK_(ptr);
+        } else goto handle_unusual;
+        continue;
+      default: {
+      handle_unusual:
+        if ((tag & 7) == 4 || tag == 0) {
+          ctx->SetLastTag(tag);
+          goto success;
+        }
+        ptr = UnknownFieldParse(tag,
+            _internal_metadata_.mutable_unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(),
+            ptr, ctx);
+        CHK_(ptr != nullptr);
+        continue;
+      }
+    }  // switch
+  }  // while
+success:
+  return ptr;
+failure:
+  ptr = nullptr;
+  goto success;
+#undef CHK_
+}
+
+::PROTOBUF_NAMESPACE_ID::uint8* PushItemResult::_InternalSerialize(
+    ::PROTOBUF_NAMESPACE_ID::uint8* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const {
+  // @@protoc_insertion_point(serialize_to_array_start:gwpush.PushItemResult)
+  ::PROTOBUF_NAMESPACE_ID::uint32 cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  // uint64 player_id = 1;
+  if (this->player_id() != 0) {
+    target = stream->EnsureSpace(target);
+    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::WriteUInt64ToArray(1, this->_internal_player_id(), target);
+  }
+
+  // uint64 server_seq = 2;
+  if (this->server_seq() != 0) {
+    target = stream->EnsureSpace(target);
+    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::WriteUInt64ToArray(2, this->_internal_server_seq(), target);
+  }
+
+  // bool queued = 3;
+  if (this->queued() != 0) {
+    target = stream->EnsureSpace(target);
+    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::WriteBoolToArray(3, this->_internal_queued(), target);
+  }
+
+  // .gwpush.PushRejectReason reason = 4;
+  if (this->reason() != 0) {
+    target = stream->EnsureSpace(target);
+    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::WriteEnumToArray(
+      4, this->_internal_reason(), target);
+  }
+
+  // bool replay_pending = 5;
+  if (this->replay_pending() != 0) {
+    target = stream->EnsureSpace(target);
+    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::WriteBoolToArray(5, this->_internal_replay_pending(), target);
+  }
+
+  if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
+    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormat::InternalSerializeUnknownFieldsToArray(
+        _internal_metadata_.unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(::PROTOBUF_NAMESPACE_ID::UnknownFieldSet::default_instance), target, stream);
+  }
+  // @@protoc_insertion_point(serialize_to_array_end:gwpush.PushItemResult)
+  return target;
+}
+
+size_t PushItemResult::ByteSizeLong() const {
+// @@protoc_insertion_point(message_byte_size_start:gwpush.PushItemResult)
+  size_t total_size = 0;
+
+  ::PROTOBUF_NAMESPACE_ID::uint32 cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void) cached_has_bits;
+
+  // uint64 player_id = 1;
+  if (this->player_id() != 0) {
+    total_size += 1 +
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::UInt64Size(
+        this->_internal_player_id());
+  }
+
+  // uint64 server_seq = 2;
+  if (this->server_seq() != 0) {
+    total_size += 1 +
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::UInt64Size(
+        this->_internal_server_seq());
+  }
+
+  // .gwpush.PushRejectReason reason = 4;
+  if (this->reason() != 0) {
+    total_size += 1 +
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::EnumSize(this->_internal_reason());
+  }
+
+  // bool queued = 3;
+  if (this->queued() != 0) {
+    total_size += 1 + 1;
+  }
+
+  // bool replay_pending = 5;
+  if (this->replay_pending() != 0) {
+    total_size += 1 + 1;
+  }
+
+  if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
+    return ::PROTOBUF_NAMESPACE_ID::internal::ComputeUnknownFieldsSize(
+        _internal_metadata_, total_size, &_cached_size_);
+  }
+  int cached_size = ::PROTOBUF_NAMESPACE_ID::internal::ToCachedSize(total_size);
+  SetCachedSize(cached_size);
+  return total_size;
+}
+
+void PushItemResult::MergeFrom(const ::PROTOBUF_NAMESPACE_ID::Message& from) {
+// @@protoc_insertion_point(generalized_merge_from_start:gwpush.PushItemResult)
+  GOOGLE_DCHECK_NE(&from, this);
+  const PushItemResult* source =
+      ::PROTOBUF_NAMESPACE_ID::DynamicCastToGenerated<PushItemResult>(
+          &from);
+  if (source == nullptr) {
+  // @@protoc_insertion_point(generalized_merge_from_cast_fail:gwpush.PushItemResult)
+    ::PROTOBUF_NAMESPACE_ID::internal::ReflectionOps::Merge(from, this);
+  } else {
+  // @@protoc_insertion_point(generalized_merge_from_cast_success:gwpush.PushItemResult)
+    MergeFrom(*source);
+  }
+}
+
+void PushItemResult::MergeFrom(const PushItemResult& from) {
+// @@protoc_insertion_point(class_specific_merge_from_start:gwpush.PushItemResult)
+  GOOGLE_DCHECK_NE(&from, this);
+  _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
+  ::PROTOBUF_NAMESPACE_ID::uint32 cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  if (from.player_id() != 0) {
+    _internal_set_player_id(from._internal_player_id());
+  }
+  if (from.server_seq() != 0) {
+    _internal_set_server_seq(from._internal_server_seq());
+  }
+  if (from.reason() != 0) {
+    _internal_set_reason(from._internal_reason());
+  }
+  if (from.queued() != 0) {
+    _internal_set_queued(from._internal_queued());
+  }
+  if (from.replay_pending() != 0) {
+    _internal_set_replay_pending(from._internal_replay_pending());
+  }
+}
+
+void PushItemResult::CopyFrom(const ::PROTOBUF_NAMESPACE_ID::Message& from) {
+// @@protoc_insertion_point(generalized_copy_from_start:gwpush.PushItemResult)
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+void PushItemResult::CopyFrom(const PushItemResult& from) {
+// @@protoc_insertion_point(class_specific_copy_from_start:gwpush.PushItemResult)
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+bool PushItemResult::IsInitialized() const {
+  return true;
+}
+
+void PushItemResult::InternalSwap(PushItemResult* other) {
+  using std::swap;
+  _internal_metadata_.Swap<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(&other->_internal_metadata_);
+  ::PROTOBUF_NAMESPACE_ID::internal::memswap<
+      PROTOBUF_FIELD_OFFSET(PushItemResult, replay_pending_)
+      + sizeof(PushItemResult::replay_pending_)
+      - PROTOBUF_FIELD_OFFSET(PushItemResult, player_id_)>(
+          reinterpret_cast<char*>(&player_id_),
+          reinterpret_cast<char*>(&other->player_id_));
+}
+
+::PROTOBUF_NAMESPACE_ID::Metadata PushItemResult::GetMetadata() const {
+  return GetMetadataStatic();
+}
+
+
+// ===================================================================
+
 void PushBatchResponse::InitAsDefaultInstance() {
 }
 class PushBatchResponse::_Internal {
@@ -913,13 +1278,15 @@ class PushBatchResponse::_Internal {
 };
 
 PushBatchResponse::PushBatchResponse(::PROTOBUF_NAMESPACE_ID::Arena* arena)
-  : ::PROTOBUF_NAMESPACE_ID::Message(arena) {
+  : ::PROTOBUF_NAMESPACE_ID::Message(arena),
+  results_(arena) {
   SharedCtor();
   RegisterArenaDtor(arena);
   // @@protoc_insertion_point(arena_constructor:gwpush.PushBatchResponse)
 }
 PushBatchResponse::PushBatchResponse(const PushBatchResponse& from)
-  : ::PROTOBUF_NAMESPACE_ID::Message() {
+  : ::PROTOBUF_NAMESPACE_ID::Message(),
+      results_(from.results_) {
   _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
   message_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
   if (!from._internal_message().empty()) {
@@ -972,6 +1339,7 @@ void PushBatchResponse::Clear() {
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
 
+  results_.Clear();
   message_.ClearToEmpty(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
   ::memset(&ok_, 0, static_cast<size_t>(
       reinterpret_cast<char*>(&rejected_) -
@@ -1015,6 +1383,18 @@ const char* PushBatchResponse::_InternalParse(const char* ptr, ::PROTOBUF_NAMESP
         if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 32)) {
           rejected_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint32(&ptr);
           CHK_(ptr);
+        } else goto handle_unusual;
+        continue;
+      // repeated .gwpush.PushItemResult results = 5;
+      case 5:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 42)) {
+          ptr -= 1;
+          do {
+            ptr += 1;
+            ptr = ctx->ParseMessage(_internal_add_results(), ptr);
+            CHK_(ptr);
+            if (!ctx->DataAvailable(ptr)) break;
+          } while (::PROTOBUF_NAMESPACE_ID::internal::ExpectTag<42>(ptr));
         } else goto handle_unusual;
         continue;
       default: {
@@ -1073,6 +1453,14 @@ failure:
     target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::WriteUInt32ToArray(4, this->_internal_rejected(), target);
   }
 
+  // repeated .gwpush.PushItemResult results = 5;
+  for (unsigned int i = 0,
+      n = static_cast<unsigned int>(this->_internal_results_size()); i < n; i++) {
+    target = stream->EnsureSpace(target);
+    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
+      InternalWriteMessage(5, this->_internal_results(i), target, stream);
+  }
+
   if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
     target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormat::InternalSerializeUnknownFieldsToArray(
         _internal_metadata_.unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(::PROTOBUF_NAMESPACE_ID::UnknownFieldSet::default_instance), target, stream);
@@ -1088,6 +1476,13 @@ size_t PushBatchResponse::ByteSizeLong() const {
   ::PROTOBUF_NAMESPACE_ID::uint32 cached_has_bits = 0;
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
+
+  // repeated .gwpush.PushItemResult results = 5;
+  total_size += 1UL * this->_internal_results_size();
+  for (const auto& msg : this->results_) {
+    total_size +=
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(msg);
+  }
 
   // string message = 2;
   if (this->message().size() > 0) {
@@ -1146,6 +1541,7 @@ void PushBatchResponse::MergeFrom(const PushBatchResponse& from) {
   ::PROTOBUF_NAMESPACE_ID::uint32 cached_has_bits = 0;
   (void) cached_has_bits;
 
+  results_.MergeFrom(from.results_);
   if (from.message().size() > 0) {
     _internal_set_message(from._internal_message());
   }
@@ -1181,6 +1577,7 @@ bool PushBatchResponse::IsInitialized() const {
 void PushBatchResponse::InternalSwap(PushBatchResponse* other) {
   using std::swap;
   _internal_metadata_.Swap<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(&other->_internal_metadata_);
+  results_.InternalSwap(&other->results_);
   message_.Swap(&other->message_, &::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
   ::PROTOBUF_NAMESPACE_ID::internal::memswap<
       PROTOBUF_FIELD_OFFSET(PushBatchResponse, rejected_)
@@ -1891,6 +2288,9 @@ template<> PROTOBUF_NOINLINE ::gwpush::PushMessage* Arena::CreateMaybeMessage< :
 }
 template<> PROTOBUF_NOINLINE ::gwpush::PushBatchRequest* Arena::CreateMaybeMessage< ::gwpush::PushBatchRequest >(Arena* arena) {
   return Arena::CreateMessageInternal< ::gwpush::PushBatchRequest >(arena);
+}
+template<> PROTOBUF_NOINLINE ::gwpush::PushItemResult* Arena::CreateMaybeMessage< ::gwpush::PushItemResult >(Arena* arena) {
+  return Arena::CreateMessageInternal< ::gwpush::PushItemResult >(arena);
 }
 template<> PROTOBUF_NOINLINE ::gwpush::PushBatchResponse* Arena::CreateMaybeMessage< ::gwpush::PushBatchResponse >(Arena* arena) {
   return Arena::CreateMessageInternal< ::gwpush::PushBatchResponse >(arena);

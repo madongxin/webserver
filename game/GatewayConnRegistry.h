@@ -24,10 +24,14 @@ public:
         uint64_t map_owner_epoch = 0;
         uint64_t route_version = 0;
         std::string gateway_instance_id;
-        /** true：已进入该连接的发送缓冲或合并槽。不是内核写完，也不是客户端已应用。 */
-        std::function<bool(const std::string &frame)> send_frame;
-        /** ENTER/LEAVE 等可靠 AOI：更高软丢水位，仍不关连接。 */
-        std::function<bool(const std::string &frame)> send_frame_urgent;
+        /**
+         * 1：已进入发送缓冲或合并槽。不是内核写完，也不是客户端已应用。
+         * 0：连接还在，这一帧没进去。
+         * <0：连接已经没了。
+         */
+        std::function<int(const std::string &frame)> send_frame;
+        /** ENTER/LEAVE 等可靠 AOI：更高软丢水位，仍不关连接。返回值同上。 */
+        std::function<int(const std::string &frame)> send_frame_urgent;
         std::function<void()> close_conn;
         std::function<void(double delay_sec, std::function<void()> cb)> run_after;
         /** 把任务投到该连接 EventLoop；缺省则在调用线程同步执行（单测）。 */
@@ -58,8 +62,12 @@ public:
     int64_t BoundPlayerCount();
     /** 该 player 已由其它 connection 接管（重连/顶号后关旧连接不得拆 Session）。 */
     bool HasNewerBinding(uint64_t connection_id, uint64_t player_id);
-    bool SendBySession(const std::string &session_id, const std::string &frame,
-                       bool urgent = false);
+    /**
+     * 1 已入队，0 没入队，<0 会话还在表里但连接没了，找不到会话时也返回 <0。
+     * PushBatch 在调用前已经 FindBySession，这里的 <0 表示发送时连接消失。
+     */
+    int SendBySession(const std::string &session_id, const std::string &frame,
+                      bool urgent = false);
     /** 仅关闭匹配 player_id+session_id+generation 的旧连接；generation=0 时忽略 generation */
     bool CloseIfMatch(uint64_t player_id, const std::string &session_id, uint64_t generation);
     /**

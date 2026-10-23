@@ -286,16 +286,16 @@ void RememberBind(uint64_t conn_id, uint64_t player_id, const std::string &token
         if (sink) {
         std::weak_ptr<TcpConnection> weak_conn = sink->tcp_connection();
         auto make_try_send = [weak_conn](bool urgent) {
-            return [weak_conn, urgent](const std::string &frame) -> bool {
+            return [weak_conn, urgent](const std::string &frame) -> int {
                 auto c = weak_conn.lock();
                 if (!c || !c->loop())
-                    return false;
+                    return -1;
                 // 推送路径用 TrySend：队列满丢帧，禁止背压关连接（否则 MarkDisconnected 雪崩）。
-                // 返回值只表示这一帧进了应用缓冲或当场 write。不是内核写完，也不是客户端已应用。
-                auto do_send = [weak_conn, frame, urgent]() -> bool {
+                // 1 = 进了应用缓冲或当场 write。不是内核写完，也不是客户端已应用。
+                auto do_send = [weak_conn, frame, urgent]() -> int {
                     auto live = weak_conn.lock();
                     if (!live || live->state() != TcpConnection::Connected)
-                        return false;
+                        return -1;
                     if (urgent)
                         MakeRoomForControl(live.get());
                     bool ok = urgent ? live->TrySendUrgent(frame) : live->TrySend(frame);
@@ -309,37 +309,42 @@ void RememberBind(uint64_t conn_id, uint64_t player_id, const std::string &token
                         }
                     }
                     if (!ok)
-                        return false;
+                        return 0;
                     OpsMetrics::Instance().AddGatewayTxBytes(frame.size());
                     OpsMetrics::Instance().AddGatewayTxFrames(1);
-                    return true;
+                    return 1;
                 };
                 if (c->loop()->IsInLoopThread())
                     return do_send();
 #ifdef WEBSERVER_ENABLE_BRPC
                 // 等的是入队结果，不是 TCP ACK。不能在连接自己的 EventLoop 上等，否则死锁。
+                // 超时后取消还没开始的回调，避免调用方记失败时帧又被写进缓冲。
                 auto done = std::make_shared<bthread::CountdownEvent>();
-                auto queued = std::make_shared<std::atomic<bool>>(false);
-                c->loop()->QueueOneFunc([do_send, done, queued]() {
-                    *queued = do_send();
+                auto queued = std::make_shared<std::atomic<int>>(0);
+                auto cancelled = std::make_shared<std::atomic<bool>>(false);
+                c->loop()->QueueOneFunc([do_send, done, queued, cancelled]() {
+                    if (!cancelled->load(std::memory_order_acquire))
+                        queued->store(do_send(), std::memory_order_release);
                     done->signal();
                 });
-                if (done->timed_wait(butil::milliseconds_from_now(200)) != 0)
-                    return false;
-                return queued->load();
+                if (done->timed_wait(butil::milliseconds_from_now(200)) != 0) {
+                    cancelled->store(true, std::memory_order_release);
+                    return 0;
+                }
+                return queued->load(std::memory_order_acquire);
 #else
                 c->loop()->QueueOneFunc([do_send]() { (void)do_send(); });
-                return false;
+                return 0;
 #endif
             };
         };
         auto send_move_now = make_try_send(false);
-        gb.send_frame = [weak_conn, send_move_now](const std::string &frame) -> bool {
+        gb.send_frame = [weak_conn, send_move_now](const std::string &frame) -> int {
             auto c = weak_conn.lock();
             if (!c || !c->loop())
-                return false;
+                return -1;
             if (OfferCoalescedMove(c, frame))
-                return true;
+                return 1;
             return send_move_now(frame);
         };
         gb.send_frame_urgent = make_try_send(true);

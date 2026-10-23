@@ -1,5 +1,6 @@
 #include "GameLogicServiceImpl.h"
 
+#include "AoiRecipientGate.h"
 #include "ClientSeqGate.h"
 #include "FormalMode.h"
 #include "ForwardMetaContext.h"
@@ -423,6 +424,7 @@ void GameLogicServiceImpl::BindPlayer(::google::protobuf::RpcController *control
         }
     }
     if (idempotent_bind) {
+        AoiRecipientGate::Instance().Clear(player_id);
         // 只刷新 session 就返回会让实体一直 connected=false：分线人数还在，视野快照是空的。
         AoiPushBatch pushes;
         MapEntity self;
@@ -459,6 +461,7 @@ void GameLogicServiceImpl::BindPlayer(::google::protobuf::RpcController *control
             rsp->set_ok(true);
             rsp->set_message("player ready");
             rsp->set_bag_item_kinds(0);
+            AoiRecipientGate::Instance().Clear(player_id);
             {
                 std::string pb;
                 if (attrs.SerializeToString(&pb))

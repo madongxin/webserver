@@ -2,8 +2,10 @@
 
 #include "GatewayConnRegistry.h"
 #include "Logging.h"
+#include "OpsMetrics.h"
 #include "ProtoFraming.h"
 #include "PublicError.h"
+#include "PushAdmit.h"
 #include "PushReplayCache.h"
 #include "game.pb.h"
 #ifdef WEBSERVER_ENABLE_REDIS
@@ -54,7 +56,15 @@ void GatewayPushServiceImpl::PushBatch(::google::protobuf::RpcController *contro
     const std::string &local_gw = GatewayPushServer::Instance().gateway_instance_id();
     if (!local_gw.empty() && !request->gateway_instance_id().empty() &&
         request->gateway_instance_id() != local_gw) {
+        for (const auto &m : request->messages()) {
+            auto *row = response->add_results();
+            row->set_player_id(m.player_id());
+            row->set_reason(gwpush::GATEWAY_MISMATCH);
+            OpsMetrics::Instance().IncReliablePushReject(
+                static_cast<int>(PushAdmitReason::GatewayMismatch));
+        }
         response->set_ok(false);
+        response->set_rejected(static_cast<uint32_t>(request->messages_size()));
         response->set_message("gateway_instance_id mismatch");
         return;
     }
@@ -62,78 +72,81 @@ void GatewayPushServiceImpl::PushBatch(::google::protobuf::RpcController *contro
     uint32_t rejected = 0;
     for (const auto &m : request->messages()) {
         GatewayConnRegistry::Bind bind;
-        if (!GatewayConnRegistry::Instance().FindBySession(m.session_id(), &bind)) {
-            ++rejected;
-            continue;
+        const bool found = GatewayConnRegistry::Instance().FindBySession(m.session_id(), &bind);
+        PushBindView view;
+        view.found = found;
+        if (found) {
+            view.player_id = bind.player_id;
+            view.gateway_instance_id = bind.gateway_instance_id;
+            view.token = bind.token;
+            view.generation = bind.generation;
+            view.has_sender = static_cast<bool>(m.reliable() ? bind.send_frame_urgent : bind.send_frame);
+            if (!view.has_sender)
+                view.has_sender = static_cast<bool>(bind.send_frame);
         }
-        if (bind.player_id != 0 && m.player_id() != 0 && bind.player_id != m.player_id()) {
-            ++rejected;
-            continue;
-        }
-        if (!local_gw.empty() && !bind.gateway_instance_id.empty() &&
-            bind.gateway_instance_id != local_gw) {
-            ++rejected;
-            continue;
-        }
-        if (!m.fence_token().empty() && !bind.token.empty() && m.fence_token() != bind.token) {
-            ++rejected;
-            continue;
-        }
-        if (m.generation() != 0 && bind.generation != 0 && m.generation() != bind.generation) {
-            ++rejected;
-            continue;
-        }
-        const uint64_t seq = SeqAfterSessionMatch(m);
-        if (m.reliable() && seq == 0) {
-            ++rejected;
-            continue;
-        }
-        std::string raw = m.payload();
-        if (raw.size() < 4) {
-            ++rejected;
-            continue;
-        }
-        const uint32_t be = (static_cast<uint8_t>(raw[0]) << 24) |
-                            (static_cast<uint8_t>(raw[1]) << 16) |
-                            (static_cast<uint8_t>(raw[2]) << 8) |
-                            static_cast<uint8_t>(raw[3]);
-        std::string inner_body;
-        if (be + 4 == raw.size())
-            inner_body = raw.substr(4);
-        else
-            inner_body = raw;
-        // 客户端可见 Envelope：带真实 server_seq（兼容：seq=0 仍发原业务帧）
-        std::string frame;
-        if (seq != 0) {
-            game::GameResponse env;
-            env.set_ok(true);
-            env.set_message("server_push");
-            auto *p = env.mutable_server_push();
-            p->set_server_seq(seq);
-            p->set_message_type(m.message_type());
-            p->set_payload(inner_body);
-            p->set_reliable(m.reliable());
-            p->set_coalescable(m.coalescable());
-            std::string body;
-            if (!env.SerializeToString(&body) || !gameproto::EncodeFrame(body, &frame)) {
-                ++rejected;
-                continue;
+        PushMsgView msg;
+        msg.player_id = m.player_id();
+        msg.fence_token = m.fence_token();
+        msg.generation = m.generation();
+        msg.reliable = m.reliable();
+        msg.server_seq = m.server_seq();
+        msg.payload = m.payload();
+        const std::string payload_copy = m.payload();
+        const std::string message_type = m.message_type();
+        const bool reliable = m.reliable();
+        const bool coalescable = m.coalescable();
+        PushAdmitEnv env;
+        env.local_gateway_id = local_gw;
+        env.assign_seq = [&m]() { return SeqAfterSessionMatch(m); };
+        env.encode = [&](uint64_t seq, std::string *frame) {
+            if (!frame)
+                return false;
+            frame->clear();
+            const std::string &raw = payload_copy;
+            const uint32_t be = (static_cast<uint8_t>(raw[0]) << 24) |
+                                (static_cast<uint8_t>(raw[1]) << 16) |
+                                (static_cast<uint8_t>(raw[2]) << 8) |
+                                static_cast<uint8_t>(raw[3]);
+            std::string inner_body;
+            if (be + 4 == raw.size())
+                inner_body = raw.substr(4);
+            else
+                inner_body = raw;
+            if (seq != 0) {
+                game::GameResponse env_msg;
+                env_msg.set_ok(true);
+                env_msg.set_message("server_push");
+                auto *p = env_msg.mutable_server_push();
+                p->set_server_seq(seq);
+                p->set_message_type(message_type);
+                p->set_payload(inner_body);
+                p->set_reliable(reliable);
+                p->set_coalescable(coalescable);
+                std::string body;
+                return env_msg.SerializeToString(&body) && gameproto::EncodeFrame(body, frame);
             }
-        } else if (be + 4 == raw.size()) {
-            frame = std::move(raw);
-        } else {
-            if (!gameproto::EncodeFrame(inner_body, &frame)) {
-                ++rejected;
-                continue;
+            if (be + 4 == raw.size()) {
+                *frame = raw;
+                return true;
             }
-        }
-        // reliable（含 AOI ENTER/LEAVE）用更高软丢水位，避免断线后客户端幽灵模型。
-        if (!GatewayConnRegistry::Instance().SendBySession(m.session_id(), frame, m.reliable())) {
-            ++rejected;
+            return gameproto::EncodeFrame(inner_body, frame);
+        };
+        env.send = [&](const std::string &frame) {
+            return GatewayConnRegistry::Instance().SendBySession(m.session_id(), frame, m.reliable());
+        };
+        const PushAdmitOut decision = AdmitPushItem(msg, view, env);
+        auto *row = response->add_results();
+        row->set_player_id(m.player_id());
+        row->set_server_seq(decision.server_seq);
+        row->set_queued(decision.queued);
+        row->set_replay_pending(decision.replay_pending);
+        row->set_reason(static_cast<gwpush::PushRejectReason>(static_cast<int>(decision.reason)));
+        if (decision.queued) {
+            ++accepted;
             continue;
         }
-        // 权威回放在 Redis PushReplayStore；此处不再双写本地缓存
-        ++accepted;
+        ++rejected;
+        OpsMetrics::Instance().IncReliablePushReject(static_cast<int>(decision.reason));
     }
     response->set_ok(true);
     response->set_accepted(accepted);
