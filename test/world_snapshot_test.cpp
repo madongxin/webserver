@@ -82,6 +82,18 @@ int main() {
            "unknown player is not an empty snapshot");
     Expect(missing.aoi_entities_size() == 0, "unknown player has no entities");
     Expect(missing.error_code() == "ERR_AOI_RESYNC_REQUIRED", "unknown player asks for resync");
+    for (uint64_t id = 3; id <= 130; ++id) {
+        MapEntity extra = a;
+        extra.player_id = id;
+        extra.player_name = "n";
+        Expect(MapRuntime::Instance().Enter(77, data, extra, &self, &snap, &pushes, &err),
+               "enter neighbor");
+    }
+    game::FullStateSnapshotRsp dense;
+    Expect(GameLogic::Instance().BuildFullStateSnapshot(1, 42, &dense) && dense.ok(),
+           "129 neighbors still snapshot");
+    Expect(dense.aoi_entities_size() >= 129, "snapshot keeps more than 128 entities");
+    Expect(dense.error_code() != "ERR_SNAPSHOT_TOO_LARGE", "dense view is not too large");
     Expect(!fs.ok() || fs.error_code() == "OK" || fs.error_code().empty() || fs.ok(), "code");
 
     game::MoveReq mreq;

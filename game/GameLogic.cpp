@@ -245,14 +245,21 @@ void AoiWorkerMain() {
             });
             if (g_aoi_q.empty())
                 return;
+            const int64_t oldest =
+                g_aoi_q.front().enqueued_ms > 0 ? NowMs() - g_aoi_q.front().enqueued_ms : 0;
             taken.reserve(g_aoi_q.size());
             while (!g_aoi_q.empty()) {
                 taken.push_back(std::move(g_aoi_q.front()));
                 g_aoi_q.pop_front();
             }
+            // 队列空了只说明批次已被取走。PushBatch 还在这个线程里跑。
             OpsMetrics::Instance().SetAoiPushBacklog(0);
+            OpsMetrics::Instance().SetAoiWorkerInflight(static_cast<int64_t>(taken.size()));
+            OpsMetrics::Instance().SetAoiBatchOldestAgeMs(oldest);
         }
         PublishTaken(std::move(taken));
+        OpsMetrics::Instance().SetAoiWorkerInflight(0);
+        OpsMetrics::Instance().SetAoiBatchOldestAgeMs(0);
     }
 }
 
@@ -267,6 +274,7 @@ void EnqueueAoi(AoiPushBatch batch) {
         return;
     {
         std::lock_guard<std::mutex> lk(g_aoi_mu);
+        batch.enqueued_ms = NowMs();
         g_aoi_q.push_back(std::move(batch));
         const size_t shed = ShedAoiMoveBatches(&g_aoi_q, kAoiQueueCap);
         if (shed != 0)
@@ -801,7 +809,8 @@ bool GameLogic::BuildFullStateSnapshot(uint64_t player_id, uint64_t baseline_ser
         lk.lock();
     }
 #endif
-    uint32_t aoi_max = 128;
+    // 与 MapRuntime 可见上限 200 对齐。128 会在密集视野里直接 ERR_SNAPSHOT_TOO_LARGE，恢复不了周围的人。
+    uint32_t aoi_max = 200;
     if (const char *e = std::getenv("GAMEMESH_SNAPSHOT_AOI_MAX")) {
         const int v = std::atoi(e);
         if (v > 0 && v <= 4096)

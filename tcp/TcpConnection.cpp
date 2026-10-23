@@ -330,6 +330,7 @@ bool TcpConnection::TrySendLatestMove(const std::string &msg) {
         send_hold_move_ = true;
         // 移动帧前面若还有回包，注册写事件把回包送走；只剩移动帧时不注册，避免空转。
         ArmWriteIfNeeded();
+        ArmParkedMoveRetry();
         return true;
     }
     send_hold_move_ = false;
@@ -535,6 +536,36 @@ void TcpConnection::WriteNonBlocking() {
     if (send_hold_move_ && send_move_hold_off_ == 0 &&
         UnsentBytes() > kLatestMoveKernelBudget && channel_->IsWriting())
         channel_->DisableWrite();
+    if (send_hold_move_)
+        ArmParkedMoveRetry();
+}
+
+void TcpConnection::ArmParkedMoveRetry() {
+    if (move_retry_armed_ || !loop_ || !send_hold_move_)
+        return;
+    if (state_ != ConnectionState::Connected || in_close_)
+        return;
+    move_retry_armed_ = true;
+    std::weak_ptr<TcpConnection> weak = shared_from_this();
+    loop_->RunAfter(0.2, [weak]() {
+        auto live = weak.lock();
+        if (!live)
+            return;
+        live->OnParkedMoveTimer();
+    });
+}
+
+void TcpConnection::OnParkedMoveTimer() {
+    move_retry_armed_ = false;
+    if (state_ != ConnectionState::Connected || in_close_ || !send_buf_ || !send_hold_move_)
+        return;
+    if (UnsentBytes() <= kLatestMoveKernelBudget) {
+        send_hold_move_ = false;
+        WriteNonBlocking();
+        ArmWriteIfNeeded();
+    }
+    if (send_hold_move_)
+        ArmParkedMoveRetry();
 }
 
 void TcpConnection::ArmWriteIfNeeded() {

@@ -136,6 +136,8 @@ private:
      */
     bool send_hold_move_ = false;
     size_t send_move_hold_off_ = 0;
+    /** 每个连接最多一个 200ms 定时器，用来在关掉 EPOLLOUT 之后再试暂存的移动帧。 */
+    bool move_retry_armed_ = false;
 
     std::function<void(const std::shared_ptr<TcpConnection> &)> on_close_;
     std::function<void(const std::shared_ptr<TcpConnection> &)> on_message_;
@@ -145,6 +147,8 @@ private:
     void WriteNonBlocking();
     /** 还有必须写出的字节才注册 EPOLLOUT。只剩压住的移动帧则关掉，避免水平触发空转。 */
     void ArmWriteIfNeeded();
+    void ArmParkedMoveRetry();
+    void OnParkedMoveTimer();
     /** 关闭路径专用：只写 socket，失败不回调 HandleClose。 */
     void FlushSendBufBestEffort();
     void CloseForBackpressure(const char *reason);

@@ -56,7 +56,7 @@ int main() {
         b.map_instance_id = 9;
         b.map_owner_epoch = 3;
         b.route_version = 2;
-        b.send_frame = [&sent](const std::string &) { ++sent; };
+        b.send_frame = [&sent](const std::string &) { ++sent; return true; };
         GatewayConnRegistry::Instance().Remember(7, b);
 
         GatewayConnRegistry::Bind out;

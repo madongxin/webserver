@@ -421,6 +421,7 @@ target_include_directories(utf8_text_test PRIVATE base runtime)
 add_executable(player_serial_queue_test
   test/player_serial_queue_test.cpp
   runtime/PlayerSerialQueue.cpp
+  runtime/OpsMetrics.cpp
   base/CurrentThread.cpp
   log/Logging.cpp
   log/LogStream.cpp
@@ -432,6 +433,7 @@ target_link_libraries(player_serial_queue_test ${CMAKE_THREAD_LIBS_INIT})
 add_executable(player_serial_shutdown_test
   test/player_serial_shutdown_test.cpp
   runtime/PlayerSerialQueue.cpp
+  runtime/OpsMetrics.cpp
   base/CurrentThread.cpp
   log/Logging.cpp
   log/LogStream.cpp
@@ -572,6 +574,8 @@ if(ENABLE_GAME_PROTOBUF)
     runtime/discovery/EtcdDiscovery.cpp
     base/FileHash.cpp
     base/LogicMetrics.cpp
+    base/PacketTiming.cpp
+    base/EventLoopMetrics.cpp
     base/CurrentThread.cpp
     log/Logging.cpp
     log/LogStream.cpp
@@ -600,6 +604,8 @@ if(ENABLE_GAME_PROTOBUF)
     runtime/discovery/EtcdDiscovery.cpp
     base/FileHash.cpp
     base/LogicMetrics.cpp
+    base/PacketTiming.cpp
+    base/EventLoopMetrics.cpp
     base/CurrentThread.cpp
     log/Logging.cpp
     log/LogStream.cpp
@@ -643,10 +649,13 @@ if(ENABLE_GAME_PROTOBUF)
     runtime/MapCatalog.cpp
     runtime/MapRuntime.cpp
     runtime/PlayerSerialQueue.cpp
+    runtime/OpsMetrics.cpp
     runtime/discovery/IServiceRegistry.cpp
     runtime/discovery/EtcdDiscovery.cpp
     base/FileHash.cpp
     base/LogicMetrics.cpp
+    base/PacketTiming.cpp
+    base/EventLoopMetrics.cpp
     base/CurrentThread.cpp
     log/Logging.cpp
     log/LogStream.cpp
@@ -703,15 +712,21 @@ if(ENABLE_GAME_PROTOBUF)
     runtime/PublicError.cpp
     runtime/OpsMetrics.cpp
     game/ProtoFraming.cpp
-    game/game.pb.cc)
+    game/game.pb.cc
+    base/CurrentThread.cpp
+    log/Logging.cpp
+    log/LogStream.cpp
+    log/LogFile.cpp
+    log/AsyncLogging.cpp)
   target_compile_definitions(protocol_handshake_test PRIVATE WEBSERVER_ENABLE_GAME_PROTOBUF)
   target_include_directories(protocol_handshake_test PRIVATE
-    ${Protobuf_INCLUDE_DIRS} game runtime)
+    ${Protobuf_INCLUDE_DIRS} game runtime base log timer)
   target_link_libraries(protocol_handshake_test ${Protobuf_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
 
   add_executable(gateway_overload_test
     test/gateway_overload_test.cpp
     runtime/PlayerSerialQueue.cpp
+    runtime/OpsMetrics.cpp
     base/CurrentThread.cpp
     log/Logging.cpp
     log/LogStream.cpp
@@ -736,6 +751,8 @@ if(ENABLE_GAME_PROTOBUF)
     runtime/discovery/EtcdDiscovery.cpp
     base/FileHash.cpp
     base/LogicMetrics.cpp
+    base/PacketTiming.cpp
+    base/EventLoopMetrics.cpp
     base/CurrentThread.cpp
     log/Logging.cpp
     log/LogStream.cpp
@@ -845,6 +862,7 @@ if(ENABLE_GAME_PROTOBUF)
   add_executable(player_serial_async_test
     test/player_serial_async_test.cpp
     runtime/PlayerSerialQueue.cpp
+    runtime/OpsMetrics.cpp
     base/CurrentThread.cpp
     log/Logging.cpp
     log/LogStream.cpp

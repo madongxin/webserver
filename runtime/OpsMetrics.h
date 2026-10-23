@@ -40,6 +40,10 @@ public:
     void IncHeartbeatOk() { heartbeat_ok_.fetch_add(1, std::memory_order_relaxed); }
     void IncHeartbeatLimited() { heartbeat_limited_.fetch_add(1, std::memory_order_relaxed); }
     void IncHeartbeatSoftDrop() { heartbeat_soft_drop_.fetch_add(1, std::memory_order_relaxed); }
+    void IncReplyGenerated() { reply_generated_.fetch_add(1, std::memory_order_relaxed); }
+    void IncReplyQueueAccepted() {
+        reply_queue_accepted_.fetch_add(1, std::memory_order_relaxed);
+    }
     void IncReplySoftDrop() { reply_soft_drop_.fetch_add(1, std::memory_order_relaxed); }
     void IncIdleTimeout() { idle_timeout_.fetch_add(1, std::memory_order_relaxed); }
     void SetLineOccupancyTotal(int64_t n) {
@@ -50,6 +54,15 @@ public:
     }
     void SetAoiPushBacklog(int64_t n) {
         aoi_push_backlog_.store(n, std::memory_order_relaxed);
+    }
+    /** 工作线程已经取走、PushBatch 还没返回的批次数。队列深度清零不代表它空闲。 */
+    void SetAoiWorkerInflight(int64_t n) {
+        aoi_worker_inflight_.store(n, std::memory_order_relaxed);
+    }
+    void SetAoiBatchOldestAgeMs(int64_t ms) {
+        if (ms < 0)
+            ms = 0;
+        aoi_batch_oldest_age_ms_.store(ms, std::memory_order_relaxed);
     }
     void AddAoiMoveShed(uint64_t n) { aoi_move_shed_.fetch_add(n, std::memory_order_relaxed); }
     void IncSafePosDeferred() { safe_pos_deferred_.fetch_add(1, std::memory_order_relaxed); }
@@ -151,6 +164,8 @@ private:
     std::atomic<uint64_t> heartbeat_ok_{0};
     std::atomic<uint64_t> heartbeat_limited_{0};
     std::atomic<uint64_t> heartbeat_soft_drop_{0};
+    std::atomic<uint64_t> reply_generated_{0};
+    std::atomic<uint64_t> reply_queue_accepted_{0};
     std::atomic<uint64_t> reply_soft_drop_{0};
     std::atomic<uint64_t> idle_timeout_{0};
     std::atomic<uint64_t> conn_rate_limited_{0};
@@ -159,6 +174,8 @@ private:
     std::atomic<int64_t> line_occupancy_total_{0};
     std::atomic<int64_t> ghost_occupancy_{0};
     std::atomic<int64_t> aoi_push_backlog_{0};
+    std::atomic<int64_t> aoi_worker_inflight_{0};
+    std::atomic<int64_t> aoi_batch_oldest_age_ms_{0};
     std::atomic<uint64_t> aoi_move_shed_{0};
     std::atomic<uint64_t> safe_pos_deferred_{0};
     std::atomic<uint64_t> safe_pos_defer_fail_{0};

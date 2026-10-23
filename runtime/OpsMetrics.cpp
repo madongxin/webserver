@@ -82,6 +82,12 @@ std::string OpsMetrics::PrometheusText() const {
     ctr("gamemesh_heartbeat_soft_drop_total",
         "Heartbeat reply soft-dropped (send_buf high water; TCP kept).",
         heartbeat_soft_drop_.load(std::memory_order_relaxed));
+    ctr("gamemesh_reply_generated_total",
+        "Heartbeat and RPC replies the gateway tried to send. Cumulative.",
+        reply_generated_.load(std::memory_order_relaxed));
+    ctr("gamemesh_reply_queue_accepted_total",
+        "Replies accepted into the connection send buffer or written immediately. Not kernel-complete.",
+        reply_queue_accepted_.load(std::memory_order_relaxed));
     ctr("gamemesh_reply_soft_drop_total",
         "RPC/auth reply soft-dropped instead of closing TCP for backpressure.",
         reply_soft_drop_.load(std::memory_order_relaxed));
@@ -107,8 +113,15 @@ std::string OpsMetrics::PrometheusText() const {
     gauge("gamemesh_ghost_occupancy",
           "max(0, line_occupancy_total - session_online); softcap ghosts.",
           ghost_occupancy_.load(std::memory_order_relaxed));
-    gauge("gamemesh_aoi_push_backlog", "AOI enqueue depth awaiting PushBatch. Instantaneous batch count.",
+    gauge("gamemesh_aoi_push_backlog",
+          "AOI batches still queued, not yet taken by the worker. Instantaneous.",
           aoi_push_backlog_.load(std::memory_order_relaxed));
+    gauge("gamemesh_aoi_worker_inflight",
+          "AOI batches taken by the worker and not yet finished publishing. Instantaneous.",
+          aoi_worker_inflight_.load(std::memory_order_relaxed));
+    gauge("gamemesh_aoi_batch_oldest_age_ms",
+          "Age of the oldest AOI batch when the worker last took the queue. Milliseconds.",
+          aoi_batch_oldest_age_ms_.load(std::memory_order_relaxed));
     ctr("gamemesh_aoi_move_shed_total",
         "AOI MOVE events dropped because the publish queue exceeded its cap. Cumulative events.",
         aoi_move_shed_.load(std::memory_order_relaxed));

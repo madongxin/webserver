@@ -51,6 +51,7 @@ struct AoiRecipientEvent {
 
 struct AoiPushBatch {
     uint64_t map_instance_id = 0;
+    int64_t enqueued_ms = 0;
     std::vector<AoiRecipientEvent> events;
 };
 

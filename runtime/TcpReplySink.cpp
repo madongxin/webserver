@@ -177,6 +177,7 @@ void TcpReplySink::SendFrame(const std::string &response_frame) {
         reply_note.live = c.get();
         reply_note.wait_ms = wait_ms;
         reply_note.frame = &response_frame;
+        OpsMetrics::Instance().IncReplyGenerated();
         // 登录/重连/进图回包：用满发送缓冲。先把挡在前面的移动包清掉，避免应答排到队尾后客户端超时。
         MakeRoomForControl(c.get());
         // 移动应答（含 ERR_OVERLOADED）必须在客户端丢掉序号之前写出去。
@@ -190,28 +191,32 @@ void TcpReplySink::SendFrame(const std::string &response_frame) {
                            gameproto::FrameDecodeResult::Complete &&
                        gr.ParseFromString(payload) && gr.has_move();
         }
+        auto accept = [&]() {
+            OpsMetrics::Instance().IncReplyQueueAccepted();
+            OpsMetrics::Instance().AddGatewayTxBytes(response_frame.size());
+            OpsMetrics::Instance().AddGatewayTxFrames(1);
+        };
         if (!c->TrySendControl(response_frame, move_rsp)) {
-            // 全量快照整帧发不出去时，丢掉排队的移动包再试一次。不改这一帧里的 aoi_entities。
+            // 控制回包排不进去时再丢一次可丢的旧移动帧。不改这一帧的内容，也不把已生效的移动改成失败。
+            const size_t dropped = DropQueuedAoiMoveFrames(c.get());
+            if (dropped != 0 && c->TrySendControl(response_frame, move_rsp)) {
+                LOG_INFO << "TcpReplySink dropped move frames for control conn#" << c->id()
+                         << " moves=" << dropped << " bytes=" << response_frame.size();
+                accept();
+                return;
+            }
             if (FrameHasFullSnapshot(response_frame)) {
-                const size_t dropped = DropQueuedAoiMoveFrames(c.get());
-                if (dropped != 0 && c->TrySendControl(response_frame)) {
-                    LOG_INFO << "TcpReplySink dropped move frames for full snapshot conn#"
-                             << c->id() << " moves=" << dropped
-                             << " bytes=" << response_frame.size();
-                    OpsMetrics::Instance().AddGatewayTxBytes(response_frame.size());
-                    OpsMetrics::Instance().AddGatewayTxFrames(1);
-                    return;
-                }
                 LOG_WARN << "TcpReplySink full snapshot not truncated conn#" << c->id()
                          << " bytes=" << response_frame.size() << " moves_dropped=" << dropped;
             }
             OpsMetrics::Instance().IncReplySoftDrop();
             LOG_WARN << "TcpReplySink soft-drop reply conn#" << c->id()
-                     << " bytes=" << response_frame.size();
+                     << " bytes=" << response_frame.size()
+                     << " send_buf=" << (c->send_buf() ? c->send_buf()->readablebytes() : 0)
+                     << " unsent=" << c->unsent_bytes() << " moves_dropped=" << dropped;
             return;
         }
-        OpsMetrics::Instance().AddGatewayTxBytes(response_frame.size());
-        OpsMetrics::Instance().AddGatewayTxFrames(1);
+        accept();
     });
 }
 

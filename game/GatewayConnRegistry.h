@@ -24,9 +24,10 @@ public:
         uint64_t map_owner_epoch = 0;
         uint64_t route_version = 0;
         std::string gateway_instance_id;
-        std::function<void(const std::string &frame)> send_frame;
+        /** true：已进入该连接的发送缓冲或合并槽。不是内核写完，也不是客户端已应用。 */
+        std::function<bool(const std::string &frame)> send_frame;
         /** ENTER/LEAVE 等可靠 AOI：更高软丢水位，仍不关连接。 */
-        std::function<void(const std::string &frame)> send_frame_urgent;
+        std::function<bool(const std::string &frame)> send_frame_urgent;
         std::function<void()> close_conn;
         std::function<void(double delay_sec, std::function<void()> cb)> run_after;
         /** 把任务投到该连接 EventLoop；缺省则在调用线程同步执行（单测）。 */

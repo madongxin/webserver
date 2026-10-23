@@ -143,13 +143,13 @@ void TestNotifyAndCloseIfMatch() {
     oldb.player_id = 601;
     oldb.session_id = "sess-n";
     oldb.generation = 1;
-    oldb.send_frame = [&](const std::string &) { sent = true; };
+    oldb.send_frame = [&](const std::string &) { sent = true; return true; };
     oldb.close_conn = [&]() { closed_old = true; };
     oldb.run_after = [&](double, std::function<void()> cb) { cb(); };
     reg.Remember(31, oldb);
     GatewayConnRegistry::Bind newb = oldb;
     newb.generation = 2;
-    newb.send_frame = [&](const std::string &) {};
+    newb.send_frame = [&](const std::string &) { return true; };
     newb.close_conn = [&]() { closed_new = true; };
     newb.run_after = [&](double, std::function<void()> cb) { cb(); };
     reg.Remember(32, newb);
@@ -172,7 +172,7 @@ void TestRetargetSkipsSelfKick() {
     b.generation = 9;
     b.token = "old-fence";
     b.close_conn = [&]() { closed = true; };
-    b.send_frame = [](const std::string &) {};
+    b.send_frame = [](const std::string &) { return true; };
     b.run_after = [](double, std::function<void()> cb) { cb(); };
     reg.Remember(33, b);
     Expect(reg.RetargetSession(33, 819, "sess-new", 10, "new-fence"), "retarget same conn");
@@ -194,7 +194,7 @@ void TestNotifyQueuesOnLoop() {
     b.player_id = 701;
     b.session_id = "sess-q";
     b.generation = 1;
-    b.send_frame = [&](const std::string &) { sent = true; };
+    b.send_frame = [&](const std::string &) { sent = true; return true; };
     b.close_conn = [&]() { closed = true; };
     b.run_after = [&](double, std::function<void()> cb) { cb(); };
     b.queue_on_loop = [&](std::function<void()> fn) {

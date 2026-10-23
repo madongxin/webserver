@@ -38,6 +38,11 @@
 #include "TcpReplySink.h"
 #include "TcpServer.h"
 #include "game.pb.h"
+#ifdef WEBSERVER_ENABLE_BRPC
+#include <atomic>
+#include <bthread/countdown_event.h>
+#include <butil/time.h>
+#endif
 
 #ifdef WEBSERVER_ENABLE_REDIS
 #include "PushReplayStore.h"
@@ -278,18 +283,19 @@ void RememberBind(uint64_t conn_id, uint64_t player_id, const std::string &token
         gb.map_owner_epoch = route->map_owner_epoch;
         gb.route_version = route->route_version;
     }
-    if (sink) {
+        if (sink) {
         std::weak_ptr<TcpConnection> weak_conn = sink->tcp_connection();
         auto make_try_send = [weak_conn](bool urgent) {
-            return [weak_conn, urgent](const std::string &frame) {
+            return [weak_conn, urgent](const std::string &frame) -> bool {
                 auto c = weak_conn.lock();
                 if (!c || !c->loop())
-                    return;
+                    return false;
                 // 推送路径用 TrySend：队列满丢帧，禁止背压关连接（否则 MarkDisconnected 雪崩）。
-                auto do_send = [weak_conn, frame, urgent]() {
+                // 返回值只表示这一帧进了应用缓冲或当场 write。不是内核写完，也不是客户端已应用。
+                auto do_send = [weak_conn, frame, urgent]() -> bool {
                     auto live = weak_conn.lock();
                     if (!live || live->state() != TcpConnection::Connected)
-                        return;
+                        return false;
                     if (urgent)
                         MakeRoomForControl(live.get());
                     bool ok = urgent ? live->TrySendUrgent(frame) : live->TrySend(frame);
@@ -303,24 +309,38 @@ void RememberBind(uint64_t conn_id, uint64_t player_id, const std::string &token
                         }
                     }
                     if (!ok)
-                        return;
+                        return false;
                     OpsMetrics::Instance().AddGatewayTxBytes(frame.size());
                     OpsMetrics::Instance().AddGatewayTxFrames(1);
+                    return true;
                 };
                 if (c->loop()->IsInLoopThread())
-                    do_send();
-                else
-                    c->loop()->QueueOneFunc(std::move(do_send));
+                    return do_send();
+#ifdef WEBSERVER_ENABLE_BRPC
+                // 等的是入队结果，不是 TCP ACK。不能在连接自己的 EventLoop 上等，否则死锁。
+                auto done = std::make_shared<bthread::CountdownEvent>();
+                auto queued = std::make_shared<std::atomic<bool>>(false);
+                c->loop()->QueueOneFunc([do_send, done, queued]() {
+                    *queued = do_send();
+                    done->signal();
+                });
+                if (done->timed_wait(butil::milliseconds_from_now(200)) != 0)
+                    return false;
+                return queued->load();
+#else
+                c->loop()->QueueOneFunc([do_send]() { (void)do_send(); });
+                return false;
+#endif
             };
         };
         auto send_move_now = make_try_send(false);
-        gb.send_frame = [weak_conn, send_move_now](const std::string &frame) {
+        gb.send_frame = [weak_conn, send_move_now](const std::string &frame) -> bool {
             auto c = weak_conn.lock();
             if (!c || !c->loop())
-                return;
+                return false;
             if (OfferCoalescedMove(c, frame))
-                return;
-            send_move_now(frame);
+                return true;
+            return send_move_now(frame);
         };
         gb.send_frame_urgent = make_try_send(true);
         gb.close_conn = [weak_conn]() {
@@ -907,16 +927,25 @@ void GameTcpGateway::OnMessage(const std::shared_ptr<TcpConnection> &conn) {
             std::string body, out;
             // 心跳在本连接 EventLoop 同步应答：TrySendUrgent，绝不 Hard Send/踢连接。
             if (outer.SerializeToString(&body) && gameproto::EncodeFrame(body, &out)) {
+                OpsMetrics::Instance().IncReplyGenerated();
                 MakeRoomForControl(conn.get());
-                if (conn->TrySendControl(out, true)) {
+                bool sent = conn->TrySendControl(out, true);
+                if (!sent) {
+                    const size_t dropped = DropQueuedAoiMoveFrames(conn.get());
+                    if (dropped != 0)
+                        sent = conn->TrySendControl(out, true);
+                }
+                if (sent) {
                     OpsMetrics::Instance().AddGatewayTxBytes(out.size());
                     OpsMetrics::Instance().AddGatewayTxFrames(1);
                     OpsMetrics::Instance().IncHeartbeatOk();
+                    OpsMetrics::Instance().IncReplyQueueAccepted();
                 } else {
                     OpsMetrics::Instance().IncHeartbeatSoftDrop();
                     LOG_WARN << "heartbeat soft-drop conn#" << conn->id()
                              << " send_buf="
-                             << (conn->send_buf() ? conn->send_buf()->readablebytes() : 0);
+                             << (conn->send_buf() ? conn->send_buf()->readablebytes() : 0)
+                             << " unsent=" << conn->unsent_bytes();
                 }
             }
             continue;

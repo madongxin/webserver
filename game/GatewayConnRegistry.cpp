@@ -167,10 +167,8 @@ bool GatewayConnRegistry::SendBySession(const std::string &session_id, const std
     if (!FindBySession(session_id, &b) || !b.send_frame)
         return false;
     if (urgent && b.send_frame_urgent)
-        b.send_frame_urgent(frame);
-    else
-        b.send_frame(frame);
-    return true;
+        return b.send_frame_urgent(frame);
+    return b.send_frame(frame);
 }
 
 bool GatewayConnRegistry::CloseIfMatch(uint64_t player_id, const std::string &session_id,
@@ -205,7 +203,7 @@ bool GatewayConnRegistry::NotifyAndCloseIfMatch(uint64_t player_id, const std::s
     if (player_id == 0)
         return false;
     struct Job {
-        std::function<void(const std::string &)> send_frame;
+        std::function<bool(const std::string &)> send_frame;
         std::function<void()> close_conn;
         std::function<void(double, std::function<void()>)> run_after;
         std::function<void(std::function<void()>)> queue_on_loop;

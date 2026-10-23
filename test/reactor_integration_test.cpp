@@ -6,10 +6,13 @@
 #include "TcpConnection.h"
 
 #include <arpa/inet.h>
+#include <cerrno>
 #include <fcntl.h>
+#include <chrono>
 #include <iostream>
 #include <netinet/in.h>
 #include <string>
+#include <thread>
 #include <unistd.h>
 #include <sys/socket.h>
 
@@ -217,6 +220,73 @@ void TestLatestMoveHeldWhileKernelBusy() {
     ::close(lfd);
 }
 
+void TestParkedMoveRetriesAfterKernelDrains() {
+    int lfd = ::socket(AF_INET, SOCK_STREAM, 0);
+    Expect(lfd >= 0, "tcp listen retry");
+    int yes = 1;
+    ::setsockopt(lfd, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(yes));
+    sockaddr_in addr{};
+    addr.sin_family = AF_INET;
+    addr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+    addr.sin_port = 0;
+    Expect(::bind(lfd, reinterpret_cast<sockaddr *>(&addr), sizeof(addr)) == 0, "bind retry");
+    Expect(::listen(lfd, 1) == 0, "listen retry");
+    socklen_t alen = sizeof(addr);
+    Expect(::getsockname(lfd, reinterpret_cast<sockaddr *>(&addr), &alen) == 0, "getsockname retry");
+
+    int cfd = ::socket(AF_INET, SOCK_STREAM, 0);
+    Expect(cfd >= 0, "tcp client retry");
+    Expect(::connect(cfd, reinterpret_cast<sockaddr *>(&addr), sizeof(addr)) == 0, "connect retry");
+    int afd = ::accept(lfd, nullptr, nullptr);
+    Expect(afd >= 0, "accept retry");
+    int flags = ::fcntl(cfd, F_GETFL, 0);
+    ::fcntl(cfd, F_SETFL, flags | O_NONBLOCK);
+    flags = ::fcntl(afd, F_GETFL, 0);
+    ::fcntl(afd, F_SETFL, flags | O_NONBLOCK);
+
+    std::string block(4096, 'B');
+    while (true) {
+        const ssize_t n = ::write(cfd, block.data(), block.size());
+        if (n > 0)
+            continue;
+        break;
+    }
+
+    EventLoop loop;
+    auto conn = std::make_shared<TcpConnection>(&loop, cfd, 12);
+    conn->set_close_callback([](const std::shared_ptr<TcpConnection> &) {});
+    conn->set_message_callback([](const std::shared_ptr<TcpConnection> &) {});
+    conn->ConnectionEstablished();
+    const std::string frame(64, 'M');
+    Expect(conn->TrySendLatestMove(frame), "parked move accepted");
+    Expect(conn->holding_latest_move(), "move is held");
+
+    std::thread drain([&]() {
+        char buf[4096];
+        const auto deadline = std::chrono::steady_clock::now() + std::chrono::milliseconds(500);
+        while (std::chrono::steady_clock::now() < deadline) {
+            const ssize_t n = ::read(afd, buf, sizeof(buf));
+            if (n > 0)
+                continue;
+            if (n < 0 && (errno == EAGAIN || errno == EWOULDBLOCK)) {
+                std::this_thread::sleep_for(std::chrono::milliseconds(5));
+                continue;
+            }
+            break;
+        }
+    });
+    loop.RunAfter(0.45, [&loop]() { loop.Quit(); });
+    loop.Loop();
+    drain.join();
+    Expect(!conn->holding_latest_move(), "timer released the parked move");
+    Expect(conn->send_buf()->readablebytes() == 0, "parked move left the app buffer");
+
+    conn->HandleClose();
+    conn->ConnectionDestructor();
+    ::close(afd);
+    ::close(lfd);
+}
+
 }  // namespace
 
 int main() {
@@ -226,6 +296,7 @@ int main() {
     TestDisableWriteAfterDrain();
     TestLatestMoveSendsWhenIdle();
     TestLatestMoveHeldWhileKernelBusy();
+    TestParkedMoveRetriesAfterKernelDrains();
     if (g_fail) {
         std::cerr << "reactor_integration_test failures=" << g_fail << "\n";
         return 1;
