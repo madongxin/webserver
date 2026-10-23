@@ -775,7 +775,9 @@ bool GameLogic::BuildFullStateSnapshot(uint64_t player_id, uint64_t baseline_ser
     if (!view.ready && std::string(view.step) == "viewer_not_online") {
         lk.unlock();
         std::string gw, sid;
+#ifdef WEBSERVER_ENABLE_BRPC
         GameLogicGetBoundMeta(player_id, &gw, &sid, nullptr, nullptr);
+#endif
         AoiPushBatch pushes;
         MapEntity self;
         std::vector<MapEntity> snap;
@@ -893,6 +895,16 @@ bool GameLogic::BuildFullStateSnapshot(uint64_t player_id, uint64_t baseline_ser
                 out->set_gamelogic_instance_id(live_place.owner_logic_server_id);
         }
 #endif
+        // 这个逻辑上没有该玩家的权威视野。ok=true 加空 aoi_entities 会被客户端当成全量替换，把周围的人删掉。
+        out->set_ok(false);
+        out->clear_aoi_entities();
+        out->set_error_code(gameproto::kErrAoiResyncRequired);
+        out->set_message("snapshot not on this owner");
+        LOG_INFO << "full snapshot not on owner player=" << player_id
+                 << " map=" << out->map_instance_id()
+                 << " logic=" << out->gamelogic_instance_id()
+                 << " baseline=" << baseline_server_seq;
+        return false;
     }
     out->set_ok(true);
     out->set_error_code("OK");
@@ -2030,7 +2042,9 @@ bool GameLogic::HandleEnterMap(const game::EnterMapReq &req, game::GameResponse 
             if (MapRuntime::Instance().SnapshotView(req.player_id(), &self_now, &aoi_now, &mid_now)) {
                 if (!self_now.connected) {
                     std::string gw, sid;
+#ifdef WEBSERVER_ENABLE_BRPC
                     GameLogicGetBoundMeta(req.player_id(), &gw, &sid, nullptr, nullptr);
+#endif
                     if (have_meta && !meta_snap.session_id.empty())
                         sid = meta_snap.session_id;
                     AoiPushBatch pushes;

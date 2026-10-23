@@ -763,6 +763,8 @@ if(ENABLE_GAME_PROTOBUF)
     runtime/discovery/EtcdDiscovery.cpp
     base/FileHash.cpp
     base/LogicMetrics.cpp
+    base/PacketTiming.cpp
+    base/EventLoopMetrics.cpp
     base/CurrentThread.cpp
     log/Logging.cpp
     log/LogStream.cpp

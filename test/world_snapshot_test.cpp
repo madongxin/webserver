@@ -77,6 +77,11 @@ int main() {
     Expect(fs.aoi_entities_size() >= 1, "aoi");
     Expect(fs.recovery_reason() == "INSTANCE_LIVE", "live");
     Expect(fs.map_instance_id() == 77, "map id");
+    game::FullStateSnapshotRsp missing;
+    Expect(!GameLogic::Instance().BuildFullStateSnapshot(99, 0, &missing) && !missing.ok(),
+           "unknown player is not an empty snapshot");
+    Expect(missing.aoi_entities_size() == 0, "unknown player has no entities");
+    Expect(missing.error_code() == "ERR_AOI_RESYNC_REQUIRED", "unknown player asks for resync");
     Expect(!fs.ok() || fs.error_code() == "OK" || fs.error_code().empty() || fs.ok(), "code");
 
     game::MoveReq mreq;

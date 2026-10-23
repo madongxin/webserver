@@ -4,11 +4,40 @@
 #include "Logging.h"
 #include "ProtoFraming.h"
 #include "PublicError.h"
+#include "PushReplayCache.h"
 #include "game.pb.h"
+#ifdef WEBSERVER_ENABLE_REDIS
+#include "PushReplayStore.h"
+#endif
 #include <brpc/controller.h>
 #include <brpc/server.h>
 
 #include <cstdlib>
+
+namespace {
+
+uint64_t SeqAfterSessionMatch(const ::gwpush::PushMessage &m) {
+    if (!m.reliable() || m.server_seq() != 0)
+        return m.server_seq();
+#ifdef WEBSERVER_ENABLE_REDIS
+    if (PushReplayStore::Instance().Available()) {
+        return PushReplayStore::Instance().AppendReliable(m.player_id(), m.session_id(),
+                                                          m.message_type(), m.payload());
+    }
+#endif
+    const uint64_t seq = PushReplayCache::Instance().NextSeq(m.player_id());
+    if (seq == 0)
+        return 0;
+    PushReplayEntry entry;
+    entry.server_seq = seq;
+    entry.message_type = m.message_type();
+    entry.payload = m.payload();
+    entry.reliable = true;
+    PushReplayCache::Instance().Store(m.player_id(), entry);
+    return seq;
+}
+
+}  // namespace
 
 void GatewayPushServiceImpl::PushBatch(::google::protobuf::RpcController *controller,
                                        const ::gwpush::PushBatchRequest *request,
@@ -54,6 +83,11 @@ void GatewayPushServiceImpl::PushBatch(::google::protobuf::RpcController *contro
             ++rejected;
             continue;
         }
+        const uint64_t seq = SeqAfterSessionMatch(m);
+        if (m.reliable() && seq == 0) {
+            ++rejected;
+            continue;
+        }
         std::string raw = m.payload();
         if (raw.size() < 4) {
             ++rejected;
@@ -70,12 +104,12 @@ void GatewayPushServiceImpl::PushBatch(::google::protobuf::RpcController *contro
             inner_body = raw;
         // 客户端可见 Envelope：带真实 server_seq（兼容：seq=0 仍发原业务帧）
         std::string frame;
-        if (m.server_seq() != 0) {
+        if (seq != 0) {
             game::GameResponse env;
             env.set_ok(true);
             env.set_message("server_push");
             auto *p = env.mutable_server_push();
-            p->set_server_seq(m.server_seq());
+            p->set_server_seq(seq);
             p->set_message_type(m.message_type());
             p->set_payload(inner_body);
             p->set_reliable(m.reliable());

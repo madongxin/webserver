@@ -257,7 +257,7 @@ std::string PacketTimingPrometheus() {
     os << "# HELP gamemesh_move_flush_total Coalesced move frames handed to the kernel write path.\n"
           "# TYPE gamemesh_move_flush_total counter\n"
           "gamemesh_move_flush_total " << g_move_flush.load(std::memory_order_relaxed) << "\n";
-    os << "# HELP gamemesh_move_hold_total Latest move frame parked in the app buffer because kernel unsent exceeded 8KB.\n"
+    os << "# HELP gamemesh_move_hold_total Latest move frame parked in the app buffer because kernel unsent exceeded 1KB.\n"
           "# TYPE gamemesh_move_hold_total counter\n"
           "gamemesh_move_hold_total " << g_move_hold.load(std::memory_order_relaxed) << "\n";
     os << "# HELP gamemesh_move_drop_total Coalesced move frames not queued because non-move app bytes already exceeded 64KB.\n"

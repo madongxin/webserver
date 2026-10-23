@@ -38,25 +38,9 @@ void ResolveItem(GatewayPushItem *item) {
         item->generation = lookup_gen;
 }
 
-bool AssignReliableSeq(GatewayPushItem *item) {
-    if (!item || item->server_seq != 0 || !item->reliable)
-        return true;
-#ifdef WEBSERVER_ENABLE_REDIS
-    if (PushReplayStore::Instance().Available()) {
-        item->server_seq = PushReplayStore::Instance().AppendReliable(
-            item->player_id, item->session_id, item->message_type, item->payload);
-        if (item->server_seq == 0) {
-            LOG_WARN << "PushReplayStore AppendReliable failed player=" << item->player_id;
-            return false;
-        }
-        return true;
-    }
-#endif
-    item->server_seq = PushReplayCache::Instance().NextSeq(item->player_id);
-    return true;
-}
-
 void StoreLocalReplay(const GatewayPushItem &item) {
+    if (item.server_seq == 0)
+        return;
 #ifdef WEBSERVER_ENABLE_REDIS
     if (PushReplayStore::Instance().Available())
         return;
@@ -83,10 +67,8 @@ bool PushGrouped(std::vector<GatewayPushItem> items) {
             ++dropped;
             continue;
         }
-        if (!AssignReliableSeq(&item)) {
-            ++dropped;
-            continue;
-        }
+        // 可靠序号在 Gateway 确认连接仍在之后再分配。这里先分配的话，
+        // 会话还没绑上或推送被拒绝时，客户端会看到 server_seq 缺口。
         by_gw[item.gateway_instance_id].push_back(std::move(item));
     }
     for (uint32_t i = 0; i < dropped; ++i)
