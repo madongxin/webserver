@@ -5,7 +5,9 @@
 
 #include "GameTcpGateway.h"
 
+#include "AoiPublishQueue.h"
 #include "Buffer.h"
+#include "ServerStats.h"
 #include "CommandPolicy.h"
 #include "EventLoop.h"
 #include "FormalMode.h"
@@ -57,6 +59,7 @@
 #endif
 
 #include <algorithm>
+#include <algorithm>
 #include <atomic>
 #include <chrono>
 #include <cstdlib>
@@ -87,8 +90,11 @@ struct MoveCoalesceSlot {
     std::mutex mu;
     uint64_t map_instance_id = 0;
     std::unordered_map<uint64_t, game::AoiEvent> by_entity;
+    std::unordered_map<uint64_t, int64_t> last_sent_ms;
     bool scheduled = false;
     int64_t last_flush_ms = 0;
+    int64_t budget_window_ms = 0;
+    int budget_bytes = 0;
 };
 
 std::mutex g_move_slots_mu;
@@ -128,7 +134,11 @@ void FlushMoveSlot(const std::shared_ptr<MoveCoalesceSlot> &slot,
         return;
     }
     constexpr int64_t kIntervalMs = 200;
+    constexpr int kBudgetBytes = 16 * 1024;
+    constexpr int kEstBytesPerMove = 48;
+    constexpr size_t kMaxMoveEntities = 30;
     int64_t wait_ms = 0;
+    bool leftover = false;
     game::AoiDelta delta;
     {
         std::lock_guard<std::mutex> lk(slot->mu);
@@ -136,12 +146,48 @@ void FlushMoveSlot(const std::shared_ptr<MoveCoalesceSlot> &slot,
         if (slot->last_flush_ms != 0 && now - slot->last_flush_ms < kIntervalMs &&
             !slot->by_entity.empty()) {
             wait_ms = kIntervalMs - (now - slot->last_flush_ms);
+        } else if (!slot->by_entity.empty()) {
+            if (slot->budget_window_ms == 0 || now - slot->budget_window_ms >= 1000) {
+                slot->budget_window_ms = now;
+                slot->budget_bytes = 0;
+            }
+            const int remain = kBudgetBytes - slot->budget_bytes;
+            size_t max_n = 0;
+            if (remain >= kEstBytesPerMove)
+                max_n = std::min(kMaxMoveEntities, static_cast<size_t>(remain / kEstBytesPerMove));
+            if (max_n == 0) {
+                wait_ms = 1000 - (now - slot->budget_window_ms);
+                if (wait_ms < 50)
+                    wait_ms = 50;
+                ServerStats::aoi_move_budget_defer.fetch_add(1, std::memory_order_relaxed);
+            } else {
+                std::vector<AoiMoveCandidate> cands;
+                cands.reserve(slot->by_entity.size());
+                for (const auto &kv : slot->by_entity) {
+                    AoiMoveCandidate c;
+                    c.entity_id = kv.first;
+                    const auto sent = slot->last_sent_ms.find(kv.first);
+                    c.last_sent_ms = sent == slot->last_sent_ms.end() ? 0 : sent->second;
+                    cands.push_back(c);
+                }
+                const auto picked = PickAoiMoveEntities(std::move(cands), max_n);
+                if (slot->by_entity.size() > picked.size()) {
+                    ServerStats::aoi_move_capped.fetch_add(slot->by_entity.size() - picked.size(),
+                                                           std::memory_order_relaxed);
+                }
+                delta.set_map_instance_id(slot->map_instance_id);
+                for (uint64_t id : picked) {
+                    auto it = slot->by_entity.find(id);
+                    if (it == slot->by_entity.end())
+                        continue;
+                    *delta.add_events() = std::move(it->second);
+                    slot->by_entity.erase(it);
+                }
+                slot->last_flush_ms = now;
+                leftover = !slot->by_entity.empty();
+                slot->scheduled = leftover;
+            }
         } else {
-            delta.set_map_instance_id(slot->map_instance_id);
-            for (auto &kv : slot->by_entity)
-                *delta.add_events() = std::move(kv.second);
-            slot->by_entity.clear();
-            slot->last_flush_ms = now;
             slot->scheduled = false;
         }
     }
@@ -172,7 +218,9 @@ void FlushMoveSlot(const std::shared_ptr<MoveCoalesceSlot> &slot,
     // 先丢掉缓冲里的旧移动帧，再放这一帧最新位置。
     // 内核里已经有没送出的字节时，TrySendLatestMove 不会再把这一帧写进去。
     // 否则回包排在旧坐标后面，客户端要读完才走下一步，人会越走越慢直到停下。
-    DropQueuedAoiMoveFrames(live.get(), false);
+    const size_t overwritten = DropQueuedAoiMoveFrames(live.get(), false);
+    if (overwritten != 0)
+        ServerStats::aoi_move_overwritten.fetch_add(overwritten, std::memory_order_relaxed);
     game::GameResponse notify;
     notify.set_ok(true);
     notify.set_message("aoi");
@@ -194,14 +242,32 @@ void FlushMoveSlot(const std::shared_ptr<MoveCoalesceSlot> &slot,
     if (live->send_buf())
         NoteSendPending(live->send_buf()->readablebytes(), live->unsent_bytes());
     if (!sent) {
+        ServerStats::aoi_move_buffer_hold.fetch_add(1, std::memory_order_relaxed);
         restore(std::move(delta));
         NoteMovePendingEntities(event_n);
         live->loop()->RunAfter(0.2, [slot, weak, conn_id]() { FlushMoveSlot(slot, weak, conn_id); });
         return;
     }
-    NoteMovePendingEntities(0);
+    int pending = 0;
+    {
+        std::lock_guard<std::mutex> lk(slot->mu);
+        const int64_t now = SteadyMs();
+        slot->budget_bytes += static_cast<int>(frame.size());
+        for (const auto &ev : delta.events()) {
+            const uint64_t id = ev.entity().player_id();
+            if (id != 0)
+                slot->last_sent_ms[id] = now;
+        }
+        pending = static_cast<int>(slot->by_entity.size());
+        if (pending > 0 && !slot->scheduled)
+            slot->scheduled = true;
+        leftover = pending > 0;
+    }
+    NoteMovePendingEntities(pending);
     OpsMetrics::Instance().AddGatewayTxBytes(frame.size());
     OpsMetrics::Instance().AddGatewayTxFrames(1);
+    if (leftover)
+        live->loop()->RunAfter(0.2, [slot, weak, conn_id]() { FlushMoveSlot(slot, weak, conn_id); });
 }
 
 // 纯移动帧被合并后返回 true。ENTER/LEAVE 或解析不了的帧返回 false，调用方照旧立刻发送。
@@ -886,11 +952,14 @@ void GameTcpGateway::OnMessage(const std::shared_ptr<TcpConnection> &conn) {
             if (hello.ok()) {
                 GatewayConnGuard::Instance().SetHelloOk(conn->id(), true);
                 OpsMetrics::Instance().IncHelloOk();
-                LOG_INFO << "ClientHello ok conn#" << conn->id()
-                         << " platform=" << peek.client_hello().platform()
-                         << " client_version=" << peek.client_hello().client_version()
-                         << " maps=" << hello.maps_size()
-                         << " manifest_ver=" << hello.map_manifest_version();
+                static std::atomic<uint32_t> hello_logs{0};
+                if ((hello_logs.fetch_add(1, std::memory_order_relaxed) & 31) == 0) {
+                    LOG_INFO << "ClientHello ok conn#" << conn->id()
+                             << " platform=" << peek.client_hello().platform()
+                             << " client_version=" << peek.client_hello().client_version()
+                             << " maps=" << hello.maps_size()
+                             << " manifest_ver=" << hello.map_manifest_version();
+                }
             } else {
                 GatewayConnGuard::Instance().SetHelloOk(conn->id(), false);
                 OpsMetrics::Instance().IncHelloFail();

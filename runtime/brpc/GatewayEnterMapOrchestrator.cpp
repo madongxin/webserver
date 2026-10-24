@@ -17,6 +17,7 @@
 #include "game.pb.h"
 #include "session.pb.h"
 
+#include <atomic>
 #include <chrono>
 #include <memory>
 #include <utility>
@@ -249,7 +250,9 @@ bool OrchestrateGatewayEnterMap(const SessionHandle &sticky, const std::string &
                  << " msg=" << err;
         return FailEnter(req, err, response_frame, err_code);
     }
-    LOG_INFO << "EnterMap resolve player=" << sticky.player_id << " tpl=" << enter.map_template_id()
+    static std::atomic<uint32_t> resolve_logs{0};
+    if ((resolve_logs.fetch_add(1, std::memory_order_relaxed) & 31) == 0)
+        LOG_INFO << "EnterMap resolve player=" << sticky.player_id << " tpl=" << enter.map_template_id()
              << " req_line=" << enter.line_no() << " req_inst=" << enter.map_instance_id()
              << " -> inst=" << map_id << " logic=" << target_logic;
 
@@ -384,7 +387,9 @@ bool OrchestrateGatewayEnterMap(const SessionHandle &sticky, const std::string &
             return FailEnter(req, irsp.message().empty() ? "import snapshot failed" : irsp.message(),
                              response_frame, irsp.error_code());
         }
-        LOG_INFO << "EnterMap snapshot imported player=" << sticky.player_id
+        static std::atomic<uint32_t> import_logs{0};
+        if ((import_logs.fetch_add(1, std::memory_order_relaxed) & 31) == 0)
+            LOG_INFO << "EnterMap snapshot imported player=" << sticky.player_id
                  << " transfer=" << transfer_id << " idempotent=" << irsp.already_applied();
 
         uint64_t committed_rv = 0;
@@ -453,7 +458,9 @@ bool OrchestrateGatewayEnterMap(const SessionHandle &sticky, const std::string &
                 route_out->route_version = committed_rv;
             }
         }
-        LOG_INFO << "EnterMap transfer committed player=" << sticky.player_id
+        static std::atomic<uint32_t> transfer_logs{0};
+        if ((transfer_logs.fetch_add(1, std::memory_order_relaxed) & 31) == 0)
+            LOG_INFO << "EnterMap transfer committed player=" << sticky.player_id
                  << " from=" << from_logic << " to=" << target_logic << " transfer=" << transfer_id
                  << " rv=" << committed_rv;
     } else {
@@ -616,7 +623,9 @@ bool BeginOrchestrateGatewayEnterMap(const SessionHandle &sticky, const std::str
             // 回包直接写回这条连接，不等玩家队列。队列卡住时客户端收不到 seq，
             // 只会看到先进去的 enter_map_notify，然后把请求判超时。
             EnsureEnterReplyFrame(h->payload, ok, &out);
-            LOG_INFO << "EnterMap reply player=" << h->sticky.player_id
+            static std::atomic<uint32_t> reply_logs{0};
+            if ((reply_logs.fetch_add(1, std::memory_order_relaxed) & 31) == 0)
+                LOG_INFO << "EnterMap reply player=" << h->sticky.player_id
                      << " conn=" << h->sticky.connection_id << " seq=" << FrameSeq(out)
                      << " bytes=" << out.size() << " ok=" << ok
                      << " map=" << route.map_instance_id;

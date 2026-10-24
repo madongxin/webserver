@@ -282,8 +282,11 @@ bool OrchestrateGatewayLogin(const std::string &gateway_instance_id, uint64_t co
         login_body->mutable_profile()->ParseFromString(brsp.profile_pb());
     rsp.set_ok(true);
     rsp.set_message("login ok");
-    LOG_INFO << "Gateway login orchestrated player=" << arsp.player_id()
-             << " logic=" << srsp.gamelogic_instance_id() << " conn=" << connection_id;
+    static std::atomic<uint32_t> login_logs{0};
+    if ((login_logs.fetch_add(1, std::memory_order_relaxed) & 31) == 0) {
+        LOG_INFO << "Gateway login orchestrated player=" << arsp.player_id()
+                 << " logic=" << srsp.gamelogic_instance_id() << " conn=" << connection_id;
+    }
     return EncodeResponse(rsp, response_frame, connection_id);
 }
 

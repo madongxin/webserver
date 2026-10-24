@@ -46,6 +46,8 @@
 
 #include <algorithm>
 #include <atomic>
+#include <memory>
+#include <memory>
 #include <chrono>
 #include <cmath>
 #include <condition_variable>
@@ -161,16 +163,35 @@ void FillEntitySnapshot(const MapEntity &e, game::EntitySnapshot *out) {
     out->set_state_seq(e.state_seq);
 }
 
+void FillMoveSnapshot(const MapEntity &e, game::EntitySnapshot *out) {
+    if (!out)
+        return;
+    out->set_player_id(e.player_id);
+    out->mutable_position()->set_x(e.x);
+    out->mutable_position()->set_y(e.y);
+    out->mutable_position()->set_z(e.z);
+    out->set_yaw(e.yaw);
+    out->set_state_seq(e.state_seq);
+}
+
 #ifdef WEBSERVER_ENABLE_BRPC
 std::mutex g_aoi_mu;
-std::condition_variable g_aoi_cv;
 std::unordered_set<uint64_t> g_aoi_held;
 std::unordered_map<uint64_t, AoiPushBatch> g_aoi_held_batch;
-std::deque<AoiPushBatch> g_aoi_q;
-std::thread g_aoi_worker;
+struct AoiLane {
+    std::mutex mu;
+    std::condition_variable cv;
+    std::deque<AoiPushBatch> q;
+    std::thread worker;
+};
+std::vector<std::unique_ptr<AoiLane>> g_aoi_lanes;
 std::once_flag g_aoi_start_once;
 std::atomic<bool> g_aoi_stop{false};
+std::atomic<int64_t> g_aoi_queued{0};
 constexpr size_t kAoiQueueCap = 64;
+constexpr int64_t kAoiLaneHoldMs = 150;
+
+void AoiLaneMain(AoiLane *lane);
 
 void PublishAoiBatch(const AoiPushBatch &batch);
 
@@ -236,25 +257,49 @@ void PublishTaken(std::vector<AoiPushBatch> taken) {
         PublishAoiBatch(kv.second);
 }
 
-void AoiWorkerMain() {
+void AoiLaneMain(AoiLane *lane) {
     for (;;) {
         std::vector<AoiPushBatch> taken;
         {
-            std::unique_lock<std::mutex> lk(g_aoi_mu);
-            g_aoi_cv.wait(lk, [] {
-                return g_aoi_stop.load(std::memory_order_relaxed) || !g_aoi_q.empty();
+            std::unique_lock<std::mutex> lk(lane->mu);
+            lane->cv.wait(lk, [&] {
+                return g_aoi_stop.load(std::memory_order_relaxed) || !lane->q.empty();
             });
-            if (g_aoi_q.empty())
+            if (lane->q.empty())
+                return;
+            const int64_t queued_at = lane->q.front().enqueued_ms;
+            const bool stop = g_aoi_stop.load(std::memory_order_relaxed);
+            bool reliable = false;
+            for (const auto &b : lane->q) {
+                if (!AoiBatchIsMoveOnly(b)) {
+                    reliable = true;
+                    break;
+                }
+            }
+            if (!stop && !reliable && queued_at > 0) {
+                const auto ready = std::chrono::steady_clock::time_point(
+                    std::chrono::milliseconds(queued_at + kAoiLaneHoldMs));
+                lane->cv.wait_until(lk, ready, [&] {
+                    if (g_aoi_stop.load(std::memory_order_relaxed) || lane->q.empty())
+                        return true;
+                    for (const auto &b : lane->q) {
+                        if (!AoiBatchIsMoveOnly(b))
+                            return true;
+                    }
+                    return NowMs() >= queued_at + kAoiLaneHoldMs;
+                });
+            }
+            if (lane->q.empty())
                 return;
             const int64_t oldest =
-                g_aoi_q.front().enqueued_ms > 0 ? NowMs() - g_aoi_q.front().enqueued_ms : 0;
-            taken.reserve(g_aoi_q.size());
-            while (!g_aoi_q.empty()) {
-                taken.push_back(std::move(g_aoi_q.front()));
-                g_aoi_q.pop_front();
+                lane->q.front().enqueued_ms > 0 ? NowMs() - lane->q.front().enqueued_ms : 0;
+            taken.reserve(lane->q.size());
+            while (!lane->q.empty()) {
+                taken.push_back(std::move(lane->q.front()));
+                lane->q.pop_front();
             }
-            // 队列空了只说明批次已被取走。PushBatch 还在这个线程里跑。
-            OpsMetrics::Instance().SetAoiPushBacklog(0);
+            g_aoi_queued.fetch_sub(static_cast<int64_t>(taken.size()), std::memory_order_relaxed);
+            OpsMetrics::Instance().SetAoiPushBacklog(g_aoi_queued.load(std::memory_order_relaxed));
             OpsMetrics::Instance().SetAoiWorkerInflight(static_cast<int64_t>(taken.size()));
             OpsMetrics::Instance().SetAoiBatchOldestAgeMs(oldest);
         }
@@ -265,7 +310,16 @@ void AoiWorkerMain() {
 }
 
 void EnsureAoiWorker() {
-    std::call_once(g_aoi_start_once, [] { g_aoi_worker = std::thread(AoiWorkerMain); });
+    std::call_once(g_aoi_start_once, [] {
+        unsigned hc = std::thread::hardware_concurrency();
+        if (hc < 4)
+            hc = 4;
+        g_aoi_lanes.reserve(hc);
+        for (unsigned i = 0; i < hc; ++i)
+            g_aoi_lanes.push_back(std::unique_ptr<AoiLane>(new AoiLane()));
+        for (auto &lane : g_aoi_lanes)
+            lane->worker = std::thread(AoiLaneMain, lane.get());
+    });
 }
 
 void EnqueueAoi(AoiPushBatch batch) {
@@ -273,28 +327,36 @@ void EnqueueAoi(AoiPushBatch batch) {
         return;
     if (g_aoi_stop.load(std::memory_order_acquire))
         return;
+    EnsureAoiWorker();
+    if (g_aoi_lanes.empty())
+        return;
+    const size_t lane_i =
+        static_cast<size_t>(batch.map_instance_id % static_cast<uint64_t>(g_aoi_lanes.size()));
+    AoiLane *lane = g_aoi_lanes[lane_i].get();
     {
-        std::lock_guard<std::mutex> lk(g_aoi_mu);
+        std::lock_guard<std::mutex> lk(lane->mu);
         batch.enqueued_ms = NowMs();
-        g_aoi_q.push_back(std::move(batch));
-        const size_t shed = ShedAoiMoveBatches(&g_aoi_q, kAoiQueueCap);
+        const size_t before = lane->q.size();
+        lane->q.push_back(std::move(batch));
+        const size_t shed = ShedAoiMoveBatches(&lane->q, kAoiQueueCap);
         if (shed != 0)
             OpsMetrics::Instance().AddAoiMoveShed(static_cast<uint64_t>(shed));
-        OpsMetrics::Instance().SetAoiPushBacklog(static_cast<int64_t>(g_aoi_q.size()));
+        const size_t after = lane->q.size();
+        g_aoi_queued.fetch_add(static_cast<int64_t>(after) - static_cast<int64_t>(before),
+                               std::memory_order_relaxed);
+        OpsMetrics::Instance().SetAoiPushBacklog(g_aoi_queued.load(std::memory_order_relaxed));
     }
-    // 发布线程自己做同步 PushBatch。地图邮箱线程不能在回 MoveRsp 之前排空这条队列。
-    EnsureAoiWorker();
-    g_aoi_cv.notify_one();
+    lane->cv.notify_one();
 }
 
 void StopAoiWorker() {
-    {
-        std::lock_guard<std::mutex> lk(g_aoi_mu);
-        g_aoi_stop.store(true, std::memory_order_release);
+    g_aoi_stop.store(true, std::memory_order_release);
+    for (auto &lane : g_aoi_lanes)
+        lane->cv.notify_all();
+    for (auto &lane : g_aoi_lanes) {
+        if (lane->worker.joinable())
+            lane->worker.join();
     }
-    g_aoi_cv.notify_all();
-    if (g_aoi_worker.joinable())
-        g_aoi_worker.join();
 }
 
 void PublishAoiBatch(const AoiPushBatch &batch) {
@@ -327,7 +389,10 @@ void PublishAoiBatch(const AoiPushBatch &batch) {
         delta.set_map_instance_id(live.map_instance_id);
         auto *pe = delta.add_events();
         pe->set_op(ev.op);
-        FillEntitySnapshot(ev.snapshot, pe->mutable_entity());
+        if (ev.op == 2)
+            FillMoveSnapshot(ev.snapshot, pe->mutable_entity());
+        else
+            FillEntitySnapshot(ev.snapshot, pe->mutable_entity());
         const int64_t t =
             ev.snapshot.last_move_server_ms > 0 ? ev.snapshot.last_move_server_ms : emit_ms;
         pe->set_server_time_ms(t);
@@ -2211,16 +2276,22 @@ bool GameLogic::HandleEnterMap(const game::EnterMapReq &req, game::GameResponse 
             slot.last_flush_ms = 0;
         }
         MaybePersistLastSafe(req.player_id(), self, place.map_instance_id, false);
-        LOG_INFO << "[enter_map] recovery=" << recovery << " player=" << req.player_id();
+        static std::atomic<uint32_t> enter_recovery_logs{0};
+        if ((enter_recovery_logs.fetch_add(1, std::memory_order_relaxed) & 31) == 0) {
+            LOG_INFO << "[enter_map] recovery=" << recovery << " player=" << req.player_id();
+        }
     }
 #ifdef WEBSERVER_ENABLE_REDIS
     PlacementStore::Instance().ConfirmSlot(req.player_id(), place.map_instance_id);
 #endif
     rsp->set_ok(true);
     rsp->set_message("entered");
-    LOG_INFO << "[enter_map] player=" << req.player_id() << " map=" << place.map_instance_id
-             << " epoch=" << place.owner_epoch
-             << " gl=" << MapInstanceRegistry::Instance().local_instance_id();
+    static std::atomic<uint32_t> enter_ok_logs{0};
+    if ((enter_ok_logs.fetch_add(1, std::memory_order_relaxed) & 31) == 0) {
+        LOG_INFO << "[enter_map] player=" << req.player_id() << " map=" << place.map_instance_id
+                 << " epoch=" << place.owner_epoch
+                 << " gl=" << MapInstanceRegistry::Instance().local_instance_id();
+    }
     // 进图结果只走这次 Dispatch 的 EnterMapRsp（客户端按请求 seq 匹配）。
     // 先 Push enter_map_notify 会在同一条 Gateway 连接上排到回包前面；那一帧若只写进
     // 用户态 send_buf，后面的 seq 回包和心跳都出不去，关闭时未读请求还会让 close() 发 RST。

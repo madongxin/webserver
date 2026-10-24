@@ -224,6 +224,21 @@ std::string OpsMetrics::PrometheusText() const {
         ServerStats::aoi_sub_leave.load(std::memory_order_relaxed));
     ctr("gamemesh_aoi_move_events_total", "AOI MOVE events emitted.",
         ServerStats::aoi_move_events.load(std::memory_order_relaxed));
+    ctr("gamemesh_aoi_move_rate_limited_total",
+        "AOI MOVE skipped because the watcher was updated inside the distance interval.",
+        ServerStats::aoi_move_rate_limited.load(std::memory_order_relaxed));
+    ctr("gamemesh_aoi_move_capped_total",
+        "AOI MOVE entities left in the coalesce slot because the frame cap was full.",
+        ServerStats::aoi_move_capped.load(std::memory_order_relaxed));
+    ctr("gamemesh_aoi_move_buffer_hold_total",
+        "AOI MOVE flushes deferred because the connection send buffer was over 64KB.",
+        ServerStats::aoi_move_buffer_hold.load(std::memory_order_relaxed));
+    ctr("gamemesh_aoi_move_budget_defer_total",
+        "AOI MOVE flushes deferred because the connection exceeded 16KB/s.",
+        ServerStats::aoi_move_budget_defer.load(std::memory_order_relaxed));
+    ctr("gamemesh_aoi_move_overwritten_total",
+        "Queued AOI MOVE frames replaced by a newer frame before write.",
+        ServerStats::aoi_move_overwritten.load(std::memory_order_relaxed));
     ctr("gamemesh_login_stage_reject_auth_total", "Auth stage admission rejects.",
         ServerStats::login_stage_reject_auth.load(std::memory_order_relaxed));
     ctr("gamemesh_session_grace_expire_total", "Disconnected sessions past grace.",

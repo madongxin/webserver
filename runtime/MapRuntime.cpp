@@ -204,17 +204,20 @@ void MapRuntime::ForgetViewer(InstanceState *st, uint64_t viewer_id) {
     if (!st)
         return;
     auto it = st->visible_targets.find(viewer_id);
-    if (it == st->visible_targets.end())
-        return;
-    for (uint64_t tid : it->second) {
-        auto w = st->watchers.find(tid);
-        if (w == st->watchers.end())
-            continue;
-        w->second.erase(viewer_id);
-        if (w->second.empty())
-            st->watchers.erase(w);
+    if (it != st->visible_targets.end()) {
+        for (uint64_t tid : it->second) {
+            auto w = st->watchers.find(tid);
+            if (w == st->watchers.end())
+                continue;
+            w->second.erase(viewer_id);
+            if (w->second.empty())
+                st->watchers.erase(w);
+        }
+        st->visible_targets.erase(it);
     }
-    st->visible_targets.erase(it);
+    st->move_notify_ms.erase(viewer_id);
+    for (auto &kv : st->move_notify_ms)
+        kv.second.erase(viewer_id);
 }
 
 void MapRuntime::RefreshViewers(InstanceState *st, const std::vector<uint64_t> &viewer_ids,
@@ -273,7 +276,8 @@ void MapRuntime::RefreshViewers(InstanceState *st, const std::vector<uint64_t> &
             st->visible_targets[viewer_id] = neu;
         if (mover_id != 0 && mover_id != viewer_id && old.count(mover_id) && neu.count(mover_id)) {
             auto mit = st->entities.find(mover_id);
-            if (mit != st->entities.end()) {
+            if (mit != st->entities.end() &&
+                AllowMoveAoi(st, viewer, mit->second, mit->second.last_move_server_ms)) {
                 EmitTo(pushes, map_instance_id, viewer, 2, mit->second);
                 ServerStats::aoi_move_events.fetch_add(1, std::memory_order_relaxed);
             }
@@ -341,6 +345,24 @@ void MapRuntime::RemovePlayerInterest(InstanceState *st, uint64_t map_instance_i
             left->second.connected = false;
     }
     RefreshViewers(st, viewers, 0, 0, map_instance_id, pushes);
+}
+
+bool MapRuntime::AllowMoveAoi(InstanceState *st, const MapEntity &watcher, const MapEntity &subject,
+                              int64_t now_ms) const {
+    if (!st || watcher.player_id == 0 || subject.player_id == 0)
+        return false;
+    const float dx = watcher.x - subject.x;
+    const float dz = watcher.z - subject.z;
+    const float dist2 = dx * dx + dz * dz;
+    constexpr float kNearM = 16.f;
+    const int64_t interval = dist2 < kNearM * kNearM ? 200 : 500;
+    int64_t &last = st->move_notify_ms[watcher.player_id][subject.player_id];
+    if (now_ms > 0 && last > 0 && now_ms - last < interval) {
+        ServerStats::aoi_move_rate_limited.fetch_add(1, std::memory_order_relaxed);
+        return false;
+    }
+    last = now_ms > 0 ? now_ms : 1;
+    return true;
 }
 
 void MapRuntime::EmitTo(AoiPushBatch *pushes, uint64_t map_id, const MapEntity &recipient, int op,
@@ -617,9 +639,12 @@ MapMoveReject MapRuntime::Move(uint64_t map_instance_id, uint64_t player_id, flo
     if (membership_stable) {
         auto wit = st->watchers.find(player_id);
         if (wit != st->watchers.end() && !wit->second.empty()) {
+            emitted_fast = true;
             for (uint64_t vid : wit->second) {
                 auto rit = st->entities.find(vid);
                 if (rit == st->entities.end() || !rit->second.connected)
+                    continue;
+                if (!AllowMoveAoi(st.get(), rit->second, e, t1))
                     continue;
                 EmitTo(pushes, map_instance_id, rit->second, 2, e);
                 ServerStats::aoi_move_events.fetch_add(1, std::memory_order_relaxed);

@@ -14,6 +14,7 @@
 
 #include "gamedb.pb.h"
 
+#include <atomic>
 #include <chrono>
 #include <condition_variable>
 #include <deque>
@@ -269,9 +270,12 @@ void FinishLoginOk(uint64_t player_id, uint64_t account_id, ::auth::LoginRespons
         response->set_access_token(access);
         response->set_refresh_token(refresh);
     }
-    LOG_INFO << "AuthService Login ok player_id=" << player_id
-             << " access=" << PasswordHash::RedactSecret(access)
-             << " refresh=" << PasswordHash::RedactSecret(refresh);
+    static std::atomic<uint32_t> login_logs{0};
+    if ((login_logs.fetch_add(1, std::memory_order_relaxed) & 31) == 0) {
+        LOG_INFO << "AuthService Login ok player_id=" << player_id
+                 << " access=" << PasswordHash::RedactSecret(access)
+                 << " refresh=" << PasswordHash::RedactSecret(refresh);
+    }
 }
 
 }  // namespace

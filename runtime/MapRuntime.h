@@ -128,6 +128,8 @@ private:
         std::unordered_map<uint64_t, std::unordered_set<uint64_t>> visible_targets;
         // target -> viewers who subscribed to that target. MOVE uses this, not the mover's own set.
         std::unordered_map<uint64_t, std::unordered_set<uint64_t>> watchers;
+        // watcher -> target -> 上次发出 MOVE 的服务器时间。近处 200ms，远处 500ms。
+        std::unordered_map<uint64_t, std::unordered_map<uint64_t, int64_t>> move_notify_ms;
         int view_radius = -1;
         int max_visible = 200;  // frozen when the instance is created
         uint64_t epoch = 0;
@@ -151,6 +153,8 @@ private:
     void RemoveFromCell(InstanceState *st, const MapEntity &e);
     void EmitTo(AoiPushBatch *pushes, uint64_t map_id, const MapEntity &recipient, int op,
                 const MapEntity &snapshot) const;
+    bool AllowMoveAoi(InstanceState *st, const MapEntity &watcher, const MapEntity &subject,
+                      int64_t now_ms) const;
 
     int ResolvedRadius(const InstanceState &st) const;
     std::unique_lock<std::mutex> LockInst(const std::shared_ptr<InstanceState> &st) const;

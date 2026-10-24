@@ -76,6 +76,11 @@ struct ServerStats {
     static inline std::atomic<uint64_t> aoi_sub_leave{0};
     static inline std::atomic<uint64_t> aoi_move_events{0};
     static inline std::atomic<uint64_t> aoi_fast_move{0};
+    static inline std::atomic<uint64_t> aoi_move_rate_limited{0};
+    static inline std::atomic<uint64_t> aoi_move_capped{0};
+    static inline std::atomic<uint64_t> aoi_move_buffer_hold{0};
+    static inline std::atomic<uint64_t> aoi_move_budget_defer{0};
+    static inline std::atomic<uint64_t> aoi_move_overwritten{0};
     static inline std::atomic<uint64_t> aoi_lock_wait_us_sum{0};
     static inline std::atomic<uint64_t> aoi_lock_hold_us_sum{0};
     static inline std::atomic<uint64_t> aoi_lock_samples{0};

@@ -16,6 +16,8 @@
 
 #include <brpc/server.h>
 
+#include <algorithm>
+#include <algorithm>
 #include <cstdint>
 #include <cstdlib>
 #include <cstring>
@@ -149,7 +151,12 @@ bool GameLogicBrpcServer::Start(const std::string &listen_addr, int idle_timeout
         return true;
 
     PlayerSerialQueue::Instance().Start(0);
-    PlayerSerialQueue::MapMailbox().Start(0);
+    unsigned hc = std::thread::hardware_concurrency();
+    if (hc == 0)
+        hc = 4;
+    const int map_shards = static_cast<int>(std::max(4u, hc));
+    // 同一 map_instance_id 固定落在 id % n。序号相邻的分线摊到不同分片。
+    PlayerSerialQueue::MapMailbox().Start(map_shards);
 
     server_.reset(new brpc::Server());
     service_.reset(new GameLogicForwardServiceImpl());

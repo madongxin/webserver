@@ -10,6 +10,7 @@
 #include <deque>
 #include <limits>
 #include <string>
+#include <vector>
 
 namespace {
 
@@ -254,6 +255,57 @@ int main() {
     only_reliable.push_back(q.front());
     Expect(ShedAoiMoveBatches(&only_reliable, 1) == 0, "reliable batches are not shed");
     Expect(only_reliable.size() == 3, "reliable queue may exceed cap");
+
+    std::vector<AoiMoveCandidate> cands;
+    for (uint64_t id = 1; id <= 40; ++id) {
+        AoiMoveCandidate c;
+        c.entity_id = id;
+        c.last_sent_ms = static_cast<int64_t>(id) * 10;
+        cands.push_back(c);
+    }
+    const auto picked = PickAoiMoveEntities(cands, 30);
+    Expect(picked.size() == 30, "move frame keeps 30 entities");
+    Expect(!picked.empty() && picked[0] == 1, "oldest unsent entity is kept");
+    bool kept_newest = false;
+    for (uint64_t id : picked) {
+        if (id == 40)
+            kept_newest = true;
+    }
+    Expect(!kept_newest, "newest send is left for the next frame");
+
+    rt.ClearForTest();
+    pushes = {};
+    Expect(rt.Enter(30, data, Ent(1, 1, 1), &self, &snap, &pushes, &err, 2), "budget enter watcher");
+    Expect(rt.Enter(30, data, Ent(2, 2, 1), &self, &snap, &pushes, &err, 2), "budget enter near");
+    pushes = {};
+    Expect(rt.Move(30, 2, 2.2f, 0, 1, 0, 1, 5000, &conf, &pushes, &err, true) == MapMoveReject::Ok,
+           "near move 1");
+    Expect(CountOp(pushes, 1, 2) == 1, "first near move is sent");
+    pushes = {};
+    Expect(rt.Move(30, 2, 2.4f, 0, 1, 0, 2, 5100, &conf, &pushes, &err, true) == MapMoveReject::Ok,
+           "near move 2");
+    Expect(CountOp(pushes, 1, 2) == 0, "near move inside 200ms is not emitted");
+    pushes = {};
+    Expect(rt.Move(30, 2, 2.6f, 0, 1, 0, 3, 5200, &conf, &pushes, &err, true) == MapMoveReject::Ok,
+           "near move 3");
+    Expect(CountOp(pushes, 1, 2) == 1, "near move after 200ms is sent");
+
+    rt.ClearForTest();
+    pushes = {};
+    Expect(rt.Enter(31, data, Ent(1, 1, 1), &self, &snap, &pushes, &err, 3), "budget enter far watcher");
+    Expect(rt.Enter(31, data, Ent(2, 25, 1), &self, &snap, &pushes, &err, 3), "budget enter far");
+    pushes = {};
+    Expect(rt.Move(31, 2, 25.2f, 0, 1, 0, 1, 8000, &conf, &pushes, &err, true) == MapMoveReject::Ok,
+           "far move 1");
+    Expect(CountOp(pushes, 1, 2) == 1, "first far move is sent");
+    pushes = {};
+    Expect(rt.Move(31, 2, 25.4f, 0, 1, 0, 2, 8200, &conf, &pushes, &err, true) == MapMoveReject::Ok,
+           "far move 2");
+    Expect(CountOp(pushes, 1, 2) == 0, "far move inside 500ms is not emitted");
+    pushes = {};
+    Expect(rt.Move(31, 2, 25.6f, 0, 1, 0, 3, 8500, &conf, &pushes, &err, true) == MapMoveReject::Ok,
+           "far move 3");
+    Expect(CountOp(pushes, 1, 2) == 1, "far move after 500ms is sent");
 
     if (fails) {
         std::printf("map_runtime_aoi_test FAIL count=%d\n", fails);
