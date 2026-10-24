@@ -36,6 +36,17 @@ public:
     }
     void IncPushAckGap() { push_ack_gap_.fetch_add(1, std::memory_order_relaxed); }
     void IncPushSendDeferred() { push_send_deferred_.fetch_add(1, std::memory_order_relaxed); }
+    void IncReliableReplayPending(const char *reason);
+    void IncReliableResend() { reliable_resend_.fetch_add(1, std::memory_order_relaxed); }
+    void IncReliableOutboxOverflow() {
+        reliable_outbox_overflow_.fetch_add(1, std::memory_order_relaxed);
+    }
+    void NoteReliableSendFailBytes(uint64_t bytes) {
+        reliable_send_fail_bytes_.fetch_add(bytes, std::memory_order_relaxed);
+        reliable_send_fail_count_.fetch_add(1, std::memory_order_relaxed);
+    }
+    void NoteReliableOutboxDepth(int64_t depth);
+    void IncSlowReply(const char *kind);
     void IncIdentityMismatch() { identity_mismatch_.fetch_add(1, std::memory_order_relaxed); }
     void IncQueueOverload() { queue_overload_.fetch_add(1, std::memory_order_relaxed); }
     void IncCommandForbidden() { command_forbidden_.fetch_add(1, std::memory_order_relaxed); }
@@ -163,6 +174,15 @@ private:
     std::atomic<uint64_t> push_ack_stale_rejected_{0};
     std::atomic<uint64_t> push_ack_gap_{0};
     std::atomic<uint64_t> push_send_deferred_{0};
+    std::atomic<uint64_t> reliable_replay_pending_[3]{};
+    std::atomic<uint64_t> reliable_resend_{0};
+    std::atomic<uint64_t> reliable_outbox_overflow_{0};
+    std::atomic<uint64_t> reliable_send_fail_bytes_{0};
+    std::atomic<uint64_t> reliable_send_fail_count_{0};
+    std::atomic<int64_t> reliable_outbox_peak_{0};
+    std::atomic<int64_t> reliable_outbox_current_{0};
+    std::atomic<uint64_t> slow_reply_heartbeat_{0};
+    std::atomic<uint64_t> slow_reply_push_ack_{0};
     std::atomic<uint64_t> identity_mismatch_{0};
     std::atomic<uint64_t> queue_overload_{0};
     std::atomic<uint64_t> command_forbidden_{0};

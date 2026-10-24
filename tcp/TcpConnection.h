@@ -42,6 +42,8 @@ public:
     void set_connection_callback(std::function<void(const std::shared_ptr<TcpConnection> &)> const &fn);
     void set_close_callback(std::function<void(const std::shared_ptr<TcpConnection> &)> const &fn);
     void set_message_callback(std::function<void(const std::shared_ptr<TcpConnection> &)> const &fn);
+    /** 写出过字节且应用缓冲降到可靠水位以下时调用。只在所属 EventLoop 上触发。 */
+    void set_drain_callback(std::function<void()> fn);
 
     Buffer *read_buf();
     Buffer *send_buf();
@@ -142,6 +144,7 @@ private:
     std::function<void(const std::shared_ptr<TcpConnection> &)> on_close_;
     std::function<void(const std::shared_ptr<TcpConnection> &)> on_message_;
     std::function<void(const std::shared_ptr<TcpConnection> &)> on_connect_;
+    std::function<void()> on_drain_;
 
     void ReadNonBlocking();
     void WriteNonBlocking();

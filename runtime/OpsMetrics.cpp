@@ -24,6 +24,32 @@ void OpsMetrics::IncReliablePushReject(int reason) {
     reliable_push_reject_[reason].fetch_add(1, std::memory_order_relaxed);
 }
 
+void OpsMetrics::IncReliableReplayPending(const char *reason) {
+    int slot = 0;
+    if (reason && std::string(reason) == "closed")
+        slot = 1;
+    else if (reason && std::string(reason) == "overflow")
+        slot = 2;
+    reliable_replay_pending_[slot].fetch_add(1, std::memory_order_relaxed);
+}
+
+void OpsMetrics::NoteReliableOutboxDepth(int64_t depth) {
+    if (depth < 0)
+        depth = 0;
+    reliable_outbox_current_.store(depth, std::memory_order_relaxed);
+    int64_t prev = reliable_outbox_peak_.load(std::memory_order_relaxed);
+    while (depth > prev &&
+           !reliable_outbox_peak_.compare_exchange_weak(prev, depth, std::memory_order_relaxed)) {
+    }
+}
+
+void OpsMetrics::IncSlowReply(const char *kind) {
+    if (kind && std::string(kind) == "push_ack")
+        slow_reply_push_ack_.fetch_add(1, std::memory_order_relaxed);
+    else
+        slow_reply_heartbeat_.fetch_add(1, std::memory_order_relaxed);
+}
+
 void OpsMetrics::IncErrorCode(const std::string &code) {
     const std::string key = code.empty() ? "ERR_INTERNAL" : code;
     std::lock_guard<std::mutex> lk(g_err_mu);
@@ -85,6 +111,37 @@ std::string OpsMetrics::PrometheusText() const {
         push_ack_gap_.load(std::memory_order_relaxed));
     ctr("gamemesh_push_send_deferred_total", "Reliable push accepted onto the connection loop after the enqueue wait.",
         push_send_deferred_.load(std::memory_order_relaxed));
+    os << "# HELP gamemesh_reliable_replay_pending_total Reliable frames held for an in-order resend.\n"
+          "# TYPE gamemesh_reliable_replay_pending_total counter\n";
+    os << "gamemesh_reliable_replay_pending_total{reason=\"buffer_full\"} "
+       << reliable_replay_pending_[0].load(std::memory_order_relaxed) << "\n";
+    os << "gamemesh_reliable_replay_pending_total{reason=\"closed\"} "
+       << reliable_replay_pending_[1].load(std::memory_order_relaxed) << "\n";
+    os << "gamemesh_reliable_replay_pending_total{reason=\"overflow\"} "
+       << reliable_replay_pending_[2].load(std::memory_order_relaxed) << "\n\n";
+    ctr("gamemesh_reliable_resend_total", "Reliable frames written after an earlier send failure.",
+        reliable_resend_.load(std::memory_order_relaxed));
+    ctr("gamemesh_reliable_outbox_overflow_total",
+        "Connections closed because the reliable outbox exceeded its cap.",
+        reliable_outbox_overflow_.load(std::memory_order_relaxed));
+    ctr("gamemesh_reliable_send_fail_buf_bytes_sum",
+        "Sum of output-buffer bytes when a reliable send failed. Divide by the count.",
+        reliable_send_fail_bytes_.load(std::memory_order_relaxed));
+    ctr("gamemesh_reliable_send_fail_buf_count",
+        "Reliable send failures that recorded an output-buffer size.",
+        reliable_send_fail_count_.load(std::memory_order_relaxed));
+    gauge("gamemesh_reliable_outbox_peak",
+          "Peak reliable frames waiting on one connection.",
+          reliable_outbox_peak_.load(std::memory_order_relaxed));
+    gauge("gamemesh_reliable_outbox_current",
+          "Reliable frames waiting on the connection last updated.",
+          reliable_outbox_current_.load(std::memory_order_relaxed));
+    os << "# HELP gamemesh_slow_reply_total Heartbeat or PushAck replies that took at least 500ms to write.\n"
+          "# TYPE gamemesh_slow_reply_total counter\n";
+    os << "gamemesh_slow_reply_total{kind=\"heartbeat\"} "
+       << slow_reply_heartbeat_.load(std::memory_order_relaxed) << "\n";
+    os << "gamemesh_slow_reply_total{kind=\"push_ack\"} "
+       << slow_reply_push_ack_.load(std::memory_order_relaxed) << "\n\n";
     ctr("gamemesh_identity_mismatch_total", "Client player_id mismatch vs trusted binding.",
         identity_mismatch_.load(std::memory_order_relaxed));
     ctr("gamemesh_queue_overload_total", "PlayerSerialQueue TryPost rejected.",

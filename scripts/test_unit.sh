@@ -74,6 +74,7 @@ run_one channel_snapshot_race_test
 run_one gateway_disconnect_async_test
 run_one gateway_conn_race_test
 run_one push_admit_test
+run_one reliable_outbox_test
 run_one gateway_logout_policy_test
 run_one discovery_ha_test
 run_one push_replay_cache_test

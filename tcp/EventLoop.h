@@ -52,6 +52,8 @@ public:
     void RunOneFunc(std::function<void()> fn);
 
     bool IsInLoopThread();
+    /** 尚未执行的跨线程任务数。 */
+    int TodoDepth();
 
     /** eventfd 可读：消费计数并 DoToDoList */
     void HandleRead();

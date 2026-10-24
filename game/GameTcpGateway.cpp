@@ -31,6 +31,7 @@
 #include "ProtocolHandshake.h"
 #include "ProtoFraming.h"
 #include "PublicError.h"
+#include "ReliableOutbox.h"
 #include "ReplySink.h"
 #include "RpcOffloadPool.h"
 #include "SceneKind.h"
@@ -147,45 +148,50 @@ void FlushMoveSlot(const std::shared_ptr<MoveCoalesceSlot> &slot,
             !slot->by_entity.empty()) {
             wait_ms = kIntervalMs - (now - slot->last_flush_ms);
         } else if (!slot->by_entity.empty()) {
-            if (slot->budget_window_ms == 0 || now - slot->budget_window_ms >= 1000) {
-                slot->budget_window_ms = now;
-                slot->budget_bytes = 0;
-            }
-            const int remain = kBudgetBytes - slot->budget_bytes;
-            size_t max_n = 0;
-            if (remain >= kEstBytesPerMove)
-                max_n = std::min(kMaxMoveEntities, static_cast<size_t>(remain / kEstBytesPerMove));
-            if (max_n == 0) {
-                wait_ms = 1000 - (now - slot->budget_window_ms);
-                if (wait_ms < 50)
-                    wait_ms = 50;
-                ServerStats::aoi_move_budget_defer.fetch_add(1, std::memory_order_relaxed);
+            // 可靠帧还在待发队列里时，不把 MOVE 再写进缓冲。等补发把序号补齐。
+            if (ReliableOutboxHub::Instance().Depth(conn_id) > 0) {
+                wait_ms = 200;
             } else {
-                std::vector<AoiMoveCandidate> cands;
-                cands.reserve(slot->by_entity.size());
-                for (const auto &kv : slot->by_entity) {
-                    AoiMoveCandidate c;
-                    c.entity_id = kv.first;
-                    const auto sent = slot->last_sent_ms.find(kv.first);
-                    c.last_sent_ms = sent == slot->last_sent_ms.end() ? 0 : sent->second;
-                    cands.push_back(c);
+                if (slot->budget_window_ms == 0 || now - slot->budget_window_ms >= 1000) {
+                    slot->budget_window_ms = now;
+                    slot->budget_bytes = 0;
                 }
-                const auto picked = PickAoiMoveEntities(std::move(cands), max_n);
-                if (slot->by_entity.size() > picked.size()) {
-                    ServerStats::aoi_move_capped.fetch_add(slot->by_entity.size() - picked.size(),
-                                                           std::memory_order_relaxed);
+                const int remain = kBudgetBytes - slot->budget_bytes;
+                size_t max_n = 0;
+                if (remain >= kEstBytesPerMove)
+                    max_n = std::min(kMaxMoveEntities, static_cast<size_t>(remain / kEstBytesPerMove));
+                if (max_n == 0) {
+                    wait_ms = 1000 - (now - slot->budget_window_ms);
+                    if (wait_ms < 50)
+                        wait_ms = 50;
+                    ServerStats::aoi_move_budget_defer.fetch_add(1, std::memory_order_relaxed);
+                } else {
+                    std::vector<AoiMoveCandidate> cands;
+                    cands.reserve(slot->by_entity.size());
+                    for (const auto &kv : slot->by_entity) {
+                        AoiMoveCandidate c;
+                        c.entity_id = kv.first;
+                        const auto sent = slot->last_sent_ms.find(kv.first);
+                        c.last_sent_ms = sent == slot->last_sent_ms.end() ? 0 : sent->second;
+                        cands.push_back(c);
+                    }
+                    const auto picked = PickAoiMoveEntities(std::move(cands), max_n);
+                    if (slot->by_entity.size() > picked.size()) {
+                        ServerStats::aoi_move_capped.fetch_add(slot->by_entity.size() - picked.size(),
+                                                               std::memory_order_relaxed);
+                    }
+                    delta.set_map_instance_id(slot->map_instance_id);
+                    for (uint64_t id : picked) {
+                        auto it = slot->by_entity.find(id);
+                        if (it == slot->by_entity.end())
+                            continue;
+                        *delta.add_events() = std::move(it->second);
+                        slot->by_entity.erase(it);
+                    }
+                    slot->last_flush_ms = now;
+                    leftover = !slot->by_entity.empty();
+                    slot->scheduled = leftover;
                 }
-                delta.set_map_instance_id(slot->map_instance_id);
-                for (uint64_t id : picked) {
-                    auto it = slot->by_entity.find(id);
-                    if (it == slot->by_entity.end())
-                        continue;
-                    *delta.add_events() = std::move(it->second);
-                    slot->by_entity.erase(it);
-                }
-                slot->last_flush_ms = now;
-                leftover = !slot->by_entity.empty();
-                slot->scheduled = leftover;
             }
         } else {
             slot->scheduled = false;
@@ -413,6 +419,35 @@ void RememberBind(uint64_t conn_id, uint64_t player_id, const std::string &token
             return send_move_now(frame);
         };
         gb.send_frame_urgent = make_try_send(true);
+        gb.send_urgent_raw = [weak_conn](const std::string &frame) -> int {
+            auto live = weak_conn.lock();
+            if (!live || live->state() != TcpConnection::Connected || !live->loop() ||
+                !live->loop()->IsInLoopThread())
+                return -1;
+            MakeRoomForControl(live.get());
+            bool ok = live->TrySendUrgent(frame);
+            if (!ok) {
+                const size_t dropped = DropQueuedAoiMoveFrames(live.get());
+                if (dropped != 0 && live->TrySendUrgent(frame))
+                    ok = true;
+            }
+            if (!ok) {
+                const int app = live->send_buf() ? live->send_buf()->readablebytes() : 0;
+                const int unsent = live->unsent_bytes();
+                const int pending = app + (unsent > 0 ? unsent : 0);
+                OpsMetrics::Instance().NoteReliableSendFailBytes(
+                    static_cast<uint64_t>(pending > 0 ? pending : 0));
+                return live->state() == TcpConnection::Connected ? 0 : -1;
+            }
+            OpsMetrics::Instance().AddGatewayTxBytes(frame.size());
+            OpsMetrics::Instance().AddGatewayTxFrames(1);
+            return 1;
+        };
+        if (auto live = weak_conn.lock()) {
+            live->set_drain_callback([conn_id]() {
+                ReliableOutboxHub::Instance().OnBufferDrained(conn_id);
+            });
+        }
         gb.close_conn = [weak_conn]() {
             auto c = weak_conn.lock();
             if (!c)
@@ -453,6 +488,7 @@ void ForgetBind(uint64_t conn_id) {
     std::lock_guard<std::mutex> lk(g_bind_mu);
     g_conn_bind.erase(conn_id);
     GatewayConnRegistry::Instance().Forget(conn_id);
+    ReliableOutboxHub::Instance().Forget(conn_id);
     OpsMetrics::Instance().SetOnlinePlayers(GatewayConnRegistry::Instance().BoundPlayerCount());
 }
 
@@ -461,6 +497,7 @@ void MarkAuthoritativeLogout(uint64_t conn_id) {
     g_authoritative_logout.insert(conn_id);
     g_conn_bind.erase(conn_id);
     GatewayConnRegistry::Instance().Forget(conn_id);
+    ReliableOutboxHub::Instance().Forget(conn_id);
     OpsMetrics::Instance().SetOnlinePlayers(GatewayConnRegistry::Instance().BoundPlayerCount());
 }
 
@@ -1020,6 +1057,18 @@ void GameTcpGateway::OnMessage(const std::shared_ptr<TcpConnection> &conn) {
                              << (conn->send_buf() ? conn->send_buf()->readablebytes() : 0)
                              << " unsent=" << conn->unsent_bytes();
                 }
+                const auto hb_ms = std::chrono::duration_cast<std::chrono::milliseconds>(
+                                       std::chrono::steady_clock::now() - handler_span.t0)
+                                       .count();
+                if (hb_ms >= 500) {
+                    OpsMetrics::Instance().IncSlowReply("heartbeat");
+                    LOG_WARN << "slow heartbeat conn#" << conn->id() << " ms=" << hb_ms
+                             << " wrote=" << (sent ? 1 : 0)
+                             << " send_buf="
+                             << (conn->send_buf() ? conn->send_buf()->readablebytes() : 0)
+                             << " unsent=" << conn->unsent_bytes()
+                             << " loop_todo=" << (conn->loop() ? conn->loop()->TodoDepth() : 0);
+                }
             }
             continue;
         }
@@ -1337,8 +1386,41 @@ void GameTcpGateway::OnMessage(const std::shared_ptr<TcpConnection> &conn) {
                 rsp.set_message(ack->message());
                 gameproto::PromotePublicError(&rsp, conn->id());
                 std::string body, out;
-                if (rsp.SerializeToString(&body) && gameproto::EncodeFrame(body, &out))
-                    tcp_sink->SendFrame(out);
+                bool ack_wrote = false;
+                // 与心跳一样在本连接 EventLoop 上直接写。SendFrame 只是再入队，量不到写出耗时。
+                if (rsp.SerializeToString(&body) && gameproto::EncodeFrame(body, &out)) {
+                    OpsMetrics::Instance().IncReplyGenerated();
+                    MakeRoomForControl(conn.get());
+                    ack_wrote = conn->TrySendControl(out, true);
+                    if (!ack_wrote) {
+                        const size_t dropped = DropQueuedAoiMoveFrames(conn.get());
+                        if (dropped != 0)
+                            ack_wrote = conn->TrySendControl(out, true);
+                    }
+                    if (ack_wrote) {
+                        OpsMetrics::Instance().AddGatewayTxBytes(out.size());
+                        OpsMetrics::Instance().AddGatewayTxFrames(1);
+                        OpsMetrics::Instance().IncReplyQueueAccepted();
+                    } else {
+                        OpsMetrics::Instance().IncReplySoftDrop();
+                        LOG_WARN << "push_ack soft-drop conn#" << conn->id()
+                                 << " send_buf="
+                                 << (conn->send_buf() ? conn->send_buf()->readablebytes() : 0)
+                                 << " unsent=" << conn->unsent_bytes();
+                    }
+                }
+                const auto ack_ms = std::chrono::duration_cast<std::chrono::milliseconds>(
+                                        std::chrono::steady_clock::now() - handler_span.t0)
+                                        .count();
+                if (ack_ms >= 500) {
+                    OpsMetrics::Instance().IncSlowReply("push_ack");
+                    LOG_WARN << "slow push_ack conn#" << conn->id() << " ms=" << ack_ms
+                             << " wrote=" << (ack_wrote ? 1 : 0)
+                             << " send_buf="
+                             << (conn->send_buf() ? conn->send_buf()->readablebytes() : 0)
+                             << " unsent=" << conn->unsent_bytes()
+                             << " loop_todo=" << (conn->loop() ? conn->loop()->TodoDepth() : 0);
+                }
                 continue;
             }
             // EnterMap：在 PlayerSerialQueue 编排 Transfer，禁止 Reactor 同步等 brpc

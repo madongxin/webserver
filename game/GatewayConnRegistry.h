@@ -32,6 +32,11 @@ public:
         std::function<int(const std::string &frame)> send_frame;
         /** ENTER/LEAVE 等可靠 AOI：更高软丢水位，仍不关连接。返回值同上。 */
         std::function<int(const std::string &frame)> send_frame_urgent;
+        /**
+         * 只在该连接的 EventLoop 上调用。丢掉排队的 MOVE 后写这一帧。
+         * 不进入可靠待发队列。返回值与 send_frame 相同。
+         */
+        std::function<int(const std::string &frame)> send_urgent_raw;
         std::function<void()> close_conn;
         std::function<void(double delay_sec, std::function<void()> cb)> run_after;
         /** 把任务投到该连接 EventLoop；缺省则在调用线程同步执行（单测）。 */

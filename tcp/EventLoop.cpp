@@ -122,6 +122,11 @@ void EventLoop::RunOneFunc(std::function<void()> fn) {
 
 bool EventLoop::IsInLoopThread() { return tid_ == CurrentThread::tid(); }
 
+int EventLoop::TodoDepth() {
+    std::lock_guard<std::mutex> lock(mutex_);
+    return static_cast<int>(to_do_list_.size());
+}
+
 void EventLoop::DoToDoList() {
     std::vector<std::function<void()>> functors;
     calling_functors_ = true;

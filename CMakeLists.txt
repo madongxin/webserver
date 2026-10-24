@@ -257,6 +257,7 @@ if(ENABLE_BRPC)
     runtime/brpc/GatewayPushClient.cpp
     runtime/brpc/GameLogicPush.cpp
     runtime/PushAdmit.cpp
+    runtime/ReliableOutbox.cpp
     runtime/AoiRecipientGate.cpp
     runtime/MapLineSync.cpp
     runtime/PushReplayCache.cpp
@@ -892,6 +893,22 @@ if(ENABLE_GAME_PROTOBUF)
     runtime/AoiRecipientGate.cpp)
   target_include_directories(push_admit_test PRIVATE runtime)
   target_link_libraries(push_admit_test ${CMAKE_THREAD_LIBS_INIT})
+
+  add_executable(reliable_outbox_test
+    test/reliable_outbox_test.cpp
+    runtime/ReliableOutbox.cpp
+    runtime/OpsMetrics.cpp
+    game/GatewayConnRegistry.cpp
+    base/CurrentThread.cpp
+    log/Logging.cpp
+    log/LogStream.cpp
+    log/LogFile.cpp
+    log/AsyncLogging.cpp)
+  target_compile_definitions(reliable_outbox_test PRIVATE WEBSERVER_ENABLE_BRPC)
+  target_include_directories(reliable_outbox_test PRIVATE runtime game base log timer
+    ${BRPC_INCLUDE_DIR} ${Protobuf_INCLUDE_DIRS})
+  target_link_libraries(reliable_outbox_test
+    ${BRPC_LINK_LIBS} ${Protobuf_LIBRARIES} ${OPENSSL_CRYPTO_LIB} ${CMAKE_THREAD_LIBS_INIT})
 
   add_executable(gateway_logout_policy_test
     test/gateway_logout_policy_test.cpp)

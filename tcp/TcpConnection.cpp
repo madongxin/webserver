@@ -108,6 +108,7 @@ void TcpConnection::set_message_callback(
     std::function<void(const std::shared_ptr<TcpConnection> &)> const &fn) {
     on_message_ = std::move(fn);
 }
+void TcpConnection::set_drain_callback(std::function<void()> fn) { on_drain_ = std::move(fn); }
 
 void TcpConnection::HandleClose() {
     if (state_ == ConnectionState::Disconected || in_close_)
@@ -485,6 +486,7 @@ void TcpConnection::FlushSendBufBestEffort() {
 void TcpConnection::WriteNonBlocking() {
     if (!send_buf_ || !channel_ || state_ == ConnectionState::Disconected || in_close_)
         return;
+    const int before = send_buf_->readablebytes();
     while (send_buf_->readablebytes() > 0) {
         int writable = send_buf_->readablebytes();
         bool hold_limit = false;
@@ -523,6 +525,11 @@ void TcpConnection::WriteNonBlocking() {
         HandleClose();
         return;
     }
+    const auto notify_drain = [&]() {
+        if (on_drain_ && send_buf_ && before > send_buf_->readablebytes() &&
+            send_buf_->readablebytes() <= 32 * 1024)
+            on_drain_();
+    };
     if (state_ != ConnectionState::Connected || in_close_ || !channel_ || !send_buf_)
         return;
     if (send_buf_->readablebytes() == 0) {
@@ -530,6 +537,7 @@ void TcpConnection::WriteNonBlocking() {
         send_move_hold_off_ = 0;
         if (channel_->IsWriting())
             channel_->DisableWrite();
+        notify_drain();
         return;
     }
     // 只剩压住的最新移动帧时关掉写兴趣。水平触发下一直可写会空转。
@@ -538,6 +546,7 @@ void TcpConnection::WriteNonBlocking() {
         channel_->DisableWrite();
     if (send_hold_move_)
         ArmParkedMoveRetry();
+    notify_drain();
 }
 
 void TcpConnection::ArmParkedMoveRetry() {

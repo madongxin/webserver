@@ -7,6 +7,7 @@
 #include "PublicError.h"
 #include "PushAdmit.h"
 #include "PushReplayCache.h"
+#include "ReliableOutbox.h"
 #include "game.pb.h"
 #ifdef WEBSERVER_ENABLE_REDIS
 #include "PushReplayStore.h"
@@ -95,9 +96,16 @@ void GatewayPushServiceImpl::PushBatch(::google::protobuf::RpcController *contro
         const std::string message_type = m.message_type();
         const bool reliable = m.reliable();
         const bool coalescable = m.coalescable();
+        uint64_t assigned_seq = m.server_seq();
+        ReliableOutboxHub::Order order;
+        if (reliable && found)
+            order = ReliableOutboxHub::Instance().Lock(bind.connection_id);
         PushAdmitEnv env;
         env.local_gateway_id = local_gw;
-        env.assign_seq = [&m]() { return SeqAfterSessionMatch(m); };
+        env.assign_seq = [&m, &assigned_seq]() {
+            assigned_seq = SeqAfterSessionMatch(m);
+            return assigned_seq;
+        };
         env.encode = [&](uint64_t seq, std::string *frame) {
             if (!frame)
                 return false;
@@ -132,7 +140,9 @@ void GatewayPushServiceImpl::PushBatch(::google::protobuf::RpcController *contro
             return gameproto::EncodeFrame(inner_body, frame);
         };
         env.send = [&](const std::string &frame) {
-            return GatewayConnRegistry::Instance().SendBySession(m.session_id(), frame, m.reliable());
+            if (reliable && found && order.q)
+                return ReliableOutboxHub::Instance().Accept(order, assigned_seq, frame);
+            return GatewayConnRegistry::Instance().SendBySession(m.session_id(), frame, false);
         };
         const PushAdmitOut decision = AdmitPushItem(msg, view, env);
         auto *row = response->add_results();
