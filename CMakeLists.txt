@@ -113,6 +113,8 @@ if(ENABLE_GAME_PROTOBUF)
     runtime/GatewayDisconnectAsync.cpp
     runtime/InProcessTransport.cpp
     runtime/TcpReplySink.cpp
+    runtime/ReplyStage.cpp
+    runtime/ControlResponseOutbox.cpp
     runtime/PublicError.cpp
     runtime/ProtocolHandshake.cpp
     runtime/GatewayConnGuard.cpp
@@ -909,6 +911,19 @@ if(ENABLE_GAME_PROTOBUF)
     ${BRPC_INCLUDE_DIR} ${Protobuf_INCLUDE_DIRS})
   target_link_libraries(reliable_outbox_test
     ${BRPC_LINK_LIBS} ${Protobuf_LIBRARIES} ${OPENSSL_CRYPTO_LIB} ${CMAKE_THREAD_LIBS_INIT})
+
+  add_executable(control_outbox_test
+    test/control_outbox_test.cpp
+    runtime/ControlResponseOutbox.cpp
+    runtime/ReplyStage.cpp
+    runtime/OpsMetrics.cpp
+    base/CurrentThread.cpp
+    log/Logging.cpp
+    log/LogStream.cpp
+    log/LogFile.cpp
+    log/AsyncLogging.cpp)
+  target_include_directories(control_outbox_test PRIVATE runtime base log timer)
+  target_link_libraries(control_outbox_test ${CMAKE_THREAD_LIBS_INIT})
 
   add_executable(gateway_logout_policy_test
     test/gateway_logout_policy_test.cpp)

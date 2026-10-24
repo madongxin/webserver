@@ -19,6 +19,14 @@ size_t DropQueuedAoiMoveFrames(TcpConnection *conn, bool keep_newest = false);
  */
 void MakeRoomForControl(TcpConnection *conn);
 
+/**
+ * 只在连接自己的 EventLoop 上调用。
+ * 1 = 回包已进入发送缓冲。0 = 还连着，回包在有序队列里等补发。小于 0 = 连接已关。
+ * kind 必须是字符串字面量。
+ */
+int SubmitControlOnLoop(const std::shared_ptr<TcpConnection> &conn, uint64_t seq, const char *kind,
+                        const std::string &frame);
+
 /** 将 Send 回投到连接所属 EventLoop，保证只在 IO 线程改 TcpConnection */
 class TcpReplySink : public ReplySink {
 public:

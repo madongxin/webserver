@@ -1,6 +1,8 @@
 #include "OpsMetrics.h"
 
+#include "ControlResponseOutbox.h"
 #include "PushAdmit.h"
+#include "ReplyStage.h"
 
 #include "ServerStats.h"
 
@@ -399,5 +401,7 @@ std::string OpsMetrics::PrometheusText() const {
        << ServerStats::db_pool_wait_sum_ms.load(std::memory_order_relaxed) << "\n";
     os << "gamemesh_db_pool_wait_ms_count "
        << ServerStats::db_pool_wait_count.load(std::memory_order_relaxed) << "\n\n";
+    os << ReplyStage::Prometheus();
+    os << ControlResponseOutbox::Prometheus();
     return os.str();
 }

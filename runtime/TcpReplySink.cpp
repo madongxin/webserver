@@ -1,21 +1,26 @@
 #include "TcpReplySink.h"
 
 #include "Buffer.h"
+#include "ControlResponseOutbox.h"
 #include "EventLoop.h"
 #include "GatewayConnRegistry.h"
 #include "Logging.h"
 #include "OpsMetrics.h"
 #include "PacketTiming.h"
 #include "ProtoFraming.h"
+#include "ReplyStage.h"
 #include "TcpConnection.h"
 #include "game.pb.h"
 
 #include <algorithm>
+#include <atomic>
 #include <chrono>
 
 namespace {
 
 const char *KindOfResponse(const game::GameResponse &gr) {
+    if (gr.has_server_hello())
+        return "hello";
     if (gr.has_heartbeat())
         return "heartbeat";
     if (gr.has_reconnect())
@@ -123,100 +128,92 @@ void MakeRoomForControl(TcpConnection *c) {
     const size_t dropped = DropQueuedAoiMoveFrames(c, false);
     if (dropped == 0)
         return;
-    LOG_INFO << "control preempted move frames conn#" << c->id() << " moves=" << dropped
-             << " before=" << before << " remain=" << c->send_buf()->readablebytes();
+    static std::atomic<uint32_t> logs{0};
+    if ((logs.fetch_add(1, std::memory_order_relaxed) & 255) == 0) {
+        LOG_INFO << "control preempted move frames conn#" << c->id() << " moves=" << dropped
+                 << " before=" << before << " remain=" << c->send_buf()->readablebytes();
+    }
+}
+
+int SubmitControlOnLoop(const std::shared_ptr<TcpConnection> &conn, uint64_t seq, const char *kind,
+                        const std::string &frame) {
+    if (!conn || conn->state() != TcpConnection::Connected || frame.empty())
+        return -1;
+    std::weak_ptr<TcpConnection> weak = conn;
+    ControlSendEnv env;
+    env.try_send = [weak](const std::string &pending) -> int {
+        auto live = weak.lock();
+        if (!live || live->state() != TcpConnection::Connected)
+            return -1;
+        // 回包插到缓冲里的 MOVE 前面，不先把 MOVE 丢掉。只有这一帧写不进缓冲时才清 MOVE。
+        if (live->TrySendControl(pending, true))
+            return 1;
+        if (DropQueuedAoiMoveFrames(live.get()) != 0 &&
+            live->state() == TcpConnection::Connected && live->TrySendControl(pending, true))
+            return 1;
+        return live->state() == TcpConnection::Connected ? 0 : -1;
+    };
+    env.drop_moves = [weak]() -> size_t {
+        auto live = weak.lock();
+        if (!live)
+            return 0;
+        return DropQueuedAoiMoveFrames(live.get());
+    };
+    env.close_conn = [weak]() {
+        auto live = weak.lock();
+        if (!live || live->state() != TcpConnection::Connected)
+            return;
+        live->HandleClose();
+    };
+    return ControlResponseOutbox::Instance().Submit(conn->id(), seq, kind ? kind : "other", frame,
+                                                    std::move(env));
 }
 
 TcpReplySink::TcpReplySink(const std::shared_ptr<TcpConnection> &conn)
     : conn_(conn), loop_(conn ? conn->loop() : nullptr) {}
 
 void TcpReplySink::SendFrame(const std::string &response_frame) {
+    uint64_t seq = 0;
+    const char *kind = "other";
+    {
+        std::string buf = response_frame;
+        std::string payload;
+        game::GameResponse gr;
+        if (gameproto::DecodeOneFrame(&buf, &payload) == gameproto::FrameDecodeResult::Complete &&
+            gr.ParseFromString(payload)) {
+            kind = KindOfResponse(gr);
+            seq = gr.seq();
+        }
+    }
+    ReplyStage::Inc(kind, ReplyStage::LogicResponseReady);
     if (!loop_)
         return;
+    ReplyStage::Inc(kind, ReplyStage::EventLoopEnqueued);
     auto weak = conn_;
     const int64_t enqueued_ms = SteadyMs();
-    loop_->QueueOneFunc([weak, response_frame, enqueued_ms]() {
+    const bool snapshot = FrameHasFullSnapshot(response_frame);
+    loop_->QueueOneFunc([weak, response_frame, enqueued_ms, seq, kind, snapshot]() {
         auto c = weak.lock();
-        if (!c)
+        if (!c || c->state() != TcpConnection::Connected) {
+            LOG_WARN << "TcpReplySink conn gone bytes=" << response_frame.size()
+                     << " kind=" << kind << " seq=" << seq;
             return;
+        }
         const int64_t wait_ms = SteadyMs() - enqueued_ms;
-        if (c->state() != TcpConnection::Connected) {
-            LOG_WARN << "TcpReplySink drop frame conn#" << c->id()
-                     << " bytes=" << response_frame.size()
-                     << " state=" << static_cast<int>(c->state());
-            return;
-        }
-        struct ReplyNote {
-            TcpConnection *live = nullptr;
-            int64_t wait_ms = 0;
-            const std::string *frame = nullptr;
-            ~ReplyNote() {
-                if (!live || !frame)
-                    return;
-                game::GameResponse gr;
-                std::string buf = *frame;
-                std::string payload;
-                const char *kind = "other";
-                uint64_t seq = 0;
-                if (gameproto::DecodeOneFrame(&buf, &payload) ==
-                        gameproto::FrameDecodeResult::Complete &&
-                    gr.ParseFromString(payload)) {
-                    kind = KindOfResponse(gr);
-                    seq = gr.seq();
-                }
-                uint64_t player = 0;
-                GatewayConnRegistry::Bind bind;
-                if (GatewayConnRegistry::Instance().FindByConnection(live->id(), &bind))
-                    player = bind.player_id;
-                const int app = live->send_buf() ? live->send_buf()->readablebytes() : 0;
-                const int unsent = live->unsent_bytes();
-                NoteSendPending(app, unsent);
-                NotePktStage(kind, "reply_queue", wait_ms, live->id(), player, seq, app, unsent);
-            }
-        } reply_note;
-        reply_note.live = c.get();
-        reply_note.wait_ms = wait_ms;
-        reply_note.frame = &response_frame;
+        uint64_t player = 0;
+        GatewayConnRegistry::Bind bind;
+        if (GatewayConnRegistry::Instance().FindByConnection(c->id(), &bind))
+            player = bind.player_id;
+        const int app = c->send_buf() ? c->send_buf()->readablebytes() : 0;
+        const int unsent = c->unsent_bytes();
+        NoteSendPending(app, unsent);
+        NotePktStage(kind, "reply_queue", wait_ms, c->id(), player, seq, app, unsent);
         OpsMetrics::Instance().IncReplyGenerated();
-        // 登录/重连/进图回包：用满发送缓冲。先把挡在前面的移动包清掉，避免应答排到队尾后客户端超时。
-        MakeRoomForControl(c.get());
-        // 移动应答（含 ERR_OVERLOADED）必须在客户端丢掉序号之前写出去。
-        // 心跳同样抬高上限。全量快照仍走 64KB，避免大帧把缓冲再次堆满。
-        bool move_rsp = false;
-        {
-            std::string buf = response_frame;
-            std::string payload;
-            game::GameResponse gr;
-            move_rsp = gameproto::DecodeOneFrame(&buf, &payload) ==
-                           gameproto::FrameDecodeResult::Complete &&
-                       gr.ParseFromString(payload) && gr.has_move();
+        const int rc = SubmitControlOnLoop(c, seq, kind, response_frame);
+        if (rc < 0 && snapshot) {
+            LOG_WARN << "TcpReplySink full snapshot not queued conn#" << c->id()
+                     << " bytes=" << response_frame.size();
         }
-        auto accept = [&]() {
-            OpsMetrics::Instance().IncReplyQueueAccepted();
-            OpsMetrics::Instance().AddGatewayTxBytes(response_frame.size());
-            OpsMetrics::Instance().AddGatewayTxFrames(1);
-        };
-        if (!c->TrySendControl(response_frame, move_rsp)) {
-            // 控制回包排不进去时再丢一次可丢的旧移动帧。不改这一帧的内容，也不把已生效的移动改成失败。
-            const size_t dropped = DropQueuedAoiMoveFrames(c.get());
-            if (dropped != 0 && c->TrySendControl(response_frame, move_rsp)) {
-                LOG_INFO << "TcpReplySink dropped move frames for control conn#" << c->id()
-                         << " moves=" << dropped << " bytes=" << response_frame.size();
-                accept();
-                return;
-            }
-            if (FrameHasFullSnapshot(response_frame)) {
-                LOG_WARN << "TcpReplySink full snapshot not truncated conn#" << c->id()
-                         << " bytes=" << response_frame.size() << " moves_dropped=" << dropped;
-            }
-            OpsMetrics::Instance().IncReplySoftDrop();
-            LOG_WARN << "TcpReplySink soft-drop reply conn#" << c->id()
-                     << " bytes=" << response_frame.size()
-                     << " send_buf=" << (c->send_buf() ? c->send_buf()->readablebytes() : 0)
-                     << " unsent=" << c->unsent_bytes() << " moves_dropped=" << dropped;
-            return;
-        }
-        accept();
     });
 }
 

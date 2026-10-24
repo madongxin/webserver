@@ -188,6 +188,7 @@ void TcpConnection::ReplaceSendBuf(const std::string &bytes) {
     if (!bytes.empty())
         send_buf_->Append(bytes);
     send_partial_prefix_ = 0;
+    control_run_ = 0;
     send_hold_move_ = false;
     send_move_hold_off_ = 0;
 }
@@ -207,10 +208,14 @@ void TcpConnection::ReplaceQueuedAfterPrefix(const std::string &queued) {
     if (!next.empty())
         send_buf_->Append(next);
     send_partial_prefix_ = prefix;
+    if (control_run_ > queued.size())
+        control_run_ = queued.size();
     send_hold_move_ = false;
     send_move_hold_off_ = 0;
-    if (send_buf_->readablebytes() == 0)
+    if (send_buf_->readablebytes() == 0) {
         send_partial_prefix_ = 0;
+        control_run_ = 0;
+    }
 }
 
 void TcpConnection::ConsumeSendPrefix(int n) {
@@ -344,11 +349,9 @@ bool TcpConnection::SendInternal(const char *msg, int len, bool soft_drop, bool 
     if (state_ != ConnectionState::Connected || in_close_ || !channel_ || !msg || len < 0)
         return false;
 
-    // 心跳和请求回包插到已经排好的完整帧前面。已经写进内核的字节挪不走，
-    // 应用缓冲开头若是半帧，必须先把这半帧写完，否则客户端会拆错帧。
-    // 心跳和回包可以插到移动帧前面，但不能在内核写不出去时无限往应用缓冲里叠。
-    // 已经超过 64KB 的非移动数据留下，这一帧软丢，连接保持。
-    // 心跳可以越过普通回包的 64KB。静默丢掉心跳时连接还在，客户端要等十几秒。
+    // 心跳和请求回包插到已经排好的 MOVE 前面，但要排在更早的回包后面。
+    // 已经写进内核的字节挪不走。应用缓冲开头若是半帧，必须先把这半帧写完。
+    // 缓冲里的非移动数据超过上限时，这一帧先不写进缓冲，由调用方排队，不能静默丢掉。
     const int control_cap = control_over_cap ? (256 * 1024) : (64 * 1024);
     if (control && send_buf_ && send_buf_->readablebytes() > control_cap)
         return false;
@@ -356,14 +359,18 @@ bool TcpConnection::SendInternal(const char *msg, int len, bool soft_drop, bool 
     if (control && send_buf_ && send_buf_->readablebytes() > 0 && len > 0) {
         const std::string raw = send_buf_->PeekAllAsString();
         const size_t prefix = std::min(send_partial_prefix_, raw.size());
+        size_t insert_at = prefix + control_run_;
+        if (insert_at > raw.size())
+            insert_at = raw.size();
         std::string next;
         next.reserve(raw.size() + static_cast<size_t>(len));
-        next.append(raw.data(), prefix);
+        next.append(raw.data(), insert_at);
         next.append(msg, static_cast<size_t>(len));
-        next.append(raw.data() + prefix, raw.size() - prefix);
+        next.append(raw.data() + insert_at, raw.size() - insert_at);
         send_buf_->RetrieveAll();
         send_buf_->Append(next);
-        if (send_hold_move_ && send_move_hold_off_ >= prefix)
+        control_run_ += static_cast<size_t>(len);
+        if (send_hold_move_ && send_move_hold_off_ >= insert_at)
             send_move_hold_off_ += static_cast<size_t>(len);
         WriteNonBlocking();
         ArmWriteIfNeeded();
@@ -425,6 +432,8 @@ bool TcpConnection::SendInternal(const char *msg, int len, bool soft_drop, bool 
         // 不能算半帧，否则心跳会被插到这整帧后面。
         if (was_empty && send_size > 0)
             send_partial_prefix_ = static_cast<size_t>(remaining);
+        else if (control && was_empty && send_size == 0)
+            control_run_ += static_cast<size_t>(remaining);
     }
     if (send_buf_->readablebytes() > 0) {
         WriteNonBlocking();
@@ -502,8 +511,16 @@ void TcpConnection::WriteNonBlocking() {
         const ssize_t send_size =
             ::write(connfd_, send_buf_->Peek(), static_cast<size_t>(writable));
         if (send_size > 0) {
+            const size_t old_prefix = send_partial_prefix_;
             NoteWriteConsumed(send_buf_->Peek(), static_cast<size_t>(send_buf_->readablebytes()),
                               static_cast<size_t>(send_size));
+            if (control_run_ > 0 && static_cast<size_t>(send_size) > old_prefix) {
+                const size_t into = static_cast<size_t>(send_size) - old_prefix;
+                if (into >= control_run_)
+                    control_run_ = 0;
+                else
+                    control_run_ -= into;
+            }
             if (send_move_hold_off_ > 0) {
                 if (static_cast<size_t>(send_size) >= send_move_hold_off_)
                     send_move_hold_off_ = 0;
@@ -535,6 +552,7 @@ void TcpConnection::WriteNonBlocking() {
     if (send_buf_->readablebytes() == 0) {
         send_hold_move_ = false;
         send_move_hold_off_ = 0;
+        control_run_ = 0;
         if (channel_->IsWriting())
             channel_->DisableWrite();
         notify_drain();

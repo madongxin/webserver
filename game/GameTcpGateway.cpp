@@ -9,6 +9,7 @@
 #include "Buffer.h"
 #include "ServerStats.h"
 #include "CommandPolicy.h"
+#include "ControlResponseOutbox.h"
 #include "EventLoop.h"
 #include "FormalMode.h"
 #include "GameRequestPlayerId.h"
@@ -33,6 +34,7 @@
 #include "PublicError.h"
 #include "ReliableOutbox.h"
 #include "ReplySink.h"
+#include "ReplyStage.h"
 #include "RpcOffloadPool.h"
 #include "SceneKind.h"
 #include "ServiceHealth.h"
@@ -122,6 +124,15 @@ void EraseMoveSlot(uint64_t conn_id) {
     g_move_slots.erase(conn_id);
 }
 
+void DiscardCoalescedAoiMoves(uint64_t conn_id) { EraseMoveSlot(conn_id); }
+
+struct RegisterMoveDiscard {
+    RegisterMoveDiscard() {
+        ControlResponseOutbox::SetPendingMoveDiscard(&DiscardCoalescedAoiMoves);
+    }
+};
+RegisterMoveDiscard g_register_move_discard;
+
 void FlushMoveSlot(const std::shared_ptr<MoveCoalesceSlot> &slot,
                    const std::weak_ptr<TcpConnection> &weak, uint64_t conn_id) {
     auto live = weak.lock();
@@ -149,7 +160,8 @@ void FlushMoveSlot(const std::shared_ptr<MoveCoalesceSlot> &slot,
             wait_ms = kIntervalMs - (now - slot->last_flush_ms);
         } else if (!slot->by_entity.empty()) {
             // 可靠帧还在待发队列里时，不把 MOVE 再写进缓冲。等补发把序号补齐。
-            if (ReliableOutboxHub::Instance().Depth(conn_id) > 0) {
+            if (ReliableOutboxHub::Instance().Depth(conn_id) > 0 ||
+                ControlResponseOutbox::Instance().BlocksMove(conn_id)) {
                 wait_ms = 200;
             } else {
                 if (slot->budget_window_ms == 0 || now - slot->budget_window_ms >= 1000) {
@@ -221,9 +233,16 @@ void FlushMoveSlot(const std::shared_ptr<MoveCoalesceSlot> &slot,
         if (!slot->scheduled && !slot->by_entity.empty())
             slot->scheduled = true;
     };
+    // 回包或可靠帧还在等发送时，这一帧不能进内核。位置留在合并槽里，下一轮再试。
+    if (ReliableOutboxHub::Instance().Depth(conn_id) > 0 ||
+        ControlResponseOutbox::Instance().BlocksMove(conn_id)) {
+        restore(std::move(delta));
+        live->loop()->RunAfter(0.2, [slot, weak, conn_id]() { FlushMoveSlot(slot, weak, conn_id); });
+        return;
+    }
     // 先丢掉缓冲里的旧移动帧，再放这一帧最新位置。
     // 内核里已经有没送出的字节时，TrySendLatestMove 不会再把这一帧写进去。
-    // 否则回包排在旧坐标后面，客户端要读完才走下一步，人会越走越慢直到停下。
+    // 回包会插到缓冲里这一帧前面，所以不用为了发回包把最新位置丢掉。
     const size_t overwritten = DropQueuedAoiMoveFrames(live.get(), false);
     if (overwritten != 0)
         ServerStats::aoi_move_overwritten.fetch_add(overwritten, std::memory_order_relaxed);
@@ -424,6 +443,8 @@ void RememberBind(uint64_t conn_id, uint64_t player_id, const std::string &token
             if (!live || live->state() != TcpConnection::Connected || !live->loop() ||
                 !live->loop()->IsInLoopThread())
                 return -1;
+            if (ControlResponseOutbox::Instance().BlocksMove(live->id()))
+                return 0;
             MakeRoomForControl(live.get());
             bool ok = live->TrySendUrgent(frame);
             if (!ok) {
@@ -445,7 +466,9 @@ void RememberBind(uint64_t conn_id, uint64_t player_id, const std::string &token
         };
         if (auto live = weak_conn.lock()) {
             live->set_drain_callback([conn_id]() {
-                ReliableOutboxHub::Instance().OnBufferDrained(conn_id);
+                ControlResponseOutbox::Instance().OnBufferDrained(conn_id);
+                if (!ControlResponseOutbox::Instance().BlocksMove(conn_id))
+                    ReliableOutboxHub::Instance().OnBufferDrained(conn_id);
             });
         }
         gb.close_conn = [weak_conn]() {
@@ -489,6 +512,7 @@ void ForgetBind(uint64_t conn_id) {
     g_conn_bind.erase(conn_id);
     GatewayConnRegistry::Instance().Forget(conn_id);
     ReliableOutboxHub::Instance().Forget(conn_id);
+    ControlResponseOutbox::Instance().Forget(conn_id);
     OpsMetrics::Instance().SetOnlinePlayers(GatewayConnRegistry::Instance().BoundPlayerCount());
 }
 
@@ -498,6 +522,7 @@ void MarkAuthoritativeLogout(uint64_t conn_id) {
     g_conn_bind.erase(conn_id);
     GatewayConnRegistry::Instance().Forget(conn_id);
     ReliableOutboxHub::Instance().Forget(conn_id);
+    ControlResponseOutbox::Instance().Forget(conn_id);
     OpsMetrics::Instance().SetOnlinePlayers(GatewayConnRegistry::Instance().BoundPlayerCount());
 }
 
@@ -903,7 +928,9 @@ void GameTcpGateway::OnMessage(const std::shared_ptr<TcpConnection> &conn) {
         }
 
         const char *pkt_kind = "other";
-        if (peek.has_heartbeat())
+        if (peek.has_client_hello())
+            pkt_kind = "hello";
+        else if (peek.has_heartbeat())
             pkt_kind = "heartbeat";
         else if (peek.has_reconnect())
             pkt_kind = "reconnect";
@@ -952,6 +979,9 @@ void GameTcpGateway::OnMessage(const std::shared_ptr<TcpConnection> &conn) {
         handler_span.player = bound ? sticky.player_id : 0;
         handler_span.seq = peek.seq();
         handler_span.live = conn.get();
+        ReplyStage::Inc(pkt_kind, ReplyStage::RequestReceived);
+        if (peek.seq() != 0)
+            ReplyStage::NoteRequest(conn->id(), peek.seq(), pkt_kind);
         handler_span.sample = peek.has_heartbeat() || peek.has_reconnect() || peek.has_login() ||
                               peek.has_enter_map() || peek.has_query_map_lines() ||
                               peek.has_world_snapshot() || peek.has_friend_list();
@@ -1035,40 +1065,25 @@ void GameTcpGateway::OnMessage(const std::shared_ptr<TcpConnection> &conn) {
             hb->set_jitter_hint_ms(gameproto::HeartbeatIntervalMs() / 5);
             gameproto::PromotePublicError(&outer, conn->id());
             std::string body, out;
-            // 心跳在本连接 EventLoop 同步应答：TrySendUrgent，绝不 Hard Send/踢连接。
+            // 心跳在本连接 EventLoop 上直接写。写不进缓冲就进有序队列，不关连接也不丢应答。
+            int hb_rc = -1;
             if (outer.SerializeToString(&body) && gameproto::EncodeFrame(body, &out)) {
+                ReplyStage::Inc("heartbeat", ReplyStage::LogicResponseReady);
+                ReplyStage::Inc("heartbeat", ReplyStage::EventLoopEnqueued);
                 OpsMetrics::Instance().IncReplyGenerated();
-                MakeRoomForControl(conn.get());
-                bool sent = conn->TrySendControl(out, true);
-                if (!sent) {
-                    const size_t dropped = DropQueuedAoiMoveFrames(conn.get());
-                    if (dropped != 0)
-                        sent = conn->TrySendControl(out, true);
-                }
-                if (sent) {
-                    OpsMetrics::Instance().AddGatewayTxBytes(out.size());
-                    OpsMetrics::Instance().AddGatewayTxFrames(1);
-                    OpsMetrics::Instance().IncHeartbeatOk();
-                    OpsMetrics::Instance().IncReplyQueueAccepted();
-                } else {
-                    OpsMetrics::Instance().IncHeartbeatSoftDrop();
-                    LOG_WARN << "heartbeat soft-drop conn#" << conn->id()
-                             << " send_buf="
-                             << (conn->send_buf() ? conn->send_buf()->readablebytes() : 0)
-                             << " unsent=" << conn->unsent_bytes();
-                }
-                const auto hb_ms = std::chrono::duration_cast<std::chrono::milliseconds>(
-                                       std::chrono::steady_clock::now() - handler_span.t0)
-                                       .count();
-                if (hb_ms >= 500) {
-                    OpsMetrics::Instance().IncSlowReply("heartbeat");
-                    LOG_WARN << "slow heartbeat conn#" << conn->id() << " ms=" << hb_ms
-                             << " wrote=" << (sent ? 1 : 0)
-                             << " send_buf="
-                             << (conn->send_buf() ? conn->send_buf()->readablebytes() : 0)
-                             << " unsent=" << conn->unsent_bytes()
-                             << " loop_todo=" << (conn->loop() ? conn->loop()->TodoDepth() : 0);
-                }
+                hb_rc = SubmitControlOnLoop(conn, peek.seq(), "heartbeat", out);
+            }
+            const auto hb_ms = std::chrono::duration_cast<std::chrono::milliseconds>(
+                                   std::chrono::steady_clock::now() - handler_span.t0)
+                                   .count();
+            if (hb_ms >= 500) {
+                OpsMetrics::Instance().IncSlowReply("heartbeat");
+                LOG_WARN << "slow heartbeat conn#" << conn->id() << " ms=" << hb_ms
+                         << " wrote=" << (hb_rc > 0 ? 1 : 0) << " queued=" << (hb_rc == 0 ? 1 : 0)
+                         << " send_buf="
+                         << (conn->send_buf() ? conn->send_buf()->readablebytes() : 0)
+                         << " unsent=" << conn->unsent_bytes()
+                         << " loop_todo=" << (conn->loop() ? conn->loop()->TodoDepth() : 0);
             }
             continue;
         }
@@ -1212,6 +1227,7 @@ void GameTcpGateway::OnMessage(const std::shared_ptr<TcpConnection> &conn) {
             };
 
             bool started = false;
+            ReplyStage::Inc(pkt_kind, ReplyStage::LogicDispatchStarted);
             if (peek.has_login()) {
                 started = gameproto::BeginOrchestrateGatewayLogin(
                     gw, conn_id, payload, shard_key,
@@ -1386,28 +1402,12 @@ void GameTcpGateway::OnMessage(const std::shared_ptr<TcpConnection> &conn) {
                 rsp.set_message(ack->message());
                 gameproto::PromotePublicError(&rsp, conn->id());
                 std::string body, out;
-                bool ack_wrote = false;
-                // 与心跳一样在本连接 EventLoop 上直接写。SendFrame 只是再入队，量不到写出耗时。
+                int ack_rc = -1;
                 if (rsp.SerializeToString(&body) && gameproto::EncodeFrame(body, &out)) {
+                    ReplyStage::Inc("push_ack", ReplyStage::LogicResponseReady);
+                    ReplyStage::Inc("push_ack", ReplyStage::EventLoopEnqueued);
                     OpsMetrics::Instance().IncReplyGenerated();
-                    MakeRoomForControl(conn.get());
-                    ack_wrote = conn->TrySendControl(out, true);
-                    if (!ack_wrote) {
-                        const size_t dropped = DropQueuedAoiMoveFrames(conn.get());
-                        if (dropped != 0)
-                            ack_wrote = conn->TrySendControl(out, true);
-                    }
-                    if (ack_wrote) {
-                        OpsMetrics::Instance().AddGatewayTxBytes(out.size());
-                        OpsMetrics::Instance().AddGatewayTxFrames(1);
-                        OpsMetrics::Instance().IncReplyQueueAccepted();
-                    } else {
-                        OpsMetrics::Instance().IncReplySoftDrop();
-                        LOG_WARN << "push_ack soft-drop conn#" << conn->id()
-                                 << " send_buf="
-                                 << (conn->send_buf() ? conn->send_buf()->readablebytes() : 0)
-                                 << " unsent=" << conn->unsent_bytes();
-                    }
+                    ack_rc = SubmitControlOnLoop(conn, peek.seq(), "push_ack", out);
                 }
                 const auto ack_ms = std::chrono::duration_cast<std::chrono::milliseconds>(
                                         std::chrono::steady_clock::now() - handler_span.t0)
@@ -1415,7 +1415,8 @@ void GameTcpGateway::OnMessage(const std::shared_ptr<TcpConnection> &conn) {
                 if (ack_ms >= 500) {
                     OpsMetrics::Instance().IncSlowReply("push_ack");
                     LOG_WARN << "slow push_ack conn#" << conn->id() << " ms=" << ack_ms
-                             << " wrote=" << (ack_wrote ? 1 : 0)
+                             << " wrote=" << (ack_rc > 0 ? 1 : 0)
+                             << " queued=" << (ack_rc == 0 ? 1 : 0)
                              << " send_buf="
                              << (conn->send_buf() ? conn->send_buf()->readablebytes() : 0)
                              << " unsent=" << conn->unsent_bytes()
@@ -1429,6 +1430,7 @@ void GameTcpGateway::OnMessage(const std::shared_ptr<TcpConnection> &conn) {
                 auto sink = tcp_sink;
                 SessionHandle h = handle;
                 std::string payload = frame;
+                ReplyStage::Inc(pkt_kind, ReplyStage::LogicDispatchStarted);
                 if (!gameproto::BeginOrchestrateGatewayEnqueueMap(
                         h, payload,
                         [conn_id, sink](bool ok, std::string out, SessionHandle) {
@@ -1454,6 +1456,7 @@ void GameTcpGateway::OnMessage(const std::shared_ptr<TcpConnection> &conn) {
                 auto sink = tcp_sink;
                 SessionHandle h = handle;
                 std::string payload = frame;
+                ReplyStage::Inc(pkt_kind, ReplyStage::LogicDispatchStarted);
                 if (!gameproto::BeginOrchestrateGatewaySwitchLine(
                         h, payload,
                         [conn_id, sink](bool ok, std::string out, SessionHandle route) {
@@ -1477,6 +1480,7 @@ void GameTcpGateway::OnMessage(const std::shared_ptr<TcpConnection> &conn) {
                 auto sink = tcp_sink;
                 SessionHandle h = handle;
                 std::string payload = frame;
+                ReplyStage::Inc(pkt_kind, ReplyStage::LogicDispatchStarted);
                 if (!gameproto::BeginOrchestrateGatewayCreateDungeon(
                         h, payload,
                         [conn_id, sink](bool ok, std::string out, SessionHandle) {
@@ -1502,6 +1506,7 @@ void GameTcpGateway::OnMessage(const std::shared_ptr<TcpConnection> &conn) {
                 auto sink = tcp_sink;
                 SessionHandle h = handle;
                 std::string payload = frame;
+                ReplyStage::Inc(pkt_kind, ReplyStage::LogicDispatchStarted);
                 if (!gameproto::BeginOrchestrateGatewayInteractPortal(
                         h, payload,
                         [conn_id, sink](bool ok, std::string out, SessionHandle route) {
@@ -1525,6 +1530,7 @@ void GameTcpGateway::OnMessage(const std::shared_ptr<TcpConnection> &conn) {
                 auto sink = tcp_sink;
                 SessionHandle h = handle;
                 std::string payload = frame;
+                ReplyStage::Inc(pkt_kind, ReplyStage::LogicDispatchStarted);
                 if (!gameproto::BeginOrchestrateGatewayQueryMapLines(
                         h, payload,
                         [conn_id, sink](bool ok, std::string out, SessionHandle) {
@@ -1550,6 +1556,7 @@ void GameTcpGateway::OnMessage(const std::shared_ptr<TcpConnection> &conn) {
                 auto sink = tcp_sink;
                 SessionHandle h = handle;
                 std::string payload = frame;
+                ReplyStage::Inc(pkt_kind, ReplyStage::LogicDispatchStarted);
                 if (!gameproto::BeginOrchestrateGatewayEnterMap(
                         h, payload,
                         [conn_id, sink](bool ok, std::string out, SessionHandle route) {
@@ -1571,6 +1578,7 @@ void GameTcpGateway::OnMessage(const std::shared_ptr<TcpConnection> &conn) {
         }
 #endif
 
+        ReplyStage::Inc(pkt_kind, ReplyStage::LogicDispatchStarted);
         GameRequestTransport::Get().PostPlayerRequest(handle, std::move(frame),
                                                      std::move(tcp_sink));
     }
