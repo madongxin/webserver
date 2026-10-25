@@ -94,6 +94,8 @@ struct MoveCoalesceSlot {
     uint64_t map_instance_id = 0;
     std::unordered_map<uint64_t, game::AoiEvent> by_entity;
     std::unordered_map<uint64_t, int64_t> last_sent_ms;
+    std::unordered_map<uint64_t, int64_t> pending_since_ms;
+    int64_t hold_since_ms = 0;
     bool scheduled = false;
     int64_t last_flush_ms = 0;
     int64_t budget_window_ms = 0;
@@ -107,6 +109,28 @@ int64_t SteadyMs() {
     return std::chrono::duration_cast<std::chrono::milliseconds>(
                std::chrono::steady_clock::now().time_since_epoch())
         .count();
+}
+
+void NotePeakMs(std::atomic<uint64_t> &slot, int64_t ms) {
+    if (ms <= 0)
+        return;
+    uint64_t next = static_cast<uint64_t>(ms);
+    uint64_t prev = slot.load(std::memory_order_relaxed);
+    while (next > prev && !slot.compare_exchange_weak(prev, next, std::memory_order_relaxed)) {
+    }
+}
+
+void ObservePendingMoves(const MoveCoalesceSlot &slot, int64_t now) {
+    int64_t oldest = 0;
+    for (const auto &kv : slot.by_entity) {
+        const auto since = slot.pending_since_ms.find(kv.first);
+        if (since == slot.pending_since_ms.end() || since->second <= 0 || now < since->second)
+            continue;
+        const int64_t age = now - since->second;
+        if (age > oldest)
+            oldest = age;
+    }
+    NotePeakMs(ServerStats::aoi_move_pending_oldest_ms, oldest);
 }
 
 bool IsMoveOnlyAoi(const game::GameResponse &gr) {
@@ -148,7 +172,8 @@ void FlushMoveSlot(const std::shared_ptr<MoveCoalesceSlot> &slot,
     constexpr int64_t kIntervalMs = 200;
     constexpr int kBudgetBytes = 16 * 1024;
     constexpr int kEstBytesPerMove = 48;
-    constexpr size_t kMaxMoveEntities = 30;
+    // 80 个实体、每 200ms 一帧时，40 个名额能在两帧（400ms）内轮完，近距离间隔留在 500ms 以内。
+    constexpr size_t kMaxMoveEntities = 40;
     int64_t wait_ms = 0;
     bool leftover = false;
     game::AoiDelta delta;
@@ -162,6 +187,8 @@ void FlushMoveSlot(const std::shared_ptr<MoveCoalesceSlot> &slot,
             // 可靠帧还在待发队列里时，不把 MOVE 再写进缓冲。等补发把序号补齐。
             if (ReliableOutboxHub::Instance().Depth(conn_id) > 0 ||
                 ControlResponseOutbox::Instance().BlocksMove(conn_id)) {
+                // 回包或可靠帧堵住时不写 MOVE。槽里仍只留每个实体的最新位置。
+                ObservePendingMoves(*slot, now);
                 wait_ms = 200;
             } else {
                 if (slot->budget_window_ms == 0 || now - slot->budget_window_ms >= 1000) {
@@ -260,10 +287,22 @@ void FlushMoveSlot(const std::shared_ptr<MoveCoalesceSlot> &slot,
     }
     const bool sent = live->TrySendLatestMove(frame);
     const bool held = sent && live->holding_latest_move();
-    if (held)
+    if (held) {
         NoteMoveHold(event_n);
-    else
+        std::lock_guard<std::mutex> lk(slot->mu);
+        if (slot->hold_since_ms == 0)
+            slot->hold_since_ms = SteadyMs();
+        NotePeakMs(ServerStats::latest_move_hold_ms, SteadyMs() - slot->hold_since_ms);
+    } else {
         NoteMoveFlush(sent, event_n);
+        if (sent) {
+            std::lock_guard<std::mutex> lk(slot->mu);
+            if (slot->hold_since_ms > 0) {
+                NotePeakMs(ServerStats::latest_move_hold_ms, SteadyMs() - slot->hold_since_ms);
+                slot->hold_since_ms = 0;
+            }
+        }
+    }
     if (live->send_buf())
         NoteSendPending(live->send_buf()->readablebytes(), live->unsent_bytes());
     if (!sent) {
@@ -280,9 +319,15 @@ void FlushMoveSlot(const std::shared_ptr<MoveCoalesceSlot> &slot,
         slot->budget_bytes += static_cast<int>(frame.size());
         for (const auto &ev : delta.events()) {
             const uint64_t id = ev.entity().player_id();
-            if (id != 0)
-                slot->last_sent_ms[id] = now;
+            if (id == 0)
+                continue;
+            const auto prev = slot->last_sent_ms.find(id);
+            if (prev != slot->last_sent_ms.end() && prev->second > 0 && now > prev->second)
+                NotePeakMs(ServerStats::aoi_move_entity_max_silence_ms, now - prev->second);
+            slot->last_sent_ms[id] = now;
+            slot->pending_since_ms.erase(id);
         }
+        ObservePendingMoves(*slot, now);
         pending = static_cast<int>(slot->by_entity.size());
         if (pending > 0 && !slot->scheduled)
             slot->scheduled = true;
@@ -328,7 +373,11 @@ bool OfferCoalescedMove(const std::shared_ptr<TcpConnection> &c, const std::stri
             if (kept.has_entity() && ev.entity().state_seq() < kept.entity().state_seq())
                 continue;
             kept = ev;
+            auto &since = slot->pending_since_ms[id];
+            if (since == 0)
+                since = SteadyMs();
         }
+        ObservePendingMoves(*slot, SteadyMs());
         if (slot->by_entity.empty())
             return true;
         if (!slot->scheduled) {

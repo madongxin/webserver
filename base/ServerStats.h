@@ -81,6 +81,12 @@ struct ServerStats {
     static inline std::atomic<uint64_t> aoi_move_buffer_hold{0};
     static inline std::atomic<uint64_t> aoi_move_budget_defer{0};
     static inline std::atomic<uint64_t> aoi_move_overwritten{0};
+    /** 进程启动以来，一个实体的最新位置在合并槽里等待的最长时间。 */
+    static inline std::atomic<uint64_t> aoi_move_pending_oldest_ms{0};
+    /** 进程启动以来，同一观察者对同一实体两次 MOVE 写出的最大间隔。 */
+    static inline std::atomic<uint64_t> aoi_move_entity_max_silence_ms{0};
+    /** 进程启动以来，最新 MOVE 帧因为内核发送队列而停在应用缓冲里的最长时间。 */
+    static inline std::atomic<uint64_t> latest_move_hold_ms{0};
     static inline std::atomic<uint64_t> aoi_lock_wait_us_sum{0};
     static inline std::atomic<uint64_t> aoi_lock_hold_us_sum{0};
     static inline std::atomic<uint64_t> aoi_lock_samples{0};

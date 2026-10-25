@@ -10,6 +10,7 @@
 #include <deque>
 #include <limits>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 namespace {
@@ -306,6 +307,39 @@ int main() {
     Expect(rt.Move(31, 2, 25.6f, 0, 1, 0, 3, 8500, &conf, &pushes, &err, true) == MapMoveReject::Ok,
            "far move 3");
     Expect(CountOp(pushes, 1, 2) == 1, "far move after 500ms is sent");
+
+    std::unordered_map<uint64_t, int64_t> last_sent;
+    std::unordered_map<uint64_t, int> last_round;
+    int max_gap = 0;
+    for (int round = 0; round < 12; ++round) {
+        std::vector<AoiMoveCandidate> crowd;
+        crowd.reserve(80);
+        for (uint64_t id = 1; id <= 80; ++id) {
+            AoiMoveCandidate c;
+            c.entity_id = id;
+            c.last_sent_ms = last_sent[id];
+            crowd.push_back(c);
+        }
+        const auto turn = PickAoiMoveEntities(std::move(crowd), 40);
+        Expect(turn.size() == 40, "80 movers still share 40 slots per frame");
+        for (uint64_t id : turn) {
+            const auto prev = last_round.find(id);
+            if (prev != last_round.end()) {
+                const int gap = round - prev->second;
+                if (gap > max_gap)
+                    max_gap = gap;
+            }
+            last_round[id] = round;
+            last_sent[id] = round + 1;
+        }
+    }
+    int seen = 0;
+    for (uint64_t id = 1; id <= 80; ++id) {
+        if (last_round.count(id) != 0)
+            ++seen;
+    }
+    Expect(seen == 80, "every one of 80 movers gets a send slot");
+    Expect(max_gap > 0 && max_gap <= 2, "no mover waits more than two frames");
 
     if (fails) {
         std::printf("map_runtime_aoi_test FAIL count=%d\n", fails);

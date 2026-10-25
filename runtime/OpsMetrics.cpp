@@ -302,6 +302,18 @@ std::string OpsMetrics::PrometheusText() const {
     ctr("gamemesh_aoi_move_overwritten_total",
         "Queued AOI MOVE frames replaced by a newer frame before write.",
         ServerStats::aoi_move_overwritten.load(std::memory_order_relaxed));
+    os << "# HELP gamemesh_aoi_move_pending_oldest_ms Peak milliseconds one entity's latest position waited in the coalesce slot since process start.\n"
+          "# TYPE gamemesh_aoi_move_pending_oldest_ms gauge\n"
+          "gamemesh_aoi_move_pending_oldest_ms "
+       << ServerStats::aoi_move_pending_oldest_ms.load(std::memory_order_relaxed) << "\n";
+    os << "# HELP gamemesh_aoi_move_entity_max_silence_ms Peak milliseconds between two MOVE writes of the same entity to one watcher since process start.\n"
+          "# TYPE gamemesh_aoi_move_entity_max_silence_ms gauge\n"
+          "gamemesh_aoi_move_entity_max_silence_ms "
+       << ServerStats::aoi_move_entity_max_silence_ms.load(std::memory_order_relaxed) << "\n";
+    os << "# HELP gamemesh_latest_move_hold_ms Peak milliseconds a latest MOVE frame stayed in the app buffer while the kernel send queue was busy, since process start.\n"
+          "# TYPE gamemesh_latest_move_hold_ms gauge\n"
+          "gamemesh_latest_move_hold_ms "
+       << ServerStats::latest_move_hold_ms.load(std::memory_order_relaxed) << "\n";
     ctr("gamemesh_login_stage_reject_auth_total", "Auth stage admission rejects.",
         ServerStats::login_stage_reject_auth.load(std::memory_order_relaxed));
     ctr("gamemesh_session_grace_expire_total", "Disconnected sessions past grace.",
