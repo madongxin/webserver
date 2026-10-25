@@ -11,7 +11,11 @@
  * 不允许在 TCP 还活着的时候把回包丢掉。
  */
 struct ControlSendEnv {
-    /** 1 = 已经写进发送缓冲。0 = 这次没写进去，连接还在。小于 0 = 连接没了。 */
+    /**
+     * 1 = 整帧已经离开应用缓冲。
+     * 2 = 帧还在应用缓冲里，下一条必须等它离开。
+     * 0 = 这次没写进去，连接还在。小于 0 = 连接没了。
+     */
     std::function<int(const std::string &frame)> try_send;
     /** 丢掉这条连接上还没写进内核的 AOI MOVE。返回丢掉的帧数。 */
     std::function<size_t()> drop_moves;
@@ -27,7 +31,8 @@ public:
 
     /**
      * 只在该连接的 EventLoop 上调用。
-     * 1 = 已写进发送缓冲。
+     * 1 = 整帧已经离开应用缓冲。
+     * 2 = 这一帧还在应用缓冲里，后面的回包在等它离开。
      * 0 = 排在更早的回包后面，或这次没写进缓冲，连接还在。
      * 小于 0 = 队列超过上限，连接已关闭，或连接已经没了。
      */
@@ -36,6 +41,8 @@ public:
     void OnBufferDrained(uint64_t conn_id);
     void Forget(uint64_t conn_id);
     size_t Depth(uint64_t conn_id);
+    /** 队头回包已经进了应用缓冲，还没离开。这时不能再发下一条。 */
+    bool Holding(uint64_t conn_id);
     /** 待发队列里还有回包，或刚写进缓冲、还没排空的回包。MOVE 这时不能再进内核。 */
     bool BlocksMove(uint64_t conn_id);
 

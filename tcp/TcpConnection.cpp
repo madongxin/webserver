@@ -189,6 +189,7 @@ void TcpConnection::ReplaceSendBuf(const std::string &bytes) {
         send_buf_->Append(bytes);
     send_partial_prefix_ = 0;
     control_run_ = 0;
+    control_hold_end_ = 0;
     send_hold_move_ = false;
     send_move_hold_off_ = 0;
 }
@@ -212,9 +213,15 @@ void TcpConnection::ReplaceQueuedAfterPrefix(const std::string &queued) {
         control_run_ = queued.size();
     send_hold_move_ = false;
     send_move_hold_off_ = 0;
+    const int queued_n = send_buf_->readablebytes();
+    if (queued_n <= 0)
+        control_hold_end_ = 0;
+    else if (control_hold_end_ > static_cast<size_t>(queued_n))
+        control_hold_end_ = static_cast<size_t>(queued_n);
     if (send_buf_->readablebytes() == 0) {
         send_partial_prefix_ = 0;
         control_run_ = 0;
+        control_hold_end_ = 0;
     }
 }
 
@@ -312,12 +319,40 @@ bool TcpConnection::TrySendUrgent(const char *msg, int len) {
     return SendInternal(msg, len, true, true);
 }
 
-bool TcpConnection::TrySendControl(const std::string &msg, bool over_cap) {
+TcpConnection::ControlSendResult TcpConnection::TrySendControl(const std::string &msg, bool over_cap) {
     return TrySendControl(msg.data(), static_cast<int>(msg.size()), over_cap);
 }
 
-bool TcpConnection::TrySendControl(const char *msg, int len, bool over_cap) {
-    return SendInternal(msg, len, true, true, true, false, over_cap);
+TcpConnection::ControlSendResult TcpConnection::TrySendControl(const char *msg, int len,
+                                                               bool over_cap) {
+    if (state_ != ConnectionState::Connected || in_close_ || !channel_ || !msg || len < 0)
+        return Closed;
+    // 上一条回包还在应用缓冲里。再插一条会把它挤到后面。
+    if (control_hold_end_ > 0)
+        return Blocked;
+    const int before = send_buf_ ? send_buf_->readablebytes() : 0;
+    const size_t run_before = control_run_;
+    const size_t prefix_before = send_partial_prefix_;
+    if (!SendInternal(msg, len, true, true, true, false, over_cap)) {
+        if (state_ != ConnectionState::Connected || in_close_)
+            return Closed;
+        return Blocked;
+    }
+    size_t hold_end = 0;
+    if (control_run_ > run_before ||
+        (before == 0 && (send_partial_prefix_ > prefix_before || control_run_ > 0)))
+        hold_end = send_partial_prefix_ + control_run_;
+    if (send_buf_) {
+        const size_t queued = static_cast<size_t>(std::max(0, send_buf_->readablebytes()));
+        if (hold_end > queued)
+            hold_end = queued;
+    }
+    if (hold_end == 0 || !send_buf_ || send_buf_->readablebytes() == 0) {
+        control_hold_end_ = 0;
+        return WrittenDirect;
+    }
+    control_hold_end_ = hold_end;
+    return Buffered;
 }
 
 bool TcpConnection::TrySendLatestMove(const std::string &msg) {
@@ -496,6 +531,7 @@ void TcpConnection::WriteNonBlocking() {
     if (!send_buf_ || !channel_ || state_ == ConnectionState::Disconected || in_close_)
         return;
     const int before = send_buf_->readablebytes();
+    bool control_released = false;
     while (send_buf_->readablebytes() > 0) {
         int writable = send_buf_->readablebytes();
         bool hold_limit = false;
@@ -527,9 +563,20 @@ void TcpConnection::WriteNonBlocking() {
                 else
                     send_move_hold_off_ -= static_cast<size_t>(send_size);
             }
+            if (control_hold_end_ > 0) {
+                if (static_cast<size_t>(send_size) >= control_hold_end_) {
+                    control_hold_end_ = 0;
+                    control_released = true;
+                } else {
+                    control_hold_end_ -= static_cast<size_t>(send_size);
+                }
+            }
             if (!hold_limit)
                 send_hold_move_ = false;
             send_buf_->Retrieve(static_cast<int>(send_size));
+            // 上一条回包已经离开。先停住，让下一条回包插到还留在缓冲里的 MOVE 前面。
+            if (control_released && send_buf_->readablebytes() > 0)
+                break;
             if (hold_limit)
                 break;
             continue;
@@ -543,8 +590,9 @@ void TcpConnection::WriteNonBlocking() {
         return;
     }
     const auto notify_drain = [&]() {
-        if (on_drain_ && send_buf_ && before > send_buf_->readablebytes() &&
-            send_buf_->readablebytes() <= 32 * 1024)
+        if (!on_drain_ || !send_buf_ || before <= send_buf_->readablebytes())
+            return;
+        if (control_released || send_buf_->readablebytes() <= 32 * 1024)
             on_drain_();
     };
     if (state_ != ConnectionState::Connected || in_close_ || !channel_ || !send_buf_)
@@ -553,6 +601,7 @@ void TcpConnection::WriteNonBlocking() {
         send_hold_move_ = false;
         send_move_hold_off_ = 0;
         control_run_ = 0;
+        control_hold_end_ = 0;
         if (channel_->IsWriting())
             channel_->DisableWrite();
         notify_drain();

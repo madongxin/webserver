@@ -21,7 +21,8 @@ void MakeRoomForControl(TcpConnection *conn);
 
 /**
  * 只在连接自己的 EventLoop 上调用。
- * 1 = 回包已进入发送缓冲。0 = 还连着，回包在有序队列里等补发。小于 0 = 连接已关。
+ * 1 = 整帧已经离开应用缓冲。2 = 还在应用缓冲里，下一条要等它离开。
+ * 0 = 还连着，回包在有序队列里等补发。小于 0 = 连接已关。
  * kind 必须是字符串字面量。
  */
 int SubmitControlOnLoop(const std::shared_ptr<TcpConnection> &conn, uint64_t seq, const char *kind,

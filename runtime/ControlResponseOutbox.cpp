@@ -203,11 +203,12 @@ int ControlResponseOutbox::Submit(uint64_t conn_id, uint64_t seq, const char *ki
         if (code > 0) {
             box->held = code == 2;
             NoteWritten(conn_id, item);
-            if (!box->q.empty()) {
+            const int rc = box->held ? 2 : 1;
+            if (!box->q.empty() && !box->held) {
                 lk.unlock();
                 Drain(conn_id);
             }
-            return 1;
+            return rc;
         }
         if (code < 0)
             return -1;
@@ -253,6 +254,8 @@ int ControlResponseOutbox::Submit(uint64_t conn_id, uint64_t seq, const char *ki
     std::lock_guard<std::mutex> guard(again->mu);
     if (again->closed)
         return -1;
+    if (again->q.empty() && again->held)
+        return 2;
     if (again->q.empty() && !again->held)
         return 1;
     return 0;
@@ -291,6 +294,16 @@ void ControlResponseOutbox::Forget(uint64_t conn_id) {
     box->blocked = false;
 }
 
+bool ControlResponseOutbox::Holding(uint64_t conn_id) {
+    auto box = Find(conn_id);
+    if (!box)
+        return false;
+    std::lock_guard<std::mutex> lk(box->mu);
+    if (box->closed)
+        return false;
+    return box->held;
+}
+
 size_t ControlResponseOutbox::Depth(uint64_t conn_id) {
     auto box = Find(conn_id);
     if (!box)
@@ -310,6 +323,15 @@ bool ControlResponseOutbox::BlocksMove(uint64_t conn_id) {
         return false;
     return !box->q.empty() || box->held;
 }
+
+namespace {
+struct InstallControlOutboxPrometheus {
+    InstallControlOutboxPrometheus() {
+        OpsMetrics::SetControlOutboxPrometheus(&ControlResponseOutbox::Prometheus);
+    }
+};
+InstallControlOutboxPrometheus g_install_control_outbox_prometheus;
+}  // namespace
 
 std::string ControlResponseOutbox::Prometheus() {
     return std::string("# HELP gamemesh_control_outbox_peak_frames Peak RPC replies waiting on one connection.\n"

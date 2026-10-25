@@ -146,6 +146,63 @@ int main() {
         ControlResponseOutbox::Instance().Forget(74);
     }
 
+    {
+        struct Sock {
+            std::string app;
+            std::vector<std::string> wire;
+            int calls = 0;
+            bool closed = false;
+            int drops = 0;
+        } sock;
+        ControlSendEnv env;
+        env.try_send = [&sock](const std::string &frame) -> int {
+            ++sock.calls;
+            if (sock.closed)
+                return -1;
+            if (!sock.app.empty()) {
+                sock.app.insert(0, frame);
+                return 2;
+            }
+            sock.app = frame;
+            return 2;
+        };
+        env.drop_moves = [&sock]() -> size_t {
+            ++sock.drops;
+            return 0;
+        };
+        env.close_conn = [&sock]() { sock.closed = true; };
+        auto flush_app = [&sock]() {
+            if (sock.app.empty())
+                return;
+            sock.wire.push_back(sock.app);
+            sock.app.clear();
+        };
+        Expect(ControlResponseOutbox::Instance().Submit(81, 10, "move", "10", env) == 2,
+               "EAGAIN leaves the first reply in send_buf");
+        Expect(ControlResponseOutbox::Instance().Holding(81), "buffered head is held");
+        Expect(sock.calls == 1 && sock.app == "10", "only seq 10 entered send_buf");
+        Expect(ControlResponseOutbox::Instance().Submit(81, 11, "move", "11", env) == 0,
+               "seq 11 waits behind the buffered head");
+        Expect(ControlResponseOutbox::Instance().Submit(81, 12, "heartbeat", "12", env) == 0,
+               "seq 12 waits behind the buffered head");
+        Expect(sock.calls == 1 && sock.app == "10", "later replies do not enter send_buf");
+        Expect(ControlResponseOutbox::Instance().Depth(81) == 2, "11 and 12 stay queued");
+        flush_app();
+        ControlResponseOutbox::Instance().OnBufferDrained(81);
+        Expect(sock.wire.size() == 1 && sock.wire[0] == "10", "10 leaves before 11 is sent");
+        Expect(sock.app == "11" && ControlResponseOutbox::Instance().Holding(81),
+               "11 is held until the buffer drains");
+        Expect(sock.calls == 2, "12 is not sent with 11");
+        flush_app();
+        ControlResponseOutbox::Instance().OnBufferDrained(81);
+        flush_app();
+        Expect(sock.wire.size() == 3 && sock.wire[0] == "10" && sock.wire[1] == "11" &&
+                   sock.wire[2] == "12",
+               "wire order is 10, 11, 12");
+        Expect(!sock.closed, "in-order replies do not close the connection");
+        ControlResponseOutbox::Instance().Forget(81);
+    }
+
     if (fails != 0) {
         std::printf("control_outbox_test FAIL %d\n", fails);
         return 1;

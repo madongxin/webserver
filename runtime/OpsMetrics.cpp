@@ -1,8 +1,6 @@
 #include "OpsMetrics.h"
 
-#include "ControlResponseOutbox.h"
 #include "PushAdmit.h"
-#include "ReplyStage.h"
 
 #include "ServerStats.h"
 
@@ -13,7 +11,13 @@
 namespace {
 std::mutex g_err_mu;
 std::unordered_map<std::string, uint64_t> g_err_counts;
+std::string (*g_reply_stage_prom)() = nullptr;
+std::string (*g_control_outbox_prom)() = nullptr;
 }  // namespace
+
+void OpsMetrics::SetReplyStagePrometheus(std::string (*fn)()) { g_reply_stage_prom = fn; }
+
+void OpsMetrics::SetControlOutboxPrometheus(std::string (*fn)()) { g_control_outbox_prom = fn; }
 
 OpsMetrics &OpsMetrics::Instance() {
     static OpsMetrics g;
@@ -401,7 +405,9 @@ std::string OpsMetrics::PrometheusText() const {
        << ServerStats::db_pool_wait_sum_ms.load(std::memory_order_relaxed) << "\n";
     os << "gamemesh_db_pool_wait_ms_count "
        << ServerStats::db_pool_wait_count.load(std::memory_order_relaxed) << "\n\n";
-    os << ReplyStage::Prometheus();
-    os << ControlResponseOutbox::Prometheus();
+    if (g_reply_stage_prom)
+        os << g_reply_stage_prom();
+    if (g_control_outbox_prom)
+        os << g_control_outbox_prom();
     return os.str();
 }

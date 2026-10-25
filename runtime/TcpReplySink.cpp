@@ -146,12 +146,12 @@ int SubmitControlOnLoop(const std::shared_ptr<TcpConnection> &conn, uint64_t seq
         if (!live || live->state() != TcpConnection::Connected)
             return -1;
         // 回包插到缓冲里的 MOVE 前面，不先把 MOVE 丢掉。只有这一帧写不进缓冲时才清 MOVE。
-        if (live->TrySendControl(pending, true))
-            return 1;
-        if (DropQueuedAoiMoveFrames(live.get()) != 0 &&
-            live->state() == TcpConnection::Connected && live->TrySendControl(pending, true))
-            return 1;
-        return live->state() == TcpConnection::Connected ? 0 : -1;
+        // 2 表示帧还在应用缓冲里，调用方必须停住，不能再发下一条。
+        auto rc = live->TrySendControl(pending, true);
+        if (rc == TcpConnection::Blocked && DropQueuedAoiMoveFrames(live.get()) != 0 &&
+            live->state() == TcpConnection::Connected)
+            rc = live->TrySendControl(pending, true);
+        return static_cast<int>(rc);
     };
     env.drop_moves = [weak]() -> size_t {
         auto live = weak.lock();

@@ -1,5 +1,7 @@
 #include "ReplyStage.h"
 
+#include "OpsMetrics.h"
+
 #include <atomic>
 #include <chrono>
 #include <cstring>
@@ -195,3 +197,12 @@ std::string ReplyStage::Prometheus() {
     os << "\n";
     return os.str();
 }
+
+namespace {
+struct InstallReplyStagePrometheus {
+    InstallReplyStagePrometheus() {
+        OpsMetrics::SetReplyStagePrometheus(&ReplyStage::Prometheus);
+    }
+};
+InstallReplyStagePrometheus g_install_reply_stage_prometheus;
+}  // namespace

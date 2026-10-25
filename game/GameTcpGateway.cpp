@@ -465,7 +465,10 @@ void RememberBind(uint64_t conn_id, uint64_t player_id, const std::string &token
             return 1;
         };
         if (auto live = weak_conn.lock()) {
-            live->set_drain_callback([conn_id]() {
+            live->set_drain_callback([weak_conn, conn_id]() {
+                auto c = weak_conn.lock();
+                if (c && c->ControlReplyBuffered())
+                    return;
                 ControlResponseOutbox::Instance().OnBufferDrained(conn_id);
                 if (!ControlResponseOutbox::Instance().BlocksMove(conn_id))
                     ReliableOutboxHub::Instance().OnBufferDrained(conn_id);

@@ -151,6 +151,8 @@ public:
     }
 
     std::string PrometheusText() const;
+    static void SetReplyStagePrometheus(std::string (*fn)());
+    static void SetControlOutboxPrometheus(std::string (*fn)());
 
 private:
     OpsMetrics() = default;

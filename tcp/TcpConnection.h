@@ -83,9 +83,17 @@ public:
     /** 可靠推送（ENTER/LEAVE）：软丢水位更高（约 90%），尽量送达，仍不关连接。 */
     bool TrySendUrgent(const std::string &msg);
     bool TrySendUrgent(const char *msg, int len);
-    /** 心跳应答：用满发送缓冲仍不关连接。缓冲已满才返回 false。 */
-    bool TrySendControl(const std::string &msg, bool over_cap = false);
-    bool TrySendControl(const char *msg, int len, bool over_cap = false);
+    /**
+     * 心跳和 RPC 回包。
+     * Closed：连接没了。Blocked：这次没写进缓冲，连接还在。
+     * WrittenDirect：整帧已经离开应用缓冲。
+     * Buffered：整帧或部分字节还在应用缓冲里，下一条回包必须等它离开。
+     */
+    enum ControlSendResult { Closed = -1, Blocked = 0, WrittenDirect = 1, Buffered = 2 };
+    ControlSendResult TrySendControl(const std::string &msg, bool over_cap = false);
+    ControlSendResult TrySendControl(const char *msg, int len, bool over_cap = false);
+    /** 上一条 RPC 回包还有字节留在应用缓冲里。 */
+    bool ControlReplyBuffered() const { return control_hold_end_ > 0; }
     /**
      * 每个连接最多挂一帧最新移动。调用方先丢掉缓冲里的旧移动帧。
      * 内核里还没送出的字节超过 1KB 时，这一帧只留在应用缓冲末尾，不写进内核，
@@ -137,6 +145,8 @@ private:
      * 不能插到更早的回包前面，也不能排到这段后面的 MOVE 后面。
      */
     size_t control_run_ = 0;
+    /** 从缓冲开头数，还要写出这么多字节，上一条 RPC 回包才算离开应用缓冲。 */
+    size_t control_hold_end_ = 0;
     /**
      * 应用缓冲末尾有一帧最新移动。内核未发送字节还多时先不写它。
      * send_move_hold_off_ 是这帧在缓冲里的起点；前面的字节仍要写出（半帧或回包）。

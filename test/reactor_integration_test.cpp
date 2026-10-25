@@ -208,7 +208,9 @@ void TestLatestMoveHeldWhileKernelBusy() {
     Expect(conn->unsent_bytes() >= unsent_before, "held move not pushed into kernel");
 
     const std::string ack(16, 'A');
-    Expect(conn->TrySendControl(ack), "ack prepended ahead of held move");
+    const auto ack_rc = conn->TrySendControl(ack);
+    Expect(ack_rc == TcpConnection::WrittenDirect || ack_rc == TcpConnection::Buffered,
+           "ack prepended ahead of held move");
     const std::string left = conn->CopySendBuf();
     Expect(left.size() >= frame.size() &&
                left.compare(left.size() - frame.size(), frame.size(), frame) == 0,
