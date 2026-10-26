@@ -21,8 +21,10 @@ const char *kKinds[kKindCount] = {
 };
 
 const char *kStages[ReplyStage::StageCount] = {
-    "request_received",   "logic_dispatch_started", "logic_response_ready", "event_loop_enqueued",
-    "control_outbox_queued", "socket_write_accepted", "response_soft_drop",
+    "request_received",      "logic_dispatch_started", "logic_response_ready",
+    "event_loop_enqueued",   "control_outbox_queued",  "socket_write_accepted",
+    "response_soft_drop",    "gateway_callback_received", "write_complete",
+    "connection_closed_before_reply", "event_loop_enqueue_failed", "outbox_wakeup_missed",
 };
 
 const int kBucketMs[kBucketCount] = {5, 10, 20, 50, 100, 200, 500, 1000, 2000, 5000, 1000000000};
@@ -41,6 +43,15 @@ std::atomic<uint64_t> g_stage[kKindCount][ReplyStage::StageCount];
 std::atomic<uint64_t> g_bucket[kKindCount][kBucketCount];
 std::atomic<uint64_t> g_latency_sum[kKindCount];
 std::atomic<uint64_t> g_latency_count[kKindCount];
+/** 还没有进入终态的请求。第二次终态不再减，用来让重复的 write_complete 把守恒差值打成非零。 */
+std::atomic<int64_t> g_inflight{0};
+std::atomic<int64_t> g_last_complete_ms{0};
+std::atomic<int64_t> g_inflight_since_ms{0};
+
+bool TerminalStage(ReplyStage::Stage stage) {
+    return stage == ReplyStage::WriteComplete || stage == ReplyStage::ConnectionClosedBeforeReply ||
+           stage == ReplyStage::ResponseSoftDrop;
+}
 
 struct Stamp {
     int64_t ms = 0;
@@ -104,6 +115,20 @@ void ReplyStage::Inc(const char *kind, Stage stage) {
     if (stage < 0 || stage >= StageCount)
         return;
     g_stage[KindIndex(kind)][stage].fetch_add(1, std::memory_order_relaxed);
+    if (stage == RequestReceived) {
+        const int64_t prev = g_inflight.fetch_add(1, std::memory_order_relaxed);
+        if (prev <= 0)
+            g_inflight_since_ms.store(NowMs(), std::memory_order_relaxed);
+        return;
+    }
+    if (!TerminalStage(stage))
+        return;
+    int64_t cur = g_inflight.load(std::memory_order_relaxed);
+    while (cur > 0 &&
+           !g_inflight.compare_exchange_weak(cur, cur - 1, std::memory_order_relaxed)) {
+    }
+    if (stage == WriteComplete)
+        g_last_complete_ms.store(NowMs(), std::memory_order_relaxed);
 }
 
 void ReplyStage::NoteRequest(uint64_t conn_id, uint64_t seq, const char *kind) {
@@ -194,7 +219,39 @@ std::string ReplyStage::Prometheus() {
         os << "gamemesh_reply_latency_p99_ms{kind=\"" << kKinds[k] << "\"} " << QuantileMs(k, 99)
            << "\n";
     }
-    os << "\n";
+    uint64_t received_n = 0, completed_n = 0, closed_n = 0, soft_n = 0;
+    for (int k = 0; k < kKindCount; ++k) {
+        received_n += g_stage[k][RequestReceived].load(std::memory_order_relaxed);
+        completed_n += g_stage[k][WriteComplete].load(std::memory_order_relaxed);
+        closed_n += g_stage[k][ConnectionClosedBeforeReply].load(std::memory_order_relaxed);
+        soft_n += g_stage[k][ResponseSoftDrop].load(std::memory_order_relaxed);
+    }
+    const int64_t inflight = g_inflight.load(std::memory_order_relaxed);
+    const int64_t residual = static_cast<int64_t>(received_n) - static_cast<int64_t>(completed_n) -
+                             static_cast<int64_t>(closed_n) - static_cast<int64_t>(soft_n) - inflight;
+    int64_t idle_ms = 0;
+    if (inflight > 0) {
+        const int64_t now = NowMs();
+        int64_t since = g_last_complete_ms.load(std::memory_order_relaxed);
+        if (since <= 0)
+            since = g_inflight_since_ms.load(std::memory_order_relaxed);
+        if (since > 0 && now >= since)
+            idle_ms = now - since;
+    }
+    os << "\n# HELP gamemesh_reply_inflight Requests not yet write_complete, closed, or soft-dropped.\n"
+          "# TYPE gamemesh_reply_inflight gauge\n"
+          "gamemesh_reply_inflight "
+       << inflight
+       << "\n# HELP gamemesh_reply_conservation_residual request_received minus write_complete, "
+          "connection_closed_before_reply, response_soft_drop, and inflight.\n"
+          "# TYPE gamemesh_reply_conservation_residual gauge\n"
+          "gamemesh_reply_conservation_residual "
+       << residual
+       << "\n# HELP gamemesh_reply_write_complete_idle_ms Milliseconds since the last write_complete "
+          "while a reply is still in flight. Zero when nothing is in flight.\n"
+          "# TYPE gamemesh_reply_write_complete_idle_ms gauge\n"
+          "gamemesh_reply_write_complete_idle_ms "
+       << idle_ms << "\n\n";
     return os.str();
 }
 

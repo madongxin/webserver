@@ -146,7 +146,7 @@ int SubmitControlOnLoop(const std::shared_ptr<TcpConnection> &conn, uint64_t seq
         if (!live || live->state() != TcpConnection::Connected)
             return -1;
         // 回包插到缓冲里的 MOVE 前面，不先把 MOVE 丢掉。只有这一帧写不进缓冲时才清 MOVE。
-        // 2 表示帧还在应用缓冲里，调用方必须停住，不能再发下一条。
+        // 1 和 2 都表示这一帧已经按序进入发送流，下一条可以继续写。
         auto rc = live->TrySendControl(pending, true);
         if (rc == TcpConnection::Blocked && DropQueuedAoiMoveFrames(live.get()) != 0 &&
             live->state() == TcpConnection::Connected)
@@ -164,6 +164,12 @@ int SubmitControlOnLoop(const std::shared_ptr<TcpConnection> &conn, uint64_t seq
         if (!live || live->state() != TcpConnection::Connected)
             return;
         live->HandleClose();
+    };
+    env.arm_retry = [weak](std::function<void()> cb) {
+        auto live = weak.lock();
+        if (!live || !live->loop() || !cb)
+            return;
+        live->loop()->RunAfter(0.05, std::move(cb));
     };
     return ControlResponseOutbox::Instance().Submit(conn->id(), seq, kind ? kind : "other", frame,
                                                     std::move(env));
@@ -185,9 +191,13 @@ void TcpReplySink::SendFrame(const std::string &response_frame) {
             seq = gr.seq();
         }
     }
+    ReplyStage::Inc(kind, ReplyStage::GatewayCallbackReceived);
     ReplyStage::Inc(kind, ReplyStage::LogicResponseReady);
-    if (!loop_)
+    if (!loop_) {
+        ReplyStage::Inc(kind, ReplyStage::EventLoopEnqueueFailed);
+        ReplyStage::Inc(kind, ReplyStage::ConnectionClosedBeforeReply);
         return;
+    }
     ReplyStage::Inc(kind, ReplyStage::EventLoopEnqueued);
     auto weak = conn_;
     const int64_t enqueued_ms = SteadyMs();
@@ -195,6 +205,7 @@ void TcpReplySink::SendFrame(const std::string &response_frame) {
     loop_->QueueOneFunc([weak, response_frame, enqueued_ms, seq, kind, snapshot]() {
         auto c = weak.lock();
         if (!c || c->state() != TcpConnection::Connected) {
+            ReplyStage::Inc(kind, ReplyStage::ConnectionClosedBeforeReply);
             LOG_WARN << "TcpReplySink conn gone bytes=" << response_frame.size()
                      << " kind=" << kind << " seq=" << seq;
             return;

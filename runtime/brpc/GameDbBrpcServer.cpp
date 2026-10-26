@@ -3,10 +3,12 @@
 #include "AsyncMysqlGameDbRepository.h"
 #include "GameDbServiceImpl.h"
 #include "Logging.h"
+#include "OpsMetrics.h"
 #include "BrpcSslUtil.h"
 #include "GameMeshPaths.h"
 
 #include <brpc/server.h>
+#include <bthread/bthread.h>
 
 #include <cstdlib>
 #include <fstream>
@@ -105,6 +107,7 @@ bool GameDbBrpcServer::Start(const std::string &listen_addr, int idle_timeout_se
         return false;
     }
     listen_addr_ = listen_addr;
+    OpsMetrics::Instance().SetBrpcWorkerThreads(bthread_getconcurrency());
     running_ = true;
     LOG_INFO << "GameDbBrpcServer listening on " << listen_addr_;
     return true;

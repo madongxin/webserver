@@ -319,6 +319,7 @@ void EnsureAoiWorker() {
             g_aoi_lanes.push_back(std::unique_ptr<AoiLane>(new AoiLane()));
         for (auto &lane : g_aoi_lanes)
             lane->worker = std::thread(AoiLaneMain, lane.get());
+        OpsMetrics::Instance().SetAoiWorkerThreads(static_cast<int64_t>(g_aoi_lanes.size()));
     });
 }
 

@@ -5,6 +5,7 @@
 #include "GameLogicServiceImpl.h"
 #include "GameMeshPaths.h"
 #include "Logging.h"
+#include "OpsMetrics.h"
 #include "MapCatalog.h"
 #include "MapInstanceRegistry.h"
 #include "MapRuntime.h"
@@ -15,8 +16,8 @@
 #endif
 
 #include <brpc/server.h>
+#include <bthread/bthread.h>
 
-#include <algorithm>
 #include <algorithm>
 #include <cstdint>
 #include <cstdlib>
@@ -190,6 +191,7 @@ bool GameLogicBrpcServer::Start(const std::string &listen_addr, int idle_timeout
     }
     listen_addr_ = listen_addr;
     running_ = true;
+    OpsMetrics::Instance().SetBrpcWorkerThreads(bthread_getconcurrency());
     LOG_INFO << "GameLogicBrpcServer listening on " << listen_addr_
              << " (GameLogicForward + GameLogicService)";
     return true;

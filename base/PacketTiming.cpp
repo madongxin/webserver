@@ -248,6 +248,13 @@ std::string PacketTimingPrometheus() {
           "# TYPE gamemesh_eventloop_batch_ms_last gauge\n"
           "gamemesh_eventloop_batch_ms_last "
        << static_cast<int>(EventLoopMetrics::LastBatchSeconds() * 1000.0) << "\n";
+    os << "# HELP gamemesh_eventloop_tick_p99_ms Upper edge of the bucket containing the 99th percentile tick.\n"
+          "# TYPE gamemesh_eventloop_tick_p99_ms gauge\n"
+          "gamemesh_eventloop_tick_p99_ms " << EventLoopMetrics::TickP99Ms() << "\n";
+    os << "# HELP gamemesh_eventloop_tick_max_ms Peak event loop iteration since process start, milliseconds.\n"
+          "# TYPE gamemesh_eventloop_tick_max_ms gauge\n"
+          "gamemesh_eventloop_tick_max_ms "
+       << static_cast<int>(EventLoopMetrics::PeakTickSeconds() * 1000.0) << "\n";
     os << "# HELP gamemesh_move_offer_total Move AOI frames accepted into the per-connection coalesce slot.\n"
           "# TYPE gamemesh_move_offer_total counter\n"
           "gamemesh_move_offer_total " << g_move_offer.load(std::memory_order_relaxed) << "\n";

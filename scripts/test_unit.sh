@@ -76,6 +76,11 @@ run_one gateway_conn_race_test
 run_one push_admit_test
 run_one reliable_outbox_test
 run_one control_outbox_test
+if curl -sf --max-time 2 http://127.0.0.1:9090/-/ready >/dev/null; then
+  python3 "$ROOT/test/monitor_promql_test.py"
+else
+  echo "monitor_promql_test NOT_RUN (prometheus :9090 not ready)"
+fi
 run_one gateway_logout_policy_test
 run_one discovery_ha_test
 run_one push_replay_cache_test

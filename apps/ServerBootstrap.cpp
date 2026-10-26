@@ -243,12 +243,26 @@ struct ClusterProc {
     bool alive = false;
     bool live = false;
     bool ready = false;
+    std::string git_sha;
 };
+
+std::string JsonStringField(const std::string &body, const char *key) {
+    const std::string pat = std::string("\"") + key + "\":\"";
+    const auto pos = body.find(pat);
+    if (pos == std::string::npos)
+        return "";
+    const auto begin = pos + pat.size();
+    const auto end = body.find('"', begin);
+    if (end == std::string::npos)
+        return "";
+    return body.substr(begin, end - begin);
+}
 
 void ProbeClusterProc(ClusterProc *p) {
     if (!p || !p->alive)
         return;
     if (p->pid == ::getpid()) {
+        p->git_sha = JsonStringField(ServiceHealth::Instance().VersionJson(), "git_sha");
         p->live = ServiceHealth::Instance().IsLive(30);
         const HealthDepsResult deps = EvaluateHealthDeps(ServiceHealth::Instance().service());
         p->ready = ServiceHealth::Instance().ready() && deps.ok;
@@ -269,6 +283,9 @@ void ProbeClusterProc(ClusterProc *p) {
     p->ready_http = HttpGetLocal(p->http_port, "/health/ready", 1500, &body);
     p->ready = (p->ready_http == 200);
     p->ready_detail = body.size() > 240 ? body.substr(0, 240) : body;
+    body.clear();
+    if (HttpGetLocal(p->http_port, "/api/version", 800, &body) == 200)
+        p->git_sha = JsonStringField(body, "git_sha");
 }
 
 Json::Value BuildClusterStatusJson() {
@@ -323,6 +340,7 @@ Json::Value BuildClusterStatusJson() {
         p["ready_http"] = r.ready_http;
         p["live_detail"] = r.live_detail;
         p["ready_detail"] = r.ready_detail;
+        p["git_sha"] = r.git_sha;
         if (r.alive)
             ++alive_n;
         if (r.live)

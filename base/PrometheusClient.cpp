@@ -3,6 +3,7 @@
 #include <arpa/inet.h>
 #include <netdb.h>
 #include <sys/socket.h>
+#include <sys/time.h>
 #include <unistd.h>
 
 #include <cctype>
@@ -132,6 +133,10 @@ PrometheusClientResult QueryPath(const std::string &path) {
         ::close(fd);
         return r;
     }
+    timeval tv{};
+    tv.tv_sec = 2;
+    ::setsockopt(fd, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv));
+    ::setsockopt(fd, SOL_SOCKET, SO_SNDTIMEO, &tv, sizeof(tv));
     std::ostringstream req;
     req << "GET " << path << " HTTP/1.1\r\nHost: " << kHost << "\r\nConnection: close\r\n\r\n";
     if (!SendAll(fd, req.str())) {

@@ -18,6 +18,11 @@ public:
         ControlOutboxQueued,
         SocketWriteAccepted,
         ResponseSoftDrop,
+        GatewayCallbackReceived,
+        WriteComplete,
+        ConnectionClosedBeforeReply,
+        EventLoopEnqueueFailed,
+        OutboxWakeupMissed,
         StageCount
     };
 

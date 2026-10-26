@@ -79,6 +79,16 @@ public:
             ms = 0;
         aoi_batch_oldest_age_ms_.store(ms, std::memory_order_relaxed);
     }
+    void SetAoiWorkerThreads(int64_t n) {
+        if (n < 0)
+            n = 0;
+        aoi_worker_threads_.store(n, std::memory_order_relaxed);
+    }
+    void SetBrpcWorkerThreads(int64_t n) {
+        if (n < 0)
+            n = 0;
+        brpc_worker_threads_.store(n, std::memory_order_relaxed);
+    }
     void AddAoiMoveShed(uint64_t n) { aoi_move_shed_.fetch_add(n, std::memory_order_relaxed); }
     void IncSafePosDeferred() { safe_pos_deferred_.fetch_add(1, std::memory_order_relaxed); }
     void IncSafePosDeferFail() { safe_pos_defer_fail_.fetch_add(1, std::memory_order_relaxed); }
@@ -205,6 +215,8 @@ private:
     std::atomic<int64_t> aoi_push_backlog_{0};
     std::atomic<int64_t> aoi_worker_inflight_{0};
     std::atomic<int64_t> aoi_batch_oldest_age_ms_{0};
+    std::atomic<int64_t> aoi_worker_threads_{-1};
+    std::atomic<int64_t> brpc_worker_threads_{-1};
     std::atomic<uint64_t> aoi_move_shed_{0};
     std::atomic<uint64_t> safe_pos_deferred_{0};
     std::atomic<uint64_t> safe_pos_defer_fail_{0};

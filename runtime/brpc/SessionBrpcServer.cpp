@@ -5,11 +5,13 @@
 #include "BrpcSslUtil.h"
 #include "GameMeshPaths.h"
 #include "Logging.h"
+#include "OpsMetrics.h"
 #include "PlacementStore.h"
 #include "SessionServiceImpl.h"
 #include "SessionStore.h"
 
 #include <brpc/server.h>
+#include <bthread/bthread.h>
 
 #include <cstdlib>
 #include <fstream>
@@ -140,6 +142,7 @@ bool SessionBrpcServer::Start(const std::string &listen_addr, int idle_timeout_s
     }
     listen_addr_ = listen_addr;
     running_ = true;
+    OpsMetrics::Instance().SetBrpcWorkerThreads(bthread_getconcurrency());
     LOG_INFO << "SessionBrpcServer(+Auth) listening on " << listen_addr_;
     return true;
 }

@@ -5,12 +5,15 @@
 #include "ReplyStage.h"
 
 #include <atomic>
+#include <chrono>
 #include <cstring>
 #include <deque>
 #include <memory>
 #include <mutex>
+#include <sstream>
 #include <unordered_map>
 #include <utility>
+#include <vector>
 
 namespace {
 
@@ -18,6 +21,7 @@ struct Item {
     uint64_t seq = 0;
     const char *kind = "other";
     std::string frame;
+    int64_t queued_ms = 0;
 };
 
 struct Box {
@@ -27,8 +31,8 @@ struct Box {
     bool inside = false;
     bool closed = false;
     bool blocked = false;
-    /** 队头已经写进应用缓冲，还要等它离开后才能写下一条，避免新回包插到旧回包前面。 */
-    bool held = false;
+    /** 已经预约了一次 50ms 重试。同一条连接最多一个。 */
+    bool retry_armed = false;
     ControlSendEnv env;
 };
 
@@ -39,6 +43,58 @@ ControlResponseOutbox::DiscardFn g_discard = nullptr;
 std::atomic<uint64_t> g_overflow{0};
 std::atomic<uint64_t> g_peak_frames{0};
 std::atomic<uint64_t> g_peak_bytes{0};
+std::atomic<uint64_t> g_drain_runs{0};
+std::atomic<uint64_t> g_drain_stalls{0};
+std::atomic<uint64_t> g_wakeup_missed{0};
+std::atomic<uint64_t> g_write_errors{0};
+
+int64_t SteadyMs() {
+    return std::chrono::duration_cast<std::chrono::milliseconds>(
+               std::chrono::steady_clock::now().time_since_epoch())
+        .count();
+}
+
+void NoteWritten(uint64_t conn_id, const Item &item);
+std::shared_ptr<Box> Find(uint64_t conn_id);
+
+void CountClosed(const char *kind) {
+    ReplyStage::Inc(kind && kind[0] ? kind : "other", ReplyStage::ConnectionClosedBeforeReply);
+}
+
+void AccountWritten(Box *box, uint64_t conn_id, const Item &item, int code) {
+    (void)box;
+    NoteWritten(conn_id, item);
+    // 直接写出和进入应用缓冲都表示这一帧已经按序进入发送流。
+    if (code > 0)
+        ReplyStage::Inc(item.kind, ReplyStage::WriteComplete);
+}
+
+void ArmWatchdog(uint64_t conn_id, const std::shared_ptr<Box> &box) {
+    std::function<void(std::function<void()>)> arm;
+    {
+        std::lock_guard<std::mutex> lk(box->mu);
+        if (box->retry_armed || box->closed || box->q.empty() || !box->env.arm_retry)
+            return;
+        box->retry_armed = true;
+        arm = box->env.arm_retry;
+    }
+    // arm_retry 若在调用栈里直接执行回调，不再嵌套预约，避免空转。
+    thread_local int depth = 0;
+    if (depth > 0) {
+        std::lock_guard<std::mutex> lk(box->mu);
+        box->retry_armed = false;
+        return;
+    }
+    ++depth;
+    arm([conn_id]() {
+        if (auto live = Find(conn_id)) {
+            std::lock_guard<std::mutex> lk(live->mu);
+            live->retry_armed = false;
+        }
+        ControlResponseOutbox::Instance().OnBufferDrained(conn_id);
+    });
+    --depth;
+}
 
 std::shared_ptr<Box> FindOrCreate(uint64_t conn_id) {
     std::lock_guard<std::mutex> lk(g_map_mu);
@@ -89,6 +145,8 @@ void RememberEnv(Box &box, ControlSendEnv env) {
         box.env.drop_moves = std::move(env.drop_moves);
     if (env.close_conn)
         box.env.close_conn = std::move(env.close_conn);
+    if (env.arm_retry)
+        box.env.arm_retry = std::move(env.arm_retry);
 }
 
 size_t DropMoves(uint64_t conn_id, Box &box) {
@@ -123,53 +181,61 @@ int ControlResponseOutbox::Drain(uint64_t conn_id) {
     box->inside = true;
     int first = 1;
     bool saw = false;
-    while (!box->q.empty()) {
-        if (box->held) {
-            box->inside = false;
-            return saw ? first : 0;
+    for (;;) {
+        while (!box->q.empty()) {
+            Item item = box->q.front();
+            auto try_send = box->env.try_send;
+            auto drop_moves = box->env.drop_moves;
+            lk.unlock();
+            g_drain_runs.fetch_add(1, std::memory_order_relaxed);
+            int code = try_send(item.frame);
+            if (code == 0 && drop_moves) {
+                drop_moves();
+                if (g_discard)
+                    g_discard(conn_id);
+                g_drain_runs.fetch_add(1, std::memory_order_relaxed);
+                code = try_send(item.frame);
+            }
+            lk.lock();
+            if (box->q.empty() || box->q.front().frame != item.frame) {
+                continue;
+            }
+            if (code < 0) {
+                g_write_errors.fetch_add(1, std::memory_order_relaxed);
+                box->closed = true;
+                box->inside = false;
+                box->blocked = true;
+                return -1;
+            }
+            if (code == 0) {
+                g_drain_stalls.fetch_add(1, std::memory_order_relaxed);
+                box->blocked = true;
+                box->inside = false;
+                lk.unlock();
+                ArmWatchdog(conn_id, box);
+                return saw ? first : 0;
+            }
+            box->bytes -= box->q.front().frame.size();
+            box->q.pop_front();
+            box->blocked = false;
+            NotePeak(box->q.size(), box->bytes);
+            AccountWritten(box.get(), conn_id, item, code);
+            if (!saw)
+                first = code;
+            saw = true;
         }
-        Item item = box->q.front();
-        auto try_send = box->env.try_send;
-        auto drop_moves = box->env.drop_moves;
-        lk.unlock();
-        int code = try_send(item.frame);
-        if (code == 0 && drop_moves) {
-            drop_moves();
-            if (g_discard)
-                g_discard(conn_id);
-            code = try_send(item.frame);
-        }
-        lk.lock();
-        if (box->q.empty() || box->q.front().frame != item.frame) {
+        box->inside = false;
+        if (!box->q.empty() && !box->closed && box->env.try_send) {
+            g_wakeup_missed.fetch_add(1, std::memory_order_relaxed);
+            ReplyStage::Inc(box->q.front().kind, ReplyStage::OutboxWakeupMissed);
+            box->inside = true;
             continue;
         }
-        if (code < 0) {
-            box->closed = true;
-            box->inside = false;
-            box->blocked = true;
-            return -1;
-        }
-        if (code == 0) {
-            box->blocked = true;
-            box->inside = false;
-            return saw ? first : 0;
-        }
-        box->bytes -= box->q.front().frame.size();
-        box->q.pop_front();
-        box->blocked = false;
-        box->held = code == 2;
-        NotePeak(box->q.size(), box->bytes);
-        NoteWritten(conn_id, item);
-        if (!saw)
-            first = 1;
-        saw = true;
-        if (box->held)
-            break;
+        break;
     }
-    box->inside = false;
-    if (box->q.empty() && !box->held)
+    if (box->q.empty())
         box->blocked = false;
-    return first;
+    return saw ? first : 1;
 }
 
 int ControlResponseOutbox::Submit(uint64_t conn_id, uint64_t seq, const char *kind,
@@ -178,10 +244,12 @@ int ControlResponseOutbox::Submit(uint64_t conn_id, uint64_t seq, const char *ki
         return -1;
     auto box = FindOrCreate(conn_id);
     std::unique_lock<std::mutex> lk(box->mu);
-    if (box->closed)
+    if (box->closed) {
+        CountClosed(kind);
         return -1;
+    }
     RememberEnv(*box, std::move(env));
-    const bool queued_behind = !box->q.empty() || box->held || box->inside;
+    const bool queued_behind = !box->q.empty() || box->inside;
     if (!queued_behind && box->env.try_send) {
         Item item;
         item.seq = seq;
@@ -201,17 +269,19 @@ int ControlResponseOutbox::Submit(uint64_t conn_id, uint64_t seq, const char *ki
         lk.lock();
         box->inside = false;
         if (code > 0) {
-            box->held = code == 2;
-            NoteWritten(conn_id, item);
-            const int rc = box->held ? 2 : 1;
-            if (!box->q.empty() && !box->held) {
-                lk.unlock();
+            AccountWritten(box.get(), conn_id, item, code);
+            const int rc = code;
+            const bool more = !box->q.empty();
+            lk.unlock();
+            if (more)
                 Drain(conn_id);
-            }
             return rc;
         }
-        if (code < 0)
+        if (code < 0) {
+            g_write_errors.fetch_add(1, std::memory_order_relaxed);
+            CountClosed(item.kind);
             return -1;
+        }
         frame = std::move(item.frame);
         kind = item.kind;
         seq = item.seq;
@@ -222,13 +292,16 @@ int ControlResponseOutbox::Submit(uint64_t conn_id, uint64_t seq, const char *ki
         Drain(conn_id);
         lk.lock();
     }
-    if (box->closed)
+    if (box->closed) {
+        CountClosed(kind);
         return -1;
+    }
     if (!Fits(*box, frame.size())) {
         box->closed = true;
         LOG_WARN << "control outbox overflow conn#" << conn_id << " depth=" << box->q.size()
                  << " bytes=" << box->bytes << " seq=" << seq;
         g_overflow.fetch_add(1, std::memory_order_relaxed);
+        CountClosed(kind);
         auto close_conn = box->env.close_conn;
         lk.unlock();
         if (close_conn)
@@ -239,12 +312,13 @@ int ControlResponseOutbox::Submit(uint64_t conn_id, uint64_t seq, const char *ki
     item.seq = seq;
     item.kind = kind && kind[0] ? kind : "other";
     item.frame = std::move(frame);
+    item.queued_ms = SteadyMs();
     box->bytes += item.frame.size();
     box->q.push_back(std::move(item));
     NotePeak(box->q.size(), box->bytes);
     ReplyStage::Inc(box->q.back().kind, ReplyStage::ControlOutboxQueued);
     box->blocked = true;
-    const bool start = !box->inside && !box->held && box->q.size() == 1;
+    const bool start = !box->inside && box->q.size() == 1;
     lk.unlock();
     if (start)
         Drain(conn_id);
@@ -254,9 +328,7 @@ int ControlResponseOutbox::Submit(uint64_t conn_id, uint64_t seq, const char *ki
     std::lock_guard<std::mutex> guard(again->mu);
     if (again->closed)
         return -1;
-    if (again->q.empty() && again->held)
-        return 2;
-    if (again->q.empty() && !again->held)
+    if (again->q.empty())
         return 1;
     return 0;
 }
@@ -265,15 +337,15 @@ void ControlResponseOutbox::OnBufferDrained(uint64_t conn_id) {
     auto box = Find(conn_id);
     if (!box)
         return;
+    bool more = false;
     {
         std::lock_guard<std::mutex> lk(box->mu);
         if (box->inside || box->closed)
             return;
-        box->held = false;
-        if (box->q.empty())
-            return;
+        more = !box->q.empty();
     }
-    Drain(conn_id);
+    if (more)
+        Drain(conn_id);
 }
 
 void ControlResponseOutbox::Forget(uint64_t conn_id) {
@@ -287,22 +359,16 @@ void ControlResponseOutbox::Forget(uint64_t conn_id) {
         g_boxes.erase(it);
     }
     std::lock_guard<std::mutex> lk(box->mu);
+    for (const auto &item : box->q)
+        CountClosed(item.kind);
     box->q.clear();
     box->bytes = 0;
     box->closed = true;
-    box->held = false;
     box->blocked = false;
+    box->retry_armed = false;
 }
 
-bool ControlResponseOutbox::Holding(uint64_t conn_id) {
-    auto box = Find(conn_id);
-    if (!box)
-        return false;
-    std::lock_guard<std::mutex> lk(box->mu);
-    if (box->closed)
-        return false;
-    return box->held;
-}
+bool ControlResponseOutbox::Holding(uint64_t) { return false; }
 
 size_t ControlResponseOutbox::Depth(uint64_t conn_id) {
     auto box = Find(conn_id);
@@ -321,7 +387,7 @@ bool ControlResponseOutbox::BlocksMove(uint64_t conn_id) {
     std::lock_guard<std::mutex> lk(box->mu);
     if (box->closed)
         return false;
-    return !box->q.empty() || box->held;
+    return !box->q.empty();
 }
 
 namespace {
@@ -334,16 +400,80 @@ InstallControlOutboxPrometheus g_install_control_outbox_prometheus;
 }  // namespace
 
 std::string ControlResponseOutbox::Prometheus() {
-    return std::string("# HELP gamemesh_control_outbox_peak_frames Peak RPC replies waiting on one connection.\n"
-                       "# TYPE gamemesh_control_outbox_peak_frames gauge\n"
-                       "gamemesh_control_outbox_peak_frames ") +
-           std::to_string(g_peak_frames.load(std::memory_order_relaxed)) +
-           "\n# HELP gamemesh_control_outbox_peak_bytes Peak RPC reply bytes waiting on one connection.\n"
-           "# TYPE gamemesh_control_outbox_peak_bytes gauge\n"
-           "gamemesh_control_outbox_peak_bytes " +
-           std::to_string(g_peak_bytes.load(std::memory_order_relaxed)) +
-           "\n# HELP gamemesh_control_outbox_overflow_total Connections closed because the RPC reply queue exceeded its cap.\n"
-           "# TYPE gamemesh_control_outbox_overflow_total counter\n"
-           "gamemesh_control_outbox_overflow_total " +
-           std::to_string(g_overflow.load(std::memory_order_relaxed)) + "\n\n";
+    uint64_t frames = 0;
+    uint64_t bytes = 0;
+    uint64_t held_conns = 0;
+    int64_t oldest = 0;
+    const int64_t now = SteadyMs();
+    std::vector<std::shared_ptr<Box>> boxes;
+    {
+        std::lock_guard<std::mutex> lk(g_map_mu);
+        boxes.reserve(g_boxes.size());
+        for (const auto &kv : g_boxes)
+            boxes.push_back(kv.second);
+    }
+    for (const auto &box : boxes) {
+        if (!box)
+            continue;
+        std::lock_guard<std::mutex> lk(box->mu);
+        if (box->closed)
+            continue;
+        frames += box->q.size();
+        bytes += box->bytes;
+        if (!box->q.empty()) {
+            ++held_conns;
+            const int64_t since = box->q.front().queued_ms;
+            if (since > 0 && now >= since) {
+                const int64_t age = now - since;
+                if (age > oldest)
+                    oldest = age;
+            }
+        }
+    }
+    std::ostringstream os;
+    os << "# HELP gamemesh_control_outbox_current_frames RPC replies still queued, not yet in the socket buffer.\n"
+          "# TYPE gamemesh_control_outbox_current_frames gauge\n"
+          "gamemesh_control_outbox_current_frames "
+       << frames
+       << "\n# HELP gamemesh_control_outbox_current_bytes Bytes of RPC replies still queued.\n"
+          "# TYPE gamemesh_control_outbox_current_bytes gauge\n"
+          "gamemesh_control_outbox_current_bytes "
+       << bytes
+       << "\n# HELP gamemesh_control_outbox_peak_frames Peak RPC replies waiting on one connection.\n"
+          "# TYPE gamemesh_control_outbox_peak_frames gauge\n"
+          "gamemesh_control_outbox_peak_frames "
+       << g_peak_frames.load(std::memory_order_relaxed)
+       << "\n# HELP gamemesh_control_outbox_peak_bytes Peak RPC reply bytes waiting on one connection.\n"
+          "# TYPE gamemesh_control_outbox_peak_bytes gauge\n"
+          "gamemesh_control_outbox_peak_bytes "
+       << g_peak_bytes.load(std::memory_order_relaxed)
+       << "\n# HELP gamemesh_control_outbox_held_connections Connections with an RPC reply not yet in the send stream.\n"
+          "# TYPE gamemesh_control_outbox_held_connections gauge\n"
+          "gamemesh_control_outbox_held_connections "
+       << held_conns
+       << "\n# HELP gamemesh_control_outbox_oldest_held_ms Age of the oldest RPC reply not yet in the send stream.\n"
+          "# TYPE gamemesh_control_outbox_oldest_held_ms gauge\n"
+          "gamemesh_control_outbox_oldest_held_ms "
+       << oldest
+       << "\n# HELP gamemesh_control_outbox_drain_runs_total Attempts to write a queued RPC reply.\n"
+          "# TYPE gamemesh_control_outbox_drain_runs_total counter\n"
+          "gamemesh_control_outbox_drain_runs_total "
+       << g_drain_runs.load(std::memory_order_relaxed)
+       << "\n# HELP gamemesh_control_outbox_drain_stalls_total Drains that stopped because the socket accepted nothing.\n"
+          "# TYPE gamemesh_control_outbox_drain_stalls_total counter\n"
+          "gamemesh_control_outbox_drain_stalls_total "
+       << g_drain_stalls.load(std::memory_order_relaxed)
+       << "\n# HELP gamemesh_control_outbox_wakeup_missed_total Drains that finished while a reply was queued behind them.\n"
+          "# TYPE gamemesh_control_outbox_wakeup_missed_total counter\n"
+          "gamemesh_control_outbox_wakeup_missed_total "
+       << g_wakeup_missed.load(std::memory_order_relaxed)
+       << "\n# HELP gamemesh_control_outbox_write_errors_total RPC reply writes that found the connection gone.\n"
+          "# TYPE gamemesh_control_outbox_write_errors_total counter\n"
+          "gamemesh_control_outbox_write_errors_total "
+       << g_write_errors.load(std::memory_order_relaxed)
+       << "\n# HELP gamemesh_control_outbox_overflow_total Connections closed because the RPC reply queue exceeded its cap.\n"
+          "# TYPE gamemesh_control_outbox_overflow_total counter\n"
+          "gamemesh_control_outbox_overflow_total "
+       << g_overflow.load(std::memory_order_relaxed) << "\n\n";
+    return os.str();
 }

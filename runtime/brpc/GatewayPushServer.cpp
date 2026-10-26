@@ -14,6 +14,7 @@
 #endif
 #include <brpc/controller.h>
 #include <brpc/server.h>
+#include <bthread/bthread.h>
 
 #include <cstdlib>
 
@@ -237,6 +238,7 @@ bool GatewayPushServer::Start(const std::string &listen_addr, int idle_timeout_s
     }
     listen_addr_ = listen_addr;
     running_ = true;
+    OpsMetrics::Instance().SetBrpcWorkerThreads(bthread_getconcurrency());
     LOG_INFO << "GatewayPushServer listening on " << listen_addr_
              << " gw=" << gateway_instance_id_;
     return true;

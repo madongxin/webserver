@@ -7,6 +7,7 @@
 
 #include <arpa/inet.h>
 #include <cerrno>
+#include <cstring>
 #include <fcntl.h>
 #include <chrono>
 #include <iostream>
@@ -289,6 +290,115 @@ void TestParkedMoveRetriesAfterKernelDrains() {
     ::close(lfd);
 }
 
+std::string LengthFrame(char mark, size_t payload) {
+    std::string body(payload, mark);
+    const uint32_t be = htonl(static_cast<uint32_t>(body.size()));
+    std::string out(sizeof(be), '\0');
+    std::memcpy(&out[0], &be, sizeof(be));
+    out.append(body);
+    return out;
+}
+
+void TestPartialControlDoesNotBlockLaterReplies() {
+    int lfd = ::socket(AF_INET, SOCK_STREAM, 0);
+    Expect(lfd >= 0, "tcp listen partial");
+    int yes = 1;
+    ::setsockopt(lfd, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(yes));
+    sockaddr_in addr{};
+    addr.sin_family = AF_INET;
+    addr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+    addr.sin_port = 0;
+    Expect(::bind(lfd, reinterpret_cast<sockaddr *>(&addr), sizeof(addr)) == 0, "bind partial");
+    Expect(::listen(lfd, 1) == 0, "listen partial");
+    socklen_t alen = sizeof(addr);
+    Expect(::getsockname(lfd, reinterpret_cast<sockaddr *>(&addr), &alen) == 0, "getsockname partial");
+
+    int cfd = ::socket(AF_INET, SOCK_STREAM, 0);
+    Expect(cfd >= 0, "tcp client partial");
+    int bufsz = 4096;
+    ::setsockopt(lfd, SOL_SOCKET, SO_RCVBUF, &bufsz, sizeof(bufsz));
+    ::setsockopt(cfd, SOL_SOCKET, SO_SNDBUF, &bufsz, sizeof(bufsz));
+    Expect(::connect(cfd, reinterpret_cast<sockaddr *>(&addr), sizeof(addr)) == 0, "connect partial");
+    int afd = ::accept(lfd, nullptr, nullptr);
+    Expect(afd >= 0, "accept partial");
+    int flags = ::fcntl(cfd, F_GETFL, 0);
+    ::fcntl(cfd, F_SETFL, flags | O_NONBLOCK);
+    flags = ::fcntl(afd, F_GETFL, 0);
+    ::fcntl(afd, F_SETFL, flags | O_NONBLOCK);
+
+    std::string block(4096, 'B');
+    while (true) {
+        const ssize_t n = ::write(cfd, block.data(), block.size());
+        if (n > 0)
+            continue;
+        break;
+    }
+
+    EventLoop loop;
+    auto conn = std::make_shared<TcpConnection>(&loop, cfd, 21);
+    conn->set_close_callback([](const std::shared_ptr<TcpConnection> &) {});
+    conn->set_message_callback([](const std::shared_ptr<TcpConnection> &) {});
+    conn->ConnectionEstablished();
+    Expect(conn->unsent_bytes() > 1024, "kernel unsent stays above 1KB");
+
+    const std::string move(64, 'M');
+    Expect(conn->TrySendLatestMove(move), "move parked behind a full kernel queue");
+    Expect(conn->holding_latest_move(), "move stays parked");
+
+    const std::string first = LengthFrame('C', 8 * 1024);
+    const auto first_rc = conn->TrySendControl(first);
+    Expect(first_rc == TcpConnection::Buffered, "first control frame stays in the app buffer");
+
+    bool split = false;
+    if (conn->unsent_bytes() > 2048) {
+        char tmp[2048];
+        const ssize_t n = ::read(afd, tmp, sizeof(tmp));
+        if (n > 0) {
+            conn->Write();
+            split = conn->send_partial_prefix() > 0 &&
+                    conn->send_buf()->readablebytes() > static_cast<int>(move.size());
+        }
+    }
+    Expect(split, "current control frame is only partly written");
+    const size_t prefix = conn->send_partial_prefix();
+    const size_t run = conn->control_run();
+    const size_t hold = conn->control_hold_end();
+    const size_t queued = static_cast<size_t>(conn->send_buf()->readablebytes());
+    Expect(prefix + run == hold, "control_hold_end does not count the partial frame twice");
+    Expect(prefix + run <= queued, "partial prefix and control_run do not overlap");
+    Expect(conn->unsent_bytes() > 1024, "kernel queue still above 1KB");
+
+    const std::string left_before = conn->CopySendBuf();
+    Expect(left_before.size() >= move.size() &&
+               left_before.compare(left_before.size() - move.size(), move.size(), move) == 0,
+           "parked move remains at the tail after the partial write");
+
+    const std::string heartbeat = LengthFrame('H', 24);
+    const std::string second = LengthFrame('Z', 24);
+    const auto hb_rc = conn->TrySendControl(heartbeat, true);
+    const auto second_rc = conn->TrySendControl(second, true);
+    Expect(hb_rc == TcpConnection::WrittenDirect || hb_rc == TcpConnection::Buffered,
+           "heartbeat enters while the kernel queue is above 1KB");
+    Expect(second_rc == TcpConnection::WrittenDirect || second_rc == TcpConnection::Buffered,
+           "second move response enters while the kernel queue is above 1KB");
+    const std::string left = conn->CopySendBuf();
+    const auto move_at = left.rfind(move);
+    const auto hb_at = left.find(heartbeat);
+    const auto second_at = left.find(second);
+    Expect(move_at != std::string::npos && hb_at != std::string::npos && second_at != std::string::npos,
+           "later control frames are in the app buffer");
+    Expect(hb_at < second_at && second_at < move_at,
+           "heartbeat and the second move stay ahead of the parked move");
+    const auto tail_of_first = left.rfind('C');
+    Expect(tail_of_first != std::string::npos && hb_at != std::string::npos && tail_of_first < hb_at,
+           "partial first move response stays ahead of the heartbeat");
+
+    conn->HandleClose();
+    conn->ConnectionDestructor();
+    ::close(afd);
+    ::close(lfd);
+}
+
 }  // namespace
 
 int main() {
@@ -299,6 +409,7 @@ int main() {
     TestLatestMoveSendsWhenIdle();
     TestLatestMoveHeldWhileKernelBusy();
     TestParkedMoveRetriesAfterKernelDrains();
+    TestPartialControlDoesNotBlockLaterReplies();
     if (g_fail) {
         std::cerr << "reactor_integration_test failures=" << g_fail << "\n";
         return 1;

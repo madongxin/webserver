@@ -4,6 +4,7 @@
 #include "common.h"
 #include "EventLoop.h"
 #include "HttpContext.h"
+#include "ServerStats.h"
 #include "TimeStamp.h"
 #include "Logging.h"
 #include <algorithm>
@@ -23,11 +24,12 @@
 #define SIOCOUTQNSD 0x894B
 #endif
 
-// 内核里还没交给网卡的字节超过这个值时，最新移动帧只留在应用缓冲，不再 write。
-// 再写进去的话，移动回包会排在这批旧坐标后面，客户端要读完才发下一步，人会越走越慢。
-// 只统计还没离开本机的字节。预算太大时，移动回包会排在已经进内核的 AOI 后面，
-// 慢读的连接要几秒才读到 MoveRsp。1KB 足够躲开空窗口，又不会把应答挡过客户端时限。
+// 内核里还没交给网卡的字节超过这个值时，最新移动帧先留在应用缓冲，不立刻 write。
+// 再写进去的话，移动回包会排在这批旧坐标后面。只统计还没离开本机的字节。
 constexpr int kLatestMoveKernelBudget = 1024;
+// 1KB 低于一条忙连接的正常在途量。只按它放行，最新位置会停在应用缓冲里几分钟。
+// 200ms 定时器在这个范围内把已经停放的那一帧写进内核。超过它仍继续停放。
+constexpr int kLatestMoveReleaseBudget = 64 * 1024;
 
 TcpConnection::TcpConnection(EventLoop *loop, int connfd, uint64_t connid)
     : connfd_(connfd),
@@ -188,6 +190,7 @@ void TcpConnection::ReplaceSendBuf(const std::string &bytes) {
     if (!bytes.empty())
         send_buf_->Append(bytes);
     send_partial_prefix_ = 0;
+    partial_is_control_ = false;
     control_run_ = 0;
     control_hold_end_ = 0;
     send_hold_move_ = false;
@@ -195,6 +198,32 @@ void TcpConnection::ReplaceSendBuf(const std::string &bytes) {
 }
 
 size_t TcpConnection::send_partial_prefix() const { return send_partial_prefix_; }
+
+size_t TcpConnection::control_run() const { return control_run_; }
+
+size_t TcpConnection::control_hold_end() const { return control_hold_end_; }
+
+void TcpConnection::RefreshControlHoldEnd() {
+    if (!send_buf_ || send_buf_->readablebytes() <= 0) {
+        send_partial_prefix_ = 0;
+        partial_is_control_ = false;
+        control_run_ = 0;
+        control_hold_end_ = 0;
+        return;
+    }
+    if (send_partial_prefix_ == 0)
+        partial_is_control_ = false;
+    if (control_run_ == 0 && !partial_is_control_) {
+        control_hold_end_ = 0;
+        return;
+    }
+    // 半帧前缀在前，完整控制帧紧跟其后。两段字节不重叠，结束位置只加一次。
+    size_t end = send_partial_prefix_ + control_run_;
+    const size_t queued = static_cast<size_t>(send_buf_->readablebytes());
+    if (end > queued)
+        end = queued;
+    control_hold_end_ = end;
+}
 
 void TcpConnection::ReplaceQueuedAfterPrefix(const std::string &queued) {
     if (!send_buf_)
@@ -209,6 +238,8 @@ void TcpConnection::ReplaceQueuedAfterPrefix(const std::string &queued) {
     if (!next.empty())
         send_buf_->Append(next);
     send_partial_prefix_ = prefix;
+    if (prefix == 0)
+        partial_is_control_ = false;
     if (control_run_ > queued.size())
         control_run_ = queued.size();
     send_hold_move_ = false;
@@ -220,8 +251,11 @@ void TcpConnection::ReplaceQueuedAfterPrefix(const std::string &queued) {
         control_hold_end_ = static_cast<size_t>(queued_n);
     if (send_buf_->readablebytes() == 0) {
         send_partial_prefix_ = 0;
+        partial_is_control_ = false;
         control_run_ = 0;
         control_hold_end_ = 0;
+    } else {
+        RefreshControlHoldEnd();
     }
 }
 
@@ -327,32 +361,19 @@ TcpConnection::ControlSendResult TcpConnection::TrySendControl(const char *msg, 
                                                                bool over_cap) {
     if (state_ != ConnectionState::Connected || in_close_ || !channel_ || !msg || len < 0)
         return Closed;
-    // 上一条回包还在应用缓冲里。再插一条会把它挤到后面。
-    if (control_hold_end_ > 0)
-        return Blocked;
-    const int before = send_buf_ ? send_buf_->readablebytes() : 0;
-    const size_t run_before = control_run_;
-    const size_t prefix_before = send_partial_prefix_;
     if (!SendInternal(msg, len, true, true, true, false, over_cap)) {
         if (state_ != ConnectionState::Connected || in_close_)
             return Closed;
         return Blocked;
     }
-    size_t hold_end = 0;
-    if (control_run_ > run_before ||
-        (before == 0 && (send_partial_prefix_ > prefix_before || control_run_ > 0)))
-        hold_end = send_partial_prefix_ + control_run_;
-    if (send_buf_) {
-        const size_t queued = static_cast<size_t>(std::max(0, send_buf_->readablebytes()));
-        if (hold_end > queued)
-            hold_end = queued;
-    }
-    if (hold_end == 0 || !send_buf_ || send_buf_->readablebytes() == 0) {
+    if (!send_buf_ || send_buf_->readablebytes() == 0) {
         control_hold_end_ = 0;
+        partial_is_control_ = false;
         return WrittenDirect;
     }
-    control_hold_end_ = hold_end;
-    return Buffered;
+    RefreshControlHoldEnd();
+    // 已经按 control_run_ 排进发送流。缓冲里还有控制字节也继续接受下一条。
+    return control_hold_end_ > 0 ? Buffered : WrittenDirect;
 }
 
 bool TcpConnection::TrySendLatestMove(const std::string &msg) {
@@ -465,10 +486,12 @@ bool TcpConnection::SendInternal(const char *msg, int len, bool soft_drop, bool 
         send_buf_->Append(msg + send_size, remaining);
         // 只有已经把帧头写进内核时，缓冲里剩下的才是半帧。一次都没写出的完整帧
         // 不能算半帧，否则心跳会被插到这整帧后面。
-        if (was_empty && send_size > 0)
+        if (was_empty && send_size > 0) {
             send_partial_prefix_ = static_cast<size_t>(remaining);
-        else if (control && was_empty && send_size == 0)
+            partial_is_control_ = control;
+        } else if (control && was_empty && send_size == 0) {
             control_run_ += static_cast<size_t>(remaining);
+        }
     }
     if (send_buf_->readablebytes() > 0) {
         WriteNonBlocking();
@@ -548,14 +571,29 @@ void TcpConnection::WriteNonBlocking() {
             ::write(connfd_, send_buf_->Peek(), static_cast<size_t>(writable));
         if (send_size > 0) {
             const size_t old_prefix = send_partial_prefix_;
+            const size_t old_run = control_run_;
+            const size_t old_hold = control_hold_end_;
             NoteWriteConsumed(send_buf_->Peek(), static_cast<size_t>(send_buf_->readablebytes()),
                               static_cast<size_t>(send_size));
-            if (control_run_ > 0 && static_cast<size_t>(send_size) > old_prefix) {
+            if (old_run > 0 && static_cast<size_t>(send_size) > old_prefix) {
                 const size_t into = static_cast<size_t>(send_size) - old_prefix;
-                if (into >= control_run_)
-                    control_run_ = 0;
-                else
-                    control_run_ -= into;
+                const size_t consumed = std::min(old_run, into);
+                size_t run_left = old_run - consumed;
+                // 没写完的那一截被记进半帧前缀。它原来也在 control_run_ 里，这里减掉，避免结束位置加两次。
+                if (send_partial_prefix_ > 0 && run_left > 0 && into < old_run) {
+                    const size_t overlap = std::min(send_partial_prefix_, run_left);
+                    run_left -= overlap;
+                    partial_is_control_ = true;
+                } else if (send_partial_prefix_ > 0 && into < old_run) {
+                    partial_is_control_ = true;
+                } else if (send_partial_prefix_ > 0 && into >= old_run) {
+                    partial_is_control_ = false;
+                } else {
+                    partial_is_control_ = false;
+                }
+                control_run_ = run_left;
+            } else if (send_partial_prefix_ == 0) {
+                partial_is_control_ = false;
             }
             if (send_move_hold_off_ > 0) {
                 if (static_cast<size_t>(send_size) >= send_move_hold_off_)
@@ -563,18 +601,13 @@ void TcpConnection::WriteNonBlocking() {
                 else
                     send_move_hold_off_ -= static_cast<size_t>(send_size);
             }
-            if (control_hold_end_ > 0) {
-                if (static_cast<size_t>(send_size) >= control_hold_end_) {
-                    control_hold_end_ = 0;
-                    control_released = true;
-                } else {
-                    control_hold_end_ -= static_cast<size_t>(send_size);
-                }
-            }
             if (!hold_limit)
                 send_hold_move_ = false;
             send_buf_->Retrieve(static_cast<int>(send_size));
-            // 上一条回包已经离开。先停住，让下一条回包插到还留在缓冲里的 MOVE 前面。
+            RefreshControlHoldEnd();
+            // 控制字节离开应用缓冲就结束等待，不等后面的 MOVE 写出。
+            if (old_hold > 0 && control_hold_end_ == 0)
+                control_released = true;
             if (control_released && send_buf_->readablebytes() > 0)
                 break;
             if (hold_limit)
@@ -583,23 +616,37 @@ void TcpConnection::WriteNonBlocking() {
         }
         if (send_size == -1 && errno == EINTR)
             continue;
-        if (send_size == -1 && (errno == EAGAIN || errno == EWOULDBLOCK))
+        if (send_size == -1 && (errno == EAGAIN || errno == EWOULDBLOCK)) {
+            ServerStats::tcp_eagain.fetch_add(1, std::memory_order_relaxed);
             break;
+        }
         LOG_ERROR << "TcpConnection::WriteNonBlocking error id#" << connid_;
+        ServerStats::tcp_write_error.fetch_add(1, std::memory_order_relaxed);
         HandleClose();
         return;
+    }
+    {
+        const int unsent = UnsentBytes();
+        if (unsent > 0) {
+            uint64_t prev = ServerStats::tcp_conn_sendq_max.load(std::memory_order_relaxed);
+            const uint64_t now = static_cast<uint64_t>(unsent);
+            while (now > prev && !ServerStats::tcp_conn_sendq_max.compare_exchange_weak(
+                                     prev, now, std::memory_order_relaxed)) {
+            }
+        }
     }
     const auto notify_drain = [&]() {
         if (!on_drain_ || !send_buf_ || before <= send_buf_->readablebytes())
             return;
-        if (control_released || send_buf_->readablebytes() <= 32 * 1024)
-            on_drain_();
+        on_drain_();
     };
     if (state_ != ConnectionState::Connected || in_close_ || !channel_ || !send_buf_)
         return;
     if (send_buf_->readablebytes() == 0) {
         send_hold_move_ = false;
         send_move_hold_off_ = 0;
+        send_partial_prefix_ = 0;
+        partial_is_control_ = false;
         control_run_ = 0;
         control_hold_end_ = 0;
         if (channel_->IsWriting())
@@ -635,7 +682,7 @@ void TcpConnection::OnParkedMoveTimer() {
     move_retry_armed_ = false;
     if (state_ != ConnectionState::Connected || in_close_ || !send_buf_ || !send_hold_move_)
         return;
-    if (UnsentBytes() <= kLatestMoveKernelBudget) {
+    if (UnsentBytes() <= kLatestMoveReleaseBudget) {
         send_hold_move_ = false;
         WriteNonBlocking();
         ArmWriteIfNeeded();

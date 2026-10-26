@@ -1,12 +1,14 @@
 #include "WorldBrpcServer.h"
 
 #include "Logging.h"
+#include "OpsMetrics.h"
 #include "BrpcSslUtil.h"
 #include "PlayerSerialQueue.h"
 #include "GameMeshPaths.h"
 #include "WorldForwardServiceImpl.h"
 
 #include <brpc/server.h>
+#include <bthread/bthread.h>
 
 #include <cstdlib>
 #include <fstream>
@@ -101,6 +103,7 @@ bool WorldBrpcServer::Start(const std::string &listen_addr, int idle_timeout_sec
         return false;
     }
     listen_addr_ = listen_addr;
+    OpsMetrics::Instance().SetBrpcWorkerThreads(bthread_getconcurrency());
     running_ = true;
     LOG_INFO << "WorldBrpcServer listening on " << listen_addr_
              << " (WorldForward, no combat tick)";

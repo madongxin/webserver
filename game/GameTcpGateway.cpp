@@ -111,16 +111,39 @@ int64_t SteadyMs() {
         .count();
 }
 
-void NotePeakMs(std::atomic<uint64_t> &slot, int64_t ms) {
-    if (ms <= 0)
-        return;
-    uint64_t next = static_cast<uint64_t>(ms);
-    uint64_t prev = slot.load(std::memory_order_relaxed);
-    while (next > prev && !slot.compare_exchange_weak(prev, next, std::memory_order_relaxed)) {
+std::mutex g_live_age_mu;
+std::unordered_map<uint64_t, uint64_t> g_pending_age;
+std::unordered_map<uint64_t, uint64_t> g_hold_age;
+
+void PublishMaxAge(std::unordered_map<uint64_t, uint64_t> &bucket, std::atomic<uint64_t> &gauge,
+                   uint64_t conn_id, uint64_t age) {
+    if (age == 0)
+        bucket.erase(conn_id);
+    else
+        bucket[conn_id] = age;
+    uint64_t mx = 0;
+    for (const auto &kv : bucket) {
+        if (kv.second > mx)
+            mx = kv.second;
     }
+    gauge.store(mx, std::memory_order_relaxed);
 }
 
-void ObservePendingMoves(const MoveCoalesceSlot &slot, int64_t now) {
+void PublishPendingAge(uint64_t conn_id, uint64_t age) {
+    std::lock_guard<std::mutex> lk(g_live_age_mu);
+    PublishMaxAge(g_pending_age, ServerStats::aoi_move_pending_oldest_ms, conn_id, age);
+    // 静默看的是还没写出的位置等了多久。没有待发位置时必须回到 0，不能留着进程启动后的最大值。
+    ServerStats::aoi_move_entity_max_silence_ms.store(
+        ServerStats::aoi_move_pending_oldest_ms.load(std::memory_order_relaxed),
+        std::memory_order_relaxed);
+}
+
+void PublishHoldAge(uint64_t conn_id, uint64_t age) {
+    std::lock_guard<std::mutex> lk(g_live_age_mu);
+    PublishMaxAge(g_hold_age, ServerStats::latest_move_hold_ms, conn_id, age);
+}
+
+void ObservePendingMoves(const MoveCoalesceSlot &slot, uint64_t conn_id, int64_t now) {
     int64_t oldest = 0;
     for (const auto &kv : slot.by_entity) {
         const auto since = slot.pending_since_ms.find(kv.first);
@@ -130,7 +153,7 @@ void ObservePendingMoves(const MoveCoalesceSlot &slot, int64_t now) {
         if (age > oldest)
             oldest = age;
     }
-    NotePeakMs(ServerStats::aoi_move_pending_oldest_ms, oldest);
+    PublishPendingAge(conn_id, oldest > 0 ? static_cast<uint64_t>(oldest) : 0);
 }
 
 bool IsMoveOnlyAoi(const game::GameResponse &gr) {
@@ -144,8 +167,20 @@ bool IsMoveOnlyAoi(const game::GameResponse &gr) {
 }
 
 void EraseMoveSlot(uint64_t conn_id) {
+    {
+        std::lock_guard<std::mutex> lk(g_move_slots_mu);
+        g_move_slots.erase(conn_id);
+    }
+    PublishPendingAge(conn_id, 0);
+    PublishHoldAge(conn_id, 0);
+}
+
+std::shared_ptr<MoveCoalesceSlot> FindMoveSlot(uint64_t conn_id) {
     std::lock_guard<std::mutex> lk(g_move_slots_mu);
-    g_move_slots.erase(conn_id);
+    auto it = g_move_slots.find(conn_id);
+    if (it == g_move_slots.end())
+        return nullptr;
+    return it->second;
 }
 
 void DiscardCoalescedAoiMoves(uint64_t conn_id) { EraseMoveSlot(conn_id); }
@@ -188,7 +223,7 @@ void FlushMoveSlot(const std::shared_ptr<MoveCoalesceSlot> &slot,
             if (ReliableOutboxHub::Instance().Depth(conn_id) > 0 ||
                 ControlResponseOutbox::Instance().BlocksMove(conn_id)) {
                 // 回包或可靠帧堵住时不写 MOVE。槽里仍只留每个实体的最新位置。
-                ObservePendingMoves(*slot, now);
+                ObservePendingMoves(*slot, conn_id, now);
                 wait_ms = 200;
             } else {
                 if (slot->budget_window_ms == 0 || now - slot->budget_window_ms >= 1000) {
@@ -268,8 +303,8 @@ void FlushMoveSlot(const std::shared_ptr<MoveCoalesceSlot> &slot,
         return;
     }
     // 先丢掉缓冲里的旧移动帧，再放这一帧最新位置。
-    // 内核里已经有没送出的字节时，TrySendLatestMove 不会再把这一帧写进去。
-    // 回包会插到缓冲里这一帧前面，所以不用为了发回包把最新位置丢掉。
+    // 内核未发送超过 1KB 时，TrySendLatestMove 先把这一帧留在应用缓冲。
+    // 200ms 后在途不超过 64KB 就会写进内核。回包仍插在这一帧前面。
     const size_t overwritten = DropQueuedAoiMoveFrames(live.get(), false);
     if (overwritten != 0)
         ServerStats::aoi_move_overwritten.fetch_add(overwritten, std::memory_order_relaxed);
@@ -292,16 +327,15 @@ void FlushMoveSlot(const std::shared_ptr<MoveCoalesceSlot> &slot,
         std::lock_guard<std::mutex> lk(slot->mu);
         if (slot->hold_since_ms == 0)
             slot->hold_since_ms = SteadyMs();
-        NotePeakMs(ServerStats::latest_move_hold_ms, SteadyMs() - slot->hold_since_ms);
+        const int64_t age = SteadyMs() - slot->hold_since_ms;
+        PublishHoldAge(conn_id, age > 0 ? static_cast<uint64_t>(age) : 0);
     } else {
         NoteMoveFlush(sent, event_n);
-        if (sent) {
+        {
             std::lock_guard<std::mutex> lk(slot->mu);
-            if (slot->hold_since_ms > 0) {
-                NotePeakMs(ServerStats::latest_move_hold_ms, SteadyMs() - slot->hold_since_ms);
-                slot->hold_since_ms = 0;
-            }
+            slot->hold_since_ms = 0;
         }
+        PublishHoldAge(conn_id, 0);
     }
     if (live->send_buf())
         NoteSendPending(live->send_buf()->readablebytes(), live->unsent_bytes());
@@ -321,13 +355,10 @@ void FlushMoveSlot(const std::shared_ptr<MoveCoalesceSlot> &slot,
             const uint64_t id = ev.entity().player_id();
             if (id == 0)
                 continue;
-            const auto prev = slot->last_sent_ms.find(id);
-            if (prev != slot->last_sent_ms.end() && prev->second > 0 && now > prev->second)
-                NotePeakMs(ServerStats::aoi_move_entity_max_silence_ms, now - prev->second);
             slot->last_sent_ms[id] = now;
             slot->pending_since_ms.erase(id);
         }
-        ObservePendingMoves(*slot, now);
+        ObservePendingMoves(*slot, conn_id, now);
         pending = static_cast<int>(slot->by_entity.size());
         if (pending > 0 && !slot->scheduled)
             slot->scheduled = true;
@@ -377,7 +408,7 @@ bool OfferCoalescedMove(const std::shared_ptr<TcpConnection> &c, const std::stri
             if (since == 0)
                 since = SteadyMs();
         }
-        ObservePendingMoves(*slot, SteadyMs());
+        ObservePendingMoves(*slot, c->id(), SteadyMs());
         if (slot->by_entity.empty())
             return true;
         if (!slot->scheduled) {
@@ -495,29 +526,37 @@ void RememberBind(uint64_t conn_id, uint64_t player_id, const std::string &token
             if (ControlResponseOutbox::Instance().BlocksMove(live->id()))
                 return 0;
             MakeRoomForControl(live.get());
-            bool ok = live->TrySendUrgent(frame);
-            if (!ok) {
+            // ENTER/LEAVE 走控制发送流，插在 MOVE 前面。32KB 的紧急水位会在回包已经占满缓冲时一直失败，
+            // 可靠队列不空又会禁止 AOI MOVE，位置更新就会停住。
+            auto rc = live->TrySendControl(frame, true);
+            if (rc == TcpConnection::Blocked) {
                 const size_t dropped = DropQueuedAoiMoveFrames(live.get());
-                if (dropped != 0 && live->TrySendUrgent(frame))
-                    ok = true;
+                if (dropped != 0)
+                    rc = live->TrySendControl(frame, true);
             }
-            if (!ok) {
-                const int app = live->send_buf() ? live->send_buf()->readablebytes() : 0;
-                const int unsent = live->unsent_bytes();
-                const int pending = app + (unsent > 0 ? unsent : 0);
-                OpsMetrics::Instance().NoteReliableSendFailBytes(
-                    static_cast<uint64_t>(pending > 0 ? pending : 0));
-                return live->state() == TcpConnection::Connected ? 0 : -1;
+            if (rc == TcpConnection::WrittenDirect || rc == TcpConnection::Buffered) {
+                OpsMetrics::Instance().AddGatewayTxBytes(frame.size());
+                OpsMetrics::Instance().AddGatewayTxFrames(1);
+                return 1;
             }
-            OpsMetrics::Instance().AddGatewayTxBytes(frame.size());
-            OpsMetrics::Instance().AddGatewayTxFrames(1);
-            return 1;
+            const int app = live->send_buf() ? live->send_buf()->readablebytes() : 0;
+            const int unsent = live->unsent_bytes();
+            const int pending = app + (unsent > 0 ? unsent : 0);
+            OpsMetrics::Instance().NoteReliableSendFailBytes(
+                static_cast<uint64_t>(pending > 0 ? pending : 0));
+            return rc == TcpConnection::Closed || live->state() != TcpConnection::Connected ? -1 : 0;
         };
         if (auto live = weak_conn.lock()) {
             live->set_drain_callback([weak_conn, conn_id]() {
                 auto c = weak_conn.lock();
-                if (c && c->ControlReplyBuffered())
-                    return;
+                if (c && !c->holding_latest_move()) {
+                    if (auto slot = FindMoveSlot(conn_id)) {
+                        std::lock_guard<std::mutex> lk(slot->mu);
+                        slot->hold_since_ms = 0;
+                    }
+                    PublishHoldAge(conn_id, 0);
+                }
+                // 已进入发送流的控制帧不挡住队列里还没写进去的下一条。
                 ControlResponseOutbox::Instance().OnBufferDrained(conn_id);
                 if (!ControlResponseOutbox::Instance().BlocksMove(conn_id))
                     ReliableOutboxHub::Instance().OnBufferDrained(conn_id);
@@ -1120,10 +1159,13 @@ void GameTcpGateway::OnMessage(const std::shared_ptr<TcpConnection> &conn) {
             // 心跳在本连接 EventLoop 上直接写。写不进缓冲就进有序队列，不关连接也不丢应答。
             int hb_rc = -1;
             if (outer.SerializeToString(&body) && gameproto::EncodeFrame(body, &out)) {
+                ReplyStage::Inc("heartbeat", ReplyStage::GatewayCallbackReceived);
                 ReplyStage::Inc("heartbeat", ReplyStage::LogicResponseReady);
                 ReplyStage::Inc("heartbeat", ReplyStage::EventLoopEnqueued);
                 OpsMetrics::Instance().IncReplyGenerated();
                 hb_rc = SubmitControlOnLoop(conn, peek.seq(), "heartbeat", out);
+            } else {
+                ReplyStage::Inc("heartbeat", ReplyStage::ConnectionClosedBeforeReply);
             }
             const auto hb_ms = std::chrono::duration_cast<std::chrono::milliseconds>(
                                    std::chrono::steady_clock::now() - handler_span.t0)
@@ -1456,10 +1498,13 @@ void GameTcpGateway::OnMessage(const std::shared_ptr<TcpConnection> &conn) {
                 std::string body, out;
                 int ack_rc = -1;
                 if (rsp.SerializeToString(&body) && gameproto::EncodeFrame(body, &out)) {
+                    ReplyStage::Inc("push_ack", ReplyStage::GatewayCallbackReceived);
                     ReplyStage::Inc("push_ack", ReplyStage::LogicResponseReady);
                     ReplyStage::Inc("push_ack", ReplyStage::EventLoopEnqueued);
                     OpsMetrics::Instance().IncReplyGenerated();
                     ack_rc = SubmitControlOnLoop(conn, peek.seq(), "push_ack", out);
+                } else {
+                    ReplyStage::Inc("push_ack", ReplyStage::ConnectionClosedBeforeReply);
                 }
                 const auto ack_ms = std::chrono::duration_cast<std::chrono::milliseconds>(
                                         std::chrono::steady_clock::now() - handler_span.t0)

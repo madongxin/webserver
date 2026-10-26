@@ -5,6 +5,8 @@ namespace EventLoopMetrics {
 void RecordTick(double seconds);
 double LastTickSeconds();
 double PeakTickSeconds();
+/** 延迟桶上沿，单位毫秒。没有样本时为 0。 */
+int TickP99Ms();
 
 /** 跨线程任务队列深度，以及一轮 DoToDoList 的批大小和耗时。 */
 void RecordTodoDepth(int depth);

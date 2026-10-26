@@ -11,7 +11,9 @@
 
 #include <cstdlib>
 #include <cstring>
+#include <fstream>
 #include <sstream>
+#include <sys/resource.h>
 
 namespace {
 
@@ -71,6 +73,60 @@ std::string BuildPrometheusMetricsText() {
     EmitGauge(os, "process_socket_recv_queue_bytes",
               "Sum of socket recv-queue bytes (SIOCINQ) for this process.",
               static_cast<double>(m.tcp_recv_queue_bytes));
+    struct rusage ru;
+    std::memset(&ru, 0, sizeof(ru));
+    if (::getrusage(RUSAGE_SELF, &ru) == 0) {
+        const double switches =
+            static_cast<double>(ru.ru_nvcsw) + static_cast<double>(ru.ru_nivcsw);
+        EmitCounter(os, "process_context_switches_total",
+                    "Voluntary plus involuntary context switches for this process.", switches);
+    }
+    if (!m.thread_states_json.empty()) {
+        const std::string key = "\"R\":";
+        const auto pos = m.thread_states_json.find(key);
+        if (pos != std::string::npos) {
+            const int runnable = std::atoi(m.thread_states_json.c_str() + pos + key.size());
+            EmitGauge(os, "process_runnable_threads",
+                      "Threads currently in the R state from /proc.", runnable);
+        }
+    }
+    {
+        std::ifstream snmp("/proc/net/snmp");
+        std::string line;
+        std::string header;
+        while (std::getline(snmp, line)) {
+            if (line.compare(0, 4, "Tcp:") != 0)
+                continue;
+            if (header.empty()) {
+                header = line;
+                continue;
+            }
+            int idx = 0;
+            int retrans_idx = -1;
+            std::istringstream hs(header);
+            std::string col;
+            while (hs >> col) {
+                if (col == "RetransSegs")
+                    retrans_idx = idx;
+                ++idx;
+            }
+            if (retrans_idx < 0)
+                break;
+            std::istringstream vs(line);
+            std::string val;
+            int at = 0;
+            while (vs >> val) {
+                if (at == retrans_idx) {
+                    EmitCounter(os, "gamemesh_host_tcp_retrans_segs_total",
+                                "Host-wide TcpRetransSegs from /proc/net/snmp. Same value on every process; do not sum.",
+                                std::strtod(val.c_str(), nullptr));
+                    break;
+                }
+                ++at;
+            }
+            break;
+        }
+    }
 
     // 兼容旧名（监控页不再使用）
     EmitGauge(os, "gamemesh_eventloop_tick_seconds", "Last event loop iteration duration.",

@@ -87,6 +87,9 @@ struct ServerStats {
     static inline std::atomic<uint64_t> aoi_move_entity_max_silence_ms{0};
     /** 进程启动以来，最新 MOVE 帧因为内核发送队列而停在应用缓冲里的最长时间。 */
     static inline std::atomic<uint64_t> latest_move_hold_ms{0};
+    static inline std::atomic<uint64_t> tcp_eagain{0};
+    static inline std::atomic<uint64_t> tcp_write_error{0};
+    static inline std::atomic<uint64_t> tcp_conn_sendq_max{0};
     static inline std::atomic<uint64_t> aoi_lock_wait_us_sum{0};
     static inline std::atomic<uint64_t> aoi_lock_hold_us_sum{0};
     static inline std::atomic<uint64_t> aoi_lock_samples{0};

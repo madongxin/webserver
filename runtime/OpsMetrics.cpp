@@ -205,6 +205,14 @@ std::string OpsMetrics::PrometheusText() const {
     gauge("gamemesh_aoi_batch_oldest_age_ms",
           "Age of the oldest AOI batch when the worker last took the queue. Milliseconds.",
           aoi_batch_oldest_age_ms_.load(std::memory_order_relaxed));
+    if (aoi_worker_threads_.load(std::memory_order_relaxed) >= 0) {
+        gauge("gamemesh_aoi_worker_threads", "AOI publish lane threads in this process.",
+              aoi_worker_threads_.load(std::memory_order_relaxed));
+    }
+    if (brpc_worker_threads_.load(std::memory_order_relaxed) >= 0) {
+        gauge("gamemesh_brpc_worker_threads", "bthread workers after brpc Server::Start.",
+              brpc_worker_threads_.load(std::memory_order_relaxed));
+    }
     ctr("gamemesh_aoi_move_shed_total",
         "AOI MOVE events dropped because the publish queue exceeded its cap. Cumulative events.",
         aoi_move_shed_.load(std::memory_order_relaxed));
@@ -302,18 +310,25 @@ std::string OpsMetrics::PrometheusText() const {
     ctr("gamemesh_aoi_move_overwritten_total",
         "Queued AOI MOVE frames replaced by a newer frame before write.",
         ServerStats::aoi_move_overwritten.load(std::memory_order_relaxed));
-    os << "# HELP gamemesh_aoi_move_pending_oldest_ms Peak milliseconds one entity's latest position waited in the coalesce slot since process start.\n"
+    os << "# HELP gamemesh_aoi_move_pending_oldest_ms Milliseconds the oldest entity position has been waiting in the coalesce slot. Zero when nothing is waiting.\n"
           "# TYPE gamemesh_aoi_move_pending_oldest_ms gauge\n"
           "gamemesh_aoi_move_pending_oldest_ms "
        << ServerStats::aoi_move_pending_oldest_ms.load(std::memory_order_relaxed) << "\n";
-    os << "# HELP gamemesh_aoi_move_entity_max_silence_ms Peak milliseconds between two MOVE writes of the same entity to one watcher since process start.\n"
+    os << "# HELP gamemesh_aoi_move_entity_max_silence_ms Current wait of the oldest entity position that has not been written yet. Zero when nothing is waiting.\n"
           "# TYPE gamemesh_aoi_move_entity_max_silence_ms gauge\n"
           "gamemesh_aoi_move_entity_max_silence_ms "
        << ServerStats::aoi_move_entity_max_silence_ms.load(std::memory_order_relaxed) << "\n";
-    os << "# HELP gamemesh_latest_move_hold_ms Peak milliseconds a latest MOVE frame stayed in the app buffer while the kernel send queue was busy, since process start.\n"
+    os << "# HELP gamemesh_latest_move_hold_ms Milliseconds the oldest latest-MOVE frame has been parked in the app buffer. Zero when none is parked.\n"
           "# TYPE gamemesh_latest_move_hold_ms gauge\n"
           "gamemesh_latest_move_hold_ms "
        << ServerStats::latest_move_hold_ms.load(std::memory_order_relaxed) << "\n";
+    ctr("gamemesh_tcp_eagain_total", "TCP writes that returned EAGAIN or EWOULDBLOCK.",
+        ServerStats::tcp_eagain.load(std::memory_order_relaxed));
+    ctr("gamemesh_tcp_write_error_total", "TCP writes that failed and closed the connection.",
+        ServerStats::tcp_write_error.load(std::memory_order_relaxed));
+    gauge("gamemesh_tcp_conn_sendq_max_bytes",
+          "Largest single-connection kernel send queue observed since process start.",
+          static_cast<int64_t>(ServerStats::tcp_conn_sendq_max.load(std::memory_order_relaxed)));
     ctr("gamemesh_login_stage_reject_auth_total", "Auth stage admission rejects.",
         ServerStats::login_stage_reject_auth.load(std::memory_order_relaxed));
     ctr("gamemesh_session_grace_expire_total", "Disconnected sessions past grace.",

@@ -87,17 +87,21 @@ public:
      * 心跳和 RPC 回包。
      * Closed：连接没了。Blocked：这次没写进缓冲，连接还在。
      * WrittenDirect：整帧已经离开应用缓冲。
-     * Buffered：整帧或部分字节还在应用缓冲里，下一条回包必须等它离开。
+     * Buffered：整帧或部分字节还在应用缓冲里，但已经按序进入发送流。
+     * 下一条回包直接接在已有控制帧后面，不等这一帧离开缓冲。
      */
     enum ControlSendResult { Closed = -1, Blocked = 0, WrittenDirect = 1, Buffered = 2 };
     ControlSendResult TrySendControl(const std::string &msg, bool over_cap = false);
     ControlSendResult TrySendControl(const char *msg, int len, bool over_cap = false);
-    /** 上一条 RPC 回包还有字节留在应用缓冲里。 */
+    /** 应用缓冲里还有还没写进内核的控制字节。不阻止下一条控制回包进入发送流。 */
     bool ControlReplyBuffered() const { return control_hold_end_ > 0; }
+    size_t control_run() const;
+    size_t control_hold_end() const;
     /**
      * 每个连接最多挂一帧最新移动。调用方先丢掉缓冲里的旧移动帧。
-     * 内核里还没送出的字节超过 1KB 时，这一帧只留在应用缓冲末尾，不写进内核，
-     * 避免回包排在旧坐标后面。下一轮会先丢掉这一帧再换成更新的位置。
+     * 内核里还没送出的字节超过 1KB 时，这一帧先留在应用缓冲末尾，不立刻 write，
+     * 避免回包排在旧坐标后面。200ms 后若在途不超过 64KB，定时器把这一帧写进内核。
+     * 超过 64KB 仍继续停放。下一轮会先丢掉这一帧再换成更新的位置。
      * 非移动数据已经超过 64KB 时返回 false，调用方 200ms 后再试。不关连接。
      */
     bool TrySendLatestMove(const std::string &msg);
@@ -140,12 +144,18 @@ private:
     bool in_close_;
     /** send_buf_ 开头有多少字节属于已经部分写进内核的那一帧。 */
     size_t send_partial_prefix_ = 0;
+    /** 半帧前缀本身是控制回包的剩余字节。这段不能再算进 control_run_。 */
+    bool partial_is_control_ = false;
     /**
-     * 紧接在半帧前缀后面的 RPC 回包字节。新的回包接在这段后面，
+     * 紧接在半帧前缀后面的完整 RPC 回包字节。新的回包接在这段后面，
      * 不能插到更早的回包前面，也不能排到这段后面的 MOVE 后面。
+     * 半帧前缀里的字节不在这里重复计算。
      */
     size_t control_run_ = 0;
-    /** 从缓冲开头数，还要写出这么多字节，上一条 RPC 回包才算离开应用缓冲。 */
+    /**
+     * 从缓冲开头数，控制字节的结束位置。等于半帧前缀（若它是控制帧）加上 control_run_，
+     * 两段不重叠。控制帧写出后立刻变成 0，不依赖后面的 MOVE 写出。
+     */
     size_t control_hold_end_ = 0;
     /**
      * 应用缓冲末尾有一帧最新移动。内核未发送字节还多时先不写它。
@@ -171,6 +181,8 @@ private:
     void FlushSendBufBestEffort();
     void CloseForBackpressure(const char *reason);
     void ConsumeSendPrefix(int n);
+    /** 用互不重叠的半帧前缀和 control_run_ 重算控制字节结束位置。 */
+    void RefreshControlHoldEnd();
     /** write 跨过帧边界时，把缓冲开头仍未写完的那一帧记成半帧前缀。 */
     void NoteWriteConsumed(const char *data, size_t data_len, size_t written);
     /** 内核里还没交给网卡的字节。拿不到时返回 0，不用未确认字节充数。 */
