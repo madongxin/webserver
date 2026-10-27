@@ -399,6 +399,59 @@ void TestPartialControlDoesNotBlockLaterReplies() {
     ::close(lfd);
 }
 
+void TestParkedMoveStaysUntilWritable() {
+    int lfd = ::socket(AF_INET, SOCK_STREAM, 0);
+    Expect(lfd >= 0, "tcp listen sticky");
+    int yes = 1;
+    ::setsockopt(lfd, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(yes));
+    sockaddr_in addr{};
+    addr.sin_family = AF_INET;
+    addr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+    addr.sin_port = 0;
+    Expect(::bind(lfd, reinterpret_cast<sockaddr *>(&addr), sizeof(addr)) == 0, "bind sticky");
+    Expect(::listen(lfd, 1) == 0, "listen sticky");
+    socklen_t alen = sizeof(addr);
+    Expect(::getsockname(lfd, reinterpret_cast<sockaddr *>(&addr), &alen) == 0, "getsockname sticky");
+
+    int cfd = ::socket(AF_INET, SOCK_STREAM, 0);
+    Expect(cfd >= 0, "tcp client sticky");
+    Expect(::connect(cfd, reinterpret_cast<sockaddr *>(&addr), sizeof(addr)) == 0, "connect sticky");
+    int afd = ::accept(lfd, nullptr, nullptr);
+    Expect(afd >= 0, "accept sticky");
+    int flags = ::fcntl(cfd, F_GETFL, 0);
+    ::fcntl(cfd, F_SETFL, flags | O_NONBLOCK);
+    flags = ::fcntl(afd, F_GETFL, 0);
+    ::fcntl(afd, F_SETFL, flags | O_NONBLOCK);
+
+    std::string block(4096, 'B');
+    while (true) {
+        const ssize_t n = ::write(cfd, block.data(), block.size());
+        if (n > 0)
+            continue;
+        break;
+    }
+
+    EventLoop loop;
+    auto conn = std::make_shared<TcpConnection>(&loop, cfd, 31);
+    conn->set_close_callback([](const std::shared_ptr<TcpConnection> &) {});
+    conn->set_message_callback([](const std::shared_ptr<TcpConnection> &) {});
+    conn->ConnectionEstablished();
+    const std::string frame(64, 'M');
+    Expect(conn->TrySendLatestMove(frame), "sticky move parked");
+    Expect(conn->holding_latest_move(), "sticky move starts held");
+    loop.RunAfter(0.3, [&loop]() { loop.Quit(); });
+    loop.Loop();
+    Expect(conn->holding_latest_move(), "full kernel keeps the move parked");
+    Expect(!conn->latest_move_awaiting_write(), "full kernel does not push the move into the write path");
+    Expect(conn->send_buf()->readablebytes() == static_cast<int>(frame.size()),
+           "parked frame stays in the app buffer");
+
+    conn->HandleClose();
+    conn->ConnectionDestructor();
+    ::close(afd);
+    ::close(lfd);
+}
+
 }  // namespace
 
 int main() {
@@ -409,6 +462,7 @@ int main() {
     TestLatestMoveSendsWhenIdle();
     TestLatestMoveHeldWhileKernelBusy();
     TestParkedMoveRetriesAfterKernelDrains();
+    TestParkedMoveStaysUntilWritable();
     TestPartialControlDoesNotBlockLaterReplies();
     if (g_fail) {
         std::cerr << "reactor_integration_test failures=" << g_fail << "\n";

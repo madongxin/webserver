@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>GameMesh 监控</title>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <script async src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
   <style>
     :root {
       --bg: #f4f6f8;
@@ -198,6 +198,83 @@
       <div class="status-pill na" data-mod="lines"><div class="name">分线（LINE）</div><div class="value">—</div></div>
       <div class="status-pill na" data-mod="dungeons"><div class="name">副本（DUNGEON）</div><div class="value">—</div></div>
     </div>
+    <script>
+      (function () {
+        var base = location.pathname.indexOf('/gamemesh/') === 0 ? '/gamemesh' : '';
+        function paint(mod, text, ok) {
+          var node = document.querySelector('.status-pill[data-mod="' + mod + '"]');
+          if (!node) return;
+          node.className = 'status-pill ' + (ok ? 'ok' : 'err');
+          var value = node.querySelector('.value');
+          if (value) value.textContent = text;
+        }
+        function fillTable(cluster) {
+          var tbody = document.querySelector('#clusterTable tbody');
+          if (!tbody || !cluster || !cluster.processes) return;
+          var frag = document.createDocumentFragment();
+          cluster.processes.forEach(function (p) {
+            var tr = document.createElement('tr');
+            [p.role || '', p.instance_id || '', p.pid || '', p.comm || '',
+             p.alive ? '是' : '否', '—', p.live ? '是' : '否', p.ready ? '是' : '否',
+             '—', '—', '—', '—', '—', p.http_port || '—', '—', p.game_port || '—',
+             p.ready ? '正常' : '未就绪'].forEach(function (v) {
+              var td = document.createElement('td');
+              td.textContent = v;
+              tr.appendChild(td);
+            });
+            frag.appendChild(tr);
+          });
+          tbody.innerHTML = '';
+          tbody.appendChild(frag);
+        }
+        function tick() {
+          var stamp = document.getElementById('lastUpdate');
+          var ctrl = new AbortController();
+          var timer = setTimeout(function () { ctrl.abort(); }, 2500);
+          fetch(base + '/api/cluster', { cache: 'no-store', signal: ctrl.signal }).then(function (r) {
+            if (!r.ok) throw new Error('http');
+            return r.json();
+          }).then(function (cluster) {
+            clearTimeout(timer);
+            if (!cluster || !cluster.processes) {
+              paint('cluster', '集群状态失败', false);
+              return;
+            }
+            var n = cluster.process_n || 0;
+            var exp = cluster.expected_n || 9;
+            paint('cluster', cluster.alive_n + '/' + n + ' 在跑（期望 ' + exp + '）',
+              !!cluster.all_alive && n >= exp);
+            paint('live', cluster.live_n + '/' + n + ' 存活', cluster.live_n === n && n > 0);
+            paint('ready', cluster.ready_n + '/' + n + ' 就绪', cluster.ready_n === n && n > 0);
+            fillTable(cluster);
+            return fetch(base + '/api/monitor/live', { cache: 'no-store' }).then(function (r) {
+              if (!r.ok) throw new Error('live');
+              return r.json();
+            }).then(function (live) {
+              paint('players', live.online == null ? '—' : String(Math.round(live.online)), live.online > 0);
+              if (!stamp) return;
+              stamp.textContent = '更新于 ' + new Date().toLocaleTimeString() +
+                '  在线 ' + Math.round(live.online || 0) +
+                '  停放 ' + Math.round(live.hold_ms || 0) + ' ms  静默 ' +
+                Math.round(live.silence_ms || 0) + ' ms  Move p99 ' +
+                Math.round(live.move_p99_ms || 0);
+            });
+          }).catch(function () {
+            clearTimeout(timer);
+            paint('cluster', '集群状态超时', false);
+            if (stamp) stamp.textContent = '集群状态超时 ' + new Date().toLocaleTimeString();
+          });
+        }
+        function start() {
+          tick();
+          setInterval(tick, 5000);
+        }
+        if (document.readyState === 'loading')
+          document.addEventListener('DOMContentLoaded', start);
+        else
+          start();
+      })();
+    </script>
 
     <section class="module" id="diagModule">
       <h2>压测诊断</h2>
@@ -343,12 +420,16 @@
     }
 
     async function fetchJson(url) {
+      const ctrl = new AbortController();
+      const timer = setTimeout(function () { ctrl.abort(); }, 2500);
       try {
-        const r = await fetch(url);
+        const r = await fetch(url, { signal: ctrl.signal });
         if (!r.ok) return null;
         return await r.json();
       } catch {
         return null;
+      } finally {
+        clearTimeout(timer);
       }
     }
 
@@ -418,7 +499,7 @@
 
     async function fetchProm(url) {
       const ctrl = new AbortController();
-      const timer = setTimeout(function () { ctrl.abort(); }, 8000);
+      const timer = setTimeout(function () { ctrl.abort(); }, 2500);
       try {
         const r = await fetch(url, { signal: ctrl.signal });
         if (!r.ok) throw new Error('Prometheus 代理 ' + r.status);
@@ -492,6 +573,10 @@
     function upsertChart(canvasId, chartData, beginZero) {
       const canvas = document.getElementById(canvasId);
       if (!canvas) return;
+      if (typeof Chart === 'undefined') {
+        setChartMessage(canvasId, '图表库还在加载');
+        return;
+      }
       const yScale = {
         beginAtZero: !!beginZero,
         ticks: { font: { size: 10 }, precision: beginZero ? 0 : undefined },
@@ -844,7 +929,7 @@
 
     async function refreshDiagCards() {
       ensureDiagCards();
-      await mapPool(DIAG_CARDS, 4, async function (card) {
+      await mapPool(DIAG_CARDS, 1, async function (card) {
         try {
           let value = null;
           if (card.gaps) value = await gapMax(card.gaps);
@@ -885,6 +970,7 @@
       { group: 'aoi_counters', type: 'counter', query: '{__name__=~"gamemesh_(aoi_move_shed_total|pushbatch_total|pushbatch_slow_total|aoi_move_events_total|aoi_move_rate_limited_total|aoi_move_capped_total|aoi_move_buffer_hold_total|aoi_move_budget_defer_total|aoi_move_overwritten_total)",job="JOB"}' },
       { group: 'tcp', type: 'gauge', query: '{__name__=~"process_socket_send_queue_bytes|gamemesh_send_pending_max_bytes|gamemesh_move_pending_entities|gamemesh_tcp_conn_sendq_max_bytes",job="JOB"}' },
       { group: 'tcp_counters', type: 'counter', query: '{__name__=~"gamemesh_(move_offer_total|move_flush_total|move_hold_total|move_drop_total|tcp_eagain_total|tcp_write_error_total)|gamemesh_host_tcp_retrans_segs_total",job="JOB"}' },
+      { group: 'bandwidth', type: 'counter', query: '{__name__=~"gamemesh_(aoi_skip_retrans_total|aoi_skip_unsent_total|aoi_write_room_total|aoi_write_starved_total|gateway_tx_bytes_total|host_tcp_retrans_segs_total)",job="JOB"}' },
       { group: 'cpu', type: 'counter', query: 'process_cpu_seconds_total{job="JOB"}' },
       { group: 'rss', type: 'gauge', query: 'process_resident_memory_bytes{job="JOB"}' },
       { group: 'threads', type: 'gauge', query: 'process_threads{job="JOB"}' },
@@ -1214,7 +1300,7 @@
           'max by (owner, map_template_id, map_instance_id) (gamemesh_map_dungeon_members{' + js + '})',
         ];
         const snapRows = new Array(snapQueries.length);
-        await mapPool(snapQueries, 4, async function (q, i) {
+        await mapPool(snapQueries, 1, async function (q, i) {
           snapRows[i] = await queryInstant(q);
         });
         const up = snapRows[0], cpu = snapRows[1], rss = snapRows[2], fds = snapRows[3];
@@ -1335,13 +1421,8 @@
     }
 
     async function refreshStatus() {
-      const [cluster, snap] = await Promise.all([
-        fetchJson(apiUrl('/api/cluster')),
-        loadPromSnapshots(),
-      ]);
+      const cluster = await fetchJson(apiUrl('/api/cluster'));
       const tbody = document.querySelector('#clusterTable tbody');
-      if (tbody)
-        tbody.innerHTML = '';
       if (!cluster || !cluster.processes) {
         setStatus('cluster', '无清单', false);
         setStatus('live', '—', null);
@@ -1354,6 +1435,7 @@
         !!cluster.all_alive && n >= exp);
       setStatus('live', cluster.live_n + '/' + n + ' 存活', cluster.live_n === n && n > 0);
       setStatus('ready', cluster.ready_n + '/' + n + ' 就绪', cluster.ready_n === n && n > 0);
+      const snap = await loadPromSnapshots();
       const mark = (ok) => ok ? '是' : '否';
       const reason = (p) => {
         if (!p.alive) return '进程不在（pid 已退出）';
@@ -1368,6 +1450,8 @@
         const inst = '127.0.0.1:' + p.http_port;
         return map[inst];
       };
+      if (tbody)
+        tbody.innerHTML = '';
       (cluster.processes || []).forEach(p => {
         const tr = document.createElement('tr');
         const upv = lookup(snap.up, p);
@@ -1448,11 +1532,28 @@
     function scheduleAutoRefresh() {
       if (timer) clearInterval(timer);
       if (chartTimer) clearInterval(chartTimer);
+      timer = null;
+      chartTimer = null;
       const sec = parseInt(document.getElementById('refresh').value, 10);
-      if (sec > 0) {
-        timer = setInterval(refreshLive, sec * 1000);
-        chartTimer = setInterval(refreshCharts, Math.max(sec, 30) * 1000);
+      if (sec > 0)
+        timer = setInterval(refreshDiagCards, sec * 1000);
+    }
+
+    function showChartsWhenReady() {
+      if (typeof Chart !== 'undefined') {
+        refreshCharts();
+        return;
       }
+      var tries = 0;
+      var wait = setInterval(function () {
+        tries++;
+        if (typeof Chart !== 'undefined') {
+          clearInterval(wait);
+          refreshCharts();
+        } else if (tries > 40) {
+          clearInterval(wait);
+        }
+      }, 250);
     }
 
     document.getElementById('btnRefresh').addEventListener('click', refreshAll);
@@ -1463,7 +1564,9 @@
     document.getElementById('refresh').addEventListener('change', scheduleAutoRefresh);
 
     applyParamsFromUrl();
-    refreshAll();
+    ensureDiagCards();
+    refreshDiagCards();
+    showChartsWhenReady();
     scheduleAutoRefresh();
   </script>
 </body>

@@ -577,6 +577,27 @@ local function load_inst(id)
   }
 end
 
+-- 按本次请求的硬顶收人。旧线上记下的 400 或更小的值都改成这次的硬顶，避免卡在 100 进不满。
+local function cap_of(L, hint)
+  if L and hint == hard then
+    local key = prefix .. 'map:inst:' .. tostring(L[1])
+    if tonumber(L[13]) ~= hard then
+      redis.call('HSET', key, 'hardCap', tostring(hard))
+      L[13] = hard
+    end
+    if soft > 0 and tonumber(L[12]) ~= soft then
+      redis.call('HSET', key, 'softCap', tostring(soft))
+      L[12] = soft
+    end
+    return hard
+  end
+  local stored = L and tonumber(L[13]) or hint
+  if not stored or stored < 1 then stored = hint end
+  local cap = hint
+  if stored < cap then cap = stored end
+  return cap
+end
+
 -- 新线/回收：选占用最少的健康 Logic，避免 instance_id 取模把 1/3 线都堆到 gl-0。
 local function pick_new_owner()
   local healthy = {}
@@ -719,6 +740,7 @@ end
 local function try_join(id, cap)
   local L = ensure_ready(load_inst(id))
   if not L then return nil, 'NOT_READY' end
+  cap = cap_of(L, cap)
   local ok = occ_key(id)
   if redis.call('SISMEMBER', ok, player) == 1 then
     touch_line(L)
@@ -849,7 +871,8 @@ for _, id in ipairs(members) do
     if n < soft then
       cand[#cand + 1] = {id, n, ln}
     end
-    if n < hard then
+    local ceiling = cap_of(L, hard)
+    if n < ceiling then
       if under_hard_id == nil or n < under_hard_n or (n == under_hard_n and ln < under_hard_line) then
         under_hard_id, under_hard_n, under_hard_line = id, n, ln
       end
@@ -1031,6 +1054,26 @@ local function load_inst(id)
   }
 end
 
+local function cap_of(L, hint)
+  if L and hint == hard then
+    local key = prefix .. 'map:inst:' .. tostring(L[1])
+    if tonumber(L[13]) ~= hard then
+      redis.call('HSET', key, 'hardCap', tostring(hard))
+      L[13] = hard
+    end
+    if soft > 0 and tonumber(L[12]) ~= soft then
+      redis.call('HSET', key, 'softCap', tostring(soft))
+      L[12] = soft
+    end
+    return hard
+  end
+  local stored = L and tonumber(L[13]) or hint
+  if not stored or stored < 1 then stored = hint end
+  local cap = hint
+  if stored < cap then cap = stored end
+  return cap
+end
+
 local function owner_alive(oid)
   if oid == nil or oid == '' then return false end
   for token in string.gmatch(healthy_csv, '[^,]+') do
@@ -1175,7 +1218,7 @@ end
 local ok = occ_key(target)
 if redis.call('SISMEMBER', ok, player) == 0 then
   local n = tonumber(redis.call('SCARD', ok)) or 0
-  if n >= hard then return {'0', 'ERR_MAP_LINE_FULL', 'map line full'} end
+  if n >= cap_of(L, hard) then return {'0', 'ERR_MAP_LINE_FULL', 'map line full'} end
   redis.call('SADD', ok, player)
   redis.call('EXPIRE', ok, 86400)
   redis.call('ZREM', prefix .. 'map:idle', tostring(target))
@@ -1293,6 +1336,7 @@ const char kLuaListLines[] = R"LUA(
 local lines_key = KEYS[1]
 local prefix = ARGV[1]
 local now = tonumber(ARGV[2]) or 0
+local hard = tonumber(ARGV[3]) or 0
 local ids = redis.call('ZRANGE', lines_key, 0, -1)
 local out = {}
 for _, id in ipairs(ids) do
@@ -1301,6 +1345,11 @@ for _, id in ipairs(ids) do
   if #raw > 0 then
     local f = {}
     for i = 1, #raw, 2 do f[raw[i]] = raw[i + 1] end
+    local stored = tonumber(f['hardCap'] or '0') or 0
+    if hard > 0 and stored > hard then
+      redis.call('HSET', key, 'hardCap', tostring(hard))
+      f['hardCap'] = tostring(hard)
+    end
     local occ = tonumber(redis.call('SCARD', prefix .. 'map:occ:' .. tostring(id))) or 0
     out[#out + 1] = tostring(id)
     out[#out + 1] = f['lineNo'] or '0'

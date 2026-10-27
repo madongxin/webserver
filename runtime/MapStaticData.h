@@ -3,6 +3,7 @@
 #include <cstdint>
 #include <memory>
 #include <string>
+#include <utility>
 #include <vector>
 
 /** MapStaticData V1：Unity X/Z 水平面，Y 为高度。walkable_rle = [value, count, ...] */
@@ -59,6 +60,19 @@ public:
     /** 在 (cx,cz) 半径内找可行走落点；失败则回退原点（若可行走）。 */
     bool FindScatteredSpawn(float cx, float cy, float cz, float radius, uint64_t seed, float *ox,
                             float *oy, float *oz) const;
+    /**
+     * 以 (cx,cz) 所在格子为中心，切比雪夫距离不超过 cells 格的可走格里，
+     * 用 player_id 稳定选一个格心。Y 原样返回。
+     */
+    bool FindNearbySpawn(uint64_t player_id, float cx, float cy, float cz, int cells, float *ox,
+                         float *oy, float *oz) const;
+    /**
+     * 用 player_id 把落点铺到整张可走图上。大约 200 米一格，再取该格里离格心最近的可走格中心。
+     * occupied 是本实例已有人的 XZ。不足 min_sep 米就按固定顺序试下一格。Y 原样返回。
+     */
+    bool FindSpreadSpawn(uint64_t player_id, float y,
+                         const std::vector<std::pair<float, float>> &occupied, float min_sep,
+                         float *ox, float *oy, float *oz) const;
 
     /** 副本复用同一份网格 JSON，仅改模板 ID（load 时一次性拷贝）。 */
     std::shared_ptr<const MapStaticData> CloneWithTemplateId(uint64_t map_template_id) const;

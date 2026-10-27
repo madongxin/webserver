@@ -2207,13 +2207,20 @@ bool GameLogic::HandleEnterMap(const game::EnterMapReq &req, game::GameResponse 
         }
         MapScenePolicy pol;
         const bool have_pol = MapCatalog::Instance().GetScenePolicy(place.map_template_id, &pol);
-        // 1002 先落到模板出生点，再按 spawn_scatter_radius 打散，避免全员叠同一坐标。
-        // 已经有可走的安全点时不再拉回模板出生点。全量快照会整表替换，旧出生点会把人拽回去。
+        // 1002 没有可走安全点时，Y 用模板出生高度，XZ 落在出生点周围 250 格内。
+        // 250 格 × 8 米，大约 2 公里。已经有可走的安全点时不再拉回模板出生点。
         if (place.map_template_id == 1002 && recovery != "REENTER_FROM_SAFE_POS") {
             ApplyTemplateSpawn(place.map_template_id, &sx, &sy, &sz);
             recovery = "SPAWN_FALLBACK";
         }
-        if (recovery == "SPAWN_FALLBACK" && have_pol && pol.spawn_scatter_radius > 0.f) {
+        if (recovery == "SPAWN_FALLBACK" && place.map_template_id == 1002) {
+            float nx = sx, ny = sy, nz = sz;
+            if (static_data->FindNearbySpawn(req.player_id(), sx, sy, sz, 250, &nx, &ny, &nz)) {
+                sx = nx;
+                sy = ny;
+                sz = nz;
+            }
+        } else if (recovery == "SPAWN_FALLBACK" && have_pol && pol.spawn_scatter_radius > 0.f) {
             float nx = sx, ny = sy, nz = sz;
             if (static_data->FindScatteredSpawn(sx, sy, sz, pol.spawn_scatter_radius,
                                                 req.player_id(), &nx, &ny, &nz)) {

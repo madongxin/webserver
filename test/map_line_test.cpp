@@ -341,6 +341,34 @@ int main() {
             return Fail("line 3 must follow lighter logic");
     }
 
+    // 9. 已存 hard_cap 高于本次请求时收紧，满新硬顶拒绝，旧值不会把线重新放大。
+    {
+        const uint64_t tpl9 = tpl + 9;
+        ResolveOrCreateResult a, b, c, denied;
+        auto join = [&](uint64_t player, uint32_t line_no, uint32_t hard,
+                        ResolveOrCreateResult *out) {
+            auto in = LineIn(tpl9, player, line_no);
+            in.soft_cap = 2;
+            in.hard_cap = hard;
+            return PlacementStore::Instance().ResolveOrCreate(in, out);
+        };
+        if (!join(99111, 0, 4, &a) || !a.ok || a.placement.line_no != 1 ||
+            a.placement.hard_cap != 4)
+            return Fail("cap seed");
+        if (!join(99112, 1, 4, &b) || !b.ok)
+            return Fail("cap p2");
+        if (!join(99113, 1, 4, &c) || !c.ok)
+            return Fail("cap p3");
+        if (join(99114, 1, 3, &denied) && denied.ok)
+            return Fail("lowered hard must reject the next player");
+        if (denied.error_code != "ERR_MAP_LINE_FULL")
+            return Fail("lowered hard code");
+        std::vector<MapLineInfo> lines;
+        if (!PlacementStore::Instance().ListLines(1, tpl9, &lines) || lines.size() != 1 ||
+            lines[0].hard_cap != 3)
+            return Fail("list hard stays lowered");
+    }
+
     std::printf("OK map_line_test specified/auto/concurrent/legacy/lease-reuse/owner-balance\n");
     std::printf("PASS map_line_test\n");
     return 0;

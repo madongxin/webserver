@@ -4,10 +4,12 @@
 #include "common.h"
 #include "EventLoop.h"
 #include "HttpContext.h"
+#include "PacketTiming.h"
 #include "ServerStats.h"
 #include "TimeStamp.h"
 #include "Logging.h"
 #include <algorithm>
+#include <chrono>
 #include <memory>
 #include <unistd.h>
 #include <cassert>
@@ -27,9 +29,25 @@
 // 内核里还没交给网卡的字节超过这个值时，最新移动帧先留在应用缓冲，不立刻 write。
 // 再写进去的话，移动回包会排在这批旧坐标后面。只统计还没离开本机的字节。
 constexpr int kLatestMoveKernelBudget = 1024;
-// 1KB 低于一条忙连接的正常在途量。只按它放行，最新位置会停在应用缓冲里几分钟。
-// 200ms 定时器在这个范围内把已经停放的那一帧写进内核。超过它仍继续停放。
-constexpr int kLatestMoveReleaseBudget = 64 * 1024;
+// 在途低于这个值就写出最新位置。1KB 低于一个报文，忙连接永远过不了那道门。
+constexpr int kLatestMoveReleaseUnsent = 16 * 1024;
+constexpr int64_t kLatestMoveStarveMs = 1000;
+
+int64_t HoldNowMs() {
+    return std::chrono::duration_cast<std::chrono::milliseconds>(
+               std::chrono::steady_clock::now().time_since_epoch())
+        .count();
+}
+bool TcpRetransmitting(int fd) {
+    if (fd < 0)
+        return false;
+    tcp_info info;
+    std::memset(&info, 0, sizeof(info));
+    socklen_t len = sizeof(info);
+    if (::getsockopt(fd, IPPROTO_TCP, TCP_INFO, &info, &len) != 0)
+        return false;
+    return info.tcpi_retransmits > 0 || info.tcpi_lost > 0;
+}
 
 TcpConnection::TcpConnection(EventLoop *loop, int connfd, uint64_t connid)
     : connfd_(connfd),
@@ -73,6 +91,19 @@ void TcpConnection::ConnectionEstablished() {
     state_ = ConnectionState::Connected;
     int nodelay = 1;
     ::setsockopt(connfd_, IPPROTO_TCP, TCP_NODELAY, &nodelay, sizeof(nodelay));
+    // 每个连接最多积 16KB 还没交给网卡的数据。默认发送缓冲能涨到数 MB，
+    // 305 条连接一起重传时会把出网打满，Cursor 的远程连接一起被挤掉。
+#ifndef TCP_NOTSENT_LOWAT
+#define TCP_NOTSENT_LOWAT 25
+#endif
+    int lowat = 16 * 1024;
+    ::setsockopt(connfd_, IPPROTO_TCP, TCP_NOTSENT_LOWAT, &lowat, sizeof(lowat));
+    int snd = 0;
+    socklen_t snd_len = sizeof(snd);
+    if (::getsockopt(connfd_, SOL_SOCKET, SO_SNDBUF, &snd, &snd_len) == 0 && snd > 64 * 1024) {
+        int cap = 32 * 1024;
+        ::setsockopt(connfd_, SOL_SOCKET, SO_SNDBUF, &cap, sizeof(cap));
+    }
     channel_->Tie(shared_from_this());
     // 先跑 on_connect_（限流/摘流可能立刻 HandleClose）。未通过时不要
     // EnableRead：限流洪泛下 Channel 进 epoll 再关，会 SIGSEGV。
@@ -385,11 +416,13 @@ bool TcpConnection::TrySendLatestMove(const std::string &msg) {
         return false;
     // 调用方已经清掉缓冲里的旧移动帧。内核里还有没送出的字节时，不要再 write：
     // 回包插不到已经进内核的字节前面，客户端会一直读旧坐标，步子越来越慢直到停下。
-    // 这一帧留在缓冲末尾，下一轮先丢掉再换成更新的位置，所以不会一帧帧叠上去。
+    // 这一帧留在缓冲末尾。连接还在重传时可以换成更新的位置；交给写路径之后不能再删。
     if (UnsentBytes() > kLatestMoveKernelBudget) {
         send_buf_->Append(msg);
         send_move_hold_off_ = static_cast<size_t>(queued);
         send_hold_move_ = true;
+        if (send_hold_since_ms_ == 0)
+            send_hold_since_ms_ = HoldNowMs();
         // 移动帧前面若还有回包，注册写事件把回包送走；只剩移动帧时不注册，避免空转。
         ArmWriteIfNeeded();
         ArmParkedMoveRetry();
@@ -397,6 +430,7 @@ bool TcpConnection::TrySendLatestMove(const std::string &msg) {
     }
     send_hold_move_ = false;
     send_move_hold_off_ = 0;
+    send_hold_since_ms_ = 0;
     return SendInternal(msg.data(), static_cast<int>(msg.size()), true, false, false, true);
 }
 
@@ -408,6 +442,7 @@ bool TcpConnection::SendInternal(const char *msg, int len, bool soft_drop, bool 
     // 心跳和请求回包插到已经排好的 MOVE 前面，但要排在更早的回包后面。
     // 已经写进内核的字节挪不走。应用缓冲开头若是半帧，必须先把这半帧写完。
     // 缓冲里的非移动数据超过上限时，这一帧先不写进缓冲，由调用方排队，不能静默丢掉。
+    // 已经交给写路径的移动帧留在末尾。回包始终插在它前面，不能因为这帧还没进内核就把回包拒到队列里。
     const int control_cap = control_over_cap ? (256 * 1024) : (64 * 1024);
     if (control && send_buf_ && send_buf_->readablebytes() > control_cap)
         return false;
@@ -426,7 +461,7 @@ bool TcpConnection::SendInternal(const char *msg, int len, bool soft_drop, bool 
         send_buf_->RetrieveAll();
         send_buf_->Append(next);
         control_run_ += static_cast<size_t>(len);
-        if (send_hold_move_ && send_move_hold_off_ >= insert_at)
+        if ((send_hold_move_ || send_move_sticky_) && send_move_hold_off_ >= insert_at)
             send_move_hold_off_ += static_cast<size_t>(len);
         WriteNonBlocking();
         ArmWriteIfNeeded();
@@ -606,9 +641,10 @@ void TcpConnection::WriteNonBlocking() {
             send_buf_->Retrieve(static_cast<int>(send_size));
             RefreshControlHoldEnd();
             // 控制字节离开应用缓冲就结束等待，不等后面的 MOVE 写出。
+            // 已经提交的移动帧除外：同一轮把这帧也写出去，不能等下一轮回包再插到它前面。
             if (old_hold > 0 && control_hold_end_ == 0)
                 control_released = true;
-            if (control_released && send_buf_->readablebytes() > 0)
+            if (control_released && send_buf_->readablebytes() > 0 && !send_move_sticky_)
                 break;
             if (hold_limit)
                 break;
@@ -645,6 +681,8 @@ void TcpConnection::WriteNonBlocking() {
     if (send_buf_->readablebytes() == 0) {
         send_hold_move_ = false;
         send_move_hold_off_ = 0;
+        send_move_sticky_ = false;
+        send_hold_since_ms_ = 0;
         send_partial_prefix_ = 0;
         partial_is_control_ = false;
         control_run_ = 0;
@@ -682,13 +720,35 @@ void TcpConnection::OnParkedMoveTimer() {
     move_retry_armed_ = false;
     if (state_ != ConnectionState::Connected || in_close_ || !send_buf_ || !send_hold_move_)
         return;
-    if (UnsentBytes() <= kLatestMoveReleaseBudget) {
-        send_hold_move_ = false;
-        WriteNonBlocking();
-        ArmWriteIfNeeded();
-    }
-    if (send_hold_move_)
+    const int unsent = UnsentBytes();
+    const int64_t age = send_hold_since_ms_ > 0 ? HoldNowMs() - send_hold_since_ms_ : 0;
+    // 这条连接正在重传时不再追加位置。继续写只会制造更多重传，把同一条出网路上的 Cursor 挤掉。
+    // 回包不走这里，仍然可以发出。重传结束后再补最新位置。
+    if (TcpRetransmitting(connfd_)) {
+        NoteAoiSkipRetrans();
         ArmParkedMoveRetry();
+        return;
+    }
+    // 在途还高、并且停放不到 1 秒：继续把这一帧留在回包后面。
+    // 停放已经超过 1 秒，或者在途降到 16KB 以内，就写出这一帧。只留一帧，写不完也不删。
+    if (unsent > kLatestMoveReleaseUnsent && age < kLatestMoveStarveMs) {
+        NoteAoiSkipUnsent();
+        ArmParkedMoveRetry();
+        return;
+    }
+    if (age >= kLatestMoveStarveMs)
+        NoteAoiWriteStarved();
+    else
+        NoteAoiWriteRoom();
+    send_hold_move_ = false;
+    send_hold_since_ms_ = 0;
+    WriteNonBlocking();
+    if (state_ == ConnectionState::Connected && !in_close_ && send_buf_ &&
+        send_buf_->readablebytes() > 0)
+        send_move_sticky_ = true;
+    else
+        send_move_sticky_ = false;
+    ArmWriteIfNeeded();
 }
 
 void TcpConnection::ArmWriteIfNeeded() {

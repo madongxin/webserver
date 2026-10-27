@@ -23,6 +23,7 @@
 #include "PacketTiming.h"
 #include "ServiceHealth.h"
 
+#include <atomic>
 #include <csignal>
 #include <memory>
 #include <vector>
@@ -106,6 +107,7 @@
 #include <netinet/in.h>
 #include <sys/socket.h>
 #include <sys/stat.h>
+#include <sys/time.h>
 #include <unistd.h>
 #include <mutex>
 #include <random>
@@ -437,7 +439,164 @@ std::string UrlDecodeParam(std::string s) {
     return out;
 }
 
+std::string ScrapeLocal(int port) {
+    const int fd = ::socket(AF_INET, SOCK_STREAM, 0);
+    if (fd < 0)
+        return {};
+    timeval tv{};
+    tv.tv_sec = 0;
+    tv.tv_usec = 400000;
+    ::setsockopt(fd, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv));
+    ::setsockopt(fd, SOL_SOCKET, SO_SNDTIMEO, &tv, sizeof(tv));
+    sockaddr_in addr{};
+    addr.sin_family = AF_INET;
+    addr.sin_port = htons(static_cast<uint16_t>(port));
+    ::inet_pton(AF_INET, "127.0.0.1", &addr.sin_addr);
+    if (::connect(fd, reinterpret_cast<sockaddr *>(&addr), sizeof(addr)) != 0) {
+        ::close(fd);
+        return {};
+    }
+    const char *req = "GET /metrics HTTP/1.1\r\nHost: 127.0.0.1\r\nConnection: close\r\n\r\n";
+    if (::send(fd, req, std::strlen(req), 0) <= 0) {
+        ::close(fd);
+        return {};
+    }
+    std::string raw;
+    char buf[8192];
+    while (raw.size() < 2 * 1024 * 1024) {
+        const ssize_t n = ::recv(fd, buf, sizeof(buf), 0);
+        if (n <= 0)
+            break;
+        raw.append(buf, static_cast<size_t>(n));
+    }
+    ::close(fd);
+    const size_t hdr = raw.find("\r\n\r\n");
+    if (hdr == std::string::npos)
+        return {};
+    return raw.substr(hdr + 4);
+}
+
+double MetricMax(const std::string &text, const char *name, const char *need) {
+    double best = 0;
+    bool saw = false;
+    size_t pos = 0;
+    const std::string key(name);
+    while (pos < text.size()) {
+        const size_t nl = text.find('\n', pos);
+        const std::string line = text.substr(pos, nl == std::string::npos ? std::string::npos : nl - pos);
+        pos = nl == std::string::npos ? text.size() : nl + 1;
+        if (line.compare(0, key.size(), key) != 0)
+            continue;
+        if (line.size() > key.size() && line[key.size()] != ' ' && line[key.size()] != '{')
+            continue;
+        if (need && line.find(need) == std::string::npos)
+            continue;
+        const size_t sp = line.rfind(' ');
+        if (sp == std::string::npos)
+            continue;
+        const double v = std::strtod(line.c_str() + sp + 1, nullptr);
+        if (!saw || v > best)
+            best = v;
+        saw = true;
+    }
+    return saw ? best : 0;
+}
+
+double MetricSum(const std::string &text, const char *name, const char *need) {
+    double sum = 0;
+    size_t pos = 0;
+    const std::string key(name);
+    while (pos < text.size()) {
+        const size_t nl = text.find('\n', pos);
+        const std::string line = text.substr(pos, nl == std::string::npos ? std::string::npos : nl - pos);
+        pos = nl == std::string::npos ? text.size() : nl + 1;
+        if (line.compare(0, key.size(), key) != 0)
+            continue;
+        if (line.size() > key.size() && line[key.size()] != ' ' && line[key.size()] != '{')
+            continue;
+        if (need && line.find(need) == std::string::npos)
+            continue;
+        const size_t sp = line.rfind(' ');
+        if (sp == std::string::npos)
+            continue;
+        sum += std::strtod(line.c_str() + sp + 1, nullptr);
+    }
+    return sum;
+}
+
+Json::Value BuildMonitorLiveJson() {
+    Json::Value out;
+    Json::Value gws(Json::arrayValue);
+    double online = 0, hold = 0, silence = 0, p99 = 0, eagain = 0, retrans = 0;
+    const int ports[] = {8080, 8082};
+    const char *names[] = {"gw-0", "gw-1"};
+    for (int i = 0; i < 2; ++i) {
+        const std::string body = ScrapeLocal(ports[i]);
+        Json::Value g;
+        g["name"] = names[i];
+        g["ok"] = !body.empty();
+        const double on = MetricSum(body, "gamemesh_online_players", nullptr);
+        const double h = MetricMax(body, "gamemesh_latest_move_hold_ms", nullptr);
+        const double s = MetricMax(body, "gamemesh_aoi_move_entity_max_silence_ms", nullptr);
+        const double p = MetricMax(body, "gamemesh_reply_latency_p99_ms", "kind=\"move\"");
+        const double e = MetricSum(body, "gamemesh_tcp_eagain_total", nullptr);
+        const double r = MetricMax(body, "gamemesh_host_tcp_retrans_segs_total", nullptr);
+        g["online"] = on;
+        g["hold_ms"] = h;
+        g["silence_ms"] = s;
+        g["move_p99_ms"] = p;
+        g["eagain"] = e;
+        g["retrans"] = r;
+        online += on;
+        if (h > hold)
+            hold = h;
+        if (s > silence)
+            silence = s;
+        if (p > p99)
+            p99 = p;
+        eagain += e;
+        if (r > retrans)
+            retrans = r;
+        gws.append(g);
+    }
+    out["gateways"] = gws;
+    out["online"] = online;
+    out["hold_ms"] = hold;
+    out["silence_ms"] = silence;
+    out["move_p99_ms"] = p99;
+    out["eagain"] = eagain;
+    out["retrans"] = retrans;
+    return out;
+}
+
+// 监控页的 Prometheus 查询是同步的。同时最多 4 个，给 /monitor、/api/cluster、/api/monitor/live 留出线程。
+struct PromQuerySlot {
+    bool held = false;
+    PromQuerySlot() {
+        int cur = inflight().load(std::memory_order_relaxed);
+        while (cur < 4) {
+            if (inflight().compare_exchange_weak(cur, cur + 1, std::memory_order_acq_rel)) {
+                held = true;
+                return;
+            }
+        }
+    }
+    ~PromQuerySlot() {
+        if (held)
+            inflight().fetch_sub(1, std::memory_order_acq_rel);
+    }
+    static std::atomic<int> &inflight() {
+        static std::atomic<int> n{0};
+        return n;
+    }
+};
+
 void HandlePrometheusInstant(const HttpRequest &request, HttpResponse *response, bool head_only) {
+    PromQuerySlot slot;
+    if (!slot.held) {
+        SendPlain(response, "prometheus busy", HttpResponse::HttpStatusCode::k503ServiceUnavailable);
+        return;
+    }
     std::string q = UrlDecodeParam(UrlParam(request, "q"));
     if (q.empty())
         q = UrlDecodeParam(UrlParam(request, "query"));
@@ -458,6 +617,11 @@ void HandlePrometheusInstant(const HttpRequest &request, HttpResponse *response,
 }
 
 void HandlePrometheusRange(const HttpRequest &request, HttpResponse *response, bool head_only) {
+    PromQuerySlot slot;
+    if (!slot.held) {
+        SendPlain(response, "prometheus busy", HttpResponse::HttpStatusCode::k503ServiceUnavailable);
+        return;
+    }
     std::string q = UrlDecodeParam(UrlParam(request, "q"));
     if (q.empty())
         q = UrlDecodeParam(UrlParam(request, "query"));
@@ -1004,6 +1168,10 @@ void HttpResponseCallback(const HttpRequest &request, HttpResponse *response) {
         SendJson(response, BuildClusterStatusJson());
         return;
     }
+    if (url == "/api/monitor/live") {
+        SendJson(response, BuildMonitorLiveJson());
+        return;
+    }
     if (url == "/api/files") {
         SendJson(response, BuildFilesJson());
         return;
@@ -1353,7 +1521,8 @@ int RunServer(const LaunchOpts &launch) {
     ResourceWatchdog::Instance().StartPeriodic(&loop, 5.0);
 
     const unsigned ncpu = std::thread::hardware_concurrency();
-    const int size = ncpu > 0 ? static_cast<int>(ncpu) : 4;
+    // 管理口要能在 Prometheus 查询占用两个线程时，仍然立刻返回 /monitor 和 /api/cluster。
+    const int size = std::max(8, ncpu > 0 ? static_cast<int>(ncpu) : 4);
     const char *http_bind_env = std::getenv("GAMEMESH_HTTP_BIND");
     std::string http_bind = (http_bind_env && *http_bind_env) ? http_bind_env : "0.0.0.0";
     if (FormalModeEnabled() && (!http_bind_env || !*http_bind_env))

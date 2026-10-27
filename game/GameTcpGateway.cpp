@@ -302,9 +302,13 @@ void FlushMoveSlot(const std::shared_ptr<MoveCoalesceSlot> &slot,
         live->loop()->RunAfter(0.2, [slot, weak, conn_id]() { FlushMoveSlot(slot, weak, conn_id); });
         return;
     }
-    // 先丢掉缓冲里的旧移动帧，再放这一帧最新位置。
-    // 内核未发送超过 1KB 时，TrySendLatestMove 先把这一帧留在应用缓冲。
-    // 200ms 后在途不超过 64KB 就会写进内核。回包仍插在这一帧前面。
+    // 上一帧已经交给写路径但还没写完时，保留它。新位置先回到合并槽，等这帧进内核再发。
+    if (live->latest_move_awaiting_write()) {
+        restore(std::move(delta));
+        live->loop()->RunAfter(0.2, [slot, weak, conn_id]() { FlushMoveSlot(slot, weak, conn_id); });
+        return;
+    }
+    // 还停在应用缓冲、定时器没接手的旧帧可以换成更新的位置。
     const size_t overwritten = DropQueuedAoiMoveFrames(live.get(), false);
     if (overwritten != 0)
         ServerStats::aoi_move_overwritten.fetch_add(overwritten, std::memory_order_relaxed);
@@ -322,30 +326,38 @@ void FlushMoveSlot(const std::shared_ptr<MoveCoalesceSlot> &slot,
     }
     const bool sent = live->TrySendLatestMove(frame);
     const bool held = sent && live->holding_latest_move();
-    if (held) {
-        NoteMoveHold(event_n);
-        std::lock_guard<std::mutex> lk(slot->mu);
-        if (slot->hold_since_ms == 0)
-            slot->hold_since_ms = SteadyMs();
-        const int64_t age = SteadyMs() - slot->hold_since_ms;
-        PublishHoldAge(conn_id, age > 0 ? static_cast<uint64_t>(age) : 0);
-    } else {
-        NoteMoveFlush(sent, event_n);
-        {
-            std::lock_guard<std::mutex> lk(slot->mu);
-            slot->hold_since_ms = 0;
-        }
-        PublishHoldAge(conn_id, 0);
-    }
     if (live->send_buf())
         NoteSendPending(live->send_buf()->readablebytes(), live->unsent_bytes());
     if (!sent) {
+        NoteMoveFlush(false, event_n);
         ServerStats::aoi_move_buffer_hold.fetch_add(1, std::memory_order_relaxed);
         restore(std::move(delta));
         NoteMovePendingEntities(event_n);
         live->loop()->RunAfter(0.2, [slot, weak, conn_id]() { FlushMoveSlot(slot, weak, conn_id); });
         return;
     }
+    if (held) {
+        // 只是停在应用缓冲里，客户端还没收到。位置留在合并槽里，不能记成已经发出。
+        NoteMoveHold(event_n);
+        restore(std::move(delta));
+        {
+            std::lock_guard<std::mutex> lk(slot->mu);
+            if (slot->hold_since_ms == 0)
+                slot->hold_since_ms = SteadyMs();
+            const int64_t age = SteadyMs() - slot->hold_since_ms;
+            PublishHoldAge(conn_id, age > 0 ? static_cast<uint64_t>(age) : 0);
+            if (!slot->scheduled && !slot->by_entity.empty())
+                slot->scheduled = true;
+        }
+        live->loop()->RunAfter(0.2, [slot, weak, conn_id]() { FlushMoveSlot(slot, weak, conn_id); });
+        return;
+    }
+    NoteMoveFlush(true, event_n);
+    {
+        std::lock_guard<std::mutex> lk(slot->mu);
+        slot->hold_since_ms = 0;
+    }
+    PublishHoldAge(conn_id, 0);
     int pending = 0;
     {
         std::lock_guard<std::mutex> lk(slot->mu);
@@ -604,6 +616,7 @@ void ForgetBind(uint64_t conn_id) {
     GatewayConnRegistry::Instance().Forget(conn_id);
     ReliableOutboxHub::Instance().Forget(conn_id);
     ControlResponseOutbox::Instance().Forget(conn_id);
+    EraseMoveSlot(conn_id);
     OpsMetrics::Instance().SetOnlinePlayers(GatewayConnRegistry::Instance().BoundPlayerCount());
 }
 
@@ -614,6 +627,7 @@ void MarkAuthoritativeLogout(uint64_t conn_id) {
     GatewayConnRegistry::Instance().Forget(conn_id);
     ReliableOutboxHub::Instance().Forget(conn_id);
     ControlResponseOutbox::Instance().Forget(conn_id);
+    EraseMoveSlot(conn_id);
     OpsMetrics::Instance().SetOnlinePlayers(GatewayConnRegistry::Instance().BoundPlayerCount());
 }
 

@@ -383,6 +383,177 @@ bool MapStaticData::FindScatteredSpawn(float cx, float cy, float cz, float radiu
     return IsWalkable(cx, cz);
 }
 
+namespace {
+
+uint64_t MixPlayer(uint64_t x) {
+    x ^= x >> 30;
+    x *= 0xbf58476d1ce4e5b9ULL;
+    x ^= x >> 27;
+    x *= 0x94d049bb133111ebULL;
+    x ^= x >> 31;
+    return x;
+}
+
+}  // namespace
+
+bool MapStaticData::FindNearbySpawn(uint64_t player_id, float cx, float cy, float cz, int cells,
+                                    float *ox, float *oy, float *oz) const {
+    if (cells < 0 || !(nav_sample_step_ > 0.f) || grid_width_ <= 0 || grid_height_ <= 0)
+        return false;
+    int scol = 0;
+    int srow = 0;
+    if (!WorldToWalkableCell(cx, cz, &scol, &srow)) {
+        scol = static_cast<int>(std::floor((cx - bounds_min_.x) / nav_sample_step_));
+        srow = static_cast<int>(std::floor((cz - bounds_min_.z) / nav_sample_step_));
+        if (scol < 0)
+            scol = 0;
+        if (srow < 0)
+            srow = 0;
+        if (scol >= grid_width_)
+            scol = grid_width_ - 1;
+        if (srow >= grid_height_)
+            srow = grid_height_ - 1;
+    }
+    std::vector<std::pair<float, float>> points;
+    const float step = nav_sample_step_;
+    for (int dr = -cells; dr <= cells; ++dr) {
+        for (int dc = -cells; dc <= cells; ++dc) {
+            const int col = scol + dc;
+            const int row = srow + dr;
+            if (!CellWalkable(col, row))
+                continue;
+            const float x = bounds_min_.x + (static_cast<float>(col) + 0.5f) * step;
+            const float z = bounds_min_.z + (static_cast<float>(row) + 0.5f) * step;
+            if (!InBounds(x, cy, z) || !IsWalkable(x, z))
+                continue;
+            points.emplace_back(x, z);
+        }
+    }
+    if (points.empty())
+        return false;
+    const size_t n = points.size();
+    const size_t index =
+        static_cast<size_t>(MixPlayer(player_id == 0 ? 1 : player_id) % n);
+    if (ox)
+        *ox = points[index].first;
+    if (oy)
+        *oy = cy;
+    if (oz)
+        *oz = points[index].second;
+    return true;
+}
+
+bool MapStaticData::FindSpreadSpawn(uint64_t player_id, float y,
+                                    const std::vector<std::pair<float, float>> &occupied,
+                                    float min_sep, float *ox, float *oy, float *oz) const {
+    if (!(nav_sample_step_ > 0.f) || grid_width_ <= 0 || grid_height_ <= 0)
+        return false;
+    constexpr float kCell = 200.f;
+    const float minx = bounds_min_.x;
+    const float minz = bounds_min_.z;
+    const float span_x = bounds_max_.x - minx;
+    const float span_z = bounds_max_.z - minz;
+    if (!(span_x > 0.f) || !(span_z > 0.f))
+        return false;
+    const int nx = std::max(1, static_cast<int>(std::ceil(span_x / kCell)));
+    const int nz = std::max(1, static_cast<int>(std::ceil(span_z / kCell)));
+    struct Slot {
+        float x = 0.f;
+        float z = 0.f;
+        float d2 = 0.f;
+        bool ok = false;
+    };
+    std::vector<Slot> coarse(static_cast<size_t>(nx * nz));
+    const float step = nav_sample_step_;
+    for (int row = 0; row < grid_height_; ++row) {
+        for (int col = 0; col < grid_width_; ++col) {
+            if (!CellWalkable(col, row))
+                continue;
+            const float x = minx + (static_cast<float>(col) + 0.5f) * step;
+            const float z = minz + (static_cast<float>(row) + 0.5f) * step;
+            int ci = static_cast<int>(std::floor((x - minx) / kCell));
+            int ri = static_cast<int>(std::floor((z - minz) / kCell));
+            if (ci < 0)
+                ci = 0;
+            if (ri < 0)
+                ri = 0;
+            if (ci >= nx)
+                ci = nx - 1;
+            if (ri >= nz)
+                ri = nz - 1;
+            const float ccx = minx + (static_cast<float>(ci) + 0.5f) * kCell;
+            const float ccz = minz + (static_cast<float>(ri) + 0.5f) * kCell;
+            const float dx = x - ccx;
+            const float dz = z - ccz;
+            const float d2 = dx * dx + dz * dz;
+            Slot &slot = coarse[static_cast<size_t>(ri * nx + ci)];
+            if (!slot.ok || d2 < slot.d2) {
+                slot.ok = true;
+                slot.d2 = d2;
+                slot.x = x;
+                slot.z = z;
+            }
+        }
+    }
+    std::vector<std::pair<float, float>> points;
+    points.reserve(coarse.size());
+    for (const Slot &slot : coarse) {
+        if (slot.ok)
+            points.emplace_back(slot.x, slot.z);
+    }
+    if (points.empty())
+        return false;
+    const float sep2 = min_sep > 0.f ? min_sep * min_sep : 0.f;
+    auto clear_of = [&](float x, float z) {
+        if (!(sep2 > 0.f))
+            return true;
+        for (const auto &p : occupied) {
+            const float dx = x - p.first;
+            const float dz = z - p.second;
+            if (dx * dx + dz * dz < sep2)
+                return false;
+        }
+        return InBounds(x, y, z) && IsWalkable(x, z);
+    };
+    const size_t n = points.size();
+    const size_t start = static_cast<size_t>(MixPlayer(player_id == 0 ? 1 : player_id) % n);
+    for (size_t i = 0; i < n; ++i) {
+        const auto &p = points[(start + i) % n];
+        if (!clear_of(p.first, p.second))
+            continue;
+        if (ox)
+            *ox = p.first;
+        if (oy)
+            *oy = y;
+        if (oz)
+            *oz = p.second;
+        return true;
+    }
+    // 200 米格点都离人太近时，按同样的起点沿可走格中心继续找，顺序固定。
+    const size_t cells = static_cast<size_t>(grid_width_) * static_cast<size_t>(grid_height_);
+    const size_t cell_start =
+        static_cast<size_t>(MixPlayer(player_id == 0 ? 1 : player_id) % std::max<size_t>(cells, 1));
+    for (size_t i = 0; i < cells; ++i) {
+        const size_t idx = (cell_start + i) % cells;
+        const int col = static_cast<int>(idx % static_cast<size_t>(grid_width_));
+        const int row = static_cast<int>(idx / static_cast<size_t>(grid_width_));
+        if (!CellWalkable(col, row))
+            continue;
+        const float x = minx + (static_cast<float>(col) + 0.5f) * step;
+        const float z = minz + (static_cast<float>(row) + 0.5f) * step;
+        if (!clear_of(x, z))
+            continue;
+        if (ox)
+            *ox = x;
+        if (oy)
+            *oy = y;
+        if (oz)
+            *oz = z;
+        return true;
+    }
+    return false;
+}
+
 std::shared_ptr<const MapStaticData> MapStaticData::CloneWithTemplateId(
     uint64_t map_template_id) const {
     auto copy = std::shared_ptr<MapStaticData>(new MapStaticData(*this));

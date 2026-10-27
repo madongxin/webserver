@@ -7,10 +7,13 @@
 #include "MapStaticData.h"
 #include "SceneKind.h"
 
+#include <algorithm>
 #include <cmath>
 #include <cstdio>
 #include <memory>
 #include <string>
+#include <utility>
+#include <vector>
 
 namespace {
 
@@ -144,11 +147,11 @@ int main() {
                    pol.kind == SceneKind::LegacyPool,
                "1001 legacy kind");
         Expect(MapCatalog::Instance().GetScenePolicy(1002, &pol) &&
-                   pol.kind == SceneKind::Line && pol.soft_cap == 100 &&
-                   pol.hard_cap == 400 && pol.aoi_view_radius_cells == 1 &&
+                   pol.kind == SceneKind::Line && pol.soft_cap == 300 &&
+                   pol.hard_cap == 300 && pol.aoi_view_radius_cells == 1 &&
                    pol.aoi_max_visible == 200 &&
                    pol.spawn_scatter_radius == 4.f,
-               "1002 LINE 100/400 scatter 4");
+               "1002 LINE 300/300 scatter 4");
         Expect(MapCatalog::Instance().GetScenePolicy(1001, &pol) &&
                    pol.spawn_scatter_radius == 4.f,
                "1001 scatter 4");
@@ -188,6 +191,65 @@ int main() {
         Expect(data->FindScatteredSpawn(-28.5f, 0.f, -7.25f, 4.f, 42, &x, &y, &z),
                "scatter walkable");
         Expect(data->IsWalkable(x, z), "scattered cell walkable");
+    }
+    {
+        std::shared_ptr<const MapStaticData> luna;
+        std::string lerr;
+        Expect(MapStaticData::LoadFromFile(MapsDir() + "/1002.grid.json", "", &luna, &lerr),
+               "load 1002 grid");
+        const float y = -18.62f;
+        const float spawn_x = 179.30f;
+        const float spawn_z = 324.20f;
+        int scol = 0, srow = 0;
+        Expect(luna && luna->WorldToWalkableCell(spawn_x, spawn_z, &scol, &srow),
+               "template spawn cell");
+        bool placed = true;
+        bool walkable = true;
+        bool near = true;
+        bool stable = true;
+        bool height = true;
+        bool varied = false;
+        int farthest = 0;
+        float first_x = 0.f, first_z = 0.f;
+        for (uint64_t id = 1; id <= 64; ++id) {
+            float x = 0.f, yy = 0.f, z = 0.f;
+            if (!luna || !luna->FindNearbySpawn(id, spawn_x, y, spawn_z, 250, &x, &yy, &z)) {
+                placed = false;
+                break;
+            }
+            if (id == 1) {
+                first_x = x;
+                first_z = z;
+            } else if (x != first_x || z != first_z) {
+                varied = true;
+            }
+            if (std::fabs(yy - y) > 0.001f)
+                height = false;
+            if (!luna->IsWalkable(x, z) || !luna->InBounds(x, yy, z))
+                walkable = false;
+            int col = 0, row = 0;
+            if (!luna->WorldToWalkableCell(x, z, &col, &row) ||
+                std::max(std::abs(col - scol), std::abs(row - srow)) > 250)
+                near = false;
+            else
+                farthest = std::max(farthest, std::max(std::abs(col - scol), std::abs(row - srow)));
+            float x2 = 0.f, y2 = 0.f, z2 = 0.f;
+            if (!luna->FindNearbySpawn(id, spawn_x, y, spawn_z, 250, &x2, &y2, &z2) || x2 != x ||
+                z2 != z)
+                stable = false;
+        }
+        Expect(placed, "nearby spawn points");
+        Expect(walkable, "nearby spawn walkable in bounds");
+        Expect(height, "nearby spawn y is template height");
+        Expect(near, "nearby spawn within 250 cells");
+        Expect(farthest > 80, "nearby spawn reaches past the old 80-cell box");
+        Expect(stable, "same player same nearby point");
+        Expect(varied, "different players can land on different cells");
+        float sx = 0.f, sy = 0.f, sz = 0.f;
+        Expect(luna && luna->FindScatteredSpawn(179.30f, y, 324.20f, 4.f, 7, &sx, &sy, &sz),
+               "1002 local scatter still local");
+        Expect(std::fabs(sx - 179.30f) <= 4.f && std::fabs(sz - 324.20f) <= 4.f,
+               "1002 radius-4 scatter stays near template");
     }
     Expect(MapCatalog::Instance().gameplay_config_version() == 1, "gameplay_config_version");
     Expect(MapCatalog::Instance().map_manifest_version() == 2, "map_manifest_version");

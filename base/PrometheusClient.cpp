@@ -6,6 +6,7 @@
 #include <sys/time.h>
 #include <unistd.h>
 
+#include <atomic>
 #include <cctype>
 #include <sstream>
 #include <vector>
@@ -117,8 +118,33 @@ bool RecvHttp(int fd, int *status, std::string *body, std::string *err) {
     return true;
 }
 
+// 监控页的大量查询不能占满 gamedb 的 HTTP 线程，否则 F5 连 /monitor 都排不上。
+std::atomic<int> g_prometheus_inflight{0};
+
+struct PrometheusSlot {
+    bool held = false;
+    PrometheusSlot() {
+        int cur = g_prometheus_inflight.load(std::memory_order_relaxed);
+        while (cur < 4) {
+            if (g_prometheus_inflight.compare_exchange_weak(cur, cur + 1, std::memory_order_relaxed)) {
+                held = true;
+                return;
+            }
+        }
+    }
+    ~PrometheusSlot() {
+        if (held)
+            g_prometheus_inflight.fetch_sub(1, std::memory_order_relaxed);
+    }
+};
+
 PrometheusClientResult QueryPath(const std::string &path) {
     PrometheusClientResult r;
+    PrometheusSlot slot;
+    if (!slot.held) {
+        r.error = "prometheus busy";
+        return r;
+    }
     const int fd = ::socket(AF_INET, SOCK_STREAM, 0);
     if (fd < 0) {
         r.error = "socket failed";

@@ -850,6 +850,31 @@ bool MapRuntime::HasPlayer(uint64_t map_instance_id, uint64_t player_id) const {
     return st->entities.count(player_id) != 0;
 }
 
+void MapRuntime::CollectXz(uint64_t map_instance_id, uint64_t except_player,
+                           std::vector<std::pair<float, float>> *out) const {
+    if (out)
+        out->clear();
+    if (!out || map_instance_id == 0)
+        return;
+    std::shared_ptr<InstanceState> st;
+    {
+        std::lock_guard<std::mutex> reg(mu_);
+        auto mit = maps_.find(map_instance_id);
+        if (mit == maps_.end() || !mit->second)
+            return;
+        st = mit->second;
+    }
+    auto inst = LockInst(st);
+    if (st->unloaded)
+        return;
+    out->reserve(st->entities.size());
+    for (const auto &kv : st->entities) {
+        if (kv.first == except_player)
+            continue;
+        out->emplace_back(kv.second.x, kv.second.z);
+    }
+}
+
 uint32_t MapRuntime::ConnectedCount(uint64_t map_instance_id) const {
     std::shared_ptr<InstanceState> st;
     {

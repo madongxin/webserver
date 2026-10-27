@@ -92,6 +92,9 @@ public:
                       AoiPushBatch *pushes);
     bool HasPlayer(uint64_t map_instance_id, uint64_t player_id) const;
     uint32_t ConnectedCount(uint64_t map_instance_id) const;
+    /** 本实例里除 except_player 以外的人的 XZ。人是一个一个进的，用来躲开已经落下去的点。 */
+    void CollectXz(uint64_t map_instance_id, uint64_t except_player,
+                   std::vector<std::pair<float, float>> *out) const;
     uint64_t PlayerMap(uint64_t player_id) const;
     bool SnapshotView(uint64_t player_id, MapEntity *self_out, std::vector<MapEntity> *aoi_snapshot,
                       uint64_t *map_instance_id) const;

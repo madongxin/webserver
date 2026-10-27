@@ -100,11 +100,14 @@ public:
     /**
      * 每个连接最多挂一帧最新移动。调用方先丢掉缓冲里的旧移动帧。
      * 内核里还没送出的字节超过 1KB 时，这一帧先留在应用缓冲末尾，不立刻 write，
-     * 避免回包排在旧坐标后面。200ms 后若在途不超过 64KB，定时器把这一帧写进内核。
-     * 超过 64KB 仍继续停放。下一轮会先丢掉这一帧再换成更新的位置。
-     * 非移动数据已经超过 64KB 时返回 false，调用方 200ms 后再试。不关连接。
+     * 避免回包排在旧坐标后面。200ms 后，连接没有重传时定时器把它交给写路径。
+     * 没写完的字节留在缓冲里，等 EPOLLOUT，这期间不能删掉；前面的回包超过 4KB 就先排队。
+     * 非移动数据已经超过 64KB 时返回 false，调用方再试。
+     * 不关连接。
      */
     bool TrySendLatestMove(const std::string &msg);
+    /** 最新移动帧已经交给写路径，但还没全部写进内核。这时不能从缓冲里删掉它。 */
+    bool latest_move_awaiting_write() const { return send_move_sticky_; }
     void SendFile(int filefd, int size);
 
     /** epoll 读就绪：读 socket -> 调 on_message_ */
@@ -163,6 +166,10 @@ private:
      */
     bool send_hold_move_ = false;
     size_t send_move_hold_off_ = 0;
+    /** 定时器已经决定写出这帧。写到 EAGAIN 时留在缓冲里，等 EPOLLOUT，禁止再删。 */
+    bool send_move_sticky_ = false;
+    /** 这一帧开始停放的时刻。超过 1 秒仍停着，就写出这一帧，避免位置一直不到客户端。 */
+    int64_t send_hold_since_ms_ = 0;
     /** 每个连接最多一个 200ms 定时器，用来在关掉 EPOLLOUT 之后再试暂存的移动帧。 */
     bool move_retry_armed_ = false;
 
