@@ -1,7 +1,10 @@
 #pragma once
 
+#include <condition_variable>
 #include <cstdint>
+#include <mutex>
 #include <string>
+#include <thread>
 #include <vector>
 
 class EventLoop;
@@ -34,11 +37,22 @@ public:
     static MetricsDbWriter &Instance();
 
     void StartPeriodic(EventLoop *loop, double interval_sec);
+    /** 停止刷库线程。可重复调用。 */
+    void Stop();
     bool QueryHistory(int hours, int limit, MetricsHistoryQuery *out);
 
 private:
     MetricsDbWriter() = default;
+    ~MetricsDbWriter();
+    void EnsureWorker();
+    void WorkerLoop();
     void OnTick();
     bool EnsureTable();
     bool InsertSnapshot();
+
+    std::mutex life_mu_;
+    std::condition_variable life_cv_;
+    std::thread worker_;
+    bool stop_ = false;
+    bool flush_requested_ = false;
 };

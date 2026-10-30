@@ -59,19 +59,58 @@ MetricsDbWriter &MetricsDbWriter::Instance() {
 }
 
 void MetricsDbWriter::StartPeriodic(EventLoop *loop, double interval_sec) {
+    EnsureWorker();
     if (!loop || !ConnectionPool::getconnectionPool()->isInitialized())
         return;
     LOG_INFO << "MetricsDbWriter: flush to MySQL every " << interval_sec << "s";
     loop->RunEvery(interval_sec, [this]() { OnTick(); });
 }
 
-void MetricsDbWriter::OnTick() {
-    std::thread([this]() {
+MetricsDbWriter::~MetricsDbWriter() {
+    Stop();
+}
+
+void MetricsDbWriter::EnsureWorker() {
+    std::lock_guard<std::mutex> lk(life_mu_);
+    if (stop_ || worker_.joinable())
+        return;
+    worker_ = std::thread([this]() { WorkerLoop(); });
+}
+
+void MetricsDbWriter::WorkerLoop() {
+    for (;;) {
+        {
+            std::unique_lock<std::mutex> lk(life_mu_);
+            life_cv_.wait(lk, [this]() { return stop_ || flush_requested_; });
+            if (stop_)
+                return;
+            flush_requested_ = false;
+        }
         std::lock_guard<std::mutex> lk(g_flush_mutex);
         if (!EnsureTable())
-            return;
+            continue;
         (void)InsertSnapshot();
-    }).detach();
+    }
+}
+
+void MetricsDbWriter::Stop() {
+    {
+        std::lock_guard<std::mutex> lk(life_mu_);
+        stop_ = true;
+    }
+    life_cv_.notify_all();
+    if (worker_.joinable())
+        worker_.join();
+}
+
+void MetricsDbWriter::OnTick() {
+    {
+        std::lock_guard<std::mutex> lk(life_mu_);
+        if (stop_)
+            return;
+        flush_requested_ = true;
+    }
+    life_cv_.notify_one();
 }
 
 bool MetricsDbWriter::EnsureTable() {

@@ -14,6 +14,7 @@
 #include "SessionStore.h"
 #endif
 
+#include <chrono>
 #include <mutex>
 #include <thread>
 
@@ -23,7 +24,10 @@ PlayerItemPersistQueue &PlayerItemPersistQueue::Instance() {
 }
 
 void PlayerItemPersistQueue::StartPeriodic(EventLoop *loop, double interval_sec) {
-    if (!loop || interval_sec <= 0.0)
+    if (interval_sec <= 0.0)
+        return;
+    EnsureWorker();
+    if (!loop)
         return;
     if (!ConnectionPool::getconnectionPool()->isInitialized()) {
         LOG_WARN << "PlayerItemPersistQueue: MySQL pool not ready, skip periodic flush";
@@ -32,6 +36,60 @@ void PlayerItemPersistQueue::StartPeriodic(EventLoop *loop, double interval_sec)
     PlayerItemStore::Instance().EnsureTable();
     LOG_INFO << "PlayerItemPersistQueue: flush online players every " << interval_sec << "s";
     loop->RunEvery(interval_sec, [this]() { OnFlushTick(); });
+}
+
+PlayerItemPersistQueue::~PlayerItemPersistQueue() {
+    Stop(std::chrono::milliseconds(3000));
+}
+
+void PlayerItemPersistQueue::EnsureWorker() {
+    std::lock_guard<std::mutex> lk(mu_);
+    if (stopped_ || worker_.joinable())
+        return;
+    worker_ = std::thread([this]() { WorkerLoop(); });
+}
+
+void PlayerItemPersistQueue::WorkerLoop() {
+    for (;;) {
+        std::unique_lock<std::mutex> lk(mu_);
+        cv_.wait(lk, [this]() { return stopped_ || flush_requested_; });
+        if (!flush_requested_) {
+            flush_finished_ = true;
+            cv_.notify_all();
+            return;
+        }
+        flush_requested_ = false;
+        lk.unlock();
+        FlushOnlinePlayers();
+        lk.lock();
+        if (stopped_ && !flush_requested_) {
+            flush_finished_ = true;
+            cv_.notify_all();
+            return;
+        }
+    }
+}
+
+void PlayerItemPersistQueue::Stop(std::chrono::milliseconds timeout) {
+    EnsureWorker();
+    {
+        std::lock_guard<std::mutex> lk(mu_);
+        if (stopped_ && flush_finished_)
+            return;
+        stopped_ = true;
+        flush_requested_ = true;
+        flush_finished_ = false;
+    }
+    cv_.notify_all();
+    {
+        std::unique_lock<std::mutex> lk(mu_);
+        if (!cv_.wait_for(lk, timeout, [this]() { return flush_finished_; })) {
+            LOG_WARN << "PlayerItemPersistQueue: shutdown flush timed out remain="
+                     << queue_.size();
+        }
+    }
+    if (worker_.joinable())
+        worker_.join();
 }
 
 void PlayerItemPersistQueue::MarkOnline(uint64_t player_id) {
@@ -67,8 +125,13 @@ size_t PlayerItemPersistQueue::QueueSize() const {
 }
 
 void PlayerItemPersistQueue::OnFlushTick() {
-    // 避免阻塞 EventLoop：刷盘在后台线程执行
-    std::thread([this]() { FlushOnlinePlayers(); }).detach();
+    {
+        std::lock_guard<std::mutex> lk(mu_);
+        if (stopped_)
+            return;
+        flush_requested_ = true;
+    }
+    cv_.notify_one();
 }
 
 void PlayerItemPersistQueue::FlushOnlinePlayers() {

@@ -6,6 +6,7 @@
 #include "FormalMode.h"
 #include "GameMeshPaths.h"
 #include "Logging.h"
+#include "PasswordExec.h"
 #include "PasswordHash.h"
 #include "PlayerAccountStore.h"
 
@@ -208,49 +209,6 @@ void ClearLoginFail(uint64_t player_id) {
 }
 
 // PBKDF2 一次大约几百毫秒。放在 brpc 工作线程上会把同进程的进图、改路由全部排在后面。
-class PasswordExec {
-public:
-    static PasswordExec &Instance() {
-        static PasswordExec exec;
-        return exec;
-    }
-
-    bool Post(std::function<void()> fn) {
-        if (!fn)
-            return false;
-        std::lock_guard<std::mutex> lk(mu_);
-        if (q_.size() >= 4096)
-            return false;
-        q_.push_back(std::move(fn));
-        cv_.notify_one();
-        return true;
-    }
-
-private:
-    PasswordExec() {
-        for (int i = 0; i < 2; ++i) {
-            std::thread([this] { Loop(); }).detach();
-        }
-    }
-
-    void Loop() {
-        for (;;) {
-            std::function<void()> fn;
-            {
-                std::unique_lock<std::mutex> lk(mu_);
-                cv_.wait(lk, [&] { return !q_.empty(); });
-                fn = std::move(q_.front());
-                q_.pop_front();
-            }
-            fn();
-        }
-    }
-
-    std::mutex mu_;
-    std::condition_variable cv_;
-    std::deque<std::function<void()>> q_;
-};
-
 void FinishLoginOk(uint64_t player_id, uint64_t account_id, ::auth::LoginResponse *response) {
     std::string access;
     std::string refresh;

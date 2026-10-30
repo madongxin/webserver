@@ -245,6 +245,7 @@ if(ENABLE_BRPC)
     runtime/brpc/session.pb.cc
     runtime/brpc/auth.pb.cc
     runtime/brpc/AuthServiceImpl.cpp
+    runtime/PasswordExec.cpp
     runtime/brpc/AuthTokenStore.cpp
     runtime/AuthLoginRateLimit.cpp
     runtime/brpc/SessionServiceImpl.cpp
@@ -1306,6 +1307,34 @@ if(ENABLE_MYSQL)
     db runtime base log timer ${MYSQL_INCLUDE_DIR})
   target_link_libraries(formal_mysql_boundary_test
     ${CMAKE_THREAD_LIBS_INIT} ${MYSQL_CLIENT_LIB})
+
+  add_executable(detach_join_test
+    test/detach_join_test.cpp
+    runtime/PasswordExec.cpp
+    db/MetricsDbWriter.cpp
+    db/PlayerItemPersistQueue.cpp
+    db/PlayerItemStore.cpp
+    db/Connection.cpp
+    db/ConnectionPool.cpp
+    base/ProcessMetricsSnapshot.cpp
+    base/EventLoopMetrics.cpp
+    base/LogicMetrics.cpp
+    base/ProcSelfStats.cpp
+    base/CurrentThread.cpp
+    tcp/EventLoop.cpp
+    tcp/Epoller.cpp
+    tcp/Channel.cpp
+    timer/TimerQueue.cpp
+    timer/Timer.cpp
+    log/Logging.cpp
+    log/LogStream.cpp
+    log/LogFile.cpp
+    log/AsyncLogging.cpp)
+  target_compile_definitions(detach_join_test PRIVATE WEBSERVER_ENABLE_MYSQL)
+  target_include_directories(detach_join_test PRIVATE
+    db runtime runtime/brpc base log timer tcp ${MYSQL_INCLUDE_DIR} ${OPENSSL_INCLUDE_DIR})
+  target_link_libraries(detach_join_test
+    ${CMAKE_THREAD_LIBS_INIT} ${MYSQL_CLIENT_LIB} ${OPENSSL_CRYPTO_LIB})
 endif()
 
 if(ENABLE_REDIS)

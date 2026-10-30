@@ -30,7 +30,7 @@
  * 【初始化】（首次 getconnectionPool()）
  *   读 config/mysql.cnf → 循环 addConnection() 建 initSize 根
  *   → 至少成功 1 根则 initialized_=true
- *   → detach 生产者线程 + 回收线程
+ *   → 启动生产者线程 + 回收线程，析构或 Stop() 时 join
  *
  * 【借出】getConnection()
  *   队列非空：pop → shared_ptr(自定义 deleter)
@@ -63,6 +63,7 @@
 #include <mutex>
 #include <queue>
 #include <string>
+#include <thread>
 
 class ConnectionPool {
 public:
@@ -92,11 +93,15 @@ public:
     /** 配置加载且至少建连成功 1 根时为 true；否则业务应降级/跳过 MySQL */
     bool isInitialized() const { return initialized_; }
 
+    /** 停止后台线程并释放空闲连接。可重复调用。借出中的连接须已归还。 */
+    void Stop();
+
     /** 当前配置的数据库名（供 /api/db/ping 等探活展示） */
     const std::string &dbname() const { return _dbname; }
 
 private:
     ConnectionPool();
+    ~ConnectionPool();
 
     /** 解析 mysql.cnf：ip/port/账号/库名及池参数；文件不存在返回 false */
     bool loadConfigFile();
@@ -129,4 +134,7 @@ private:
     std::atomic<int> _connectionCnt{0};       ///< 已创建且未销毁的连接总数
     std::condition_variable cv;               ///< 空池等待 / 归还与扩容唤醒
     bool initialized_ = false;                ///< 是否可对外提供连接
+    std::atomic<bool> stop_{false};
+    std::thread producer_;
+    std::thread recycler_;
 };

@@ -106,11 +106,28 @@ ConnectionPool::ConnectionPool() {
         return;
     initialized_ = true;
 
-    // 生产者 / 回收器与进程同寿命；失败不 join（池作为进程级单例）
-    std::thread producer(std::bind(&ConnectionPool::produceConnectionTask, this));
-    producer.detach();
-    std::thread recycler(std::bind(&ConnectionPool::recycleConnectionTask, this));
-    recycler.detach();
+    producer_ = std::thread([this]() { produceConnectionTask(); });
+    recycler_ = std::thread([this]() { recycleConnectionTask(); });
+}
+
+ConnectionPool::~ConnectionPool() {
+    Stop();
+}
+
+void ConnectionPool::Stop() {
+    stop_.store(true, std::memory_order_release);
+    cv.notify_all();
+    if (producer_.joinable())
+        producer_.join();
+    if (recycler_.joinable())
+        recycler_.join();
+    std::lock_guard<std::mutex> lock(_queueMutex);
+    while (!_connectionQue.empty()) {
+        delete _connectionQue.front();
+        _connectionQue.pop();
+    }
+    _connectionCnt.store(0);
+    initialized_ = false;
 }
 
 void ConnectionPool::addConnection() {
@@ -130,7 +147,9 @@ void ConnectionPool::produceConnectionTask() {
     // 策略：仅当「空闲队列为空」时扩容，有空闲则复用、不主动建连
     for (;;) {
         std::unique_lock<std::mutex> lock(_queueMutex);
-        cv.wait(lock, [this]() { return _connectionQue.empty(); });
+        cv.wait(lock, [this]() { return stop_.load(std::memory_order_acquire) || _connectionQue.empty(); });
+        if (stop_.load(std::memory_order_acquire))
+            return;
         if (_connectionCnt.load() < _maxSize) {
             // addConnection 内部再次加锁，故先 unlock，避免自死锁
             lock.unlock();
@@ -145,8 +164,15 @@ void ConnectionPool::recycleConnectionTask() {
     // 队列是 FIFO：队首是归还最早、空闲最久的连接；从队首连续回收即可
     const clock_t max_idle_ticks = static_cast<clock_t>(_maxIdleTime) * CLOCKS_PER_SEC;
     for (;;) {
-        std::this_thread::sleep_for(std::chrono::milliseconds(500));
+        {
+            std::unique_lock<std::mutex> wait_lock(_queueMutex);
+            if (cv.wait_for(wait_lock, std::chrono::milliseconds(500),
+                            [this]() { return stop_.load(std::memory_order_acquire); }))
+                return;
+        }
         std::unique_lock<std::mutex> lock(_queueMutex);
+        if (stop_.load(std::memory_order_acquire))
+            return;
         while (_connectionCnt.load() > _initSize && !_connectionQue.empty()) {
             Connection *conn = _connectionQue.front();
             if (conn->getAlieTime() >= max_idle_ticks) {
@@ -164,7 +190,11 @@ void ConnectionPool::recycleConnectionTask() {
 std::shared_ptr<Connection> ConnectionPool::getConnection() {
     const auto wait_started = std::chrono::steady_clock::now();
     std::unique_lock<std::mutex> lock(_queueMutex);
+    if (stop_.load(std::memory_order_acquire))
+        return nullptr;
     while (_connectionQue.empty()) {
+        if (stop_.load(std::memory_order_acquire))
+            return nullptr;
         // 等待：业务归还（deleter）或生产者 addConnection 后的 notify。池满时到时返回，不再新建连接。
         if (cv.wait_for(lock, std::chrono::milliseconds(_connectionTimeout)) ==
             std::cv_status::timeout) {

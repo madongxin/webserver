@@ -15,13 +15,16 @@
  *   2. 玩家 logout 时 FlushPlayer：该玩家队列立即落库。
  *   3. 离线玩家队列项保留，待其再次上线后由定时任务写入。
  *
- * 线程安全：queue_ / online_local_ 由 mu_ 保护；刷盘在独立线程执行（见 OnFlushTick）。
+ * 线程安全：queue_ / online_local_ 由 mu_ 保护；刷盘由成员线程执行，Stop 时 join。
  */
 
+#include <chrono>
+#include <condition_variable>
 #include <cstdint>
 #include <deque>
 #include <mutex>
 #include <string>
+#include <thread>
 #include <unordered_set>
 
 class EventLoop;
@@ -51,15 +54,29 @@ public:
     /** 登出：先刷该玩家队列，再从本地在线集合移除 */
     void MarkOffline(uint64_t player_id);
 
+    /**
+     * 停机：请求最后一次在线刷盘并等待。
+     * 超时则打日志，队列仍留在内存里由调用方决定，不会悄悄丢掉而不留记录。
+     */
+    void Stop(std::chrono::milliseconds timeout = std::chrono::milliseconds(3000));
+
     size_t QueueSize() const;
 
 private:
     PlayerItemPersistQueue() = default;
+    ~PlayerItemPersistQueue();
+    void EnsureWorker();
+    void WorkerLoop();
     void OnFlushTick();
     void FlushOnlinePlayers();
     void FlushPlayer(uint64_t player_id);
 
     mutable std::mutex mu_;
+    std::condition_variable cv_;
+    std::thread worker_;
+    bool stopped_ = false;
+    bool flush_requested_ = false;
+    bool flush_finished_ = false;
     std::deque<PendingPlayerItem> queue_;
     /** Redis 不可用时的在线玩家兜底集合 */
     std::unordered_set<uint64_t> online_local_;
