@@ -1,6 +1,8 @@
 #include "GameLogicBrpcServer.h"
 
+#include "BindAddressPolicy.h"
 #include "BrpcSslUtil.h"
+#include "FormalMode.h"
 #include "GameLogicForwardServiceImpl.h"
 #include "GameLogicServiceImpl.h"
 #include "GameMeshPaths.h"
@@ -38,7 +40,7 @@ std::string Trim(std::string s) {
 
 bool ParseLogicConfig(const std::string &path, std::string *listen_addr, int *idle_timeout_sec,
                       std::string *instance_id, std::string *map_data_dir, uint32_t *capacity,
-                      int *aoi_radius, int *tick_hz) {
+                      int *aoi_radius, int *tick_hz, bool *allow_public_bind) {
     std::ifstream in(path);
     if (!in)
         return false;
@@ -66,6 +68,8 @@ bool ParseLogicConfig(const std::string &path, std::string *listen_addr, int *id
             *aoi_radius = std::atoi(val.c_str());
         else if (key == "map_tick_hz" && tick_hz)
             *tick_hz = std::atoi(val.c_str());
+        else if (key == "allow_public_bind" && allow_public_bind)
+            *allow_public_bind = ConfigFlagTrue(val);
     }
     return !listen_addr->empty();
 }
@@ -94,7 +98,7 @@ GameLogicBrpcServer::~GameLogicBrpcServer() {
 }
 
 void GameLogicBrpcServer::LoadMapRuntimeFromConfig() {
-    std::string addr = "0.0.0.0:8201";
+    std::string addr = "127.0.0.1:8201";
     int idle = 30;
     std::string instance_id = "gl-0";
     std::string map_data_dir;
@@ -102,7 +106,7 @@ void GameLogicBrpcServer::LoadMapRuntimeFromConfig() {
     int aoi_radius = 2;
     int tick_hz = 10;
     if (!ParseLogicConfig(LogicCnfPath(), &addr, &idle, &instance_id, &map_data_dir, &capacity,
-                          &aoi_radius, &tick_hz))
+                          &aoi_radius, &tick_hz, nullptr))
         LOG_WARN << "GameLogicBrpcServer: map config defaults, cannot parse " << LogicCnfPath();
     (void)addr;
     (void)idle;
@@ -122,15 +126,16 @@ void GameLogicBrpcServer::LoadMapRuntimeFromConfig() {
 }
 
 bool GameLogicBrpcServer::StartFromConfig() {
-    std::string addr = "0.0.0.0:8201";
+    std::string addr = "127.0.0.1:8201";
     int idle = 30;
     std::string instance_id = "gl-0";
     std::string map_data_dir;
     uint32_t capacity = 50;
     int aoi_radius = 2;
     int tick_hz = 10;
+    bool allow_public = AllowPublicBindFromEnv();
     if (!ParseLogicConfig(LogicCnfPath(), &addr, &idle, &instance_id, &map_data_dir, &capacity,
-                          &aoi_radius, &tick_hz))
+                          &aoi_radius, &tick_hz, &allow_public))
         LOG_WARN << "GameLogicBrpcServer: use default listen, cannot parse " << LogicCnfPath();
     MapInstanceRegistry::Instance().SetLocalInstanceId(instance_id);
     LoadMapRuntimeFromConfig();
@@ -144,10 +149,18 @@ bool GameLogicBrpcServer::StartFromConfig() {
     }
     LOG_INFO << "GameLogicBrpcServer instance_id=" << instance_id
              << " require_lease=" << MapInstanceRegistry::Instance().require_lease();
-    return Start(addr, idle);
+    return Start(addr, idle, allow_public);
 }
 
-bool GameLogicBrpcServer::Start(const std::string &listen_addr, int idle_timeout_sec) {
+bool GameLogicBrpcServer::Start(const std::string &listen_addr, int idle_timeout_sec,
+                                 bool allow_public_bind) {
+    const ListenBindDecision bind =
+        EvaluateListenBind(listen_addr, FormalModeEnabled(),
+                           allow_public_bind || AllowPublicBindFromEnv());
+    if (!bind.ok) {
+        LOG_ERROR << "GameLogicBrpcServer: " << bind.error;
+        return false;
+    }
     if (running_)
         return true;
 

@@ -1283,6 +1283,10 @@ add_executable(password_hash_test
 target_include_directories(password_hash_test PRIVATE runtime ${OPENSSL_INCLUDE_DIR})
 target_link_libraries(password_hash_test ${OPENSSL_CRYPTO_LIB})
 
+add_executable(listen_bind_policy_test test/listen_bind_policy_test.cpp)
+target_include_directories(listen_bind_policy_test PRIVATE runtime)
+target_link_libraries(listen_bind_policy_test ${CMAKE_THREAD_LIBS_INIT})
+
 add_executable(service_health_test
   test/service_health_test.cpp
   runtime/ServiceHealth.cpp

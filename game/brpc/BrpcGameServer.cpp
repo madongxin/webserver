@@ -5,7 +5,9 @@
 
 #include "BrpcGameServer.h"
 
+#include "BindAddressPolicy.h"
 #include "BrpcConfigPath.h"
+#include "FormalMode.h"
 #include "Logging.h"
 #include "MailBrpcServiceImpl.h"
 
@@ -26,7 +28,8 @@ std::string Trim(std::string s) {
     return s.substr(i);
 }
 
-bool ParseConfig(const std::string &path, std::string *listen_addr, int *idle_timeout_sec) {
+bool ParseConfig(const std::string &path, std::string *listen_addr, int *idle_timeout_sec,
+                 bool *allow_public_bind) {
     std::ifstream in(path);
     if (!in)
         return false;
@@ -44,6 +47,8 @@ bool ParseConfig(const std::string &path, std::string *listen_addr, int *idle_ti
             *listen_addr = val;
         else if (key == "idle_timeout_sec")
             *idle_timeout_sec = std::atoi(val.c_str());
+        else if (key == "allow_public_bind" && allow_public_bind)
+            *allow_public_bind = ConfigFlagTrue(val);
     }
     return !listen_addr->empty();
 }
@@ -60,15 +65,29 @@ BrpcGameServer::~BrpcGameServer() {
 }
 
 bool BrpcGameServer::StartFromConfig() {
-    std::string addr = "0.0.0.0:8181";
+    std::string addr = "127.0.0.1:8181";
     int idle = 30;
+    bool allow_public = AllowPublicBindFromEnv();
     const std::string &cnf = BrpcConfigPath::Cnf();
-    if (!ParseConfig(cnf, &addr, &idle))
+    if (!ParseConfig(cnf, &addr, &idle, &allow_public))
         LOG_WARN << "BrpcGameServer: use default listen_addr, cannot parse " << cnf;
-    return Start(addr, idle);
+    const ListenBindDecision bind = EvaluateListenBind(addr, FormalModeEnabled(), allow_public);
+    if (!bind.ok) {
+        LOG_ERROR << "BrpcGameServer: " << bind.error;
+        return false;
+    }
+    return Start(addr, idle, allow_public);
 }
 
-bool BrpcGameServer::Start(const std::string &listen_addr, int idle_timeout_sec) {
+bool BrpcGameServer::Start(const std::string &listen_addr, int idle_timeout_sec,
+                           bool allow_public_bind) {
+    const ListenBindDecision bind =
+        EvaluateListenBind(listen_addr, FormalModeEnabled(),
+                           allow_public_bind || AllowPublicBindFromEnv());
+    if (!bind.ok) {
+        LOG_ERROR << "BrpcGameServer: " << bind.error;
+        return false;
+    }
     if (running_) {
         LOG_WARN << "BrpcGameServer already running at " << listen_addr_;
         return true;

@@ -12,6 +12,7 @@
 #include "PrometheusClient.h"
 #include "PrometheusMetrics.h"
 #include "ResourceWatchdog.h"
+#include "BindAddressPolicy.h"
 #include "FormalMode.h"
 #include "GameMeshPaths.h"
 #include "GatewayIdentity.h"
@@ -1524,9 +1525,15 @@ int RunServer(const LaunchOpts &launch) {
     // 管理口要能在 Prometheus 查询占用两个线程时，仍然立刻返回 /monitor 和 /api/cluster。
     const int size = std::max(8, ncpu > 0 ? static_cast<int>(ncpu) : 4);
     const char *http_bind_env = std::getenv("GAMEMESH_HTTP_BIND");
-    std::string http_bind = (http_bind_env && *http_bind_env) ? http_bind_env : "0.0.0.0";
-    if (FormalModeEnabled() && (!http_bind_env || !*http_bind_env))
-        http_bind = "127.0.0.1";  // 正式模式默认管理口仅 loopback
+    std::string http_bind = (http_bind_env && *http_bind_env) ? http_bind_env : "127.0.0.1";
+    if (FormalModeEnabled()) {
+        const ListenBindDecision http_bind_decision =
+            EvaluateListenBind(http_bind, true, AllowPublicBindFromEnv());
+        if (!http_bind_decision.ok) {
+            LOG_ERROR << "HTTP admin " << http_bind_decision.error;
+            return 1;
+        }
+    }
     HttpServer server(&loop, http_bind.c_str(), port, true);
     server.SetHttpCallback(HttpResponseCallback);
     server.SetThreadNums(size);
@@ -1712,10 +1719,10 @@ int RunServer(const LaunchOpts &launch) {
         LOG_INFO << "role=gamedb listen=" << listen << " instance_id=" << gid
                  << " advertise=" << adv;
     } else if (role == "gamelogic") {
-        std::string listen = "0.0.0.0:8201";
+        std::string listen = "127.0.0.1:8201";
         if (logic_port_override > 0) {
             char buf[64];
-            snprintf(buf, sizeof(buf), "0.0.0.0:%d", logic_port_override);
+            snprintf(buf, sizeof(buf), "127.0.0.1:%d", logic_port_override);
             listen = buf;
         }
         if (logic_port_override > 0) {

@@ -3,6 +3,7 @@
 ## Topology (MVP)
 
 - Client ↔ public **VIP:8081** (L4 LB) → Gateway ×2 (game TCP). HTTP admin and Push brpc ports are **internal only**.
+- bRPC and the HTTP admin port default to **127.0.0.1**. `GAMEMESH_FORMAL=1` refuses `0.0.0.0` and public addresses unless `allow_public_bind=true` or `GAMEMESH_ALLOW_PUBLIC_BIND=1`. The public monitor on gamedb-0 is that explicit exception.
 - Gateway orchestrates login: **AuthService.Login** → **SessionService.AcquireSession** → **GameLogic.BindPlayer**.
 - AuthService and SessionService share the `session` binary but keep separate protos; Auth does **not** create Sessions.
 - Auth: Redis (access tokens) + GameDB/MySQL (accounts). Session: Redis (fence / ONLINE / DISCONNECTED).

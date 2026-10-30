@@ -1,5 +1,6 @@
 # GameLogic Forward brpc 监听（阶段 2/5）
-listen_addr=0.0.0.0:8201
+# 未配置时进程默认 127.0.0.1。正式模式拒绝 0.0.0.0 和公网地址，除非 allow_public_bind=true。
+listen_addr=127.0.0.1:8201
 idle_timeout_sec=30
 instance_id=gl-0
 # S2 地图静态数据 / 公共实例容量 / AOI

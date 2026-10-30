@@ -21,8 +21,9 @@ public:
     /** 读 config/brpc.cnf 并 Start；失败返回 false */
     bool StartFromConfig();
 
-    /** 指定地址启动，如 0.0.0.0:8181 */
-    bool Start(const std::string &listen_addr, int idle_timeout_sec = 30);
+    /** 指定地址启动。未配置时用 127.0.0.1。正式模式拒绝 0.0.0.0 和公网地址。 */
+    bool Start(const std::string &listen_addr, int idle_timeout_sec = 30,
+               bool allow_public_bind = false);
 
     void Stop();
     bool running() const { return running_; }

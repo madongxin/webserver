@@ -165,7 +165,7 @@ printf '%s\n' \
   "ssl_enable=0" >"$GAMEDB_CNF"
 
 printf '%s\n' \
-  "listen_addr=0.0.0.0:${LOGIC0}" \
+  "listen_addr=127.0.0.1:${LOGIC0}" \
   "idle_timeout_sec=30" \
   "instance_id=gl-0" \
   "session_addrs=127.0.0.1:${SESSION}${GAMEMESH_SESSION2:+,127.0.0.1:${GAMEMESH_SESSION2}}" \
@@ -221,7 +221,7 @@ if [[ -n "${SESSION2}" ]]; then
     sess-1 "127.0.0.1:${SESSION2}" "$HTTP_S2" - "$HTTP_S2" "$SESSION2"
 fi
 # 监控页需从公网 EIP:8094 打开；仅 gamedb-0 的 HTTP 管理口离开 loopback
-GAMEMESH_HTTP_BIND=0.0.0.0 GAMEMESH_INSTANCE_ID=gamedb-0 start_proc "$GAMEDB_BIN" gamedb "$RUN_DIR/logs/gamedb0.log" \
+GAMEMESH_HTTP_BIND=0.0.0.0 GAMEMESH_ALLOW_PUBLIC_BIND=1 GAMEMESH_INSTANCE_ID=gamedb-0 start_proc "$GAMEDB_BIN" gamedb "$RUN_DIR/logs/gamedb0.log" \
   gamedb-0 "127.0.0.1:${GAMEDB0}" "$HTTP_D0" - "$HTTP_D0" "$GAMEDB0"
 GAMEMESH_INSTANCE_ID=gamedb-1 start_proc "$GAMEDB_BIN" gamedb "$RUN_DIR/logs/gamedb1.log" \
   gamedb-1 "127.0.0.1:${GAMEDB1}" "$HTTP_D1" - "$HTTP_D1" "$GAMEDB1"
