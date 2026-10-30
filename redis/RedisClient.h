@@ -53,7 +53,7 @@
 class RedisClient {
 public:
     RedisClient() = default;
-    ~RedisClient();
+    virtual ~RedisClient();
 
     RedisClient(const RedisClient &) = delete;
     RedisClient &operator=(const RedisClient &) = delete;
@@ -65,16 +65,16 @@ public:
      * @return true  连接、认证（如需）、PING 均成功
      * @return false 连接超时、AUTH 失败或 PING 非 PONG
      */
-    bool Connect(const std::string &host, int port, const std::string &password);
+    virtual bool Connect(const std::string &host, int port, const std::string &password);
 
     /** 释放 redisContext，之后 IsConnected() 为 false */
     void Disconnect();
 
     /** 是否已持有有效连接（ctx_ != nullptr） */
-    bool IsConnected() const { return ctx_ != nullptr; }
+    virtual bool IsConnected() const { return ctx_ != nullptr; }
 
     /** 发送 PING，期望回复 PONG；用于探活与 Connect 末尾校验 */
-    bool Ping();
+    virtual bool Ping();
 
     /**
      * 判断 key 是否存在。

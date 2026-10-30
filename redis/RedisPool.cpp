@@ -40,6 +40,27 @@ bool RedisPool::Init(const std::string &host, int port, const std::string &passw
     return true;
 }
 
+bool RedisPool::InitWithClientsForTest(std::vector<std::unique_ptr<RedisClient>> clients) {
+    if (clients.empty())
+        return false;
+    std::lock_guard<std::mutex> lk(life_mu_);
+    auto st = std::make_shared<PoolState>();
+    st->host = "test";
+    st->port = 0;
+    st->generation = ++next_generation_;
+    st->owned.reserve(clients.size());
+    for (auto &c : clients) {
+        if (!c)
+            return false;
+        st->free.push_back(c.get());
+        st->owned.push_back(std::move(c));
+    }
+    st->ready = true;
+    st->closing = false;
+    state_ = std::move(st);
+    return true;
+}
+
 void RedisPool::Shutdown() {
     Shutdown(std::chrono::milliseconds(3000));
 }
@@ -152,29 +173,53 @@ RedisPool::Lease RedisPool::Acquire(int timeout_ms) {
     }
     if (!st)
         return Lease();
-    std::unique_lock<std::mutex> lk(st->mu);
-    if (!st->ready || st->closing)
-        return Lease();
-    auto deadline = std::chrono::steady_clock::now() + std::chrono::milliseconds(timeout_ms);
-    while (st->free.empty()) {
-        if (st->cv.wait_until(lk, deadline) == std::cv_status::timeout) {
-            LOG_ERROR << "RedisPool: acquire timeout";
-            return Lease();
-        }
+    const auto deadline = std::chrono::steady_clock::now() + std::chrono::milliseconds(timeout_ms);
+    RedisClient *c = nullptr;
+    uint64_t gen = 0;
+    std::string host;
+    std::string password;
+    int port = 0;
+    {
+        std::unique_lock<std::mutex> lk(st->mu);
         if (!st->ready || st->closing)
             return Lease();
+        while (st->free.empty()) {
+            if (st->cv.wait_until(lk, deadline) == std::cv_status::timeout) {
+                LOG_ERROR << "RedisPool: acquire timeout";
+                return Lease();
+            }
+            if (!st->ready || st->closing)
+                return Lease();
+        }
+        c = st->free.back();
+        st->free.pop_back();
+        ++st->active;
+        gen = st->generation;
+        host = st->host;
+        password = st->password;
+        port = st->port;
     }
-    RedisClient *c = st->free.back();
-    st->free.pop_back();
-    if (!c->IsConnected() || !c->Ping()) {
-        if (!c->Connect(st->host, st->port, st->password)) {
+    bool ok = c->IsConnected() && c->Ping();
+    if (!ok)
+        ok = c->Connect(host, port, password);
+    {
+        std::lock_guard<std::mutex> lk(st->mu);
+        if (!st->ready || st->closing || gen != st->generation) {
+            if (st->active > 0)
+                --st->active;
+            if (!st->closing && st->ready && gen == st->generation)
+                st->free.push_back(c);
+            st->cv.notify_all();
+            return Lease();
+        }
+        if (!ok) {
             st->free.push_back(c);
+            if (st->active > 0)
+                --st->active;
+            st->cv.notify_one();
             LOG_ERROR << "RedisPool: reconnect failed";
             return Lease();
         }
     }
-    ++st->active;
-    const uint64_t gen = st->generation;
-    lk.unlock();
     return Lease(std::move(st), c, gen);
 }

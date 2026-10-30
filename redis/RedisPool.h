@@ -36,6 +36,8 @@ public:
     static RedisPool &Instance();
 
     bool Init(const std::string &host, int port, const std::string &password, int pool_size = 8);
+    /** 测试注入已构造的客户端，不在 Init 里连真实 Redis。调用前应 Shutdown。 */
+    bool InitWithClientsForTest(std::vector<std::unique_ptr<RedisClient>> clients);
     void Shutdown();
     void Shutdown(std::chrono::milliseconds deadline);
     bool ready() const;

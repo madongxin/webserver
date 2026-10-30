@@ -87,6 +87,7 @@ run_one push_replay_cache_test
 run_one password_hash_test
 run_one service_health_test
 run_one formal_mysql_boundary_test
+run_one redis_pool_acquire_test
 # 协议导出：未改 proto 时 game.proto SHA-256 稳定
 # phase3_discovery_test / phase3_gamedb_asset_test：依赖 Redis/MySQL，见 test_integration.sh
 # session_store_test / placement_store_test 依赖 Redis：scripts/test_placement.sh / test_integration.sh

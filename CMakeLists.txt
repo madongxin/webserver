@@ -1189,6 +1189,20 @@ if(ENABLE_GAME_PROTOBUF AND ENABLE_REDIS)
     redis base log timer runtime ${HIREDIS_INCLUDE_DIR})
   target_link_libraries(redis_pool_shutdown_test ${CMAKE_THREAD_LIBS_INIT} ${HIREDIS_LIB})
 
+  add_executable(redis_pool_acquire_test
+    test/redis_pool_acquire_test.cpp
+    redis/RedisClient.cpp
+    redis/RedisPool.cpp
+    base/CurrentThread.cpp
+    log/Logging.cpp
+    log/LogStream.cpp
+    log/LogFile.cpp
+    log/AsyncLogging.cpp)
+  target_compile_definitions(redis_pool_acquire_test PRIVATE WEBSERVER_ENABLE_REDIS)
+  target_include_directories(redis_pool_acquire_test PRIVATE
+    redis base log timer runtime ${HIREDIS_INCLUDE_DIR})
+  target_link_libraries(redis_pool_acquire_test ${CMAKE_THREAD_LIBS_INIT} ${HIREDIS_LIB})
+
   add_executable(map_lease_drill
     test/map_lease_drill.cpp
     game/PlacementStore.cpp
