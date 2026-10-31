@@ -3,7 +3,7 @@
 ## 锁模型（源码 OBSERVED）
 
 - 全局 `MapRuntime::mu_`：仅注册表（找 map / player_map），Move 热路径短持有。
-- **每实例** `InstanceState::mu`：`LockInst` 计量 `aoi_lock_wait_us_sum`（ServerStats 有，**OpsMetrics 未导出** → 等待分布 NOT_OBSERVABLE）。
+- **每实例** `InstanceState::mu`：`LockInst` 在拿到锁之前累加 `gamemesh_aoi_lock_wait_us_sum`，在作用域锁析构时累加 `gamemesh_aoi_lock_hold_us_sum`。两者共用 `gamemesh_aoi_lock_samples_total`。这是总和，不是 P95/P99。
 - 多图不共享同一 instance 锁；同图内 Move 串行于该实例锁。
 
 ## 分段耗时

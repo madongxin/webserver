@@ -2,7 +2,7 @@
 
 | 问题 | 现有 | 缺口 | 建议埋点 |
 | --- | --- | --- | --- |
-| 锁是否先饱和 | LockInst 累加 wait_us | 未导出 / 无直方图 | `gamemesh_aoi_lock_wait_us_*` |
+| 锁是否先饱和 | `LockInst` 分开累加等待与持锁 | 已导出总和，仍无直方图 | `gamemesh_aoi_lock_wait_us_sum`、`gamemesh_aoi_lock_hold_us_sum`、`gamemesh_aoi_lock_samples_total` |
 | 每次 Move 候选数 | candidate_sum | 无 count | 导出 `aoi_candidate_count` |
 | Move 成败比 | error_code 累计 | 无 ok、无窗口 | `move_total{result}` |
 | Push RPC 等待 | accept/reject | 无 latency | PushBatch client 耗时 |

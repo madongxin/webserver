@@ -4,6 +4,7 @@
 #include "AoiPublishQueue.h"
 #include "MapRuntime.h"
 #include "MapStaticData.h"
+#include "ServerStats.h"
 
 #include <cmath>
 #include <cstdio>
@@ -74,6 +75,8 @@ int CountOp(const AoiPushBatch &b, uint64_t recipient, int op) {
 }  // namespace
 
 int main() {
+    const auto lock_samples_before = ServerStats::aoi_lock_samples.load();
+    const auto lock_hold_before = ServerStats::aoi_lock_hold_us_sum.load();
     auto data = MakeOpen();
     if (!data)
         return 1;
@@ -340,6 +343,10 @@ int main() {
     }
     Expect(seen == 80, "every one of 80 movers gets a send slot");
     Expect(max_gap > 0 && max_gap <= 2, "no mover waits more than two frames");
+    Expect(ServerStats::aoi_lock_samples.load() > lock_samples_before,
+           "aoi lock samples increased");
+    Expect(ServerStats::aoi_lock_hold_us_sum.load() > lock_hold_before,
+           "aoi lock hold time increased");
 
     if (fails) {
         std::printf("map_runtime_aoi_test FAIL count=%d\n", fails);

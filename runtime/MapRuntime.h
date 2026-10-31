@@ -3,6 +3,7 @@
 #include "MapStaticData.h"
 
 #include <atomic>
+#include <chrono>
 #include <cstdint>
 #include <memory>
 #include <mutex>
@@ -160,7 +161,26 @@ private:
                       int64_t now_ms) const;
 
     int ResolvedRadius(const InstanceState &st) const;
-    std::unique_lock<std::mutex> LockInst(const std::shared_ptr<InstanceState> &st) const;
+    /** 锁等待记在构造前，持锁时间记在析构。调用方只把它当作用域锁。 */
+    class InstLock {
+    public:
+        InstLock() = default;
+        explicit InstLock(std::unique_lock<std::mutex> lk);
+        InstLock(InstLock &&o) noexcept;
+        InstLock &operator=(InstLock &&o) noexcept;
+        bool owns_lock() const { return live_; }
+        void unlock() { Release(); }
+        ~InstLock();
+        InstLock(const InstLock &) = delete;
+        InstLock &operator=(const InstLock &) = delete;
+
+    private:
+        void Release() noexcept;
+        std::unique_lock<std::mutex> lk_;
+        std::chrono::steady_clock::time_point held_at_{};
+        bool live_ = false;
+    };
+    InstLock LockInst(const std::shared_ptr<InstanceState> &st) const;
     // Registry only. Does not take the instance lock.
     bool PublishPlayer(uint64_t player_id, uint64_t map_instance_id,
                        const std::shared_ptr<InstanceState> &st);

@@ -287,6 +287,15 @@ std::string OpsMetrics::PrometheusText() const {
         ServerStats::move_walk_slide.load(std::memory_order_relaxed));
     ctr("gamemesh_aoi_candidate_sum", "Sum of AOI candidate counts.",
         ServerStats::aoi_candidate_sum.load(std::memory_order_relaxed));
+    ctr("gamemesh_aoi_lock_wait_us_sum",
+        "Microseconds spent waiting to acquire an AOI instance lock. Does not include time holding the lock.",
+        ServerStats::aoi_lock_wait_us_sum.load(std::memory_order_relaxed));
+    ctr("gamemesh_aoi_lock_hold_us_sum",
+        "Microseconds spent holding an AOI instance lock, measured when LockInst's guard is released.",
+        ServerStats::aoi_lock_hold_us_sum.load(std::memory_order_relaxed));
+    ctr("gamemesh_aoi_lock_samples_total",
+        "Number of AOI instance lock acquisitions. Wait and hold sums share this count.",
+        ServerStats::aoi_lock_samples.load(std::memory_order_relaxed));
     ctr("gamemesh_aoi_visible_query_us_sum", "Sum of VisibleIds microseconds.",
         ServerStats::aoi_visible_query_us_sum.load(std::memory_order_relaxed));
     ctr("gamemesh_aoi_sub_enter_total", "AOI subscription ENTER events.",

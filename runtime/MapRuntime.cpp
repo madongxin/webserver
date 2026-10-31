@@ -56,16 +56,51 @@ int MapRuntime::ResolvedRadius(const InstanceState &st) const {
     return st.view_radius >= 0 ? st.view_radius : view_radius_;
 }
 
-std::unique_lock<std::mutex> MapRuntime::LockInst(const std::shared_ptr<InstanceState> &st) const {
+void MapRuntime::InstLock::Release() noexcept {
+    if (!live_)
+        return;
+    live_ = false;
+    const auto us = std::chrono::duration_cast<std::chrono::microseconds>(
+                        std::chrono::steady_clock::now() - held_at_)
+                        .count();
+    ServerStats::aoi_lock_hold_us_sum.fetch_add(static_cast<uint64_t>(us < 0 ? 0 : us),
+                                                std::memory_order_relaxed);
+    if (lk_.owns_lock())
+        lk_.unlock();
+}
+
+MapRuntime::InstLock::InstLock(std::unique_lock<std::mutex> lk)
+    : lk_(std::move(lk)), held_at_(std::chrono::steady_clock::now()), live_(lk_.owns_lock()) {}
+
+MapRuntime::InstLock::InstLock(InstLock &&o) noexcept
+    : lk_(std::move(o.lk_)), held_at_(o.held_at_), live_(o.live_) {
+    o.live_ = false;
+}
+
+MapRuntime::InstLock &MapRuntime::InstLock::operator=(InstLock &&o) noexcept {
+    if (this != &o) {
+        Release();
+        lk_ = std::move(o.lk_);
+        held_at_ = o.held_at_;
+        live_ = o.live_;
+        o.live_ = false;
+    }
+    return *this;
+}
+
+MapRuntime::InstLock::~InstLock() {
+    Release();
+}
+
+MapRuntime::InstLock MapRuntime::LockInst(const std::shared_ptr<InstanceState> &st) const {
     const auto t0 = std::chrono::steady_clock::now();
     std::unique_lock<std::mutex> lk(st->mu);
-    const auto us = std::chrono::duration_cast<std::chrono::microseconds>(
-                        std::chrono::steady_clock::now() - t0)
-                        .count();
+    const auto waited = std::chrono::steady_clock::now();
+    const auto us = std::chrono::duration_cast<std::chrono::microseconds>(waited - t0).count();
     ServerStats::aoi_lock_wait_us_sum.fetch_add(static_cast<uint64_t>(us < 0 ? 0 : us),
                                                 std::memory_order_relaxed);
     ServerStats::aoi_lock_samples.fetch_add(1, std::memory_order_relaxed);
-    return lk;
+    return InstLock(std::move(lk));
 }
 
 bool MapRuntime::PublishPlayer(uint64_t player_id, uint64_t map_instance_id,
@@ -424,8 +459,8 @@ bool MapRuntime::Enter(uint64_t map_instance_id, std::shared_ptr<const MapStatic
                 old = oit->second;
         }
     }
-    std::unique_lock<std::mutex> lock_a;
-    std::unique_lock<std::mutex> lock_b;
+    InstLock lock_a;
+    InstLock lock_b;
     if (old && old_id != map_instance_id) {
         if (old_id < map_instance_id) {
             lock_a = LockInst(old);
@@ -521,7 +556,6 @@ MapMoveReject MapRuntime::Move(uint64_t map_instance_id, uint64_t player_id, flo
             return fail(MapMoveReject::NotOnMap, "ERR_NOT_ON_MAP");
         st = mit->second;
     }
-    const auto hold0 = std::chrono::steady_clock::now();
     auto inst = LockInst(st);
     if (st->unloaded)
         return fail(MapMoveReject::NotOnMap, "ERR_NOT_ON_MAP");
@@ -664,11 +698,6 @@ MapMoveReject MapRuntime::Move(uint64_t map_instance_id, uint64_t player_id, flo
     }
     if (confirmed)
         *confirmed = e;
-    const auto hold_us = std::chrono::duration_cast<std::chrono::microseconds>(
-                             std::chrono::steady_clock::now() - hold0)
-                             .count();
-    ServerStats::aoi_lock_hold_us_sum.fetch_add(static_cast<uint64_t>(hold_us < 0 ? 0 : hold_us),
-                                                std::memory_order_relaxed);
     return MapMoveReject::Ok;
 }
 
