@@ -890,6 +890,17 @@ if(ENABLE_GAME_PROTOBUF)
   target_include_directories(gateway_conn_race_test PRIVATE runtime game base log timer)
   target_link_libraries(gateway_conn_race_test ${CMAKE_THREAD_LIBS_INIT})
 
+  add_executable(gateway_conn_bench
+    test/gateway_conn_bench.cpp
+    game/GatewayConnRegistry.cpp
+    base/CurrentThread.cpp
+    log/Logging.cpp
+    log/LogStream.cpp
+    log/LogFile.cpp
+    log/AsyncLogging.cpp)
+  target_include_directories(gateway_conn_bench PRIVATE runtime game base log timer)
+  target_link_libraries(gateway_conn_bench ${CMAKE_THREAD_LIBS_INIT})
+
   add_executable(push_admit_test
     test/push_admit_test.cpp
     runtime/PushAdmit.cpp
