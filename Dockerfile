@@ -28,12 +28,12 @@ RUN sed -i 's/mirrorlist/#mirrorlist/g; s|#baseurl=http://mirror.centos.org|base
  && useradd -r -u 10001 -d /opt/gamemesh -s /sbin/nologin gamemesh
 WORKDIR /opt/gamemesh
 COPY --from=build /src/build/test/gateway /src/build/test/session /src/build/test/gamelogic \
-                  /src/build/test/world /src/build/test/gamedb /opt/gamemesh/
+                  /src/build/test/globalservice /src/build/test/gamedb /opt/gamemesh/
 COPY config /opt/gamemesh/config
 COPY deploy/docker-entrypoint.sh /opt/gamemesh/docker-entrypoint.sh
 RUN chmod +x /opt/gamemesh/docker-entrypoint.sh \
  && chmod +x /opt/gamemesh/gateway /opt/gamemesh/session /opt/gamemesh/gamelogic \
-             /opt/gamemesh/world /opt/gamemesh/gamedb \
+             /opt/gamemesh/globalservice /opt/gamemesh/gamedb \
  && chown -R gamemesh:gamemesh /opt/gamemesh
 USER gamemesh
 ENV GAMEMESH_FORMAL=1 GAMEMESH_HTTP_BIND=0.0.0.0 GAMEMESH_ADVERTISE_HOST=127.0.0.1 \

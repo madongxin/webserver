@@ -6,12 +6,12 @@ RUN sed -i 's/mirrorlist/#mirrorlist/g; s|#baseurl=http://mirror.centos.org|base
  && useradd -r -u 10001 -d /opt/gamemesh -s /sbin/nologin gamemesh
 WORKDIR /opt/gamemesh
 COPY lib/ /opt/gamemesh/lib/
-COPY gateway session gamelogic world gamedb /opt/gamemesh/
+COPY gateway session gamelogic globalservice gamedb /opt/gamemesh/
 COPY docker-entrypoint.sh /opt/gamemesh/docker-entrypoint.sh
 COPY config /opt/gamemesh/config
 RUN chmod +x /opt/gamemesh/docker-entrypoint.sh \
              /opt/gamemesh/gateway /opt/gamemesh/session /opt/gamemesh/gamelogic \
-             /opt/gamemesh/world /opt/gamemesh/gamedb \
+             /opt/gamemesh/globalservice /opt/gamemesh/gamedb \
  && echo "/opt/gamemesh/lib" > /etc/ld.so.conf.d/gamemesh.conf \
  && ldconfig || true \
  && chown -R gamemesh:gamemesh /opt/gamemesh

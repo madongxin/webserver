@@ -11,7 +11,7 @@ x-gamemesh-app: &gamemesh_app
     - ../build/test/gateway:/opt/gamemesh/gateway:ro
     - ../build/test/session:/opt/gamemesh/session:ro
     - ../build/test/gamelogic:/opt/gamemesh/gamelogic:ro
-    - ../build/test/world:/opt/gamemesh/world:ro
+    - ../build/test/globalservice:/opt/gamemesh/globalservice:ro
     - ../build/test/gamedb:/opt/gamemesh/gamedb:ro
     - ./docker-entrypoint.sh:/opt/gamemesh/docker-entrypoint.sh:ro
     - ../config:/opt/config:ro
@@ -90,13 +90,13 @@ services:
       GAMEMESH_HEALTH_PORT: "8095"
     command: ["gamedb", "8095", "8502"]
 
-  world:
+  globalservice:
     <<: *gamemesh_app
     environment:
       <<: *gamemesh_env
-      GAMEMESH_INSTANCE_ID: "world-0"
+      GAMEMESH_INSTANCE_ID: "globalservice-1"
       GAMEMESH_HEALTH_PORT: "8092"
-    command: ["world", "8092"]
+    command: ["globalservice", "8092"]
     depends_on: [gamedb0]
 
   gamelogic0:

@@ -6,7 +6,7 @@ set -euo pipefail
 ROOT="${GAMEMESH_BIN_DIR:-/opt/gamemesh}"
 
 if [[ $# -eq 0 ]]; then
-  echo "usage: gateway|session|gamelogic|world|gamedb [args...]" >&2
+  echo "usage: gateway|session|gamelogic|globalservice|gamedb [args...]" >&2
   echo "   or: /absolute/path/to/binary [args...]" >&2
   exit 2
 fi
@@ -15,7 +15,7 @@ cmd="$1"
 shift
 
 case "$cmd" in
-  gateway|session|gamelogic|world|gamedb)
+  gateway|session|gamelogic|globalservice|gamedb)
     exec "${ROOT}/${cmd}" "$@"
     ;;
   /*)

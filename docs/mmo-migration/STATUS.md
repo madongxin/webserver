@@ -1,5 +1,7 @@
 # STATUS — GameMesh 迁移进度
 
+> 进程名已从 `world` 改为 `globalservice`。下面若还出现旧二进制名，只作历史记录，启动请用 `./build/test/globalservice`。
+
 > 更新：2026-09-06
 > 正式基线：`docs/mmo-distributed-architecture.md`
 > 全阶段路线图：`docs/GameMesh_Cursor_All_Phases.md`
@@ -58,7 +60,7 @@
 ```bash
 ./build/test/session 8092 8401
 ./build/test/gamedb 8093 8501
-./build/test/world 8091
+./build/test/globalservice 8092
 ./build/test/gamelogic 8090 8201
 ./build/test/gateway 8080 8081
 ./build/test/server all 8080 8081
