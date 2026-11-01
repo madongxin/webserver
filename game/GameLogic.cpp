@@ -482,73 +482,81 @@ void GameLogic::SetAoiHold(uint64_t player_id, bool hold) {
 }
 
 bool GameLogic::EnsurePlayerLoaded(uint64_t player_id, std::string *err) {
-    // 已有内存态（含 Import/迁移）视为已加载
-    if (inventory_.count(player_id) != 0) {
-        player_load_ok_[player_id] = true;
-        if (skill_cd_until_ms_.count(player_id) == 0)
-            skill_cd_until_ms_[player_id] = {};
-        return true;
+    {
+        std::lock_guard<std::mutex> lk(mu_);
+        if (inventory_.count(player_id) != 0) {
+            player_load_ok_[player_id] = true;
+            if (skill_cd_until_ms_.count(player_id) == 0)
+                skill_cd_until_ms_[player_id] = {};
+            return true;
+        }
+        if (player_load_ok_.count(player_id) && !player_load_ok_[player_id]) {
+            if (err)
+                *err = "player load previously failed";
+            return false;
+        }
     }
-    if (player_load_ok_.count(player_id) && !player_load_ok_[player_id]) {
-        if (err)
-            *err = "player load previously failed";
-        return false;
-    }
+
+    std::map<uint32_t, uint32_t> loaded;
+    uint64_t ver = 1;
+    bool failed = false;
+    std::string load_err;
+    bool from_mysql = false;
 #if defined(WEBSERVER_ENABLE_BRPC)
     if (FormalModeEnabled()) {
         if (!BrpcGameDbRepository::Instance().started()) {
-            player_load_ok_[player_id] = false;
-            if (err)
-                *err = "gamedb unavailable";
-            LOG_WARN << "EnsurePlayerLoaded GameDB not started player_id=" << player_id;
-            return false;
+            failed = true;
+            load_err = "gamedb unavailable";
+        } else if (!BrpcGameDbRepository::Instance().LoadInventory(player_id, &loaded, &ver,
+                                                                   &load_err)) {
+            failed = true;
+            if (load_err.empty())
+                load_err = "gamedb load failed";
         }
-        std::map<uint32_t, uint32_t> loaded;
-        uint64_t ver = 1;
-        std::string load_err;
-        if (!BrpcGameDbRepository::Instance().LoadInventory(player_id, &loaded, &ver, &load_err)) {
-            player_load_ok_[player_id] = false;
-            if (err)
-                *err = load_err.empty() ? "gamedb load failed" : load_err;
-            LOG_WARN << "EnsurePlayerLoaded GameDB fail player_id=" << player_id
-                     << " err=" << (err ? *err : load_err);
-            return false;
-        }
-        inventory_[player_id] = std::move(loaded);
-        asset_version_[player_id] = ver == 0 ? 1 : ver;
-        skill_cd_until_ms_[player_id] = {};
+    }
+#endif
+    if (!failed && !FormalModeEnabled()) {
+#ifdef WEBSERVER_ENABLE_MYSQL
+        from_mysql = true;
+        if (!PlayerItemStore::Instance().LoadInventoryAggregate(player_id, &loaded))
+            loaded.clear();
+#else
+        loaded[1001] = 10;
+        loaded[1002] = 5;
+#endif
+    }
+
+    std::lock_guard<std::mutex> lk(mu_);
+    if (inventory_.count(player_id) != 0) {
         player_load_ok_[player_id] = true;
-        LOG_INFO << "EnsurePlayerLoaded from GameDB player_id=" << player_id
-                 << " kinds=" << inventory_[player_id].size() << " ver=" << asset_version_[player_id];
         return true;
     }
-#endif
-    auto &inv = inventory_[player_id];
-#ifdef WEBSERVER_ENABLE_MYSQL
-    std::map<uint32_t, uint32_t> loaded;
-    if (PlayerItemStore::Instance().LoadInventoryAggregate(player_id, &loaded) && !loaded.empty()) {
-        inv = std::move(loaded);
-        LOG_INFO << "EnsurePlayer loaded bag from DB player_id=" << player_id
-                 << " kinds=" << inv.size();
-    } else {
-        inv.clear();
+    if (failed) {
+        player_load_ok_[player_id] = false;
+        if (err)
+            *err = load_err;
+        LOG_WARN << "EnsurePlayerLoaded fail player_id=" << player_id << " err=" << load_err;
+        return false;
     }
-#else
-    inv[1001] = 10;
-    inv[1002] = 5;
-#endif
+    inventory_[player_id] = std::move(loaded);
+    if (asset_version_.count(player_id) == 0)
+        asset_version_[player_id] = ver == 0 ? 1 : ver;
     if (skill_cd_until_ms_.count(player_id) == 0)
         skill_cd_until_ms_[player_id] = {};
-    if (asset_version_.count(player_id) == 0)
-        asset_version_[player_id] = 1;
     player_load_ok_[player_id] = true;
+    if (FormalModeEnabled()) {
+        LOG_INFO << "EnsurePlayerLoaded from GameDB player_id=" << player_id
+                 << " kinds=" << inventory_[player_id].size()
+                 << " ver=" << asset_version_[player_id];
+    } else if (from_mysql && !inventory_[player_id].empty()) {
+        LOG_INFO << "EnsurePlayer loaded bag from DB player_id=" << player_id
+                 << " kinds=" << inventory_[player_id].size();
+    }
     return true;
 }
 
 void GameLogic::EnsurePlayer(uint64_t player_id) {
-    std::string err;
-    (void)EnsurePlayerLoaded(player_id, &err);
-    // 非 Formal 兼容：保证 key 存在，避免调用方 operator[] 歧义
+    // 非 Formal 兼容：保证 key 存在，避免调用方 operator[] 歧义。此处禁止远程 IO。
     if (inventory_.count(player_id) == 0 && !FormalModeEnabled()) {
         inventory_[player_id] = {};
         skill_cd_until_ms_[player_id] = {};
@@ -558,6 +566,8 @@ void GameLogic::EnsurePlayer(uint64_t player_id) {
 }
 
 uint32_t GameLogic::GetItemCount(uint64_t player_id, uint32_t item_id) {
+    std::string err;
+    (void)EnsurePlayerLoaded(player_id, &err);
     std::lock_guard<std::mutex> lk(mu_);
     EnsurePlayer(player_id);
     return inventory_[player_id][item_id];
@@ -567,6 +577,8 @@ void GameLogic::CopyInventory(uint64_t player_id, std::unordered_map<uint32_t, u
     if (!out)
         return;
     out->clear();
+    std::string err;
+    (void)EnsurePlayerLoaded(player_id, &err);
     std::lock_guard<std::mutex> lk(mu_);
     EnsurePlayer(player_id);
     for (const auto &kv : inventory_[player_id])
@@ -576,6 +588,8 @@ void GameLogic::CopyInventory(uint64_t player_id, std::unordered_map<uint32_t, u
 bool GameLogic::ApplyItemReward(uint64_t player_id, uint32_t item_id, uint32_t count) {
     if (count == 0)
         return false;
+    std::string err;
+    (void)EnsurePlayerLoaded(player_id, &err);
     std::lock_guard<std::mutex> lk(mu_);
     EnsurePlayer(player_id);
     inventory_[player_id][item_id] += count;
@@ -694,6 +708,8 @@ bool GameLogic::ApplyItemRewardsWithVersion(uint64_t player_id,
                                             uint64_t committed_asset_version) {
     if (player_id == 0 || committed_asset_version == 0)
         return false;
+    std::string load_err;
+    (void)EnsurePlayerLoaded(player_id, &load_err);
     bool need_reload = false;
     {
         std::lock_guard<std::mutex> lk(mu_);
@@ -757,12 +773,16 @@ bool GameLogic::ApplyItemRewardsWithVersion(uint64_t player_id,
 }
 
 uint64_t GameLogic::GetAssetVersion(uint64_t player_id) {
+    std::string err;
+    (void)EnsurePlayerLoaded(player_id, &err);
     std::lock_guard<std::mutex> lk(mu_);
     EnsurePlayer(player_id);
     return asset_version_[player_id];
 }
 
 bool GameLogic::RollbackItemReward(uint64_t player_id, uint32_t item_id, uint32_t count) {
+    std::string err;
+    (void)EnsurePlayerLoaded(player_id, &err);
     std::lock_guard<std::mutex> lk(mu_);
     EnsurePlayer(player_id);
     auto &n = inventory_[player_id][item_id];
@@ -778,6 +798,8 @@ bool GameLogic::ExportRuntimeState(uint64_t player_id, std::map<uint32_t, uint32
                                    std::map<uint32_t, int64_t> *skill_cds, uint64_t *asset_version) {
     if (!bag || !skill_cds)
         return false;
+    std::string err;
+    (void)EnsurePlayerLoaded(player_id, &err);
     std::lock_guard<std::mutex> lk(mu_);
     EnsurePlayer(player_id);
     *bag = inventory_[player_id];
@@ -825,6 +847,8 @@ bool GameLogic::BuildFullStateSnapshot(uint64_t player_id, uint64_t baseline_ser
         return false;
     }
     out->Clear();
+    std::string load_err;
+    (void)EnsurePlayerLoaded(player_id, &load_err);
     game::PlayerAttributes attrs;
     const bool have_profile = GetPlayerAttributes(player_id, &attrs);
     std::unique_lock<std::mutex> lk(mu_);
@@ -992,6 +1016,8 @@ bool GameLogic::BuildFullStateSnapshot(uint64_t player_id, uint64_t baseline_ser
 }
 
 void GameLogic::SetLifeStateForTest(uint64_t player_id, int32_t hp, const std::string &life_state) {
+    std::string err;
+    (void)EnsurePlayerLoaded(player_id, &err);
     std::lock_guard<std::mutex> lk(mu_);
     EnsurePlayer(player_id);
     auto &p = profiles_[player_id];
@@ -1166,6 +1192,10 @@ bool GameLogic::HandleConsumeItem(const game::ConsumeItemReq &req, game::GameRes
         rsp->set_message("count must be > 0");
         return false;
     }
+    {
+        std::string load_err;
+        (void)EnsurePlayerLoaded(req.player_id(), &load_err);
+    }
     if (!EnsureAssetsSynced(req.player_id())) {
         rsp->set_ok(false);
         rsp->set_message("STATE_SYNC_REQUIRED");
@@ -1313,6 +1343,10 @@ bool GameLogic::HandleConsumeItem(const game::ConsumeItemReq &req, game::GameRes
 }
 
 bool GameLogic::HandleReleaseSkill(const game::ReleaseSkillReq &req, game::GameResponse *rsp) {
+    {
+        std::string load_err;
+        (void)EnsurePlayerLoaded(req.player_id(), &load_err);
+    }
     LOG_INFO << "[release_skill] recv player_id=" << req.player_id() << " skill_id=" << req.skill_id()
              << " target=(" << req.target_x() << "," << req.target_y() << ")";
     std::lock_guard<std::mutex> lk(mu_);
@@ -1362,6 +1396,10 @@ bool GameLogic::HandleGrantItem(const game::GrantItemReq &req, game::GameRespons
         body->set_ok(false);
         body->set_message(rsp->message());
         return false;
+    }
+    {
+        std::string load_err;
+        (void)EnsurePlayerLoaded(req.player_id(), &load_err);
     }
     if (!EnsureAssetsSynced(req.player_id())) {
         rsp->set_ok(false);
@@ -1701,8 +1739,11 @@ bool GameLogic::BindAuthenticatedPlayer(uint64_t player_id, std::string *err,
     {
         std::lock_guard<std::mutex> lk(mu_);
         player_load_ok_.erase(player_id);
-        if (!EnsurePlayerLoaded(player_id, err))
-            return false;
+    }
+    if (!EnsurePlayerLoaded(player_id, err))
+        return false;
+    {
+        std::lock_guard<std::mutex> lk(mu_);
         auto it = profiles_.find(player_id);
         if (it != profiles_.end()) {
             if (profile_out)

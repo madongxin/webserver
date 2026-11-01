@@ -112,8 +112,9 @@ private:
     bool HandleRespawn(const game::RespawnReq &req, game::GameResponse *rsp);
     bool HandleInteractPortal(const game::InteractPortalReq &req, game::GameResponse *rsp);
     bool RequireSessionToken(const game::GameRequest &req, uint64_t player_id, game::GameResponse *rsp);
-    /** @return false：Formal 下 GameDB 加载失败，不得当作空背包成功 */
+    /** 不得在持有 mu_ 时调用。远程加载在锁外完成，写回内存时才加锁。 */
     bool EnsurePlayerLoaded(uint64_t player_id, std::string *err);
+    /** 调用方已持有 mu_。只补内存槽，不做网络或磁盘 IO。 */
     void EnsurePlayer(uint64_t player_id);
     /** 从正式资产重载背包+版本（不得在持 mu_ 时调用远程 IO） */
     bool LoadAssetsFromGameDbUnlocked(uint64_t player_id, std::map<uint32_t, uint32_t> *bag,
