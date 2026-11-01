@@ -2,7 +2,8 @@
 
 #include <mysql/mysql.h>
 
-#include <ctime>
+#include <chrono>
+#include <cstdint>
 #include <string>
 #include <vector>
 
@@ -31,11 +32,12 @@ public:
     bool rollback();
 
     void refreshAliveTime();
-    clock_t getAlieTime() const;
+    /** 自上次 refreshAliveTime 起的墙钟毫秒，不用 clock() 的进程 CPU 时间。 */
+    int64_t getAlieTime() const;
 
     MYSQL *raw() const { return _conn; }
 
 private:
     MYSQL *_conn = nullptr;
-    clock_t _alivetime = 0;
+    std::chrono::steady_clock::time_point _alivetime{};
 };

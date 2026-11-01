@@ -46,8 +46,11 @@ public:
     /** 注册到主 EventLoop 定时器（与 MetricsDbWriter 类似） */
     void StartPeriodic(EventLoop *loop, double interval_sec = 300.0);
 
-    /** grant_item 成功后调用：入队 + 标记本地在线 */
-    void Enqueue(const PendingPlayerItem &item);
+    /**
+     * grant/consume 成功后调用。队列超过 10000 条时拒绝并打日志，避免发奖洪水吃光内存。
+     * 返回 false 表示没进队列。
+     */
+    bool Enqueue(const PendingPlayerItem &item);
 
     /** 登录成功等：加入本地在线集合（Redis 仍为准） */
     void MarkOnline(uint64_t player_id);

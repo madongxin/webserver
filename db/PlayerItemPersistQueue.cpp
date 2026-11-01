@@ -17,6 +17,7 @@
 #include <chrono>
 #include <mutex>
 #include <thread>
+#include <unordered_set>
 
 PlayerItemPersistQueue &PlayerItemPersistQueue::Instance() {
     static PlayerItemPersistQueue g;
@@ -108,12 +109,24 @@ void PlayerItemPersistQueue::MarkOffline(uint64_t player_id) {
     online_local_.erase(player_id);
 }
 
-void PlayerItemPersistQueue::Enqueue(const PendingPlayerItem &item) {
+bool PlayerItemPersistQueue::Enqueue(const PendingPlayerItem &item) {
     if (item.player_id == 0 || item.item_id == 0)
-        return;
+        return false;
     if (!item.snapshot && item.count == 0)
-        return;
+        return false;
     std::lock_guard<std::mutex> lk(mu_);
+    if (queue_.size() >= 10000 &&
+        !(item.snapshot && [&]() {
+            for (const auto &e : queue_) {
+                if (e.player_id == item.player_id && e.item_id == item.item_id)
+                    return true;
+            }
+            return false;
+        }())) {
+        LOG_WARN << "PlayerItemPersistQueue: reject full queue player_id=" << item.player_id
+                 << " item_id=" << item.item_id << " queue_size=" << queue_.size();
+        return false;
+    }
     if (item.snapshot) {
         for (auto it = queue_.begin(); it != queue_.end();) {
             if (it->player_id == item.player_id && it->item_id == item.item_id)
@@ -127,6 +140,7 @@ void PlayerItemPersistQueue::Enqueue(const PendingPlayerItem &item) {
     LOG_INFO << "PlayerItemPersistQueue: enqueue player_id=" << item.player_id
              << " item_id=" << item.item_id << " count=" << item.count
              << " queue_size=" << queue_.size();
+    return true;
 }
 
 size_t PlayerItemPersistQueue::QueueSize() const {
@@ -150,22 +164,35 @@ void PlayerItemPersistQueue::FlushOnlinePlayers() {
     PlayerItemStore::Instance().EnsureTable();
 
     // 将队列拆成 to_flush（在线）与 keep（离线）；离线项继续留在 queue_ 直到玩家再次上线
+    std::deque<PendingPlayerItem> queued;
+    std::unordered_set<uint64_t> local_online;
+    {
+        std::lock_guard<std::mutex> lk(mu_);
+        queued = queue_;
+        local_online = online_local_;
+    }
+    std::unordered_set<uint64_t> online_ids;
+    for (const auto &e : queued) {
+        if (online_ids.count(e.player_id))
+            continue;
+        bool online = false;
+#ifdef WEBSERVER_ENABLE_REDIS
+        if (SessionStore::Instance().Available())
+            online = SessionStore::Instance().IsPlayerOnline(e.player_id);
+        else
+            online = local_online.count(e.player_id) > 0;
+#else
+        online = local_online.count(e.player_id) > 0;
+#endif
+        if (online)
+            online_ids.insert(e.player_id);
+    }
     std::deque<PendingPlayerItem> to_flush;
     std::deque<PendingPlayerItem> keep;
     {
         std::lock_guard<std::mutex> lk(mu_);
         for (const auto &e : queue_) {
-            bool online = false;
-#ifdef WEBSERVER_ENABLE_REDIS
-            // Redis 有 game:session:{uid} 则以 SessionStore 为准；否则用 grant/login 写入的 online_local_
-            if (SessionStore::Instance().Available())
-                online = SessionStore::Instance().IsPlayerOnline(e.player_id);
-            else
-                online = online_local_.count(e.player_id) > 0;
-#else
-            online = online_local_.count(e.player_id) > 0;
-#endif
-            if (online)
+            if (online_ids.count(e.player_id))
                 to_flush.push_back(e);
             else
                 keep.push_back(e);

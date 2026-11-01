@@ -186,9 +186,11 @@ bool Connection::commit() { return update("COMMIT"); }
 bool Connection::rollback() { return update("ROLLBACK"); }
 
 void Connection::refreshAliveTime() {
-    _alivetime = clock();
+    _alivetime = std::chrono::steady_clock::now();
 }
 
-clock_t Connection::getAlieTime() const {
-    return clock() - _alivetime;
+int64_t Connection::getAlieTime() const {
+    return std::chrono::duration_cast<std::chrono::milliseconds>(
+               std::chrono::steady_clock::now() - _alivetime)
+        .count();
 }

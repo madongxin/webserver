@@ -33,6 +33,13 @@ bool EncodeFrame(const std::string &payload, std::string *out);
  * Incomplete：不消费。
  * Invalid：不消费完整帧（可保留或由调用方清空并关连）。
  */
+/**
+ * 从 buffer[offset] 起解析一帧，不改 buffer。
+ * Complete 时 *consumed 为这一帧占用的字节数（4 + payload）。
+ */
+FrameDecodeResult DecodeOneFrameFrom(const std::string &buffer, size_t offset, std::string *payload,
+                                     size_t *consumed);
+
 FrameDecodeResult DecodeOneFrame(std::string *buffer, std::string *payload);
 
 /** 兼容旧接口：仅 Complete 返回 true（Incomplete/Invalid 均 false） */

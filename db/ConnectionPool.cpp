@@ -162,7 +162,7 @@ void ConnectionPool::produceConnectionTask() {
 
 void ConnectionPool::recycleConnectionTask() {
     // 队列是 FIFO：队首是归还最早、空闲最久的连接；从队首连续回收即可
-    const clock_t max_idle_ticks = static_cast<clock_t>(_maxIdleTime) * CLOCKS_PER_SEC;
+    const int64_t max_idle_ms = static_cast<int64_t>(_maxIdleTime) * 1000;
     for (;;) {
         {
             std::unique_lock<std::mutex> wait_lock(_queueMutex);
@@ -175,7 +175,7 @@ void ConnectionPool::recycleConnectionTask() {
             return;
         while (_connectionCnt.load() > _initSize && !_connectionQue.empty()) {
             Connection *conn = _connectionQue.front();
-            if (conn->getAlieTime() >= max_idle_ticks) {
+            if (conn->getAlieTime() >= max_idle_ms) {
                 _connectionQue.pop();
                 _connectionCnt.fetch_sub(1);
                 delete conn;  // ~Connection → mysql_close

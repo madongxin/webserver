@@ -20,6 +20,17 @@ namespace {
 
 std::mutex g_mu;
 
+struct MysqlResGuard {
+    MYSQL_RES *res = nullptr;
+    explicit MysqlResGuard(MYSQL_RES *r) : res(r) {}
+    ~MysqlResGuard() {
+        if (res)
+            mysql_free_result(res);
+    }
+    MysqlResGuard(const MysqlResGuard &) = delete;
+    MysqlResGuard &operator=(const MysqlResGuard &) = delete;
+};
+
 /** 转义 SQL 字符串中的 \ 和 '，防止拼接注入 */
 std::string SqlEscape(const std::string &s) {
     std::string out;
@@ -100,16 +111,13 @@ bool PlayerItemStore::Insert(uint64_t player_id, uint64_t item_id, uint32_t coun
         return false;
 
     // 取 AUTO_INCREMENT，作为 GrantItemRsp.instance_id（队列入库时客户端多为 0）
-    MYSQL_RES *res = conn->query("SELECT LAST_INSERT_ID() AS id");
-    if (!res)
+    MysqlResGuard res(conn->query("SELECT LAST_INSERT_ID() AS id"));
+    if (!res.res)
         return false;
-    MYSQL_ROW row = mysql_fetch_row(res);
-    if (!row || !row[0]) {
-        mysql_free_result(res);
+    MYSQL_ROW row = mysql_fetch_row(res.res);
+    if (!row || !row[0])
         return false;
-    }
     *instance_id = static_cast<uint64_t>(std::strtoull(row[0], nullptr, 10));
-    mysql_free_result(res);
     return *instance_id > 0;
 }
 
@@ -134,16 +142,13 @@ bool PlayerItemStore::InsertOnConnection(Connection *conn, uint64_t player_id, u
     if (!conn->update(sql.str()))
         return false;
 
-    MYSQL_RES *res = conn->query("SELECT LAST_INSERT_ID() AS id");
-    if (!res)
+    MysqlResGuard res(conn->query("SELECT LAST_INSERT_ID() AS id"));
+    if (!res.res)
         return false;
-    MYSQL_ROW row = mysql_fetch_row(res);
-    if (!row || !row[0]) {
-        mysql_free_result(res);
+    MYSQL_ROW row = mysql_fetch_row(res.res);
+    if (!row || !row[0])
         return false;
-    }
     *instance_id = static_cast<uint64_t>(std::strtoull(row[0], nullptr, 10));
-    mysql_free_result(res);
     return *instance_id > 0;
 }
 
@@ -159,14 +164,15 @@ bool PlayerItemStore::SetCount(uint64_t player_id, uint64_t item_id, uint32_t co
     std::ostringstream find;
     find << "SELECT MIN(id) FROM player_item WHERE player_id=" << player_id
          << " AND item_id=" << item_id;
-    MYSQL_RES *res = conn->query(find.str());
-    if (!res)
-        return false;
-    MYSQL_ROW row = mysql_fetch_row(res);
     uint64_t keep_id = 0;
-    if (row && row[0])
-        keep_id = static_cast<uint64_t>(std::strtoull(row[0], nullptr, 10));
-    mysql_free_result(res);
+    {
+        MysqlResGuard found(conn->query(find.str()));
+        if (!found.res)
+            return false;
+        MYSQL_ROW row = mysql_fetch_row(found.res);
+        if (row && row[0])
+            keep_id = static_cast<uint64_t>(std::strtoull(row[0], nullptr, 10));
+    }
 
     if (keep_id == 0) {
         if (count == 0)
@@ -200,11 +206,11 @@ bool PlayerItemStore::LoadInventoryAggregate(uint64_t player_id, std::map<uint32
     std::ostringstream sql;
     sql << "SELECT item_id, SUM(count) FROM player_item WHERE player_id=" << player_id
         << " AND (expire_time IS NULL OR expire_time > NOW()) GROUP BY item_id";
-    MYSQL_RES *res = conn->query(sql.str());
-    if (!res)
+    MysqlResGuard res(conn->query(sql.str()));
+    if (!res.res)
         return false;
     MYSQL_ROW row;
-    while ((row = mysql_fetch_row(res)) != nullptr) {
+    while ((row = mysql_fetch_row(res.res)) != nullptr) {
         if (!row[0] || !row[1])
             continue;
         const uint32_t item_id = static_cast<uint32_t>(std::strtoul(row[0], nullptr, 10));
@@ -212,6 +218,5 @@ bool PlayerItemStore::LoadInventoryAggregate(uint64_t player_id, std::map<uint32
         if (item_id > 0 && count > 0)
             (*out)[item_id] = count;
     }
-    mysql_free_result(res);
     return true;
 }

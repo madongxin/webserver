@@ -966,12 +966,15 @@ void GameTcpGateway::OnMessage(const std::shared_ptr<TcpConnection> &conn) {
 
     std::vector<std::string> frames;
     std::string frame;
+    size_t offset = 0;
     for (;;) {
-        const auto dr = gameproto::DecodeOneFrame(&buf, &frame);
+        size_t consumed = 0;
+        const auto dr = gameproto::DecodeOneFrameFrom(buf, offset, &frame, &consumed);
         if (dr == gameproto::FrameDecodeResult::Complete) {
             frames.push_back(std::move(frame));
             OpsMetrics::Instance().AddGatewayRxFrames(1);
             frame.clear();
+            offset += consumed;
             continue;
         }
         if (dr == gameproto::FrameDecodeResult::Invalid) {
@@ -984,6 +987,8 @@ void GameTcpGateway::OnMessage(const std::shared_ptr<TcpConnection> &conn) {
         }
         break;  // Incomplete
     }
+    if (offset > 0)
+        buf.erase(0, offset);
     // 同一读批次里心跳/重连先处理，避免排在 Move/EnterMap 后面拖过客户端时限。
     if (frames.size() > 1) {
         std::stable_sort(frames.begin(), frames.end(), [](const std::string &a, const std::string &b) {

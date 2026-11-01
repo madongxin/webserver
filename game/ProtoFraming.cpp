@@ -35,25 +35,37 @@ bool EncodeFrame(const std::string &payload, std::string *out) {
     return true;
 }
 
-FrameDecodeResult DecodeOneFrame(std::string *buffer, std::string *payload) {
-    if (!buffer || !payload)
+FrameDecodeResult DecodeOneFrameFrom(const std::string &buffer, size_t offset, std::string *payload,
+                                     size_t *consumed) {
+    if (!payload)
         return FrameDecodeResult::Invalid;
-    if (buffer->size() < 4)
+    if (buffer.size() < offset + 4)
         return FrameDecodeResult::Incomplete;
 
     uint32_t be = 0;
-    std::memcpy(&be, buffer->data(), 4);
+    std::memcpy(&be, buffer.data() + offset, 4);
     const uint32_t len = ntohl(be);
 
     if (len == 0 || len > MaxFrameSize())
         return FrameDecodeResult::Invalid;
 
-    if (buffer->size() < 4u + len)
+    if (buffer.size() < offset + 4u + len)
         return FrameDecodeResult::Incomplete;
 
-    payload->assign(buffer->data() + 4, len);
-    buffer->erase(0, 4 + len);
+    payload->assign(buffer.data() + offset + 4, len);
+    if (consumed)
+        *consumed = 4u + len;
     return FrameDecodeResult::Complete;
+}
+
+FrameDecodeResult DecodeOneFrame(std::string *buffer, std::string *payload) {
+    if (!buffer)
+        return FrameDecodeResult::Invalid;
+    size_t consumed = 0;
+    const FrameDecodeResult dr = DecodeOneFrameFrom(*buffer, 0, payload, &consumed);
+    if (dr == FrameDecodeResult::Complete)
+        buffer->erase(0, consumed);
+    return dr;
 }
 
 bool TryDecodeOneFrame(std::string *buffer, std::string *payload) {
