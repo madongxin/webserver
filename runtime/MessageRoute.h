@@ -4,8 +4,8 @@
 
 namespace gameproto {
 
-/** 阶段 6：应路由到 World 中控的请求（邮件 + 聊天/好友骨架） */
-bool IsWorldBoundRequest(const game::GameRequest &req);
+/** 阶段 6：应路由到 GlobalService 的请求（邮件 + 聊天/好友骨架） */
+bool IsGlobalServiceRequest(const game::GameRequest &req);
 
 /** 邮件读写：Formal 下 World 再转 GameDB（MailStore 只在 GameDB） */
 bool IsMailBoundRequest(const game::GameRequest &req);

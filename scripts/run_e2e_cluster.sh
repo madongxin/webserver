@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # 最终 E2E 专用集群（高端口，避免与 formal 8080 冲突）
-# 拓扑: 2×gw + 2×session + 2×logic + 2×gamedb + world
+# 拓扑: 2×gw + 2×session + 2×logic + 2×gamedb + globalservice
 set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"

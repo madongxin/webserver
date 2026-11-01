@@ -132,9 +132,9 @@ const char descriptor_table_protodef_forward_2eproto[] PROTOBUF_SECTION_VARIABLE
   "load\030\002 \001(\014\"A\n\nForwardRsp\022\n\n\002ok\030\001 \001(\010\022\017\n\007"
   "message\030\002 \001(\t\022\026\n\016response_frame\030\003 \001(\0142\?\n"
   "\020GameLogicForward\022+\n\007Forward\022\017.fwd.Forwa"
-  "rdReq\032\017.fwd.ForwardRsp2;\n\014WorldForward\022+"
-  "\n\007Forward\022\017.fwd.ForwardReq\032\017.fwd.Forward"
-  "RspB\003\200\001\001b\006proto3"
+  "rdReq\032\017.fwd.ForwardRsp2C\n\024GlobalServiceF"
+  "orward\022+\n\007Forward\022\017.fwd.ForwardReq\032\017.fwd"
+  ".ForwardRspB\003\200\001\001b\006proto3"
   ;
 static const ::PROTOBUF_NAMESPACE_ID::internal::DescriptorTable*const descriptor_table_forward_2eproto_deps[1] = {
 };
@@ -145,7 +145,7 @@ static ::PROTOBUF_NAMESPACE_ID::internal::SCCInfoBase*const descriptor_table_for
 };
 static ::PROTOBUF_NAMESPACE_ID::internal::once_flag descriptor_table_forward_2eproto_once;
 const ::PROTOBUF_NAMESPACE_ID::internal::DescriptorTable descriptor_table_forward_2eproto = {
-  false, false, descriptor_table_protodef_forward_2eproto, "forward.proto", 536,
+  false, false, descriptor_table_protodef_forward_2eproto, "forward.proto", 544,
   &descriptor_table_forward_2eproto_once, descriptor_table_forward_2eproto_sccs, descriptor_table_forward_2eproto_deps, 3, 0,
   schemas, file_default_instances, TableStruct_forward_2eproto::offsets,
   file_level_metadata_forward_2eproto, 3, file_level_enum_descriptors_forward_2eproto, file_level_service_descriptors_forward_2eproto,
@@ -1219,18 +1219,18 @@ void GameLogicForward_Stub::Forward(::PROTOBUF_NAMESPACE_ID::RpcController* cont
 }
 // ===================================================================
 
-WorldForward::~WorldForward() {}
+GlobalServiceForward::~GlobalServiceForward() {}
 
-const ::PROTOBUF_NAMESPACE_ID::ServiceDescriptor* WorldForward::descriptor() {
+const ::PROTOBUF_NAMESPACE_ID::ServiceDescriptor* GlobalServiceForward::descriptor() {
   ::PROTOBUF_NAMESPACE_ID::internal::AssignDescriptors(&descriptor_table_forward_2eproto);
   return file_level_service_descriptors_forward_2eproto[1];
 }
 
-const ::PROTOBUF_NAMESPACE_ID::ServiceDescriptor* WorldForward::GetDescriptor() {
+const ::PROTOBUF_NAMESPACE_ID::ServiceDescriptor* GlobalServiceForward::GetDescriptor() {
   return descriptor();
 }
 
-void WorldForward::Forward(::PROTOBUF_NAMESPACE_ID::RpcController* controller,
+void GlobalServiceForward::Forward(::PROTOBUF_NAMESPACE_ID::RpcController* controller,
                          const ::fwd::ForwardReq*,
                          ::fwd::ForwardRsp*,
                          ::google::protobuf::Closure* done) {
@@ -1238,7 +1238,7 @@ void WorldForward::Forward(::PROTOBUF_NAMESPACE_ID::RpcController* controller,
   done->Run();
 }
 
-void WorldForward::CallMethod(const ::PROTOBUF_NAMESPACE_ID::MethodDescriptor* method,
+void GlobalServiceForward::CallMethod(const ::PROTOBUF_NAMESPACE_ID::MethodDescriptor* method,
                              ::PROTOBUF_NAMESPACE_ID::RpcController* controller,
                              const ::PROTOBUF_NAMESPACE_ID::Message* request,
                              ::PROTOBUF_NAMESPACE_ID::Message* response,
@@ -1259,7 +1259,7 @@ void WorldForward::CallMethod(const ::PROTOBUF_NAMESPACE_ID::MethodDescriptor* m
   }
 }
 
-const ::PROTOBUF_NAMESPACE_ID::Message& WorldForward::GetRequestPrototype(
+const ::PROTOBUF_NAMESPACE_ID::Message& GlobalServiceForward::GetRequestPrototype(
     const ::PROTOBUF_NAMESPACE_ID::MethodDescriptor* method) const {
   GOOGLE_DCHECK_EQ(method->service(), descriptor());
   switch(method->index()) {
@@ -1272,7 +1272,7 @@ const ::PROTOBUF_NAMESPACE_ID::Message& WorldForward::GetRequestPrototype(
   }
 }
 
-const ::PROTOBUF_NAMESPACE_ID::Message& WorldForward::GetResponsePrototype(
+const ::PROTOBUF_NAMESPACE_ID::Message& GlobalServiceForward::GetResponsePrototype(
     const ::PROTOBUF_NAMESPACE_ID::MethodDescriptor* method) const {
   GOOGLE_DCHECK_EQ(method->service(), descriptor());
   switch(method->index()) {
@@ -1285,18 +1285,18 @@ const ::PROTOBUF_NAMESPACE_ID::Message& WorldForward::GetResponsePrototype(
   }
 }
 
-WorldForward_Stub::WorldForward_Stub(::PROTOBUF_NAMESPACE_ID::RpcChannel* channel)
+GlobalServiceForward_Stub::GlobalServiceForward_Stub(::PROTOBUF_NAMESPACE_ID::RpcChannel* channel)
   : channel_(channel), owns_channel_(false) {}
-WorldForward_Stub::WorldForward_Stub(
+GlobalServiceForward_Stub::GlobalServiceForward_Stub(
     ::PROTOBUF_NAMESPACE_ID::RpcChannel* channel,
     ::PROTOBUF_NAMESPACE_ID::Service::ChannelOwnership ownership)
   : channel_(channel),
     owns_channel_(ownership == ::PROTOBUF_NAMESPACE_ID::Service::STUB_OWNS_CHANNEL) {}
-WorldForward_Stub::~WorldForward_Stub() {
+GlobalServiceForward_Stub::~GlobalServiceForward_Stub() {
   if (owns_channel_) delete channel_;
 }
 
-void WorldForward_Stub::Forward(::PROTOBUF_NAMESPACE_ID::RpcController* controller,
+void GlobalServiceForward_Stub::Forward(::PROTOBUF_NAMESPACE_ID::RpcController* controller,
                               const ::fwd::ForwardReq* request,
                               ::fwd::ForwardRsp* response,
                               ::google::protobuf::Closure* done) {

@@ -141,7 +141,7 @@ void HealthProbeStore::Refresh(const std::string &role) {
             next->detail = "session rpc channel not ready";
         }
     }
-    if (next->ok && (role == "gamelogic" || role == "world" || role == "all")) {
+    if (next->ok && (role == "gamelogic" || role == "globalservice" || role == "all")) {
         if (!BrpcGameDbRepository::Instance().started() ||
             !BrpcGameDbRepository::Instance().Ping(800)) {
             next->ok = false;

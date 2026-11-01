@@ -27,84 +27,84 @@ int main() {
     {
         game::GameRequest req;
         req.mutable_mail_claim()->set_player_id(1);
-        EXPECT_TRUE(gameproto::IsWorldBoundRequest(req));
+        EXPECT_TRUE(gameproto::IsGlobalServiceRequest(req));
         EXPECT_TRUE(!gameproto::IsLogicBoundRequest(req));
     }
     {
         game::GameRequest req;
         req.mutable_chat_send()->set_player_id(1);
-        EXPECT_TRUE(gameproto::IsWorldBoundRequest(req));
+        EXPECT_TRUE(gameproto::IsGlobalServiceRequest(req));
     }
     {
         game::GameRequest req;
         req.mutable_friend_list()->set_player_id(1);
-        EXPECT_TRUE(gameproto::IsWorldBoundRequest(req));
+        EXPECT_TRUE(gameproto::IsGlobalServiceRequest(req));
     }
     {
         game::GameRequest req;
         req.mutable_friend_apply()->set_player_id(1);
         req.mutable_friend_apply()->set_target_player_id(2);
-        EXPECT_TRUE(gameproto::IsWorldBoundRequest(req));
+        EXPECT_TRUE(gameproto::IsGlobalServiceRequest(req));
         EXPECT_TRUE(!gameproto::IsLogicBoundRequest(req));
     }
     {
         game::GameRequest req;
         req.mutable_friend_search()->set_player_id(1);
-        EXPECT_TRUE(gameproto::IsWorldBoundRequest(req));
+        EXPECT_TRUE(gameproto::IsGlobalServiceRequest(req));
     }
     {
         game::GameRequest req;
         req.mutable_friend_accept()->set_player_id(1);
-        EXPECT_TRUE(gameproto::IsWorldBoundRequest(req));
+        EXPECT_TRUE(gameproto::IsGlobalServiceRequest(req));
         EXPECT_TRUE(!gameproto::IsLogicBoundRequest(req));
         req.Clear();
         req.mutable_friend_reject()->set_player_id(1);
-        EXPECT_TRUE(gameproto::IsWorldBoundRequest(req));
+        EXPECT_TRUE(gameproto::IsGlobalServiceRequest(req));
         req.Clear();
         req.mutable_friend_delete()->set_player_id(1);
-        EXPECT_TRUE(gameproto::IsWorldBoundRequest(req));
+        EXPECT_TRUE(gameproto::IsGlobalServiceRequest(req));
         req.Clear();
         req.mutable_friend_request_list()->set_player_id(1);
-        EXPECT_TRUE(gameproto::IsWorldBoundRequest(req));
+        EXPECT_TRUE(gameproto::IsGlobalServiceRequest(req));
         req.Clear();
         req.mutable_friend_block()->set_player_id(1);
-        EXPECT_TRUE(gameproto::IsWorldBoundRequest(req));
+        EXPECT_TRUE(gameproto::IsGlobalServiceRequest(req));
         req.Clear();
         req.mutable_friend_unblock()->set_player_id(1);
-        EXPECT_TRUE(gameproto::IsWorldBoundRequest(req));
+        EXPECT_TRUE(gameproto::IsGlobalServiceRequest(req));
         req.Clear();
         req.mutable_friend_block_list()->set_player_id(1);
-        EXPECT_TRUE(gameproto::IsWorldBoundRequest(req));
+        EXPECT_TRUE(gameproto::IsGlobalServiceRequest(req));
     }
     {
         game::GameRequest req;
         req.mutable_get_player_brief()->set_player_id(1);
-        EXPECT_TRUE(gameproto::IsWorldBoundRequest(req));
+        EXPECT_TRUE(gameproto::IsGlobalServiceRequest(req));
         EXPECT_TRUE(!gameproto::IsMailBoundRequest(req));
     }
     {
         game::GameRequest req;
         req.mutable_query_online_state()->set_player_id(1);
-        EXPECT_TRUE(gameproto::IsWorldBoundRequest(req));
+        EXPECT_TRUE(gameproto::IsGlobalServiceRequest(req));
     }
     {
         game::GameRequest req;
         req.mutable_enter_map()->set_player_id(1);
         req.mutable_enter_map()->set_map_template_id(9);
         EXPECT_TRUE(gameproto::IsLogicBoundRequest(req));
-        EXPECT_TRUE(!gameproto::IsWorldBoundRequest(req));
+        EXPECT_TRUE(!gameproto::IsGlobalServiceRequest(req));
     }
     {
         game::GameRequest req;
         req.mutable_player_mail_send()->set_sender_player_id(1);
         EXPECT_TRUE(gameproto::IsMailBoundRequest(req));
-        EXPECT_TRUE(gameproto::IsWorldBoundRequest(req));
+        EXPECT_TRUE(gameproto::IsGlobalServiceRequest(req));
     }
     {
         game::GameRequest req;
         req.mutable_chat_send()->set_player_id(1);
         EXPECT_TRUE(!gameproto::IsMailBoundRequest(req));
-        EXPECT_TRUE(gameproto::IsWorldBoundRequest(req));
+        EXPECT_TRUE(gameproto::IsGlobalServiceRequest(req));
     }
     {
         game::GameRequest req;
@@ -115,7 +115,7 @@ int main() {
         game::GameRequest req;
         req.mutable_switch_line()->set_player_id(1);
         EXPECT_TRUE(gameproto::IsLogicBoundRequest(req));
-        EXPECT_TRUE(!gameproto::IsWorldBoundRequest(req));
+        EXPECT_TRUE(!gameproto::IsGlobalServiceRequest(req));
     }
     {
         game::GameRequest req;

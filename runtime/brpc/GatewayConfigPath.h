@@ -67,14 +67,14 @@ inline std::string ReadValue(const char *key) {
     return {};
 }
 
-/** logic_addrs / logic_instance_ids / world_addrs / rpc_timeout_ms */
+/** logic_addrs / logic_instance_ids / globalservice_addrs / rpc_timeout_ms */
 inline bool Load(std::vector<std::string> *logic_addrs, std::vector<std::string> *logic_instance_ids,
-                 std::vector<std::string> *world_addrs, int *timeout_ms) {
+                 std::vector<std::string> *globalservice_addrs, int *timeout_ms) {
     logic_addrs->clear();
     if (logic_instance_ids)
         logic_instance_ids->clear();
-    if (world_addrs)
-        world_addrs->clear();
+    if (globalservice_addrs)
+        globalservice_addrs->clear();
     *timeout_ms = 3000;
     std::ifstream in(Cnf());
     if (!in)
@@ -93,8 +93,8 @@ inline bool Load(std::vector<std::string> *logic_addrs, std::vector<std::string>
             SplitCsv(val, logic_addrs);
         } else if (key == "logic_instance_ids" && logic_instance_ids) {
             SplitCsv(val, logic_instance_ids);
-        } else if (key == "world_addrs" && world_addrs) {
-            SplitCsv(val, world_addrs);
+        } else if (key == "globalservice_addrs" && globalservice_addrs) {
+            SplitCsv(val, globalservice_addrs);
         } else if (key == "rpc_timeout_ms" || key == "world_rpc_timeout_ms") {
             *timeout_ms = std::atoi(val.c_str());
         }

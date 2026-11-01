@@ -20,7 +20,7 @@ echo "  git_sha     : ${GIT_SHA}${GIT_DIRTY:+ (dirty)}"
 echo "  build_type  : ${BUILD_TYPE}"
 echo "  cxx_standard: C++${CXX_STD}"
 echo "  binaries:"
-for b in gateway session gamelogic world gamedb server; do
+for b in gateway session gamelogic globalservice gamedb server; do
   p="${ROOT}/build/test/${b}"
   if [[ -x "$p" ]]; then
     echo "    ${b}: $(ls -l "$p" | awk '{print $5,$6,$7,$8}')"

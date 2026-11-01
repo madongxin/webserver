@@ -5,7 +5,7 @@
 1. 准备新 Logic/World 实例（新端口或新机），健康检查：日志出现 `*BrpcServer listening`，`/metrics` 可访问。
 2. 修改 `config/gateway.cnf`：
    - 扩容：追加 `logic_addrs` / `logic_instance_ids`（保持一一对应）
-   - World：切换 `world_addrs` 到新实例
+   - GlobalService：切换 `globalservice_addrs` 到新实例
    - Session / GameDB：切换 `session_addrs` / `gamedb_addrs`
 3. **滚动重启 Gateway**（当前实现启动期 Init Channel，不热更配置）。
 4. 观察 Login、邮件、MapPing；异常则执行回滚。
@@ -14,7 +14,7 @@
 
 1. `gateway.cnf` 设置 `etcd_endpoints=http://127.0.0.1:2379`（或集群列表）。
 2. 各服启动时 `EtcdDiscovery::Register`；Gateway 优先 `Discover(gamelogic|world|session)`。
-3. Discover 失败时 **WARN 并回退** 静态 `logic_addrs` / `world_addrs` / `session_addrs`。
+3. Discover 失败时 **WARN 并回退** 静态 `logic_addrs` / `globalservice_addrs` / `session_addrs`。
 4. 摘流：停止实例并让 TTL 过期，或删 etcd key；Gateway 下次启动/重读时不再发现该实例（当前为启动期 Discover，需重启 Gateway）。
 
 ## 回滚路径

@@ -21,7 +21,7 @@ bool IsMailBoundRequest(const game::GameRequest &req) {
     }
 }
 
-bool IsWorldBoundRequest(const game::GameRequest &req) {
+bool IsGlobalServiceRequest(const game::GameRequest &req) {
     if (IsMailBoundRequest(req))
         return true;
     switch (req.body_case()) {
@@ -45,7 +45,7 @@ bool IsWorldBoundRequest(const game::GameRequest &req) {
 }
 
 bool IsLogicBoundRequest(const game::GameRequest &req) {
-    return !IsWorldBoundRequest(req);
+    return !IsGlobalServiceRequest(req);
 }
 
 }  // namespace gameproto

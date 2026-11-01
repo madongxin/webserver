@@ -68,7 +68,7 @@ struct DispatchCallContext {
     std::shared_ptr<brpc::Channel> channel_keep;  // 覆盖异步 RPC 生命周期
 };
 
-struct WorldForwardCallContext {
+struct GlobalServiceForwardCallContext {
     brpc::Controller cntl;
     fwd::ForwardReq req;
     fwd::ForwardRsp rsp;
@@ -123,12 +123,12 @@ void OnDispatchDone(DispatchCallContext *ctx) {
     ctx->sink->SendFrame(ctx->rsp.response_frame());
 }
 
-void OnWorldForwardDone(WorldForwardCallContext *ctx) {
-    std::unique_ptr<WorldForwardCallContext> guard(ctx);
+void OnGlobalServiceForwardDone(GlobalServiceForwardCallContext *ctx) {
+    std::unique_ptr<GlobalServiceForwardCallContext> guard(ctx);
     if (!ctx->sink)
         return;
     if (ctx->cntl.Failed()) {
-        LOG_ERROR << "BrpcTransport WorldForward failed: " << ctx->cntl.ErrorText();
+        LOG_ERROR << "BrpcTransport GlobalServiceForward failed: " << ctx->cntl.ErrorText();
         const std::string err =
             BuildErrorFrame(ctx->request_payload, std::string("rpc_failed: ") + ctx->cntl.ErrorText());
         if (!err.empty())
@@ -272,7 +272,7 @@ bool FillMapRouteFromRequest(const game::GameRequest &req, SessionHandle *handle
     return true;
 }
 
-bool InitWorldChannel(std::unique_ptr<brpc::Channel> *out, const std::string &addr, int timeout_ms) {
+bool InitGlobalServiceChannel(std::unique_ptr<brpc::Channel> *out, const std::string &addr, int timeout_ms) {
     if (!out || addr.empty())
         return false;
     auto ch = std::make_unique<brpc::Channel>();
@@ -308,21 +308,21 @@ bool BrpcTransport::EnsureStarted(const std::vector<std::string> &logic_addrs,
 
 bool BrpcTransport::EnsureStarted(const std::vector<std::string> &logic_addrs,
                                   const std::vector<std::string> &logic_instance_ids,
-                                  const std::vector<std::string> &world_addrs, int timeout_ms) {
+                                  const std::vector<std::string> &globalservice_addrs, int timeout_ms) {
     if (!BrpcChannelManager::Instance().Init(logic_addrs, logic_instance_ids, timeout_ms))
         return false;
     MapPlacement::Instance().ConfigureOwners(BrpcChannelManager::Instance().instance_ids());
-    world_channel_.reset();
-    if (!world_addrs.empty()) {
-        if (!InitWorldChannel(&world_channel_, world_addrs.front(), timeout_ms))
+    globalservice_channel_.reset();
+    if (!globalservice_addrs.empty()) {
+        if (!InitGlobalServiceChannel(&globalservice_channel_, globalservice_addrs.front(), timeout_ms))
             return false;
     } else {
-        LOG_WARN << "BrpcTransport: world_addrs empty; mail/chat will fail on gateway role";
+        LOG_WARN << "BrpcTransport: globalservice_addrs empty; mail/chat will fail on gateway role";
     }
     GameRequestTransport::Set(this);
     started_ = true;
     LOG_INFO << "BrpcTransport started (Dispatch path) logic=" << logic_addrs.size()
-             << " world=" << (world_channel_ ? 1 : 0);
+             << " globalservice=" << (globalservice_channel_ ? 1 : 0);
     return true;
 }
 
@@ -332,10 +332,10 @@ void BrpcTransport::PostPlayerRequest(const SessionHandle &handle, std::string r
     MapPlacementRecord placement;
     game::GameRequest parsed;
     const bool parsed_ok = parsed.ParseFromString(request_payload);
-    const bool to_world = parsed_ok && gameproto::IsWorldBoundRequest(parsed);
+    const bool to_globalservice = parsed_ok && gameproto::IsGlobalServiceRequest(parsed);
 
     // EnterMap 由 GatewayEnterMapOrchestrator 在 worker 编排；此处禁止 Placement 直改 sticky 后裸 Dispatch
-    if (parsed_ok && !to_world) {
+    if (parsed_ok && !to_globalservice) {
         if (parsed.body_case() == game::GameRequest::kEnterMap ||
             parsed.body_case() == game::GameRequest::kSwitchLine ||
             parsed.body_case() == game::GameRequest::kEnqueueMap ||
@@ -362,25 +362,25 @@ void BrpcTransport::PostPlayerRequest(const SessionHandle &handle, std::string r
         }
     }
 
-    if (to_world) {
-        brpc::Channel *ch = world_channel_.get();
+    if (to_globalservice) {
+        brpc::Channel *ch = globalservice_channel_.get();
         if (!ch) {
             if (sink) {
-                const std::string err = BuildErrorFrame(request_payload, "no_world_channel");
+                const std::string err = BuildErrorFrame(request_payload, "no_globalservice_channel");
                 if (!err.empty())
                     sink->SendFrame(err);
             }
             return;
         }
-        auto *ctx = new WorldForwardCallContext();
+        auto *ctx = new GlobalServiceForwardCallContext();
         ctx->sink = std::move(sink);
         ctx->request_payload = request_payload;
         ctx->req.mutable_meta()->set_player_id(route.player_id);
         ctx->req.mutable_meta()->set_connection_id(route.connection_id);
         ctx->req.mutable_meta()->set_generation(route.generation);
         ctx->req.set_request_payload(std::move(request_payload));
-        fwd::WorldForward_Stub stub(ch);
-        stub.Forward(&ctx->cntl, &ctx->req, &ctx->rsp, brpc::NewCallback(&OnWorldForwardDone, ctx));
+        fwd::GlobalServiceForward_Stub stub(ch);
+        stub.Forward(&ctx->cntl, &ctx->req, &ctx->rsp, brpc::NewCallback(&OnGlobalServiceForwardDone, ctx));
         return;
     }
 

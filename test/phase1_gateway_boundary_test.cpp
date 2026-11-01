@@ -84,17 +84,17 @@ void TestStickyOverwritesPlayerId() {
 void TestDispatchIsWorldVsLogic() {
     game::GameRequest logic_req;
     logic_req.mutable_consume_item()->set_player_id(1);
-    Expect(!gameproto::IsWorldBoundRequest(logic_req), "consume -> logic Dispatch path");
+    Expect(!gameproto::IsGlobalServiceRequest(logic_req), "consume -> logic Dispatch path");
 
     game::GameRequest world_req;
     world_req.mutable_mail_list()->set_player_id(1);
-    Expect(gameproto::IsWorldBoundRequest(world_req), "mail -> world forward path");
+    Expect(gameproto::IsGlobalServiceRequest(world_req), "mail -> world forward path");
     game::GameRequest pmail;
     pmail.mutable_player_mail_send()->set_sender_player_id(1);
-    Expect(gameproto::IsWorldBoundRequest(pmail), "player_mail_send -> world");
+    Expect(gameproto::IsGlobalServiceRequest(pmail), "player_mail_send -> world");
     game::GameRequest move;
     move.mutable_move()->set_player_id(1);
-    Expect(!gameproto::IsWorldBoundRequest(move), "move -> logic");
+    Expect(!gameproto::IsGlobalServiceRequest(move), "move -> logic");
 }
 
 void TestOwnedAuth() {

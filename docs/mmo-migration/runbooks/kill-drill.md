@@ -34,7 +34,7 @@
 |----|------|
 | 操作 | `kill` world |
 | 预期 | 邮件/聊天骨架失败；场景 Logic 仍可用 |
-| 恢复 | 重启 `world`；确认 `world_addrs` / etcd |
+| 恢复 | 重启 `globalservice`；确认 `globalservice_addrs` / etcd |
 
 ## Session
 

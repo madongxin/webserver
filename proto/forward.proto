@@ -39,7 +39,7 @@ service GameLogicForward {
   rpc Forward(ForwardReq) returns (ForwardRsp);
 }
 
-// 阶段 6：Gateway → World 中控（邮件/聊天/好友等全局业务，无战斗 Tick）
-service WorldForward {
+// 阶段 6：Gateway → GlobalService（邮件/聊天/好友等全局业务，无战斗 Tick）
+service GlobalServiceForward {
   rpc Forward(ForwardReq) returns (ForwardRsp);
 }

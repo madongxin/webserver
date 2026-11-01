@@ -81,7 +81,7 @@ DB0_HTTP="${E2E_DB0_HTTP:-${GAMEMESH_HTTP_D0:-8094}}"
 DB1_HTTP="${E2E_DB1_HTTP:-${GAMEMESH_HTTP_D1:-8095}}"
 
 mapfile -t PIDS <"$RUN_DIR/pids"
-# start_formal 顺序: session,gamedb0,gamedb1,world,logic0,logic1,gw0,gw1[,session2]
+# start_formal 顺序: session,gamedb0,gamedb1,globalservice,logic0,logic1,gw0,gw1[,session2]
 PID_S0="${PIDS[0]:-}"
 PID_DB0="${PIDS[1]:-}"
 PID_L1="${PIDS[5]:-}"

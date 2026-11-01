@@ -50,7 +50,7 @@ inline bool AllowUnsafeDebugCommandsEnv() {
 
 /**
  * 正式模式下是否允许本进程初始化 MySQL 连接池。
- * 仅 gamedb（及紧急 role=all）可直连；gateway/session/gamelogic/world 必须经 GameDB brpc。
+ * 仅 gamedb（及紧急 role=all）可直连；gateway/session/gamelogic/globalservice 必须经 GameDB brpc。
  */
 inline bool FormalModeAllowsMysql(const std::string &role) {
     if (!FormalModeEnabled())

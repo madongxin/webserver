@@ -67,11 +67,24 @@
     }
     .export-status a { font-weight: 600; }
     .export-status.err { color: var(--err); }
+    .status-block { margin-bottom: 18px; }
+    .status-block h2 {
+      font-size: 13px;
+      margin: 0 0 8px;
+      color: var(--muted);
+      font-weight: 600;
+    }
     .status-row {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      grid-template-columns: repeat(4, 1fr);
       gap: 10px;
-      margin-bottom: 24px;
+    }
+    .status-row.thirds {
+      grid-template-columns: repeat(3, 1fr);
+      margin-top: 10px;
+    }
+    @media (max-width: 900px) {
+      .status-row { grid-template-columns: repeat(2, 1fr); }
     }
     .status-pill {
       background: var(--card);
@@ -101,9 +114,10 @@
     .module {
       margin-bottom: 28px;
     }
+    .module .status-row { margin-bottom: 12px; }
     .module > h2 {
       font-size: 16px;
-      margin: 0 0 12px;
+      margin: 0 0 8px;
       padding-bottom: 6px;
       border-bottom: 2px solid #1a73e8;
       display: inline-block;
@@ -111,7 +125,24 @@
     .module-desc {
       color: var(--muted);
       font-size: 12px;
-      margin: -6px 0 12px;
+      margin: 0 0 12px;
+    }
+    .group-title {
+      font-size: 13px;
+      margin: 16px 0 8px;
+      font-weight: 600;
+    }
+    .now-line {
+      margin: 0 0 10px;
+      font-size: 14px;
+      font-weight: 600;
+    }
+    .empty-note { display: none; color: var(--muted); margin: 0; }
+    #dungeonModule.is-empty .charts,
+    #dungeonModule.is-empty .table-wrap { display: none; }
+    #dungeonModule.is-empty .empty-note { display: block; }
+    .status-row.fit {
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
     }
     .charts {
       display: grid;
@@ -164,7 +195,7 @@
 <body>
   <div class="dashboard">
     <h1>GameMesh 监控</h1>
-    <p class="subtitle">Prometheus 拉取各实例 <code>/metrics</code> · 通用进程指标（CPU / 内存 / FD / 线程 / IO）· live/ready 健康检查</p>
+    <p class="subtitle">先看此刻人数和队列，再看压测曲线。进程表和资源在下面。</p>
 
     <div class="toolbar">
       <label>Prometheus job <input id="job" type="text" value="gamemesh" size="16"></label>
@@ -185,18 +216,28 @@
       <div id="exportStatus" class="export-status"></div>
     </div>
 
-    <div class="status-row" id="statusRow">
-      <div class="status-pill na" data-mod="targets"><div class="name">Prometheus 采集</div><div class="value">—</div></div>
-      <div class="status-pill na" data-mod="cluster"><div class="name">集群进程</div><div class="value">—</div></div>
-      <div class="status-pill na" data-mod="live"><div class="name">存活 /health/live</div><div class="value">—</div></div>
-      <div class="status-pill na" data-mod="ready"><div class="name">就绪 /health/ready</div><div class="value">—</div></div>
-      <div class="status-pill na" data-mod="players"><div class="name">Gateway 绑定玩家</div><div class="value">—</div></div>
-      <div class="status-pill na" data-mod="sessionOnline"><div class="name">Session ONLINE</div><div class="value">—</div></div>
-      <div class="status-pill na" data-mod="gwtraffic"><div class="name">Gateway 流量</div><div class="value">—</div></div>
-      <div class="status-pill na" data-mod="sendq"><div class="name">发送队列</div><div class="value">—</div></div>
-      <div class="status-pill na" data-mod="replyq"><div class="name">回包排队</div><div class="value">—</div></div>
-      <div class="status-pill na" data-mod="lines"><div class="name">分线（LINE）</div><div class="value">—</div></div>
-      <div class="status-pill na" data-mod="dungeons"><div class="name">副本（DUNGEON）</div><div class="value">—</div></div>
+    <div class="status-block">
+      <h2>集群</h2>
+      <div class="status-row">
+        <div class="status-pill na" data-mod="cluster"><div class="name">进程</div><div class="value">—</div></div>
+        <div class="status-pill na" data-mod="live"><div class="name">存活</div><div class="value">—</div></div>
+        <div class="status-pill na" data-mod="ready"><div class="name">就绪</div><div class="value">—</div></div>
+        <div class="status-pill na" data-mod="targets"><div class="name">Prometheus</div><div class="value">—</div></div>
+      </div>
+    </div>
+    <div class="status-block">
+      <h2>此刻</h2>
+      <div class="status-row">
+        <div class="status-pill na" data-mod="players"><div class="name">在线玩家</div><div class="value">—</div></div>
+        <div class="status-pill na" data-mod="sessionOnline"><div class="name">Session</div><div class="value">—</div></div>
+        <div class="status-pill na" data-mod="lines"><div class="name">分线</div><div class="value">—</div></div>
+        <div class="status-pill na" data-mod="dungeons"><div class="name">副本</div><div class="value">—</div></div>
+      </div>
+      <div class="status-row thirds">
+        <div class="status-pill na" data-mod="gwtraffic"><div class="name">Gateway 流量</div><div class="value">—</div></div>
+        <div class="status-pill na" data-mod="sendq"><div class="name">发送队列</div><div class="value">—</div></div>
+        <div class="status-pill na" data-mod="replyq"><div class="name">回复排队</div><div class="value">—</div></div>
+      </div>
     </div>
     <script>
       (function () {
@@ -208,24 +249,112 @@
           var value = node.querySelector('.value');
           if (value) value.textContent = text;
         }
+        function shownService(name) {
+          if (name === 'world') return 'globalservice';
+          if (name === 'world-1') return 'globalservice-1';
+          return name || '';
+        }
         function fillTable(cluster) {
           var tbody = document.querySelector('#clusterTable tbody');
           if (!tbody || !cluster || !cluster.processes) return;
+          var procs = cluster.processes;
+          var rows = tbody.querySelectorAll('tr');
+          var same = rows.length === procs.length;
+          for (var i = 0; same && i < procs.length; i++) {
+            var inst = rows[i].getAttribute('data-inst') || '';
+            if (inst !== (procs[i].instance_id || ''))
+              same = false;
+          }
+          function clusterCells(p) {
+            return [shownService(p.role), shownService(p.instance_id),
+              p.alive ? '是' : '否', null, null, null, null, null, null,
+              p.live ? '是' : '否', p.ready ? '是' : '否',
+              p.pid || '', shownService(p.comm), null, p.http_port || '—', p.game_port || '—',
+              p.ready ? '正常' : '未就绪'];
+          }
+          if (same) {
+            procs.forEach(function (p, i) {
+              var vals = clusterCells(p);
+              var tds = rows[i].children;
+              for (var c = 0; c < vals.length; c++) {
+                if (vals[c] != null && tds[c])
+                  tds[c].textContent = vals[c];
+              }
+            });
+            return;
+          }
           var frag = document.createDocumentFragment();
-          cluster.processes.forEach(function (p) {
+          procs.forEach(function (p) {
             var tr = document.createElement('tr');
-            [p.role || '', p.instance_id || '', p.pid || '', p.comm || '',
-             p.alive ? '是' : '否', '—', p.live ? '是' : '否', p.ready ? '是' : '否',
-             '—', '—', '—', '—', '—', p.http_port || '—', '—', p.game_port || '—',
-             p.ready ? '正常' : '未就绪'].forEach(function (v) {
+            tr.setAttribute('data-inst', p.instance_id || '');
+            tr.setAttribute('data-role', p.role || '');
+            clusterCells(p).forEach(function (v) {
               var td = document.createElement('td');
-              td.textContent = v;
+              td.textContent = v == null ? '—' : v;
               tr.appendChild(td);
             });
             frag.appendChild(tr);
           });
           tbody.innerHTML = '';
           tbody.appendChild(frag);
+        }
+        var lastRx = null, lastTx = null, lastAt = 0;
+        function fmtBps(n) {
+          if (!isFinite(n) || n < 0) n = 0;
+          if (n < 1024) return Math.round(n) + ' B/s';
+          if (n < 1048576) return (n / 1024).toFixed(1) + ' KB/s';
+          return (n / 1048576).toFixed(2) + ' MB/s';
+        }
+        function fmtBytes(n) {
+          if (!isFinite(n) || n < 0) return '0 B';
+          if (n < 1024) return Math.round(n) + ' B';
+          if (n < 1048576) return (n / 1024).toFixed(1) + ' KB';
+          return (n / 1048576).toFixed(1) + ' MB';
+        }
+        function paintLive(live) {
+          if (!live) return;
+          paint('players', live.online == null ? '—' : String(Math.round(live.online)), live.online != null);
+          paint('sessionOnline', live.session_online == null ? '—' : String(Math.round(live.session_online)),
+            live.session_online != null);
+          paint('sendq', live.send_pending_bytes == null ? '—' : fmtBytes(live.send_pending_bytes),
+            live.send_pending_bytes != null && live.send_pending_bytes < 32768);
+          paint('replyq', live.outbox_frames == null ? '—' : (Math.round(live.outbox_frames) + ' 帧'),
+            live.outbox_frames != null && live.outbox_frames === 0);
+          var now = Date.now();
+          if (lastAt && live.tx_bytes != null && live.rx_bytes != null) {
+            var dt = (now - lastAt) / 1000;
+            if (dt > 0) {
+              var rx = (live.rx_bytes - lastRx) / dt;
+              var tx = (live.tx_bytes - lastTx) / dt;
+              if (rx < 0) rx = 0;
+              if (tx < 0) tx = 0;
+              paint('gwtraffic', '↓' + fmtBps(rx) + '  ↑' + fmtBps(tx), true);
+            }
+          }
+          lastAt = now;
+          lastRx = live.rx_bytes;
+          lastTx = live.tx_bytes;
+          paint('lines', live.line_count ? (live.line_count + ' 线 / ' + Math.round(live.line_players || 0) + ' 人') : '无分线',
+            true);
+          paint('dungeons', live.dungeon_count ? (live.dungeon_count + ' 本 / ' + Math.round(live.dungeon_players || 0) + ' 人') : '无副本',
+            true);
+          var lineNow = document.getElementById('lineNow');
+          if (lineNow) {
+            lineNow.textContent = live.line_count
+              ? ('现在 ' + live.line_count + ' 线，' + Math.round(live.line_players || 0) + ' 人')
+              : '现在没有分线';
+          }
+          var dun = document.getElementById('dungeonModule');
+          if (dun)
+            dun.classList.toggle('is-empty', !live.dungeon_count);
+          var stamp = document.getElementById('lastUpdate');
+          if (stamp) {
+            stamp.textContent = '更新于 ' + new Date().toLocaleTimeString() +
+              '  在线 ' + Math.round(live.online || 0) +
+              '  停放 ' + Math.round(live.hold_ms || 0) + ' ms  静默 ' +
+              Math.round(live.silence_ms || 0) + ' ms  Move p99 ' +
+              Math.round(live.move_p99_ms || 0);
+          }
         }
         function tick() {
           var stamp = document.getElementById('lastUpdate');
@@ -251,13 +380,17 @@
               if (!r.ok) throw new Error('live');
               return r.json();
             }).then(function (live) {
-              paint('players', live.online == null ? '—' : String(Math.round(live.online)), live.online > 0);
-              if (!stamp) return;
-              stamp.textContent = '更新于 ' + new Date().toLocaleTimeString() +
-                '  在线 ' + Math.round(live.online || 0) +
-                '  停放 ' + Math.round(live.hold_ms || 0) + ' ms  静默 ' +
-                Math.round(live.silence_ms || 0) + ' ms  Move p99 ' +
-                Math.round(live.move_p99_ms || 0);
+              paintLive(live);
+              fetch(base + '/api/prometheus/query?q=' + encodeURIComponent('count(up{job="gamemesh"})')).then(function (r) {
+                if (!r.ok) throw new Error('prom');
+                return r.json();
+              }).then(function (j) {
+                var rows = j && j.data && j.data.result ? j.data.result : [];
+                var n = rows.length && rows[0].value ? Number(rows[0].value[1]) : 0;
+                paint('targets', n ? (n + ' up') : '无 target', n >= 9);
+              }).catch(function () {
+                paint('targets', '未响应', false);
+              });
             });
           }).catch(function () {
             clearTimeout(timer);
@@ -277,59 +410,29 @@
     </script>
 
     <section class="module" id="diagModule">
-      <h2>压测诊断</h2>
-      <p class="module-desc">Move / Heartbeat 回包链、ControlResponseOutbox、GameLogic AOI、4 核竞争和 TCP 发送。计数器曲线用 rate 或 increase，瞬时量直接显示。心跳在网关连接线程内联应答，<code>logic_dispatch_started</code> 保持为 0；状态卡「Heartbeat 当前阶段缺口」不计这一段，图上仍画出。缺系列显示「指标未导出」。单张图查询失败不影响其余图刷新。</p>
-      <div class="status-row" id="diagStatus"></div>
-      <div class="charts" id="diagCharts"></div>
+      <h2>压测</h2>
+      <p class="module-desc">上面是现在的数，下面是这段时间的曲线。自己的移动、位置有没有发出去、出口堵不堵，看这一块。</p>
+      <h3 class="group-title">自己的移动</h3>
+      <div class="status-row fit" id="diagMove"></div>
+      <div class="charts" id="diagMoveCharts"></div>
+      <h3 class="group-title">位置有没有发出去</h3>
+      <div class="status-row fit" id="diagPos"></div>
+      <div class="charts" id="diagPosCharts"></div>
+      <h3 class="group-title">出口堵不堵</h3>
+      <div class="status-row fit" id="diagNet"></div>
+      <div class="charts" id="diagNetCharts"></div>
     </section>
 
     <section class="module">
-      <h2>业务 · 玩家与 Gateway 流量</h2>
-      <p class="module-desc">Gateway 绑定 = 当前游戏 TCP 上已 Login/Reconnect 的不重复 player_id。Session ONLINE = Redis 会话集合（两台 Session 报同一份，图上取 max 不是 sum；重连宽限内可能仍 ONLINE，即使 TCP 已断）。两条对不上时优先看 Gateway 绑定。</p>
+      <h2>在线与流量</h2>
+      <p class="module-desc">在线看 Gateway 上已经登录的人。Session 是 Redis 里的会话，断线后短暂还会留着。</p>
       <div class="charts" id="bizCharts"></div>
     </section>
 
     <section class="module">
-      <h2>发送队列与回包耗时</h2>
-      <p class="module-desc">发送队列高水位 = 最近 10 秒内，单次写出时看到的应用缓冲加内核未发送字节。回包排队 = 应答从排进连接事件循环到真正 write 的等待。处理 = 网关读到包后在这条连接上花的时间。RPC = 登录、重连、进图、查线、移动在工作线程里的时间。超过 1 秒的阶段会计入慢包，并在网关日志里打 <code>slow pkt</code>；每 10 秒还有一行 <code>sendq window</code> 和 <code>pkt window</code>。</p>
-      <div class="charts" id="sendCharts"></div>
-    </section>
-
-    <section class="module">
-      <h2>实例</h2>
-      <p class="module-desc">进程清单来自 <code>inventory.tsv</code>；采集状态来自 Prometheus <code>up</code>。曲线按 <code>instance_id</code> 分线。</p>
-      <div class="table-wrap">
-        <table class="data" id="clusterTable">
-          <thead>
-            <tr>
-              <th>角色</th>
-              <th>实例</th>
-              <th>PID</th>
-              <th>进程</th>
-              <th>进程在跑</th>
-              <th>采集 up</th>
-              <th>存活</th>
-              <th>就绪</th>
-              <th>CPU</th>
-              <th>RSS</th>
-              <th>FDs</th>
-              <th>线程</th>
-              <th>运行时间</th>
-              <th>HTTP</th>
-              <th>绑定玩家</th>
-              <th>游戏 TCP</th>
-              <th>说明</th>
-            </tr>
-          </thead>
-          <tbody></tbody>
-        </table>
-      </div>
-    </section>
-
-    <section class="module">
-      <h2>分线 · 每 GameLogic</h2>
-      <p class="module-desc">曲线是<strong>所选时间范围内的历史</strong>，压测结束后图上仍会留下当时的人数/线数。此刻人数看本页顶部状态条和下面表格。Redis 占位权威；Session 导出全量，GameLogic 只导出本机 Owner 的线。</p>
-      <div class="charts" id="lineCharts"></div>
+      <h2>分线</h2>
+      <p class="module-desc">每条线的人数。上面的数字是现在，图是所选时间里的变化。</p>
+      <p class="now-line" id="lineNow">现在 —</p>
       <div class="table-wrap">
         <table class="data" id="lineTable">
           <thead>
@@ -344,11 +447,58 @@
           <tbody></tbody>
         </table>
       </div>
+      <div class="charts" id="lineCharts"></div>
     </section>
 
     <section class="module">
-      <h2>副本 · 每实例</h2>
-      <p class="module-desc">每个副本实例单独记人数（<code>map_instance_id</code>），不是按模板合计。人数 = Redis 占位；成员 = 允许进本名单。空本约 30s 后 CloseIdle。曲线是所选时间范围的历史。</p>
+      <h2>发送</h2>
+      <p class="module-desc">发送队列是最近 10 秒里还没进内核的字节。下面两张是登录、进图和移动在工作线程里的最慢一次。</p>
+      <div class="charts" id="sendCharts"></div>
+    </section>
+
+    <section class="module">
+      <h2>进程</h2>
+      <p class="module-desc">九个进程是否在跑。采集、CPU、内存、文件描述符和运行时间随页面一起刷新。</p>
+      <div class="table-wrap">
+        <table class="data" id="clusterTable">
+          <thead>
+            <tr>
+              <th>角色</th>
+              <th>实例</th>
+              <th>进程在跑</th>
+              <th>采集 up</th>
+              <th>CPU</th>
+              <th>RSS</th>
+              <th>FDs</th>
+              <th>运行时间</th>
+              <th>绑定玩家</th>
+              <th>存活</th>
+              <th>就绪</th>
+              <th>PID</th>
+              <th>进程</th>
+              <th>线程</th>
+              <th>HTTP</th>
+              <th>游戏 TCP</th>
+              <th>说明</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="module">
+      <h2>资源</h2>
+      <p class="module-desc">每个进程的 CPU、内存和打开的文件数。</p>
+      <div class="status-row fit" id="resStatus"></div>
+      <div id="promErr" class="err-msg"></div>
+      <div class="charts" id="promCharts"></div>
+    </section>
+
+    <section class="module is-empty" id="dungeonModule">
+      <h2>副本</h2>
+      <p class="module-desc">没有开副本时，这里是空的。</p>
+      <p class="empty-note">当前没有副本。</p>
       <div class="charts" id="dungeonCharts"></div>
       <div class="table-wrap">
         <table class="data" id="dungeonTable">
@@ -367,13 +517,6 @@
           <tbody></tbody>
         </table>
       </div>
-    </section>
-
-    <section class="module">
-      <h2>资源 · USE</h2>
-      <p class="module-desc">Utilization / Saturation：标准 <code>process_*</code> 指标。每条线一个实例。</p>
-      <div id="promErr" class="err-msg"></div>
-      <div class="charts" id="promCharts"></div>
     </section>
   </div>
 
@@ -433,10 +576,16 @@
       }
     }
 
+    function shownService(name) {
+      if (name === 'world') return 'globalservice';
+      if (name === 'world-1') return 'globalservice-1';
+      return name || '';
+    }
+
     function seriesLabel(s) {
       const m = s.metric || {};
       if (m.kind || m.stage) {
-        const inst = m.instance_id || m.role || '';
+        const inst = shownService(m.instance_id || m.role || '');
         const stage = m.stage ? ('/' + m.stage) : '';
         let tail = '';
         if (m.__name__ && m.__name__.indexOf('latency_p') >= 0) {
@@ -452,7 +601,7 @@
         return (owner ? owner + ' ' : '') + '模板' + m.map_template_id + ' 线' + m.line_no;
       if (m.map_template_id && owner)
         return owner + ' 模板' + m.map_template_id;
-      let label = m.instance_id || m.role || m.instance || m.__name__ || 'series';
+      let label = shownService(m.instance_id || m.role || '') || m.instance || m.__name__ || 'series';
       if (m.__name__ && m.instance_id &&
           (m.__name__.indexOf('tick_') >= 0 || m.__name__.indexOf('rpc_offload') >= 0 ||
            m.__name__.indexOf('latency_p') >= 0))
@@ -497,9 +646,9 @@
       return map;
     }
 
-    async function fetchProm(url) {
+    async function fetchProm(url, timeoutMs) {
       const ctrl = new AbortController();
-      const timer = setTimeout(function () { ctrl.abort(); }, 2500);
+      const timer = setTimeout(function () { ctrl.abort(); }, timeoutMs || 2500);
       try {
         const r = await fetch(url, { signal: ctrl.signal });
         if (!r.ok) throw new Error('Prometheus 代理 ' + r.status);
@@ -524,16 +673,16 @@
       const c = cfg();
       const end = Math.floor(Date.now() / 1000);
       const start = end - c.hours * 3600;
-      const step = stepOverride || c.step;
+      const step = stepOverride || chartStep();
       const url = apiUrl('/api/prometheus/query_range') +
         '?q=' + encodeURIComponent(promql) + '&start=' + start + '&end=' + end + '&step=' + step;
-      const j = await fetchProm(url);
+      const j = await fetchProm(url, 8000);
       return j.data && j.data.result ? j.data.result : [];
     }
 
     async function queryInstant(promql) {
       const url = apiUrl('/api/prometheus/query') + '?q=' + encodeURIComponent(promql);
-      const j = await fetchProm(url);
+      const j = await fetchProm(url, 2500);
       return j.data && j.data.result ? j.data.result : [];
     }
 
@@ -662,176 +811,49 @@
       ['control_outbox_queued', 'socket_write_accepted'],
     ];
 
-    const DIAG_PANELS = [
-      { id: 'dMoveRate', title: 'Move 各阶段速率', beginZero: true,
-        promql: 'sum by (instance_id, kind, stage) (rate(gamemesh_reply_stage_total{job="JOB",role="gateway",kind="move"}[1m]))' },
-      { id: 'dHbRate', title: 'Heartbeat 各阶段速率', beginZero: true,
-        promql: 'sum by (instance_id, kind, stage) (rate(gamemesh_reply_stage_total{job="JOB",role="gateway",kind="heartbeat"}[1m]))' },
-    ];
-    MOVE_GAP_PAIRS.forEach(function (pair) {
-      DIAG_PANELS.push({
-        id: 'dMoveGap' + pair[0],
-        title: 'Move 缺口 ' + pair[0] + ' − ' + pair[1],
-        beginZero: false,
-        promql: gapPromql('move', pair[0], pair[1]),
-      });
-    });
-    HEARTBEAT_GAP_PAIRS.forEach(function (pair) {
-      DIAG_PANELS.push({
-        id: 'dHbGap' + pair[0],
-        title: 'Heartbeat 缺口 ' + pair[0] + ' − ' + pair[1],
-        beginZero: false,
-        promql: gapPromql('heartbeat', pair[0], pair[1]),
-      });
-    });
-    DIAG_PANELS.push(
-      { id: 'dHbDispatchGap', title: 'Heartbeat 缺口 request_received − logic_dispatch_started（内联应答，设计上不为 0）', beginZero: false,
-        promql: gapPromql('heartbeat', 'request_received', 'logic_dispatch_started') },
+    const MOVE_CHARTS = [
       { id: 'dMoveLat', title: 'Move 延迟 p50 / p95 / p99', beginZero: true,
-        promql: '{__name__=~"gamemesh_reply_latency_p(50|95|99)_ms",job="JOB",role="gateway",kind="move"}' },
-      { id: 'dHbLat', title: 'Heartbeat 延迟 p50 / p95 / p99', beginZero: true,
-        promql: '{__name__=~"gamemesh_reply_latency_p(50|95|99)_ms",job="JOB",role="gateway",kind="heartbeat"}' },
-      { id: 'dSoft', title: '软丢弃 /s', beginZero: true,
-        promql: 'sum by (instance_id, kind) (rate(gamemesh_reply_stage_total{job="JOB",role="gateway",stage="response_soft_drop"}[1m]))' },
-      { id: 'dConserve', title: '回包守恒差值', beginZero: false,
-        promql: 'gamemesh_reply_conservation_residual{job="JOB",role="gateway"}' },
-      { id: 'dIdle', title: '最长无 write_complete 时间（毫秒）', beginZero: true,
-        promql: 'gamemesh_reply_write_complete_idle_ms{job="JOB",role="gateway"}' },
-      { id: 'dObFrames', title: 'Outbox 当前排队帧', beginZero: true,
-        promql: 'gamemesh_control_outbox_current_frames{job="JOB",role="gateway"}' },
-      { id: 'dObBytes', title: 'Outbox 当前排队字节', beginZero: true,
-        promql: 'gamemesh_control_outbox_current_bytes{job="JOB",role="gateway"}' },
-      { id: 'dObPeakF', title: 'Outbox 峰值帧', beginZero: true,
-        promql: 'gamemesh_control_outbox_peak_frames{job="JOB",role="gateway"}' },
-      { id: 'dObPeakB', title: 'Outbox 峰值字节', beginZero: true,
-        promql: 'gamemesh_control_outbox_peak_bytes{job="JOB",role="gateway"}' },
-      { id: 'dObHeld', title: 'Outbox Held 连接数', beginZero: true,
-        promql: 'gamemesh_control_outbox_held_connections{job="JOB",role="gateway"}' },
-      { id: 'dObAge', title: 'Outbox 最老 Held（毫秒）', beginZero: true,
-        promql: 'gamemesh_control_outbox_oldest_held_ms{job="JOB",role="gateway"}' },
-      { id: 'dObRuns', title: 'Outbox drain /s', beginZero: true,
-        promql: 'rate(gamemesh_control_outbox_drain_runs_total{job="JOB",role="gateway"}[1m])' },
-      { id: 'dObStall', title: 'Outbox drain stall /s', beginZero: true,
-        promql: 'rate(gamemesh_control_outbox_drain_stalls_total{job="JOB",role="gateway"}[1m])' },
-      { id: 'dObWake', title: 'Outbox wakeup missed /s', beginZero: true,
-        promql: 'rate(gamemesh_control_outbox_wakeup_missed_total{job="JOB",role="gateway"}[1m])' },
-      { id: 'dObErr', title: 'Outbox write error /s', beginZero: true,
-        promql: 'rate(gamemesh_control_outbox_write_errors_total{job="JOB",role="gateway"}[1m])' },
-      { id: 'dObOv', title: 'Outbox overflow /s', beginZero: true,
-        promql: 'rate(gamemesh_control_outbox_overflow_total{job="JOB",role="gateway"}[1m])' },
-      { id: 'dMail', title: 'Mailbox pending', beginZero: true,
-        promql: 'gamemesh_mailbox_pending{job="JOB"}' },
-      { id: 'dAoiBack', title: 'AOI push backlog', beginZero: true,
-        promql: 'gamemesh_aoi_push_backlog{job="JOB"}' },
-      { id: 'dAoiInf', title: 'AOI worker inflight', beginZero: true,
-        promql: 'gamemesh_aoi_worker_inflight{job="JOB"}' },
-      { id: 'dAoiAge', title: 'AOI batch 最老年龄（毫秒）', beginZero: true,
-        promql: 'gamemesh_aoi_batch_oldest_age_ms{job="JOB"}' },
-      { id: 'dAoiShed', title: 'AOI move shed /s', beginZero: true,
-        promql: 'rate(gamemesh_aoi_move_shed_total{job="JOB"}[1m])' },
-      { id: 'dPush', title: 'PushBatch /s', beginZero: true,
-        promql: 'rate(gamemesh_pushbatch_total{job="JOB"}[1m])' },
-      { id: 'dPushSlow', title: 'PushBatch slow /s', beginZero: true,
-        promql: 'rate(gamemesh_pushbatch_slow_total{job="JOB"}[1m])' },
-      { id: 'dPushLast', title: 'PushBatch 最近耗时（毫秒）', beginZero: true,
-        promql: 'gamemesh_pushbatch_last_ms{job="JOB"}' },
-      { id: 'dAoiEv', title: 'AOI move events /s', beginZero: true,
-        promql: 'rate(gamemesh_aoi_move_events_total{job="JOB"}[1m])' },
-      { id: 'dAoiLim', title: 'AOI move rate limited /s', beginZero: true,
-        promql: 'rate(gamemesh_aoi_move_rate_limited_total{job="JOB"}[1m])' },
-      { id: 'dAoiCap', title: 'AOI move capped /s', beginZero: true,
-        promql: 'rate(gamemesh_aoi_move_capped_total{job="JOB"}[1m])' },
-      { id: 'dAoiHold', title: 'AOI move buffer hold /s', beginZero: true,
-        promql: 'rate(gamemesh_aoi_move_buffer_hold_total{job="JOB"}[1m])' },
-      { id: 'dAoiDef', title: 'AOI move budget defer /s', beginZero: true,
-        promql: 'rate(gamemesh_aoi_move_budget_defer_total{job="JOB"}[1m])' },
-      { id: 'dAoiOw', title: 'AOI move overwritten /s', beginZero: true,
-        promql: 'rate(gamemesh_aoi_move_overwritten_total{job="JOB"}[1m])' },
-      { id: 'dAoiOld', title: 'AOI move pending oldest（毫秒）', beginZero: true,
-        promql: 'gamemesh_aoi_move_pending_oldest_ms{job="JOB"}' },
-      { id: 'dAoiSil', title: 'AOI move 最大静默（毫秒）', beginZero: true,
-        promql: 'gamemesh_aoi_move_entity_max_silence_ms{job="JOB"}' },
-      { id: 'dMoveHold', title: 'latest move hold（毫秒）', beginZero: true,
-        promql: 'gamemesh_latest_move_hold_ms{job="JOB"}' },
-      { id: 'dCpu', title: '进程 CPU（核）', beginZero: true,
-        promql: 'rate(process_cpu_seconds_total{job="JOB"}[1m])' },
-      { id: 'dRss', title: '进程 RSS', beginZero: true,
-        promql: 'process_resident_memory_bytes{job="JOB"}' },
-      { id: 'dThr', title: '进程线程数', beginZero: true,
-        promql: 'process_threads{job="JOB"}' },
-      { id: 'dCtx', title: '进程上下文切换 /s', beginZero: true,
-        promql: 'rate(process_context_switches_total{job="JOB"}[1m])' },
-      { id: 'dRun', title: '可运行线程数', beginZero: true,
-        promql: 'process_runnable_threads{job="JOB"}' },
-      { id: 'dTick', title: 'EventLoop tick p99 / max（毫秒）', beginZero: true,
-        promql: '{__name__=~"gamemesh_eventloop_tick_(p99|max)_ms",job="JOB"}' },
-      { id: 'dTodo', title: 'EventLoop todo depth', beginZero: true,
-        promql: 'gamemesh_eventloop_todo_last{job="JOB"}' },
-      { id: 'dBatch', title: 'EventLoop batch 耗时（毫秒）', beginZero: true,
-        promql: 'gamemesh_eventloop_batch_ms_last{job="JOB"}' },
-      { id: 'dRpcQ', title: 'RPC worker 排队', beginZero: true,
-        promql: '{__name__=~"gamemesh_rpc_offload(_fast)?_pending",job="JOB"}' },
-      { id: 'dAoiThr', title: 'AOI worker 线程数', beginZero: true,
-        promql: 'gamemesh_aoi_worker_threads{job="JOB"}' },
-      { id: 'dBrpcThr', title: 'BRPC worker 线程数', beginZero: true,
-        promql: 'gamemesh_brpc_worker_threads{job="JOB"}' },
-      { id: 'dSockQ', title: '内核发送队列字节', beginZero: true,
-        promql: 'process_socket_send_queue_bytes{job="JOB",role="gateway"}' },
-      { id: 'dSendMax', title: '发送队列高水位字节', beginZero: true,
-        promql: 'gamemesh_send_pending_max_bytes{job="JOB",role="gateway"}' },
-      { id: 'dPendEnt', title: 'Move pending entities', beginZero: true,
-        promql: 'gamemesh_move_pending_entities{job="JOB",role="gateway"}' },
-      { id: 'dOffer', title: 'Move offer /s', beginZero: true,
-        promql: 'rate(gamemesh_move_offer_total{job="JOB",role="gateway"}[1m])' },
-      { id: 'dFlush', title: 'Move flush /s', beginZero: true,
-        promql: 'rate(gamemesh_move_flush_total{job="JOB",role="gateway"}[1m])' },
-      { id: 'dHoldR', title: 'Move hold /s', beginZero: true,
-        promql: 'rate(gamemesh_move_hold_total{job="JOB",role="gateway"}[1m])' },
-      { id: 'dDrop', title: 'Move drop /s', beginZero: true,
-        promql: 'rate(gamemesh_move_drop_total{job="JOB",role="gateway"}[1m])' },
-      { id: 'dEagain', title: 'TCP EAGAIN /s', beginZero: true,
-        promql: 'rate(gamemesh_tcp_eagain_total{job="JOB",role="gateway"}[1m])' },
-      { id: 'dWrErr', title: 'TCP write error /s', beginZero: true,
-        promql: 'rate(gamemesh_tcp_write_error_total{job="JOB",role="gateway"}[1m])' },
-      { id: 'dRetrans', title: 'TCP retrans /s（主机，取 max，不要相加）', beginZero: true,
+        promql: 'gamemesh_reply_latency_p50_ms{job="JOB",role="gateway",kind="move"} or gamemesh_reply_latency_p95_ms{job="JOB",role="gateway",kind="move"} or gamemesh_reply_latency_p99_ms{job="JOB",role="gateway",kind="move"}' },
+    ];
+    const POS_CHARTS = [
+      { id: 'dAoiEv', title: 'AOI 移动事件 /s', beginZero: true,
+        promql: 'sum(rate(gamemesh_aoi_move_events_total{job="JOB"}[1m]))' },
+      { id: 'dAoiSkip', title: 'AOI 因重传未写出 /s', beginZero: true,
+        promql: 'sum(rate(gamemesh_aoi_skip_retrans_total{job="JOB",role="gateway"}[1m]))' },
+      { id: 'dAoiSil', title: '位置最大静默（毫秒）', beginZero: true,
+        promql: 'max(gamemesh_aoi_move_entity_max_silence_ms{job="JOB"})' },
+      { id: 'dMoveHold', title: '位置停放（毫秒）', beginZero: true,
+        promql: 'max(gamemesh_latest_move_hold_ms{job="JOB"})' },
+      { id: 'pMoveFlush', title: '位置写出 /s', beginZero: true,
+        promql: 'sum(rate(gamemesh_move_flush_total{job="JOB",role="gateway"}[1m]))' },
+      { id: 'pMoveDrop', title: '位置丢掉 /s', beginZero: true,
+        promql: 'sum(rate(gamemesh_move_drop_total{job="JOB",role="gateway"}[1m]))' },
+      { id: 'dObFrames', title: '回复排队帧', beginZero: true,
+        promql: 'sum(gamemesh_control_outbox_current_frames{job="JOB",role="gateway"})' },
+      { id: 'dObAge', title: '最老未进发送流的回复（毫秒）', beginZero: true,
+        promql: 'max(gamemesh_control_outbox_oldest_held_ms{job="JOB",role="gateway"})' },
+    ];
+    const NET_CHARTS = [
+      { id: 'dRetrans', title: '主机 TCP 重传 /s', beginZero: true,
         promql: 'max(rate(gamemesh_host_tcp_retrans_segs_total{job="JOB"}[1m]))' },
-      { id: 'dConnQ', title: '最大单连接 Send-Q', beginZero: true,
-        promql: 'gamemesh_tcp_conn_sendq_max_bytes{job="JOB",role="gateway"}' }
-    );
+    ];
+    const DIAG_PANELS = MOVE_CHARTS.concat(POS_CHARTS).concat(NET_CHARTS);
 
     const DIAG_CARDS = [
-      { id: 'moveRx', name: 'Move 接收/s', query: 'sum(rate(gamemesh_reply_stage_total{job="JOB",role="gateway",kind="move",stage="request_received"}[1m]))' },
-      { id: 'moveTx', name: 'Move 写入发送缓冲/s', query: 'sum(rate(gamemesh_reply_stage_total{job="JOB",role="gateway",kind="move",stage="socket_write_accepted"}[1m]))' },
-      { id: 'moveGap', name: 'Move 当前阶段缺口', gaps: 'move', red: function (v) { return v > 0; } },
-      { id: 'moveP99', name: 'Move p99', query: 'max(gamemesh_reply_latency_p99_ms{job="JOB",role="gateway",kind="move"})', red: function (v) { return v >= 1500; } },
-      { id: 'hbRx', name: 'Heartbeat 接收/s', query: 'sum(rate(gamemesh_reply_stage_total{job="JOB",role="gateway",kind="heartbeat",stage="request_received"}[1m]))' },
-      { id: 'hbTx', name: 'Heartbeat 写入发送缓冲/s', query: 'sum(rate(gamemesh_reply_stage_total{job="JOB",role="gateway",kind="heartbeat",stage="socket_write_accepted"}[1m]))' },
-      { id: 'hbGap', name: 'Heartbeat 当前阶段缺口', gaps: 'heartbeat', red: function (v) { return v > 0; } },
-      { id: 'hbP99', name: 'Heartbeat p99', query: 'max(gamemesh_reply_latency_p99_ms{job="JOB",role="gateway",kind="heartbeat"})', red: function (v) { return v >= 3000; } },
-      { id: 'softDrop', name: 'response soft drop/s', query: 'sum(rate(gamemesh_reply_stage_total{job="JOB",role="gateway",stage="response_soft_drop"}[1m]))', red: function (v) { return v > 0; } },
-      { id: 'conserve', name: '回包守恒差值', query: 'sum(gamemesh_reply_conservation_residual{job="JOB",role="gateway"})', holdMs: 30000, red: function (v) { return Math.abs(v) >= 1; } },
-      { id: 'obFrames', name: '当前排队回复', query: 'sum(gamemesh_control_outbox_current_frames{job="JOB",role="gateway"})' },
-      { id: 'obAge', name: '最老 Held 时间', query: 'max(gamemesh_control_outbox_oldest_held_ms{job="JOB",role="gateway"})', red: function (v) { return v > 1000; }, unit: 'ms' },
-      { id: 'obStall', name: 'Drain stall', query: 'sum(rate(gamemesh_control_outbox_drain_stalls_total{job="JOB",role="gateway"}[1m]))', red: function (v) { return v > 0; } },
-      { id: 'obWake', name: 'Wakeup missed', query: 'sum(rate(gamemesh_control_outbox_wakeup_missed_total{job="JOB",role="gateway"}[1m]))', red: function (v) { return v > 0; } },
-      { id: 'obOv', name: 'Overflow', query: 'sum(rate(gamemesh_control_outbox_overflow_total{job="JOB",role="gateway"}[1m]))', red: function (v) { return v > 0; } },
-      { id: 'cpuAll', name: '全机 CPU 总核占用', query: 'sum(rate(process_cpu_seconds_total{job="JOB"}[1m]))', holdMs: 30000, red: function (v) { return v >= 3.6; }, digits: 2 },
-      { id: 'thrAll', name: '9 个进程总线程数', query: 'sum(process_threads{job="JOB"})' },
-      { id: 'cpuGw', name: 'Gateway CPU', query: 'sum(rate(process_cpu_seconds_total{job="JOB",role="gateway"}[1m]))', digits: 2 },
-      { id: 'cpuGl', name: 'GameLogic CPU', query: 'sum(rate(process_cpu_seconds_total{job="JOB",role="gamelogic"}[1m]))', digits: 2 },
-      { id: 'loopMax', name: 'EventLoop 最大延迟', query: 'max(gamemesh_eventloop_tick_max_ms{job="JOB"})', unit: 'ms' },
-      { id: 'todoMax', name: '最大工作队列深度', query: 'max(gamemesh_eventloop_todo_last{job="JOB"})' },
-      { id: 'mailCard', name: 'Mailbox pending', query: 'max(gamemesh_mailbox_pending{job="JOB"})', growMs: 30000 },
-      { id: 'aoiBackCard', name: 'AOI backlog', query: 'max(gamemesh_aoi_push_backlog{job="JOB"})', holdMs: 10000, warn: function (v) { return v > 0; } },
-      { id: 'aoiAgeCard', name: 'AOI batch age', query: 'max(gamemesh_aoi_batch_oldest_age_ms{job="JOB"})', red: function (v) { return v > 500; }, unit: 'ms' },
-      { id: 'silCard', name: 'Move 最大静默', query: 'max(gamemesh_aoi_move_entity_max_silence_ms{job="JOB"})', red: function (v) { return v > 2000; }, unit: 'ms' },
-      { id: 'holdCard', name: 'latest move hold', query: 'max(gamemesh_latest_move_hold_ms{job="JOB"})', red: function (v) { return v > 1000; }, unit: 'ms' },
-      { id: 'shedCard', name: 'move shed /s', query: 'sum(rate(gamemesh_aoi_move_shed_total{job="JOB"}[1m]))', red: function (v) { return v > 0; } },
-      { id: 'dropCard', name: 'move drop /s', query: 'sum(rate(gamemesh_move_drop_total{job="JOB",role="gateway"}[1m]))', red: function (v) { return v > 0; } },
-      { id: 'eagainCard', name: 'TCP EAGAIN /s', query: 'sum(rate(gamemesh_tcp_eagain_total{job="JOB",role="gateway"}[1m]))', holdMs: 30000, red: function (v) { return v > 0; } },
-      { id: 'idleCard', name: '无 write_complete', query: 'max(gamemesh_reply_write_complete_idle_ms{job="JOB",role="gateway"})', red: function (v) { return v > 2000; }, unit: 'ms' },
-      { id: 'retransCard', name: 'TCP retrans /s', query: 'max(rate(gamemesh_host_tcp_retrans_segs_total{job="JOB"}[1m]))', growMs: 30000 },
-      { id: 'sendqCard', name: '发送队列', query: 'max(process_socket_send_queue_bytes{job="JOB",role="gateway"})', growMs: 30000 },
+      { id: 'moveP99', box: 'diagMove', name: 'Move p99', query: 'max(gamemesh_reply_latency_p99_ms{job="JOB",role="gateway",kind="move"})', red: function (v) { return v >= 1500; }, unit: 'ms' },
+      { id: 'hbP99', box: 'diagMove', name: '心跳 p99', query: 'max(gamemesh_reply_latency_p99_ms{job="JOB",role="gateway",kind="heartbeat"})', red: function (v) { return v >= 3000; }, unit: 'ms' },
+      { id: 'silCard', box: 'diagPos', name: '位置静默', query: 'max(gamemesh_aoi_move_entity_max_silence_ms{job="JOB"})', red: function (v) { return v > 2000; }, unit: 'ms' },
+      { id: 'holdCard', box: 'diagPos', name: '位置停放', query: 'max(gamemesh_latest_move_hold_ms{job="JOB"})', red: function (v) { return v > 1000; }, unit: 'ms' },
+      { id: 'skipCard', box: 'diagPos', name: 'AOI 因重传跳过 /s', query: 'sum(rate(gamemesh_aoi_skip_retrans_total{job="JOB",role="gateway"}[1m]))', red: function (v) { return v > 50; } },
+      { id: 'shedCard', box: 'diagPos', name: 'AOI 丢弃 /s', query: 'sum(rate(gamemesh_aoi_move_shed_total{job="JOB"}[1m]))', red: function (v) { return v > 0; } },
+      { id: 'dropCard', box: 'diagPos', name: '移动丢弃 /s', query: 'sum(rate(gamemesh_move_drop_total{job="JOB",role="gateway"}[1m]))', red: function (v) { return v > 0; } },
+      { id: 'obFrames', box: 'diagPos', name: '排队回复', query: 'sum(gamemesh_control_outbox_current_frames{job="JOB",role="gateway"})' },
+      { id: 'obAge', box: 'diagPos', name: '最老未发出回复', query: 'max(gamemesh_control_outbox_oldest_held_ms{job="JOB",role="gateway"})', red: function (v) { return v > 1000; }, unit: 'ms' },
+      { id: 'retransCard', box: 'diagNet', name: 'TCP 重传 /s', query: 'max(rate(gamemesh_host_tcp_retrans_segs_total{job="JOB"}[1m]))' },
+      { id: 'eagainCard', box: 'diagNet', name: 'TCP EAGAIN /s', query: 'sum(rate(gamemesh_tcp_eagain_total{job="JOB",role="gateway"}[1m]))', red: function (v) { return v > 20; } },
+      { id: 'cpuAll', box: 'resStatus', name: 'CPU 合计', query: 'sum(rate(process_cpu_seconds_total{job="JOB"}[1m]))', red: function (v) { return v >= 3.6; }, digits: 2 },
+      { id: 'cpuGw', box: 'resStatus', name: 'Gateway CPU', query: 'sum(rate(process_cpu_seconds_total{job="JOB",role="gateway"}[1m]))', digits: 2 },
+      { id: 'cpuGl', box: 'resStatus', name: 'GameLogic CPU', query: 'sum(rate(process_cpu_seconds_total{job="JOB",role="gamelogic"}[1m]))', digits: 2 },
     ];
 
     const diagHist = {};
@@ -868,9 +890,9 @@
     }
 
     function ensureDiagCards() {
-      const root = document.getElementById('diagStatus');
-      if (!root || root.children.length) return;
       DIAG_CARDS.forEach(function (c) {
+        const root = document.getElementById(c.box);
+        if (!root || root.querySelector('[data-mod="' + c.id + '"]')) return;
         const el = document.createElement('div');
         el.className = 'status-pill na';
         el.setAttribute('data-mod', c.id);
@@ -958,26 +980,15 @@
     }
 
     const EXPORT_METRICS = [
-      { group: 'reply_stages', type: 'counter', query: 'gamemesh_reply_stage_total{job="JOB"}' },
-      { group: 'latency', type: 'gauge', query: '{__name__=~"gamemesh_reply_latency_p(50|95|99)_ms",job="JOB"}' },
-      { group: 'inflight', type: 'gauge', query: 'gamemesh_reply_inflight{job="JOB"}' },
-      { group: 'conservation', type: 'gauge', query: 'gamemesh_reply_conservation_residual{job="JOB"}' },
-      { group: 'write_complete_idle', type: 'gauge', query: 'gamemesh_reply_write_complete_idle_ms{job="JOB"}' },
-      { group: 'control_outbox', type: 'gauge', query: '{__name__=~"gamemesh_control_outbox_(current_frames|current_bytes|peak_frames|peak_bytes|held_connections|oldest_held_ms)",job="JOB"}' },
-      { group: 'control_outbox_counters', type: 'counter', query: '{__name__=~"gamemesh_control_outbox_(drain_runs_total|drain_stalls_total|wakeup_missed_total|write_errors_total|overflow_total)",job="JOB"}' },
-      { group: 'eventloop', type: 'gauge', query: '{__name__=~"gamemesh_eventloop_(todo_last|batch_last|batch_ms_last|tick_p99_ms|tick_max_ms)",job="JOB"}' },
-      { group: 'aoi', type: 'gauge', query: '{__name__=~"gamemesh_(mailbox_pending|aoi_push_backlog|aoi_worker_inflight|aoi_batch_oldest_age_ms|aoi_move_pending_oldest_ms|aoi_move_entity_max_silence_ms|latest_move_hold_ms|pushbatch_last_ms|aoi_worker_threads)",job="JOB"}' },
-      { group: 'aoi_counters', type: 'counter', query: '{__name__=~"gamemesh_(aoi_move_shed_total|pushbatch_total|pushbatch_slow_total|aoi_move_events_total|aoi_move_rate_limited_total|aoi_move_capped_total|aoi_move_buffer_hold_total|aoi_move_budget_defer_total|aoi_move_overwritten_total)",job="JOB"}' },
-      { group: 'tcp', type: 'gauge', query: '{__name__=~"process_socket_send_queue_bytes|gamemesh_send_pending_max_bytes|gamemesh_move_pending_entities|gamemesh_tcp_conn_sendq_max_bytes",job="JOB"}' },
-      { group: 'tcp_counters', type: 'counter', query: '{__name__=~"gamemesh_(move_offer_total|move_flush_total|move_hold_total|move_drop_total|tcp_eagain_total|tcp_write_error_total)|gamemesh_host_tcp_retrans_segs_total",job="JOB"}' },
-      { group: 'bandwidth', type: 'counter', query: '{__name__=~"gamemesh_(aoi_skip_retrans_total|aoi_skip_unsent_total|aoi_write_room_total|aoi_write_starved_total|gateway_tx_bytes_total|host_tcp_retrans_segs_total)",job="JOB"}' },
+      { group: 'reply_stages', type: 'counter', query: 'gamemesh_reply_stage_total{job="JOB",role="gateway",kind=~"move|heartbeat"}' },
+      { group: 'latency', type: 'gauge', query: 'gamemesh_reply_latency_p50_ms{job="JOB",role="gateway",kind=~"move|heartbeat"} or gamemesh_reply_latency_p95_ms{job="JOB",role="gateway",kind=~"move|heartbeat"} or gamemesh_reply_latency_p99_ms{job="JOB",role="gateway",kind=~"move|heartbeat"}' },
+      { group: 'control_outbox', type: 'gauge', query: 'gamemesh_control_outbox_current_frames{job="JOB",role="gateway"} or gamemesh_control_outbox_oldest_held_ms{job="JOB",role="gateway"}' },
+      { group: 'aoi', type: 'gauge', query: 'gamemesh_aoi_move_entity_max_silence_ms{job="JOB"} or gamemesh_latest_move_hold_ms{job="JOB"}' },
+      { group: 'aoi_counters', type: 'counter', query: 'gamemesh_aoi_move_events_total{job="JOB"} or gamemesh_aoi_move_shed_total{job="JOB"}' },
+      { group: 'bandwidth', type: 'counter', query: 'gamemesh_aoi_skip_retrans_total{job="JOB",role="gateway"} or gamemesh_aoi_write_room_total{job="JOB",role="gateway"} or gamemesh_gateway_tx_bytes_total{job="JOB",role="gateway"} or gamemesh_host_tcp_retrans_segs_total{job="JOB",role="gateway"}' },
+      { group: 'tcp_counters', type: 'counter', query: 'gamemesh_move_flush_total{job="JOB",role="gateway"} or gamemesh_move_drop_total{job="JOB",role="gateway"} or gamemesh_tcp_eagain_total{job="JOB",role="gateway"}' },
       { group: 'cpu', type: 'counter', query: 'process_cpu_seconds_total{job="JOB"}' },
       { group: 'rss', type: 'gauge', query: 'process_resident_memory_bytes{job="JOB"}' },
-      { group: 'threads', type: 'gauge', query: 'process_threads{job="JOB"}' },
-      { group: 'context_switches', type: 'counter', query: 'process_context_switches_total{job="JOB"}' },
-      { group: 'runnable_threads', type: 'gauge', query: 'process_runnable_threads{job="JOB"}' },
-      { group: 'rpc_queue', type: 'gauge', query: '{__name__=~"gamemesh_rpc_offload(_fast)?_pending",job="JOB"}' },
-      { group: 'brpc_threads', type: 'gauge', query: 'gamemesh_brpc_worker_threads{job="JOB"}' },
     ];
 
     function labelKey(metric) {
@@ -1069,6 +1080,96 @@
       return '浏览器默认下载目录。';
     }
 
+    function readPills() {
+      const out = [];
+      document.querySelectorAll('.status-pill').forEach(function (node) {
+        const name = node.querySelector('.name');
+        const value = node.querySelector('.value');
+        out.push({
+          name: name ? name.textContent : '',
+          value: value ? value.textContent : '',
+        });
+      });
+      return out;
+    }
+
+    function chartSeries(rows) {
+      return (rows || []).map(function (s) {
+        return {
+          name: seriesLabel(s),
+          metric: s.metric || {},
+          points: (s.values || []).map(function (x) {
+            return [x[0], parseFloat(x[1])];
+          }),
+        };
+      });
+    }
+
+    const PAGE_SECTIONS = [
+      { id: 'diag', title: '压测', panels: function () { return DIAG_PANELS; } },
+      { id: 'biz', title: '在线与流量', panels: function () { return BIZ_PANELS; } },
+      { id: 'lines', title: '分线', panels: function () { return LINE_PANELS; } },
+      { id: 'send', title: '发送', panels: function () { return SEND_PANELS; } },
+      { id: 'resources', title: '资源', panels: function () { return PROM_PANELS; } },
+      { id: 'dungeons', title: '副本', panels: function () { return DUNGEON_PANELS; } },
+    ];
+
+    async function exportPageCharts() {
+      const sections = [];
+      let done = 0;
+      let total = 0;
+      PAGE_SECTIONS.forEach(function (sec) { total += sec.panels().length; });
+      for (let s = 0; s < PAGE_SECTIONS.length; ++s) {
+        const sec = PAGE_SECTIONS[s];
+        const panels = sec.panels();
+        const chartsOut = [];
+        for (let i = 0; i < panels.length; ++i) {
+          done++;
+          setExportStatus('正在导出曲线 ' + done + '/' + total + ' …');
+          const panel = panels[i];
+          const item = { id: panel.id, title: panel.title, series: [] };
+          try {
+            item.series = chartSeries(await queryRange(panelQuery(panel), chartStep()));
+            if (!item.series.length)
+              item.note = panel.emptyText || '指标未导出';
+          } catch (e) {
+            item.error = e && e.message ? e.message : String(e);
+          }
+          chartsOut.push(item);
+        }
+        sections.push({ id: sec.id, title: sec.title, charts: chartsOut });
+      }
+      return sections;
+    }
+
+    async function exportTables() {
+      const js = jobSel();
+      const specs = [
+        ['lines', 'max by (owner, map_template_id, line_no, state) (gamemesh_map_line_occupancy{' + js + '})'],
+        ['dungeons', 'max by (owner, map_template_id, map_instance_id, state, soft_cap, hard_cap) (gamemesh_map_dungeon_occupancy{' + js + '})'],
+        ['dungeon_members', 'max by (owner, map_template_id, map_instance_id) (gamemesh_map_dungeon_members{' + js + '})'],
+        ['process_cpu', 'rate(process_cpu_seconds_total{' + js + '}[1m])'],
+        ['process_rss', 'process_resident_memory_bytes{' + js + '}'],
+        ['process_fds', 'process_open_fds{' + js + '}'],
+        ['process_threads', 'process_threads{' + js + '}'],
+        ['process_uptime', 'time() - process_start_time_seconds{' + js + '}'],
+        ['gateway_players', 'gamemesh_online_players{' + js + ',role="gateway"}'],
+      ];
+      const out = {};
+      for (let i = 0; i < specs.length; ++i) {
+        setExportStatus('正在导出表格 ' + (i + 1) + '/' + specs.length + ' …');
+        try {
+          const rows = await queryInstant(specs[i][1]);
+          out[specs[i][0]] = (rows || []).map(function (s) {
+            return { metric: s.metric || {}, value: s.value ? parseFloat(s.value[1]) : null };
+          });
+        } catch (e) {
+          out[specs[i][0]] = { error: e && e.message ? e.message : String(e) };
+        }
+      }
+      return out;
+    }
+
     async function exportDiagnostics() {
       const btn = document.getElementById('btnExport');
       if (btn) btn.disabled = true;
@@ -1079,6 +1180,7 @@
         const bracket = rangeBracket();
         const version = await fetchJson(apiUrl('/api/version'));
         const cluster = await fetchJson(apiUrl('/api/cluster'));
+        const live = await fetchJson(apiUrl('/api/monitor/live'));
         const groups = {};
         for (let i = 0; i < EXPORT_METRICS.length; ++i) {
           const spec = EXPORT_METRICS[i];
@@ -1095,6 +1197,8 @@
             groups[spec.group] = { missing: true, note: '指标未导出', error: e.message || String(e), series: [] };
           }
         }
+        const pageCharts = await exportPageCharts();
+        const tables = await exportTables();
         const doc = {
           schema: 'gamemesh.server-movement-diagnostics.v1',
           formal_version: {
@@ -1103,6 +1207,10 @@
             service: version && version.service ? version.service : '',
           },
           processes: cluster && cluster.processes ? cluster.processes : [],
+          live: live || {},
+          shown: readPills(),
+          page: pageCharts,
+          tables: tables,
           expected_process_n: 9,
           prometheus_job: cfg().job,
           range: {
@@ -1114,23 +1222,13 @@
           reply_stages: groups.reply_stages,
           stage_gaps: stageGaps(groups.reply_stages),
           latency: groups.latency,
-          inflight: groups.inflight,
-          conservation: groups.conservation,
-          write_complete_idle: groups.write_complete_idle,
           control_outbox: groups.control_outbox,
-          control_outbox_counters: groups.control_outbox_counters,
-          eventloop: groups.eventloop,
           aoi: groups.aoi,
           aoi_counters: groups.aoi_counters,
-          tcp: groups.tcp,
+          bandwidth: groups.bandwidth,
           tcp_counters: groups.tcp_counters,
           cpu: groups.cpu,
           rss: groups.rss,
-          threads: groups.threads,
-          context_switches: groups.context_switches,
-          runnable_threads: groups.runnable_threads,
-          rpc_queue: groups.rpc_queue,
-          brpc_threads: groups.brpc_threads,
         };
         const now = new Date();
         const p = function (n) { return String(n).padStart(2, '0'); };
@@ -1174,35 +1272,17 @@
         promql: () => 'max(gamemesh_session_online_players{' + jobSel() + ',role="session"})' },
       { id: 'pGwConn', title: 'Gateway TCP 连接', beginZero: true,
         promql: () => 'gamemesh_gateway_tcp_connections{' + jobSel() + ',role="gateway"}' },
-      { id: 'pGwRx', title: 'Gateway 入站 (B/s)', promql: () => 'rate(gamemesh_gateway_rx_bytes_total{' + jobSel() + ',role="gateway"}[1m])' },
-      { id: 'pGwTx', title: 'Gateway 出站 (B/s)', promql: () => 'rate(gamemesh_gateway_tx_bytes_total{' + jobSel() + ',role="gateway"}[1m])' },
-      { id: 'pGwRxF', title: 'Gateway 入站帧/s', promql: () => 'rate(gamemesh_gateway_rx_frames_total{' + jobSel() + ',role="gateway"}[1m])' },
-      { id: 'pGwTxF', title: 'Gateway 出站帧/s', promql: () => 'rate(gamemesh_gateway_tx_frames_total{' + jobSel() + ',role="gateway"}[1m])' },
+      { id: 'pGwRx', title: 'Gateway 入站 (B/s)', promql: () => 'sum(rate(gamemesh_gateway_rx_bytes_total{' + jobSel() + ',role="gateway"}[1m]))' },
+      { id: 'pGwTx', title: 'Gateway 出站 (B/s)', promql: () => 'sum(rate(gamemesh_gateway_tx_bytes_total{' + jobSel() + ',role="gateway"}[1m]))' },
     ];
 
     const SEND_PANELS = [
       { id: 'pSendPending', title: '发送队列高水位（字节，10秒最大）', beginZero: true,
-        promql: () => 'gamemesh_send_pending_max_bytes{' + jobSel() + ',role="gateway"}' },
-      { id: 'pSockSend', title: '内核发送队列（字节，进程合计）', beginZero: true,
-        promql: () => 'process_socket_send_queue_bytes{' + jobSel() + ',role="gateway"}' },
-      { id: 'pTodo', title: '事件循环待执行回调', beginZero: true,
-        promql: () => 'gamemesh_eventloop_todo_last{' + jobSel() + ',role="gateway"}' },
-      { id: 'pBatchMs', title: '回调批耗时（毫秒）', beginZero: true,
-        promql: () => 'gamemesh_eventloop_batch_ms_last{' + jobSel() + ',role="gateway"}' },
+        promql: () => 'max(gamemesh_send_pending_max_bytes{' + jobSel() + ',role="gateway"})' },
       { id: 'pReplyMax', title: '回包排队 10秒最大（毫秒）', beginZero: true,
         promql: () => 'max by (kind) (gamemesh_pkt_stage_max_ms{' + jobSel() + ',role="gateway",stage="reply_queue"})' },
-      { id: 'pRpcMax', title: 'RPC 10秒最大（毫秒）', beginZero: true,
+      { id: 'pRpcMax', title: '登录和进图 RPC 10秒最大（毫秒）', beginZero: true,
         promql: () => 'max by (kind) (gamemesh_pkt_stage_max_ms{' + jobSel() + ',role="gateway",stage="rpc"})' },
-      { id: 'pHandlerMax', title: '连接上处理 10秒最大（毫秒）', beginZero: true,
-        promql: () => 'max by (kind) (gamemesh_pkt_stage_max_ms{' + jobSel() + ',stage="handler"})' },
-      { id: 'pSlow', title: '慢包（≥1秒）/s', beginZero: true,
-        promql: () => 'sum by (kind) (rate(gamemesh_pkt_slow_total{' + jobSel() + '}[1m]))' },
-      { id: 'pMoveOffer', title: '移动合并入队 /s', beginZero: true,
-        promql: () => 'rate(gamemesh_move_offer_total{' + jobSel() + ',role="gateway"}[1m])' },
-      { id: 'pMoveFlush', title: '移动写出 /s', beginZero: true,
-        promql: () => 'rate(gamemesh_move_flush_total{' + jobSel() + ',role="gateway"}[1m])' },
-      { id: 'pMoveDrop', title: '移动因队列丢掉 /s', beginZero: true,
-        promql: () => 'rate(gamemesh_move_drop_total{' + jobSel() + ',role="gateway"}[1m])' },
     ];
 
     const LINE_PANELS = [
@@ -1213,21 +1293,16 @@
     ];
 
     const DUNGEON_PANELS = [
-      { id: 'pDunOcc', title: '每个副本人数', beginZero: true,
+      { id: 'pDunOcc', title: '每个副本人数', beginZero: true, emptyText: '当前没有副本',
         promql: () => 'max by (owner, map_template_id, map_instance_id) (gamemesh_map_dungeon_occupancy{' + jobSel() + '})' },
-      { id: 'pDunCnt', title: '每模板副本数', beginZero: true,
+      { id: 'pDunCnt', title: '每模板副本数', beginZero: true, emptyText: '当前没有副本',
         promql: () => 'max by (owner, map_template_id) (gamemesh_map_dungeon_count{' + jobSel() + '})' },
     ];
 
     const PROM_PANELS = [
-      { id: 'pCpu', title: 'CPU（核）', promql: () => 'rate(process_cpu_seconds_total{' + jobSel() + '}[1m])' },
+      { id: 'pCpu', title: 'CPU（核）', promql: () => 'sum by (instance_id) (rate(process_cpu_seconds_total{' + jobSel() + '}[1m]))' },
       { id: 'pRss', title: '内存 RSS', promql: () => 'process_resident_memory_bytes{' + jobSel() + '}' },
-      { id: 'pVm', title: '虚拟内存', promql: () => 'process_virtual_memory_bytes{' + jobSel() + '}' },
       { id: 'pFds', title: '打开文件描述符', promql: () => 'process_open_fds{' + jobSel() + '}' },
-      { id: 'pFdUtil', title: 'FD 使用率', promql: () => 'process_open_fds{' + jobSel() + '} / process_max_fds{' + jobSel() + '}' },
-      { id: 'pThr', title: '线程数', promql: () => 'process_threads{' + jobSel() + '}' },
-      { id: 'pIoR', title: '磁盘读 B/s', promql: () => 'rate(process_io_read_bytes_total{' + jobSel() + '}[1m])' },
-      { id: 'pIoW', title: '磁盘写 B/s', promql: () => 'rate(process_io_write_bytes_total{' + jobSel() + '}[1m])' },
     ];
 
     function ensureChartBoxes(rootId, panels) {
@@ -1250,9 +1325,16 @@
         }
         const p = panels[i];
         try {
-          const result = await queryRange(panelQuery(p), step);
+          let result;
+          try {
+            result = await queryRange(panelQuery(p), step);
+          } catch (e) {
+            if (!e || String(e.message || '').indexOf('超时') < 0)
+              throw e;
+            result = await queryRange(panelQuery(p), step);
+          }
           if (!result.length) {
-            setChartMessage(p.id, '指标未导出');
+            setChartMessage(p.id, p.emptyText || '指标未导出');
             continue;
           }
           setChartMessage(p.id, '');
@@ -1265,7 +1347,9 @@
     }
 
     function ensureAllCharts() {
-      ensureChartBoxes('diagCharts', DIAG_PANELS);
+      ensureChartBoxes('diagMoveCharts', MOVE_CHARTS);
+      ensureChartBoxes('diagPosCharts', POS_CHARTS);
+      ensureChartBoxes('diagNetCharts', NET_CHARTS);
       ensureChartBoxes('bizCharts', BIZ_PANELS);
       ensureChartBoxes('sendCharts', SEND_PANELS);
       ensureChartBoxes('lineCharts', LINE_PANELS);
@@ -1414,8 +1498,7 @@
           bound: instantMap(boundMap),
         };
       } catch {
-        setStatus('targets', 'Prometheus 不可用', false);
-        setStatus('dungeons', '—', null);
+        setStatus('targets', 'Prometheus 未响应', false);
         return empty;
       }
     }
@@ -1454,6 +1537,8 @@
         tbody.innerHTML = '';
       (cluster.processes || []).forEach(p => {
         const tr = document.createElement('tr');
+        tr.setAttribute('data-inst', p.instance_id || '');
+        tr.setAttribute('data-role', p.role || '');
         const upv = lookup(snap.up, p);
         const scraped = upv != null && Number(upv) === 1;
         if (!p.alive)
@@ -1461,17 +1546,18 @@
         else if (!p.ready || (upv != null && !scraped))
           tr.style.background = '#fff8e1';
         const cells = [
-          p.role, p.instance_id, p.pid, p.comm || '',
+          shownService(p.role), shownService(p.instance_id),
           mark(p.alive),
           upv == null ? '—' : (scraped ? '是' : '否'),
-          mark(p.live), mark(p.ready),
           fmtCpu(lookup(snap.cpu, p)),
           fmtBytes(lookup(snap.rss, p)),
           lookup(snap.fds, p) == null ? '—' : String(Math.round(Number(lookup(snap.fds, p)))),
-          lookup(snap.thr, p) == null ? '—' : String(Math.round(Number(lookup(snap.thr, p)))),
           fmtDur(lookup(snap.uptime, p)),
-          p.http_port || '—',
           p.role === 'gateway' ? (lookup(snap.bound, p) == null ? '—' : String(Math.round(Number(lookup(snap.bound, p))))) : '—',
+          mark(p.live), mark(p.ready),
+          p.pid, shownService(p.comm || ''),
+          lookup(snap.thr, p) == null ? '—' : String(Math.round(Number(lookup(snap.thr, p)))),
+          p.http_port || '—',
           p.game_port || '—',
           reason(p),
         ];
@@ -1527,6 +1613,129 @@
       refreshCharts();
     }
 
+    let procRunning = false;
+    async function refreshProcessColumns() {
+      const tbody = document.querySelector('#clusterTable tbody');
+      if (procRunning || !tbody || !tbody.children.length)
+        return;
+      procRunning = true;
+      try {
+        const js = jobSel();
+        const queries = [
+          'up{' + js + '}',
+          'rate(process_cpu_seconds_total{' + js + '}[1m])',
+          'process_resident_memory_bytes{' + js + '}',
+          'process_open_fds{' + js + '}',
+          'process_threads{' + js + '}',
+          'time() - process_start_time_seconds{' + js + '}',
+          'gamemesh_online_players{' + js + ',role="gateway"}',
+        ];
+        const rows = new Array(queries.length);
+        await mapPool(queries, 1, async function (q, i) {
+          rows[i] = await queryInstant(q);
+        });
+        const maps = rows.map(instantMap);
+        const col = [3, 4, 5, 6, 13, 7, 8];
+        Array.prototype.forEach.call(tbody.children, function (tr) {
+          const id = tr.getAttribute('data-inst') || (tr.children[1] ? tr.children[1].textContent : '');
+          const role = tr.getAttribute('data-role') || (tr.children[0] ? tr.children[0].textContent : '');
+          const vals = [
+            maps[0][id] == null ? '—' : (Number(maps[0][id]) === 1 ? '是' : '否'),
+            fmtCpu(maps[1][id]),
+            fmtBytes(maps[2][id]),
+            maps[3][id] == null ? '—' : String(Math.round(Number(maps[3][id]))),
+            maps[4][id] == null ? '—' : String(Math.round(Number(maps[4][id]))),
+            maps[5][id] == null ? '—' : fmtDur(maps[5][id]),
+            role === 'gateway'
+              ? (maps[6][id] == null ? '—' : String(Math.round(Number(maps[6][id]))))
+              : '—',
+          ];
+          for (let i = 0; i < col.length; i++) {
+            if (tr.children[col[i]])
+              tr.children[col[i]].textContent = vals[i];
+          }
+        });
+      } catch (e) {
+      } finally {
+        procRunning = false;
+      }
+    }
+
+    async function refreshSceneTables() {
+      const js = jobSel();
+      try {
+        const lineRows = await queryInstant('max by (owner, map_template_id, line_no, state) (gamemesh_map_line_occupancy{' + js + '})');
+        const tbody = document.querySelector('#lineTable tbody');
+        if (tbody) {
+          tbody.innerHTML = '';
+          if (!lineRows.length) {
+            const tr = document.createElement('tr');
+            const td = document.createElement('td');
+            td.colSpan = 5;
+            td.textContent = '当前没有分线';
+            tr.appendChild(td);
+            tbody.appendChild(tr);
+          } else {
+            lineRows.forEach(function (s) {
+              const m = s.metric || {};
+              const occ = s.value ? parseFloat(s.value[1]) : NaN;
+              const tr = document.createElement('tr');
+              [m.owner || '—', m.map_template_id || '—', m.line_no || '—',
+                isFinite(occ) ? String(Math.round(occ)) : '—', m.state || '—'].forEach(function (v) {
+                const td = document.createElement('td');
+                td.textContent = v;
+                tr.appendChild(td);
+              });
+              tbody.appendChild(tr);
+            });
+          }
+        }
+      } catch (e) {}
+      const dun = document.getElementById('dungeonModule');
+      if (dun && dun.classList.contains('is-empty'))
+        return;
+      try {
+        const dunRows = await queryInstant('max by (owner, map_template_id, map_instance_id, state, soft_cap, hard_cap) (gamemesh_map_dungeon_occupancy{' + js + '})');
+        const memRows = await queryInstant('max by (owner, map_template_id, map_instance_id) (gamemesh_map_dungeon_members{' + js + '})');
+        const mem = {};
+        (memRows || []).forEach(function (s) {
+          const id = (s.metric || {}).map_instance_id;
+          if (id) mem[id] = s.value ? parseFloat(s.value[1]) : 0;
+        });
+        const tbody = document.querySelector('#dungeonTable tbody');
+        if (!tbody) return;
+        tbody.innerHTML = '';
+        if (!dunRows.length) {
+          const tr = document.createElement('tr');
+          const td = document.createElement('td');
+          td.colSpan = 8;
+          td.textContent = '当前没有副本';
+          tr.appendChild(td);
+          tbody.appendChild(tr);
+          return;
+        }
+        dunRows.forEach(function (s) {
+          const m = s.metric || {};
+          const occ = s.value ? parseFloat(s.value[1]) : NaN;
+          const n = mem[m.map_instance_id];
+          const tr = document.createElement('tr');
+          [m.owner || '—', m.map_template_id || '—', m.map_instance_id || '—',
+            isFinite(occ) ? String(Math.round(occ)) : '—',
+            n == null || !isFinite(n) ? '—' : String(Math.round(n)),
+            m.soft_cap || '—', m.hard_cap || '—', m.state || '—'].forEach(function (v) {
+            const td = document.createElement('td');
+            td.textContent = v;
+            tr.appendChild(td);
+          });
+          tbody.appendChild(tr);
+        });
+      } catch (e) {}
+    }
+
+    function refreshNumbers() {
+      return refreshDiagCards().then(refreshProcessColumns).then(refreshSceneTables);
+    }
+
     let timer = null;
     let chartTimer = null;
     function scheduleAutoRefresh() {
@@ -1536,7 +1745,9 @@
       chartTimer = null;
       const sec = parseInt(document.getElementById('refresh').value, 10);
       if (sec > 0)
-        timer = setInterval(refreshDiagCards, sec * 1000);
+        timer = setInterval(function () {
+          refreshNumbers();
+        }, sec * 1000);
     }
 
     function showChartsWhenReady() {
@@ -1565,9 +1776,17 @@
 
     applyParamsFromUrl();
     ensureDiagCards();
-    refreshDiagCards();
+    refreshNumbers();
     showChartsWhenReady();
     scheduleAutoRefresh();
+    (function waitProcessRows() {
+      const tbody = document.querySelector('#clusterTable tbody');
+      if (!tbody || !tbody.children.length) {
+        setTimeout(waitProcessRows, 300);
+        return;
+      }
+      refreshProcessColumns();
+    })();
   </script>
 </body>
 </html>

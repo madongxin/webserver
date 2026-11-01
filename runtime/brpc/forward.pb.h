@@ -782,16 +782,16 @@ class GameLogicForward_Stub : public GameLogicForward {
 
 // -------------------------------------------------------------------
 
-class WorldForward_Stub;
+class GlobalServiceForward_Stub;
 
-class WorldForward : public ::PROTOBUF_NAMESPACE_ID::Service {
+class GlobalServiceForward : public ::PROTOBUF_NAMESPACE_ID::Service {
  protected:
   // This class should be treated as an abstract interface.
-  inline WorldForward() {};
+  inline GlobalServiceForward() {};
  public:
-  virtual ~WorldForward();
+  virtual ~GlobalServiceForward();
 
-  typedef WorldForward_Stub Stub;
+  typedef GlobalServiceForward_Stub Stub;
 
   static const ::PROTOBUF_NAMESPACE_ID::ServiceDescriptor* descriptor();
 
@@ -814,19 +814,19 @@ class WorldForward : public ::PROTOBUF_NAMESPACE_ID::Service {
     const ::PROTOBUF_NAMESPACE_ID::MethodDescriptor* method) const;
 
  private:
-  GOOGLE_DISALLOW_EVIL_CONSTRUCTORS(WorldForward);
+  GOOGLE_DISALLOW_EVIL_CONSTRUCTORS(GlobalServiceForward);
 };
 
-class WorldForward_Stub : public WorldForward {
+class GlobalServiceForward_Stub : public GlobalServiceForward {
  public:
-  WorldForward_Stub(::PROTOBUF_NAMESPACE_ID::RpcChannel* channel);
-  WorldForward_Stub(::PROTOBUF_NAMESPACE_ID::RpcChannel* channel,
+  GlobalServiceForward_Stub(::PROTOBUF_NAMESPACE_ID::RpcChannel* channel);
+  GlobalServiceForward_Stub(::PROTOBUF_NAMESPACE_ID::RpcChannel* channel,
                    ::PROTOBUF_NAMESPACE_ID::Service::ChannelOwnership ownership);
-  ~WorldForward_Stub();
+  ~GlobalServiceForward_Stub();
 
   inline ::PROTOBUF_NAMESPACE_ID::RpcChannel* channel() { return channel_; }
 
-  // implements WorldForward ------------------------------------------
+  // implements GlobalServiceForward ------------------------------------------
 
   void Forward(::PROTOBUF_NAMESPACE_ID::RpcController* controller,
                        const ::fwd::ForwardReq* request,
@@ -835,7 +835,7 @@ class WorldForward_Stub : public WorldForward {
  private:
   ::PROTOBUF_NAMESPACE_ID::RpcChannel* channel_;
   bool owns_channel_;
-  GOOGLE_DISALLOW_EVIL_CONSTRUCTORS(WorldForward_Stub);
+  GOOGLE_DISALLOW_EVIL_CONSTRUCTORS(GlobalServiceForward_Stub);
 };
 
 

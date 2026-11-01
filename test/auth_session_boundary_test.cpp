@@ -41,7 +41,7 @@ int main() {
     {
         game::GameRequest req;
         req.mutable_login()->set_player_id(1);
-        Expect(!gameproto::IsWorldBoundRequest(req), "Login is not World-bound");
+        Expect(!gameproto::IsGlobalServiceRequest(req), "Login is not World-bound");
     }
 
     // 3/4/6/7. GatewayConnRegistry：粘性 Logic + 旧 session Push 拒绝

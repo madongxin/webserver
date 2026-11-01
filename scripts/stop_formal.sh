@@ -54,7 +54,7 @@ restore() {
 }
 
 restore gateway.cnf
-restore world.cnf
+restore globalservice.cnf
 restore session.cnf
 restore gamedb.cnf
 restore gamelogic.cnf

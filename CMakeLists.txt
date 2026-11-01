@@ -240,8 +240,8 @@ if(ENABLE_BRPC)
     runtime/brpc/GameLogicForwardServiceImpl.cpp
     runtime/brpc/GameLogicServiceImpl.cpp
     runtime/brpc/GameLogicBrpcServer.cpp
-    runtime/brpc/WorldForwardServiceImpl.cpp
-    runtime/brpc/WorldBrpcServer.cpp
+    runtime/brpc/GlobalServiceForwardServiceImpl.cpp
+    runtime/brpc/GlobalServiceBrpcServer.cpp
     runtime/brpc/session.pb.cc
     runtime/brpc/auth.pb.cc
     runtime/brpc/AuthServiceImpl.cpp
@@ -321,12 +321,12 @@ gamemesh_apply_target_options(server)
 if(ENABLE_BRPC)
   add_executable(gateway apps/gateway_main.cpp ${GAMEMESH_COMMON_SRCS})
   add_executable(gamelogic apps/gamelogic_main.cpp ${GAMEMESH_COMMON_SRCS})
-  add_executable(world apps/world_main.cpp ${GAMEMESH_COMMON_SRCS})
+  add_executable(globalservice apps/globalservice_main.cpp ${GAMEMESH_COMMON_SRCS})
   add_executable(session apps/session_main.cpp ${GAMEMESH_COMMON_SRCS})
   add_executable(gamedb apps/gamedb_main.cpp ${GAMEMESH_COMMON_SRCS})
   gamemesh_apply_target_options(gateway)
   gamemesh_apply_target_options(gamelogic)
-  gamemesh_apply_target_options(world)
+  gamemesh_apply_target_options(globalservice)
   gamemesh_apply_target_options(session)
   gamemesh_apply_target_options(gamedb)
 endif()
@@ -337,7 +337,7 @@ if(ENABLE_BRPC)
     game/brpc/BrpcGameServer.cpp game/brpc/MailBrpcServiceImpl.cpp
     runtime/brpc/GameLogicBrpcServer.cpp runtime/brpc/GameLogicForwardServiceImpl.cpp
     runtime/brpc/GameLogicServiceImpl.cpp
-    runtime/brpc/WorldBrpcServer.cpp runtime/brpc/WorldForwardServiceImpl.cpp
+    runtime/brpc/GlobalServiceBrpcServer.cpp runtime/brpc/GlobalServiceForwardServiceImpl.cpp
     runtime/brpc/BrpcTransport.cpp runtime/brpc/BrpcChannelManager.cpp
     runtime/brpc/SessionBrpcServer.cpp runtime/brpc/SessionServiceImpl.cpp
     runtime/brpc/SessionRpcClient.cpp

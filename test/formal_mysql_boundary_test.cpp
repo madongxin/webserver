@@ -21,7 +21,7 @@ int main() {
         return Fail("pool must not init after ForbidInit");
 
     ::setenv("GAMEMESH_FORMAL", "1", 1);
-    if (FormalModeAllowsMysql("gamelogic") || FormalModeAllowsMysql("world") ||
+    if (FormalModeAllowsMysql("gamelogic") || FormalModeAllowsMysql("globalservice") ||
         FormalModeAllowsMysql("gateway") || FormalModeAllowsMysql("session"))
         return Fail("non-gamedb roles must be denied under FORMAL");
     if (!FormalModeAllowsMysql("gamedb") || !FormalModeAllowsMysql("all"))

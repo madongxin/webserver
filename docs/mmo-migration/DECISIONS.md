@@ -57,8 +57,8 @@
 
 ## D-M6-001（2026-08-07）阶段 6 World 中控
 
-- `role=world`：只跑 `WorldForward` + MailService/GameDB；**禁止**战斗 Tick / AOI。
-- Gateway 按 `body_case`：`IsWorldBoundRequest`（邮件 30–39 + chat/friend）→ World；其余 → Logic。
+- `role=globalservice`：只跑 `GlobalServiceForward` + MailService/GameDB；**禁止**战斗 Tick / AOI。
+- Gateway 按 `body_case`：`IsGlobalServiceRequest`（邮件 30–39 + chat/friend）→ GlobalService；其余 → Logic。
 - `role=all` 仍 InProcess（回滚路径）；Mail brpc 工具口仅 `all` 保留。
 - Chat/Friend 仅模块边界 + `NOT_IMPLEMENTED`，不上产品逻辑。
 - 生产化（etcd / mTLS / 杀服演练 runbook）延后至 D-M7。
@@ -95,7 +95,7 @@
 - 外网仍用 `game.GameRequest.login`（兼容）；内部路由字段由 Gateway/Session 填写。
 - 增加 `GatewayPushService.PushBatch`（内网 `game_port+100`）；Logic 只持 `gateway_instance_id`。
 - `IServiceRegistry` + `StaticServiceRegistry` fallback；etcd 仍可选。
-- World target 逻辑名 **GlobalService**（本轮不强制改二进制名）。
+- 全局服二进制和 role 都是 **globalservice**。
 - 拓扑源：`docs/mmo-migration/topology-auth-session.md`。
 
 ## D-SCENE-001（2026-09-06）场景管理施工包

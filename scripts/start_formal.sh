@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # 正式一键启动（多开常驻）：
-#   2×gateway + 2×gamelogic + 2×gamedb + 1×world + 2×session
+#   2×gateway + 2×gamelogic + 2×gamedb + 1×globalservice + 2×session
 # 启动结束后打印客户端可连接的 Gateway 端口。
 set -euo pipefail
 
@@ -36,7 +36,7 @@ LOGIC0="${GAMEMESH_LOGIC0:-8201}"
 HTTP_L1="${GAMEMESH_HTTP_L1:-8091}"
 LOGIC1="${GAMEMESH_LOGIC1:-8202}"
 
-# World ×1 / Session ×2（Redis 权威；Placement 无状态）
+# GlobalService ×1 / Session ×2（Redis 权威；Placement 无状态）
 HTTP_W="${GAMEMESH_HTTP_W:-8092}"
 WORLD="${GAMEMESH_WORLD:-8301}"
 HTTP_S="${GAMEMESH_HTTP_S:-8093}"
@@ -66,7 +66,7 @@ pick_bin() {
 
 SESSION_BIN="$(pick_bin session)"
 GAMEDB_BIN="$(pick_bin gamedb)"
-WORLD_BIN="$(pick_bin world)"
+WORLD_BIN="$(pick_bin globalservice)"
 LOGIC_BIN="$(pick_bin gamelogic)"
 GW_BIN="$(pick_bin gateway)"
 
@@ -117,7 +117,7 @@ backup_cnf() {
 }
 
 GW_CNF="$ROOT/config/gateway.cnf"
-WORLD_CNF="$ROOT/config/world.cnf"
+WORLD_CNF="$ROOT/config/globalservice.cnf"
 SESSION_CNF="$ROOT/config/session.cnf"
 GAMEDB_CNF="$ROOT/config/gamedb.cnf"
 LOGIC_CNF="$ROOT/config/gamelogic.cnf"
@@ -132,7 +132,7 @@ backup_cnf "$LOGIC_CNF"
 printf '%s\n' \
   "logic_addrs=127.0.0.1:${LOGIC0},127.0.0.1:${LOGIC1}" \
   "logic_instance_ids=gl-0,gl-1" \
-  "world_addrs=127.0.0.1:${WORLD}" \
+  "globalservice_addrs=127.0.0.1:${WORLD}" \
   "session_addrs=127.0.0.1:${SESSION}${GAMEMESH_SESSION2:+,127.0.0.1:${GAMEMESH_SESSION2}}" \
   "session_instance_ids=sess-0${GAMEMESH_SESSION2:+,sess-1}" \
   "gamedb_addrs=127.0.0.1:${GAMEDB0},127.0.0.1:${GAMEDB1}" \
@@ -213,7 +213,7 @@ wait_log() {
   return 1
 }
 
-echo "== GameMesh formal start (2×gw + 2×logic + 2×gamedb + world + session×2) =="
+echo "== GameMesh formal start (2×gw + 2×logic + 2×gamedb + globalservice + session×2) =="
 GAMEMESH_INSTANCE_ID=sess-0 start_proc "$SESSION_BIN" session "$RUN_DIR/logs/session.log" \
   sess-0 "127.0.0.1:${SESSION}" "$HTTP_S" - "$HTTP_S" "$SESSION"
 if [[ -n "${SESSION2}" ]]; then
@@ -234,13 +234,13 @@ fi
 wait_log gamedb0 "$RUN_DIR/logs/gamedb0.log" 'GameDbBrpcServer listening|role=gamedb'
 wait_log gamedb1 "$RUN_DIR/logs/gamedb1.log" 'GameDbBrpcServer listening|role=gamedb'
 
-GAMEMESH_INSTANCE_ID=world-1 start_proc "$WORLD_BIN" world "$RUN_DIR/logs/world.log" \
-  world-1 "127.0.0.1:${WORLD}" "$HTTP_W" - "$HTTP_W"
+GAMEMESH_INSTANCE_ID=globalservice-1 start_proc "$WORLD_BIN" globalservice "$RUN_DIR/logs/globalservice.log" \
+  globalservice-1 "127.0.0.1:${WORLD}" "$HTTP_W" - "$HTTP_W"
 GAMEMESH_INSTANCE_ID=gl-0 start_proc "$LOGIC_BIN" gamelogic "$RUN_DIR/logs/logic0.log" \
   gl-0 "127.0.0.1:${LOGIC0}" "$HTTP_L0" - "$HTTP_L0" "$LOGIC0"
 GAMEMESH_INSTANCE_ID=gl-1 start_proc "$LOGIC_BIN" gamelogic "$RUN_DIR/logs/logic1.log" \
   gl-1 "127.0.0.1:${LOGIC1}" "$HTTP_L1" - "$HTTP_L1" "$LOGIC1"
-wait_log world "$RUN_DIR/logs/world.log" 'WorldBrpcServer listening|role=world'
+wait_log globalservice "$RUN_DIR/logs/globalservice.log" 'GlobalServiceBrpcServer listening|role=globalservice'
 wait_log gamelogic0 "$RUN_DIR/logs/logic0.log" 'GameLogicBrpcServer listening|role=gamelogic'
 wait_log gamelogic1 "$RUN_DIR/logs/logic1.log" 'GameLogicBrpcServer listening|role=gamelogic'
 
@@ -284,7 +284,7 @@ echo "  观察页: http://127.0.0.1:${HTTP_D0}/monitor  （Prometheus job=gameme
 echo "  采集  : /etc/prometheus/file_sd/gamemesh.json  ← scripts/sync_prometheus_sd.sh"
 echo "=============================================="
 echo
-echo "拓扑: 2×gateway + 2×gamelogic + 2×gamedb + world(GlobalService) + session×2(+Auth)"
+echo "拓扑: 2×gateway + 2×gamelogic + 2×gamedb + globalservice + session×2(+Auth)"
 echo "连接信息: $RUN_DIR/CLIENT.txt"
 echo "日志目录: $RUN_DIR/logs/"
 echo "停止命令: ./scripts/stop_formal.sh  或  ./scripts/stop_local.sh"

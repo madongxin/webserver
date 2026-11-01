@@ -63,7 +63,7 @@
 #include "BrpcTransport.h"
 #include "GameLogicBrpcServer.h"
 #include "GatewayConfigPath.h"
-#include "WorldBrpcServer.h"
+#include "GlobalServiceBrpcServer.h"
 #include "SessionBrpcServer.h"
 #include "SessionRpcClient.h"
 #include "GatewayAuthClients.h"
@@ -525,10 +525,29 @@ double MetricSum(const std::string &text, const char *name, const char *need) {
     return sum;
 }
 
+int MetricCount(const std::string &text, const char *name) {
+    int n = 0;
+    size_t pos = 0;
+    const std::string key(name);
+    while (pos < text.size()) {
+        const size_t nl = text.find('\n', pos);
+        const std::string line = text.substr(pos, nl == std::string::npos ? std::string::npos : nl - pos);
+        pos = nl == std::string::npos ? text.size() : nl + 1;
+        if (line.compare(0, key.size(), key) != 0)
+            continue;
+        if (line.size() > key.size() && line[key.size()] != ' ' && line[key.size()] != '{')
+            continue;
+        ++n;
+    }
+    return n;
+}
+
 Json::Value BuildMonitorLiveJson() {
     Json::Value out;
     Json::Value gws(Json::arrayValue);
     double online = 0, hold = 0, silence = 0, p99 = 0, eagain = 0, retrans = 0;
+    double rx = 0, tx = 0, sendq = 0, reply_ms = 0, outbox = 0;
+    int gw_ok = 0;
     const int ports[] = {8080, 8082};
     const char *names[] = {"gw-0", "gw-1"};
     for (int i = 0; i < 2; ++i) {
@@ -536,6 +555,8 @@ Json::Value BuildMonitorLiveJson() {
         Json::Value g;
         g["name"] = names[i];
         g["ok"] = !body.empty();
+        if (!body.empty())
+            ++gw_ok;
         const double on = MetricSum(body, "gamemesh_online_players", nullptr);
         const double h = MetricMax(body, "gamemesh_latest_move_hold_ms", nullptr);
         const double s = MetricMax(body, "gamemesh_aoi_move_entity_max_silence_ms", nullptr);
@@ -549,6 +570,11 @@ Json::Value BuildMonitorLiveJson() {
         g["eagain"] = e;
         g["retrans"] = r;
         online += on;
+        rx += MetricSum(body, "gamemesh_gateway_rx_bytes_total", nullptr);
+        tx += MetricSum(body, "gamemesh_gateway_tx_bytes_total", nullptr);
+        sendq = std::max(sendq, MetricMax(body, "gamemesh_send_pending_max_bytes", nullptr));
+        reply_ms = std::max(reply_ms, MetricMax(body, "gamemesh_pkt_stage_max_ms", "stage=\"reply_queue\""));
+        outbox += MetricSum(body, "gamemesh_control_outbox_current_frames", nullptr);
         if (h > hold)
             hold = h;
         if (s > silence)
@@ -560,13 +586,27 @@ Json::Value BuildMonitorLiveJson() {
             retrans = r;
         gws.append(g);
     }
+    std::string session = ScrapeLocal(8093);
+    if (session.empty())
+        session = ScrapeLocal(8096);
     out["gateways"] = gws;
+    out["gateway_ok"] = gw_ok;
     out["online"] = online;
     out["hold_ms"] = hold;
     out["silence_ms"] = silence;
     out["move_p99_ms"] = p99;
     out["eagain"] = eagain;
     out["retrans"] = retrans;
+    out["rx_bytes"] = rx;
+    out["tx_bytes"] = tx;
+    out["send_pending_bytes"] = sendq;
+    out["reply_queue_ms"] = reply_ms;
+    out["outbox_frames"] = outbox;
+    out["session_online"] = MetricMax(session, "gamemesh_session_online_players", nullptr);
+    out["line_count"] = MetricCount(session, "gamemesh_map_line_occupancy");
+    out["line_players"] = MetricSum(session, "gamemesh_map_line_occupancy", nullptr);
+    out["dungeon_count"] = MetricCount(session, "gamemesh_map_dungeon_occupancy");
+    out["dungeon_players"] = MetricSum(session, "gamemesh_map_dungeon_occupancy", nullptr);
     return out;
 }
 
@@ -1298,7 +1338,7 @@ bool ParseLaunchArgs(int argc, char *argv[], LaunchOpts *opts) {
         return false;
     auto is_role = [](const char *s) {
         return s && (!strcmp(s, "all") || !strcmp(s, "gateway") || !strcmp(s, "gamelogic") ||
-                     !strcmp(s, "world") || !strcmp(s, "session") || !strcmp(s, "gamedb"));
+                     !strcmp(s, "globalservice") || !strcmp(s, "session") || !strcmp(s, "gamedb"));
     };
 
     std::string role = opts->force_role.empty() ? "all" : opts->force_role;
@@ -1318,9 +1358,9 @@ bool ParseLaunchArgs(int argc, char *argv[], LaunchOpts *opts) {
     if (argi < argc) {
         if (role == "gamelogic" || role == "session" || role == "gamedb")
             logic_port_override = std::atoi(argv[argi]);
-        else if (role != "world")
+        else if (role != "globalservice")
             game_port = std::atoi(argv[argi]);
-    } else if (game_port <= 0 && role != "gamelogic" && role != "world" && role != "session" &&
+    } else if (game_port <= 0 && role != "gamelogic" && role != "globalservice" && role != "session" &&
                role != "gamedb") {
         game_port = port + 1;
     }
@@ -1353,11 +1393,11 @@ int RunServer(const LaunchOpts &launch) {
 #ifdef WEBSERVER_ENABLE_BRPC
     const int logic_port_override = opts.logic_port_override;
 #endif
-    if (game_port <= 0 && role != "gamelogic" && role != "world" && role != "session" &&
+    if (game_port <= 0 && role != "gamelogic" && role != "globalservice" && role != "session" &&
         role != "gamedb")
         game_port = port + 1;
 
-    if (role == "gamelogic" || role == "world" || role == "session" || role == "gamedb")
+    if (role == "gamelogic" || role == "globalservice" || role == "session" || role == "gamedb")
         g_game_port = 0;
     else
         g_game_port = game_port;
@@ -1385,7 +1425,7 @@ int RunServer(const LaunchOpts &launch) {
     ServiceHealth::Instance().Configure(role, role + "-" + std::to_string(port));
 
 #if !defined(WEBSERVER_ENABLE_BRPC)
-    if (role == "gateway" || role == "gamelogic" || role == "world" || role == "session" ||
+    if (role == "gateway" || role == "gamelogic" || role == "globalservice" || role == "session" ||
         role == "gamedb") {
         LOG_ERROR << "role=" << role << " requires cmake -DENABLE_BRPC=ON";
         return 1;
@@ -1452,18 +1492,18 @@ int RunServer(const LaunchOpts &launch) {
     });
 #ifdef WEBSERVER_ENABLE_MYSQL
     const bool need_db = FormalModeAllowsMysql(role) &&
-                         (role == "all" || role == "gamelogic" || role == "world" || role == "gamedb");
+                         (role == "all" || role == "gamelogic" || role == "globalservice" || role == "gamedb");
     if (FormalModeEnabled() && !FormalModeAllowsMysql(role)) {
         LOG_INFO << "formal mode: skip MySQL pool/stores for role=" << role
                  << " (assets/mail via GameDB)";
     } else if (need_db && ConnectionPool::getconnectionPool()->isInitialized()) {
         if (role != "gamedb")
             MetricsDbWriter::Instance().StartPeriodic(&loop, 10.0);
-        if (role != "gamedb" && role != "world") {
+        if (role != "gamedb" && role != "globalservice") {
             PlayerItemStore::Instance().EnsureTable();
             PlayerAccountStore::Instance().EnsureTable();
             PlayerItemPersistQueue::Instance().StartPeriodic(&loop, 300.0);
-        } else if (role == "world") {
+        } else if (role == "globalservice") {
             PlayerItemStore::Instance().EnsureTable();
         } else if (role == "gamedb") {
             PlayerAccountStore::Instance().EnsureTable();
@@ -1473,7 +1513,7 @@ int RunServer(const LaunchOpts &launch) {
             GameDbOutbox::Instance().EnsureTable();
         }
 #ifdef WEBSERVER_ENABLE_GAME_PROTOBUF
-        // world：若配置 gamedb_addrs，先挂 BrpcGameDb 再 Init MailService（见下方 brpc 分支）
+        // globalservice：若配置 gamedb_addrs，先挂 BrpcGameDb 再 Init MailService（见下方 brpc 分支）
         if (role == "all" || role == "gamelogic" || role == "gamedb") {
             if (MailService::Instance().Init()) {
                 if (role == "all" || role == "gamedb")
@@ -1488,19 +1528,19 @@ int RunServer(const LaunchOpts &launch) {
     }
 #endif
 #ifdef WEBSERVER_ENABLE_REDIS
-    if (role == "all" || role == "gamelogic" || role == "gateway" || role == "world" ||
+    if (role == "all" || role == "gamelogic" || role == "gateway" || role == "globalservice" ||
         role == "session" || role == "gamedb") {
         if (!SessionStore::Instance().InitFromConfig())
             LOG_WARN << "Redis session disabled (config/redis.cnf)";
         else {
             // Session 权威 Placement；Logic 也需可读 Redis Placement（EnterMap/lease）
-            if (role == "all" || role == "session" || role == "gamelogic" || role == "world" ||
+            if (role == "all" || role == "session" || role == "gamelogic" || role == "globalservice" ||
                 role == "gateway") {
                 PlacementStore::Instance().InitFromSessionPrefix(
                     SessionStore::Instance().key_prefix());
             }
-            // Gateway / GameLogic / World：跨 GW 可靠 Push 回放。好友申请在 World 发出。
-            if (role == "all" || role == "gateway" || role == "gamelogic" || role == "world" ||
+            // Gateway / GameLogic / GlobalService：跨 GW 可靠 Push 回放。好友申请在 GlobalService 发出。
+            if (role == "all" || role == "gateway" || role == "gamelogic" || role == "globalservice" ||
                 role == "session" || role == "gamedb") {
                 PushReplayStore::Instance().InitFromSessionPrefix(
                     SessionStore::Instance().key_prefix());
@@ -1601,7 +1641,7 @@ int RunServer(const LaunchOpts &launch) {
         };
         try_cnf("config/gamelogic.cnf");
         try_cnf("config/session.cnf");
-        try_cnf("config/world.cnf");
+        try_cnf("config/globalservice.cnf");
         auto entries = split_addrs(push_map);
         for (const auto &e : entries) {
             const auto eq = e.find('=');
@@ -1791,13 +1831,13 @@ int RunServer(const LaunchOpts &launch) {
     } else if (role == "gateway") {
         std::vector<std::string> addrs;
         std::vector<std::string> ids;
-        std::vector<std::string> world_addrs;
+        std::vector<std::string> globalservice_addrs;
         int timeout_ms = 3000;
-        if (!GatewayConfigPath::Load(&addrs, &ids, &world_addrs, &timeout_ms)) {
+        if (!GatewayConfigPath::Load(&addrs, &ids, &globalservice_addrs, &timeout_ms)) {
             addrs = {"127.0.0.1:8201"};
             ids = {"gl-0"};
-            world_addrs = {"127.0.0.1:8301"};
-            LOG_WARN << "gateway.cnf missing, default logic+world addrs";
+            globalservice_addrs = {"127.0.0.1:8301"};
+            LOG_WARN << "gateway.cnf missing, default logic+globalservice addrs";
         }
         std::vector<std::string> session_addrs;
         std::vector<std::string> session_ids;
@@ -1814,16 +1854,16 @@ int RunServer(const LaunchOpts &launch) {
                 addrs = discovered;
                 LOG_WARN << "legacy etcd v2 gamelogic addrs=" << addrs.size();
             }
-            if (EtcdDiscovery::Instance().Discover("world", &discovered) && !discovered.empty()) {
-                world_addrs = discovered;
-                LOG_WARN << "legacy etcd v2 world addrs=" << world_addrs.size();
+            if (EtcdDiscovery::Instance().Discover("globalservice", &discovered) && !discovered.empty()) {
+                globalservice_addrs = discovered;
+                LOG_WARN << "legacy etcd v2 globalservice addrs=" << globalservice_addrs.size();
             }
             if (EtcdDiscovery::Instance().Discover("session", &discovered) && !discovered.empty()) {
                 session_addrs = discovered;
                 LOG_WARN << "legacy etcd v2 session addrs=" << session_addrs.size();
             }
         }
-        if (!BrpcTransport::Instance().EnsureStarted(addrs, ids, world_addrs, timeout_ms)) {
+        if (!BrpcTransport::Instance().EnsureStarted(addrs, ids, globalservice_addrs, timeout_ms)) {
             LOG_ERROR << "BrpcTransport init failed";
             return 1;
         }
@@ -1838,7 +1878,7 @@ int RunServer(const LaunchOpts &launch) {
             GatewayAuthClients::Instance().InitLogicChannels(addrs, ids, timeout_ms);
             StaticServiceRegistry::Get().SetStaticAddrs("gamelogic", addrs, ids);
             StaticServiceRegistry::Get().SetStaticAddrs("session", session_addrs, session_ids);
-            StaticServiceRegistry::Get().SetStaticAddrs("world", world_addrs);
+            StaticServiceRegistry::Get().SetStaticAddrs("globalservice", globalservice_addrs);
         }
         // 统一 GatewayInstanceId（GameTCP / Push / Session 绑定共用）
         {
@@ -1916,7 +1956,7 @@ int RunServer(const LaunchOpts &launch) {
                 static std::string last_logic;
                 static std::string last_sess;
                 static std::string last_gamedb;
-                std::vector<std::string> logic_addrs, logic_ids, world_addrs, sess_addrs, sess_ids;
+                std::vector<std::string> logic_addrs, logic_ids, globalservice_addrs, sess_addrs, sess_ids;
                 int to = timeout_ms;
                 // Redis 动态发现优先；失败再回落 cnf（空发现不覆盖健康 Channel）
                 std::vector<IServiceRegistry::ServiceInstance> redis_logic;
@@ -1929,7 +1969,7 @@ int RunServer(const LaunchOpts &launch) {
                         logic_addrs.push_back(i.address);
                         logic_ids.push_back(i.instance_id);
                     }
-                } else if (!GatewayConfigPath::Load(&logic_addrs, &logic_ids, &world_addrs, &to)) {
+                } else if (!GatewayConfigPath::Load(&logic_addrs, &logic_ids, &globalservice_addrs, &to)) {
                     return;
                 }
                 std::string logic_key;
@@ -2017,15 +2057,15 @@ int RunServer(const LaunchOpts &launch) {
                 }
             });
         }
-    } else if (role == "world") {
+    } else if (role == "globalservice") {
         {
             std::string gamedb_addr = GatewayConfigPath::ReadValue("gamedb_addrs");
             if (gamedb_addr.empty()) {
-                std::string world_cnf = "../config/world.cnf";
+                std::string globalservice_cnf = "../config/globalservice.cnf";
                 std::string resolved;
-                if (GameMeshPaths::ResolveProjectSubdir("config/world.cnf", &resolved))
-                    world_cnf = resolved;
-                gamedb_addr = load_kv(world_cnf, "gamedb_addrs");
+                if (GameMeshPaths::ResolveProjectSubdir("config/globalservice.cnf", &resolved))
+                    globalservice_cnf = resolved;
+                gamedb_addr = load_kv(globalservice_cnf, "gamedb_addrs");
             }
             if (!gamedb_addr.empty()) {
                 auto addrs = split_addrs(gamedb_addr);
@@ -2041,30 +2081,30 @@ int RunServer(const LaunchOpts &launch) {
             LOG_WARN << "MailService init failed";
 #endif
 #endif
-        if (!WorldBrpcServer::Instance().StartFromConfig()) {
-            LOG_ERROR << "WorldBrpcServer start failed";
+        if (!GlobalServiceBrpcServer::Instance().StartFromConfig()) {
+            LOG_ERROR << "GlobalServiceBrpcServer start failed";
             return 1;
         }
-        const std::string listen = WorldBrpcServer::Instance().listen_addr();
+        const std::string listen = GlobalServiceBrpcServer::Instance().listen_addr();
         const std::string wid =
-            resolve_instance_id("world", PortFromHostPort(listen), "world-1");
+            resolve_instance_id("globalservice", PortFromHostPort(listen), "globalservice-1");
         const std::string adv = AdvertiseFromListen(listen);
         IServiceRegistry::ServiceInstance inst;
-        inst.service = "world";
+        inst.service = "globalservice";
         inst.instance_id = wid;
         inst.address = adv;
         inst.port = PortFromHostPort(listen);
         inst.status = "UP";
         if (StaticServiceRegistry::Get().RegisterInstance(inst, 30))
-            track_reg("world", wid, 30);
+            track_reg("globalservice", wid, 30);
         if (EtcdDiscovery::Instance().enabled())
-            EtcdDiscovery::Instance().Register("world", wid, adv, 30);
-        LOG_INFO << "role=world listen=" << listen << " instance_id=" << wid
+            EtcdDiscovery::Instance().Register("globalservice", wid, adv, 30);
+        LOG_INFO << "role=globalservice listen=" << listen << " instance_id=" << wid
                  << " advertise=" << adv;
     }
 
     // 非 gateway 角色：进程内注册续租 + Redis 发现续租
-    if (role == "session" || role == "gamelogic" || role == "world" || role == "gamedb") {
+    if (role == "session" || role == "gamelogic" || role == "globalservice" || role == "gamedb") {
         loop.RunEvery(5.0, []() {
             std::lock_guard<std::mutex> lk(g_local_regs_mu);
             for (const auto &r : g_local_regs) {
@@ -2086,8 +2126,8 @@ int RunServer(const LaunchOpts &launch) {
         });
     }
 #endif
-    // GameLogic / World / GameDB / Session：Push 与 KickConnection 都走 gateway_push
-    if (role == "gamelogic" || role == "world" || role == "gamedb" || role == "session" ||
+    // GameLogic / GlobalService / GameDB / Session：Push 与 KickConnection 都走 gateway_push
+    if (role == "gamelogic" || role == "globalservice" || role == "gamedb" || role == "session" ||
         role == "all") {
         loop.RunEvery(5.0, []() {
             if (!RedisServiceRegistry::Get().ready())
@@ -2267,7 +2307,7 @@ int RunServer(const LaunchOpts &launch) {
     ServiceHealth::Instance().SetReady(false);
     LOG_INFO << "graceful shutdown begin role=" << role;
 #ifdef WEBSERVER_ENABLE_GAME_PROTOBUF
-    if (role == "world" || role == "all" || role == "gamelogic")
+    if (role == "globalservice" || role == "all" || role == "gamelogic")
         FriendService::Instance().StopPresenceFanout();
 #endif
 #ifdef WEBSERVER_ENABLE_GAME_PROTOBUF
@@ -2302,8 +2342,8 @@ int RunServer(const LaunchOpts &launch) {
         SessionBrpcServer::Instance().Stop();
     if (role == "gamelogic" || role == "all")
         GameLogicBrpcServer::Instance().Stop();
-    if (role == "world" || role == "all")
-        WorldBrpcServer::Instance().Stop();
+    if (role == "globalservice" || role == "all")
+        GlobalServiceBrpcServer::Instance().Stop();
     if (role == "gamedb" || role == "all")
         GameDbBrpcServer::Instance().Stop();
     if (role == "gateway" || role == "all")

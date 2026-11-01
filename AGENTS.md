@@ -8,7 +8,7 @@
 - AuthService and SessionService share the `session` binary but keep separate protos; Auth does **not** create Sessions.
 - Auth: Redis (access tokens) + GameDB/MySQL (accounts). Session: Redis (fence / ONLINE / DISCONNECTED).
 - GameLogic PushBatch targets **one** Gateway by `gateway_instance_id` (not broadcast).
-- Binary `world` = logical **GlobalService**. etcd optional; static `*_addrs` fallback via `IServiceRegistry`.
+- Binary `globalservice` is **GlobalService**. etcd optional; static `*_addrs` fallback via `IServiceRegistry`.
 
 Details: `docs/mmo-migration/topology-auth-session.md`
 

@@ -7,7 +7,7 @@ BIN="${ROOT}/build/test"
 STAGE="${ROOT}/build/docker_stage"
 TAG="${GAMEMESH_IMAGE_TAG:-gamemesh:local}"
 
-for b in gateway session gamelogic world gamedb; do
+for b in gateway session gamelogic globalservice gamedb; do
   if [[ ! -x "$BIN/$b" ]]; then
     echo "ERROR missing $BIN/$b (build full with ENABLE_BRPC=ON first)" >&2
     exit 1
@@ -16,7 +16,7 @@ done
 
 rm -rf "$STAGE"
 mkdir -p "$STAGE/lib"
-for b in gateway session gamelogic world gamedb; do
+for b in gateway session gamelogic globalservice gamedb; do
   cp -a "$BIN/$b" "$STAGE/$b"
   strip --strip-unneeded "$STAGE/$b" 2>/dev/null || true
 done
@@ -37,7 +37,7 @@ collect_libs() {
     fi
   done
 }
-for b in gateway session gamelogic world gamedb; do
+for b in gateway session gamelogic globalservice gamedb; do
   collect_libs "$STAGE/$b"
 done
 

@@ -163,6 +163,7 @@ void FillEntitySnapshot(const MapEntity &e, game::EntitySnapshot *out) {
     out->set_state_seq(e.state_seq);
 }
 
+#ifdef WEBSERVER_ENABLE_BRPC
 void FillMoveSnapshot(const MapEntity &e, game::EntitySnapshot *out) {
     if (!out)
         return;
@@ -174,7 +175,6 @@ void FillMoveSnapshot(const MapEntity &e, game::EntitySnapshot *out) {
     out->set_state_seq(e.state_seq);
 }
 
-#ifdef WEBSERVER_ENABLE_BRPC
 std::mutex g_aoi_mu;
 std::unordered_set<uint64_t> g_aoi_held;
 std::unordered_map<uint64_t, AoiPushBatch> g_aoi_held_batch;

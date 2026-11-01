@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# 中期：session + gamedb + world + gamelogic + gateway 本地冒烟（Login）
+# 中期：session + gamedb + globalservice + gamelogic + gateway 本地冒烟（Login）
 set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
@@ -17,7 +17,7 @@ pick_bin() {
 
 SESSION_BIN="$(pick_bin session)"
 GAMEDB_BIN="$(pick_bin gamedb)"
-WORLD_BIN="$(pick_bin world)"
+WORLD_BIN="$(pick_bin globalservice)"
 LOGIC_BIN="$(pick_bin gamelogic)"
 GW_BIN="$(pick_bin gateway)"
 CLIENT="$ROOT/build/test/game_tcp_smoke_client"
@@ -41,18 +41,18 @@ GAMEDB=29501
 WORKDIR=/tmp/gamemesh-midterm
 mkdir -p "$WORKDIR"
 GW_CNF="$ROOT/config/gateway.cnf"
-WORLD_CNF="$ROOT/config/world.cnf"
+WORLD_CNF="$ROOT/config/globalservice.cnf"
 SESSION_CNF="$ROOT/config/session.cnf"
 GAMEDB_CNF="$ROOT/config/gamedb.cnf"
 cp -a "$GW_CNF" "$WORKDIR/gateway.cnf.bak"
-cp -a "$WORLD_CNF" "$WORKDIR/world.cnf.bak"
+cp -a "$WORLD_CNF" "$WORKDIR/globalservice.cnf.bak"
 cp -a "$SESSION_CNF" "$WORKDIR/session.cnf.bak"
 cp -a "$GAMEDB_CNF" "$WORKDIR/gamedb.cnf.bak"
 
 printf '%s\n' \
   "logic_addrs=127.0.0.1:${LOGIC}" \
   "logic_instance_ids=gl-0" \
-  "world_addrs=127.0.0.1:${WORLD}" \
+  "globalservice_addrs=127.0.0.1:${WORLD}" \
   "session_addrs=127.0.0.1:${SESSION}" \
   "gamedb_addrs=127.0.0.1:${GAMEDB}" \
   "etcd_endpoints=" \
@@ -67,7 +67,7 @@ PIDS=()
 cleanup() {
   for p in "${PIDS[@]:-}"; do kill "$p" 2>/dev/null || true; done
   [[ -f "$WORKDIR/gateway.cnf.bak" ]] && mv -f "$WORKDIR/gateway.cnf.bak" "$GW_CNF"
-  [[ -f "$WORKDIR/world.cnf.bak" ]] && mv -f "$WORKDIR/world.cnf.bak" "$WORLD_CNF"
+  [[ -f "$WORKDIR/globalservice.cnf.bak" ]] && mv -f "$WORKDIR/globalservice.cnf.bak" "$WORLD_CNF"
   [[ -f "$WORKDIR/session.cnf.bak" ]] && mv -f "$WORKDIR/session.cnf.bak" "$SESSION_CNF"
   [[ -f "$WORKDIR/gamedb.cnf.bak" ]] && mv -f "$WORKDIR/gamedb.cnf.bak" "$GAMEDB_CNF"
 }
@@ -87,18 +87,18 @@ run_role() {
 run_role "$SESSION_BIN" session "$WORKDIR/session.log" "$HTTP_S"
 run_role "$GAMEDB_BIN" gamedb "$WORKDIR/gamedb.log" "$HTTP_D"
 run_role "$LOGIC_BIN" gamelogic "$WORKDIR/logic.log" "$HTTP_L" "$LOGIC"
-run_role "$WORLD_BIN" world "$WORKDIR/world.log" "$HTTP_W"
+run_role "$WORLD_BIN" globalservice "$WORKDIR/globalservice.log" "$HTTP_W"
 sleep 2
 run_role "$GW_BIN" gateway "$WORKDIR/gw.log" "$HTTP_G" "$GAME"
 sleep 2
 
-grep -E 'SessionBrpcServer listening|GameDbBrpcServer listening|GameLogicBrpcServer listening|WorldBrpcServer listening|SessionRpcClient ready|BrpcGameDbRepository ready|GameTcpGateway ready|FATAL|ERROR' \
+grep -E 'SessionBrpcServer listening|GameDbBrpcServer listening|GameLogicBrpcServer listening|GlobalServiceBrpcServer listening|SessionRpcClient ready|BrpcGameDbRepository ready|GameTcpGateway ready|FATAL|ERROR' \
   "$WORKDIR"/*.log || true
 
 fail=0
 grep -q 'SessionBrpcServer listening' "$WORKDIR/session.log" || { echo "FAIL: session"; fail=1; }
 grep -q 'GameDbBrpcServer listening' "$WORKDIR/gamedb.log" || { echo "FAIL: gamedb"; fail=1; }
-grep -q 'WorldBrpcServer listening' "$WORKDIR/world.log" || { echo "FAIL: world"; fail=1; }
+grep -q 'GlobalServiceBrpcServer listening' "$WORKDIR/globalservice.log" || { echo "FAIL: globalservice"; fail=1; }
 grep -q 'GameLogicBrpcServer listening' "$WORKDIR/logic.log" || { echo "FAIL: gamelogic"; fail=1; }
 [[ "$fail" -eq 0 ]] || exit 1
 

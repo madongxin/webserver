@@ -112,7 +112,7 @@ e2e_cluster_healthy() {
       set -- $line
       r="${1:-}" i="${2:-}" p="${3:-}" http="${5:--}"
       case "$r" in
-        session|gamedb|gamelogic|gateway|world) ;;
+        session|gamedb|gamelogic|gateway|globalservice) ;;
         *) continue ;;
       esac
       if [[ "$r" == "gamelogic" && "$i" == "gl-2" && "${GAMEMESH_EXPERIMENTAL_DYNAMIC_SCALE:-0}" != "1" ]]; then

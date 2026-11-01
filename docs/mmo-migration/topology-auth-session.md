@@ -1,9 +1,9 @@
 # GameMesh 拓扑（登录边界 / Push / LB 修正）
 
-> 二进制 `world` = 逻辑服务 **GlobalService**（邮件等）。
+> 二进制 `globalservice` 是逻辑服务 **GlobalService**（邮件等）。
 > Session/Auth、GlobalService、Redis、MySQL 标注为 **MVP 单点**。
 > `GameDB ×2` 只是访问层多实例，**不代表 MySQL HA**。
-> etcd 未启用时使用静态 `logic_addrs` / `session_addrs` / `world_addrs` / `gamedb_addrs` 降级。
+> etcd 未启用时使用静态 `logic_addrs` / `session_addrs` / `globalservice_addrs` / `gamedb_addrs` 降级。
 
 ```mermaid
 flowchart TB
@@ -23,7 +23,7 @@ flowchart TB
   subgraph Core["后端"]
     L0["GameLogic gl-0 :8201"]
     L1["GameLogic gl-1 :8202"]
-    G["GlobalService ×1 · MVP 单点<br/>代码名 World :8301"]
+    G["GlobalService ×1 · MVP 单点<br/>globalservice :8301"]
     D0["GameDB ×2 :8501/:8502<br/>访问层多开≠MySQL HA"]
   end
 

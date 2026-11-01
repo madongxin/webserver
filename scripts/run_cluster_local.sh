@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# 本地集群：2×gateway + 2×session + 2×gamelogic + 1×world + 2×gamedb
+# 本地集群：2×gateway + 2×session + 2×gamelogic + 1×globalservice + 2×gamedb
 # Gateway session_addrs 含双 Session（list:// + rr）
 set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
