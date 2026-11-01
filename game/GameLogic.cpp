@@ -1123,6 +1123,41 @@ void GameLogic::FlushAllLastSafe(const char *reason) {
     }
 }
 
+namespace {
+
+std::mutex g_item_idem_mu;
+std::unordered_map<std::string, uint32_t> g_item_idem_remain;
+
+std::string ItemIdemKey(const char *op, uint64_t player_id, uint32_t item_id, uint32_t count) {
+    const ForwardRouteMeta *m = ForwardMetaContext::Get();
+    if (!m || m->client_seq == 0)
+        return {};
+    return m->session_id + ":" + std::to_string(m->client_seq) + ":" + op + ":" +
+           std::to_string(player_id) + ":" + std::to_string(item_id) + ":" + std::to_string(count);
+}
+
+bool RecallItemIdem(const std::string &key, uint32_t *remain) {
+    if (key.empty() || !remain)
+        return false;
+    std::lock_guard<std::mutex> lk(g_item_idem_mu);
+    const auto it = g_item_idem_remain.find(key);
+    if (it == g_item_idem_remain.end())
+        return false;
+    *remain = it->second;
+    return true;
+}
+
+void StoreItemIdem(const std::string &key, uint32_t remain) {
+    if (key.empty())
+        return;
+    std::lock_guard<std::mutex> lk(g_item_idem_mu);
+    if (g_item_idem_remain.size() > 10000)
+        g_item_idem_remain.clear();
+    g_item_idem_remain[key] = remain;
+}
+
+}  // namespace
+
 bool GameLogic::HandleConsumeItem(const game::ConsumeItemReq &req, game::GameResponse *rsp) {
     LOG_INFO << "[consume_item] recv player_id=" << req.player_id() << " item_id=" << req.item_id()
              << " count=" << req.count();
@@ -1197,6 +1232,18 @@ bool GameLogic::HandleConsumeItem(const game::ConsumeItemReq &req, game::GameRes
         return true;
     }
 #endif
+    const std::string consume_idem =
+        ItemIdemKey("consume", req.player_id(), req.item_id(), req.count());
+    uint32_t recalled = 0;
+    if (RecallItemIdem(consume_idem, &recalled)) {
+        rsp->set_ok(true);
+        rsp->set_message("item consumed");
+        auto *body = rsp->mutable_consume_item();
+        body->set_ok(true);
+        body->set_message("idempotent");
+        body->set_remain_count(recalled);
+        return true;
+    }
     uint32_t remain = 0;
     {
         std::lock_guard<std::mutex> lk(mu_);
@@ -1220,6 +1267,30 @@ bool GameLogic::HandleConsumeItem(const game::ConsumeItemReq &req, game::GameRes
         ++asset_version_[req.player_id()];
         remain = inv[req.item_id()];
     }
+#ifdef WEBSERVER_ENABLE_MYSQL
+    if (ConnectionPool::getconnectionPool()->isInitialized()) {
+        if (!PlayerItemStore::Instance().SetCount(req.player_id(), req.item_id(), remain)) {
+            std::lock_guard<std::mutex> lk(mu_);
+            inventory_[req.player_id()][req.item_id()] += req.count();
+            if (asset_version_[req.player_id()] > 0)
+                --asset_version_[req.player_id()];
+            rsp->set_ok(false);
+            rsp->set_message("item persist failed");
+            auto *fail = rsp->mutable_consume_item();
+            fail->set_ok(false);
+            fail->set_message(rsp->message());
+            fail->set_remain_count(inventory_[req.player_id()][req.item_id()]);
+            return false;
+        }
+        PendingPlayerItem snap;
+        snap.player_id = req.player_id();
+        snap.item_id = req.item_id();
+        snap.count = remain;
+        snap.snapshot = true;
+        PlayerItemPersistQueue::Instance().Enqueue(snap);
+    }
+#endif
+    StoreItemIdem(consume_idem, remain);
     rsp->set_ok(true);
     rsp->set_message("item consumed");
     auto *body = rsp->mutable_consume_item();
@@ -1315,6 +1386,17 @@ bool GameLogic::HandleGrantItem(const game::GrantItemReq &req, game::GameRespons
     }
     const uint32_t item_id = static_cast<uint32_t>(req.item_id());
     uint32_t bag_total = 0;
+    const std::string grant_idem = ItemIdemKey("grant", req.player_id(), item_id, req.count());
+    uint32_t recalled_grant = 0;
+    if (RecallItemIdem(grant_idem, &recalled_grant)) {
+        rsp->set_ok(true);
+        rsp->set_message("item granted");
+        body->set_ok(true);
+        body->set_message("idempotent");
+        body->set_instance_id(0);
+        body->set_bag_total(recalled_grant);
+        return true;
+    }
 
 #if defined(WEBSERVER_ENABLE_BRPC)
     if (FormalModeEnabled()) {
@@ -1391,13 +1473,30 @@ bool GameLogic::HandleGrantItem(const game::GrantItemReq &req, game::GameRespons
         ++asset_version_[req.player_id()];
         bag_total = inventory_[req.player_id()][item_id];
     }
+    if (!PlayerItemStore::Instance().SetCount(req.player_id(), item_id, bag_total)) {
+        std::lock_guard<std::mutex> lk(mu_);
+        auto &slot = inventory_[req.player_id()][item_id];
+        if (slot >= req.count())
+            slot -= req.count();
+        else
+            slot = 0;
+        if (asset_version_[req.player_id()] > 0)
+            --asset_version_[req.player_id()];
+        rsp->set_ok(false);
+        rsp->set_message("item persist failed");
+        body->set_ok(false);
+        body->set_message(rsp->message());
+        return false;
+    }
     PendingPlayerItem pending;
     pending.player_id = req.player_id();
     pending.item_id = req.item_id();
-    pending.count = req.count();
+    pending.count = bag_total;
     pending.expire_time_sec = req.expire_time_sec();
     pending.extra_data = req.extra_data();
+    pending.snapshot = true;
     PlayerItemPersistQueue::Instance().Enqueue(pending);
+    StoreItemIdem(grant_idem, bag_total);
     PlayerItemPersistQueue::Instance().MarkOnline(req.player_id());
 #else
     (void)item_id;

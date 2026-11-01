@@ -109,9 +109,19 @@ void PlayerItemPersistQueue::MarkOffline(uint64_t player_id) {
 }
 
 void PlayerItemPersistQueue::Enqueue(const PendingPlayerItem &item) {
-    if (item.player_id == 0 || item.item_id == 0 || item.count == 0)
+    if (item.player_id == 0 || item.item_id == 0)
+        return;
+    if (!item.snapshot && item.count == 0)
         return;
     std::lock_guard<std::mutex> lk(mu_);
+    if (item.snapshot) {
+        for (auto it = queue_.begin(); it != queue_.end();) {
+            if (it->player_id == item.player_id && it->item_id == item.item_id)
+                it = queue_.erase(it);
+            else
+                ++it;
+        }
+    }
     queue_.push_back(item);
     online_local_.insert(item.player_id);
     LOG_INFO << "PlayerItemPersistQueue: enqueue player_id=" << item.player_id
@@ -167,8 +177,12 @@ void PlayerItemPersistQueue::FlushOnlinePlayers() {
     size_t fail = 0;
     for (const auto &e : to_flush) {
         uint64_t instance_id = 0;
-        if (PlayerItemStore::Instance().Insert(e.player_id, e.item_id, e.count, e.expire_time_sec,
-                                               e.extra_data, &instance_id)) {
+        const bool wrote = e.snapshot
+                               ? PlayerItemStore::Instance().SetCount(e.player_id, e.item_id, e.count)
+                               : PlayerItemStore::Instance().Insert(e.player_id, e.item_id, e.count,
+                                                                    e.expire_time_sec, e.extra_data,
+                                                                    &instance_id);
+        if (wrote) {
             ++ok;
         } else {
             ++fail;
@@ -204,8 +218,12 @@ void PlayerItemPersistQueue::FlushPlayer(uint64_t player_id) {
     size_t ok = 0;
     for (const auto &e : to_flush) {
         uint64_t instance_id = 0;
-        if (PlayerItemStore::Instance().Insert(e.player_id, e.item_id, e.count, e.expire_time_sec,
-                                               e.extra_data, &instance_id))
+        const bool wrote = e.snapshot
+                               ? PlayerItemStore::Instance().SetCount(e.player_id, e.item_id, e.count)
+                               : PlayerItemStore::Instance().Insert(e.player_id, e.item_id, e.count,
+                                                                    e.expire_time_sec, e.extra_data,
+                                                                    &instance_id);
+        if (wrote)
             ++ok;
         else {
             std::lock_guard<std::mutex> lk(mu_);

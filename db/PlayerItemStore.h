@@ -41,6 +41,13 @@ public:
                             uint32_t count, int64_t expire_time_sec, const std::string &extra_data,
                             uint64_t *instance_id);
 
+    /**
+     * 覆盖该玩家该道具的持久数量。先收成一行，再
+     * UPDATE player_item SET count = ? WHERE player_id = ? AND item_id = ?
+     * 没有行且 count>0 时插入一行。count==0 时把已有行写成 0。
+     */
+    bool SetCount(uint64_t player_id, uint64_t item_id, uint32_t count);
+
     /** 从 player_item 聚合加载背包 item_id -> count；无行则 out 为空且返回 true */
     bool LoadInventoryAggregate(uint64_t player_id, std::map<uint32_t, uint32_t> *out);
 

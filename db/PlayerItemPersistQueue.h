@@ -29,13 +29,14 @@
 
 class EventLoop;
 
-/** 待持久化的一条道具发放（与 GrantItemReq 字段对应） */
+/** 待持久化的一条道具变更。snapshot 为真时 count 是该道具的剩余总量，不是增量。 */
 struct PendingPlayerItem {
     uint64_t player_id = 0;
     uint64_t item_id = 0;
     uint32_t count = 0;
     int64_t expire_time_sec = 0;
     std::string extra_data;
+    bool snapshot = false;
 };
 
 class PlayerItemPersistQueue {

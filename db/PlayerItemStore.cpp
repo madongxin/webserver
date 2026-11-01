@@ -147,6 +147,47 @@ bool PlayerItemStore::InsertOnConnection(Connection *conn, uint64_t player_id, u
     return *instance_id > 0;
 }
 
+bool PlayerItemStore::SetCount(uint64_t player_id, uint64_t item_id, uint32_t count) {
+    if (player_id == 0 || item_id == 0)
+        return false;
+    if (!EnsureTable())
+        return false;
+    auto conn = ConnectionPool::getconnectionPool()->getConnection();
+    if (!conn)
+        return false;
+
+    std::ostringstream find;
+    find << "SELECT MIN(id) FROM player_item WHERE player_id=" << player_id
+         << " AND item_id=" << item_id;
+    MYSQL_RES *res = conn->query(find.str());
+    if (!res)
+        return false;
+    MYSQL_ROW row = mysql_fetch_row(res);
+    uint64_t keep_id = 0;
+    if (row && row[0])
+        keep_id = static_cast<uint64_t>(std::strtoull(row[0], nullptr, 10));
+    mysql_free_result(res);
+
+    if (keep_id == 0) {
+        if (count == 0)
+            return true;
+        uint64_t instance_id = 0;
+        return InsertOnConnection(conn.get(), player_id, item_id, count, 0,
+                                  "{\"source\":\"snapshot\"}", &instance_id);
+    }
+
+    std::ostringstream drop;
+    drop << "DELETE FROM player_item WHERE player_id=" << player_id << " AND item_id=" << item_id
+         << " AND id<>" << keep_id;
+    if (!conn->update(drop.str()))
+        return false;
+
+    std::ostringstream upd;
+    upd << "UPDATE player_item SET count = " << count << " WHERE player_id = " << player_id
+        << " AND item_id = " << item_id;
+    return conn->update(upd.str());
+}
+
 bool PlayerItemStore::LoadInventoryAggregate(uint64_t player_id, std::map<uint32_t, uint32_t> *out) {
     if (!out || player_id == 0)
         return false;
