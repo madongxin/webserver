@@ -4,6 +4,8 @@
 
 服务器协议事实源：`webserver/docs/protocol/export/`（`game.proto` + `game.desc` + `protocol_manifest.json`）。客户端必须导入这一份，禁止用旧 schema 或反向覆盖服务器 proto。
 
+当前服务器 `proto/game.proto` 的 SHA-256 是 `edfd9fb92b1961dac7451d0b78be4e12ef9ee1424d9716d7e02dbcd5d237c6ae`。luna 稀疏检出里的 `f16462b65fa998a1c1d63be4710b2be927c9ec1b8ef47756803b12798d6e8665` 已经过期，Hello 用它会 `ERR_SCHEMA_MISMATCH`。以 export 目录里重新计算的 hash 为准，不要手写这一串。
+
 ---
 
 ## 你的角色
@@ -12,10 +14,10 @@
 
 ## 不可违反
 
-1. 外网只连 Gateway TCP VIP。不要连 Session / World / GameLogic / GameDB。不要引入 gRPC。
+1. 外网只连 Gateway TCP VIP。不要连 Session、GlobalService、GameLogic、GameDB。不要引入 gRPC。邮件和好友以前写在 World 进程上，那个二进制现在叫 `globalservice`，客户端仍然不直连它。
 2. `package game`，C# namespace `GameMesh.Protocol`。Hello 必须带当前 `schema_sha256`，否则 `ERR_SCHEMA_MISMATCH`。
 3. **不要在请求里自报操作人身份当权威。** 可以填 `player_id`，Gateway 会覆盖为 Session 绑定 id。填错会被拒 `ERR_UNAUTHENTICATED`。
-4. 所有好友 RPC 都是 **World 路由**。进图、换线、进副本不影响好友关系。不要把好友状态绑在当前 `map_instance_id` / GameLogic 上。
+4. 所有好友 RPC 都由 Gateway 转到 **GlobalService**（原来的 World 路由）。进图、换线、进副本不影响好友关系。不要把好友状态绑在当前 `map_instance_id` / GameLogic 上。聊天频道字符串 `"world"` 和 `WorldSnapshot` 不是这个进程名，不要改。
 5. 错误码只认 `GameResponse.error_code` 与子响应同名字段。不要解析 `message` 当 UI 文案。
 6. `MarkDisconnected` ≠ 登出。好友在线在重连保护期内应继续显示在线，不要拿 TCP 是否断开当权威。
 
@@ -47,6 +49,21 @@
 
 C# 字段名：`FriendAcceptRsp.Peer`、`FriendAddedPush.Peer`（C++ 关键字 `friend` 不能做字段名）。
 
+消息内部字段以 `proto/game.proto` 为准，不要按旧策划稿里的 oneof 或「cursor 是 1 号字段」来生成：
+
+| 消息 | 字段 |
+| --- | --- |
+| `FriendListReq` | `player_id=1`，`cursor=2`，`page_size=3` |
+| `FriendListRsp` | `friends=4`，`next_cursor=5`，`friend_n=6`，`friend_cap=7` |
+| `FriendSearchReq` | 三个并列字段，不是 oneof：`player_id=1`，`target_player_id=2`，`exact_name=3`。id 非 0 时用 id |
+| `FriendApplyReq` | `target_player_id=2`，`exact_name=3`，`operation_id=4` |
+| `FriendAcceptReq` / `FriendRejectReq` | `request_id=2`，`operation_id=3` |
+| `FriendDeleteReq` | `friend_player_id=2`，`operation_id=3` |
+| `FriendBlockReq` / `FriendUnblockReq` | `target_player_id=2`，`operation_id=3` |
+| `FriendAcceptRsp` / `FriendAddedPush` | 对方资料在 `peer`，不在名为 `friend` 的字段 |
+
+`player_id` 可以填登录后的 id。Gateway 会覆盖成 Session 绑定值；填成别人的 id 会被拒。
+
 ---
 
 ## 数据结构
@@ -65,7 +82,7 @@ C# 字段名：`FriendAcceptRsp.Peer`、`FriendAddedPush.Peer`（C++ 关键字 `
 
 **没有** “对方拉黑我” 状态。Apply 若目标拉黑自己，服务器仍可能返回成功（隐私）。不要用错误码探测谁拉黑了你。
 
-上限（服务端默认）：好友 100、黑名单 100、待处理申请 50。申请约 7 天过期。
+上限（服务端默认，以 `FriendListRsp.friend_cap` 为准）：好友 100、黑名单 100、待处理申请 50。申请约 7 天过期。`FriendBrief.level` 在角色表没有等级列时是 0，表示没有等级，不要显示成 1 级。
 
 ---
 
@@ -105,13 +122,13 @@ C# 字段名：`FriendAcceptRsp.Peer`、`FriendAddedPush.Peer`（C++ 关键字 `
 
 ### 6. 删除 → `FriendDelete`
 
-- `friend_player_id`。双方关系同时解除。默认不要弹“你被删了”强提醒；收到 `FriendRemovedPush` 只从 UI 移除。
+- `friend_player_id`，并带稳定 `operation_id`。双方关系同时解除。默认不要弹“你被删了”强提醒；收到 `FriendRemovedPush` 只从 UI 移除。
 
 ### 7. 黑名单 P2（一起做完）
 
-- `FriendBlock`：会删好友并关掉相关申请。单向。
-- `FriendUnblock` 后才能再申请。
-- `FriendBlockList` 展示我拉黑的人。
+- `FriendBlock`：会删好友并关掉相关申请。单向。带 `operation_id`。
+- `FriendUnblock` 后才能再申请。同样带 `operation_id`。
+- `FriendBlockList` 展示我拉黑的人。列表在 `blocked`，不是 `friends`。
 
 ---
 
@@ -151,6 +168,8 @@ C# 字段名：`FriendAcceptRsp.Peer`、`FriendAddedPush.Peer`（C++ 关键字 `
 4. 不要做亲密度、分组、礼物、推荐。
 
 ## 联调
+
+入口：VIP `124.222.244.169:8081`（备用 `8083`）。
 
 1. 两个账号登录同一 VIP。
 2. A Search B → Apply；B 在线应立刻收到 `friend.request.v1`。
