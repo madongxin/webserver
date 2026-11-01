@@ -627,6 +627,7 @@ void GameLogicServiceImpl::UnbindPlayer(::google::protobuf::RpcController *contr
         }
         // 未绑定：幂等成功，仍走 LeaveAll 清残留 AOI。
     }
+    GameLogic::Instance().InvalidateSessionTokenCache(request->player_id());
     // 串行队列上收尾，避免与在途 Dispatch 竞态
     const uint64_t pid = request->player_id();
     const std::string reason = request->reason().empty() ? "unbind" : request->reason();

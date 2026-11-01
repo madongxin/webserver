@@ -1566,8 +1566,147 @@ bool GameLogic::HandleGrantItem(const game::GrantItemReq &req, game::GameRespons
     return true;
 }
 
+namespace {
+
+struct TokenCacheEntry {
+    std::string token;
+    std::chrono::steady_clock::time_point expire{};
+};
+
+std::mutex g_token_cache_mu;
+std::unordered_map<uint64_t, TokenCacheEntry> g_token_cache;
+/** 移动很密，60 秒把每个玩家的 Redis 校验压到大约每分钟一次。顶号和解绑会立刻删条目，不靠 TTL 挡旧 token。 */
+constexpr int kTokenCacheTtlSec = 60;
+constexpr size_t kTokenCacheCap = 8192;
+
+bool LookupTokenCache(uint64_t player_id, const std::string &token) {
+    if (player_id == 0 || token.empty())
+        return false;
+    std::lock_guard<std::mutex> lk(g_token_cache_mu);
+    const auto it = g_token_cache.find(player_id);
+    if (it == g_token_cache.end())
+        return false;
+    if (it->second.token != token || std::chrono::steady_clock::now() >= it->second.expire)
+        return false;
+    return true;
+}
+
+void RememberTokenCache(uint64_t player_id, const std::string &token) {
+    if (player_id == 0 || token.empty())
+        return;
+    std::lock_guard<std::mutex> lk(g_token_cache_mu);
+    if (g_token_cache.size() >= kTokenCacheCap && g_token_cache.count(player_id) == 0)
+        g_token_cache.erase(g_token_cache.begin());
+    TokenCacheEntry e;
+    e.token = token;
+    e.expire = std::chrono::steady_clock::now() + std::chrono::seconds(kTokenCacheTtlSec);
+    g_token_cache[player_id] = std::move(e);
+}
+
+uint64_t SessionTokenPlayerId(const game::GameRequest &req) {
+    switch (req.body_case()) {
+    case game::GameRequest::kConsumeItem:
+        return req.consume_item().player_id();
+    case game::GameRequest::kReleaseSkill:
+        return req.release_skill().player_id();
+    case game::GameRequest::kGrantItem:
+        return req.grant_item().player_id();
+    case game::GameRequest::kEnterMap:
+        return req.enter_map().player_id();
+    case game::GameRequest::kLeaveMap:
+        return req.leave_map().player_id();
+    case game::GameRequest::kMapPing:
+        return req.map_ping().player_id();
+    case game::GameRequest::kInteractPortal:
+        return req.interact_portal().player_id();
+    case game::GameRequest::kChatSend:
+        return req.chat_send().player_id();
+    case game::GameRequest::kFriendList:
+        return req.friend_list().player_id();
+    case game::GameRequest::kFriendSearch:
+        return req.friend_search().player_id();
+    case game::GameRequest::kFriendApply:
+        return req.friend_apply().player_id();
+    case game::GameRequest::kFriendAccept:
+        return req.friend_accept().player_id();
+    case game::GameRequest::kFriendReject:
+        return req.friend_reject().player_id();
+    case game::GameRequest::kFriendDelete:
+        return req.friend_delete().player_id();
+    case game::GameRequest::kFriendRequestList:
+        return req.friend_request_list().player_id();
+    case game::GameRequest::kFriendBlock:
+        return req.friend_block().player_id();
+    case game::GameRequest::kFriendUnblock:
+        return req.friend_unblock().player_id();
+    case game::GameRequest::kFriendBlockList:
+        return req.friend_block_list().player_id();
+    case game::GameRequest::kGetPlayerBrief:
+        return req.get_player_brief().player_id();
+    case game::GameRequest::kQueryOnlineState:
+        return req.query_online_state().player_id();
+    case game::GameRequest::kGetSelfProfile:
+        return req.get_self_profile().player_id();
+    case game::GameRequest::kMove:
+        return req.move().player_id();
+    case game::GameRequest::kWorldSnapshot:
+        return req.world_snapshot().player_id();
+    case game::GameRequest::kRespawn:
+        return req.respawn().player_id();
+    case game::GameRequest::kMailboxSummary:
+        return req.mailbox_summary().player_id();
+    case game::GameRequest::kMailList:
+        return req.mail_list().player_id();
+    case game::GameRequest::kMailGet:
+        return req.mail_get().player_id();
+    case game::GameRequest::kMailRead:
+        return req.mail_read().player_id();
+    case game::GameRequest::kMailClaim:
+        return req.mail_claim().player_id();
+    case game::GameRequest::kMailBatchClaim:
+        return req.mail_batch_claim().player_id();
+    case game::GameRequest::kMailFavorite:
+        return req.mail_favorite().player_id();
+    case game::GameRequest::kMailBatchRead:
+        return req.mail_batch_read().player_id();
+    case game::GameRequest::kMailBatchDelete:
+        return req.mail_batch_delete().player_id();
+    case game::GameRequest::kPlayerMailSend:
+        return req.player_mail_send().sender_player_id();
+    default:
+        return 0;
+    }
+}
+
+bool CommandNeedsSessionToken(game::GameRequest::BodyCase body) {
+    switch (body) {
+    case game::GameRequest::kLogin:
+    case game::GameRequest::kReconnect:
+    case game::GameRequest::kValidateSession:
+    case game::GameRequest::kCheckOnline:
+    case game::GameRequest::kLogout:
+    case game::GameRequest::kRegister:
+    case game::GameRequest::kFlushBag:
+    case game::GameRequest::BODY_NOT_SET:
+        return false;
+    default:
+        return true;
+    }
+}
+
+}  // namespace
+
+void GameLogic::InvalidateSessionTokenCache(uint64_t player_id) {
+    if (player_id == 0)
+        return;
+    std::lock_guard<std::mutex> lk(g_token_cache_mu);
+    g_token_cache.erase(player_id);
+}
+
 bool GameLogic::RequireSessionToken(const game::GameRequest &req, uint64_t player_id,
                                     game::GameResponse *rsp) {
+    if (LookupTokenCache(player_id, req.session_token()))
+        return true;
 #ifdef WEBSERVER_ENABLE_REDIS
     std::string err;
 #ifdef WEBSERVER_ENABLE_BRPC
@@ -1584,8 +1723,10 @@ bool GameLogic::RequireSessionToken(const game::GameRequest &req, uint64_t playe
                      why.find("not found") != std::string::npos)
                 rsp->set_error_code(gameproto::kErrSessionExpired);
             LOG_WARN << "session token rejected player_id=" << player_id << " msg=" << why;
+            InvalidateSessionTokenCache(player_id);
             return false;
         }
+        RememberTokenCache(player_id, req.session_token());
         return true;
     }
 #endif
@@ -1603,13 +1744,16 @@ bool GameLogic::RequireSessionToken(const game::GameRequest &req, uint64_t playe
                  why.find("not found") != std::string::npos)
             rsp->set_error_code(gameproto::kErrSessionExpired);
         LOG_WARN << "session token rejected player_id=" << player_id << " msg=" << why;
+        InvalidateSessionTokenCache(player_id);
         return false;
     }
+    RememberTokenCache(player_id, req.session_token());
 #else
     (void)req;
     (void)player_id;
     (void)rsp;
 #endif
+    RememberTokenCache(player_id, req.session_token());
     return true;
 }
 
@@ -1736,6 +1880,7 @@ bool GameLogic::GetPlayerAttributes(uint64_t player_id, game::PlayerAttributes *
 
 bool GameLogic::BindAuthenticatedPlayer(uint64_t player_id, std::string *err,
                                         game::PlayerAttributes *profile_out) {
+    InvalidateSessionTokenCache(player_id);
     {
         std::lock_guard<std::mutex> lk(mu_);
         player_load_ok_.erase(player_id);
@@ -1874,6 +2019,7 @@ bool GameLogic::HandleLogout(const game::LogoutReq &req, game::GameResponse *rsp
     rsp->set_ok(body->ok());
     rsp->set_message(body->message());
     if (body->ok()) {
+        InvalidateSessionTokenCache(req.player_id());
 #ifdef WEBSERVER_ENABLE_MYSQL
         PlayerItemPersistQueue::Instance().MarkOffline(req.player_id());
 #endif
@@ -3182,7 +3328,7 @@ bool GameLogic::Handle(const game::GameRequest &req, game::GameResponse *rsp) {
             }
 #endif
         }
-        return RequireSessionToken(req, player_id, rsp);
+        return true;
     };
 #endif
     switch (req.body_case()) {
@@ -3207,6 +3353,13 @@ bool GameLogic::Handle(const game::GameRequest &req, game::GameResponse *rsp) {
     default:
         break;
     }
+    bool token_ok = true;
+    if (CommandNeedsSessionToken(req.body_case()) &&
+        req.body_case() != game::GameRequest::kMailDeliver) {
+        token_ok = RequireSessionToken(req, SessionTokenPlayerId(req), rsp);
+        if (!token_ok && req.body_case() != game::GameRequest::kWorldSnapshot)
+            return false;
+    }
     switch (req.body_case()) {
         case game::GameRequest::kLogin:
             return HandleLogin(req.login(), rsp);
@@ -3224,37 +3377,20 @@ bool GameLogic::Handle(const game::GameRequest &req, game::GameResponse *rsp) {
             return HandleFlushBag(req.flush_bag(), rsp);
         case game::GameRequest::kConsumeItem:
             LOG_INFO << "[game] dispatch consume_item seq=" << req.seq();
-            if (!RequireSessionToken(req, req.consume_item().player_id(), rsp)) {
-                LOG_WARN << "[consume_item] session rejected seq=" << req.seq() << " msg="
-                         << rsp->message();
-                return false;
-            }
 #ifdef WEBSERVER_ENABLE_MYSQL
             PlayerItemPersistQueue::Instance().MarkOnline(req.consume_item().player_id());
 #endif
             return HandleConsumeItem(req.consume_item(), rsp);
         case game::GameRequest::kReleaseSkill:
             LOG_INFO << "[game] dispatch release_skill seq=" << req.seq();
-            if (!RequireSessionToken(req, req.release_skill().player_id(), rsp)) {
-                LOG_WARN << "[release_skill] session rejected seq=" << req.seq() << " msg="
-                         << rsp->message();
-                return false;
-            }
 #ifdef WEBSERVER_ENABLE_MYSQL
             PlayerItemPersistQueue::Instance().MarkOnline(req.release_skill().player_id());
 #endif
             return HandleReleaseSkill(req.release_skill(), rsp);
         case game::GameRequest::kGrantItem:
             LOG_INFO << "[game] dispatch grant_item seq=" << req.seq();
-            if (!RequireSessionToken(req, req.grant_item().player_id(), rsp)) {
-                LOG_WARN << "[grant_item] session rejected seq=" << req.seq() << " msg="
-                         << rsp->message();
-                return false;
-            }
             return HandleGrantItem(req.grant_item(), rsp);
         case game::GameRequest::kEnterMap:
-            if (!RequireSessionToken(req, req.enter_map().player_id(), rsp))
-                return false;
             {
                 const bool ok = HandleEnterMap(req.enter_map(), rsp);
                 if (!ok && rsp->has_enter_map() && rsp->enter_map().error_code().empty()) {
@@ -3265,79 +3401,43 @@ bool GameLogic::Handle(const game::GameRequest &req, game::GameResponse *rsp) {
                 return ok;
             }
         case game::GameRequest::kLeaveMap:
-            if (!RequireSessionToken(req, req.leave_map().player_id(), rsp))
-                return false;
             return HandleLeaveMap(req.leave_map(), rsp);
         case game::GameRequest::kMapPing:
-            if (!RequireSessionToken(req, req.map_ping().player_id(), rsp))
-                return false;
             return HandleMapPing(req.map_ping(), rsp);
         case game::GameRequest::kInteractPortal:
-            if (!RequireSessionToken(req, req.interact_portal().player_id(), rsp))
-                return false;
             return HandleInteractPortal(req.interact_portal(), rsp);
         case game::GameRequest::kChatSend:
-            if (!RequireSessionToken(req, req.chat_send().player_id(), rsp))
-                return false;
             return HandleChatSend(req.chat_send(), rsp);
         case game::GameRequest::kFriendList:
-            if (!RequireSessionToken(req, req.friend_list().player_id(), rsp))
-                return false;
             return HandleFriendList(req.friend_list(), rsp);
         case game::GameRequest::kFriendSearch:
-            if (!RequireSessionToken(req, req.friend_search().player_id(), rsp))
-                return false;
             return FriendService::Instance().HandleSearch(req.friend_search(), rsp);
         case game::GameRequest::kFriendApply:
-            if (!RequireSessionToken(req, req.friend_apply().player_id(), rsp))
-                return false;
             return FriendService::Instance().HandleApply(req.friend_apply(), rsp);
         case game::GameRequest::kFriendAccept:
-            if (!RequireSessionToken(req, req.friend_accept().player_id(), rsp))
-                return false;
             return FriendService::Instance().HandleAccept(req.friend_accept(), rsp);
         case game::GameRequest::kFriendReject:
-            if (!RequireSessionToken(req, req.friend_reject().player_id(), rsp))
-                return false;
             return FriendService::Instance().HandleReject(req.friend_reject(), rsp);
         case game::GameRequest::kFriendDelete:
-            if (!RequireSessionToken(req, req.friend_delete().player_id(), rsp))
-                return false;
             return FriendService::Instance().HandleDelete(req.friend_delete(), rsp);
         case game::GameRequest::kFriendRequestList:
-            if (!RequireSessionToken(req, req.friend_request_list().player_id(), rsp))
-                return false;
             return FriendService::Instance().HandleRequestList(req.friend_request_list(), rsp);
         case game::GameRequest::kFriendBlock:
-            if (!RequireSessionToken(req, req.friend_block().player_id(), rsp))
-                return false;
             return FriendService::Instance().HandleBlock(req.friend_block(), rsp);
         case game::GameRequest::kFriendUnblock:
-            if (!RequireSessionToken(req, req.friend_unblock().player_id(), rsp))
-                return false;
             return FriendService::Instance().HandleUnblock(req.friend_unblock(), rsp);
         case game::GameRequest::kFriendBlockList:
-            if (!RequireSessionToken(req, req.friend_block_list().player_id(), rsp))
-                return false;
             return FriendService::Instance().HandleBlockList(req.friend_block_list(), rsp);
         case game::GameRequest::kGetPlayerBrief:
-            if (!RequireSessionToken(req, req.get_player_brief().player_id(), rsp))
-                return false;
             return HandleGetPlayerBrief(req.get_player_brief(), rsp);
         case game::GameRequest::kQueryOnlineState:
-            if (!RequireSessionToken(req, req.query_online_state().player_id(), rsp))
-                return false;
             return HandleQueryOnlineState(req.query_online_state(), rsp);
         case game::GameRequest::kGetSelfProfile:
-            if (!RequireSessionToken(req, req.get_self_profile().player_id(), rsp))
-                return false;
             return HandleGetSelfProfile(req.get_self_profile(), rsp);
         case game::GameRequest::kMove:
-            if (!RequireSessionToken(req, req.move().player_id(), rsp))
-                return false;
             return HandleMove(req.move(), rsp);
         case game::GameRequest::kWorldSnapshot:
-            if (!RequireSessionToken(req, req.world_snapshot().player_id(), rsp)) {
+            if (!token_ok) {
                 // 会话已断开、人还在这张图上：客户端会先拉全量快照，不要再回 ERR_INTERNAL。
                 const bool still_on_map =
                     MapRuntime::Instance().PlayerMap(req.world_snapshot().player_id()) != 0;
@@ -3351,8 +3451,6 @@ bool GameLogic::Handle(const game::GameRequest &req, game::GameResponse *rsp) {
             }
             return HandleWorldSnapshot(req.world_snapshot(), rsp);
         case game::GameRequest::kRespawn:
-            if (!RequireSessionToken(req, req.respawn().player_id(), rsp))
-                return false;
             return HandleRespawn(req.respawn(), rsp);
 #ifdef WEBSERVER_ENABLE_MYSQL
         case game::GameRequest::kMailboxSummary:

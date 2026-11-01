@@ -112,6 +112,8 @@ private:
     bool HandleRespawn(const game::RespawnReq &req, game::GameResponse *rsp);
     bool HandleInteractPortal(const game::InteractPortalReq &req, game::GameResponse *rsp);
     bool RequireSessionToken(const game::GameRequest &req, uint64_t player_id, game::GameResponse *rsp);
+    /** 顶号、登出、解绑时丢掉该玩家的进程内 token 缓存。 */
+    void InvalidateSessionTokenCache(uint64_t player_id);
     /** 不得在持有 mu_ 时调用。远程加载在锁外完成，写回内存时才加锁。 */
     bool EnsurePlayerLoaded(uint64_t player_id, std::string *err);
     /** 调用方已持有 mu_。只补内存槽，不做网络或磁盘 IO。 */
