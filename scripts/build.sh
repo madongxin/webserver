@@ -60,6 +60,11 @@ else
   : "${ENABLE_BRPC:=ON}"
 fi
 : "${ENABLE_ROCKSDB:=OFF}"
+if [[ "${GAMEMESH_WERROR:-}" == "1" || "${GAMEMESH_WERROR:-}" == "ON" ]]; then
+  GAMEMESH_WERROR=ON
+else
+  GAMEMESH_WERROR=OFF
+fi
 : "${ENABLE_ASAN:=OFF}"
 : "${ENABLE_UBSAN:=OFF}"
 : "${ENABLE_TSAN:=OFF}"
@@ -110,7 +115,8 @@ cmake -S "$ROOT" -B "$BUILD_DIR" \
   -DENABLE_ROCKSDB="$ENABLE_ROCKSDB" \
   -DENABLE_ASAN="$ENABLE_ASAN" \
   -DENABLE_UBSAN="$ENABLE_UBSAN" \
-  -DENABLE_TSAN="$ENABLE_TSAN"
+  -DENABLE_TSAN="$ENABLE_TSAN" \
+  -DGAMEMESH_WERROR="$GAMEMESH_WERROR"
 
 echo "== build: jobs=$JOBS target=${TARGET:-all} =="
 if [[ -n "$TARGET" ]]; then

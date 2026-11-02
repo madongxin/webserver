@@ -5,20 +5,18 @@ project(GameMesh)
 # 供 Cursor/VS Code（Microsoft C++、clangd）跳转定义/实现
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON CACHE BOOL "Export compile_commands.json for IDE" FORCE)
 
-include_directories(
-    /usr/include
-    /usr/local/include
-    base
-    tcp
-    log
-    http
-    timer
-    db
-    redis
-    rocksdb
-    runtime
-    runtime/discovery
-    apps
+set(GAMEMESH_BASE_INCLUDES
+    ${CMAKE_SOURCE_DIR}/base
+    ${CMAKE_SOURCE_DIR}/tcp
+    ${CMAKE_SOURCE_DIR}/log
+    ${CMAKE_SOURCE_DIR}/http
+    ${CMAKE_SOURCE_DIR}/timer
+    ${CMAKE_SOURCE_DIR}/db
+    ${CMAKE_SOURCE_DIR}/redis
+    ${CMAKE_SOURCE_DIR}/rocksdb
+    ${CMAKE_SOURCE_DIR}/runtime
+    ${CMAKE_SOURCE_DIR}/runtime/discovery
+    ${CMAKE_SOURCE_DIR}/apps
 )
 
 option(ENABLE_MYSQL "Build MySQL connection pool (libmysqlclient)" ON)
@@ -47,8 +45,14 @@ set(CMAKE_CXX_COMPILER "g++")
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
-set(CMAKE_CXX_FLAGS "-g -Wall -Werror")
-set(CMAKE_CXX_FLAGS_DEBUG "-O0")
+# 不覆盖 CMake 的 Release 优化选项。-Werror 只在 GAMEMESH_WERROR=ON 时打开。
+option(GAMEMESH_WERROR "Treat compiler warnings as errors" OFF)
+if(DEFINED ENV{GAMEMESH_WERROR})
+  if("$ENV{GAMEMESH_WERROR}" STREQUAL "1" OR "$ENV{GAMEMESH_WERROR}" STREQUAL "ON")
+    set(GAMEMESH_WERROR ON)
+  endif()
+endif()
+set(CMAKE_CXX_FLAGS_DEBUG "-O0 -g")
 message(STATUS "C++ standard: ${CMAKE_CXX_STANDARD} (required=${CMAKE_CXX_STANDARD_REQUIRED})")
 
 # Threads 探测必须在 -fsanitize=* 之前，否则 TSan 会让 FindThreads 失败
@@ -315,15 +319,24 @@ function(gamemesh_apply_target_options tgt)
   endif()
 endfunction()
 
-add_executable(server test/http_server.cpp ${GAMEMESH_COMMON_SRCS})
+add_library(gamemesh_core STATIC ${GAMEMESH_COMMON_SRCS})
+gamemesh_apply_target_options(gamemesh_core)
+
+add_executable(server test/http_server.cpp)
+target_link_libraries(server gamemesh_core)
 gamemesh_apply_target_options(server)
 
 if(ENABLE_BRPC)
-  add_executable(gateway apps/gateway_main.cpp ${GAMEMESH_COMMON_SRCS})
-  add_executable(gamelogic apps/gamelogic_main.cpp ${GAMEMESH_COMMON_SRCS})
-  add_executable(globalservice apps/globalservice_main.cpp ${GAMEMESH_COMMON_SRCS})
-  add_executable(session apps/session_main.cpp ${GAMEMESH_COMMON_SRCS})
-  add_executable(gamedb apps/gamedb_main.cpp ${GAMEMESH_COMMON_SRCS})
+  add_executable(gateway apps/gateway_main.cpp)
+  add_executable(gamelogic apps/gamelogic_main.cpp)
+  add_executable(globalservice apps/globalservice_main.cpp)
+  add_executable(session apps/session_main.cpp)
+  add_executable(gamedb apps/gamedb_main.cpp)
+  target_link_libraries(gateway gamemesh_core)
+  target_link_libraries(gamelogic gamemesh_core)
+  target_link_libraries(globalservice gamemesh_core)
+  target_link_libraries(session gamemesh_core)
+  target_link_libraries(gamedb gamemesh_core)
   gamemesh_apply_target_options(gateway)
   gamemesh_apply_target_options(gamelogic)
   gamemesh_apply_target_options(globalservice)
@@ -1677,6 +1690,22 @@ if(ENABLE_MYSQL AND ENABLE_GAME_PROTOBUF)
     ${CMAKE_THREAD_LIBS_INIT} ${MYSQL_CLIENT_LIB} ${Protobuf_LIBRARIES} ${JSONCPP_LIBRARIES}
     ${OPENSSL_CRYPTO_LIB})
 endif()
+
+enable_testing()
+get_property(_gamemesh_targets DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}" PROPERTY BUILDSYSTEM_TARGETS)
+foreach(_t ${_gamemesh_targets})
+  get_target_property(_typ ${_t} TYPE)
+  if(_typ STREQUAL "EXECUTABLE" OR _typ STREQUAL "STATIC_LIBRARY")
+    target_include_directories(${_t} PRIVATE ${GAMEMESH_BASE_INCLUDES})
+    target_compile_options(${_t} PRIVATE -Wall)
+    if(GAMEMESH_WERROR)
+      target_compile_options(${_t} PRIVATE -Werror)
+    endif()
+  endif()
+  if(_typ STREQUAL "EXECUTABLE" AND _t MATCHES "_test$")
+    add_test(NAME ${_t} COMMAND ${_t} WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+  endif()
+endforeach()
 
 # 每次 build 时同步到项目根，便于 clangd 默认扫描 ${workspaceFolder}
 if(CMAKE_EXPORT_COMPILE_COMMANDS)

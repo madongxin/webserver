@@ -6,9 +6,12 @@ on:
     branches: [main, master]
   pull_request:
 
+env:
+  GAMEMESH_WERROR: "ON"
+
 jobs:
   lowlevel:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
       - name: deps
@@ -45,7 +48,7 @@ jobs:
   full:
     # PR 只跑 lowlevel；main/master push 跑完整依赖构建
     if: github.event_name == 'push'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     services:
       redis:
         image: redis:7
@@ -199,7 +202,7 @@ jobs:
 
   asan:
     if: github.event_name == 'push'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
       - name: deps
@@ -213,7 +216,7 @@ jobs:
 
   tsan:
     if: github.event_name == 'push'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
       - name: deps
