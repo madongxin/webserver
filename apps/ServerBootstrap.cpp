@@ -15,6 +15,7 @@
 #include "BindAddressPolicy.h"
 #include "FormalMode.h"
 #include "GameMeshPaths.h"
+#include "SafePath.h"
 #include "GatewayIdentity.h"
 #include "HealthDeps.h"
 #include "HealthProbe.h"
@@ -880,7 +881,11 @@ std::string BuildFileHtml() {
 }
 
 bool DownloadFile(const std::string &name, HttpResponse *response, bool head_only) {
-    const std::string path = GameMeshPaths::FilesRoot() + "/" + name;
+    std::string path;
+    if (!SafeJoinUnderRoot(GameMeshPaths::FilesRoot(), name, &path)) {
+        SendPlain(response, "bad path", HttpResponse::HttpStatusCode::k400BadRequest);
+        return false;
+    }
     const int fd = ::open(path.c_str(), O_RDONLY);
     if (fd < 0) {
         SendPlain(response, "file not found", HttpResponse::HttpStatusCode::k404NotFound);
@@ -1268,16 +1273,29 @@ void HttpResponseCallback(const HttpRequest &request, HttpResponse *response) {
         return;
     }
     if (url == "/download") {
+        if (!AdminHttpEnabled() || !GmSessionValid(GmSidFromRequest(request))) {
+            SendPlain(response, "admin denied", HttpResponse::HttpStatusCode::k403Forbidden);
+            return;
+        }
         const std::string file = UrlParam(request, "file");
-        if (!file.empty())
+        std::string path;
+        if (!file.empty() && SafeJoinUnderRoot(GameMeshPaths::FilesRoot(), file, &path))
             DownloadFile(file, response, head_only);
         else
             SendPlain(response, "missing file", HttpResponse::HttpStatusCode::k400BadRequest);
         return;
     }
     if (url == "/delete" && request.method() == HttpRequest::Method::kPost) {
+        if (!AdminHttpEnabled() || !GmSessionValid(GmSidFromRequest(request))) {
+            SendPlain(response, "admin denied", HttpResponse::HttpStatusCode::k403Forbidden);
+            return;
+        }
         const std::string file = UrlParam(request, "file");
-        const std::string path = GameMeshPaths::FilesRoot() + "/" + file;
+        std::string path;
+        if (!SafeJoinUnderRoot(GameMeshPaths::FilesRoot(), file, &path)) {
+            SendPlain(response, "bad path", HttpResponse::HttpStatusCode::k400BadRequest);
+            return;
+        }
         const int rc = ::remove(path.c_str());
         Json::Value j;
         j["removed"] = (rc == 0);
@@ -1320,7 +1338,13 @@ void HttpResponseCallback(const HttpRequest &request, HttpResponse *response) {
     }
 
     if (url.size() > 1 && url[0] == '/') {
-        std::string path = GameMeshPaths::StaticRoot() + url;
+        std::string path;
+        if (!SafeJoinUnderRoot(GameMeshPaths::StaticRoot(), url.substr(1), &path)) {
+            response->SetStatusCode(HttpResponse::HttpStatusCode::k404NotFound);
+            response->SetStatusMessage("Not Found");
+            response->SetCloseConnection(true);
+            return;
+        }
         std::string body = ReadFile(path);
         if (!body.empty()) {
             SendHtml(response, body, head_only);

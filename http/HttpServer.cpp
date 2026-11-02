@@ -10,6 +10,7 @@
 #include "Logging.h"
 #include "TimeStamp.h"
 #include "GameMeshPaths.h"
+#include "SafePath.h"
 #include <arpa/inet.h>
 #include <functional>
 #include <iostream>
@@ -112,6 +113,13 @@ void HttpServer::onRequest(const TcpConnectionPtr &conn, const HttpRequest &requ
         size_t end_index = filemessage.find("\"\r\n", begin_index); // 能用
 
         std::string filename = filemessage.substr(begin_index, end_index - begin_index);
+        std::string safe_name;
+        if (!SafeBasename(filename, &safe_name)) {
+            LOG_ERROR << "rejected upload filename";
+            return;
+        }
+        const size_t slash = safe_name.find_last_of('/');
+        filename = slash == std::string::npos ? safe_name : safe_name.substr(slash + 1);
 
         // 对文件信息的处理
         begin_index = filemessage.find("\r\n\r\n") + 4; //遇到空行，说明进入了文件体
@@ -119,7 +127,12 @@ void HttpServer::onRequest(const TcpConnectionPtr &conn, const HttpRequest &requ
 
         std::string filedata = filemessage.substr(begin_index, end_index - begin_index);
         // 写入文件
-        std::ofstream ofs(GameMeshPaths::FilesRoot() + "/" + filename,
+        std::string upload_path;
+        if (!SafeJoinUnderRoot(GameMeshPaths::FilesRoot(), filename, &upload_path)) {
+            LOG_ERROR << "rejected upload path";
+            return;
+        }
+        std::ofstream ofs(upload_path,
                           std::ios::out | std::ios::app | std::ios::binary);
         ofs.write(filedata.data(), filedata.size());
         ofs.close();
