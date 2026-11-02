@@ -570,6 +570,7 @@ if(ENABLE_GAME_PROTOBUF)
   add_executable(message_route_test
     test/message_route_test.cpp
     runtime/MessageRoute.cpp
+    game/CommandSpec.cpp
     game/game.pb.cc)
   target_compile_definitions(message_route_test PRIVATE WEBSERVER_ENABLE_GAME_PROTOBUF)
   target_include_directories(message_route_test PRIVATE
@@ -706,11 +707,23 @@ if(ENABLE_GAME_PROTOBUF)
   add_executable(command_policy_test
     test/command_policy_test.cpp
     game/CommandPolicy.cpp
+    game/CommandSpec.cpp
     game/game.pb.cc)
   target_compile_definitions(command_policy_test PRIVATE WEBSERVER_ENABLE_GAME_PROTOBUF)
   target_include_directories(command_policy_test PRIVATE
     ${Protobuf_INCLUDE_DIRS} game runtime)
   target_link_libraries(command_policy_test ${Protobuf_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
+
+  add_executable(command_route_table_test
+    test/command_route_table_test.cpp
+    game/CommandPolicy.cpp
+    game/CommandSpec.cpp
+    runtime/MessageRoute.cpp
+    game/game.pb.cc)
+  target_compile_definitions(command_route_table_test PRIVATE WEBSERVER_ENABLE_GAME_PROTOBUF)
+  target_include_directories(command_route_table_test PRIVATE
+    ${Protobuf_INCLUDE_DIRS} game runtime)
+  target_link_libraries(command_route_table_test ${Protobuf_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
 
   add_executable(client_protocol_test
     test/client_protocol_test.cpp

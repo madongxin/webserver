@@ -1,6 +1,7 @@
 #include "GameLogic.h"
 
 #include "AoiPublishQueue.h"
+#include "CommandSpec.h"
 #include "FormalMode.h"
 #include "ForwardMetaContext.h"
 #include "FriendService.h"
@@ -1679,19 +1680,8 @@ uint64_t SessionTokenPlayerId(const game::GameRequest &req) {
 }
 
 bool CommandNeedsSessionToken(game::GameRequest::BodyCase body) {
-    switch (body) {
-    case game::GameRequest::kLogin:
-    case game::GameRequest::kReconnect:
-    case game::GameRequest::kValidateSession:
-    case game::GameRequest::kCheckOnline:
-    case game::GameRequest::kLogout:
-    case game::GameRequest::kRegister:
-    case game::GameRequest::kFlushBag:
-    case game::GameRequest::BODY_NOT_SET:
-        return false;
-    default:
-        return true;
-    }
+    const gameproto::CommandSpec *s = gameproto::FindCommandSpec(body);
+    return s && s->needs_session_token;
 }
 
 }  // namespace

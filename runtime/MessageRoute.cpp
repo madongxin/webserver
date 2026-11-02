@@ -1,47 +1,17 @@
 #include "MessageRoute.h"
 
+#include "CommandSpec.h"
+
 namespace gameproto {
 
 bool IsMailBoundRequest(const game::GameRequest &req) {
-    switch (req.body_case()) {
-    case game::GameRequest::kMailboxSummary:
-    case game::GameRequest::kMailList:
-    case game::GameRequest::kMailGet:
-    case game::GameRequest::kMailRead:
-    case game::GameRequest::kMailClaim:
-    case game::GameRequest::kMailBatchClaim:
-    case game::GameRequest::kMailFavorite:
-    case game::GameRequest::kMailBatchRead:
-    case game::GameRequest::kMailBatchDelete:
-    case game::GameRequest::kMailDeliver:
-    case game::GameRequest::kPlayerMailSend:
-        return true;
-    default:
-        return false;
-    }
+    const CommandSpec *s = FindCommandSpec(req.body_case());
+    return s && s->mail;
 }
 
 bool IsGlobalServiceRequest(const game::GameRequest &req) {
-    if (IsMailBoundRequest(req))
-        return true;
-    switch (req.body_case()) {
-    case game::GameRequest::kChatSend:
-    case game::GameRequest::kGetPlayerBrief:
-    case game::GameRequest::kQueryOnlineState:
-    case game::GameRequest::kFriendList:
-    case game::GameRequest::kFriendSearch:
-    case game::GameRequest::kFriendApply:
-    case game::GameRequest::kFriendAccept:
-    case game::GameRequest::kFriendReject:
-    case game::GameRequest::kFriendDelete:
-    case game::GameRequest::kFriendRequestList:
-    case game::GameRequest::kFriendBlock:
-    case game::GameRequest::kFriendUnblock:
-    case game::GameRequest::kFriendBlockList:
-        return true;
-    default:
-        return false;
-    }
+    const CommandSpec *s = FindCommandSpec(req.body_case());
+    return s && s->global_service;
 }
 
 bool IsLogicBoundRequest(const game::GameRequest &req) {

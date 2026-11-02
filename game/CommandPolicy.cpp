@@ -1,5 +1,6 @@
 #include "CommandPolicy.h"
 
+#include "CommandSpec.h"
 #include "FormalMode.h"
 
 #include <cstdlib>
@@ -20,64 +21,13 @@ bool AllowUnsafeDebugCommands() {
 namespace {
 
 bool IsDangerousClientCommand(game::GameRequest::BodyCase body) {
-    switch (body) {
-    case game::GameRequest::kGrantItem:
-    case game::GameRequest::kMailDeliver:
-    case game::GameRequest::kValidateSession:
-    case game::GameRequest::kCheckOnline:
-    case game::GameRequest::kFlushBag:
-        return true;
-    default:
-        return false;
-    }
+    const CommandSpec *s = FindCommandSpec(body);
+    return s && s->dangerous;
 }
 
 bool IsAuthenticatedClientAllowlisted(game::GameRequest::BodyCase body) {
-    switch (body) {
-    case game::GameRequest::kConsumeItem:
-    case game::GameRequest::kReleaseSkill:
-    case game::GameRequest::kLogout:
-    case game::GameRequest::kMailboxSummary:
-    case game::GameRequest::kMailList:
-    case game::GameRequest::kMailGet:
-    case game::GameRequest::kMailRead:
-    case game::GameRequest::kMailClaim:
-    case game::GameRequest::kMailBatchClaim:
-    case game::GameRequest::kMailFavorite:
-    case game::GameRequest::kMailBatchRead:
-    case game::GameRequest::kMailBatchDelete:
-    case game::GameRequest::kEnterMap:
-    case game::GameRequest::kLeaveMap:
-    case game::GameRequest::kMapPing:
-    case game::GameRequest::kChatSend:
-    case game::GameRequest::kPushAck:
-    case game::GameRequest::kGetSelfProfile:
-    case game::GameRequest::kMove:
-    case game::GameRequest::kPlayerMailSend:
-    case game::GameRequest::kHeartbeat:
-    case game::GameRequest::kWorldSnapshot:
-    case game::GameRequest::kRespawn:
-    case game::GameRequest::kGetPlayerBrief:
-    case game::GameRequest::kQueryOnlineState:
-    case game::GameRequest::kQueryMapLines:
-    case game::GameRequest::kCreateDungeon:
-    case game::GameRequest::kSwitchLine:
-    case game::GameRequest::kEnqueueMap:
-    case game::GameRequest::kInteractPortal:
-    case game::GameRequest::kFriendList:
-    case game::GameRequest::kFriendSearch:
-    case game::GameRequest::kFriendApply:
-    case game::GameRequest::kFriendAccept:
-    case game::GameRequest::kFriendReject:
-    case game::GameRequest::kFriendDelete:
-    case game::GameRequest::kFriendRequestList:
-    case game::GameRequest::kFriendBlock:
-    case game::GameRequest::kFriendUnblock:
-    case game::GameRequest::kFriendBlockList:
-        return true;
-    default:
-        return false;
-    }
+    const CommandSpec *s = FindCommandSpec(body);
+    return s && s->authenticated_allow;
 }
 
 }  // namespace
@@ -93,14 +43,10 @@ CommandDecision ValidateCommandPolicy(game::GameRequest::BodyCase body, CommandT
         return CommandDecision::Allow;
 
     if (trust == CommandTrustLevel::PreAuthClient) {
-        switch (body) {
-        case game::GameRequest::kLogin:
-        case game::GameRequest::kRegister:
-        case game::GameRequest::kReconnect:
-        case game::GameRequest::kClientHello:
-        case game::GameRequest::kHeartbeat:
+        const CommandSpec *s = FindCommandSpec(body);
+        if (s && s->preauth_allow)
             return CommandDecision::Allow;
-        default:
+        {
             if (err_code)
                 *err_code = "ERR_COMMAND_FORBIDDEN";
             return CommandDecision::Forbid;
