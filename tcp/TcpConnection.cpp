@@ -289,6 +289,10 @@ void TcpConnection::ReplaceQueuedAfterPrefix(const std::string &queued) {
         control_run_ = queued.size();
     send_hold_move_ = false;
     send_move_hold_off_ = 0;
+    send_move_sticky_ = false;
+    send_hold_since_ms_ = 0;
+    if (move_commit_pending_)
+        FinishMoveCommit(false);
     const int queued_n = send_buf_->readablebytes();
     if (queued_n <= 0)
         control_hold_end_ = 0;
@@ -422,12 +426,92 @@ TcpConnection::ControlSendResult TcpConnection::TrySendControl(const char *msg, 
 }
 
 bool TcpConnection::TrySendLatestMove(const std::string &msg) {
+    return TrySendLatestMove(msg, {});
+}
+
+void TcpConnection::set_latest_move_commit_callback(
+    std::function<void(std::vector<LatestMoveAck>, bool committed, int frame_bytes)> cb) {
+    move_commit_cb_ = std::move(cb);
+}
+
+void TcpConnection::FinishMoveCommit(bool committed) {
+    if (!move_commit_pending_)
+        return;
+    move_commit_pending_ = false;
+    move_commit_skip_ = 0;
+    move_commit_left_ = 0;
+    const int bytes = move_commit_bytes_;
+    move_commit_bytes_ = 0;
+    std::vector<LatestMoveAck> ents;
+    ents.swap(move_commit_entities_);
+    if (move_commit_cb_)
+        move_commit_cb_(std::move(ents), committed, bytes);
+}
+
+void TcpConnection::AccountMoveBytesWritten(int n) {
+    if (!move_commit_pending_ || n <= 0 || move_commit_left_ <= 0)
+        return;
+    if (static_cast<size_t>(n) <= move_commit_skip_) {
+        move_commit_skip_ -= static_cast<size_t>(n);
+        return;
+    }
+    const int into = n - static_cast<int>(move_commit_skip_);
+    move_commit_skip_ = 0;
+    move_commit_left_ -= into;
+    if (move_commit_left_ <= 0)
+        FinishMoveCommit(true);
+}
+
+int64_t TcpConnection::parked_move_age_ms() const {
+    if (send_hold_since_ms_ <= 0)
+        return 0;
+    const int64_t age = HoldNowMs() - send_hold_since_ms_;
+    return age > 0 ? age : 0;
+}
+
+void TcpConnection::ReleaseStuckMove() {
+    if (!send_buf_)
+        return;
+    // 已经写进内核的半帧不能截断。只丢掉还整帧留在应用缓冲里的移动。
+    if (send_move_sticky_ || send_partial_prefix_ > 0)
+        return;
+    if (!send_hold_move_ && !move_commit_pending_)
+        return;
+    const std::string raw = send_buf_->PeekAllAsString();
+    const size_t prefix = std::min(send_partial_prefix_, raw.size());
+    size_t keep_n = prefix;
+    if (send_hold_move_)
+        keep_n = std::min(send_move_hold_off_, raw.size());
+    else if (move_commit_pending_)
+        keep_n = std::min(move_commit_skip_, raw.size());
+    if (keep_n < prefix)
+        keep_n = prefix;
+    std::string keep;
+    if (keep_n > prefix)
+        keep.assign(raw.data() + prefix, keep_n - prefix);
+    send_hold_move_ = false;
+    send_move_sticky_ = false;
+    send_hold_since_ms_ = 0;
+    send_move_hold_off_ = 0;
+    ReplaceQueuedAfterPrefix(keep);
+    if (move_commit_pending_)
+        FinishMoveCommit(false);
+}
+
+bool TcpConnection::TrySendLatestMove(const std::string &msg, const std::vector<LatestMoveAck> &acks) {
     if (state_ != ConnectionState::Connected || in_close_ || !send_buf_ || msg.empty())
         return false;
     const int queued = send_buf_->readablebytes();
     // 非移动数据已经堆过 64KB，这一帧先不追加。调用方留着位置，200ms 后再试。
     if (queued > 64 * 1024)
         return false;
+    if (move_commit_pending_)
+        FinishMoveCommit(false);
+    move_commit_entities_ = acks;
+    move_commit_pending_ = !acks.empty();
+    move_commit_bytes_ = static_cast<int>(msg.size());
+    move_commit_skip_ = 0;
+    move_commit_left_ = 0;
     // 调用方已经清掉缓冲里的旧移动帧。内核里还有没送出的字节时，不要再 write：
     // 回包插不到已经进内核的字节前面，客户端会一直读旧坐标，步子越来越慢直到停下。
     // 这一帧留在缓冲末尾。连接还在重传时可以换成更新的位置；交给写路径之后不能再删。
@@ -437,6 +521,8 @@ bool TcpConnection::TrySendLatestMove(const std::string &msg) {
         send_hold_move_ = true;
         if (send_hold_since_ms_ == 0)
             send_hold_since_ms_ = HoldNowMs();
+        move_commit_skip_ = static_cast<size_t>(queued);
+        move_commit_left_ = static_cast<int>(msg.size());
         // 移动帧前面若还有回包，注册写事件把回包送走；只剩移动帧时不注册，避免空转。
         ArmWriteIfNeeded();
         ArmParkedMoveRetry();
@@ -445,7 +531,18 @@ bool TcpConnection::TrySendLatestMove(const std::string &msg) {
     send_hold_move_ = false;
     send_move_hold_off_ = 0;
     send_hold_since_ms_ = 0;
-    return SendInternal(msg.data(), static_cast<int>(msg.size()), true, false, false, true);
+    move_commit_skip_ = static_cast<size_t>(queued);
+    move_commit_left_ = static_cast<int>(msg.size());
+    const bool ok = SendInternal(msg.data(), static_cast<int>(msg.size()), true, false, false, true);
+    if (!ok) {
+        FinishMoveCommit(false);
+        return false;
+    }
+    if (move_commit_pending_ && move_commit_left_ <= 0)
+        FinishMoveCommit(true);
+    else if (move_commit_pending_ && (!send_buf_ || send_buf_->readablebytes() == 0))
+        FinishMoveCommit(true);
+    return true;
 }
 
 bool TcpConnection::SendInternal(const char *msg, int len, bool soft_drop, bool urgent,
@@ -477,6 +574,8 @@ bool TcpConnection::SendInternal(const char *msg, int len, bool soft_drop, bool 
         control_run_ += static_cast<size_t>(len);
         if ((send_hold_move_ || send_move_sticky_) && send_move_hold_off_ >= insert_at)
             send_move_hold_off_ += static_cast<size_t>(len);
+        if (move_commit_pending_ && move_commit_skip_ >= insert_at)
+            move_commit_skip_ += static_cast<size_t>(len);
         WriteNonBlocking();
         ArmWriteIfNeeded();
         return true;
@@ -505,6 +604,7 @@ bool TcpConnection::SendInternal(const char *msg, int len, bool soft_drop, bool 
         send_size = static_cast<int>(::write(connfd_, msg, static_cast<size_t>(len)));
         if (send_size >= 0) {
             remaining -= send_size;
+            AccountMoveBytesWritten(send_size);
         } else if (errno == EINTR) {
             send_size = 0;
         } else if (errno == EAGAIN || errno == EWOULDBLOCK) {
@@ -650,6 +750,7 @@ void TcpConnection::WriteNonBlocking() {
                 else
                     send_move_hold_off_ -= static_cast<size_t>(send_size);
             }
+            AccountMoveBytesWritten(static_cast<int>(send_size));
             if (!hold_limit)
                 send_hold_move_ = false;
             send_buf_->Retrieve(static_cast<int>(send_size));

@@ -18,6 +18,7 @@
 #include <functional>
 #include <memory>
 #include <string>
+#include <vector>
 #include "TimeStamp.h"
 
 class Buffer;
@@ -117,6 +118,21 @@ public:
      * 不关连接。
      */
     bool TrySendLatestMove(const std::string &msg);
+    struct LatestMoveAck {
+        uint64_t entity_id = 0;
+        uint64_t state_seq = 0;
+    };
+    /**
+     * 和 TrySendLatestMove 相同，另外记下这一帧里的实体。
+     * 字节真正写进内核时回调 committed=true；停放帧被换掉时回调 committed=false。
+     * 已经进内核的字节不会撤回来。
+     */
+    bool TrySendLatestMove(const std::string &msg, const std::vector<LatestMoveAck> &acks);
+    void set_latest_move_commit_callback(
+        std::function<void(std::vector<LatestMoveAck>, bool committed, int frame_bytes)> cb);
+    /** 停放满 1 秒仍写不进内核时，丢掉应用缓冲里的这一帧并通知槽。内核字节不动。 */
+    void ReleaseStuckMove();
+    int64_t parked_move_age_ms() const;
     /** 最新移动帧已经交给写路径，但还没全部写进内核。这时不能从缓冲里删掉它。 */
     bool latest_move_awaiting_write() const { return send_move_sticky_; }
     void SendFile(int filefd, int size);
@@ -183,6 +199,12 @@ private:
     int64_t send_hold_since_ms_ = 0;
     /** 每个连接最多一个 200ms 定时器，用来在关掉 EPOLLOUT 之后再试暂存的移动帧。 */
     bool move_retry_armed_ = false;
+    std::vector<LatestMoveAck> move_commit_entities_;
+    bool move_commit_pending_ = false;
+    size_t move_commit_skip_ = 0;
+    int move_commit_left_ = 0;
+    int move_commit_bytes_ = 0;
+    std::function<void(std::vector<LatestMoveAck>, bool committed, int frame_bytes)> move_commit_cb_;
 
     std::function<void(const std::shared_ptr<TcpConnection> &)> on_close_;
     std::function<void(const std::shared_ptr<TcpConnection> &)> on_message_;
@@ -203,6 +225,8 @@ private:
     void RefreshControlHoldEnd();
     /** write 跨过帧边界时，把缓冲开头仍未写完的那一帧记成半帧前缀。 */
     void NoteWriteConsumed(const char *data, size_t data_len, size_t written);
+    void FinishMoveCommit(bool committed);
+    void AccountMoveBytesWritten(int n);
     /** 内核里还没交给网卡的字节。拿不到时返回 0，不用未确认字节充数。 */
     int UnsentBytes() const;
     /** soft_drop=true：队列将满时丢弃本帧并返回 false；false：关连接（背压）。

@@ -5,6 +5,7 @@
 
 #include "GameTcpGateway.h"
 
+#include "AoiMoveCoalesceLedger.h"
 #include "AoiPublishQueue.h"
 #include "Buffer.h"
 #include "ServerStats.h"
@@ -93,13 +94,13 @@ struct MoveCoalesceSlot {
     std::mutex mu;
     uint64_t map_instance_id = 0;
     std::unordered_map<uint64_t, game::AoiEvent> by_entity;
-    std::unordered_map<uint64_t, int64_t> last_sent_ms;
-    std::unordered_map<uint64_t, int64_t> pending_since_ms;
+    AoiMoveCoalesceLedger ledger;
     int64_t hold_since_ms = 0;
     bool scheduled = false;
-    int64_t last_flush_ms = 0;
-    int64_t budget_window_ms = 0;
-    int budget_bytes = 0;
+    bool commit_hooked = false;
+    bool viewer_known = false;
+    float viewer_x = 0;
+    float viewer_z = 0;
 };
 
 std::mutex g_move_slots_mu;
@@ -144,16 +145,23 @@ void PublishHoldAge(uint64_t conn_id, uint64_t age) {
 }
 
 void ObservePendingMoves(const MoveCoalesceSlot &slot, uint64_t conn_id, int64_t now) {
-    int64_t oldest = 0;
-    for (const auto &kv : slot.by_entity) {
-        const auto since = slot.pending_since_ms.find(kv.first);
-        if (since == slot.pending_since_ms.end() || since->second <= 0 || now < since->second)
-            continue;
-        const int64_t age = now - since->second;
-        if (age > oldest)
-            oldest = age;
-    }
+    const int64_t oldest = slot.ledger.MaxSilenceMs(now);
     PublishPendingAge(conn_id, oldest > 0 ? static_cast<uint64_t>(oldest) : 0);
+}
+
+int MoveLayer(MoveCoalesceSlot *slot, uint64_t viewer, const game::AoiEvent &ev) {
+    const auto &ent = ev.entity();
+    if (viewer != 0 && ent.player_id() == viewer) {
+        slot->viewer_known = true;
+        slot->viewer_x = ent.position().x();
+        slot->viewer_z = ent.position().z();
+        return 1;
+    }
+    if (!slot->viewer_known)
+        return -1;
+    const float dx = ent.position().x() - slot->viewer_x;
+    const float dz = ent.position().z() - slot->viewer_z;
+    return (dx * dx + dz * dz) < (16.f * 16.f) ? 1 : 0;
 }
 
 bool IsMoveOnlyAoi(const game::GameResponse &gr) {
@@ -175,6 +183,28 @@ void EraseMoveSlot(uint64_t conn_id) {
     PublishHoldAge(conn_id, 0);
 }
 
+void SampleMoveSilence(std::vector<int64_t> *near, std::vector<int64_t> *far) {
+    std::vector<std::shared_ptr<MoveCoalesceSlot>> slots;
+    {
+        std::lock_guard<std::mutex> lk(g_move_slots_mu);
+        slots.reserve(g_move_slots.size());
+        for (const auto &kv : g_move_slots)
+            slots.push_back(kv.second);
+    }
+    const int64_t now = SteadyMs();
+    for (const auto &slot : slots) {
+        if (!slot)
+            continue;
+        std::lock_guard<std::mutex> lk(slot->mu);
+        slot->ledger.AppendSilence(now, near, far);
+    }
+}
+
+struct RegisterMoveSilence {
+    RegisterMoveSilence() { OpsMetrics::SetAoiSilenceSampler(&SampleMoveSilence); }
+};
+RegisterMoveSilence g_register_move_silence;
+
 std::shared_ptr<MoveCoalesceSlot> FindMoveSlot(uint64_t conn_id) {
     std::lock_guard<std::mutex> lk(g_move_slots_mu);
     auto it = g_move_slots.find(conn_id);
@@ -193,6 +223,74 @@ struct RegisterMoveDiscard {
 RegisterMoveDiscard g_register_move_discard;
 
 void FlushMoveSlot(const std::shared_ptr<MoveCoalesceSlot> &slot,
+                   const std::weak_ptr<TcpConnection> &weak, uint64_t conn_id);
+
+void ApplyMoveCommit(const std::shared_ptr<MoveCoalesceSlot> &slot,
+                     const std::shared_ptr<TcpConnection> &live,
+                     std::vector<TcpConnection::LatestMoveAck> ents, bool committed, int frame_bytes) {
+    ServerStats::aoi_move_commit_callbacks.fetch_add(1, std::memory_order_relaxed);
+    bool again = false;
+    const uint64_t conn_id = live ? live->id() : 0;
+    {
+        std::lock_guard<std::mutex> lk(slot->mu);
+        const int64_t now = SteadyMs();
+        std::vector<AoiMoveStamp> stamps;
+        stamps.reserve(ents.size());
+        for (const auto &e : ents) {
+            if (e.entity_id == 0)
+                continue;
+            AoiMoveStamp stamp;
+            stamp.entity_id = e.entity_id;
+            stamp.state_seq = e.state_seq;
+            stamps.push_back(stamp);
+        }
+        if (committed) {
+            slot->ledger.NoteKernelWrite(stamps, now, frame_bytes);
+            if (frame_bytes > 0) {
+                OpsMetrics::Instance().AddGatewayTxBytes(static_cast<uint64_t>(frame_bytes));
+                OpsMetrics::Instance().AddGatewayTxFrames(1);
+            }
+            for (const auto &e : ents) {
+                auto it = slot->by_entity.find(e.entity_id);
+                if (it == slot->by_entity.end())
+                    continue;
+                if (it->second.entity().state_seq() == e.state_seq)
+                    slot->by_entity.erase(it);
+            }
+            slot->hold_since_ms = 0;
+        } else {
+            slot->ledger.NoteReplaced(stamps);
+        }
+        ObservePendingMoves(*slot, conn_id, now);
+        again = !slot->by_entity.empty();
+        slot->scheduled = again;
+    }
+    if (committed)
+        PublishHoldAge(conn_id, 0);
+    if (!again || !live || !live->loop())
+        return;
+    std::weak_ptr<TcpConnection> weak = live;
+    live->loop()->RunAfter(0.0, [slot, weak, conn_id]() { FlushMoveSlot(slot, weak, conn_id); });
+}
+
+void HookMoveCommit(const std::shared_ptr<TcpConnection> &c,
+                    const std::shared_ptr<MoveCoalesceSlot> &slot) {
+    if (!c || !slot || slot->commit_hooked)
+        return;
+    slot->commit_hooked = true;
+    std::weak_ptr<TcpConnection> weak = c;
+    std::weak_ptr<MoveCoalesceSlot> wslot = slot;
+    c->set_latest_move_commit_callback(
+        [weak, wslot](std::vector<TcpConnection::LatestMoveAck> ents, bool committed, int bytes) {
+            auto live = weak.lock();
+            auto held = wslot.lock();
+            if (!held)
+                return;
+            ApplyMoveCommit(held, live, std::move(ents), committed, bytes);
+        });
+}
+
+void FlushMoveSlot(const std::shared_ptr<MoveCoalesceSlot> &slot,
                    const std::weak_ptr<TcpConnection> &weak, uint64_t conn_id) {
     auto live = weak.lock();
     if (!slot || !live || live->state() != TcpConnection::Connected || !live->loop()) {
@@ -204,91 +302,52 @@ void FlushMoveSlot(const std::shared_ptr<MoveCoalesceSlot> &slot,
         EraseMoveSlot(conn_id);
         return;
     }
-    // 上一帧还停在应用缓冲里，等它写进内核。删掉再挑会永远选中同一批人，其余机器人就再也不动。
-    if (live->holding_latest_move()) {
-        live->loop()->RunAfter(0.2, [slot, weak, conn_id]() { FlushMoveSlot(slot, weak, conn_id); });
-        return;
+    HookMoveCommit(live, slot);
+    // 上一帧还没写进内核时先试着写。停放不满 1 秒就先不换人。
+    // 满 1 秒仍写不进去，丢掉应用缓冲里的这一帧（内核字节不动），被换掉的人回到候选集。
+    if (live->latest_move_awaiting_write())
+        live->Write();
+    if (live->holding_latest_move() || live->latest_move_awaiting_write()) {
+        if (live->holding_latest_move() && !live->latest_move_awaiting_write() &&
+            live->parked_move_age_ms() >= 1000)
+            live->ReleaseStuckMove();
+        if (live->holding_latest_move() || live->latest_move_awaiting_write()) {
+            live->loop()->RunAfter(0.2, [slot, weak, conn_id]() { FlushMoveSlot(slot, weak, conn_id); });
+            return;
+        }
     }
-    constexpr int64_t kIntervalMs = 200;
-    constexpr int kBudgetBytes = 16 * 1024;
-    constexpr int kEstBytesPerMove = 48;
-    constexpr int64_t kOldestForceMs = 1000;
-    // 一帧最多 40 个。兴趣集里更老的位置必须先走，不能被刚进槽的实体一直挤掉。
-    constexpr size_t kMaxMoveEntities = 40;
+    constexpr int kMaxMoveEntities = 40;
     int64_t wait_ms = 0;
     bool leftover = false;
     game::AoiDelta delta;
+    std::vector<AoiMoveStamp> picked;
     {
         std::lock_guard<std::mutex> lk(slot->mu);
         const int64_t now = SteadyMs();
-        int64_t oldest_wait = 0;
-        for (const auto &kv : slot->by_entity) {
-            const auto since = slot->pending_since_ms.find(kv.first);
-            if (since == slot->pending_since_ms.end() || since->second <= 0 || now < since->second)
-                continue;
-            const int64_t age = now - since->second;
-            if (age > oldest_wait)
-                oldest_wait = age;
-        }
-        const bool force_oldest = oldest_wait >= kOldestForceMs;
-        if (!force_oldest && slot->last_flush_ms != 0 && now - slot->last_flush_ms < kIntervalMs &&
-            !slot->by_entity.empty()) {
-            wait_ms = kIntervalMs - (now - slot->last_flush_ms);
-        } else if (!slot->by_entity.empty()) {
-            // 可靠帧还在待发队列里时，不把 MOVE 再写进缓冲。等补发把序号补齐。
-            if (ReliableOutboxHub::Instance().Depth(conn_id) > 0 ||
-                ControlResponseOutbox::Instance().BlocksMove(conn_id)) {
-                // 回包或可靠帧堵住时不写 MOVE。槽里仍只留每个实体的最新位置。
-                ObservePendingMoves(*slot, conn_id, now);
-                wait_ms = 200;
-            } else {
-                if (slot->budget_window_ms == 0 || now - slot->budget_window_ms >= 1000) {
-                    slot->budget_window_ms = now;
-                    slot->budget_bytes = 0;
-                }
-                const int remain = kBudgetBytes - slot->budget_bytes;
-                size_t max_n = 0;
-                if (force_oldest)
-                    max_n = kMaxMoveEntities;
-                else if (remain >= kEstBytesPerMove)
-                    max_n = std::min(kMaxMoveEntities, static_cast<size_t>(remain / kEstBytesPerMove));
-                if (max_n == 0) {
-                    wait_ms = 1000 - (now - slot->budget_window_ms);
-                    if (wait_ms < 50)
-                        wait_ms = 50;
-                    ServerStats::aoi_move_budget_defer.fetch_add(1, std::memory_order_relaxed);
-                } else {
-                    std::vector<AoiMoveCandidate> cands;
-                    cands.reserve(slot->by_entity.size());
-                    for (const auto &kv : slot->by_entity) {
-                        AoiMoveCandidate c;
-                        c.entity_id = kv.first;
-                        const auto since = slot->pending_since_ms.find(kv.first);
-                        // 越小越优先。还没有 since 的视为已经等了最久。
-                        c.last_sent_ms = (since == slot->pending_since_ms.end() || since->second <= 0)
-                                             ? 0
-                                             : since->second;
-                        cands.push_back(c);
-                    }
-                    const auto picked = PickAoiMoveEntities(std::move(cands), max_n);
-                    if (slot->by_entity.size() > picked.size()) {
-                        ServerStats::aoi_move_capped.fetch_add(slot->by_entity.size() - picked.size(),
-                                                               std::memory_order_relaxed);
-                    }
-                    delta.set_map_instance_id(slot->map_instance_id);
-                    for (uint64_t id : picked) {
-                        auto it = slot->by_entity.find(id);
-                        if (it == slot->by_entity.end())
-                            continue;
-                        *delta.add_events() = std::move(it->second);
-                        slot->by_entity.erase(it);
-                    }
-                    leftover = !slot->by_entity.empty();
-                    slot->scheduled = leftover;
-                }
-            }
-        } else {
+        if (slot->by_entity.empty()) {
             slot->scheduled = false;
+        } else if (ReliableOutboxHub::Instance().Depth(conn_id) > 0 ||
+                   ControlResponseOutbox::Instance().BlocksMove(conn_id)) {
+            ObservePendingMoves(*slot, conn_id, now);
+            wait_ms = 200;
+        } else {
+            int64_t conns = OpsMetrics::Instance().gateway_tcp_connections();
+            if (conns < 1)
+                conns = 1;
+            const int per = std::max(
+                1, AoiMoveCoalesceLedger::EgressBudgetBytesPerSec() / static_cast<int>(conns));
+            picked = slot->ledger.Pick(now, per, kAoiMoveEventBytes, kMaxMoveEntities, &wait_ms);
+            if (!picked.empty()) {
+                delta.set_map_instance_id(slot->map_instance_id);
+                for (const auto &stamp : picked) {
+                    auto it = slot->by_entity.find(stamp.entity_id);
+                    if (it == slot->by_entity.end())
+                        continue;
+                    *delta.add_events() = it->second;
+                }
+                slot->ledger.NoteParked(picked);
+                slot->scheduled = !slot->by_entity.empty();
+            }
         }
     }
     if (wait_ms > 0) {
@@ -309,32 +368,16 @@ void FlushMoveSlot(const std::shared_ptr<MoveCoalesceSlot> &slot,
         return;
     }
     const int event_n = delta.events_size();
-    auto restore = [&](game::AoiDelta pending) {
+    auto give_back = [&]() {
         std::lock_guard<std::mutex> lk(slot->mu);
-        if (pending.map_instance_id() != 0)
-            slot->map_instance_id = pending.map_instance_id();
-        for (auto &ev : *pending.mutable_events()) {
-            const uint64_t id = ev.entity().player_id();
-            if (id == 0)
-                continue;
-            auto &kept = slot->by_entity[id];
-            if (kept.has_entity() && ev.entity().state_seq() < kept.entity().state_seq())
-                continue;
-            kept = std::move(ev);
-        }
+        slot->ledger.NoteReplaced(picked);
         if (!slot->scheduled && !slot->by_entity.empty())
             slot->scheduled = true;
     };
-    // 回包或可靠帧还在等发送时，这一帧不能进内核。位置留在合并槽里，下一轮再试。
+    // 回包或可靠帧还在等发送时，这一帧不能进内核。人留在槽里，等待时间不重置。
     if (ReliableOutboxHub::Instance().Depth(conn_id) > 0 ||
         ControlResponseOutbox::Instance().BlocksMove(conn_id)) {
-        restore(std::move(delta));
-        live->loop()->RunAfter(0.2, [slot, weak, conn_id]() { FlushMoveSlot(slot, weak, conn_id); });
-        return;
-    }
-    // 上一帧已经交给写路径但还没写完时，保留它。新位置先回到合并槽，等这帧进内核再发。
-    if (live->latest_move_awaiting_write()) {
-        restore(std::move(delta));
+        give_back();
         live->loop()->RunAfter(0.2, [slot, weak, conn_id]() { FlushMoveSlot(slot, weak, conn_id); });
         return;
     }
@@ -349,36 +392,47 @@ void FlushMoveSlot(const std::shared_ptr<MoveCoalesceSlot> &slot,
     std::string body;
     std::string frame;
     if (!notify.SerializeToString(&body) || !gameproto::EncodeFrame(body, &frame)) {
-        restore(std::move(delta));
+        give_back();
         NoteMoveFlush(false, event_n);
         live->loop()->RunAfter(0.2, [slot, weak, conn_id]() { FlushMoveSlot(slot, weak, conn_id); });
         return;
     }
-    const bool sent = live->TrySendLatestMove(frame);
+    std::vector<TcpConnection::LatestMoveAck> acks;
+    acks.reserve(picked.size());
+    for (const auto &stamp : picked) {
+        TcpConnection::LatestMoveAck ack;
+        ack.entity_id = stamp.entity_id;
+        ack.state_seq = stamp.state_seq;
+        acks.push_back(ack);
+    }
+    const bool sent = live->TrySendLatestMove(frame, acks);
     const bool held = sent && live->holding_latest_move();
     if (live->send_buf())
         NoteSendPending(live->send_buf()->readablebytes(), live->unsent_bytes());
     if (!sent) {
         NoteMoveFlush(false, event_n);
         ServerStats::aoi_move_buffer_hold.fetch_add(1, std::memory_order_relaxed);
-        restore(std::move(delta));
+        // 64KB 拒绝不会回调。写失败的回调已经把人放回候选集，这里再调一次是空操作的前提是
+        // NoteReplaced 对已经不在途的人不再加惩罚。为了测试里「未停放也要惩罚」，这里只在仍 in_flight 时归还。
+        {
+            std::lock_guard<std::mutex> lk(slot->mu);
+            std::vector<AoiMoveStamp> still;
+            for (const auto &stamp : picked) {
+                if (slot->ledger.IsInFlight(stamp.entity_id))
+                    still.push_back(stamp);
+            }
+            if (!still.empty())
+                slot->ledger.NoteReplaced(still);
+        }
         NoteMovePendingEntities(event_n);
         live->loop()->RunAfter(0.2, [slot, weak, conn_id]() { FlushMoveSlot(slot, weak, conn_id); });
         return;
     }
     if (held) {
-        // 这一帧已经在应用缓冲里，1 秒内会写进内核。不要放回槽里，否则下一轮还是挑中他们。
         NoteMoveHold(event_n);
         {
             std::lock_guard<std::mutex> lk(slot->mu);
             const int64_t now = SteadyMs();
-            for (const auto &ev : delta.events()) {
-                const uint64_t id = ev.entity().player_id();
-                if (id == 0)
-                    continue;
-                slot->pending_since_ms.erase(id);
-                slot->last_sent_ms[id] = now;
-            }
             if (slot->hold_since_ms == 0)
                 slot->hold_since_ms = now;
             const int64_t age = now - slot->hold_since_ms;
@@ -391,24 +445,10 @@ void FlushMoveSlot(const std::shared_ptr<MoveCoalesceSlot> &slot,
         return;
     }
     NoteMoveFlush(true, event_n);
-    {
-        std::lock_guard<std::mutex> lk(slot->mu);
-        slot->hold_since_ms = 0;
-    }
-    PublishHoldAge(conn_id, 0);
     int pending = 0;
     {
         std::lock_guard<std::mutex> lk(slot->mu);
         const int64_t now = SteadyMs();
-        slot->budget_bytes += static_cast<int>(frame.size());
-        slot->last_flush_ms = SteadyMs();
-        for (const auto &ev : delta.events()) {
-            const uint64_t id = ev.entity().player_id();
-            if (id == 0)
-                continue;
-            slot->last_sent_ms[id] = now;
-            slot->pending_since_ms.erase(id);
-        }
         ObservePendingMoves(*slot, conn_id, now);
         pending = static_cast<int>(slot->by_entity.size());
         if (pending > 0 && !slot->scheduled)
@@ -416,8 +456,6 @@ void FlushMoveSlot(const std::shared_ptr<MoveCoalesceSlot> &slot,
         leftover = pending > 0;
     }
     NoteMovePendingEntities(pending);
-    OpsMetrics::Instance().AddGatewayTxBytes(frame.size());
-    OpsMetrics::Instance().AddGatewayTxFrames(1);
     if (leftover)
         live->loop()->RunAfter(0.2, [slot, weak, conn_id]() { FlushMoveSlot(slot, weak, conn_id); });
 }
@@ -441,25 +479,29 @@ bool OfferCoalescedMove(const std::shared_ptr<TcpConnection> &c, const std::stri
             found = std::make_shared<MoveCoalesceSlot>();
         slot = found;
     }
+    uint64_t viewer = 0;
+    {
+        std::lock_guard<std::mutex> blk(g_bind_mu);
+        auto bit = g_conn_bind.find(c->id());
+        if (bit != g_conn_bind.end())
+            viewer = bit->second.player_id;
+    }
     bool schedule = false;
     {
         std::lock_guard<std::mutex> lk(slot->mu);
         if (gr.aoi_delta().map_instance_id() != 0)
             slot->map_instance_id = gr.aoi_delta().map_instance_id();
+        const int64_t now = SteadyMs();
         for (const auto &ev : gr.aoi_delta().events()) {
             const uint64_t id = ev.entity().player_id();
             if (id == 0)
                 continue;
-            const bool already_waiting = slot->by_entity.find(id) != slot->by_entity.end();
             auto &kept = slot->by_entity[id];
             // 序号不增加的移动客户端会整条丢掉。只保留更大的 state_seq。
             if (kept.has_entity() && ev.entity().state_seq() < kept.entity().state_seq())
                 continue;
             kept = ev;
-            auto &since = slot->pending_since_ms[id];
-            // 离开过槽再进来要重新计时。留下上次失败的旧时间会把静默显示成好几分钟。
-            if (!already_waiting || since == 0)
-                since = SteadyMs();
+            slot->ledger.Offer(id, ev.entity().state_seq(), now, MoveLayer(slot.get(), viewer, ev));
         }
         ObservePendingMoves(*slot, c->id(), SteadyMs());
         if (slot->by_entity.empty())

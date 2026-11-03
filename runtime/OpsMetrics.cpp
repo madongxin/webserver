@@ -3,9 +3,11 @@
 #include "PushAdmit.h"
 #include "ServerStats.h"
 
+#include <algorithm>
 #include <mutex>
 #include <sstream>
 #include <unordered_map>
+#include <vector>
 
 namespace {
 std::mutex g_err_mu;
@@ -13,11 +15,16 @@ std::unordered_map<std::string, uint64_t> g_err_counts;
 std::string (*g_reply_stage_prom)() = nullptr;
 std::string (*g_control_outbox_prom)() = nullptr;
 int64_t (*g_map_entity_count)() = nullptr;
+void (*g_aoi_silence_sampler)(std::vector<int64_t> *, std::vector<int64_t> *) = nullptr;
 }  // namespace
 
 void OpsMetrics::SetReplyStagePrometheus(std::string (*fn)()) { g_reply_stage_prom = fn; }
 
 void OpsMetrics::SetMapEntityCount(int64_t (*fn)()) { g_map_entity_count = fn; }
+
+void OpsMetrics::SetAoiSilenceSampler(void (*fn)(std::vector<int64_t> *, std::vector<int64_t> *)) {
+    g_aoi_silence_sampler = fn;
+}
 
 void OpsMetrics::SetControlOutboxPrometheus(std::string (*fn)()) { g_control_outbox_prom = fn; }
 
@@ -327,7 +334,7 @@ std::string OpsMetrics::PrometheusText() const {
         "AOI MOVE flushes deferred because the connection send buffer was over 64KB.",
         ServerStats::aoi_move_buffer_hold.load(std::memory_order_relaxed));
     ctr("gamemesh_aoi_move_budget_defer_total",
-        "AOI MOVE flushes deferred because the connection exceeded 16KB/s.",
+        "AOI MOVE flushes deferred because the connection exceeded its share of the egress budget.",
         ServerStats::aoi_move_budget_defer.load(std::memory_order_relaxed));
     ctr("gamemesh_aoi_move_overwritten_total",
         "Queued AOI MOVE frames replaced by a newer frame before write.",
@@ -340,6 +347,62 @@ std::string OpsMetrics::PrometheusText() const {
           "# TYPE gamemesh_aoi_move_entity_max_silence_ms gauge\n"
           "gamemesh_aoi_move_entity_max_silence_ms "
        << ServerStats::aoi_move_entity_max_silence_ms.load(std::memory_order_relaxed) << "\n";
+    if (ServerStats::aoi_move_repicked_samples.load(std::memory_order_relaxed) > 0) {
+        os << "# HELP gamemesh_aoi_move_repicked_unwritten Entities in the latest pick that were selected before and still not written. Unit: entities.\n"
+              "# TYPE gamemesh_aoi_move_repicked_unwritten gauge\n"
+              "gamemesh_aoi_move_repicked_unwritten "
+           << ServerStats::aoi_move_repicked_unwritten.load(std::memory_order_relaxed) << "\n";
+    }
+    ctr("gamemesh_aoi_move_park_replaced_total",
+        "Parked MOVE frames replaced before the bytes entered the kernel.",
+        ServerStats::aoi_move_park_replaced.load(std::memory_order_relaxed));
+    ctr("gamemesh_aoi_move_park_written_total",
+        "Parked MOVE frames whose bytes were written into the kernel.",
+        ServerStats::aoi_move_park_written.load(std::memory_order_relaxed));
+    ctr("gamemesh_aoi_move_commit_callbacks_total",
+        "Write-confirm callbacks delivered to the coalesce slot.",
+        ServerStats::aoi_move_commit_callbacks.load(std::memory_order_relaxed));
+    const int64_t budget = ServerStats::egress_budget_bytes_per_sec.load(std::memory_order_relaxed);
+    if (budget > 0) {
+        os << "# HELP gamemesh_egress_budget_bytes_per_sec Configured game egress budget. Unit: bytes per second.\n"
+              "# TYPE gamemesh_egress_budget_bytes_per_sec gauge\n"
+              "gamemesh_egress_budget_bytes_per_sec " << budget << "\n";
+        os << "# HELP gamemesh_egress_admitted_bytes_total Bytes confirmed written into the kernel for AOI MOVE. Unit: bytes.\n"
+              "# TYPE gamemesh_egress_admitted_bytes_total counter\n"
+              "gamemesh_egress_admitted_bytes_total "
+           << ServerStats::egress_admitted_bytes.load(std::memory_order_relaxed) << "\n";
+    }
+    if (g_aoi_silence_sampler) {
+        std::vector<int64_t> near;
+        std::vector<int64_t> far;
+        g_aoi_silence_sampler(&near, &far);
+        auto emit_q = [&](const char *name, const std::vector<int64_t> &samples) {
+            if (samples.empty())
+                return;
+            std::vector<int64_t> sorted = samples;
+            std::sort(sorted.begin(), sorted.end());
+            auto at = [&](double q) {
+                size_t idx = static_cast<size_t>(q * static_cast<double>(sorted.size() - 1));
+                if (idx >= sorted.size())
+                    idx = sorted.size() - 1;
+                return sorted[idx];
+            };
+            os << "# HELP " << name << "_p50_ms Entity position silence, 50th percentile. Unit: milliseconds.\n"
+                  "# TYPE " << name << "_p50_ms gauge\n"
+               << name << "_p50_ms " << at(0.50) << "\n";
+            os << "# HELP " << name << "_p95_ms Entity position silence, 95th percentile. Unit: milliseconds.\n"
+                  "# TYPE " << name << "_p95_ms gauge\n"
+               << name << "_p95_ms " << at(0.95) << "\n";
+            os << "# HELP " << name << "_p99_ms Entity position silence, 99th percentile. Unit: milliseconds.\n"
+                  "# TYPE " << name << "_p99_ms gauge\n"
+               << name << "_p99_ms " << at(0.99) << "\n";
+            os << "# HELP " << name << "_max_ms Entity position silence, maximum. Unit: milliseconds.\n"
+                  "# TYPE " << name << "_max_ms gauge\n"
+               << name << "_max_ms " << sorted.back() << "\n";
+        };
+        emit_q("gamemesh_aoi_move_silence_near", near);
+        emit_q("gamemesh_aoi_move_silence_far", far);
+    }
     os << "# HELP gamemesh_latest_move_hold_ms Milliseconds the oldest latest-MOVE frame has been parked in the app buffer. Zero when none is parked.\n"
           "# TYPE gamemesh_latest_move_hold_ms gauge\n"
           "gamemesh_latest_move_hold_ms "

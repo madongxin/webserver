@@ -3,6 +3,7 @@
 #include <atomic>
 #include <cstdint>
 #include <string>
+#include <vector>
 
 /** 阶段 7：进程内运维计数（Prometheus 导出；不要求跨实例聚合）。 */
 class OpsMetrics {
@@ -118,6 +119,9 @@ public:
     void SetGatewayTcpConnections(int64_t n) {
         gateway_tcp_connections_.store(n, std::memory_order_relaxed);
     }
+    int64_t gateway_tcp_connections() const {
+        return gateway_tcp_connections_.load(std::memory_order_relaxed);
+    }
     void AddGatewayRxBytes(uint64_t n) { gateway_rx_bytes_.fetch_add(n, std::memory_order_relaxed); }
     void AddGatewayTxBytes(uint64_t n) { gateway_tx_bytes_.fetch_add(n, std::memory_order_relaxed); }
     void AddGatewayRxFrames(uint64_t n = 1) {
@@ -170,6 +174,7 @@ public:
     static void SetReplyStagePrometheus(std::string (*fn)());
     static void SetMapEntityCount(int64_t (*fn)());
     static void SetControlOutboxPrometheus(std::string (*fn)());
+    static void SetAoiSilenceSampler(void (*fn)(std::vector<int64_t> *near, std::vector<int64_t> *far));
 
 private:
     OpsMetrics() = default;

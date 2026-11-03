@@ -1326,6 +1326,14 @@ target_link_libraries(password_hash_test ${OPENSSL_CRYPTO_LIB})
   target_include_directories(safe_path_test PRIVATE base)
   add_executable(http_admin_access_test test/http_admin_access_test.cpp)
   target_include_directories(http_admin_access_test PRIVATE runtime)
+  add_executable(aoi_move_rotate_test test/aoi_move_rotate_test.cpp)
+  target_include_directories(aoi_move_rotate_test PRIVATE runtime base)
+  add_executable(aoi_move_frame_size_test
+    test/aoi_move_frame_size_test.cpp
+    game/ProtoFraming.cpp
+    game/game.pb.cc)
+  target_include_directories(aoi_move_frame_size_test PRIVATE ${Protobuf_INCLUDE_DIRS} game)
+  target_link_libraries(aoi_move_frame_size_test ${CMAKE_THREAD_LIBS_INIT} ${Protobuf_LIBRARIES})
 target_include_directories(listen_bind_policy_test PRIVATE runtime)
 target_link_libraries(listen_bind_policy_test ${CMAKE_THREAD_LIBS_INIT})
 

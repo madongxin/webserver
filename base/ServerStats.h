@@ -81,6 +81,15 @@ struct ServerStats {
     static inline std::atomic<uint64_t> aoi_move_buffer_hold{0};
     static inline std::atomic<uint64_t> aoi_move_budget_defer{0};
     static inline std::atomic<uint64_t> aoi_move_overwritten{0};
+    /** 最近一次挑选里，以前被选中过但还没写进内核的实体数。 */
+    static inline std::atomic<uint64_t> aoi_move_repicked_unwritten{0};
+    static inline std::atomic<uint64_t> aoi_move_park_replaced{0};
+    static inline std::atomic<uint64_t> aoi_move_park_written{0};
+    static inline std::atomic<uint64_t> aoi_move_commit{0};
+    static inline std::atomic<uint64_t> aoi_move_commit_callbacks{0};
+    static inline std::atomic<uint64_t> aoi_move_repicked_samples{0};
+    static inline std::atomic<int64_t> egress_budget_bytes_per_sec{0};
+    static inline std::atomic<uint64_t> egress_admitted_bytes{0};
     /** 进程启动以来，一个实体的最新位置在合并槽里等待的最长时间。 */
     static inline std::atomic<uint64_t> aoi_move_pending_oldest_ms{0};
     /** 进程启动以来，同一观察者对同一实体两次 MOVE 写出的最大间隔。 */
