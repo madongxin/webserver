@@ -38,6 +38,20 @@ int64_t HoldNowMs() {
                std::chrono::steady_clock::now().time_since_epoch())
         .count();
 }
+ParkedMoveDecision DecideParkedMove(bool retransmitting, int unsent_bytes, int64_t age_ms) {
+    if (age_ms < 0)
+        age_ms = 0;
+    // 重传期间少写，避免把旧坐标堆进已经在重传的队列。但不能一直不写：
+    // 回包仍在发出时 tcpi_retransmits 会一直大于 0，位置就会停好几分钟，出口带宽却还空着。
+    if (age_ms >= kLatestMoveStarveMs)
+        return ParkedMoveDecision::WriteStarved;
+    if (retransmitting)
+        return ParkedMoveDecision::SkipRetrans;
+    if (unsent_bytes > kLatestMoveReleaseUnsent)
+        return ParkedMoveDecision::SkipUnsent;
+    return ParkedMoveDecision::WriteRoom;
+}
+
 bool TcpRetransmitting(int fd) {
     if (fd < 0)
         return false;
@@ -722,21 +736,20 @@ void TcpConnection::OnParkedMoveTimer() {
         return;
     const int unsent = UnsentBytes();
     const int64_t age = send_hold_since_ms_ > 0 ? HoldNowMs() - send_hold_since_ms_ : 0;
-    // 这条连接正在重传时不再追加位置。继续写只会制造更多重传，把同一条出网路上的 Cursor 挤掉。
-    // 回包不走这里，仍然可以发出。重传结束后再补最新位置。
-    if (TcpRetransmitting(connfd_)) {
+    // 停放不到 1 秒且正在重传：先不追加位置。回包不走这里。
+    // 停放满 1 秒就写出这一帧最新位置，即使 TCP_INFO 仍报重传。
+    const ParkedMoveDecision decision = DecideParkedMove(TcpRetransmitting(connfd_), unsent, age);
+    if (decision == ParkedMoveDecision::SkipRetrans) {
         NoteAoiSkipRetrans();
         ArmParkedMoveRetry();
         return;
     }
-    // 在途还高、并且停放不到 1 秒：继续把这一帧留在回包后面。
-    // 停放已经超过 1 秒，或者在途降到 16KB 以内，就写出这一帧。只留一帧，写不完也不删。
-    if (unsent > kLatestMoveReleaseUnsent && age < kLatestMoveStarveMs) {
+    if (decision == ParkedMoveDecision::SkipUnsent) {
         NoteAoiSkipUnsent();
         ArmParkedMoveRetry();
         return;
     }
-    if (age >= kLatestMoveStarveMs)
+    if (decision == ParkedMoveDecision::WriteStarved)
         NoteAoiWriteStarved();
     else
         NoteAoiWriteRoom();

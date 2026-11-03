@@ -4,7 +4,15 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>GameMesh 监控</title>
-  <script async src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <script>
+      (function () {
+        var u = new URL(location.href);
+        if (!u.searchParams.has('access_token')) return;
+        u.searchParams.delete('access_token');
+        history.replaceState(null, '', u.pathname + u.search + u.hash);
+      })();
+    </script>
+    <script src="vendor/chart.umd.min.js"></script>
   <style>
     :root {
       --bg: #f4f6f8;
@@ -83,6 +91,28 @@
       grid-template-columns: repeat(3, 1fr);
       margin-top: 10px;
     }
+    .status-row.signals {
+      grid-template-columns: repeat(4, 1fr);
+    }
+    @media (max-width: 900px) {
+      .status-row.signals { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (max-width: 520px) {
+      .status-row, .status-row.signals, .status-row.thirds { grid-template-columns: 1fr; }
+    }
+    details.fold {
+      margin: 0 0 18px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 8px 12px 12px;
+    }
+    details.fold > summary {
+      cursor: pointer;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+    .build-meta { color: var(--muted); font-size: 12px; }
     @media (max-width: 900px) {
       .status-row { grid-template-columns: repeat(2, 1fr); }
     }
@@ -209,8 +239,10 @@
         <option value="168">7 天</option>
       </select></label>
       <label>步长(秒) <input id="step" type="number" value="15" min="5" max="300" style="width:56px"></label>
-      <label>自动刷新(秒) <input id="refresh" type="number" value="5" min="5" max="600" style="width:56px"></label>
+      <label>自动刷新 <input id="autoRefresh" type="checkbox" checked> <input id="refresh" type="number" value="5" min="5" max="600" style="width:56px"> 秒</label>
+      <label>实例 <select id="instances" multiple size="1" title="不选表示全部"></select></label>
       <button type="button" id="btnRefresh">立即刷新</button>
+      <span id="buildMeta" class="build-meta">构建 —</span>
       <button type="button" id="btnExport">导出压测诊断JSON</button>
       <span id="lastUpdate" style="color:var(--muted);font-size:12px"></span>
       <div id="exportStatus" class="export-status"></div>
@@ -226,17 +258,21 @@
       </div>
     </div>
     <div class="status-block">
-      <h2>此刻</h2>
-      <div class="status-row">
+      <h2>状态（阈值待用压测基线校准）</h2>
+      <div class="status-row signals">
         <div class="status-pill na" data-mod="players"><div class="name">在线玩家</div><div class="value">—</div></div>
-        <div class="status-pill na" data-mod="sessionOnline"><div class="name">Session</div><div class="value">—</div></div>
-        <div class="status-pill na" data-mod="lines"><div class="name">分线</div><div class="value">—</div></div>
-        <div class="status-pill na" data-mod="dungeons"><div class="name">副本</div><div class="value">—</div></div>
+        <div class="status-pill na" data-mod="tcp"><div class="name">TCP 连接</div><div class="value">—</div></div>
+        <div class="status-pill na" data-mod="moveP99"><div class="name">MOVE p99</div><div class="value">—</div></div>
+        <div class="status-pill na" data-mod="conserve"><div class="name">回包守恒差值</div><div class="value">—</div></div>
+        <div class="status-pill na" data-mod="egress"><div class="name">出口 Mbps / 3</div><div class="value">—</div></div>
+        <div class="status-pill na" data-mod="dropRate"><div class="name">丢弃/合并率</div><div class="value">—</div></div>
+        <div class="status-pill na" data-mod="redisP99"><div class="name">Redis p99</div><div class="value">—</div></div>
+        <div class="status-pill na" data-mod="dbErr"><div class="name">GameDB 错误</div><div class="value">—</div></div>
       </div>
       <div class="status-row thirds">
-        <div class="status-pill na" data-mod="gwtraffic"><div class="name">Gateway 流量</div><div class="value">—</div></div>
-        <div class="status-pill na" data-mod="sendq"><div class="name">发送队列</div><div class="value">—</div></div>
-        <div class="status-pill na" data-mod="replyq"><div class="name">回复排队</div><div class="value">—</div></div>
+        <div class="status-pill na" data-mod="sessionOnline"><div class="name">Session ONLINE</div><div class="value">—</div></div>
+        <div class="status-pill na" data-mod="entities"><div class="name">地图实体</div><div class="value">—</div></div>
+        <div class="status-pill na" data-mod="lines"><div class="name">分线</div><div class="value">—</div></div>
       </div>
     </div>
     <script>
@@ -313,8 +349,7 @@
         }
         function paintLive(live) {
           if (!live) return;
-          paint('players', live.online == null ? '—' : String(Math.round(live.online)), live.online != null);
-          paint('sessionOnline', live.session_online == null ? '—' : String(Math.round(live.session_online)),
+          paint('sessionOnline', live.session_online == null ? '无数据' : String(Math.round(live.session_online)),
             live.session_online != null);
           paint('sendq', live.send_pending_bytes == null ? '—' : fmtBytes(live.send_pending_bytes),
             live.send_pending_bytes != null && live.send_pending_bytes < 32768);
@@ -350,10 +385,10 @@
           var stamp = document.getElementById('lastUpdate');
           if (stamp) {
             stamp.textContent = '更新于 ' + new Date().toLocaleTimeString() +
-              '  在线 ' + Math.round(live.online || 0) +
-              '  停放 ' + Math.round(live.hold_ms || 0) + ' ms  静默 ' +
-              Math.round(live.silence_ms || 0) + ' ms  Move p99 ' +
-              Math.round(live.move_p99_ms || 0);
+              '  在线 ' + (live.online == null ? '无数据' : Math.round(live.online)) +
+              '  停放 ' + (live.hold_ms == null ? '无数据' : Math.round(live.hold_ms)) + ' ms  静默 ' +
+              (live.silence_ms == null ? '无数据' : Math.round(live.silence_ms)) + ' ms  Move p99 ' +
+              (live.move_p99_ms == null ? '无数据' : Math.round(live.move_p99_ms));
           }
         }
         function tick() {
@@ -409,7 +444,31 @@
       })();
     </script>
 
-    <section class="module" id="diagModule">
+    <section class="module">
+      <h2>黄金信号</h2>
+      <p class="module-desc">流量、错误、延迟、饱和。阈值线是待校准的参考，不是已验证的 SLO。</p>
+      <div class="charts" id="goldenCharts"></div>
+    </section>
+
+    <details class="fold" open>
+      <summary>Gateway 出站</summary>
+      <div class="charts" id="gwCharts"></div>
+    </details>
+    <details class="fold" open>
+      <summary>GameLogic 与 AOI</summary>
+      <div class="charts" id="logicCharts"></div>
+    </details>
+    <details class="fold" open>
+      <summary>Session 与 Redis</summary>
+      <div class="charts" id="sessionCharts"></div>
+    </details>
+    <details class="fold" open>
+      <summary>GameDB 与 MySQL</summary>
+      <div class="charts" id="dbCharts"></div>
+    </details>
+
+    <details class="fold" id="diagModule">
+      <summary>诊断（Outbox 与 AOI，默认折叠）</summary>
       <h2>压测</h2>
       <p class="module-desc">上面是现在的数，下面是这段时间的曲线。自己的移动、位置有没有发出去、出口堵不堵，看这一块。</p>
       <h3 class="group-title">自己的移动</h3>
@@ -421,13 +480,13 @@
       <h3 class="group-title">出口堵不堵</h3>
       <div class="status-row fit" id="diagNet"></div>
       <div class="charts" id="diagNetCharts"></div>
-    </section>
+    </details>
 
-    <section class="module">
-      <h2>在线与流量</h2>
+    <details class="fold">
+      <summary>在线与流量（并入上面的链路分组，默认不请求）</summary>
       <p class="module-desc">在线看 Gateway 上已经登录的人。Session 是 Redis 里的会话，断线后短暂还会留着。</p>
       <div class="charts" id="bizCharts"></div>
-    </section>
+    </details>
 
     <section class="module">
       <h2>分线</h2>
@@ -450,11 +509,11 @@
       <div class="charts" id="lineCharts"></div>
     </section>
 
-    <section class="module">
-      <h2>发送</h2>
+    <details class="fold">
+      <summary>发送（默认不请求）</summary>
       <p class="module-desc">发送队列是最近 10 秒里还没进内核的字节。下面两张是登录、进图和移动在工作线程里的最慢一次。</p>
       <div class="charts" id="sendCharts"></div>
-    </section>
+    </details>
 
     <section class="module">
       <h2>进程</h2>
@@ -487,16 +546,16 @@
       </div>
     </section>
 
-    <section class="module">
-      <h2>资源</h2>
+    <details class="fold">
+      <summary>资源（默认不请求）</summary>
       <p class="module-desc">每个进程的 CPU、内存和打开的文件数。</p>
       <div class="status-row fit" id="resStatus"></div>
       <div id="promErr" class="err-msg"></div>
       <div class="charts" id="promCharts"></div>
-    </section>
+    </details>
 
-    <section class="module is-empty" id="dungeonModule">
-      <h2>副本</h2>
+    <details class="fold is-empty" id="dungeonModule">
+      <summary>副本（默认不请求）</summary>
       <p class="module-desc">没有开副本时，这里是空的。</p>
       <p class="empty-note">当前没有副本。</p>
       <div class="charts" id="dungeonCharts"></div>
@@ -517,13 +576,23 @@
           <tbody></tbody>
         </table>
       </div>
-    </section>
+    </details>
   </div>
 
   <script>
     const params = new URLSearchParams(location.search);
     const charts = {};
     const COLORS = ['#1a73e8', '#e8710a', '#137333', '#c5221f', '#9334e6', '#00897b', '#f9ab00', '#5f6368'];
+    // 待用压测基线校准。这些数字不是已经验证过的 SLO。
+    const THRESHOLDS = {
+      note: '待用压测基线校准',
+      moveP99Ms: 200,
+      conservation: 0,
+      egressMbps: 3,
+      dropRate: 0.01,
+      redisP99Ms: 20,
+      gamedbErrors: 0,
+    };
     const API_BASE = (location.pathname.indexOf('/gamemesh/') === 0) ? '/gamemesh' : '';
 
     function apiUrl(path) {
@@ -539,7 +608,32 @@
     }
 
     function jobSel() {
-      return 'job="' + cfg().job + '"';
+      let sel = 'job="' + cfg().job + '"';
+      const box = document.getElementById('instances');
+      if (!box) return sel;
+      const picked = Array.prototype.filter.call(box.selectedOptions || [], function (o) { return o.value; })
+        .map(function (o) { return o.value; });
+      if (picked.length)
+        sel += ',instance_id=~"' + picked.join('|') + '"';
+      return sel;
+    }
+
+    function rateWindow() {
+      const rangeSec = Math.max(60, cfg().hours * 3600);
+      const iv = Math.max(15 * 4, Math.floor(rangeSec / 100));
+      if (iv <= 60) return '1m';
+      if (iv <= 300) return '5m';
+      if (iv <= 900) return '15m';
+      return '30m';
+    }
+
+    function withRate(promql) {
+      return String(promql).split('[1m]').join('[' + rateWindow() + ']');
+    }
+
+    function fmtNum(v) {
+      if (v == null || !isFinite(Number(v))) return '无数据';
+      return Number(v).toLocaleString('zh-CN', { maximumFractionDigits: 2 });
     }
 
     function syncUrl() {
@@ -558,7 +652,7 @@
     function setStatus(mod, text, ok) {
       const el = document.querySelector('.status-pill[data-mod="' + mod + '"]');
       if (!el) return;
-      el.className = 'status-pill ' + (ok === null ? 'na' : ok ? 'ok' : 'err');
+      el.className = 'status-pill ' + (ok === null ? 'na' : ok === 'warn' ? 'warn' : ok ? 'ok' : 'err');
       el.querySelector('.value').textContent = text;
     }
 
@@ -669,7 +763,25 @@
       return Math.max(c.step, Math.ceil(span / 90));
     }
 
+    let promSlots = 4;
+    const promWaiters = [];
+    function acquireProm() {
+      if (promSlots > 0) {
+        promSlots--;
+        return Promise.resolve();
+      }
+      return new Promise(function (resolve) { promWaiters.push(resolve); });
+    }
+    function releaseProm() {
+      const next = promWaiters.shift();
+      if (next) next();
+      else promSlots++;
+    }
+
     async function queryRange(promql, stepOverride) {
+      promql = withRate(promql);
+      await acquireProm();
+      try {
       const c = cfg();
       const end = Math.floor(Date.now() / 1000);
       const start = end - c.hours * 3600;
@@ -678,12 +790,21 @@
         '?q=' + encodeURIComponent(promql) + '&start=' + start + '&end=' + end + '&step=' + step;
       const j = await fetchProm(url, 8000);
       return j.data && j.data.result ? j.data.result : [];
+      } finally {
+        releaseProm();
+      }
     }
 
     async function queryInstant(promql) {
-      const url = apiUrl('/api/prometheus/query') + '?q=' + encodeURIComponent(promql);
-      const j = await fetchProm(url, 2500);
-      return j.data && j.data.result ? j.data.result : [];
+      promql = withRate(promql);
+      await acquireProm();
+      try {
+        const url = apiUrl('/api/prometheus/query') + '?q=' + encodeURIComponent(promql);
+        const j = await fetchProm(url, 2500);
+        return j.data && j.data.result ? j.data.result : [];
+      } finally {
+        releaseProm();
+      }
     }
 
     async function mapPool(items, limit, fn) {
@@ -728,7 +849,10 @@
       }
       const yScale = {
         beginAtZero: !!beginZero,
-        ticks: { font: { size: 10 }, precision: beginZero ? 0 : undefined },
+        ticks: {
+          font: { size: 10 },
+          callback: function (v) { return fmtNum(v); },
+        },
       };
       if (charts[canvasId]) {
         charts[canvasId].data = chartData;
@@ -812,8 +936,8 @@
     ];
 
     const MOVE_CHARTS = [
-      { id: 'dMoveLat', title: 'Move 延迟 p50 / p95 / p99', beginZero: true,
-        promql: 'gamemesh_reply_latency_p50_ms{job="JOB",role="gateway",kind="move"} or gamemesh_reply_latency_p95_ms{job="JOB",role="gateway",kind="move"} or gamemesh_reply_latency_p99_ms{job="JOB",role="gateway",kind="move"}' },
+      { id: 'dMoveLat', title: 'Move 延迟 p50 / p95 / p99（毫秒，直方图）', beginZero: true, threshold: THRESHOLDS.moveP99Ms,
+        promql: 'histogram_quantile(0.50, sum by (le) (rate(gamemesh_reply_latency_ms_bucket{job="JOB",role="gateway",kind="move"}[1m]))) or histogram_quantile(0.95, sum by (le) (rate(gamemesh_reply_latency_ms_bucket{job="JOB",role="gateway",kind="move"}[1m]))) or histogram_quantile(0.99, sum by (le) (rate(gamemesh_reply_latency_ms_bucket{job="JOB",role="gateway",kind="move"}[1m])))' },
     ];
     const POS_CHARTS = [
       { id: 'dAoiEv', title: 'AOI 移动事件 /s', beginZero: true,
@@ -849,6 +973,8 @@
       { id: 'dropCard', box: 'diagPos', name: '移动丢弃 /s', query: 'sum(rate(gamemesh_move_drop_total{job="JOB",role="gateway"}[1m]))', red: function (v) { return v > 0; } },
       { id: 'obFrames', box: 'diagPos', name: '排队回复', query: 'sum(gamemesh_control_outbox_current_frames{job="JOB",role="gateway"})' },
       { id: 'obAge', box: 'diagPos', name: '最老未发出回复', query: 'max(gamemesh_control_outbox_oldest_held_ms{job="JOB",role="gateway"})', red: function (v) { return v > 1000; }, unit: 'ms' },
+      { id: 'obPeakFrames', box: 'diagPos', name: '排队帧峰值（启动以来，不是曲线）', query: 'max(gamemesh_control_outbox_peak_frames{job="JOB"})' },
+      { id: 'obPeakBytes', box: 'diagPos', name: '排队字节峰值（启动以来，不是曲线）', query: 'max(gamemesh_control_outbox_peak_bytes{job="JOB"})' },
       { id: 'retransCard', box: 'diagNet', name: 'TCP 重传 /s', query: 'max(rate(gamemesh_host_tcp_retrans_segs_total{job="JOB"}[1m]))' },
       { id: 'eagainCard', box: 'diagNet', name: 'TCP EAGAIN /s', query: 'sum(rate(gamemesh_tcp_eagain_total{job="JOB",role="gateway"}[1m]))', red: function (v) { return v > 20; } },
       { id: 'cpuAll', box: 'resStatus', name: 'CPU 合计', query: 'sum(rate(process_cpu_seconds_total{job="JOB"}[1m]))', red: function (v) { return v >= 3.6; }, digits: 2 },
@@ -919,9 +1045,9 @@
     }
 
     function fmtCard(v, card) {
-      if (v == null || !isFinite(v)) return '指标未导出';
+      if (v == null || !isFinite(v)) return '无数据';
       const digits = card && card.digits != null ? card.digits : (Math.abs(v) >= 100 ? 0 : 2);
-      const n = Math.abs(v) >= 100 && !(card && card.digits != null) ? String(Math.round(v)) : v.toFixed(digits);
+      const n = fmtNum(card && card.digits != null ? Number(v).toFixed(digits) : v);
       return (card && card.unit) ? (n + ' ' + card.unit) : n;
     }
 
@@ -946,18 +1072,24 @@
         });
       }
       if (!saw) return null;
-      return max == null ? 0 : max;
+      return max;
     }
 
     async function refreshDiagCards() {
       ensureDiagCards();
-      await mapPool(DIAG_CARDS, 1, async function (card) {
+      const cards = DIAG_CARDS.filter(function (card) {
+        const box = document.getElementById(card.box);
+        if (!box) return false;
+        const det = box.closest('details');
+        return !det || det.open;
+      });
+      await mapPool(cards, 4, async function (card) {
         try {
           let value = null;
           if (card.gaps) value = await gapMax(card.gaps);
           else value = await scalarQuery(card.query);
           if (value == null || !isFinite(value)) {
-            setStatus(card.id, '指标未导出', null);
+            setStatus(card.id, '无数据', null);
             return;
           }
           remember(card.id, value);
@@ -998,7 +1130,7 @@
 
     function packExport(instantRows, rangeRows, increaseRows, type) {
       const source = (rangeRows && rangeRows.length) ? rangeRows : (instantRows || []);
-      if (!source.length) return { missing: true, note: '指标未导出', series: [] };
+      if (!source.length) return { missing: true, note: '无数据', series: [] };
       const incMap = {};
       (increaseRows || []).forEach(function (s) {
         incMap[labelKey(s.metric)] = s.value ? parseFloat(s.value[1]) : null;
@@ -1031,7 +1163,7 @@
     }
 
     function stageGaps(stagePack) {
-      if (!stagePack || stagePack.missing) return { missing: true, note: '指标未导出', series: [] };
+      if (!stagePack || stagePack.missing) return { missing: true, note: '无数据', series: [] };
       const by = {};
       (stagePack.series || []).forEach(function (s) {
         const id = [s.instance_id, s.kind].join('|');
@@ -1131,7 +1263,7 @@
           try {
             item.series = chartSeries(await queryRange(panelQuery(panel), chartStep()));
             if (!item.series.length)
-              item.note = panel.emptyText || '指标未导出';
+              item.note = panel.emptyText || '无数据';
           } catch (e) {
             item.error = e && e.message ? e.message : String(e);
           }
@@ -1194,7 +1326,7 @@
               increase = await queryInstant('increase(' + q + '[' + bracket + '])');
             groups[spec.group] = packExport(instant, range, increase, spec.type);
           } catch (e) {
-            groups[spec.group] = { missing: true, note: '指标未导出', error: e.message || String(e), series: [] };
+            groups[spec.group] = { missing: true, note: '无数据', error: e.message || String(e), series: [] };
           }
         }
         const pageCharts = await exportPageCharts();
@@ -1265,6 +1397,67 @@
       }
     }
 
+    const GOLDEN_PANELS = [
+      { id: 'gTraffic', title: '流量（Mbps）', beginZero: true, threshold: THRESHOLDS.egressMbps,
+        promql: () => 'sum(rate(gamemesh_gateway_tx_bytes_total{' + jobSel() + ',role="gateway"}[1m])) * 8 / 1000000' },
+      { id: 'gErrors', title: '错误（GameDB UNKNOWN /s）', beginZero: true, threshold: THRESHOLDS.gamedbErrors,
+        promql: () => 'sum(rate(gamemesh_gamedb_unknown_result_total{' + jobSel() + '}[1m]))' },
+      { id: 'gLatency', title: '延迟 MOVE p99（毫秒）', beginZero: true, threshold: THRESHOLDS.moveP99Ms,
+        promql: () => 'histogram_quantile(0.99, sum by (le) (rate(gamemesh_reply_latency_ms_bucket{' + jobSel() + ',role="gateway",kind="move"}[1m])))' },
+      { id: 'gSat', title: '饱和（出口占 3Mbps）', beginZero: true, threshold: 1,
+        promql: () => 'sum(rate(gamemesh_gateway_tx_bytes_total{' + jobSel() + ',role="gateway"}[1m])) * 8 / 1000000 / 3' },
+    ];
+    const GW_PANELS = [
+      { id: 'gwTx', title: '出口（Mbps）', beginZero: true, threshold: THRESHOLDS.egressMbps,
+        promql: () => 'sum(rate(gamemesh_gateway_tx_bytes_total{' + jobSel() + ',role="gateway"}[1m])) * 8 / 1000000' },
+      { id: 'gwRx', title: '入口（Mbps）', beginZero: true,
+        promql: () => 'sum(rate(gamemesh_gateway_rx_bytes_total{' + jobSel() + ',role="gateway"}[1m])) * 8 / 1000000' },
+      { id: 'gwTcp', title: 'TCP 连接', beginZero: true,
+        promql: () => 'sum(gamemesh_gateway_tcp_connections{' + jobSel() + ',role="gateway"})' },
+      { id: 'gwCons', title: '回包守恒差值', beginZero: true, threshold: THRESHOLDS.conservation,
+        promql: () => 'sum(gamemesh_reply_conservation_residual{' + jobSel() + '})' },
+      { id: 'gwDrop', title: '移动丢弃率', beginZero: true, threshold: THRESHOLDS.dropRate,
+        promql: () => 'sum(rate(gamemesh_move_drop_total{' + jobSel() + ',role="gateway"}[1m])) / clamp_min(sum(rate(gamemesh_move_flush_total{' + jobSel() + ',role="gateway"}[1m])) + sum(rate(gamemesh_move_drop_total{' + jobSel() + ',role="gateway"}[1m])), 0.001)' },
+    ];
+    const LOGIC_PANELS = [
+      { id: 'lgPush', title: 'PushBatch p50/p95/p99（毫秒）', beginZero: true,
+        promql: () => 'histogram_quantile(0.50, sum by (le) (rate(gamemesh_pushbatch_duration_ms_bucket{' + jobSel() + '}[1m]))) or histogram_quantile(0.95, sum by (le) (rate(gamemesh_pushbatch_duration_ms_bucket{' + jobSel() + '}[1m]))) or histogram_quantile(0.99, sum by (le) (rate(gamemesh_pushbatch_duration_ms_bucket{' + jobSel() + '}[1m])))' },
+      { id: 'lgLast', title: 'PushBatch 最近一次（毫秒，对照）', beginZero: true,
+        promql: () => 'max(gamemesh_pushbatch_last_ms{' + jobSel() + '})' },
+      { id: 'lgEnt', title: '地图实体', beginZero: true,
+        promql: () => 'sum(gamemesh_map_entities{' + jobSel() + '})' },
+      { id: 'lgAoi', title: 'AOI 移动事件 /s', beginZero: true,
+        promql: () => 'sum(rate(gamemesh_aoi_move_events_total{' + jobSel() + '}[1m]))' },
+      { id: 'lgShed', title: 'AOI 丢弃 /s', beginZero: true,
+        promql: () => 'sum(rate(gamemesh_aoi_move_shed_total{' + jobSel() + '}[1m]))' },
+    ];
+    const SESS_PANELS = [
+      { id: 'ssOn', title: 'Session ONLINE', beginZero: true,
+        promql: () => 'max(gamemesh_session_online_players{' + jobSel() + ',role="session"})' },
+      { id: 'ssFence', title: 'fence 拒绝 /s', beginZero: true,
+        promql: () => 'sum(rate(gamemesh_session_fence_reject_total{' + jobSel() + '}[1m]))' },
+      { id: 'ssAcq', title: 'AcquireSession p99（毫秒）', beginZero: true,
+        promql: () => 'histogram_quantile(0.99, sum by (le) (rate(gamemesh_session_acquire_ms_bucket{' + jobSel() + '}[1m])))' },
+      { id: 'ssWait', title: 'Redis 借用等待 p99（毫秒）', beginZero: true, threshold: THRESHOLDS.redisP99Ms,
+        promql: () => 'histogram_quantile(0.99, sum by (le) (rate(gamemesh_redis_acquire_wait_ms_bucket{' + jobSel() + '}[1m])))' },
+      { id: 'ssPool', title: 'Redis 连接 active', beginZero: true,
+        promql: () => 'sum(gamemesh_redis_pool_active{' + jobSel() + '})' },
+      { id: 'ssFree', title: 'Redis 连接 free', beginZero: true,
+        promql: () => 'sum(gamemesh_redis_pool_free{' + jobSel() + '})' },
+    ];
+    const DB_PANELS = [
+      { id: 'dbUnk', title: 'UNKNOWN_RESULT /s', beginZero: true, threshold: THRESHOLDS.gamedbErrors,
+        promql: () => 'sum(rate(gamemesh_gamedb_unknown_result_total{' + jobSel() + '}[1m]))' },
+      { id: 'dbIdem', title: '幂等命中 /s', beginZero: true,
+        promql: () => 'sum(rate(gamemesh_gamedb_idempotent_hit_total{' + jobSel() + '}[1m]))' },
+      { id: 'dbUse', title: 'MySQL 连接占用', beginZero: true,
+        promql: () => 'sum(gamemesh_mysql_pool_in_use{' + jobSel() + '})' },
+      { id: 'dbIdle', title: 'MySQL 连接空闲', beginZero: true,
+        promql: () => 'sum(gamemesh_mysql_pool_idle{' + jobSel() + '})' },
+      { id: 'dbTo', title: 'Redis acquire 超时 /s', beginZero: true,
+        promql: () => 'sum(rate(gamemesh_redis_acquire_timeout_total{' + jobSel() + '}[1m]))' },
+    ];
+
     const BIZ_PANELS = [
       { id: 'pPlayers', title: 'Gateway 绑定玩家（合计）', beginZero: true,
         promql: () => 'sum(gamemesh_online_players{' + jobSel() + ',role="gateway"})' },
@@ -1319,11 +1512,10 @@
 
     async function refreshPanelList(panels) {
       const step = chartStep();
-      for (let i = 0; i < panels.length; i++) {
+      await mapPool(panels, 4, async function (p) {
         while (liveRunning) {
           await new Promise(function (r) { setTimeout(r, 100); });
         }
-        const p = panels[i];
         try {
           let result;
           try {
@@ -1334,22 +1526,37 @@
             result = await queryRange(panelQuery(p), step);
           }
           if (!result.length) {
-            setChartMessage(p.id, p.emptyText || '指标未导出');
-            continue;
+            setChartMessage(p.id, p.emptyText || '无数据');
+            return;
           }
           setChartMessage(p.id, '');
-          upsertChart(p.id, seriesToChartData(result), p.beginZero);
+          const chartData = seriesToChartData(result);
+          if (p.threshold != null && chartData.labels.length) {
+            chartData.datasets.push({
+              label: '阈值（待校准）',
+              data: chartData.labels.map(function () { return p.threshold; }),
+              borderColor: '#c5221f',
+              borderDash: [4, 4],
+              pointRadius: 0,
+              borderWidth: 1,
+            });
+          }
+          upsertChart(p.id, chartData, p.beginZero);
         } catch (e) {
           setChartMessage(p.id, e.message || '查询失败');
         }
-        await new Promise(function (r) { setTimeout(r, 0); });
-      }
+      });
     }
 
     function ensureAllCharts() {
       ensureChartBoxes('diagMoveCharts', MOVE_CHARTS);
       ensureChartBoxes('diagPosCharts', POS_CHARTS);
       ensureChartBoxes('diagNetCharts', NET_CHARTS);
+      ensureChartBoxes('goldenCharts', GOLDEN_PANELS);
+      ensureChartBoxes('gwCharts', GW_PANELS);
+      ensureChartBoxes('logicCharts', LOGIC_PANELS);
+      ensureChartBoxes('sessionCharts', SESS_PANELS);
+      ensureChartBoxes('dbCharts', DB_PANELS);
       ensureChartBoxes('bizCharts', BIZ_PANELS);
       ensureChartBoxes('sendCharts', SEND_PANELS);
       ensureChartBoxes('lineCharts', LINE_PANELS);
@@ -1358,7 +1565,18 @@
     }
 
     function allPanels() {
-      return DIAG_PANELS.concat(BIZ_PANELS).concat(SEND_PANELS).concat(LINE_PANELS).concat(DUNGEON_PANELS).concat(PROM_PANELS);
+      return GOLDEN_PANELS.concat(GW_PANELS).concat(LOGIC_PANELS).concat(SESS_PANELS).concat(DB_PANELS)
+        .concat(DIAG_PANELS).concat(BIZ_PANELS).concat(SEND_PANELS).concat(LINE_PANELS).concat(DUNGEON_PANELS).concat(PROM_PANELS);
+    }
+
+    function panelWanted(p) {
+      const canvas = document.getElementById(p.id);
+      if (!canvas) return false;
+      const det = canvas.closest('details');
+      if (det && !det.open) return false;
+      const r = canvas.getBoundingClientRect();
+      const view = window.innerHeight || 800;
+      return r.bottom > -40 && r.top < view + 240;
     }
 
     async function loadPromSnapshots() {
@@ -1512,6 +1730,7 @@
         setStatus('ready', '—', null);
         return;
       }
+      fillInstances(cluster.processes);
       const n = cluster.process_n || 0;
       const exp = cluster.expected_n || 9;
       setStatus('cluster', cluster.alive_n + '/' + n + ' 在跑（期望 ' + exp + '）',
@@ -1570,6 +1789,76 @@
       });
     }
 
+    function toneHigh(v, limit) {
+      if (v == null || !isFinite(v)) return null;
+      if (v > limit) return false;
+      if (limit > 0 && v >= limit * 0.8) return 'warn';
+      return true;
+    }
+
+    async function paintSignals() {
+      const js = jobSel();
+      const specs = [
+        { mod: 'players', q: 'sum(gamemesh_online_players{' + js + ',role="gateway"})',
+          text: function (v) { return fmtNum(v); }, tone: function () { return true; } },
+        { mod: 'tcp', q: 'sum(gamemesh_gateway_tcp_connections{' + js + ',role="gateway"})',
+          text: function (v) { return fmtNum(v); }, tone: function () { return true; } },
+        { mod: 'entities', q: 'sum(gamemesh_map_entities{' + js + '})',
+          text: function (v) { return fmtNum(v); }, tone: function () { return true; } },
+        { mod: 'moveP99', q: 'histogram_quantile(0.99, sum by (le) (rate(gamemesh_reply_latency_ms_bucket{' + js + ',role="gateway",kind="move"}[1m])))',
+          text: function (v) { return fmtNum(v) + ' ms'; }, tone: function (v) { return toneHigh(v, THRESHOLDS.moveP99Ms); } },
+        { mod: 'conserve', q: 'sum(gamemesh_reply_conservation_residual{' + js + '})',
+          text: function (v) { return fmtNum(v); }, tone: function (v) { return v === 0 ? true : false; } },
+        { mod: 'egress', q: 'sum(rate(gamemesh_gateway_tx_bytes_total{' + js + ',role="gateway"}[1m])) * 8 / 1000000',
+          text: function (v) { return fmtNum(v) + ' Mbps'; }, tone: function (v) { return toneHigh(v, THRESHOLDS.egressMbps); } },
+        { mod: 'dropRate', q: 'sum(rate(gamemesh_move_drop_total{' + js + ',role="gateway"}[1m])) / clamp_min(sum(rate(gamemesh_move_flush_total{' + js + ',role="gateway"}[1m])) + sum(rate(gamemesh_move_drop_total{' + js + ',role="gateway"}[1m])), 0.001)',
+          text: function (v) { return fmtNum(v * 100) + '%'; }, tone: function (v) { return toneHigh(v, THRESHOLDS.dropRate); } },
+        { mod: 'redisP99', q: 'histogram_quantile(0.99, sum by (le) (rate(gamemesh_redis_acquire_wait_ms_bucket{' + js + '}[1m])))',
+          text: function (v) { return fmtNum(v) + ' ms'; }, tone: function (v) { return toneHigh(v, THRESHOLDS.redisP99Ms); } },
+        { mod: 'dbErr', q: 'sum(increase(gamemesh_gamedb_unknown_result_total{' + js + '}[1m]))',
+          text: function (v) { return fmtNum(v); }, tone: function (v) { return v > THRESHOLDS.gamedbErrors ? false : true; } },
+      ];
+      await mapPool(specs, 4, async function (spec) {
+        try {
+          const rows = await queryInstant(spec.q);
+          const v = instantScalar(rows);
+          if (v == null || !isFinite(v)) {
+            setStatus(spec.mod, '无数据', null);
+            return;
+          }
+          setStatus(spec.mod, spec.text(v), spec.tone(v));
+        } catch (e) {
+          setStatus(spec.mod, '无数据', null);
+        }
+      });
+    }
+
+    async function loadBuildMeta() {
+      const el = document.getElementById('buildMeta');
+      if (!el) return;
+      const v = await fetchJson(apiUrl('/api/version'));
+      if (!v || !v.git_sha) {
+        el.textContent = '构建 无数据';
+        return;
+      }
+      const start = await queryInstant('min(process_start_time_seconds{' + jobSel() + '})').catch(function () { return []; });
+      const sec = instantScalar(start);
+      const started = sec ? new Date(sec * 1000).toLocaleString() : '无数据';
+      el.textContent = '构建 ' + v.git_sha + '  启动 ' + started;
+    }
+
+    function fillInstances(processes) {
+      const box = document.getElementById('instances');
+      if (!box || box.options.length || !processes) return;
+      processes.forEach(function (p) {
+        if (!p.instance_id) return;
+        const opt = document.createElement('option');
+        opt.value = p.instance_id;
+        opt.textContent = shownService(p.instance_id);
+        box.appendChild(opt);
+      });
+    }
+
     let liveRunning = false;
     let liveAgain = false;
     let chartRunning = false;
@@ -1586,6 +1875,7 @@
           document.getElementById('lastUpdate').textContent =
             '正在更新 ' + new Date().toLocaleTimeString();
           await refreshStatus();
+          await paintSignals();
           document.getElementById('lastUpdate').textContent =
             '更新于 ' + new Date().toLocaleTimeString();
           await refreshDiagCards();
@@ -1603,7 +1893,7 @@
         const errEl = document.getElementById('promErr');
         if (errEl) errEl.style.display = 'none';
         ensureAllCharts();
-        await refreshPanelList(allPanels());
+        await refreshPanelList(allPanels().filter(panelWanted));
       } finally {
         chartRunning = false;
       }
@@ -1733,7 +2023,7 @@
     }
 
     function refreshNumbers() {
-      return refreshDiagCards().then(refreshProcessColumns).then(refreshSceneTables);
+      return paintSignals().then(refreshDiagCards).then(refreshProcessColumns).then(refreshSceneTables);
     }
 
     let timer = null;
@@ -1744,7 +2034,8 @@
       timer = null;
       chartTimer = null;
       const sec = parseInt(document.getElementById('refresh').value, 10);
-      if (sec > 0)
+      const autoOn = document.getElementById('autoRefresh');
+      if (sec > 0 && autoOn && autoOn.checked)
         timer = setInterval(function () {
           refreshNumbers();
         }, sec * 1000);
@@ -1773,8 +2064,21 @@
       document.getElementById(id).addEventListener('change', refreshAll);
     });
     document.getElementById('refresh').addEventListener('change', scheduleAutoRefresh);
+    document.getElementById('autoRefresh').addEventListener('change', scheduleAutoRefresh);
+    document.getElementById('instances').addEventListener('change', refreshAll);
+    document.querySelectorAll('details.fold').forEach(function (det) {
+      det.addEventListener('toggle', function () {
+        if (det.open) refreshCharts();
+      });
+    });
+    var scrollTimer = null;
+    window.addEventListener('scroll', function () {
+      if (scrollTimer) clearTimeout(scrollTimer);
+      scrollTimer = setTimeout(refreshCharts, 400);
+    });
 
     applyParamsFromUrl();
+    loadBuildMeta();
     ensureDiagCards();
     refreshNumbers();
     showChartsWhenReady();

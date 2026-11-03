@@ -1,6 +1,7 @@
 #include "MapRuntime.h"
 
 #include "Logging.h"
+#include "OpsMetrics.h"
 #include "ServerStats.h"
 
 #include <algorithm>
@@ -34,8 +35,14 @@ void MapRuntime::ResetClientSeq(uint64_t player_id) {
         eit->second.last_client_seq = 0;
 }
 
+namespace {
+int64_t MapEntityCountForMetrics() { return MapRuntime::Instance().TotalEntityCount(); }
+}  // namespace
+
 MapRuntime &MapRuntime::Instance() {
     static MapRuntime g;
+    static int wired = (OpsMetrics::SetMapEntityCount(&MapEntityCountForMetrics), 0);
+    (void)wired;
     return g;
 }
 
@@ -1086,6 +1093,16 @@ bool MapRuntime::SnapshotView(uint64_t player_id, MapEntity *self_out,
     }
     FillSnapshot(*st, player_id, aoi_snapshot);
     return true;
+}
+
+int MapRuntime::TotalEntityCount() const {
+    std::lock_guard<std::mutex> lk(mu_);
+    int n = 0;
+    for (const auto &kv : maps_) {
+        if (kv.second)
+            n += kv.second->entity_count.load(std::memory_order_relaxed);
+    }
+    return n;
 }
 
 std::vector<uint64_t> MapRuntime::ListPlayers() const {

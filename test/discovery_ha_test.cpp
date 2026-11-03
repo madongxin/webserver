@@ -7,6 +7,7 @@
 
 #include <chrono>
 #include <cstdio>
+#include <cstdlib>
 #include <string>
 #include <thread>
 #include <vector>
@@ -33,6 +34,12 @@ int main() {
         Expect(IsForbiddenAdvertiseHost("0.0.0.0"), "forbidden host");
         Expect(AdvertiseFromListen("0.0.0.0:8401").find(":8401") != std::string::npos,
                "advertise from listen keeps port");
+        setenv("GAMEMESH_ADVERTISE_HOST", "10.0.0.2", 1);
+        Expect(AdvertiseFromListen("0.0.0.0:8401") == "10.0.0.2:8401",
+               "wildcard listen uses advertise host");
+        Expect(AdvertiseFromListen("127.0.0.1:8202") == "127.0.0.1:8202",
+               "loopback listen is advertised as loopback");
+        unsetenv("GAMEMESH_ADVERTISE_HOST");
         Expect(PortFromHostPort("127.0.0.1:8402") == 8402, "port parse");
     }
 

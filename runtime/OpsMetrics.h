@@ -101,6 +101,12 @@ public:
         pushbatch_last_ms_.store(ms, std::memory_order_relaxed);
         if (ms >= 200)
             pushbatch_slow_.fetch_add(1, std::memory_order_relaxed);
+        pushbatch_le_inf_.fetch_add(1, std::memory_order_relaxed);
+        if (ms <= 1000) pushbatch_le_1000_.fetch_add(1, std::memory_order_relaxed);
+        if (ms <= 200) pushbatch_le_200_.fetch_add(1, std::memory_order_relaxed);
+        if (ms <= 50) pushbatch_le_50_.fetch_add(1, std::memory_order_relaxed);
+        if (ms <= 10) pushbatch_le_10_.fetch_add(1, std::memory_order_relaxed);
+        if (ms <= 5) pushbatch_le_5_.fetch_add(1, std::memory_order_relaxed);
     }
     void IncConnRateLimited() { conn_rate_limited_.fetch_add(1, std::memory_order_relaxed); }
     void IncErrorCode(const std::string &code);
@@ -162,6 +168,7 @@ public:
 
     std::string PrometheusText() const;
     static void SetReplyStagePrometheus(std::string (*fn)());
+    static void SetMapEntityCount(int64_t (*fn)());
     static void SetControlOutboxPrometheus(std::string (*fn)());
 
 private:
@@ -225,6 +232,12 @@ private:
     std::atomic<uint64_t> pushbatch_ms_sum_{0};
     std::atomic<uint64_t> pushbatch_slow_{0};
     std::atomic<int64_t> pushbatch_last_ms_{0};
+    std::atomic<uint64_t> pushbatch_le_5_{0};
+    std::atomic<uint64_t> pushbatch_le_10_{0};
+    std::atomic<uint64_t> pushbatch_le_50_{0};
+    std::atomic<uint64_t> pushbatch_le_200_{0};
+    std::atomic<uint64_t> pushbatch_le_1000_{0};
+    std::atomic<uint64_t> pushbatch_le_inf_{0};
     std::atomic<int64_t> gateway_tcp_connections_{0};
     std::atomic<uint64_t> gateway_rx_bytes_{0};
     std::atomic<uint64_t> gateway_tx_bytes_{0};

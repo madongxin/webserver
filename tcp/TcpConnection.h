@@ -23,6 +23,16 @@
 class Buffer;
 class HttpContext;
 
+/** 压住的最新位置何时可以写进内核。停放满 1 秒必须写出，重传不能把这一帧无限期留下。 */
+enum class ParkedMoveDecision {
+    SkipRetrans = 0,
+    SkipUnsent,
+    WriteStarved,
+    WriteRoom,
+};
+
+ParkedMoveDecision DecideParkedMove(bool retransmitting, int unsent_bytes, int64_t age_ms);
+
 class TcpConnection : public std::enable_shared_from_this<TcpConnection> {
 public:
     enum ConnectionState {
@@ -100,7 +110,8 @@ public:
     /**
      * 每个连接最多挂一帧最新移动。调用方先丢掉缓冲里的旧移动帧。
      * 内核里还没送出的字节超过 1KB 时，这一帧先留在应用缓冲末尾，不立刻 write，
-     * 避免回包排在旧坐标后面。200ms 后，连接没有重传时定时器把它交给写路径。
+     * 避免回包排在旧坐标后面。200ms 后定时器再决定：重传或在途过高时继续留着，
+     * 停放满 1 秒则写出这一帧，重传标志不能把位置无限期压住。
      * 没写完的字节留在缓冲里，等 EPOLLOUT，这期间不能删掉；前面的回包超过 4KB 就先排队。
      * 非移动数据已经超过 64KB 时返回 false，调用方再试。
      * 不关连接。

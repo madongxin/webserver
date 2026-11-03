@@ -11,6 +11,9 @@
 #include "TimeStamp.h"
 #include "GameMeshPaths.h"
 #include "SafePath.h"
+#include "FormalMode.h"
+#include "HttpAdminAccess.h"
+#include <cstdlib>
 #include <arpa/inet.h>
 #include <functional>
 #include <iostream>
@@ -87,7 +90,48 @@ void HttpServer::SetHttpCallback(const HttpServer::HttpResponseCallback &cb){
 }
 
 void HttpServer::onRequest(const TcpConnectionPtr &conn, const HttpRequest &request){
-    LOG_INFO << "HttpServer::onMessage - Request URL : " << request.url() << " from TcpConnection"
+    std::string peer = "127.0.0.1";
+    struct sockaddr_in peeraddr;
+    socklen_t peer_len = sizeof(peeraddr);
+    if (getpeername(conn->fd(), (struct sockaddr *)&peeraddr, &peer_len) == 0)
+        peer = inet_ntoa(peeraddr.sin_addr);
+    const char *configured_env = std::getenv("GAMEMESH_HTTP_ACCESS_TOKEN");
+    const std::string configured = configured_env ? configured_env : "";
+    std::string presented = request.GetHeader("X-GameMesh-Token");
+    if (presented.empty()) {
+        const std::string auth = request.GetHeader("Authorization");
+        if (auth.size() > 7 && auth.compare(0, 7, "Bearer ") == 0)
+            presented = auth.substr(7);
+    }
+    if (presented.empty())
+        presented = HttpCookieValue(request.GetHeader("Cookie"), "gamemesh_token");
+    // 解析器把 ? 后面的参数放进 request_params，url() 里没有查询串。
+    std::string query_token = HttpQueryParam(request.url(), "access_token");
+    if (query_token.empty()) {
+        const auto &params = request.request_params();
+        const auto it = params.find("access_token");
+        if (it != params.end())
+            query_token = it->second;
+    }
+    if (presented.empty())
+        presented = query_token;
+    const HttpAdminAccessDecision access =
+        EvaluateHttpAdminAccess(FormalModeEnabled(), peer, configured, presented);
+    if (!access.allow) {
+        LOG_WARN << "HttpServer refused admin request from " << peer << " reason=" << access.reason;
+        conn->Send("HTTP/1.1 403 Forbidden\r\nContent-Length: 10\r\nConnection: close\r\n\r\nforbidden\n");
+        conn->HandleClose();
+        return;
+    }
+    const bool set_access_cookie = !configured.empty() && query_token == configured;
+    std::string logged_url = request.url();
+    const size_t secret = logged_url.find("access_token=");
+    if (secret != std::string::npos) {
+        const size_t amp = logged_url.find('&', secret);
+        logged_url.replace(secret, amp == std::string::npos ? std::string::npos : amp - secret,
+                           "access_token=redacted");
+    }
+    LOG_INFO << "HttpServer::onMessage - Request URL : " << logged_url << " from TcpConnection"
              << "[ fd#" << conn->fd() << "-id#" << conn->id() << " ]";
     std::string connection_state = request.GetHeader("Connection");
     bool isclose = (connection_state == "Close" ||
@@ -142,6 +186,10 @@ void HttpServer::onRequest(const TcpConnectionPtr &conn, const HttpRequest &requ
     // 与之前相同
     HttpResponse response(isclose);
     response_callback_(request, &response);
+    if (set_access_cookie) {
+        response.AddHeader("Set-Cookie",
+                           "gamemesh_token=" + configured + "; Path=/; HttpOnly; SameSite=Lax");
+    }
     // 如果是HTML，直接发送所有信息
     if(response.bodytype() == HttpResponse::HttpBodyType::HTML_TYPE){
         conn->Send(response.message());

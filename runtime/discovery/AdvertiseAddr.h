@@ -48,10 +48,19 @@ inline std::string MakeAdvertiseAddr(int port) {
     return host + ":" + std::to_string(port);
 }
 
-/** 从 listen（可为 0.0.0.0:port）生成可路由 advertise */
+/** 从 listen 生成对端能拨通的地址。
+ *  0.0.0.0 / :: 换成 GAMEMESH_ADVERTISE_HOST。
+ *  已经绑在具体地址（含 127.0.0.1）上时必须原样公布，否则对端会去连一块没在听的网卡。
+ */
 inline std::string AdvertiseFromListen(const std::string &listen_addr) {
     const int port = PortFromHostPort(listen_addr);
     if (port <= 0)
         return {};
+    const auto colon = listen_addr.rfind(':');
+    std::string host = colon == std::string::npos ? listen_addr : listen_addr.substr(0, colon);
+    if (!host.empty() && host.front() == '[' && host.back() == ']')
+        host = host.substr(1, host.size() - 2);
+    if (!IsForbiddenAdvertiseHost(host))
+        return host + ":" + std::to_string(port);
     return MakeAdvertiseAddr(port);
 }

@@ -1216,6 +1216,15 @@ bool SessionStore::AcquireSessionUnlocked(const AcquireSessionInput &in, Acquire
 }
 
 bool SessionStore::AcquireSession(const AcquireSessionInput &in, AcquireSessionResult *out) {
+    struct AcquireWatch {
+        std::chrono::steady_clock::time_point t0{std::chrono::steady_clock::now()};
+        ~AcquireWatch() {
+            const auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(
+                                std::chrono::steady_clock::now() - t0)
+                                .count();
+            ServerStats::ObserveSessionAcquireMs(static_cast<uint64_t>(ms < 0 ? 0 : ms));
+        }
+    } watch;
     if (!out)
         return false;
     *out = AcquireSessionResult{};
@@ -2054,6 +2063,7 @@ bool SessionStore::ValidateToken(uint64_t player_id, const std::string &token, s
         return false;
     }
     if (rec.token != token) {
+        ServerStats::session_fence_reject.fetch_add(1, std::memory_order_relaxed);
         if (err)
             *err = "invalid session token";
         return false;

@@ -118,6 +118,7 @@ public:
     };
     bool CollectFullView(uint64_t player_id, FullView *out) const;
     std::vector<uint64_t> ListPlayers() const;
+    int TotalEntityCount() const;
     void ClearForTest();
 
 private:

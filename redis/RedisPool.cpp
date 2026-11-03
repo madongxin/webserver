@@ -1,6 +1,7 @@
 #include "RedisPool.h"
 
 #include "Logging.h"
+#include "ServerStats.h"
 
 #include <chrono>
 
@@ -183,8 +184,14 @@ RedisPool::Lease RedisPool::Acquire(int timeout_ms) {
         std::unique_lock<std::mutex> lk(st->mu);
         if (!st->ready || st->closing)
             return Lease();
+        const auto wait_t0 = std::chrono::steady_clock::now();
         while (st->free.empty()) {
             if (st->cv.wait_until(lk, deadline) == std::cv_status::timeout) {
+                const auto waited = std::chrono::duration_cast<std::chrono::milliseconds>(
+                                        std::chrono::steady_clock::now() - wait_t0)
+                                        .count();
+                ServerStats::ObserveRedisWaitMs(static_cast<uint64_t>(waited < 0 ? 0 : waited));
+                ServerStats::redis_acquire_timeout.fetch_add(1, std::memory_order_relaxed);
                 LOG_ERROR << "RedisPool: acquire timeout";
                 return Lease();
             }
@@ -194,6 +201,13 @@ RedisPool::Lease RedisPool::Acquire(int timeout_ms) {
         c = st->free.back();
         st->free.pop_back();
         ++st->active;
+        const auto waited = std::chrono::duration_cast<std::chrono::milliseconds>(
+                                std::chrono::steady_clock::now() - wait_t0)
+                                .count();
+        ServerStats::ObserveRedisWaitMs(static_cast<uint64_t>(waited < 0 ? 0 : waited));
+        ServerStats::redis_pool_active.store(st->active, std::memory_order_relaxed);
+        ServerStats::redis_pool_free.store(static_cast<int64_t>(st->free.size()),
+                                           std::memory_order_relaxed);
         gen = st->generation;
         host = st->host;
         password = st->password;

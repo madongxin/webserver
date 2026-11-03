@@ -207,7 +207,8 @@ void FlushMoveSlot(const std::shared_ptr<MoveCoalesceSlot> &slot,
     constexpr int64_t kIntervalMs = 200;
     constexpr int kBudgetBytes = 16 * 1024;
     constexpr int kEstBytesPerMove = 48;
-    // 80 个实体、每 200ms 一帧时，40 个名额能在两帧（400ms）内轮完，近距离间隔留在 500ms 以内。
+    constexpr int64_t kOldestForceMs = 1000;
+    // 一帧最多 40 个。兴趣集里更老的位置必须先走，不能被刚进槽的实体一直挤掉。
     constexpr size_t kMaxMoveEntities = 40;
     int64_t wait_ms = 0;
     bool leftover = false;
@@ -215,7 +216,17 @@ void FlushMoveSlot(const std::shared_ptr<MoveCoalesceSlot> &slot,
     {
         std::lock_guard<std::mutex> lk(slot->mu);
         const int64_t now = SteadyMs();
-        if (slot->last_flush_ms != 0 && now - slot->last_flush_ms < kIntervalMs &&
+        int64_t oldest_wait = 0;
+        for (const auto &kv : slot->by_entity) {
+            const auto since = slot->pending_since_ms.find(kv.first);
+            if (since == slot->pending_since_ms.end() || since->second <= 0 || now < since->second)
+                continue;
+            const int64_t age = now - since->second;
+            if (age > oldest_wait)
+                oldest_wait = age;
+        }
+        const bool force_oldest = oldest_wait >= kOldestForceMs;
+        if (!force_oldest && slot->last_flush_ms != 0 && now - slot->last_flush_ms < kIntervalMs &&
             !slot->by_entity.empty()) {
             wait_ms = kIntervalMs - (now - slot->last_flush_ms);
         } else if (!slot->by_entity.empty()) {
@@ -232,7 +243,9 @@ void FlushMoveSlot(const std::shared_ptr<MoveCoalesceSlot> &slot,
                 }
                 const int remain = kBudgetBytes - slot->budget_bytes;
                 size_t max_n = 0;
-                if (remain >= kEstBytesPerMove)
+                if (force_oldest)
+                    max_n = kMaxMoveEntities;
+                else if (remain >= kEstBytesPerMove)
                     max_n = std::min(kMaxMoveEntities, static_cast<size_t>(remain / kEstBytesPerMove));
                 if (max_n == 0) {
                     wait_ms = 1000 - (now - slot->budget_window_ms);
@@ -245,8 +258,11 @@ void FlushMoveSlot(const std::shared_ptr<MoveCoalesceSlot> &slot,
                     for (const auto &kv : slot->by_entity) {
                         AoiMoveCandidate c;
                         c.entity_id = kv.first;
-                        const auto sent = slot->last_sent_ms.find(kv.first);
-                        c.last_sent_ms = sent == slot->last_sent_ms.end() ? 0 : sent->second;
+                        const auto since = slot->pending_since_ms.find(kv.first);
+                        // 越小越优先。还没有 since 的视为已经等了最久。
+                        c.last_sent_ms = (since == slot->pending_since_ms.end() || since->second <= 0)
+                                             ? 0
+                                             : since->second;
                         cands.push_back(c);
                     }
                     const auto picked = PickAoiMoveEntities(std::move(cands), max_n);
@@ -262,7 +278,6 @@ void FlushMoveSlot(const std::shared_ptr<MoveCoalesceSlot> &slot,
                         *delta.add_events() = std::move(it->second);
                         slot->by_entity.erase(it);
                     }
-                    slot->last_flush_ms = now;
                     leftover = !slot->by_entity.empty();
                     slot->scheduled = leftover;
                 }
@@ -276,8 +291,18 @@ void FlushMoveSlot(const std::shared_ptr<MoveCoalesceSlot> &slot,
                                [slot, weak, conn_id]() { FlushMoveSlot(slot, weak, conn_id); });
         return;
     }
-    if (delta.events_size() == 0)
+    if (delta.events_size() == 0) {
+        bool pending = false;
+        {
+            std::lock_guard<std::mutex> lk(slot->mu);
+            pending = !slot->by_entity.empty();
+            if (pending)
+                slot->scheduled = true;
+        }
+        if (pending)
+            live->loop()->RunAfter(0.2, [slot, weak, conn_id]() { FlushMoveSlot(slot, weak, conn_id); });
         return;
+    }
     const int event_n = delta.events_size();
     auto restore = [&](game::AoiDelta pending) {
         std::lock_guard<std::mutex> lk(slot->mu);
@@ -363,6 +388,7 @@ void FlushMoveSlot(const std::shared_ptr<MoveCoalesceSlot> &slot,
         std::lock_guard<std::mutex> lk(slot->mu);
         const int64_t now = SteadyMs();
         slot->budget_bytes += static_cast<int>(frame.size());
+        slot->last_flush_ms = SteadyMs();
         for (const auto &ev : delta.events()) {
             const uint64_t id = ev.entity().player_id();
             if (id == 0)
@@ -411,13 +437,15 @@ bool OfferCoalescedMove(const std::shared_ptr<TcpConnection> &c, const std::stri
             const uint64_t id = ev.entity().player_id();
             if (id == 0)
                 continue;
+            const bool already_waiting = slot->by_entity.find(id) != slot->by_entity.end();
             auto &kept = slot->by_entity[id];
             // 序号不增加的移动客户端会整条丢掉。只保留更大的 state_seq。
             if (kept.has_entity() && ev.entity().state_seq() < kept.entity().state_seq())
                 continue;
             kept = ev;
             auto &since = slot->pending_since_ms[id];
-            if (since == 0)
+            // 离开过槽再进来要重新计时。留下上次失败的旧时间会把静默显示成好几分钟。
+            if (!already_waiting || since == 0)
                 since = SteadyMs();
         }
         ObservePendingMoves(*slot, c->id(), SteadyMs());

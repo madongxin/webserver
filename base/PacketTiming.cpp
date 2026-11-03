@@ -328,7 +328,7 @@ std::string PacketTimingPrometheus() {
     os << "# HELP gamemesh_move_hold_total Latest move frame parked in the app buffer because kernel unsent exceeded 1KB.\n"
           "# TYPE gamemesh_move_hold_total counter\n"
           "gamemesh_move_hold_total " << g_move_hold.load(std::memory_order_relaxed) << "\n";
-    os << "# HELP gamemesh_aoi_skip_retrans_total AOI position not written because this connection was retransmitting.\n"
+    os << "# HELP gamemesh_aoi_skip_retrans_total AOI position kept parked because the connection was retransmitting and the frame was younger than 1s.\n"
           "# TYPE gamemesh_aoi_skip_retrans_total counter\n"
           "gamemesh_aoi_skip_retrans_total " << g_aoi_skip_retrans.load(std::memory_order_relaxed) << "\n";
     os << "# HELP gamemesh_aoi_skip_unsent_total AOI position not written because kernel unsent exceeded 16KB and the frame was younger than 1s.\n"

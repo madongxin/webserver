@@ -452,6 +452,23 @@ void TestParkedMoveStaysUntilWritable() {
     ::close(lfd);
 }
 
+void TestParkedMoveDecisionReleasesDuringRetransmit() {
+    Expect(DecideParkedMove(true, 0, 0) == ParkedMoveDecision::SkipRetrans,
+           "fresh retransmit keeps the frame parked");
+    Expect(DecideParkedMove(true, 64 * 1024, 999) == ParkedMoveDecision::SkipRetrans,
+           "retransmit under 1s still parks");
+    Expect(DecideParkedMove(true, 64 * 1024, 1000) == ParkedMoveDecision::WriteStarved,
+           "retransmit at 1s writes the latest frame");
+    Expect(DecideParkedMove(true, 64 * 1024, 265000) == ParkedMoveDecision::WriteStarved,
+           "long retransmit cannot hold a position for minutes");
+    Expect(DecideParkedMove(false, 20 * 1024, 0) == ParkedMoveDecision::SkipUnsent,
+           "high unsent without retransmit still waits");
+    Expect(DecideParkedMove(false, 20 * 1024, 1000) == ParkedMoveDecision::WriteStarved,
+           "high unsent releases at 1s");
+    Expect(DecideParkedMove(false, 1024, 0) == ParkedMoveDecision::WriteRoom,
+           "small unsent writes immediately");
+}
+
 }  // namespace
 
 int main() {
@@ -463,6 +480,7 @@ int main() {
     TestLatestMoveHeldWhileKernelBusy();
     TestParkedMoveRetriesAfterKernelDrains();
     TestParkedMoveStaysUntilWritable();
+    TestParkedMoveDecisionReleasesDuringRetransmit();
     TestPartialControlDoesNotBlockLaterReplies();
     if (g_fail) {
         std::cerr << "reactor_integration_test failures=" << g_fail << "\n";

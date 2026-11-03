@@ -97,6 +97,49 @@ struct ServerStats {
     static inline std::atomic<uint64_t> login_stage_reject_session{0};
     static inline std::atomic<uint64_t> login_stage_reject_bind{0};
     static inline std::atomic<uint64_t> login_stage_reject_enter{0};
+    static inline std::atomic<uint64_t> redis_acquire_timeout{0};
+    static inline std::atomic<int64_t> redis_pool_active{0};
+    static inline std::atomic<int64_t> redis_pool_free{0};
+    static inline std::atomic<uint64_t> redis_wait_count{0};
+    static inline std::atomic<uint64_t> redis_wait_sum_ms{0};
+    static inline std::atomic<uint64_t> redis_wait_le_1{0};
+    static inline std::atomic<uint64_t> redis_wait_le_5{0};
+    static inline std::atomic<uint64_t> redis_wait_le_20{0};
+    static inline std::atomic<uint64_t> redis_wait_le_100{0};
+    static inline std::atomic<uint64_t> redis_wait_le_500{0};
+    static inline std::atomic<uint64_t> redis_wait_le_inf{0};
+    static inline std::atomic<uint64_t> session_fence_reject{0};
+    static inline std::atomic<uint64_t> session_acquire_count{0};
+    static inline std::atomic<uint64_t> session_acquire_sum_ms{0};
+    static inline std::atomic<uint64_t> session_acquire_le_5{0};
+    static inline std::atomic<uint64_t> session_acquire_le_20{0};
+    static inline std::atomic<uint64_t> session_acquire_le_100{0};
+    static inline std::atomic<uint64_t> session_acquire_le_500{0};
+    static inline std::atomic<uint64_t> session_acquire_le_inf{0};
+    static inline std::atomic<uint64_t> gamedb_idempotent_hit{0};
+    static inline std::atomic<int64_t> mysql_pool_in_use{0};
+    static inline std::atomic<int64_t> mysql_pool_idle{0};
+    static inline std::atomic<int64_t> map_entities{0};
+
+    static void ObserveRedisWaitMs(uint64_t ms) {
+        redis_wait_count.fetch_add(1, std::memory_order_relaxed);
+        redis_wait_sum_ms.fetch_add(ms, std::memory_order_relaxed);
+        redis_wait_le_inf.fetch_add(1, std::memory_order_relaxed);
+        if (ms <= 500) redis_wait_le_500.fetch_add(1, std::memory_order_relaxed);
+        if (ms <= 100) redis_wait_le_100.fetch_add(1, std::memory_order_relaxed);
+        if (ms <= 20) redis_wait_le_20.fetch_add(1, std::memory_order_relaxed);
+        if (ms <= 5) redis_wait_le_5.fetch_add(1, std::memory_order_relaxed);
+        if (ms <= 1) redis_wait_le_1.fetch_add(1, std::memory_order_relaxed);
+    }
+    static void ObserveSessionAcquireMs(uint64_t ms) {
+        session_acquire_count.fetch_add(1, std::memory_order_relaxed);
+        session_acquire_sum_ms.fetch_add(ms, std::memory_order_relaxed);
+        session_acquire_le_inf.fetch_add(1, std::memory_order_relaxed);
+        if (ms <= 500) session_acquire_le_500.fetch_add(1, std::memory_order_relaxed);
+        if (ms <= 100) session_acquire_le_100.fetch_add(1, std::memory_order_relaxed);
+        if (ms <= 20) session_acquire_le_20.fetch_add(1, std::memory_order_relaxed);
+        if (ms <= 5) session_acquire_le_5.fetch_add(1, std::memory_order_relaxed);
+    }
 
     static void ObserveAoiQueryUs(uint64_t us) {
         aoi_visible_query_us_sum.fetch_add(us, std::memory_order_relaxed);

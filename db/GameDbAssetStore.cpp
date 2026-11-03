@@ -3,6 +3,8 @@
 #include "ConnectionPool.h"
 #include "GameDbOutbox.h"
 #include "Logging.h"
+#include "OpsMetrics.h"
+#include "ServerStats.h"
 #include "PlayerItemStore.h"
 
 #include <chrono>
@@ -406,6 +408,7 @@ bool GameDbAssetStore::ApplyMutation(uint64_t player_id, const std::string &idem
     auto fill_conflict = [&](const char *msg) {
         out->ok = false;
         out->idempotent_hit = true;
+        ServerStats::gamedb_idempotent_hit.fetch_add(1, std::memory_order_relaxed);
         out->error_code = "IDEMPOTENCY_CONFLICT";
         out->message = msg;
     };
@@ -437,6 +440,7 @@ bool GameDbAssetStore::ApplyMutation(uint64_t player_id, const std::string &idem
         if (std::atoi(row[0]) != 0) {
             out->ok = true;
             out->idempotent_hit = true;
+        ServerStats::gamedb_idempotent_hit.fetch_add(1, std::memory_order_relaxed);
             out->error_code = row[1] ? row[1] : "";
             out->message = row[2] ? row[2] : "idempotent";
             out->asset_version = row[3] ? std::strtoull(row[3], nullptr, 10) : 0;
@@ -449,6 +453,7 @@ bool GameDbAssetStore::ApplyMutation(uint64_t player_id, const std::string &idem
             // 已持久化 FAILED：直接返回原始失败，禁止当成 BUSY
             out->ok = false;
             out->idempotent_hit = true;
+        ServerStats::gamedb_idempotent_hit.fetch_add(1, std::memory_order_relaxed);
             out->error_code = ecode;
             out->message = row[2] ? row[2] : "failed";
             out->asset_version = row[3] ? std::strtoull(row[3], nullptr, 10) : 0;
@@ -636,6 +641,7 @@ bool GameDbAssetStore::ApplyMutation(uint64_t player_id, const std::string &idem
         conn.reset();
         out->ok = false;
         out->error_code = "UNKNOWN_RESULT";
+        OpsMetrics::Instance().IncGamedbUnknownResult();
         out->message = "commit failpoint; result unknown";
         return false;
     }
@@ -647,6 +653,7 @@ bool GameDbAssetStore::ApplyMutation(uint64_t player_id, const std::string &idem
             if (q.status == "SUCCEEDED") {
                 out->ok = true;
                 out->idempotent_hit = true;
+        ServerStats::gamedb_idempotent_hit.fetch_add(1, std::memory_order_relaxed);
                 out->message = "recovered_after_commit";
                 out->asset_version = q.asset_version;
                 out->remain_count = q.remain_count;
@@ -655,6 +662,7 @@ bool GameDbAssetStore::ApplyMutation(uint64_t player_id, const std::string &idem
             if (q.status == "FAILED") {
                 out->ok = false;
                 out->idempotent_hit = true;
+        ServerStats::gamedb_idempotent_hit.fetch_add(1, std::memory_order_relaxed);
                 out->error_code = q.error_code.empty() ? "OPERATION_FAILED" : q.error_code;
                 out->message = q.message.empty() ? "operation recorded as failed" : q.message;
                 out->asset_version = q.asset_version;
@@ -664,12 +672,14 @@ bool GameDbAssetStore::ApplyMutation(uint64_t player_id, const std::string &idem
             if (q.status == "IN_PROGRESS") {
                 out->ok = false;
                 out->error_code = "UNKNOWN_RESULT";
+        OpsMetrics::Instance().IncGamedbUnknownResult();
                 out->message = "commit unknown; still in progress";
                 return false;
             }
         }
         out->ok = false;
         out->error_code = "UNKNOWN_RESULT";
+        OpsMetrics::Instance().IncGamedbUnknownResult();
         out->message = "commit result unknown";
         return false;
     }
@@ -741,6 +751,7 @@ bool GameDbAssetStore::SaveSnapshot(uint64_t player_id, uint64_t expected_versio
                 const std::string old_hash = row[4] ? row[4] : "";
                 if (pid != 0 && pid != player_id) {
                     out->idempotent_hit = true;
+        ServerStats::gamedb_idempotent_hit.fetch_add(1, std::memory_order_relaxed);
                     out->ok = false;
                     out->error_code = "IDEMPOTENCY_CONFLICT";
                     out->message = "idempotency_key bound to other player";
@@ -749,6 +760,7 @@ bool GameDbAssetStore::SaveSnapshot(uint64_t player_id, uint64_t expected_versio
                 }
                 if (!old_hash.empty() && old_hash != req_hash) {
                     out->idempotent_hit = true;
+        ServerStats::gamedb_idempotent_hit.fetch_add(1, std::memory_order_relaxed);
                     out->ok = false;
                     out->error_code = "IDEMPOTENCY_CONFLICT";
                     out->message = "same key different payload";
@@ -757,6 +769,7 @@ bool GameDbAssetStore::SaveSnapshot(uint64_t player_id, uint64_t expected_versio
                 }
                 if (std::atoi(row[0]) != 0) {
                     out->idempotent_hit = true;
+        ServerStats::gamedb_idempotent_hit.fetch_add(1, std::memory_order_relaxed);
                     out->ok = true;
                     out->error_code = row[1] ? row[1] : "";
                     out->message = row[2] ? row[2] : "idempotent";
@@ -800,12 +813,14 @@ bool GameDbAssetStore::SaveSnapshot(uint64_t player_id, uint64_t expected_versio
                         if (!old_hash.empty() && old_hash != req_hash) {
                             out->ok = false;
                             out->idempotent_hit = true;
+        ServerStats::gamedb_idempotent_hit.fetch_add(1, std::memory_order_relaxed);
                             out->error_code = "IDEMPOTENCY_CONFLICT";
                             out->message = "same key different payload";
                             mysql_free_result(res2);
                             return false;
                         }
                         out->idempotent_hit = true;
+        ServerStats::gamedb_idempotent_hit.fetch_add(1, std::memory_order_relaxed);
                         out->ok = true;
                         out->error_code = row2[1] ? row2[1] : "";
                         out->message = row2[2] ? row2[2] : "idempotent";

@@ -1,7 +1,6 @@
 #include "OpsMetrics.h"
 
 #include "PushAdmit.h"
-
 #include "ServerStats.h"
 
 #include <mutex>
@@ -13,9 +12,12 @@ std::mutex g_err_mu;
 std::unordered_map<std::string, uint64_t> g_err_counts;
 std::string (*g_reply_stage_prom)() = nullptr;
 std::string (*g_control_outbox_prom)() = nullptr;
+int64_t (*g_map_entity_count)() = nullptr;
 }  // namespace
 
 void OpsMetrics::SetReplyStagePrometheus(std::string (*fn)()) { g_reply_stage_prom = fn; }
+
+void OpsMetrics::SetMapEntityCount(int64_t (*fn)()) { g_map_entity_count = fn; }
 
 void OpsMetrics::SetControlOutboxPrometheus(std::string (*fn)()) { g_control_outbox_prom = fn; }
 
@@ -231,8 +233,19 @@ std::string OpsMetrics::PrometheusText() const {
         pushbatch_ms_sum_.load(std::memory_order_relaxed));
     ctr("gamemesh_pushbatch_slow_total", "PushBatch calls that took at least 200ms. Cumulative.",
         pushbatch_slow_.load(std::memory_order_relaxed));
-    gauge("gamemesh_pushbatch_last_ms", "Duration of the most recent PushBatch call. Milliseconds.",
+    gauge("gamemesh_pushbatch_last_ms",
+          "Duration of the most recent PushBatch call. Milliseconds. Kept for one version; use gamemesh_pushbatch_duration_ms histogram.",
           pushbatch_last_ms_.load(std::memory_order_relaxed));
+    os << "# HELP gamemesh_pushbatch_duration_ms PushBatch call latency. Milliseconds. Cumulative since process start.\n"
+          "# TYPE gamemesh_pushbatch_duration_ms histogram\n";
+    os << "gamemesh_pushbatch_duration_ms_bucket{le=\"5\"} " << pushbatch_le_5_.load(std::memory_order_relaxed) << "\n";
+    os << "gamemesh_pushbatch_duration_ms_bucket{le=\"10\"} " << pushbatch_le_10_.load(std::memory_order_relaxed) << "\n";
+    os << "gamemesh_pushbatch_duration_ms_bucket{le=\"50\"} " << pushbatch_le_50_.load(std::memory_order_relaxed) << "\n";
+    os << "gamemesh_pushbatch_duration_ms_bucket{le=\"200\"} " << pushbatch_le_200_.load(std::memory_order_relaxed) << "\n";
+    os << "gamemesh_pushbatch_duration_ms_bucket{le=\"1000\"} " << pushbatch_le_1000_.load(std::memory_order_relaxed) << "\n";
+    os << "gamemesh_pushbatch_duration_ms_bucket{le=\"+Inf\"} " << pushbatch_le_inf_.load(std::memory_order_relaxed) << "\n";
+    os << "gamemesh_pushbatch_duration_ms_sum " << pushbatch_ms_sum_.load(std::memory_order_relaxed) << "\n";
+    os << "gamemesh_pushbatch_duration_ms_count " << pushbatch_total_.load(std::memory_order_relaxed) << "\n";
     gauge("gamemesh_gateway_tcp_connections", "Current game TCP sockets (including pre-auth).",
           gateway_tcp_connections_.load(std::memory_order_relaxed));
     ctr("gamemesh_gateway_rx_bytes_total", "Game TCP bytes received (client → Gateway).",
@@ -441,6 +454,43 @@ std::string OpsMetrics::PrometheusText() const {
        << ServerStats::db_pool_wait_sum_ms.load(std::memory_order_relaxed) << "\n";
     os << "gamemesh_db_pool_wait_ms_count "
        << ServerStats::db_pool_wait_count.load(std::memory_order_relaxed) << "\n\n";
+    if (g_map_entity_count)
+        ServerStats::map_entities.store(g_map_entity_count(), std::memory_order_relaxed);
+    gauge("gamemesh_map_entities", "Entities currently placed on map instances in this process.",
+          ServerStats::map_entities.load(std::memory_order_relaxed));
+    gauge("gamemesh_redis_pool_active", "Redis connections currently checked out.",
+          ServerStats::redis_pool_active.load(std::memory_order_relaxed));
+    gauge("gamemesh_redis_pool_free", "Redis connections sitting idle in the pool.",
+          ServerStats::redis_pool_free.load(std::memory_order_relaxed));
+    ctr("gamemesh_redis_acquire_timeout_total", "Redis pool borrows that gave up waiting.",
+        ServerStats::redis_acquire_timeout.load(std::memory_order_relaxed));
+    os << "# HELP gamemesh_redis_acquire_wait_ms Time spent waiting for a free Redis connection. Milliseconds.\n"
+          "# TYPE gamemesh_redis_acquire_wait_ms histogram\n";
+    os << "gamemesh_redis_acquire_wait_ms_bucket{le=\"1\"} " << ServerStats::redis_wait_le_1.load(std::memory_order_relaxed) << "\n";
+    os << "gamemesh_redis_acquire_wait_ms_bucket{le=\"5\"} " << ServerStats::redis_wait_le_5.load(std::memory_order_relaxed) << "\n";
+    os << "gamemesh_redis_acquire_wait_ms_bucket{le=\"20\"} " << ServerStats::redis_wait_le_20.load(std::memory_order_relaxed) << "\n";
+    os << "gamemesh_redis_acquire_wait_ms_bucket{le=\"100\"} " << ServerStats::redis_wait_le_100.load(std::memory_order_relaxed) << "\n";
+    os << "gamemesh_redis_acquire_wait_ms_bucket{le=\"500\"} " << ServerStats::redis_wait_le_500.load(std::memory_order_relaxed) << "\n";
+    os << "gamemesh_redis_acquire_wait_ms_bucket{le=\"+Inf\"} " << ServerStats::redis_wait_le_inf.load(std::memory_order_relaxed) << "\n";
+    os << "gamemesh_redis_acquire_wait_ms_sum " << ServerStats::redis_wait_sum_ms.load(std::memory_order_relaxed) << "\n";
+    os << "gamemesh_redis_acquire_wait_ms_count " << ServerStats::redis_wait_count.load(std::memory_order_relaxed) << "\n";
+    ctr("gamemesh_session_fence_reject_total", "Acquire/validate calls rejected because the session token did not match.",
+        ServerStats::session_fence_reject.load(std::memory_order_relaxed));
+    os << "# HELP gamemesh_session_acquire_ms AcquireSession latency. Milliseconds. Cumulative since process start.\n"
+          "# TYPE gamemesh_session_acquire_ms histogram\n";
+    os << "gamemesh_session_acquire_ms_bucket{le=\"5\"} " << ServerStats::session_acquire_le_5.load(std::memory_order_relaxed) << "\n";
+    os << "gamemesh_session_acquire_ms_bucket{le=\"20\"} " << ServerStats::session_acquire_le_20.load(std::memory_order_relaxed) << "\n";
+    os << "gamemesh_session_acquire_ms_bucket{le=\"100\"} " << ServerStats::session_acquire_le_100.load(std::memory_order_relaxed) << "\n";
+    os << "gamemesh_session_acquire_ms_bucket{le=\"500\"} " << ServerStats::session_acquire_le_500.load(std::memory_order_relaxed) << "\n";
+    os << "gamemesh_session_acquire_ms_bucket{le=\"+Inf\"} " << ServerStats::session_acquire_le_inf.load(std::memory_order_relaxed) << "\n";
+    os << "gamemesh_session_acquire_ms_sum " << ServerStats::session_acquire_sum_ms.load(std::memory_order_relaxed) << "\n";
+    os << "gamemesh_session_acquire_ms_count " << ServerStats::session_acquire_count.load(std::memory_order_relaxed) << "\n";
+    ctr("gamemesh_gamedb_idempotent_hit_total", "Asset mutations that reused an existing idempotency row.",
+        ServerStats::gamedb_idempotent_hit.load(std::memory_order_relaxed));
+    gauge("gamemesh_mysql_pool_in_use", "MySQL connections currently checked out.",
+          ServerStats::mysql_pool_in_use.load(std::memory_order_relaxed));
+    gauge("gamemesh_mysql_pool_idle", "MySQL connections sitting idle in the pool.",
+          ServerStats::mysql_pool_idle.load(std::memory_order_relaxed));
     if (g_reply_stage_prom)
         os << g_reply_stage_prom();
     if (g_control_outbox_prom)

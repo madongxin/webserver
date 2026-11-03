@@ -439,11 +439,11 @@ std::string ControlResponseOutbox::Prometheus() {
           "# TYPE gamemesh_control_outbox_current_bytes gauge\n"
           "gamemesh_control_outbox_current_bytes "
        << bytes
-       << "\n# HELP gamemesh_control_outbox_peak_frames Peak RPC replies waiting on one connection.\n"
+       << "\n# HELP gamemesh_control_outbox_peak_frames Lifetime peak of queued RPC replies on one connection since process start. Monotonic until restart. Not a windowed time series.\n"
           "# TYPE gamemesh_control_outbox_peak_frames gauge\n"
           "gamemesh_control_outbox_peak_frames "
        << g_peak_frames.load(std::memory_order_relaxed)
-       << "\n# HELP gamemesh_control_outbox_peak_bytes Peak RPC reply bytes waiting on one connection.\n"
+       << "\n# HELP gamemesh_control_outbox_peak_bytes Lifetime peak of queued RPC reply bytes on one connection since process start. Monotonic until restart. Not a windowed time series.\n"
           "# TYPE gamemesh_control_outbox_peak_bytes gauge\n"
           "gamemesh_control_outbox_peak_bytes "
        << g_peak_bytes.load(std::memory_order_relaxed)

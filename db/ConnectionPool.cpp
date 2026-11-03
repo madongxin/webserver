@@ -221,12 +221,21 @@ std::shared_ptr<Connection> ConnectionPool::getConnection() {
 
     Connection *raw = _connectionQue.front();
     _connectionQue.pop();
+    ServerStats::mysql_pool_idle.store(static_cast<int64_t>(_connectionQue.size()),
+                                      std::memory_order_relaxed);
+    ServerStats::mysql_pool_in_use.store(
+        _connectionCnt.load() - static_cast<int>(_connectionQue.size()), std::memory_order_relaxed);
 
     // 自定义 deleter：不 delete，而是还回空闲队列（RAII 借还）
     std::shared_ptr<Connection> connptr(raw, [this](Connection *conn) {
         std::lock_guard<std::mutex> locker(_queueMutex);
         conn->refreshAliveTime();
         _connectionQue.push(conn);
+        ServerStats::mysql_pool_idle.store(static_cast<int64_t>(_connectionQue.size()),
+                                          std::memory_order_relaxed);
+        ServerStats::mysql_pool_in_use.store(
+            _connectionCnt.load() - static_cast<int>(_connectionQue.size()),
+            std::memory_order_relaxed);
         cv.notify_all();  // 唤醒等待借连接的线程，以及生产者（若队列曾空）
     });
 

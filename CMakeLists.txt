@@ -113,6 +113,7 @@ if(ENABLE_GAME_PROTOBUF)
     game/GatewayConnRegistry.cpp
     game/GatewayAuthPolicy.cpp
     game/CommandPolicy.cpp
+    game/CommandSpec.cpp
     runtime/PlayerSerialQueue.cpp
     runtime/GatewayDisconnectAsync.cpp
     runtime/InProcessTransport.cpp
@@ -1323,6 +1324,8 @@ target_link_libraries(password_hash_test ${OPENSSL_CRYPTO_LIB})
   add_executable(listen_bind_policy_test test/listen_bind_policy_test.cpp)
   add_executable(safe_path_test test/safe_path_test.cpp)
   target_include_directories(safe_path_test PRIVATE base)
+  add_executable(http_admin_access_test test/http_admin_access_test.cpp)
+  target_include_directories(http_admin_access_test PRIVATE runtime)
 target_include_directories(listen_bind_policy_test PRIVATE runtime)
 target_link_libraries(listen_bind_policy_test ${CMAKE_THREAD_LIBS_INIT})
 

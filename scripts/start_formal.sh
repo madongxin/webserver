@@ -22,6 +22,11 @@ export GAMEMESH_LOGIN_ENTER_INFLIGHT="${GAMEMESH_LOGIN_ENTER_INFLIGHT:-512}"
 
 RUN_DIR="${GAMEMESH_RUN_DIR:-$ROOT/run/formal}"
 mkdir -p "$RUN_DIR/logs"
+# 公网观察页令牌。文件在 run/formal，不进 git。未设置时回环仍可开，公网 403。
+if [[ -z "${GAMEMESH_HTTP_ACCESS_TOKEN:-}" && -f "$RUN_DIR/http_access_token" ]]; then
+  GAMEMESH_HTTP_ACCESS_TOKEN="$(tr -d '[:space:]' < "$RUN_DIR/http_access_token")"
+  export GAMEMESH_HTTP_ACCESS_TOKEN
+fi
 
 # ---- 端口（可用环境变量覆盖）----
 # Gateway ×2（★ 客户端连 GAME 口）

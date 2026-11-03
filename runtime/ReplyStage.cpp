@@ -189,11 +189,11 @@ std::string ReplyStage::Prometheus() {
           "# TYPE gamemesh_reply_latency_ms_sum counter\n";
     os << "# HELP gamemesh_reply_latency_ms_count Replies with a request timestamp.\n"
           "# TYPE gamemesh_reply_latency_ms_count counter\n";
-    os << "# HELP gamemesh_reply_latency_p50_ms Upper edge of the bucket containing the 50th percentile.\n"
+    os << "# HELP gamemesh_reply_latency_p50_ms Lifetime cumulative bucket upper edge for the 50th percentile since process start. Not a sliding window. Do not average across instances; use gamemesh_reply_latency_ms_bucket.\n"
           "# TYPE gamemesh_reply_latency_p50_ms gauge\n";
-    os << "# HELP gamemesh_reply_latency_p95_ms Upper edge of the bucket containing the 95th percentile.\n"
+    os << "# HELP gamemesh_reply_latency_p95_ms Lifetime cumulative bucket upper edge for the 95th percentile since process start. Not a sliding window. Do not average across instances; use gamemesh_reply_latency_ms_bucket.\n"
           "# TYPE gamemesh_reply_latency_p95_ms gauge\n";
-    os << "# HELP gamemesh_reply_latency_p99_ms Upper edge of the bucket containing the 99th percentile.\n"
+    os << "# HELP gamemesh_reply_latency_p99_ms Lifetime cumulative bucket upper edge for the 99th percentile since process start. Not a sliding window. Do not average across instances; use gamemesh_reply_latency_ms_bucket.\n"
           "# TYPE gamemesh_reply_latency_p99_ms gauge\n";
     for (int k = 0; k < kKindCount; ++k) {
         uint64_t cum = 0;
