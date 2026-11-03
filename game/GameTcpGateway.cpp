@@ -260,13 +260,13 @@ void ApplyMoveCommit(const std::shared_ptr<MoveCoalesceSlot> &slot,
             slot->hold_since_ms = 0;
         } else {
             slot->ledger.NoteReplaced(stamps);
+            slot->hold_since_ms = 0;
         }
         ObservePendingMoves(*slot, conn_id, now);
         again = !slot->by_entity.empty();
         slot->scheduled = again;
     }
-    if (committed)
-        PublishHoldAge(conn_id, 0);
+    PublishHoldAge(conn_id, 0);
     if (!again || !live || !live->loop())
         return;
     std::weak_ptr<TcpConnection> weak = live;
@@ -303,18 +303,10 @@ void FlushMoveSlot(const std::shared_ptr<MoveCoalesceSlot> &slot,
         return;
     }
     HookMoveCommit(live, slot);
-    // 上一帧还没写进内核时先试着写。停放不满 1 秒就先不换人。
-    // 满 1 秒仍写不进去，丢掉应用缓冲里的这一帧（内核字节不动），被换掉的人回到候选集。
-    if (live->latest_move_awaiting_write())
-        live->Write();
+    // 这一帧还停在应用缓冲里，或者有半帧已经进了内核。等连接自己的写事件，不要在这里空转 write。
     if (live->holding_latest_move() || live->latest_move_awaiting_write()) {
-        if (live->holding_latest_move() && !live->latest_move_awaiting_write() &&
-            live->parked_move_age_ms() >= 1000)
-            live->ReleaseStuckMove();
-        if (live->holding_latest_move() || live->latest_move_awaiting_write()) {
-            live->loop()->RunAfter(0.2, [slot, weak, conn_id]() { FlushMoveSlot(slot, weak, conn_id); });
-            return;
-        }
+        live->loop()->RunAfter(0.2, [slot, weak, conn_id]() { FlushMoveSlot(slot, weak, conn_id); });
+        return;
     }
     constexpr int kMaxMoveEntities = 40;
     int64_t wait_ms = 0;

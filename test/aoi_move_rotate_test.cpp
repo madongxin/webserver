@@ -47,7 +47,7 @@ RunResult Simulate(bool legacy, bool intermittent) {
         parked_at = -1;
     };
 
-    for (int64_t t = kStep; t <= 20000; t += kStep) {
+    for (int64_t t = kStep; t <= 40000; t += kStep) {
         for (int id = 1; id <= kEntities; ++id)
             ledger.Offer(static_cast<uint64_t>(id), static_cast<uint64_t>(t), t, id <= 50 ? 1 : 0);
         const bool due = !parked.empty() && parked_at >= 0 && t - parked_at >= kWriteEvery;
@@ -74,7 +74,7 @@ RunResult Simulate(bool legacy, bool intermittent) {
             max_silence = sil;
     }
     if (!parked.empty())
-        commit(20000);
+        commit(40000);
     RunResult out;
     out.max_silence_ms = max_silence;
     for (int id = 1; id <= kEntities; ++id) {
@@ -89,7 +89,8 @@ RunResult Simulate(bool legacy, bool intermittent) {
 }  // namespace
 
 int main() {
-    const int64_t bound = ((200 + 40 - 1) / 40) * 1000 * 2;
+    // 近处占四分之三名额，远处至少等 5 秒再进轮转。上界按远处名额估算。
+    const int64_t bound = 5000 + ((150 + 10 - 1) / 10) * 1000 * 2;
 
     const RunResult legacy = Simulate(true, false);
     std::printf("legacy unwritten=%d silence_ms=%lld\n", legacy.unwritten,

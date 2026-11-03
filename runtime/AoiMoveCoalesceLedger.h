@@ -34,11 +34,18 @@ public:
         bool in_flight = false;
         uint64_t in_flight_seq = 0;
         int layer = -1;  // 1 near, 0 far, -1 unknown
+        float x = 0;
+        float z = 0;
+        float sent_x = 0;
+        float sent_z = 0;
+        bool has_pos = false;
+        bool has_sent_pos = false;
     };
 
     void EnableLegacyAccountingForTest(bool on) { legacy_ = on; }
 
-    void Offer(uint64_t id, uint64_t seq, int64_t now, int layer) {
+    void Offer(uint64_t id, uint64_t seq, int64_t now, int layer, float x = 0, float z = 0,
+               bool has_pos = false) {
         if (id == 0)
             return;
         auto &ent = entities_[id];
@@ -47,6 +54,11 @@ public:
         const bool waiting = ent.pending_since_ms > 0;
         ent.state_seq = seq;
         ent.layer = layer;
+        if (has_pos) {
+            ent.x = x;
+            ent.z = z;
+            ent.has_pos = true;
+        }
         if (!waiting)
             ent.pending_since_ms = now;
     }
@@ -108,13 +120,9 @@ public:
             c.id = kv.first;
             c.gap = kv.second.last_written_ms <= 0 ? now + 1 : now - kv.second.last_written_ms;
             c.attempts = kv.second.unwritten_attempts;
-            c.layer = kv.second.layer;
-            c.hard = kv.second.pending_since_ms > 0 && now - kv.second.pending_since_ms >= 15000;
             if (legacy_) {
                 c.gap = now - kv.second.pending_since_ms;
                 c.attempts = 0;
-                c.layer = 0;
-                c.hard = false;
             }
             cands.push_back(c);
         }
@@ -127,21 +135,18 @@ public:
         const int take_n = std::min(limit, static_cast<int>(cands.size()));
         std::partial_sort(cands.begin(), cands.begin() + take_n, cands.end(),
                           [](const Cand &a, const Cand &b) {
-                              if (a.hard != b.hard)
-                                  return a.hard;
                               if (a.gap != b.gap)
                                   return a.gap > b.gap;
                               if (a.attempts != b.attempts)
                                   return a.attempts < b.attempts;
-                              if (a.layer != b.layer)
-                                  return a.layer > b.layer;
                               return a.id < b.id;
                           });
+        const std::vector<Cand> &chosen = cands;
         std::vector<AoiMoveStamp> out;
         out.reserve(static_cast<size_t>(take_n));
         int repicked = 0;
         for (int i = 0; i < take_n; ++i) {
-            const uint64_t id = cands[static_cast<size_t>(i)].id;
+            const uint64_t id = chosen[static_cast<size_t>(i)].id;
             auto &ent = entities_[id];
             if (ent.unwritten_attempts > 0)
                 ++repicked;
@@ -202,9 +207,12 @@ public:
             it->second.last_written_ms = now;
             it->second.unwritten_attempts = 0;
             it->second.pending_since_ms = 0;
-            if (it->second.state_seq == stamp.state_seq)
-                entities_.erase(it);
-            else
+            if (it->second.has_pos) {
+                it->second.sent_x = it->second.x;
+                it->second.sent_z = it->second.z;
+                it->second.has_sent_pos = true;
+            }
+            if (it->second.state_seq != stamp.state_seq)
                 it->second.pending_since_ms = now;
         }
     }

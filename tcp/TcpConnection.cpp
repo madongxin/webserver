@@ -26,27 +26,19 @@
 #define SIOCOUTQNSD 0x894B
 #endif
 
-// 内核里还没交给网卡的字节超过这个值时，最新移动帧先留在应用缓冲，不立刻 write。
-// 再写进去的话，移动回包会排在这批旧坐标后面。只统计还没离开本机的字节。
-constexpr int kLatestMoveKernelBudget = 1024;
-// 在途低于这个值就写出最新位置。1KB 低于一个报文，忙连接永远过不了那道门。
+// 和 ConnectionEstablished 里的 TCP_NOTSENT_LOWAT 是同一个上限。
+// 超过之后 write 会返回 EAGAIN。没到这个值就写出，不要用 1KB 把位置拦在应用缓冲里。
+constexpr int kLatestMoveKernelBudget = 16 * 1024;
 constexpr int kLatestMoveReleaseUnsent = 16 * 1024;
-constexpr int64_t kLatestMoveStarveMs = 1000;
 
 int64_t HoldNowMs() {
     return std::chrono::duration_cast<std::chrono::milliseconds>(
                std::chrono::steady_clock::now().time_since_epoch())
         .count();
 }
-ParkedMoveDecision DecideParkedMove(bool retransmitting, int unsent_bytes, int64_t age_ms) {
-    if (age_ms < 0)
-        age_ms = 0;
-    // 重传期间少写，避免把旧坐标堆进已经在重传的队列。但不能一直不写：
-    // 回包仍在发出时 tcpi_retransmits 会一直大于 0，位置就会停好几分钟，出口带宽却还空着。
-    if (age_ms >= kLatestMoveStarveMs)
-        return ParkedMoveDecision::WriteStarved;
-    if (retransmitting)
-        return ParkedMoveDecision::SkipRetrans;
+ParkedMoveDecision DecideParkedMove(bool /*retransmitting*/, int unsent_bytes, int64_t /*age_ms*/) {
+    // tcpi_retransmits 在回包还在发出时也会大于 0，不能拿它当「先别写位置」。
+    // 只有本连接还没交给网卡的字节超过 16KB 时，内核才会拒绝 write。
     if (unsent_bytes > kLatestMoveReleaseUnsent)
         return ParkedMoveDecision::SkipUnsent;
     return ParkedMoveDecision::WriteRoom;
@@ -472,10 +464,10 @@ int64_t TcpConnection::parked_move_age_ms() const {
 void TcpConnection::ReleaseStuckMove() {
     if (!send_buf_)
         return;
-    // 已经写进内核的半帧不能截断。只丢掉还整帧留在应用缓冲里的移动。
-    if (send_move_sticky_ || send_partial_prefix_ > 0)
+    // 这一帧已经有字节进了内核，剩下的半帧不能截断。
+    if (move_commit_pending_ && move_commit_bytes_ > 0 && move_commit_left_ < move_commit_bytes_)
         return;
-    if (!send_hold_move_ && !move_commit_pending_)
+    if (!send_hold_move_ && !send_move_sticky_ && !move_commit_pending_)
         return;
     const std::string raw = send_buf_->PeekAllAsString();
     const size_t prefix = std::min(send_partial_prefix_, raw.size());
@@ -542,6 +534,15 @@ bool TcpConnection::TrySendLatestMove(const std::string &msg, const std::vector<
         FinishMoveCommit(true);
     else if (move_commit_pending_ && (!send_buf_ || send_buf_->readablebytes() == 0))
         FinishMoveCommit(true);
+    else if (send_buf_ && send_buf_->readablebytes() > 0 && move_commit_bytes_ > 0 &&
+             move_commit_left_ >= move_commit_bytes_) {
+        // write 一个字节都没收下。帧整段还在应用缓冲里，和主动停放是同一种状态。
+        send_hold_move_ = true;
+        send_move_hold_off_ = std::min(move_commit_skip_, static_cast<size_t>(send_buf_->readablebytes()));
+        if (send_hold_since_ms_ == 0)
+            send_hold_since_ms_ = HoldNowMs();
+        ArmParkedMoveRetry();
+    }
     return true;
 }
 
@@ -855,13 +856,26 @@ void TcpConnection::OnParkedMoveTimer() {
     else
         NoteAoiWriteRoom();
     send_hold_move_ = false;
-    send_hold_since_ms_ = 0;
     WriteNonBlocking();
     if (state_ == ConnectionState::Connected && !in_close_ && send_buf_ &&
-        send_buf_->readablebytes() > 0)
-        send_move_sticky_ = true;
-    else
+        send_buf_->readablebytes() > 0) {
+        const bool move_entered = move_commit_pending_ && move_commit_bytes_ > 0 &&
+                                  move_commit_left_ < move_commit_bytes_;
+        if (move_entered) {
+            // 这帧已经有字节进了内核，剩下的半帧等 EPOLLOUT，不能删。
+            send_hold_since_ms_ = 0;
+            send_move_sticky_ = true;
+        } else {
+            // write 返回 EAGAIN。帧还整段在应用缓冲里，继续停放，等队列低于 16KB 再写。
+            send_hold_move_ = true;
+            if (send_hold_since_ms_ == 0)
+                send_hold_since_ms_ = HoldNowMs();
+            send_move_sticky_ = false;
+        }
+    } else {
+        send_hold_since_ms_ = 0;
         send_move_sticky_ = false;
+    }
     ArmWriteIfNeeded();
 }
 

@@ -452,19 +452,83 @@ void TestParkedMoveStaysUntilWritable() {
     ::close(lfd);
 }
 
+void TestFullKernelDoesNotStickTheSameMove() {
+    int lfd = ::socket(AF_INET, SOCK_STREAM, 0);
+    Expect(lfd >= 0, "tcp listen rotate");
+    int yes = 1;
+    ::setsockopt(lfd, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(yes));
+    sockaddr_in addr{};
+    addr.sin_family = AF_INET;
+    addr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+    addr.sin_port = 0;
+    Expect(::bind(lfd, reinterpret_cast<sockaddr *>(&addr), sizeof(addr)) == 0, "bind rotate");
+    Expect(::listen(lfd, 1) == 0, "listen rotate");
+    socklen_t alen = sizeof(addr);
+    Expect(::getsockname(lfd, reinterpret_cast<sockaddr *>(&addr), &alen) == 0, "getsockname rotate");
+
+    int cfd = ::socket(AF_INET, SOCK_STREAM, 0);
+    Expect(cfd >= 0, "tcp client rotate");
+    Expect(::connect(cfd, reinterpret_cast<sockaddr *>(&addr), sizeof(addr)) == 0, "connect rotate");
+    int afd = ::accept(lfd, nullptr, nullptr);
+    Expect(afd >= 0, "accept rotate");
+    int flags = ::fcntl(cfd, F_GETFL, 0);
+    ::fcntl(cfd, F_SETFL, flags | O_NONBLOCK);
+    flags = ::fcntl(afd, F_GETFL, 0);
+    ::fcntl(afd, F_SETFL, flags | O_NONBLOCK);
+
+    std::string block(4096, 'B');
+    while (true) {
+        const ssize_t n = ::write(cfd, block.data(), block.size());
+        if (n > 0)
+            continue;
+        break;
+    }
+
+    EventLoop loop;
+    auto conn = std::make_shared<TcpConnection>(&loop, cfd, 41);
+    conn->set_close_callback([](const std::shared_ptr<TcpConnection> &) {});
+    conn->set_message_callback([](const std::shared_ptr<TcpConnection> &) {});
+    int callbacks = 0;
+    int committed = 0;
+    conn->set_latest_move_commit_callback(
+        [&](std::vector<TcpConnection::LatestMoveAck>, bool ok, int) {
+            ++callbacks;
+            if (ok)
+                ++committed;
+        });
+    conn->ConnectionEstablished();
+    const std::string frame(64, 'M');
+    std::vector<TcpConnection::LatestMoveAck> acks(1);
+    acks[0].entity_id = 7;
+    acks[0].state_seq = 1;
+    Expect(conn->TrySendLatestMove(frame, acks), "acked move parked on a full kernel");
+    Expect(conn->holding_latest_move(), "acked move starts held");
+    loop.RunAfter(1.3, [&loop]() { loop.Quit(); });
+    loop.Loop();
+    Expect(conn->holding_latest_move(), "full kernel keeps the latest move parked");
+    Expect(!conn->latest_move_awaiting_write(), "EAGAIN does not mark the move as already handed to the kernel");
+    Expect(conn->send_buf()->readablebytes() == static_cast<int>(frame.size()),
+           "unwritten move stays intact in the app buffer");
+    Expect(callbacks == 0, "a frame the kernel refused is not reported as finished");
+    (void)committed;
+
+    conn->HandleClose();
+    conn->ConnectionDestructor();
+    ::close(afd);
+    ::close(lfd);
+}
+
 void TestParkedMoveDecisionReleasesDuringRetransmit() {
-    Expect(DecideParkedMove(true, 0, 0) == ParkedMoveDecision::SkipRetrans,
-           "fresh retransmit keeps the frame parked");
-    Expect(DecideParkedMove(true, 64 * 1024, 999) == ParkedMoveDecision::SkipRetrans,
-           "retransmit under 1s still parks");
-    Expect(DecideParkedMove(true, 64 * 1024, 1000) == ParkedMoveDecision::WriteStarved,
-           "retransmit at 1s writes the latest frame");
-    Expect(DecideParkedMove(true, 64 * 1024, 265000) == ParkedMoveDecision::WriteStarved,
-           "long retransmit cannot hold a position for minutes");
+    Expect(DecideParkedMove(true, 0, 0) == ParkedMoveDecision::WriteRoom,
+           "retransmit flag alone does not hold the move");
+    Expect(DecideParkedMove(true, 64 * 1024, 0) == ParkedMoveDecision::SkipUnsent,
+           "retransmit with a full notsent queue still waits");
+    Expect(DecideParkedMove(true, 64 * 1024, 265000) == ParkedMoveDecision::SkipUnsent,
+           "age does not force a write into a full notsent queue");
     Expect(DecideParkedMove(false, 20 * 1024, 0) == ParkedMoveDecision::SkipUnsent,
-           "high unsent without retransmit still waits");
-    Expect(DecideParkedMove(false, 20 * 1024, 1000) == ParkedMoveDecision::WriteStarved,
-           "high unsent releases at 1s");
+           "unsent above 16KB waits");
+    Expect(DecideParkedMove(false, 16 * 1024, 0) == ParkedMoveDecision::WriteRoom,
+           "unsent at 16KB can be written");
     Expect(DecideParkedMove(false, 1024, 0) == ParkedMoveDecision::WriteRoom,
            "small unsent writes immediately");
 }
@@ -480,6 +544,7 @@ int main() {
     TestLatestMoveHeldWhileKernelBusy();
     TestParkedMoveRetriesAfterKernelDrains();
     TestParkedMoveStaysUntilWritable();
+    TestFullKernelDoesNotStickTheSameMove();
     TestParkedMoveDecisionReleasesDuringRetransmit();
     TestPartialControlDoesNotBlockLaterReplies();
     if (g_fail) {
