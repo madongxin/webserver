@@ -1328,6 +1328,10 @@ target_link_libraries(password_hash_test ${OPENSSL_CRYPTO_LIB})
   target_include_directories(http_admin_access_test PRIVATE runtime)
   add_executable(aoi_move_rotate_test test/aoi_move_rotate_test.cpp)
   target_include_directories(aoi_move_rotate_test PRIVATE runtime base)
+  add_executable(aoi_send_policy_test test/aoi_send_policy_test.cpp)
+  target_include_directories(aoi_send_policy_test PRIVATE runtime base)
+  add_executable(sendbuf_v2_test test/sendbuf_v2_test.cpp)
+  target_include_directories(sendbuf_v2_test PRIVATE runtime)
   add_executable(aoi_move_frame_size_test
     test/aoi_move_frame_size_test.cpp
     game/ProtoFraming.cpp

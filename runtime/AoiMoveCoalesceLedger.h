@@ -19,6 +19,16 @@ struct AoiMoveStamp {
  * 见 docs/perf_audit/aoi_move_egress.md。
  */
 constexpr int kAoiMoveEventBytes = 38;
+/**
+ * 一个 TCP 小段的线上开销：以太网头 14 + IPv4 头 20 + TCP 头 20 + 12 字节选项/填充余量。
+ * 预算按 payload + 这个常量记账，避免 54 字节小帧把真实流量算少。
+ */
+constexpr int kOnWireHeaderBytes = 66;
+constexpr int kNearQuotaPercent = 60;
+constexpr int kBatchMinEvents = 8;
+constexpr int kNearHardSilenceMs = 3000;  // 待压测校准
+constexpr int kFarHardSilenceMs = 15000;  // 待压测校准
+constexpr int kBudgetReservePercent = 10;
 
 /**
  * 一条连接上的 MOVE 合并账本。槽是唯一事实来源，发出去的帧只是一份可丢弃的快照。
@@ -43,6 +53,15 @@ public:
     };
 
     void EnableLegacyAccountingForTest(bool on) { legacy_ = on; }
+    void SetSendIntervalMs(int ms) { coalesce_interval_ms_ = ms; }
+    void SetQuotaPercent(int pct) { quota_numerator_ = pct; }
+    int charged_total() const { return charged_total_; }
+    void ClearPending() {
+        for (auto &kv : entities_) {
+            kv.second.pending_since_ms = 0;
+            kv.second.in_flight = false;
+        }
+    }
 
     void Offer(uint64_t id, uint64_t seq, int64_t now, int layer, float x = 0, float z = 0,
                bool has_pos = false) {
@@ -72,25 +91,48 @@ public:
         if (est_bytes < 1)
             est_bytes = 1;
         const int64_t oldest = MaxSilenceMs(now);
-        const bool force = oldest >= 1000;
-        if (!force && last_written_flush_ms_ != 0 && now - last_written_flush_ms_ < 200) {
+        const int interval = coalesce_interval_ms_ > 0 ? coalesce_interval_ms_ : 200;
+        if (last_written_flush_ms_ != 0 && now - last_written_flush_ms_ < interval) {
             if (wait_ms)
-                *wait_ms = 200 - (now - last_written_flush_ms_);
+                *wait_ms = interval - (now - last_written_flush_ms_);
             return {};
         }
-        if (budget_window_ms_ == 0 || now - budget_window_ms_ >= 1000) {
+            if (budget_window_ms_ == 0 || now - budget_window_ms_ >= 1000) {
             budget_window_ms_ = now;
             budget_bytes_ = 0;
+            over_reported_ = 0;
         }
+        window_budget_ = per_conn_budget > 0 ? per_conn_budget : 16 * 1024;
         int budget = per_conn_budget > 0 ? per_conn_budget : 16 * 1024;
-        int remain = budget - budget_bytes_;
+        if (quota_numerator_ > 0 && quota_numerator_ < 100)
+            max_n = std::max(1, max_n * quota_numerator_ / 100);
+        const int normal_budget = budget * (100 - kBudgetReservePercent) / 100;
+        bool any_hard = false;
+        if (!legacy_) {
+            for (const auto &kv : entities_) {
+                if (kv.second.in_flight || kv.second.pending_since_ms <= 0)
+                    continue;
+                const int64_t age = now - kv.second.pending_since_ms;
+                const int cap = kv.second.layer == 1 ? kNearHardSilenceMs : kFarHardSilenceMs;
+                if (age >= cap)
+                    any_hard = true;
+            }
+        }
+        const int ceiling = any_hard ? budget : normal_budget;
+        int remain = ceiling - budget_bytes_;
+        if (remain < 0)
+            remain = 0;
         int limit = 0;
-        if (force) {
-            // 强制带上最老且最近没被尝试的一批，仍不超过每帧名额。
-            // 全局预算已经用完时只带 1 个，避免把同一批字节再推进重传。
-            limit = remain >= est_bytes ? max_n : 1;
-        } else if (remain >= est_bytes) {
-            limit = remain / est_bytes;
+        if (legacy_) {
+            const bool force = oldest >= 1000;
+            if (force)
+                limit = remain >= est_bytes ? max_n : 1;
+            else if (remain >= est_bytes)
+                limit = std::min(max_n, remain / est_bytes);
+            if (force && remain < est_bytes)
+                limit = std::max(limit, 1);
+        } else if (remain >= est_bytes + kOnWireHeaderBytes) {
+            limit = (remain - kOnWireHeaderBytes) / est_bytes;
             if (limit > max_n)
                 limit = max_n;
         }
@@ -128,20 +170,75 @@ public:
         }
         if (cands.empty())
             return {};
-        // 预算不够时，满 1 秒也只放行 1 个最老的，避免把整帧再推进重传。
-        // 静默到 15 秒的人排在前面，但仍受本帧名额和预算限制，超出的名额不往缓冲里堆。
-        if (force && remain < est_bytes)
-            limit = std::max(limit, 1);
-        const int take_n = std::min(limit, static_cast<int>(cands.size()));
-        std::partial_sort(cands.begin(), cands.begin() + take_n, cands.end(),
-                          [](const Cand &a, const Cand &b) {
-                              if (a.gap != b.gap)
-                                  return a.gap > b.gap;
-                              if (a.attempts != b.attempts)
-                                  return a.attempts < b.attempts;
-                              return a.id < b.id;
-                          });
-        const std::vector<Cand> &chosen = cands;
+        auto better = [](const Cand &a, const Cand &b) {
+            if (a.attempts != b.attempts)
+                return a.attempts < b.attempts;
+            if (a.gap != b.gap)
+                return a.gap > b.gap;
+            return a.id < b.id;
+        };
+        std::vector<Cand> chosen;
+        if (legacy_) {
+            const int take_n = std::min(limit, static_cast<int>(cands.size()));
+            std::partial_sort(cands.begin(), cands.begin() + take_n, cands.end(),
+                              [](const Cand &a, const Cand &b) {
+                                  if (a.gap != b.gap)
+                                      return a.gap > b.gap;
+                                  return a.id < b.id;
+                              });
+            chosen.assign(cands.begin(), cands.begin() + take_n);
+        } else {
+            std::vector<Cand> near;
+            std::vector<Cand> far;
+            for (auto &c : cands) {
+                auto it = entities_.find(c.id);
+                const int layer = it == entities_.end() ? -1 : it->second.layer;
+                const int64_t pend = it == entities_.end() ? 0 : it->second.pending_since_ms;
+                const int64_t age = pend > 0 ? now - pend : 0;
+                c.layer = layer;
+                c.hard = layer == 1 ? age >= kNearHardSilenceMs : age >= kFarHardSilenceMs;
+                if (layer == 1)
+                    near.push_back(c);
+                else
+                    far.push_back(c);
+            }
+            int near_take = static_cast<int>(near.size());
+            int far_take = static_cast<int>(far.size());
+            if (!near.empty()) {
+                near_take = std::max(1, limit * kNearQuotaPercent / 100);
+                if (near_take > limit)
+                    near_take = limit;
+                if (near_take > static_cast<int>(near.size()))
+                    near_take = static_cast<int>(near.size());
+                far_take = limit - near_take;
+                if (far_take > static_cast<int>(far.size())) {
+                    near_take = std::min(static_cast<int>(near.size()),
+                                         near_take + (far_take - static_cast<int>(far.size())));
+                    far_take = static_cast<int>(far.size());
+                }
+            } else {
+                near_take = 0;
+                far_take = std::min(limit, static_cast<int>(far.size()));
+            }
+            if (near_take > 0) {
+                std::partial_sort(near.begin(), near.begin() + near_take, near.end(), better);
+                chosen.insert(chosen.end(), near.begin(), near.begin() + near_take);
+            }
+            if (far_take > 0) {
+                std::partial_sort(far.begin(), far.begin() + far_take, far.end(), better);
+                chosen.insert(chosen.end(), far.begin(), far.begin() + far_take);
+            }
+            const bool batch_wait = static_cast<int>(chosen.size()) < kBatchMinEvents && !any_hard &&
+                                    oldest < kNearHardSilenceMs &&
+                                    static_cast<int>(cands.size()) >= kBatchMinEvents;
+            if (batch_wait) {
+                if (wait_ms)
+                    *wait_ms = 50;
+                ServerStats::aoi_move_batch_hold.fetch_add(1, std::memory_order_relaxed);
+                return {};
+            }
+        }
+        const int take_n = static_cast<int>(chosen.size());
         std::vector<AoiMoveStamp> out;
         out.reserve(static_cast<size_t>(take_n));
         int repicked = 0;
@@ -194,9 +291,19 @@ public:
         if (legacy_)
             return;
         if (frame_bytes > 0) {
-            budget_bytes_ += frame_bytes;
-            ServerStats::egress_admitted_bytes.fetch_add(static_cast<uint64_t>(frame_bytes),
+            const int wire = frame_bytes + kOnWireHeaderBytes;
+            budget_bytes_ += wire;
+            charged_total_ += wire;
+            ServerStats::egress_admitted_bytes.fetch_add(static_cast<uint64_t>(wire),
                                                          std::memory_order_relaxed);
+            if (window_budget_ > 0 && budget_bytes_ > window_budget_) {
+                const int over = budget_bytes_ - window_budget_;
+                if (over > over_reported_) {
+                    ServerStats::aoi_move_budget_over_bytes.fetch_add(
+                        static_cast<uint64_t>(over - over_reported_), std::memory_order_relaxed);
+                    over_reported_ = over;
+                }
+            }
         }
         last_written_flush_ms_ = now;
         for (const auto &stamp : frame) {
@@ -256,7 +363,14 @@ public:
             double mbps = (env && *env) ? std::atof(env) : 2.4;
             if (mbps < 0.1)
                 mbps = 0.1;
-            const int v = static_cast<int>(mbps * 1000000.0 / 8.0);
+            const char *inst_env = std::getenv("GAMEMESH_GATEWAY_INSTANCES");
+            int instances = (inst_env && *inst_env) ? std::atoi(inst_env) : 2;
+            if (instances < 1)
+                instances = 1;
+            int v = static_cast<int>(mbps * 1000000.0 / 8.0);
+            v /= instances;
+            if (v < 1)
+                v = 1;
             ServerStats::egress_budget_bytes_per_sec.store(v, std::memory_order_relaxed);
             return v;
         }();
@@ -265,6 +379,11 @@ public:
 
 private:
     bool legacy_ = false;
+    int coalesce_interval_ms_ = 200;
+    int quota_numerator_ = 100;
+    int window_budget_ = 0;
+    int over_reported_ = 0;
+    int charged_total_ = 0;
     std::unordered_map<uint64_t, Entity> entities_;
     int64_t last_written_flush_ms_ = 0;
     int64_t budget_window_ms_ = 0;

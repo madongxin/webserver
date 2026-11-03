@@ -6,6 +6,8 @@
 #include "GameTcpGateway.h"
 
 #include "AoiMoveCoalesceLedger.h"
+#include "SendBufV2.h"
+#include "SlowClientPolicy.h"
 #include "AoiPublishQueue.h"
 #include "Buffer.h"
 #include "ServerStats.h"
@@ -101,6 +103,8 @@ struct MoveCoalesceSlot {
     bool viewer_known = false;
     float viewer_x = 0;
     float viewer_z = 0;
+    SlowClientTracker slow;
+    std::vector<game::AoiEvent> resync;
 };
 
 std::mutex g_move_slots_mu;
@@ -246,6 +250,7 @@ void ApplyMoveCommit(const std::shared_ptr<MoveCoalesceSlot> &slot,
         }
         if (committed) {
             slot->ledger.NoteKernelWrite(stamps, now, frame_bytes);
+            slot->slow.NoteMoveWritten(now);
             if (frame_bytes > 0) {
                 OpsMetrics::Instance().AddGatewayTxBytes(static_cast<uint64_t>(frame_bytes));
                 OpsMetrics::Instance().AddGatewayTxFrames(1);
@@ -303,19 +308,55 @@ void FlushMoveSlot(const std::shared_ptr<MoveCoalesceSlot> &slot,
         return;
     }
     HookMoveCommit(live, slot);
-    // 这一帧还停在应用缓冲里，或者有半帧已经进了内核。等连接自己的写事件，不要在这里空转 write。
-    if (live->holding_latest_move() || live->latest_move_awaiting_write()) {
+    // 半帧已经进了内核就等写完。还没写出第一个字节的停放帧可以换成更新的一批。
+    if (live->latest_move_awaiting_write()) {
         live->loop()->RunAfter(0.2, [slot, weak, conn_id]() { FlushMoveSlot(slot, weak, conn_id); });
         return;
     }
+    if (live->holding_latest_move())
+        live->ReleaseStuckMove();
     constexpr int kMaxMoveEntities = 40;
     int64_t wait_ms = 0;
     bool leftover = false;
+    bool close_for_slow = false;
     game::AoiDelta delta;
     std::vector<AoiMoveStamp> picked;
     {
         std::lock_guard<std::mutex> lk(slot->mu);
         const int64_t now = SteadyMs();
+        const bool overflow =
+            ControlResponseOutbox::Instance().Depth(conn_id) >= ControlResponseOutbox::kMaxFrames;
+        const SlowClientAction slow_action = slot->slow.Evaluate(now, overflow);
+        if (slow_action == SlowClientAction::Degrade) {
+            slot->ledger.SetQuotaPercent(50);
+            slot->ledger.SetSendIntervalMs(1000);
+            ServerStats::aoi_move_slow_degrade.fetch_add(1, std::memory_order_relaxed);
+            LOG_INFO << "slow client degrade conn#" << conn_id;
+        } else if (slow_action == SlowClientAction::ClearSlot) {
+            slot->resync.clear();
+            for (const auto &kv : slot->by_entity)
+                slot->resync.push_back(kv.second);
+            slot->by_entity.clear();
+            slot->ledger.ClearPending();
+            ServerStats::aoi_move_slow_clear.fetch_add(1, std::memory_order_relaxed);
+            LOG_INFO << "slow client clear slot conn#" << conn_id << " entities=" << slot->resync.size();
+        } else if (slow_action == SlowClientAction::Close) {
+            ServerStats::aoi_move_slow_close.fetch_add(1, std::memory_order_relaxed);
+            LOG_WARN << "slow client close conn#" << conn_id;
+            close_for_slow = true;
+        }
+        if (slot->slow.snapshot_due() && !slot->resync.empty()) {
+            for (const auto &ev : slot->resync) {
+                const uint64_t id = ev.entity().player_id();
+                if (id == 0)
+                    continue;
+                slot->by_entity[id] = ev;
+                slot->ledger.Offer(id, ev.entity().state_seq(), now, 1);
+            }
+            slot->resync.clear();
+            slot->slow.NoteSnapshotSent();
+            ServerStats::aoi_move_snapshot_resync.fetch_add(1, std::memory_order_relaxed);
+        }
         if (slot->by_entity.empty()) {
             slot->scheduled = false;
         } else if (ReliableOutboxHub::Instance().Depth(conn_id) > 0 ||
@@ -341,6 +382,10 @@ void FlushMoveSlot(const std::shared_ptr<MoveCoalesceSlot> &slot,
                 slot->scheduled = !slot->by_entity.empty();
             }
         }
+    }
+    if (close_for_slow) {
+        live->CloseForSlowClient("slow_client");
+        return;
     }
     if (wait_ms > 0) {
         live->loop()->RunAfter(static_cast<double>(wait_ms) / 1000.0,
@@ -640,6 +685,7 @@ void RememberBind(uint64_t conn_id, uint64_t player_id, const std::string &token
                     if (auto slot = FindMoveSlot(conn_id)) {
                         std::lock_guard<std::mutex> lk(slot->mu);
                         slot->hold_since_ms = 0;
+                        slot->slow.NoteAnyByteWritten(SteadyMs());
                     }
                     PublishHoldAge(conn_id, 0);
                 }
@@ -1013,7 +1059,10 @@ void GameTcpGateway::Run() {
                  << " generation=" << bind.generation;
     });
     LOG_INFO << "GameTcpGateway ready on " << ip_ << ":" << port_
-             << " id=" << g_gateway_id << " (session bind + grace disconnect)";
+             << " id=" << g_gateway_id << " (session bind + grace disconnect)"
+             << " egress_bytes_per_sec=" << AoiMoveCoalesceLedger::EgressBudgetBytesPerSec()
+             << " sendbuf_v2=" << (SendBufV2Enabled() ? 1 : 0)
+             << " read_backpressure=" << (ReadBackpressureEnabled() ? 1 : 0);
     g_tcp_listening.store(true, std::memory_order_release);
     HealthProbeStore::SetGatewayTcpListening(true);
     server->Start();
@@ -1035,61 +1084,75 @@ void GameTcpGateway::OnMessage(const std::shared_ptr<TcpConnection> &conn) {
     const size_t nread = static_cast<size_t>(rb->readablebytes());
     OpsMetrics::Instance().AddGatewayRxBytes(nread);
 
-    // 流缓冲挂在连接上，仅由所属 EventLoop 访问，无需全局锁
-    std::string &buf = conn->proto_stream();
-    buf.append(rb->RetrieveAllAsString());
-
-    std::vector<std::string> frames;
-    std::string frame;
+    struct RankedFrame {
+        std::string payload;
+        game::GameRequest req;
+        int rank = 2;
+        bool ok = false;
+    };
+    std::vector<RankedFrame> frames;
+    const std::string raw = rb->PeekAllAsString();
     size_t offset = 0;
-    for (;;) {
+    constexpr size_t kScanCap = 256;
+    while (frames.size() < kScanCap) {
         size_t consumed = 0;
-        const auto dr = gameproto::DecodeOneFrameFrom(buf, offset, &frame, &consumed);
-        if (dr == gameproto::FrameDecodeResult::Complete) {
-            frames.push_back(std::move(frame));
-            OpsMetrics::Instance().AddGatewayRxFrames(1);
-            frame.clear();
-            offset += consumed;
-            continue;
-        }
+        std::string payload;
+        const auto dr = gameproto::DecodeOneFrameFrom(raw, offset, &payload, &consumed);
+        if (dr == gameproto::FrameDecodeResult::Incomplete)
+            break;
         if (dr == gameproto::FrameDecodeResult::Invalid) {
             OpsMetrics::Instance().IncIllegalFrame();
             LOG_WARN << "GameTcpGateway invalid frame conn#" << conn->id()
-                     << " stream_bytes=" << buf.size();
-            buf.clear();
+                     << " stream_bytes=" << raw.size();
+            rb->RetrieveAll();
             conn->HandleClose();
             return;
         }
-        break;  // Incomplete
+        RankedFrame item;
+        item.payload = std::move(payload);
+        item.ok = item.req.ParseFromString(item.payload);
+        if (item.ok) {
+            if (item.req.has_heartbeat() || item.req.has_client_hello())
+                item.rank = 0;
+            else if (item.req.has_reconnect() || item.req.has_login() || item.req.has_register_() ||
+                     item.req.has_logout())
+                item.rank = 1;
+        }
+        frames.push_back(std::move(item));
+        OpsMetrics::Instance().AddGatewayRxFrames(1);
+        offset += consumed;
     }
     if (offset > 0)
-        buf.erase(0, offset);
-    // 同一读批次里心跳/重连先处理，避免排在 Move/EnterMap 后面拖过客户端时限。
+        rb->Retrieve(static_cast<int>(offset));
     if (frames.size() > 1) {
-        std::stable_sort(frames.begin(), frames.end(), [](const std::string &a, const std::string &b) {
-            auto rank = [](const std::string &frame) {
-                game::GameRequest peek;
-                if (!peek.ParseFromString(frame))
-                    return 2;
-                if (peek.has_heartbeat() || peek.has_client_hello())
-                    return 0;
-                if (peek.has_reconnect() || peek.has_login() || peek.has_register_() ||
-                    peek.has_logout())
-                    return 1;
-                return 2;
-            };
-            return rank(a) < rank(b);
-        });
+        std::stable_sort(frames.begin(), frames.end(),
+                         [](const RankedFrame &a, const RankedFrame &b) { return a.rank < b.rank; });
     }
-    // 恶意半包堆积：超过读缓冲上限则关连
-    if (buf.size() > conn->max_read_buf_bytes()) {
+    if (static_cast<size_t>(rb->readablebytes()) > conn->max_read_buf_bytes()) {
         LOG_WARN << "GameTcpGateway stream overflow conn#" << conn->id();
-        buf.clear();
+        rb->RetrieveAll();
         conn->HandleClose();
         return;
     }
+    constexpr size_t kMaxFramesPerWake = 64;
+    if (frames.size() > kMaxFramesPerWake) {
+        std::string putback;
+        for (size_t i = kMaxFramesPerWake; i < frames.size(); ++i) {
+            std::string encoded;
+            if (gameproto::EncodeFrame(frames[i].payload, &encoded))
+                putback.append(encoded);
+        }
+        if (!putback.empty()) {
+            const std::string tail = rb->RetrieveAllAsString();
+            rb->Append(putback);
+            if (!tail.empty())
+                rb->Append(tail);
+        }
+        frames.resize(kMaxFramesPerWake);
+    }
 
-    for (auto &frame : frames) {
+    for (auto &item : frames) {
+        const std::string &frame = item.payload;
         auto tcp_sink = std::make_shared<TcpReplySink>(conn);
         GatewayConnRegistry::Bind sticky;
         const bool bound =
@@ -1098,13 +1161,27 @@ void GameTcpGateway::OnMessage(const std::shared_ptr<TcpConnection> &conn) {
         const std::string frame_lim =
             GatewayConnGuard::Instance().CheckFrameRate(conn->id(), frame.size());
         if (!frame_lim.empty()) {
-            SendPublicErr(tcp_sink, conn->id(), 0, gameproto::kErrRateLimited, "frame rate limited");
+            ServerStats::gateway_rate_drop_frames.fetch_add(1, std::memory_order_relaxed);
+            if (GatewayConnGuard::Instance().AllowRateError(conn->id()))
+                SendPublicErr(tcp_sink, conn->id(), 0, gameproto::kErrRateLimited, "frame rate limited");
+            if (GatewayConnGuard::Instance().RateLimitedTooLong(conn->id(), 10000)) {
+                ServerStats::gateway_rate_close.fetch_add(1, std::memory_order_relaxed);
+                conn->CloseForSlowClient("frame_rate");
+                return;
+            }
             continue;
+        }
+        const size_t cap = bound ? (64 * 1024) : (16 * 1024);
+        const bool wide = item.ok && (item.req.has_world_snapshot() || item.req.has_enter_map());
+        if (!wide && frame.size() > cap) {
+            LOG_WARN << "GameTcpGateway frame too large conn#" << conn->id() << " bytes=" << frame.size();
+            conn->CloseForSlowClient("frame_too_large");
+            return;
         }
         GatewayConnGuard::Instance().NoteActivity(conn->id(), frame.size());
 
-        game::GameRequest peek;
-        if (!peek.ParseFromString(frame)) {
+        game::GameRequest peek = item.req;
+        if (!item.ok) {
             OpsMetrics::Instance().IncIllegalFrame();
             SendPublicErr(tcp_sink, conn->id(), 0, gameproto::kErrInvalidArgument, "invalid protobuf");
             LOG_WARN << "GameTcpGateway illegal protobuf conn#" << conn->id();

@@ -30,6 +30,14 @@ void Buffer::Append(const std::string& message) {
     Append(message.data(), static_cast<int>(message.size())); 
 }
 
+void Buffer::HasWritten(int len) {
+    if (len <= 0)
+        return;
+    if (len > writablebytes())
+        len = writablebytes();
+    write_index_ += len;
+}
+
 
 int Buffer::readablebytes() const { return write_index_ - read_index_; }
 int Buffer::writablebytes() const { return static_cast<int>(buffer_.size()) - write_index_; } 

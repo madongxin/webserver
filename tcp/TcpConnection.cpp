@@ -10,6 +10,7 @@
 #include "Logging.h"
 #include <algorithm>
 #include <chrono>
+#include <cstdlib>
 #include <memory>
 #include <unistd.h>
 #include <cassert>
@@ -657,14 +658,27 @@ void TcpConnection::Write() { WriteNonBlocking(); }
 void TcpConnection::ReadNonBlocking() {
     if (state_ != ConnectionState::Connected || in_close_ || connfd_ < 0)
         return;
-    char buf[1024];
-    while (true) {
-        ssize_t bytes_read = ::read(connfd_, buf, sizeof(buf));
+    const char *cap_env = std::getenv("GAMEMESH_READ_WAKE_BYTES");
+    int wake_cap = (cap_env && *cap_env) ? std::atoi(cap_env) : (256 * 1024);
+    if (wake_cap < 16 * 1024)
+        wake_cap = 16 * 1024;
+    if (wake_cap > 1024 * 1024)
+        wake_cap = 1024 * 1024;
+    int got = 0;
+    ServerStats::tcp_read_wakeups.fetch_add(1, std::memory_order_relaxed);
+    while (got < wake_cap) {
+        const int chunk = std::min(64 * 1024, wake_cap - got);
+        read_buf_->EnsureWritableBytes(chunk);
+        ssize_t bytes_read = ::read(connfd_, read_buf_->beginwrite(), static_cast<size_t>(chunk));
         if (bytes_read > 0) {
-            read_buf_->Append(buf, static_cast<int>(bytes_read));
+            read_buf_->HasWritten(static_cast<int>(bytes_read));
+            got += static_cast<int>(bytes_read);
+            ServerStats::tcp_read_syscalls.fetch_add(1, std::memory_order_relaxed);
+            ServerStats::tcp_read_wake_bytes.fetch_add(static_cast<uint64_t>(bytes_read),
+                                                       std::memory_order_relaxed);
             if (static_cast<size_t>(read_buf_->readablebytes()) > max_read_buf_bytes_) {
                 CloseForBackpressure("read_buf_limit");
-                break;
+                return;
             }
         } else if (bytes_read == -1 && errno == EINTR) {
             continue;
@@ -838,23 +852,13 @@ void TcpConnection::OnParkedMoveTimer() {
         return;
     const int unsent = UnsentBytes();
     const int64_t age = send_hold_since_ms_ > 0 ? HoldNowMs() - send_hold_since_ms_ : 0;
-    // 停放不到 1 秒且正在重传：先不追加位置。回包不走这里。
-    // 停放满 1 秒就写出这一帧最新位置，即使 TCP_INFO 仍报重传。
-    const ParkedMoveDecision decision = DecideParkedMove(TcpRetransmitting(connfd_), unsent, age);
-    if (decision == ParkedMoveDecision::SkipRetrans) {
-        NoteAoiSkipRetrans();
-        ArmParkedMoveRetry();
-        return;
-    }
+    const ParkedMoveDecision decision = DecideParkedMove(false, unsent, age);
     if (decision == ParkedMoveDecision::SkipUnsent) {
         NoteAoiSkipUnsent();
         ArmParkedMoveRetry();
         return;
     }
-    if (decision == ParkedMoveDecision::WriteStarved)
-        NoteAoiWriteStarved();
-    else
-        NoteAoiWriteRoom();
+    NoteAoiWriteRoom();
     send_hold_move_ = false;
     WriteNonBlocking();
     if (state_ == ConnectionState::Connected && !in_close_ && send_buf_ &&

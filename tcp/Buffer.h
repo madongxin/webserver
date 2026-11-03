@@ -42,6 +42,8 @@ public:
     void Append(const char *message);
     void Append(const char *message, int len);
     void Append(const std::string &message);
+    /** read 直接写入 beginwrite() 之后，把写指针前移。 */
+    void HasWritten(int len);
 
     int readablebytes() const;
     int writablebytes() const;

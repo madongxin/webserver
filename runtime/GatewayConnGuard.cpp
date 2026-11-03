@@ -45,6 +45,9 @@ struct ConnState {
     int64_t name_window_ms = 0;
     uint32_t name_in_window = 0;
     std::string ip;
+    int64_t limited_since_ms = 0;
+    int64_t last_rate_err_ms = 0;
+    int64_t idle_credit_ms = 0;
 };
 
 struct IpBucket {
@@ -151,11 +154,44 @@ std::string GatewayConnGuard::CheckFrameRate(uint64_t conn_id, size_t frame_byte
     ++st.frames_in_window;
     st.bytes_in_window += static_cast<uint32_t>(frame_bytes > 0xffffffffULL ? 0xffffffffULL : frame_bytes);
     st.last_rx_ms = now;
-    if (st.frames_in_window > 120)
+    if (st.frames_in_window > 120 || st.bytes_in_window > 512 * 1024) {
+        if (st.limited_since_ms == 0)
+            st.limited_since_ms = now;
         return "ERR_RATE_LIMITED";
-    if (st.bytes_in_window > 512 * 1024)
-        return "ERR_RATE_LIMITED";
+    }
+    st.limited_since_ms = 0;
     return {};
+}
+
+bool GatewayConnGuard::AllowRateError(uint64_t conn_id) {
+    const int64_t now = NowMs();
+    std::lock_guard<std::mutex> lk(g_mu);
+    auto it = g_conns.find(conn_id);
+    if (it == g_conns.end())
+        return false;
+    if (it->second.last_rate_err_ms != 0 && now - it->second.last_rate_err_ms < 1000)
+        return false;
+    it->second.last_rate_err_ms = now;
+    return true;
+}
+
+bool GatewayConnGuard::RateLimitedTooLong(uint64_t conn_id, int64_t ms) {
+    const int64_t now = NowMs();
+    std::lock_guard<std::mutex> lk(g_mu);
+    auto it = g_conns.find(conn_id);
+    if (it == g_conns.end() || it->second.limited_since_ms == 0)
+        return false;
+    return now - it->second.limited_since_ms >= ms;
+}
+
+void GatewayConnGuard::AddIdleCredit(uint64_t conn_id, int64_t paused_ms) {
+    if (paused_ms <= 0)
+        return;
+    std::lock_guard<std::mutex> lk(g_mu);
+    auto it = g_conns.find(conn_id);
+    if (it == g_conns.end())
+        return;
+    it->second.idle_credit_ms += paused_ms;
 }
 
 std::string GatewayConnGuard::CheckHeartbeatRate(uint64_t conn_id, bool bound) {
@@ -230,7 +266,8 @@ bool GatewayConnGuard::IdleExpired(uint64_t conn_id, uint32_t idle_ms) const {
     auto it = g_conns.find(conn_id);
     if (it == g_conns.end())
         return true;
-    return now - it->second.last_rx_ms >= static_cast<int64_t>(idle_ms);
+    const int64_t idle = now - it->second.last_rx_ms - it->second.idle_credit_ms;
+    return idle >= static_cast<int64_t>(idle_ms);
 }
 
 std::string GatewayConnGuard::PeerIp(uint64_t conn_id) const {

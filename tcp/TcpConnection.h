@@ -142,6 +142,7 @@ public:
     /** epoll 写就绪：把 send_buf_ 写入 socket */
     void HandleWrite();
     void HandleClose();
+    void CloseForSlowClient(const char *reason) { CloseForBackpressure(reason); }
 
     ConnectionState state() const;
     EventLoop *loop() const;

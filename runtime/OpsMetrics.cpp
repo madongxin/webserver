@@ -339,6 +339,40 @@ std::string OpsMetrics::PrometheusText() const {
     ctr("gamemesh_aoi_move_overwritten_total",
         "Queued AOI MOVE frames replaced by a newer frame before write.",
         ServerStats::aoi_move_overwritten.load(std::memory_order_relaxed));
+    if (ServerStats::aoi_move_batch_hold.load(std::memory_order_relaxed) > 0)
+        ctr("gamemesh_aoi_move_batch_hold_total",
+            "Position frames held back to accumulate more entities. Unit: frames.",
+            ServerStats::aoi_move_batch_hold.load(std::memory_order_relaxed));
+    if (ServerStats::aoi_move_budget_over_bytes.load(std::memory_order_relaxed) > 0)
+        ctr("gamemesh_aoi_move_budget_over_bytes_total",
+            "Bytes charged above the per-connection budget window. Unit: bytes.",
+            ServerStats::aoi_move_budget_over_bytes.load(std::memory_order_relaxed));
+    if (ServerStats::aoi_move_slow_degrade.load(std::memory_order_relaxed) > 0)
+        ctr("gamemesh_aoi_slow_degrade_total", "Slow clients moved to the reduced send rate.",
+            ServerStats::aoi_move_slow_degrade.load(std::memory_order_relaxed));
+    if (ServerStats::aoi_move_slow_clear.load(std::memory_order_relaxed) > 0)
+        ctr("gamemesh_aoi_slow_clear_total", "Slow client coalesce slots cleared.",
+            ServerStats::aoi_move_slow_clear.load(std::memory_order_relaxed));
+    if (ServerStats::aoi_move_slow_close.load(std::memory_order_relaxed) > 0)
+        ctr("gamemesh_aoi_slow_close_total", "Connections closed because nothing could be written.",
+            ServerStats::aoi_move_slow_close.load(std::memory_order_relaxed));
+    if (ServerStats::aoi_move_snapshot_resync.load(std::memory_order_relaxed) > 0)
+        ctr("gamemesh_aoi_snapshot_resync_total", "Full position snapshots sent after a slot clear.",
+            ServerStats::aoi_move_snapshot_resync.load(std::memory_order_relaxed));
+    if (ServerStats::gateway_rate_drop_frames.load(std::memory_order_relaxed) > 0)
+        ctr("gamemesh_gateway_rate_drop_frames_total", "Inbound frames dropped by the per-connection rate limit.",
+            ServerStats::gateway_rate_drop_frames.load(std::memory_order_relaxed));
+    if (ServerStats::gateway_rate_close.load(std::memory_order_relaxed) > 0)
+        ctr("gamemesh_gateway_rate_close_total", "Connections closed after sustained rate limiting.",
+            ServerStats::gateway_rate_close.load(std::memory_order_relaxed));
+    if (ServerStats::tcp_read_wakeups.load(std::memory_order_relaxed) > 0) {
+        ctr("gamemesh_tcp_read_syscalls_total", "read system calls on game connections.",
+            ServerStats::tcp_read_syscalls.load(std::memory_order_relaxed));
+        ctr("gamemesh_tcp_read_wakeups_total", "Read wakeups on game connections.",
+            ServerStats::tcp_read_wakeups.load(std::memory_order_relaxed));
+        ctr("gamemesh_tcp_read_wake_bytes_total", "Bytes read from game connections. Unit: bytes.",
+            ServerStats::tcp_read_wake_bytes.load(std::memory_order_relaxed));
+    }
     os << "# HELP gamemesh_aoi_move_pending_oldest_ms Milliseconds the oldest entity position has been waiting in the coalesce slot. Zero when nothing is waiting.\n"
           "# TYPE gamemesh_aoi_move_pending_oldest_ms gauge\n"
           "gamemesh_aoi_move_pending_oldest_ms "

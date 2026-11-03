@@ -87,6 +87,18 @@ struct ServerStats {
     static inline std::atomic<uint64_t> aoi_move_park_written{0};
     static inline std::atomic<uint64_t> aoi_move_commit{0};
     static inline std::atomic<uint64_t> aoi_move_commit_callbacks{0};
+    static inline std::atomic<uint64_t> aoi_move_batch_hold{0};
+    static inline std::atomic<uint64_t> aoi_move_budget_over_bytes{0};
+    static inline std::atomic<uint64_t> aoi_move_slow_degrade{0};
+    static inline std::atomic<uint64_t> aoi_move_slow_clear{0};
+    static inline std::atomic<uint64_t> aoi_move_slow_close{0};
+    static inline std::atomic<uint64_t> aoi_move_snapshot_resync{0};
+    static inline std::atomic<uint64_t> gateway_rate_drop_frames{0};
+    static inline std::atomic<uint64_t> gateway_rate_close{0};
+    static inline std::atomic<uint64_t> gateway_busy_replies{0};
+    static inline std::atomic<uint64_t> tcp_read_syscalls{0};
+    static inline std::atomic<uint64_t> tcp_read_wakeups{0};
+    static inline std::atomic<uint64_t> tcp_read_wake_bytes{0};
     static inline std::atomic<uint64_t> aoi_move_repicked_samples{0};
     static inline std::atomic<int64_t> egress_budget_bytes_per_sec{0};
     static inline std::atomic<uint64_t> egress_admitted_bytes{0};
