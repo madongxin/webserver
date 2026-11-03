@@ -65,8 +65,9 @@ bool FrameHasFullSnapshot(const std::string &frame) {
 size_t DropQueuedAoiMoveFrames(TcpConnection *c, bool keep_newest) {
     if (!c)
         return 0;
-    // 这帧已经交给写路径，EPOLLOUT 还没写完。删掉后客户端会一直看不到新位置。
-    if (c->latest_move_awaiting_write())
+    // 已经交给写路径，或还停在缓冲里等 1 秒写出的那一帧，都不能删。
+    // 删掉后合并槽会反复挑中同一批人，其余机器人就停在原地。
+    if (c->latest_move_awaiting_write() || c->holding_latest_move())
         return 0;
     std::string raw = c->CopySendBuf();
     if (raw.empty())

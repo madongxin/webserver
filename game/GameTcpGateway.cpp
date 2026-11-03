@@ -204,6 +204,11 @@ void FlushMoveSlot(const std::shared_ptr<MoveCoalesceSlot> &slot,
         EraseMoveSlot(conn_id);
         return;
     }
+    // 上一帧还停在应用缓冲里，等它写进内核。删掉再挑会永远选中同一批人，其余机器人就再也不动。
+    if (live->holding_latest_move()) {
+        live->loop()->RunAfter(0.2, [slot, weak, conn_id]() { FlushMoveSlot(slot, weak, conn_id); });
+        return;
+    }
     constexpr int64_t kIntervalMs = 200;
     constexpr int kBudgetBytes = 16 * 1024;
     constexpr int kEstBytesPerMove = 48;
@@ -362,15 +367,23 @@ void FlushMoveSlot(const std::shared_ptr<MoveCoalesceSlot> &slot,
         return;
     }
     if (held) {
-        // 只是停在应用缓冲里，客户端还没收到。位置留在合并槽里，不能记成已经发出。
+        // 这一帧已经在应用缓冲里，1 秒内会写进内核。不要放回槽里，否则下一轮还是挑中他们。
         NoteMoveHold(event_n);
-        restore(std::move(delta));
         {
             std::lock_guard<std::mutex> lk(slot->mu);
+            const int64_t now = SteadyMs();
+            for (const auto &ev : delta.events()) {
+                const uint64_t id = ev.entity().player_id();
+                if (id == 0)
+                    continue;
+                slot->pending_since_ms.erase(id);
+                slot->last_sent_ms[id] = now;
+            }
             if (slot->hold_since_ms == 0)
-                slot->hold_since_ms = SteadyMs();
-            const int64_t age = SteadyMs() - slot->hold_since_ms;
+                slot->hold_since_ms = now;
+            const int64_t age = now - slot->hold_since_ms;
             PublishHoldAge(conn_id, age > 0 ? static_cast<uint64_t>(age) : 0);
+            ObservePendingMoves(*slot, conn_id, now);
             if (!slot->scheduled && !slot->by_entity.empty())
                 slot->scheduled = true;
         }
