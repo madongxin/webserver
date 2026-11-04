@@ -135,8 +135,12 @@ public:
     bool TrySendLatestMove(const std::string &msg, const std::vector<LatestMoveAck> &acks);
     void set_latest_move_commit_callback(
         std::function<void(std::vector<LatestMoveAck>, bool committed, int frame_bytes)> cb);
-    /** 停放满 1 秒仍写不进内核时，丢掉应用缓冲里的这一帧并通知槽。内核字节不动。 */
+    /** 停放帧被换掉时丢掉应用缓冲里还没进内核的这一帧，并通知槽。不记失败次数。 */
+    void ReleaseParkedMoveForSwap();
+    /** 丢掉应用缓冲里还没进内核的位置帧并通知槽。已经进内核的半帧不能截断。 */
     void ReleaseStuckMove();
+    /** 停放中采样内核队列和 TCP_INFO。没有停放时不做任何事。 */
+    void NoteParkSample();
     int64_t parked_move_age_ms() const;
     /** 最新移动帧已经交给写路径，但还没全部写进内核。这时不能从缓冲里删掉它。 */
     bool latest_move_awaiting_write() const { return send_move_sticky_; }
@@ -217,6 +221,8 @@ private:
     bool flushing_v2_ = false;
     SendBufV2 send_v2_;
     std::vector<LatestMoveAck> move_commit_entities_;
+    bool commit_penalize_ = true;
+    int outbound_cls_ = 2;
     bool move_commit_pending_ = false;
     size_t move_commit_skip_ = 0;
     int move_commit_left_ = 0;

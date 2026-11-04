@@ -175,6 +175,7 @@ public:
     static void SetMapEntityCount(int64_t (*fn)());
     static void SetControlOutboxPrometheus(std::string (*fn)());
     static void SetAoiSilenceSampler(void (*fn)(std::vector<int64_t> *near, std::vector<int64_t> *far));
+    static void SetConnSilenceSampler(void (*fn)(std::vector<int64_t> *per_conn));
 
 private:
     OpsMetrics() = default;

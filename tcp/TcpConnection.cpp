@@ -4,7 +4,9 @@
 #include "common.h"
 #include "EventLoop.h"
 #include "HttpContext.h"
+#include "MoveSendConfig.h"
 #include "PacketTiming.h"
+#include "ParkProbe.h"
 #include "RecentSamples.h"
 #include "ServerStats.h"
 #include "TimeStamp.h"
@@ -155,6 +157,7 @@ void TcpConnection::set_drain_callback(std::function<void()> fn) { on_drain_ = s
 void TcpConnection::HandleClose() {
     if (state_ == ConnectionState::Disconected || in_close_)
         return;
+    ParkProbe::EndEpisode(connid_);
     in_close_ = true;
     // 持有 self，避免 on_close_ 链路里最后一次 shared_ptr 释放导致中途析构。
     const auto self = shared_from_this();
@@ -385,6 +388,9 @@ bool TcpConnection::TrySend(const std::string &msg) {
 }
 
 bool TcpConnection::TrySend(const char *msg, int len) {
+    outbound_cls_ = static_cast<int>(OutboundClass::Reliable);
+    if (DeferBulkWhileKernelParked(send_hold_move_ && UnsentBytes() > kLatestMoveKernelBudget, len))
+        return false;
     return SendInternal(msg, len, true);
 }
 
@@ -393,6 +399,9 @@ bool TcpConnection::TrySendUrgent(const std::string &msg) {
 }
 
 bool TcpConnection::TrySendUrgent(const char *msg, int len) {
+    outbound_cls_ = static_cast<int>(OutboundClass::Snapshot);
+    if (DeferBulkWhileKernelParked(send_hold_move_ && UnsentBytes() > kLatestMoveKernelBudget, len))
+        return false;
     // soft_drop=true 且 urgent：SendInternal 用 90% 水位。
     return SendInternal(msg, len, true, true);
 }
@@ -429,6 +438,7 @@ TcpConnection::ControlSendResult TcpConnection::TrySendControl(const char *msg, 
 
 TcpConnection::ControlSendResult TcpConnection::TrySendControl(const char *msg, int len, bool over_cap,
                                                                const std::vector<uint64_t> &strip_entities) {
+    outbound_cls_ = static_cast<int>(OutboundClass::Control);
     if (state_ != ConnectionState::Connected || in_close_ || !channel_ || !msg || len < 0)
         return Closed;
     if (SendBufV2Enabled()) {
@@ -602,8 +612,12 @@ void TcpConnection::FinishMoveCommit(bool committed) {
     move_commit_pending_ = false;
     move_commit_skip_ = 0;
     move_commit_left_ = 0;
-    const int bytes = move_commit_bytes_;
+    int bytes = move_commit_bytes_;
     move_commit_bytes_ = 0;
+    if (!committed && !commit_penalize_)
+        bytes = -1;
+    if (committed)
+        ParkProbe::EndEpisode(connid_);
     std::vector<LatestMoveAck> ents;
     ents.swap(move_commit_entities_);
     if (move_commit_cb_)
@@ -656,11 +670,28 @@ void TcpConnection::ReleaseStuckMove() {
     send_hold_since_ms_ = 0;
     send_move_hold_off_ = 0;
     ReplaceQueuedAfterPrefix(keep);
+    if (commit_penalize_)
+        ParkProbe::EndEpisode(connid_);
+    else
+        ParkProbe::EndFrame(connid_);
     if (move_commit_pending_)
         FinishMoveCommit(false);
 }
 
+void TcpConnection::ReleaseParkedMoveForSwap() {
+    commit_penalize_ = false;
+    ReleaseStuckMove();
+    commit_penalize_ = true;
+}
+
+void TcpConnection::NoteParkSample() {
+    if (!send_hold_move_)
+        return;
+    ParkProbe::Sample(connid_, connfd_, HoldNowMs());
+}
+
 bool TcpConnection::TrySendLatestMove(const std::string &msg, const std::vector<LatestMoveAck> &acks) {
+    outbound_cls_ = static_cast<int>(OutboundClass::Move);
     if (state_ != ConnectionState::Connected || in_close_ || !send_buf_ || msg.empty())
         return false;
     if (SendBufV2Enabled()) {
@@ -688,6 +719,8 @@ bool TcpConnection::TrySendLatestMove(const std::string &msg, const std::vector<
     // 这一帧留在缓冲末尾。连接还在重传时可以换成更新的位置；交给写路径之后不能再删。
     if (UnsentBytes() > kLatestMoveKernelBudget) {
         send_buf_->Append(msg);
+        ParkProbe::BeginFrame(connid_, HoldNowMs());
+        ParkProbe::AddApp(connid_, static_cast<int>(OutboundClass::Move), static_cast<int>(msg.size()));
         send_move_hold_off_ = static_cast<size_t>(queued);
         send_hold_move_ = true;
         if (send_hold_since_ms_ == 0)
@@ -717,6 +750,7 @@ bool TcpConnection::TrySendLatestMove(const std::string &msg, const std::vector<
              move_commit_left_ >= move_commit_bytes_) {
         // write 一个字节都没收下。帧整段还在应用缓冲里，和主动停放是同一种状态。
         send_hold_move_ = true;
+        ParkProbe::BeginFrame(connid_, HoldNowMs());
         send_move_hold_off_ = std::min(move_commit_skip_, static_cast<size_t>(send_buf_->readablebytes()));
         if (send_hold_since_ms_ == 0)
             send_hold_since_ms_ = HoldNowMs();
@@ -751,6 +785,7 @@ bool TcpConnection::SendInternal(const char *msg, int len, bool soft_drop, bool 
         next.append(raw.data() + insert_at, raw.size() - insert_at);
         send_buf_->RetrieveAll();
         send_buf_->Append(next);
+        ParkProbe::AddApp(connid_, outbound_cls_, len);
         control_run_ += static_cast<size_t>(len);
         if ((send_hold_move_ || send_move_sticky_) && send_move_hold_off_ >= insert_at)
             send_move_hold_off_ += static_cast<size_t>(len);
@@ -785,6 +820,8 @@ bool TcpConnection::SendInternal(const char *msg, int len, bool soft_drop, bool 
         if (send_size >= 0) {
             remaining -= send_size;
             AccountMoveBytesWritten(send_size);
+            if (send_size > 0)
+                ParkProbe::AddKernel(connid_, outbound_cls_, send_size);
         } else if (errno == EINTR) {
             send_size = 0;
         } else if (errno == EAGAIN || errno == EWOULDBLOCK) {
@@ -813,6 +850,7 @@ bool TcpConnection::SendInternal(const char *msg, int len, bool soft_drop, bool 
         }
         const bool was_empty = send_buf_->readablebytes() == 0;
         send_buf_->Append(msg + send_size, remaining);
+        ParkProbe::AddApp(connid_, outbound_cls_, remaining);
         // 只有已经把帧头写进内核时，缓冲里剩下的才是半帧。一次都没写出的完整帧
         // 不能算半帧，否则心跳会被插到这整帧后面。
         if (was_empty && send_size > 0) {
@@ -957,6 +995,7 @@ void TcpConnection::WriteNonBlocking() {
                     send_move_hold_off_ -= static_cast<size_t>(send_size);
             }
             AccountMoveBytesWritten(static_cast<int>(send_size));
+            ParkProbe::AppToKernel(connid_, static_cast<int>(send_size));
             if (!hold_limit)
                 send_hold_move_ = false;
             send_buf_->Retrieve(static_cast<int>(send_size));
@@ -1001,6 +1040,7 @@ void TcpConnection::WriteNonBlocking() {
         return;
     if (send_buf_->readablebytes() == 0) {
         send_hold_move_ = false;
+        ParkProbe::EndEpisode(connid_);
         send_move_hold_off_ = 0;
         send_move_sticky_ = false;
         send_hold_since_ms_ = 0;
@@ -1043,6 +1083,7 @@ void TcpConnection::OnParkedMoveTimer() {
     move_retry_armed_ = false;
     if (state_ != ConnectionState::Connected || in_close_ || !send_buf_ || !send_hold_move_)
         return;
+    NoteParkSample();
     const int unsent = UnsentBytes();
     const int64_t age = send_hold_since_ms_ > 0 ? HoldNowMs() - send_hold_since_ms_ : 0;
     const ParkedMoveDecision decision = DecideParkedMove(false, unsent, age);

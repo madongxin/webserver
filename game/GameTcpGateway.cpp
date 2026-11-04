@@ -111,6 +111,7 @@ struct MoveCoalesceSlot {
     float viewer_z = 0;
     SlowClientTracker slow;
     std::vector<game::AoiEvent> resync;
+    int64_t last_park_swap_ms = 0;
 };
 
 std::mutex g_move_slots_mu;
@@ -212,6 +213,28 @@ void EraseMoveSlot(uint64_t conn_id) {
     PublishHoldAge(conn_id, 0);
 }
 
+void SampleConnSilence(std::vector<int64_t> *per_conn) {
+    if (!per_conn)
+        return;
+    std::vector<std::shared_ptr<MoveCoalesceSlot>> slots;
+    {
+        std::lock_guard<std::mutex> lk(g_move_slots_mu);
+        slots.reserve(g_move_slots.size());
+        for (const auto &kv : g_move_slots)
+            slots.push_back(kv.second);
+    }
+    const int64_t now = SteadyMs();
+    per_conn->reserve(slots.size());
+    for (const auto &slot : slots) {
+        if (!slot)
+            continue;
+        std::lock_guard<std::mutex> lk(slot->mu);
+        const int64_t age = slot->ledger.MaxSilenceMs(now);
+        if (age > 0)
+            per_conn->push_back(age);
+    }
+}
+
 void SampleMoveSilence(std::vector<int64_t> *near, std::vector<int64_t> *far) {
     std::vector<std::shared_ptr<MoveCoalesceSlot>> slots;
     {
@@ -230,7 +253,10 @@ void SampleMoveSilence(std::vector<int64_t> *near, std::vector<int64_t> *far) {
 }
 
 struct RegisterMoveSilence {
-    RegisterMoveSilence() { OpsMetrics::SetAoiSilenceSampler(&SampleMoveSilence); }
+    RegisterMoveSilence() {
+        OpsMetrics::SetAoiSilenceSampler(&SampleMoveSilence);
+        OpsMetrics::SetConnSilenceSampler(&SampleConnSilence);
+    }
 };
 RegisterMoveSilence g_register_move_silence;
 
@@ -288,6 +314,10 @@ void ApplyMoveCommit(const std::shared_ptr<MoveCoalesceSlot> &slot,
                     slot->by_entity.erase(it);
             }
             slot->hold_since_ms = 0;
+            slot->last_park_swap_ms = 0;
+        } else if (frame_bytes < 0) {
+            slot->ledger.NoteParkSwapped(stamps);
+            slot->hold_since_ms = 0;
         } else {
             slot->ledger.NoteReplaced(stamps);
             slot->hold_since_ms = 0;
@@ -335,21 +365,47 @@ void FlushMoveSlot(const std::shared_ptr<MoveCoalesceSlot> &slot,
     HookMoveCommit(live, slot);
     // 半帧已经进了内核就等写完。还没写出第一个字节的停放帧可以换成更新的一批。
     if (live->latest_move_awaiting_write()) {
+        {
+            std::lock_guard<std::mutex> lk(slot->mu);
+            slot->slow.NoteServerDeferred(SteadyMs());
+        }
         live->loop()->RunAfter(0.2, [slot, weak, conn_id]() { FlushMoveSlot(slot, weak, conn_id); });
         return;
     }
     if (live->holding_latest_move()) {
+        {
+            std::lock_guard<std::mutex> lk(slot->mu);
+            slot->slow.NoteServerDeferred(SteadyMs());
+        }
+        live->NoteParkSample();
         if (live->move_parked_on_kernel_queue()) {
-            // 内核未发送队列还高于 16KB。这一帧留着，等队列降下来由定时器写出。
-            // 每 200ms 丢掉再选，会把等最久的人记成失败，坐标就一直写不出去。
+            // 队列还高于 16KB 时不写这一帧，也不每 200ms 记一次失败。
+            // 满 1 秒才换成槽里的最新坐标，失败次数和等待起点都不变。
+            bool swap = false;
             {
                 std::lock_guard<std::mutex> lk(slot->mu);
-                slot->slow.NoteServerDeferred(SteadyMs());
+                const int64_t now = SteadyMs();
+                if (slot->last_park_swap_ms == 0)
+                    slot->last_park_swap_ms = now;
+                else if (now - slot->last_park_swap_ms >= 1000) {
+                    slot->last_park_swap_ms = now;
+                    swap = true;
+                }
             }
+            if (!swap) {
+                live->loop()->RunAfter(0.2, [slot, weak, conn_id]() { FlushMoveSlot(slot, weak, conn_id); });
+                return;
+            }
+            live->ReleaseParkedMoveForSwap();
+            if (live->holding_latest_move() || live->latest_move_awaiting_write()) {
+                live->loop()->RunAfter(0.2, [slot, weak, conn_id]() { FlushMoveSlot(slot, weak, conn_id); });
+                return;
+            }
+        } else {
+            // 队列已经降到 16KB。定时器负责写出，这里不能把还没进内核的帧丢掉。
             live->loop()->RunAfter(0.2, [slot, weak, conn_id]() { FlushMoveSlot(slot, weak, conn_id); });
             return;
         }
-        live->ReleaseStuckMove();
     }
     constexpr int kMaxMoveEntities = 40;
     int64_t wait_ms = 0;
@@ -738,13 +794,11 @@ void RememberBind(uint64_t conn_id, uint64_t player_id, const std::string &token
         if (auto live = weak_conn.lock()) {
             live->set_drain_callback([weak_conn, conn_id]() {
                 auto c = weak_conn.lock();
-                if (c && !c->holding_latest_move()) {
+                if (c) {
                     if (auto slot = FindMoveSlot(conn_id)) {
                         std::lock_guard<std::mutex> lk(slot->mu);
-                        slot->hold_since_ms = 0;
                         slot->slow.NoteAnyByteWritten(SteadyMs());
                     }
-                    PublishHoldAge(conn_id, 0);
                 }
                 // 已进入发送流的控制帧不挡住队列里还没写进去的下一条。
                 ControlResponseOutbox::Instance().OnBufferDrained(conn_id);

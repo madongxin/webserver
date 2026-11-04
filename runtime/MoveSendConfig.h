@@ -37,6 +37,12 @@ inline bool ReplyQueueHigh(size_t depth, size_t bytes) {
     return depth >= high_frames || bytes >= high_bytes;
 }
 
+/** 位置帧已因内核未发送队列超过 16KB 停放时，大的可靠帧和快照先别再写进内核。
+ *  心跳和请求回包不走这里。512 字节及以下的小帧仍然放行。 */
+inline bool DeferBulkWhileKernelParked(bool parked_over_16kb, int nbytes) {
+    return parked_over_16kb && nbytes > 512;
+}
+
 inline bool ReplyQueueLow(size_t depth, size_t bytes) {
     const size_t low_frames =
         ControlResponseOutbox::kMaxFrames * static_cast<size_t>(ReadPauseLowPercent()) / 100;

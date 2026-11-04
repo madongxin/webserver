@@ -1,10 +1,12 @@
 #include "OpsMetrics.h"
 
+#include "ParkProbe.h"
 #include "PushAdmit.h"
 #include "RecentSamples.h"
 #include "ServerStats.h"
 
 #include <algorithm>
+#include <chrono>
 #include <mutex>
 #include <sstream>
 #include <unordered_map>
@@ -17,6 +19,7 @@ std::string (*g_reply_stage_prom)() = nullptr;
 std::string (*g_control_outbox_prom)() = nullptr;
 int64_t (*g_map_entity_count)() = nullptr;
 void (*g_aoi_silence_sampler)(std::vector<int64_t> *, std::vector<int64_t> *) = nullptr;
+void (*g_conn_silence_sampler)(std::vector<int64_t> *) = nullptr;
 }  // namespace
 
 void OpsMetrics::SetReplyStagePrometheus(std::string (*fn)()) { g_reply_stage_prom = fn; }
@@ -25,6 +28,10 @@ void OpsMetrics::SetMapEntityCount(int64_t (*fn)()) { g_map_entity_count = fn; }
 
 void OpsMetrics::SetAoiSilenceSampler(void (*fn)(std::vector<int64_t> *, std::vector<int64_t> *)) {
     g_aoi_silence_sampler = fn;
+}
+
+void OpsMetrics::SetConnSilenceSampler(void (*fn)(std::vector<int64_t> *)) {
+    g_conn_silence_sampler = fn;
 }
 
 void OpsMetrics::SetControlOutboxPrometheus(std::string (*fn)()) { g_control_outbox_prom = fn; }
@@ -472,6 +479,31 @@ std::string OpsMetrics::PrometheusText() const {
         emit_q("gamemesh_aoi_move_silence_near", near);
         emit_q("gamemesh_aoi_move_silence_far", far);
     }
+    if (g_conn_silence_sampler) {
+        std::vector<int64_t> per_conn;
+        g_conn_silence_sampler(&per_conn);
+        if (!per_conn.empty()) {
+            std::sort(per_conn.begin(), per_conn.end());
+            auto at = [&](double q) {
+                size_t idx = static_cast<size_t>(q * static_cast<double>(per_conn.size() - 1));
+                if (idx >= per_conn.size())
+                    idx = per_conn.size() - 1;
+                return per_conn[idx];
+            };
+            os << "# HELP gamemesh_aoi_move_conn_silence_ms Per-connection oldest unwritten position. Unit: milliseconds.\n"
+                  "# TYPE gamemesh_aoi_move_conn_silence_ms gauge\n";
+            os << "gamemesh_aoi_move_conn_silence_ms{quantile=\"0.5\"} " << at(0.50) << "\n";
+            os << "gamemesh_aoi_move_conn_silence_ms{quantile=\"0.9\"} " << at(0.90) << "\n";
+            os << "gamemesh_aoi_move_conn_silence_ms{quantile=\"0.99\"} " << at(0.99) << "\n";
+            os << "gamemesh_aoi_move_conn_silence_ms{quantile=\"1\"} " << per_conn.back() << "\n";
+        }
+    }
+    {
+        const int64_t now = std::chrono::duration_cast<std::chrono::milliseconds>(
+                                std::chrono::steady_clock::now().time_since_epoch())
+                                .count();
+        ParkProbe::WritePrometheus(os, now);
+    }
     auto emit_recent = [&](const char *name, const char *unit, RecentSamples &samples) {
         if (samples.Empty())
             return;
@@ -494,10 +526,6 @@ std::string OpsMetrics::PrometheusText() const {
                 OnMessageUsSamples());
     emit_recent("gamemesh_gateway_batch_frames", "Frames observed in one OnMessage call.",
                 BatchFramesSamples());
-    os << "# HELP gamemesh_latest_move_hold_ms Milliseconds the oldest latest-MOVE frame has been parked in the app buffer. Zero when none is parked.\n"
-          "# TYPE gamemesh_latest_move_hold_ms gauge\n"
-          "gamemesh_latest_move_hold_ms "
-       << ServerStats::latest_move_hold_ms.load(std::memory_order_relaxed) << "\n";
     ctr("gamemesh_tcp_eagain_total", "TCP writes that returned EAGAIN or EWOULDBLOCK.",
         ServerStats::tcp_eagain.load(std::memory_order_relaxed));
     ctr("gamemesh_tcp_write_error_total", "TCP writes that failed and closed the connection.",

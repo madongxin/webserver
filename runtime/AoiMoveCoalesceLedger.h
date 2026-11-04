@@ -294,6 +294,26 @@ public:
         }
     }
 
+    /** 停放帧换成更新的坐标。清掉在途标记，不记失败次数，也不重算等待时间。 */
+    void NoteParkSwapped(const std::vector<AoiMoveStamp> &frame) {
+        for (const auto &stamp : frame) {
+            auto it = entities_.find(stamp.entity_id);
+            if (it == entities_.end())
+                continue;
+            it->second.in_flight = false;
+        }
+    }
+
+    int UnwrittenAttemptsForTest(uint64_t id) const {
+        auto it = entities_.find(id);
+        return it == entities_.end() ? 0 : it->second.unwritten_attempts;
+    }
+
+    int64_t PendingSinceForTest(uint64_t id) const {
+        auto it = entities_.find(id);
+        return it == entities_.end() ? 0 : it->second.pending_since_ms;
+    }
+
     void NoteKernelWrite(const std::vector<AoiMoveStamp> &frame, int64_t now, int frame_bytes) {
         ServerStats::aoi_move_commit.fetch_add(1, std::memory_order_relaxed);
             ServerStats::aoi_move_park_written.fetch_add(1, std::memory_order_relaxed);
