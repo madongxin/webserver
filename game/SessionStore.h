@@ -78,6 +78,7 @@ struct AcquireSessionResult {
     std::string previous_gateway_instance_id;
     std::string previous_session_id;
     uint64_t previous_generation = 0;
+    uint64_t previous_connection_id = 0;
     std::string previous_fence_token;
     std::string previous_device_id;
     std::string previous_gamelogic_instance_id;

@@ -82,11 +82,21 @@ void TestForceStaysInsideBudget() {
     Expect(ledger.charged_total() <= cap, "force does not exceed budget by more than 10 percent");
 }
 
+void TestTightBudgetSendsNow() {
+    AoiMoveCoalesceLedger ledger;
+    for (int id = 1; id <= 200; ++id)
+        ledger.Offer(static_cast<uint64_t>(id), 1, 1000, 0);
+    int64_t wait_ms = 0;
+    const auto picked = ledger.Pick(1000, 331, 38, 40, &wait_ms);
+    std::printf("tight budget picked=%zu wait=%lld\n", picked.size(), static_cast<long long>(wait_ms));
+    Expect(picked.size() == 6, "331 B/s sends the six entities that fit, without waiting for eight");
+}
+
 void TestHeaderAccounted() {
     AoiMoveCoalesceLedger ledger;
     ledger.Offer(1, 1, 1000, 1);
     int64_t wait_ms = 0;
-    auto picked = ledger.Pick(1000, 10000, 54, 40, &wait_ms);
+    auto picked = ledger.Pick(1200, 10000, 54, 40, &wait_ms);
     Expect(!picked.empty(), "one event is picked");
     ledger.NoteParked(picked);
     ledger.NoteKernelWrite(picked, 1000, 54);
@@ -113,6 +123,13 @@ void TestSlowClientLevels() {
     replies.NoteAnyByteWritten(50000);
     Expect(replies.Evaluate(90000, false) != SlowClientAction::Close,
            "bytes written for replies reset the close timer");
+    SlowClientTracker budget;
+    budget.Evaluate(0, false);
+    budget.NoteServerDeferred(10000);
+    Expect(budget.Evaluate(10000, false) == SlowClientAction::None,
+           "a budget defer is not a slow client");
+    Expect(budget.Evaluate(90000, false) == SlowClientAction::Close,
+           "no bytes at all still closes after the budget defer");
 }
 
 }  // namespace
@@ -120,6 +137,7 @@ void TestSlowClientLevels() {
 int main() {
     TestSteadyRotation();
     TestForceStaysInsideBudget();
+    TestTightBudgetSendsNow();
     TestHeaderAccounted();
     TestSlowClientLevels();
     if (g_fail) {

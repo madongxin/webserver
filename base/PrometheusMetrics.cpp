@@ -12,6 +12,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <fstream>
+#include <iomanip>
 #include <sstream>
 #include <sys/resource.h>
 
@@ -56,9 +57,14 @@ std::string BuildPrometheusMetricsText() {
         EmitGauge(os, "process_max_fds", "Maximum number of open file descriptors.", m.max_fds);
     if (m.threads >= 0)
         EmitGauge(os, "process_threads", "Number of OS threads in the process.", m.threads);
-    if (m.start_time_seconds > 0)
-        EmitGauge(os, "process_start_time_seconds",
-                  "Start time of the process since unix epoch in seconds.", m.start_time_seconds);
+    if (m.start_time_seconds > 0) {
+        os << "# HELP process_start_time_seconds Start time of the process since unix epoch in seconds.\n"
+              "# TYPE process_start_time_seconds gauge\n"
+           << "process_start_time_seconds " << std::fixed << std::setprecision(0) << m.start_time_seconds
+           << "\n\n";
+        os.unsetf(std::ios::fixed);
+        os << std::setprecision(6);
+    }
     if (m.io_read_bytes >= 0)
         EmitCounter(os, "process_io_read_bytes_total",
                     "Number of bytes read by the process from storage.",

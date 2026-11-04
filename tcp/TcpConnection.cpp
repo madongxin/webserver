@@ -5,6 +5,7 @@
 #include "EventLoop.h"
 #include "HttpContext.h"
 #include "PacketTiming.h"
+#include "RecentSamples.h"
 #include "ServerStats.h"
 #include "TimeStamp.h"
 #include "Logging.h"
@@ -21,6 +22,7 @@
 #include <sys/ioctl.h>
 #include <sys/socket.h>
 #include <sys/sendfile.h>
+#include <sys/uio.h>
 #include <arpa/inet.h>
 
 #ifndef SIOCOUTQNSD
@@ -396,13 +398,60 @@ bool TcpConnection::TrySendUrgent(const char *msg, int len) {
 }
 
 TcpConnection::ControlSendResult TcpConnection::TrySendControl(const std::string &msg, bool over_cap) {
-    return TrySendControl(msg.data(), static_cast<int>(msg.size()), over_cap);
+    return TrySendControl(msg.data(), static_cast<int>(msg.size()), over_cap, {});
 }
 
-TcpConnection::ControlSendResult TcpConnection::TrySendControl(const char *msg, int len,
-                                                               bool over_cap) {
+TcpConnection::ControlSendResult TcpConnection::TrySendControl(const std::string &msg, bool over_cap,
+                                                               const std::vector<uint64_t> &strip_entities) {
+    return TrySendControl(msg.data(), static_cast<int>(msg.size()), over_cap, strip_entities);
+}
+
+void TcpConnection::InstallSendBufV2Callback() {
+    send_v2_.SetCallback([this](std::vector<SendBufV2::Stamp> stamps, bool committed) {
+        if (committed)
+            return;
+        std::vector<LatestMoveAck> ents;
+        ents.reserve(stamps.size());
+        for (const auto &st : stamps) {
+            LatestMoveAck ack;
+            ack.entity_id = st.entity_id;
+            ack.state_seq = st.state_seq;
+            ents.push_back(ack);
+        }
+        if (move_commit_cb_)
+            move_commit_cb_(std::move(ents), false, 0);
+    });
+}
+
+TcpConnection::ControlSendResult TcpConnection::TrySendControl(const char *msg, int len, bool over_cap) {
+    return TrySendControl(msg, len, over_cap, {});
+}
+
+TcpConnection::ControlSendResult TcpConnection::TrySendControl(const char *msg, int len, bool over_cap,
+                                                               const std::vector<uint64_t> &strip_entities) {
     if (state_ != ConnectionState::Connected || in_close_ || !channel_ || !msg || len < 0)
         return Closed;
+    if (SendBufV2Enabled()) {
+        InstallSendBufV2Callback();
+        bool strip_buffered = false;
+        if (!strip_entities.empty() && move_commit_pending_ && !MoveBytesAlreadyEntered() &&
+            !send_move_sticky_) {
+            for (uint64_t id : strip_entities) {
+                for (const auto &ack : move_commit_entities_) {
+                    if (ack.entity_id == id)
+                        strip_buffered = true;
+                }
+            }
+        }
+        if (strip_buffered)
+            ReleaseStuckMove();
+        send_v2_.PushControl(std::string(msg, static_cast<size_t>(len)), strip_entities);
+        if (!FlushSendBufV2(UnsentBytes() <= kLatestMoveKernelBudget))
+            return state_ == ConnectionState::Connected ? Blocked : Closed;
+        if (!send_buf_ || send_buf_->readablebytes() == 0)
+            return WrittenDirect;
+        return Buffered;
+    }
     if (!SendInternal(msg, len, true, true, true, false, over_cap)) {
         if (state_ != ConnectionState::Connected || in_close_)
             return Closed;
@@ -418,8 +467,128 @@ TcpConnection::ControlSendResult TcpConnection::TrySendControl(const char *msg, 
     return control_hold_end_ > 0 ? Buffered : WrittenDirect;
 }
 
+bool TcpConnection::move_parked_on_kernel_queue() const {
+    return send_hold_move_ && UnsentBytes() > kLatestMoveKernelBudget;
+}
+
 bool TcpConnection::TrySendLatestMove(const std::string &msg) {
     return TrySendLatestMove(msg, {});
+}
+
+void TcpConnection::SetReadEnabled(bool on) {
+    if (!channel_ || state_ != ConnectionState::Connected || in_close_)
+        return;
+    if (on) {
+        if (!channel_->IsReading())
+            channel_->EnableRead();
+        read_paused_ = false;
+    } else if (!read_paused_) {
+        channel_->DisableRead();
+        read_paused_ = true;
+        read_pause_since_ms_ = HoldNowMs();
+        ServerStats::gateway_read_pause.fetch_add(1, std::memory_order_relaxed);
+    }
+}
+
+int64_t TcpConnection::EndReadPause(int64_t now_ms) {
+    if (!read_paused_)
+        return 0;
+    const int64_t credit = read_pause_since_ms_ > 0 && now_ms > read_pause_since_ms_
+                               ? now_ms - read_pause_since_ms_
+                               : 0;
+    read_pause_since_ms_ = 0;
+    SetReadEnabled(true);
+    if (credit > 0)
+        ServerStats::gateway_read_pause_ms.fetch_add(static_cast<uint64_t>(credit), std::memory_order_relaxed);
+    return credit;
+}
+
+int64_t TcpConnection::ReadPauseAgeMs(int64_t now_ms) const {
+    if (!read_paused_ || read_pause_since_ms_ <= 0 || now_ms < read_pause_since_ms_)
+        return 0;
+    return now_ms - read_pause_since_ms_;
+}
+
+bool TcpConnection::MoveBytesAlreadyEntered() const {
+    return move_commit_pending_ && move_commit_bytes_ > 0 && move_commit_left_ < move_commit_bytes_;
+}
+
+bool TcpConnection::FlushSendBufV2(bool include_move) {
+    if (flushing_v2_)
+        return true;
+    if (state_ != ConnectionState::Connected || in_close_ || !send_buf_)
+        return false;
+    // A 还没写完时，B 和 C 留在槽里，避免插进半帧中间。
+    if (send_partial_prefix_ > 0 || send_move_sticky_ || MoveBytesAlreadyEntered())
+        return true;
+    flushing_v2_ = true;
+    struct FlagGuard {
+        bool *flag;
+        ~FlagGuard() { *flag = false; }
+    } guard{&flushing_v2_};
+
+    if (move_commit_pending_)
+        ReleaseStuckMove();
+
+    const std::string control = send_v2_.Take(false);
+    SendBufV2::MovePiece piece;
+    if (include_move)
+        piece = send_v2_.DetachMove();
+    if (control.empty() && piece.frame.empty()) {
+        if (send_v2_.has_move()) {
+            send_hold_move_ = true;
+            if (send_hold_since_ms_ == 0)
+                send_hold_since_ms_ = HoldNowMs();
+            ArmParkedMoveRetry();
+        }
+        return true;
+    }
+    bool ok = true;
+    if (!control.empty())
+        ok = SendInternal(control.data(), static_cast<int>(control.size()), true, false, true, true, true);
+    if (!ok)
+        return false;
+    if (piece.frame.empty()) {
+        if (send_v2_.has_move()) {
+            send_hold_move_ = true;
+            if (send_hold_since_ms_ == 0)
+                send_hold_since_ms_ = HoldNowMs();
+            ArmParkedMoveRetry();
+        }
+        return true;
+    }
+    if (move_commit_pending_)
+        FinishMoveCommit(false);
+    move_commit_entities_.clear();
+    move_commit_entities_.reserve(piece.stamps.size());
+    for (const auto &st : piece.stamps) {
+        LatestMoveAck ack;
+        ack.entity_id = st.entity_id;
+        ack.state_seq = st.state_seq;
+        move_commit_entities_.push_back(ack);
+    }
+    move_commit_pending_ = !move_commit_entities_.empty();
+    move_commit_bytes_ = static_cast<int>(piece.frame.size());
+    move_commit_skip_ = static_cast<size_t>(send_buf_->readablebytes());
+    move_commit_left_ = move_commit_bytes_;
+    ok = SendInternal(piece.frame.data(), move_commit_bytes_, true, false, false, true);
+    if (!ok && move_commit_pending_ && move_commit_left_ >= move_commit_bytes_) {
+        FinishMoveCommit(false);
+        return false;
+    }
+    if (move_commit_pending_ && move_commit_left_ <= 0)
+        FinishMoveCommit(true);
+    else if (move_commit_pending_ && send_buf_->readablebytes() == 0)
+        FinishMoveCommit(true);
+    else if (send_buf_->readablebytes() > 0 && move_commit_bytes_ > 0 &&
+             move_commit_left_ >= move_commit_bytes_) {
+        send_hold_move_ = true;
+        send_move_hold_off_ = std::min(move_commit_skip_, static_cast<size_t>(send_buf_->readablebytes()));
+        if (send_hold_since_ms_ == 0)
+            send_hold_since_ms_ = HoldNowMs();
+        ArmParkedMoveRetry();
+    }
+    return ok;
 }
 
 void TcpConnection::set_latest_move_commit_callback(
@@ -494,6 +663,15 @@ void TcpConnection::ReleaseStuckMove() {
 bool TcpConnection::TrySendLatestMove(const std::string &msg, const std::vector<LatestMoveAck> &acks) {
     if (state_ != ConnectionState::Connected || in_close_ || !send_buf_ || msg.empty())
         return false;
+    if (SendBufV2Enabled()) {
+        InstallSendBufV2Callback();
+        std::vector<SendBufV2::Stamp> stamps;
+        stamps.reserve(acks.size());
+        for (const auto &ack : acks)
+            stamps.push_back(SendBufV2::Stamp{ack.entity_id, ack.state_seq});
+        send_v2_.SetMove(msg, std::move(stamps));
+        return FlushSendBufV2(UnsentBytes() <= kLatestMoveKernelBudget);
+    }
     const int queued = send_buf_->readablebytes();
     // 非移动数据已经堆过 64KB，这一帧先不追加。调用方留着位置，200ms 后再试。
     if (queued > 64 * 1024)
@@ -647,6 +825,9 @@ bool TcpConnection::SendInternal(const char *msg, int len, bool soft_drop, bool 
     if (send_buf_->readablebytes() > 0) {
         WriteNonBlocking();
         ArmWriteIfNeeded();
+    } else if (send_size > 0 && on_drain_) {
+        // 整帧一次 write 完，缓冲没经过 WriteNonBlocking，慢客户端计时也要看到这次写出。
+        on_drain_();
     }
     return true;
 }
@@ -669,13 +850,23 @@ void TcpConnection::ReadNonBlocking() {
     while (got < wake_cap) {
         const int chunk = std::min(64 * 1024, wake_cap - got);
         read_buf_->EnsureWritableBytes(chunk);
-        ssize_t bytes_read = ::read(connfd_, read_buf_->beginwrite(), static_cast<size_t>(chunk));
+        char extra[64 * 1024];
+        iovec iov[2];
+        iov[0].iov_base = read_buf_->beginwrite();
+        iov[0].iov_len = static_cast<size_t>(chunk);
+        iov[1].iov_base = extra;
+        iov[1].iov_len = sizeof(extra);
+        const ssize_t bytes_read = ::readv(connfd_, iov, 2);
         if (bytes_read > 0) {
-            read_buf_->HasWritten(static_cast<int>(bytes_read));
+            const int into_buf = bytes_read > chunk ? chunk : static_cast<int>(bytes_read);
+            read_buf_->HasWritten(into_buf);
+            if (bytes_read > chunk)
+                read_buf_->Append(extra, static_cast<int>(bytes_read - chunk));
             got += static_cast<int>(bytes_read);
             ServerStats::tcp_read_syscalls.fetch_add(1, std::memory_order_relaxed);
             ServerStats::tcp_read_wake_bytes.fetch_add(static_cast<uint64_t>(bytes_read),
                                                        std::memory_order_relaxed);
+            ReadWakeBytesSamples().Add(bytes_read);
             if (static_cast<size_t>(read_buf_->readablebytes()) > max_read_buf_bytes_) {
                 CloseForBackpressure("read_buf_limit");
                 return;
@@ -820,6 +1011,8 @@ void TcpConnection::WriteNonBlocking() {
         if (channel_->IsWriting())
             channel_->DisableWrite();
         notify_drain();
+        if (SendBufV2Enabled() && send_v2_.pending())
+            FlushSendBufV2(UnsentBytes() <= kLatestMoveKernelBudget);
         return;
     }
     // 只剩压住的最新移动帧时关掉写兴趣。水平触发下一直可写会空转。
@@ -859,6 +1052,10 @@ void TcpConnection::OnParkedMoveTimer() {
         return;
     }
     NoteAoiWriteRoom();
+    if (SendBufV2Enabled() && send_v2_.has_move() && !send_move_sticky_) {
+        FlushSendBufV2(true);
+        return;
+    }
     send_hold_move_ = false;
     WriteNonBlocking();
     if (state_ == ConnectionState::Connected && !in_close_ && send_buf_ &&

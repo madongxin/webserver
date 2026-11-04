@@ -106,14 +106,17 @@ bool TestOverloadReject() {
         return false;
     }
     const bool rejected = !q.TryPost(1, []() {});
+    const bool urgent_ok = q.TryPost(1, []() {}, true);
+    if (!urgent_ok)
+        std::printf("FAIL urgent TryPost rejected when shard full\n");
     {
         std::lock_guard<std::mutex> lk(mu);
         release = true;
     }
     cv.notify_all();
     q.DrainForTest();
-    if (!rejected) {
-        std::printf("FAIL expected TryPost reject when shard full\n");
+    if (!rejected || !urgent_ok) {
+        std::printf("FAIL expected normal reject and urgent accept when shard full\n");
         return false;
     }
     std::printf("OK overload reject\n");

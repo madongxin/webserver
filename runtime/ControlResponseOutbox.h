@@ -46,6 +46,7 @@ public:
     void OnBufferDrained(uint64_t conn_id);
     void Forget(uint64_t conn_id);
     size_t Depth(uint64_t conn_id);
+    size_t QueuedBytes(uint64_t conn_id);
     /** 逐帧等待已经去掉。已进入发送流的回包不再挡住下一条。 */
     bool Holding(uint64_t conn_id);
     /** 队列里还有还没进入 TcpConnection 发送流的回包。已接受的缓冲回包不挡 MOVE。 */

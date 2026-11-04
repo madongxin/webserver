@@ -373,7 +373,8 @@ redis.call('HMSET', sess,
 redis.call('EXPIRE', sess, ttl)
 redis.call('DEL', pend)
 return {'1', 'OK', cand, sid, cand_gen, p['logic'] or '', p['mapInstanceId'] or '0',
-        p['mapOwnerEpoch'] or '0', tostring(rv)}
+        p['mapOwnerEpoch'] or '0', tostring(rv),
+        f['gatewayId'] or '', f['generation'] or '0', f['sessionId'] or '', f['connectionId'] or '0'}
 )LUA";
 
 const char kLuaAbortReconnect[] = R"LUA(
@@ -1547,6 +1548,12 @@ bool SessionStore::CommitReconnect(uint64_t player_id, const std::string &operat
     out->map_instance_id = reply.size() > 6 ? ParseU64(reply[6]) : 0;
     out->map_owner_epoch = reply.size() > 7 ? ParseU64(reply[7]) : 0;
     out->route_version = reply.size() > 8 ? ParseU64(reply[8]) : 0;
+    if (reply.size() > 12) {
+        out->previous_gateway_instance_id = reply[9];
+        out->previous_generation = ParseU64(reply[10]);
+        out->previous_session_id = reply[11];
+        out->previous_connection_id = ParseU64(reply[12]);
+    }
     return true;
 }
 

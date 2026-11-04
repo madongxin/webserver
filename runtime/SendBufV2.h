@@ -54,13 +54,13 @@ public:
         move_stamps_ = std::move(stamps);
     }
 
-    std::string TakeAll() {
+    std::string Take(bool include_move) {
         std::string out = partial_;
         partial_.clear();
         for (const auto &frame : control_)
             out.append(frame);
         control_.clear();
-        if (!move_.empty()) {
+        if (include_move && !move_.empty()) {
             out.append(move_);
             if (cb_)
                 cb_(move_stamps_, true);
@@ -70,6 +70,27 @@ public:
         }
         return out;
     }
+
+    bool has_move() const { return !move_.empty(); }
+
+    std::string TakeAll() { return Take(true); }
+
+    struct MovePiece {
+        std::string frame;
+        std::vector<Stamp> stamps;
+    };
+
+    /** 把 C 取出来，不回调。已经开始写的半帧不取。 */
+    MovePiece DetachMove() {
+        MovePiece piece;
+        if (move_started_bytes_ > 0)
+            return piece;
+        piece.frame.swap(move_);
+        piece.stamps.swap(move_stamps_);
+        return piece;
+    }
+
+    bool pending() const { return !partial_.empty() || !control_.empty() || !move_.empty(); }
 
 private:
     std::string partial_;

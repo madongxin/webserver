@@ -6,10 +6,14 @@
 #include "GameTcpGateway.h"
 
 #include "AoiMoveCoalesceLedger.h"
+#include "AoiStrip.h"
+#include "InboundFrameBatch.h"
+#include "MoveSendConfig.h"
 #include "SendBufV2.h"
 #include "SlowClientPolicy.h"
 #include "AoiPublishQueue.h"
 #include "Buffer.h"
+#include "RecentSamples.h"
 #include "ServerStats.h"
 #include "CommandPolicy.h"
 #include "ControlResponseOutbox.h"
@@ -38,6 +42,8 @@
 #include "ReliableOutbox.h"
 #include "ReplySink.h"
 #include "ReplyStage.h"
+
+#include <sys/ioctl.h>
 #include "RpcOffloadPool.h"
 #include "SceneKind.h"
 #include "ServiceHealth.h"
@@ -120,18 +126,37 @@ std::mutex g_live_age_mu;
 std::unordered_map<uint64_t, uint64_t> g_pending_age;
 std::unordered_map<uint64_t, uint64_t> g_hold_age;
 
+void RecomputeLiveAgeLocked(const std::unordered_map<uint64_t, uint64_t> &bucket,
+                            std::atomic<uint64_t> &gauge, int64_t now) {
+    uint64_t mx = 0;
+    for (const auto &kv : bucket) {
+        if (kv.second == 0 || now <= static_cast<int64_t>(kv.second))
+            continue;
+        const uint64_t age = static_cast<uint64_t>(now - static_cast<int64_t>(kv.second));
+        if (age > mx)
+            mx = age;
+    }
+    gauge.store(mx, std::memory_order_relaxed);
+}
+
 void PublishMaxAge(std::unordered_map<uint64_t, uint64_t> &bucket, std::atomic<uint64_t> &gauge,
                    uint64_t conn_id, uint64_t age) {
+    const int64_t now = SteadyMs();
     if (age == 0)
         bucket.erase(conn_id);
     else
-        bucket[conn_id] = age;
-    uint64_t mx = 0;
-    for (const auto &kv : bucket) {
-        if (kv.second > mx)
-            mx = kv.second;
-    }
-    gauge.store(mx, std::memory_order_relaxed);
+        bucket[conn_id] = static_cast<uint64_t>(now - static_cast<int64_t>(age));
+    RecomputeLiveAgeLocked(bucket, gauge, now);
+}
+
+void RefreshLiveAges() {
+    std::lock_guard<std::mutex> lk(g_live_age_mu);
+    const int64_t now = SteadyMs();
+    RecomputeLiveAgeLocked(g_pending_age, ServerStats::aoi_move_pending_oldest_ms, now);
+    RecomputeLiveAgeLocked(g_hold_age, ServerStats::latest_move_hold_ms, now);
+    ServerStats::aoi_move_entity_max_silence_ms.store(
+        ServerStats::aoi_move_pending_oldest_ms.load(std::memory_order_relaxed),
+        std::memory_order_relaxed);
 }
 
 void PublishPendingAge(uint64_t conn_id, uint64_t age) {
@@ -313,8 +338,19 @@ void FlushMoveSlot(const std::shared_ptr<MoveCoalesceSlot> &slot,
         live->loop()->RunAfter(0.2, [slot, weak, conn_id]() { FlushMoveSlot(slot, weak, conn_id); });
         return;
     }
-    if (live->holding_latest_move())
+    if (live->holding_latest_move()) {
+        if (live->move_parked_on_kernel_queue()) {
+            // 内核未发送队列还高于 16KB。这一帧留着，等队列降下来由定时器写出。
+            // 每 200ms 丢掉再选，会把等最久的人记成失败，坐标就一直写不出去。
+            {
+                std::lock_guard<std::mutex> lk(slot->mu);
+                slot->slow.NoteServerDeferred(SteadyMs());
+            }
+            live->loop()->RunAfter(0.2, [slot, weak, conn_id]() { FlushMoveSlot(slot, weak, conn_id); });
+            return;
+        }
         live->ReleaseStuckMove();
+    }
     constexpr int kMaxMoveEntities = 40;
     int64_t wait_ms = 0;
     bool leftover = false;
@@ -364,7 +400,9 @@ void FlushMoveSlot(const std::shared_ptr<MoveCoalesceSlot> &slot,
             ObservePendingMoves(*slot, conn_id, now);
             wait_ms = 200;
         } else {
-            int64_t conns = OpsMetrics::Instance().gateway_tcp_connections();
+            int64_t conns = GatewayConnRegistry::Instance().BoundPlayerCount();
+            if (conns < 1)
+                conns = OpsMetrics::Instance().gateway_tcp_connections();
             if (conns < 1)
                 conns = 1;
             const int per = std::max(
@@ -382,8 +420,11 @@ void FlushMoveSlot(const std::shared_ptr<MoveCoalesceSlot> &slot,
                 slot->scheduled = !slot->by_entity.empty();
             }
         }
+        if (wait_ms > 0)
+            slot->slow.NoteServerDeferred(now);
     }
     if (close_for_slow) {
+        EraseMoveSlot(conn_id);
         live->CloseForSlowClient("slow_client");
         return;
     }
@@ -599,13 +640,28 @@ void RememberBind(uint64_t conn_id, uint64_t player_id, const std::string &token
                     auto live = weak_conn.lock();
                     if (!live || live->state() != TcpConnection::Connected)
                         return -1;
-                    if (urgent)
-                        MakeRoomForControl(live.get());
-                    bool ok = urgent ? live->TrySendUrgent(frame) : live->TrySend(frame);
+                    bool ok = false;
+                    if (urgent && SendBufV2Enabled()) {
+                        const auto rc =
+                            live->TrySendControl(frame, true, AoiStripEntityIds(frame));
+                        ok = rc == TcpConnection::WrittenDirect || rc == TcpConnection::Buffered;
+                    } else {
+                        if (urgent)
+                            MakeRoomForControl(live.get());
+                        ok = urgent ? live->TrySendUrgent(frame) : live->TrySend(frame);
+                    }
                     // ENTER/LEAVE 发不出去时丢掉排队的移动包再试一次。不改这一帧的内容。
                     if (!ok && urgent) {
                         const size_t dropped = DropQueuedAoiMoveFrames(live.get());
-                        if (dropped != 0 && live->TrySendUrgent(frame)) {
+                        bool retried = false;
+                        if (dropped != 0 && SendBufV2Enabled()) {
+                            const auto rc =
+                                live->TrySendControl(frame, true, AoiStripEntityIds(frame));
+                            retried = rc == TcpConnection::WrittenDirect || rc == TcpConnection::Buffered;
+                        } else if (dropped != 0) {
+                            retried = live->TrySendUrgent(frame);
+                        }
+                        if (retried) {
                             LOG_INFO << "Gateway dropped move frames for aoi conn#" << live->id()
                                      << " moves=" << dropped << " bytes=" << frame.size();
                             ok = true;
@@ -660,11 +716,12 @@ void RememberBind(uint64_t conn_id, uint64_t player_id, const std::string &token
             MakeRoomForControl(live.get());
             // ENTER/LEAVE 走控制发送流，插在 MOVE 前面。32KB 的紧急水位会在回包已经占满缓冲时一直失败，
             // 可靠队列不空又会禁止 AOI MOVE，位置更新就会停住。
-            auto rc = live->TrySendControl(frame, true);
+            const auto strip = AoiStripEntityIds(frame);
+            auto rc = live->TrySendControl(frame, true, strip);
             if (rc == TcpConnection::Blocked) {
                 const size_t dropped = DropQueuedAoiMoveFrames(live.get());
                 if (dropped != 0)
-                    rc = live->TrySendControl(frame, true);
+                    rc = live->TrySendControl(frame, true, strip);
             }
             if (rc == TcpConnection::WrittenDirect || rc == TcpConnection::Buffered) {
                 OpsMetrics::Instance().AddGatewayTxBytes(frame.size());
@@ -783,6 +840,14 @@ void ScheduleIdleCheck(std::weak_ptr<TcpConnection> weak, uint64_t id) {
             idle_ms = gameproto::HelloDeadlineMs();
         if (idle_ms < 200)
             idle_ms = 200;
+        int unread = 0;
+        if (c->fd() >= 0)
+            ::ioctl(c->fd(), FIONREAD, &unread);
+        if (unread > 0 || (c->read_buf() && c->read_buf()->readablebytes() > 0)) {
+            GatewayConnGuard::Instance().NoteActivity(id, static_cast<size_t>(unread > 0 ? unread : 1));
+            ScheduleIdleCheck(weak, id);
+            return;
+        }
         if (GatewayConnGuard::Instance().IdleExpired(id, idle_ms)) {
             OpsMetrics::Instance().IncIdleTimeout();
             LOG_WARN << "Gateway idle timeout conn#" << id << " hello_ok=" << hello_ok;
@@ -1058,6 +1123,7 @@ void GameTcpGateway::Run() {
         LOG_INFO << "Gateway disconnect conn#" << c->id() << " player_id=" << bind.player_id
                  << " generation=" << bind.generation;
     });
+    loop.RunEvery(1.0, []() { RefreshLiveAges(); });
     LOG_INFO << "GameTcpGateway ready on " << ip_ << ":" << port_
              << " id=" << g_gateway_id << " (session bind + grace disconnect)"
              << " egress_bytes_per_sec=" << AoiMoveCoalesceLedger::EgressBudgetBytesPerSec()
@@ -1077,56 +1143,65 @@ void GameTcpGateway::Run() {
 }
 
 void GameTcpGateway::OnMessage(const std::shared_ptr<TcpConnection> &conn) {
+    const auto msg_t0 = std::chrono::steady_clock::now();
+    struct MsgWatch {
+        std::chrono::steady_clock::time_point t0;
+        size_t frames = 0;
+        ~MsgWatch() {
+            const auto us = std::chrono::duration_cast<std::chrono::microseconds>(
+                                std::chrono::steady_clock::now() - t0)
+                                .count();
+            ServerStats::gateway_onmessage_us.fetch_add(static_cast<uint64_t>(us > 0 ? us : 0),
+                                                        std::memory_order_relaxed);
+            ServerStats::gateway_onmessage_n.fetch_add(1, std::memory_order_relaxed);
+            ServerStats::gateway_batch_frames.fetch_add(frames, std::memory_order_relaxed);
+            OnMessageUsSamples().Add(us > 0 ? us : 0);
+            BatchFramesSamples().Add(static_cast<int64_t>(frames));
+        }
+    } msg_watch{msg_t0, 0};
     Buffer *rb = conn->read_buf();
     if (!rb || rb->readablebytes() <= 0)
         return;
+    if (ReadBackpressureEnabled()) {
+        const size_t depth = ControlResponseOutbox::Instance().Depth(conn->id());
+        const size_t bytes = ControlResponseOutbox::Instance().QueuedBytes(conn->id());
+        const bool high = ReplyQueueHigh(depth, bytes);
+        const bool low = ReplyQueueLow(depth, bytes);
+        const int64_t now = std::chrono::duration_cast<std::chrono::milliseconds>(
+                                std::chrono::steady_clock::now().time_since_epoch())
+                                .count();
+        if (conn->read_paused() && (low || conn->ReadPauseAgeMs(now) >= ReadPauseMaxMs())) {
+            const int64_t credit = conn->EndReadPause(now);
+            GatewayConnGuard::Instance().AddIdleCredit(conn->id(), credit);
+        } else if (!conn->read_paused() && high) {
+            conn->SetReadEnabled(false);
+        }
+    }
 
     const size_t nread = static_cast<size_t>(rb->readablebytes());
     OpsMetrics::Instance().AddGatewayRxBytes(nread);
 
-    struct RankedFrame {
-        std::string payload;
-        game::GameRequest req;
-        int rank = 2;
-        bool ok = false;
-    };
-    std::vector<RankedFrame> frames;
+    std::vector<InboundFrame> frames;
     const std::string raw = rb->PeekAllAsString();
     size_t offset = 0;
+    size_t parses = 0;
     constexpr size_t kScanCap = 256;
-    while (frames.size() < kScanCap) {
-        size_t consumed = 0;
-        std::string payload;
-        const auto dr = gameproto::DecodeOneFrameFrom(raw, offset, &payload, &consumed);
-        if (dr == gameproto::FrameDecodeResult::Incomplete)
-            break;
-        if (dr == gameproto::FrameDecodeResult::Invalid) {
-            OpsMetrics::Instance().IncIllegalFrame();
-            LOG_WARN << "GameTcpGateway invalid frame conn#" << conn->id()
-                     << " stream_bytes=" << raw.size();
-            rb->RetrieveAll();
-            conn->HandleClose();
-            return;
-        }
-        RankedFrame item;
-        item.payload = std::move(payload);
-        item.ok = item.req.ParseFromString(item.payload);
-        if (item.ok) {
-            if (item.req.has_heartbeat() || item.req.has_client_hello())
-                item.rank = 0;
-            else if (item.req.has_reconnect() || item.req.has_login() || item.req.has_register_() ||
-                     item.req.has_logout())
-                item.rank = 1;
-        }
-        frames.push_back(std::move(item));
-        OpsMetrics::Instance().AddGatewayRxFrames(1);
-        offset += consumed;
+    if (!DecodeInboundFrames(raw, kScanCap, &frames, &offset, &parses)) {
+        OpsMetrics::Instance().IncIllegalFrame();
+        LOG_WARN << "GameTcpGateway invalid frame conn#" << conn->id()
+                 << " stream_bytes=" << raw.size();
+        rb->RetrieveAll();
+        conn->HandleClose();
+        return;
     }
+    (void)parses;
+    for (size_t i = 0; i < frames.size(); ++i)
+        OpsMetrics::Instance().AddGatewayRxFrames(1);
     if (offset > 0)
         rb->Retrieve(static_cast<int>(offset));
     if (frames.size() > 1) {
         std::stable_sort(frames.begin(), frames.end(),
-                         [](const RankedFrame &a, const RankedFrame &b) { return a.rank < b.rank; });
+                         [](const InboundFrame &a, const InboundFrame &b) { return a.rank < b.rank; });
     }
     if (static_cast<size_t>(rb->readablebytes()) > conn->max_read_buf_bytes()) {
         LOG_WARN << "GameTcpGateway stream overflow conn#" << conn->id();
@@ -1134,7 +1209,8 @@ void GameTcpGateway::OnMessage(const std::shared_ptr<TcpConnection> &conn) {
         conn->HandleClose();
         return;
     }
-    constexpr size_t kMaxFramesPerWake = 64;
+    const size_t kMaxFramesPerWake = static_cast<size_t>(FramesPerWake());
+    msg_watch.frames = frames.size();
     if (frames.size() > kMaxFramesPerWake) {
         std::string putback;
         for (size_t i = kMaxFramesPerWake; i < frames.size(); ++i) {
@@ -1171,7 +1247,13 @@ void GameTcpGateway::OnMessage(const std::shared_ptr<TcpConnection> &conn) {
             }
             continue;
         }
-        const size_t cap = bound ? (64 * 1024) : (16 * 1024);
+        const size_t cap = static_cast<size_t>(bound ? FrameCapLogin() : FrameCapPreLogin());
+        if (ReadBackpressureEnabled() && item.rank > 1 && RpcOffloadPool::Instance().Saturated()) {
+            ServerStats::gateway_busy_replies.fetch_add(1, std::memory_order_relaxed);
+            if (GatewayConnGuard::Instance().AllowRateError(conn->id()))
+                SendPublicErr(tcp_sink, conn->id(), 0, gameproto::kErrOverloaded, "busy");
+            continue;
+        }
         const bool wide = item.ok && (item.req.has_world_snapshot() || item.req.has_enter_map());
         if (!wide && frame.size() > cap) {
             LOG_WARN << "GameTcpGateway frame too large conn#" << conn->id() << " bytes=" << frame.size();

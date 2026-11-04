@@ -12,6 +12,7 @@
  *   -> HandleClose -> on_close_ -> 主线程删 map -> ConnectionDestructor
  */
 
+#include "SendBufV2.h"
 #include "common.h"
 
 #include <cstdint>
@@ -103,7 +104,11 @@ public:
      */
     enum ControlSendResult { Closed = -1, Blocked = 0, WrittenDirect = 1, Buffered = 2 };
     ControlSendResult TrySendControl(const std::string &msg, bool over_cap = false);
+    ControlSendResult TrySendControl(const std::string &msg, bool over_cap,
+                                     const std::vector<uint64_t> &strip_entities);
     ControlSendResult TrySendControl(const char *msg, int len, bool over_cap = false);
+    ControlSendResult TrySendControl(const char *msg, int len, bool over_cap,
+                                     const std::vector<uint64_t> &strip_entities);
     /** 应用缓冲里还有还没写进内核的控制字节。不阻止下一条控制回包进入发送流。 */
     bool ControlReplyBuffered() const { return control_hold_end_ > 0; }
     size_t control_run() const;
@@ -143,6 +148,11 @@ public:
     void HandleWrite();
     void HandleClose();
     void CloseForSlowClient(const char *reason) { CloseForBackpressure(reason); }
+    void SetReadEnabled(bool on);
+    bool read_paused() const { return read_paused_; }
+    /** 恢复读时返回这次暂停了多久，供空闲超时扣除。 */
+    int64_t EndReadPause(int64_t now_ms);
+    int64_t ReadPauseAgeMs(int64_t now_ms) const;
 
     ConnectionState state() const;
     EventLoop *loop() const;
@@ -151,6 +161,8 @@ public:
     int unsent_bytes() const;
     /** 最新移动帧正压在应用缓冲末尾，还没 write。只在所属 EventLoop 上调用。 */
     bool holding_latest_move() const { return send_hold_move_; }
+    /** 位置帧停在应用缓冲里，是因为内核未发送队列还高于 16KB。这时不能把帧丢掉重选。 */
+    bool move_parked_on_kernel_queue() const;
     uint64_t id() const;
     HttpContext *context() const;
     bool IsWriting() const;
@@ -200,6 +212,10 @@ private:
     int64_t send_hold_since_ms_ = 0;
     /** 每个连接最多一个 200ms 定时器，用来在关掉 EPOLLOUT 之后再试暂存的移动帧。 */
     bool move_retry_armed_ = false;
+    bool read_paused_ = false;
+    int64_t read_pause_since_ms_ = 0;
+    bool flushing_v2_ = false;
+    SendBufV2 send_v2_;
     std::vector<LatestMoveAck> move_commit_entities_;
     bool move_commit_pending_ = false;
     size_t move_commit_skip_ = 0;
@@ -227,6 +243,9 @@ private:
     /** write 跨过帧边界时，把缓冲开头仍未写完的那一帧记成半帧前缀。 */
     void NoteWriteConsumed(const char *data, size_t data_len, size_t written);
     void FinishMoveCommit(bool committed);
+    bool MoveBytesAlreadyEntered() const;
+    bool FlushSendBufV2(bool include_move);
+    void InstallSendBufV2Callback();
     void AccountMoveBytesWritten(int n);
     /** 内核里还没交给网卡的字节。拿不到时返回 0，不用未确认字节充数。 */
     int UnsentBytes() const;

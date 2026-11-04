@@ -1,6 +1,7 @@
 #include "OpsMetrics.h"
 
 #include "PushAdmit.h"
+#include "RecentSamples.h"
 #include "ServerStats.h"
 
 #include <algorithm>
@@ -339,6 +340,40 @@ std::string OpsMetrics::PrometheusText() const {
     ctr("gamemesh_aoi_move_overwritten_total",
         "Queued AOI MOVE frames replaced by a newer frame before write.",
         ServerStats::aoi_move_overwritten.load(std::memory_order_relaxed));
+    if (ServerStats::aoi_move_force_picks.load(std::memory_order_relaxed) > 0) {
+        ctr("gamemesh_aoi_move_force_picks_total",
+            "Picks that included an entity past its silence cap. Unit: picks.",
+            ServerStats::aoi_move_force_picks.load(std::memory_order_relaxed));
+        ctr("gamemesh_aoi_move_force_bytes_total",
+            "Payload bytes in those picks. Unit: bytes.",
+            ServerStats::aoi_move_force_bytes.load(std::memory_order_relaxed));
+    }
+    if (ServerStats::aoi_move_frames.load(std::memory_order_relaxed) > 0) {
+        ctr("gamemesh_aoi_move_frames_total", "Position frames confirmed written. Unit: frames.",
+            ServerStats::aoi_move_frames.load(std::memory_order_relaxed));
+        ctr("gamemesh_aoi_move_frame_events_total",
+            "Entities in those frames. Divide by frames for the average. Unit: entities.",
+            ServerStats::aoi_move_frame_events.load(std::memory_order_relaxed));
+    }
+    if (ServerStats::gateway_read_pause.load(std::memory_order_relaxed) > 0) {
+        ctr("gamemesh_gateway_read_pause_total", "Times a connection paused reads because its reply queue was high.",
+            ServerStats::gateway_read_pause.load(std::memory_order_relaxed));
+        ctr("gamemesh_gateway_read_pause_ms_total",
+            "Milliseconds those pauses lasted. Unit: milliseconds.",
+            ServerStats::gateway_read_pause_ms.load(std::memory_order_relaxed));
+    }
+    if (ServerStats::gateway_busy_replies.load(std::memory_order_relaxed) > 0)
+        ctr("gamemesh_gateway_busy_replies_total",
+            "BUSY replies while the downstream RPC queue was full.",
+            ServerStats::gateway_busy_replies.load(std::memory_order_relaxed));
+    if (ServerStats::gateway_onmessage_n.load(std::memory_order_relaxed) > 0) {
+        ctr("gamemesh_gateway_onmessage_us_total", "Time spent in OnMessage. Unit: microseconds.",
+            ServerStats::gateway_onmessage_us.load(std::memory_order_relaxed));
+        ctr("gamemesh_gateway_onmessage_total", "OnMessage calls.",
+            ServerStats::gateway_onmessage_n.load(std::memory_order_relaxed));
+        ctr("gamemesh_gateway_batch_frames_total", "Frames observed in those calls.",
+            ServerStats::gateway_batch_frames.load(std::memory_order_relaxed));
+    }
     if (ServerStats::aoi_move_batch_hold.load(std::memory_order_relaxed) > 0)
         ctr("gamemesh_aoi_move_batch_hold_total",
             "Position frames held back to accumulate more entities. Unit: frames.",
@@ -437,6 +472,28 @@ std::string OpsMetrics::PrometheusText() const {
         emit_q("gamemesh_aoi_move_silence_near", near);
         emit_q("gamemesh_aoi_move_silence_far", far);
     }
+    auto emit_recent = [&](const char *name, const char *unit, RecentSamples &samples) {
+        if (samples.Empty())
+            return;
+        int64_t p50 = 0;
+        int64_t p95 = 0;
+        int64_t p99 = 0;
+        if (!samples.Percentile(0.50, &p50) || !samples.Percentile(0.95, &p95) ||
+            !samples.Percentile(0.99, &p99))
+            return;
+        os << "# HELP " << name << "_p50 " << unit << "\n# TYPE " << name << "_p50 gauge\n"
+           << name << "_p50 " << p50 << "\n";
+        os << "# HELP " << name << "_p95 " << unit << "\n# TYPE " << name << "_p95 gauge\n"
+           << name << "_p95 " << p95 << "\n";
+        os << "# HELP " << name << "_p99 " << unit << "\n# TYPE " << name << "_p99 gauge\n"
+           << name << "_p99 " << p99 << "\n";
+    };
+    emit_recent("gamemesh_tcp_read_wake_bytes", "Bytes returned by one read on a game connection.",
+                ReadWakeBytesSamples());
+    emit_recent("gamemesh_gateway_onmessage_us", "Microseconds spent in one OnMessage call.",
+                OnMessageUsSamples());
+    emit_recent("gamemesh_gateway_batch_frames", "Frames observed in one OnMessage call.",
+                BatchFramesSamples());
     os << "# HELP gamemesh_latest_move_hold_ms Milliseconds the oldest latest-MOVE frame has been parked in the app buffer. Zero when none is parked.\n"
           "# TYPE gamemesh_latest_move_hold_ms gauge\n"
           "gamemesh_latest_move_hold_ms "

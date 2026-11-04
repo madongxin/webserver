@@ -24,6 +24,8 @@ public:
     bool TryPostFast(std::function<void()> fn);
 
     bool started() const;
+    /** 慢队列已经满。全局过载时用来回 BUSY，不暂停读。 */
+    bool Saturated();
 
 private:
     RpcOffloadPool() = default;

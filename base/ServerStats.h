@@ -88,6 +88,15 @@ struct ServerStats {
     static inline std::atomic<uint64_t> aoi_move_commit{0};
     static inline std::atomic<uint64_t> aoi_move_commit_callbacks{0};
     static inline std::atomic<uint64_t> aoi_move_batch_hold{0};
+    static inline std::atomic<uint64_t> aoi_move_force_picks{0};
+    static inline std::atomic<uint64_t> aoi_move_force_bytes{0};
+    static inline std::atomic<uint64_t> aoi_move_frame_events{0};
+    static inline std::atomic<uint64_t> aoi_move_frames{0};
+    static inline std::atomic<uint64_t> gateway_read_pause{0};
+    static inline std::atomic<uint64_t> gateway_read_pause_ms{0};
+    static inline std::atomic<uint64_t> gateway_onmessage_us{0};
+    static inline std::atomic<uint64_t> gateway_onmessage_n{0};
+    static inline std::atomic<uint64_t> gateway_batch_frames{0};
     static inline std::atomic<uint64_t> aoi_move_budget_over_bytes{0};
     static inline std::atomic<uint64_t> aoi_move_slow_degrade{0};
     static inline std::atomic<uint64_t> aoi_move_slow_clear{0};

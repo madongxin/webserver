@@ -443,6 +443,22 @@ GameLogic &GameLogic::Instance() {
     return g;
 }
 
+void GameLogic::SweepDisconnected() {
+    int grace_sec = 45;
+    if (const char *env = std::getenv("GAMEMESH_SESSION_GRACE_SEC")) {
+        const int v = std::atoi(env);
+        if (v >= 1 && v <= 3600)
+            grace_sec = v;
+    }
+    AoiPushBatch pushes;
+    const size_t n = MapRuntime::Instance().ExpireDisconnected(static_cast<int64_t>(grace_sec) * 1000,
+                                                              &pushes);
+    if (!pushes.events.empty())
+        EmitAoi(pushes);
+    if (n > 0)
+        LOG_INFO << "GameLogic expired disconnected entities n=" << n;
+}
+
 void GameLogic::EmitAoi(const AoiPushBatch &batch) {
 #ifdef WEBSERVER_ENABLE_BRPC
     EnqueueAoi(batch);

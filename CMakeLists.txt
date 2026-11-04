@@ -499,6 +499,7 @@ target_link_libraries(map_static_data_test
 add_executable(map_runtime_aoi_test
   test/map_runtime_aoi_test.cpp
   runtime/MapRuntime.cpp
+  runtime/OpsMetrics.cpp
   runtime/MapStaticData.cpp
   runtime/MapCatalog.cpp
   base/FileHash.cpp
@@ -515,6 +516,7 @@ target_link_libraries(map_runtime_aoi_test
 add_executable(aoi_subscription_invariant_test
   test/aoi_subscription_invariant_test.cpp
   runtime/MapRuntime.cpp
+  runtime/OpsMetrics.cpp
   runtime/MapStaticData.cpp
   runtime/MapCatalog.cpp
   base/FileHash.cpp
@@ -531,6 +533,7 @@ target_link_libraries(aoi_subscription_invariant_test
 add_executable(aoi_interest_bench
   test/aoi_interest_bench.cpp
   runtime/MapRuntime.cpp
+  runtime/OpsMetrics.cpp
   runtime/MapStaticData.cpp
   runtime/MapCatalog.cpp
   base/FileHash.cpp
@@ -553,6 +556,7 @@ target_link_libraries(login_admission_test ${CMAKE_THREAD_LIBS_INIT})
 add_executable(aoi200_subscription_test
   test/aoi200_subscription_test.cpp
   runtime/MapRuntime.cpp
+  runtime/OpsMetrics.cpp
   runtime/MapStaticData.cpp
   runtime/MapCatalog.cpp
   base/FileHash.cpp
@@ -582,8 +586,10 @@ if(ENABLE_GAME_PROTOBUF)
     test/auth_session_boundary_test.cpp
     game/GameLogic.cpp
     game/FriendService.cpp
+    game/CommandSpec.cpp
     game/GatewayConnRegistry.cpp
     game/game.pb.cc
+    runtime/OpsMetrics.cpp
     runtime/MessageRoute.cpp
     runtime/ForwardMetaContext.cpp
     runtime/MapInstanceRegistry.cpp
@@ -612,8 +618,10 @@ if(ENABLE_GAME_PROTOBUF)
     test/asset_dirty_consistency_test.cpp
     game/GameLogic.cpp
     game/FriendService.cpp
+    game/CommandSpec.cpp
     game/GatewayConnRegistry.cpp
     game/game.pb.cc
+    runtime/OpsMetrics.cpp
     runtime/MessageRoute.cpp
     runtime/ForwardMetaContext.cpp
     runtime/MapInstanceRegistry.cpp
@@ -645,6 +653,7 @@ if(ENABLE_GAME_PROTOBUF)
     game/ProtoFraming.cpp
     game/game.pb.cc
     runtime/MessageRoute.cpp
+    game/CommandSpec.cpp
     base/CurrentThread.cpp
     log/Logging.cpp
     log/LogStream.cpp
@@ -660,8 +669,10 @@ if(ENABLE_GAME_PROTOBUF)
     test/phase1_correctness_test.cpp
     game/GameLogic.cpp
     game/FriendService.cpp
+    game/CommandSpec.cpp
     game/GatewayConnRegistry.cpp
     game/game.pb.cc
+    runtime/OpsMetrics.cpp
     runtime/MessageRoute.cpp
     runtime/ForwardMetaContext.cpp
     runtime/MapInstanceRegistry.cpp
@@ -670,7 +681,6 @@ if(ENABLE_GAME_PROTOBUF)
     runtime/MapCatalog.cpp
     runtime/MapRuntime.cpp
     runtime/PlayerSerialQueue.cpp
-    runtime/OpsMetrics.cpp
     runtime/discovery/IServiceRegistry.cpp
     runtime/discovery/EtcdDiscovery.cpp
     base/FileHash.cpp
@@ -772,6 +782,7 @@ if(ENABLE_GAME_PROTOBUF)
     test/phase2_transfer_snapshot_test.cpp
     game/GameLogic.cpp
     game/FriendService.cpp
+    game/CommandSpec.cpp
     game/game.pb.cc
     runtime/MessageRoute.cpp
     runtime/ForwardMetaContext.cpp
@@ -780,6 +791,7 @@ if(ENABLE_GAME_PROTOBUF)
     runtime/MapStaticData.cpp
     runtime/MapCatalog.cpp
     runtime/MapRuntime.cpp
+    runtime/OpsMetrics.cpp
     runtime/discovery/IServiceRegistry.cpp
     runtime/discovery/EtcdDiscovery.cpp
     base/FileHash.cpp
@@ -801,7 +813,9 @@ if(ENABLE_GAME_PROTOBUF)
     test/world_snapshot_test.cpp
     game/GameLogic.cpp
     game/FriendService.cpp
+    game/CommandSpec.cpp
     game/game.pb.cc
+    runtime/OpsMetrics.cpp
     runtime/MessageRoute.cpp
     runtime/ForwardMetaContext.cpp
     runtime/MapInstanceRegistry.cpp
@@ -1332,6 +1346,24 @@ target_link_libraries(password_hash_test ${OPENSSL_CRYPTO_LIB})
   target_include_directories(aoi_send_policy_test PRIVATE runtime base)
   add_executable(sendbuf_v2_test test/sendbuf_v2_test.cpp)
   target_include_directories(sendbuf_v2_test PRIVATE runtime)
+  add_executable(recv_policy_test
+    test/recv_policy_test.cpp
+    runtime/GatewayConnGuard.cpp
+    runtime/OpsMetrics.cpp
+    runtime/ProtocolHandshake.cpp
+    runtime/PublicError.cpp
+    runtime/ControlResponseOutbox.cpp
+    runtime/ReplyStage.cpp
+    game/ProtoFraming.cpp
+    game/game.pb.cc
+    base/CurrentThread.cpp
+    log/Logging.cpp
+    log/LogStream.cpp
+    log/LogFile.cpp
+    log/AsyncLogging.cpp)
+  target_include_directories(recv_policy_test PRIVATE
+    runtime game base log ${Protobuf_INCLUDE_DIRS})
+  target_link_libraries(recv_policy_test ${CMAKE_THREAD_LIBS_INIT} ${Protobuf_LIBRARIES})
   add_executable(aoi_move_frame_size_test
     test/aoi_move_frame_size_test.cpp
     game/ProtoFraming.cpp
@@ -1482,6 +1514,7 @@ if(ENABLE_MYSQL AND ENABLE_GAME_PROTOBUF)
     game/MailService.cpp
     game/GameLogic.cpp
     game/FriendService.cpp
+    game/CommandSpec.cpp
     game/game.pb.cc
     db/Connection.cpp
     db/ConnectionPool.cpp
@@ -1518,6 +1551,7 @@ if(ENABLE_MYSQL AND ENABLE_GAME_PROTOBUF)
     db/GameDbOutbox.cpp
     db/GameDbAssetStore.cpp
     db/PlayerItemStore.cpp
+    runtime/OpsMetrics.cpp
     base/CurrentThread.cpp
     log/Logging.cpp
     log/LogStream.cpp
@@ -1536,6 +1570,7 @@ if(ENABLE_MYSQL AND ENABLE_GAME_PROTOBUF)
     db/GameDbOutbox.cpp
     db/GameDbAssetStore.cpp
     db/PlayerItemStore.cpp
+    runtime/OpsMetrics.cpp
     base/CurrentThread.cpp
     log/Logging.cpp
     log/LogStream.cpp
@@ -1554,6 +1589,7 @@ if(ENABLE_MYSQL AND ENABLE_GAME_PROTOBUF)
     db/GameDbOutbox.cpp
     db/GameDbAssetStore.cpp
     db/PlayerItemStore.cpp
+    runtime/OpsMetrics.cpp
     base/CurrentThread.cpp
     log/Logging.cpp
     log/LogStream.cpp
@@ -1572,6 +1608,7 @@ if(ENABLE_MYSQL AND ENABLE_GAME_PROTOBUF)
     db/GameDbOutbox.cpp
     db/GameDbAssetStore.cpp
     db/PlayerItemStore.cpp
+    runtime/OpsMetrics.cpp
     base/CurrentThread.cpp
     log/Logging.cpp
     log/LogStream.cpp
@@ -1590,6 +1627,7 @@ if(ENABLE_MYSQL AND ENABLE_GAME_PROTOBUF)
     db/GameDbOutbox.cpp
     db/GameDbAssetStore.cpp
     db/PlayerItemStore.cpp
+    runtime/OpsMetrics.cpp
     base/CurrentThread.cpp
     log/Logging.cpp
     log/LogStream.cpp

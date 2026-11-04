@@ -383,8 +383,10 @@ void MapRuntime::RemovePlayerInterest(InstanceState *st, uint64_t map_instance_i
         st->entity_count.fetch_sub(1, std::memory_order_relaxed);
     } else {
         auto left = st->entities.find(player_id);
-        if (left != st->entities.end())
+        if (left != st->entities.end()) {
             left->second.connected = false;
+            left->second.disconnected_ms = NowMs();
+        }
     }
     RefreshViewers(st, viewers, 0, 0, map_instance_id, pushes);
 }
@@ -504,6 +506,7 @@ bool MapRuntime::Enter(uint64_t map_instance_id, std::shared_ptr<const MapStatic
         RemovePlayerInterest(st.get(), map_instance_id, entity.player_id, pushes, true);
     }
     entity.connected = true;
+    entity.disconnected_ms = 0;
     if (entity.state_seq == 0)
         entity.state_seq = 1;
     st->entities[entity.player_id] = entity;
@@ -799,6 +802,78 @@ void MapRuntime::LeaveAll(uint64_t player_id, AoiPushBatch *pushes) {
         RetireIfEmpty(mid, st);
 }
 
+size_t MapRuntime::ExpireDisconnected(int64_t grace_ms, AoiPushBatch *pushes) {
+    if (grace_ms < 1000)
+        grace_ms = 1000;
+    const int64_t now = NowMs();
+    std::vector<std::shared_ptr<InstanceState>> maps;
+    {
+        std::lock_guard<std::mutex> reg(mu_);
+        maps.reserve(maps_.size());
+        for (const auto &mk : maps_) {
+            if (mk.second)
+                maps.push_back(mk.second);
+        }
+    }
+    std::vector<uint64_t> due;
+    for (const auto &st : maps) {
+        auto inst = LockInst(st);
+        for (const auto &ek : st->entities) {
+            const MapEntity &e = ek.second;
+            if (e.connected || e.disconnected_ms <= 0 || now - e.disconnected_ms < grace_ms)
+                continue;
+            due.push_back(e.player_id);
+        }
+    }
+    size_t n = 0;
+    for (uint64_t pid : due) {
+        uint64_t mid = 0;
+        std::shared_ptr<InstanceState> st;
+        {
+            std::lock_guard<std::mutex> reg(mu_);
+            auto pit = player_map_.find(pid);
+            if (pit == player_map_.end())
+                continue;
+            mid = pit->second;
+            auto mit = maps_.find(mid);
+            if (mit == maps_.end() || !mit->second)
+                continue;
+            st = mit->second;
+        }
+        bool erase = false;
+        {
+            auto inst = LockInst(st);
+            if (st->unloaded)
+                continue;
+            auto eit = st->entities.find(pid);
+            if (eit == st->entities.end() || eit->second.connected || eit->second.disconnected_ms <= 0 ||
+                now - eit->second.disconnected_ms < grace_ms)
+                continue;
+            const MapEntity gone = eit->second;
+            const std::vector<uint64_t> viewers = NeighborhoodIds(*st, gone.x, gone.z);
+            for (uint64_t vid : viewers) {
+                if (vid == pid)
+                    continue;
+                auto rit = st->entities.find(vid);
+                if (rit != st->entities.end() && rit->second.connected)
+                    EmitTo(pushes, mid, rit->second, 3, gone);
+            }
+            RemovePlayerInterest(st.get(), mid, pid, pushes, true);
+            erase = st->entity_count.load(std::memory_order_relaxed) == 0;
+        }
+        {
+            std::lock_guard<std::mutex> reg(mu_);
+            auto pit = player_map_.find(pid);
+            if (pit != player_map_.end() && pit->second == mid)
+                player_map_.erase(pit);
+        }
+        if (erase)
+            RetireIfEmpty(mid, st);
+        ++n;
+    }
+    return n;
+}
+
 bool MapRuntime::Disconnect(uint64_t player_id, AoiPushBatch *pushes) {
     // 必须对邻居发 LEAVE：否则客户端 AOI 模型永不消失（静默断线已在实机压测验证为幽灵模型根因）。
     // entity 保留（erase_entity=false）以便宽限内 Reconnect；LEAVE 走 reliable 推送。
@@ -851,6 +926,7 @@ bool MapRuntime::Reconnect(uint64_t player_id, const std::string &gateway_instan
         return false;
     MapEntity &e = eit->second;
     e.connected = true;
+    e.disconnected_ms = 0;
     if (!gateway_instance_id.empty())
         e.gateway_instance_id = gateway_instance_id;
     if (!session_id.empty())

@@ -38,6 +38,7 @@ struct MapEntity {
     std::string session_id;
     uint64_t last_client_seq = 0;
     int64_t last_move_server_ms = 0;
+    int64_t disconnected_ms = 0;
     int64_t last_client_time_ms = 0;
     float move_speed = 10.f;
 };
@@ -81,6 +82,8 @@ public:
     bool Leave(uint64_t map_instance_id, uint64_t player_id, AoiPushBatch *pushes);
     void LeaveAll(uint64_t player_id, AoiPushBatch *pushes);
     bool Disconnect(uint64_t player_id, AoiPushBatch *pushes);
+    /** 宽限到期后删掉断线实体，并再给周围还在线的人发一次 LEAVE。 */
+    size_t ExpireDisconnected(int64_t grace_ms, AoiPushBatch *pushes);
     bool Reconnect(uint64_t player_id, const std::string &gateway_instance_id,
                    const std::string &session_id, MapEntity *self_out,
                    std::vector<MapEntity> *aoi_snapshot, AoiPushBatch *pushes);

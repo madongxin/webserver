@@ -78,6 +78,11 @@ public:
 
     bool started() const { return started_.load(std::memory_order_acquire); }
 
+    bool Saturated() {
+        std::lock_guard<std::mutex> lk(mu_);
+        return q_.size() >= kMaxPending;
+    }
+
 private:
     Pool() = default;
     ~Pool() { Stop(); }
@@ -176,4 +181,8 @@ bool RpcOffloadPool::TryPostFast(std::function<void()> fn) {
 
 bool RpcOffloadPool::started() const {
     return Pool::Get().started();
+}
+
+bool RpcOffloadPool::Saturated() {
+    return Pool::Get().Saturated();
 }

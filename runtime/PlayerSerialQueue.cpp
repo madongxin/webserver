@@ -275,11 +275,11 @@ bool PlayerSerialQueue::TryPost(uint64_t player_id, std::function<void()> task,
         if (shard->stop)
             return false;
         entry.submit_seq = shard->next_submit_seq++;
-        const size_t shard_limit = ignore_global_cap ? max_per_shard_ + 128 : max_per_shard_;
+        const size_t shard_limit = max_per_shard_;
         const auto dit = shard->async_depth.find(player_id);
         if (dit != shard->async_depth.end() && dit->second > 0) {
             auto &dq = shard->deferred[player_id];
-            if (dq.size() + shard->q.size() >= shard_limit)
+            if (!ignore_global_cap && dq.size() + shard->q.size() >= shard_limit)
                 return false;
             dq.push_back(std::move(entry));
             pending_global_.fetch_add(1, std::memory_order_relaxed);
@@ -287,7 +287,7 @@ bool PlayerSerialQueue::TryPost(uint64_t player_id, std::function<void()> task,
                 static_cast<int64_t>(pending_global_.load(std::memory_order_relaxed)));
             return true;
         }
-        if (shard->q.size() >= shard_limit)
+        if (!ignore_global_cap && shard->q.size() >= shard_limit)
             return false;
         shard->q.push_back(std::move(entry));
         pending_global_.fetch_add(1, std::memory_order_relaxed);

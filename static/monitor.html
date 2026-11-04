@@ -1594,7 +1594,7 @@
           'process_open_fds{' + js + '}',
           'process_threads{' + js + '}',
           'time() - process_start_time_seconds{' + js + '}',
-          'sum(gamemesh_online_players{' + js + ',role="gateway"})',
+          'max(gamemesh_session_online_players{' + js + ',role="session"})',
           'max(gamemesh_session_online_players{' + js + ',role="session"})',
           'gamemesh_online_players{' + js + ',role="gateway"}',
           'sum(rate(gamemesh_gateway_rx_bytes_total{' + js + ',role="gateway"}[1m]))',
@@ -1803,7 +1803,7 @@
     async function paintSignals() {
       const js = jobSel();
       const specs = [
-        { mod: 'players', q: 'sum(gamemesh_online_players{' + js + ',role="gateway"})',
+        { mod: 'players', q: 'max(gamemesh_session_online_players{' + js + ',role="session"})',
           text: function (v) { return fmtNum(v); }, tone: function () { return true; } },
         { mod: 'tcp', q: 'sum(gamemesh_gateway_tcp_connections{' + js + ',role="gateway"})',
           text: function (v) { return fmtNum(v); }, tone: function () { return true; } },

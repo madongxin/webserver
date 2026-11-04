@@ -1,5 +1,6 @@
 #pragma once
 
+#include "MoveSendConfig.h"
 #include "ServerStats.h"
 
 #include <algorithm>
@@ -113,7 +114,7 @@ public:
                 if (kv.second.in_flight || kv.second.pending_since_ms <= 0)
                     continue;
                 const int64_t age = now - kv.second.pending_since_ms;
-                const int cap = kv.second.layer == 1 ? kNearHardSilenceMs : kFarHardSilenceMs;
+                const int cap = kv.second.layer == 1 ? NearHardSilenceMs() : FarHardSilenceMs();
                 if (age >= cap)
                     any_hard = true;
             }
@@ -196,7 +197,7 @@ public:
                 const int64_t pend = it == entities_.end() ? 0 : it->second.pending_since_ms;
                 const int64_t age = pend > 0 ? now - pend : 0;
                 c.layer = layer;
-                c.hard = layer == 1 ? age >= kNearHardSilenceMs : age >= kFarHardSilenceMs;
+                c.hard = layer == 1 ? age >= NearHardSilenceMs() : age >= FarHardSilenceMs();
                 if (layer == 1)
                     near.push_back(c);
                 else
@@ -205,7 +206,7 @@ public:
             int near_take = static_cast<int>(near.size());
             int far_take = static_cast<int>(far.size());
             if (!near.empty()) {
-                near_take = std::max(1, limit * kNearQuotaPercent / 100);
+                near_take = std::max(1, limit * NearQuotaPercent() / 100);
                 if (near_take > limit)
                     near_take = limit;
                 if (near_take > static_cast<int>(near.size()))
@@ -228,12 +229,19 @@ public:
                 std::partial_sort(far.begin(), far.begin() + far_take, far.end(), better);
                 chosen.insert(chosen.end(), far.begin(), far.begin() + far_take);
             }
-            const bool batch_wait = static_cast<int>(chosen.size()) < kBatchMinEvents && !any_hard &&
-                                    oldest < kNearHardSilenceMs &&
-                                    static_cast<int>(cands.size()) >= kBatchMinEvents;
+            // 人已经在槽里时必须发出预算装得下的那些。凑不满默认 8 人不能再等：
+            // 满员后每条连接每秒只够大约 6 人，旧条件会把这一帧退回，并每 50ms 空转一次。
+            // 只在人还没到、而且预算装得下更大的一帧时，才等一个发送间隔。
+            const int batch_min = MoveBatchMinEvents();
+            const int have = static_cast<int>(cands.size());
+            const bool batch_wait = !any_hard && have < batch_min && have < limit &&
+                                    oldest < static_cast<int64_t>(interval);
             if (batch_wait) {
-                if (wait_ms)
-                    *wait_ms = 50;
+                if (wait_ms) {
+                    *wait_ms = static_cast<int64_t>(interval) - oldest;
+                    if (*wait_ms < 50)
+                        *wait_ms = 50;
+                }
                 ServerStats::aoi_move_batch_hold.fetch_add(1, std::memory_order_relaxed);
                 return {};
             }
@@ -259,6 +267,7 @@ public:
             ServerStats::aoi_move_capped.fetch_add(
                 static_cast<uint64_t>(entities_.size() - static_cast<size_t>(take_n)),
                 std::memory_order_relaxed);
+        any_hard_pick_ = any_hard;
         return out;
     }
 
@@ -287,7 +296,14 @@ public:
 
     void NoteKernelWrite(const std::vector<AoiMoveStamp> &frame, int64_t now, int frame_bytes) {
         ServerStats::aoi_move_commit.fetch_add(1, std::memory_order_relaxed);
-        ServerStats::aoi_move_park_written.fetch_add(1, std::memory_order_relaxed);
+            ServerStats::aoi_move_park_written.fetch_add(1, std::memory_order_relaxed);
+        ServerStats::aoi_move_frame_events.fetch_add(frame.size(), std::memory_order_relaxed);
+        ServerStats::aoi_move_frames.fetch_add(1, std::memory_order_relaxed);
+        if (any_hard_pick_) {
+            ServerStats::aoi_move_force_picks.fetch_add(1, std::memory_order_relaxed);
+            ServerStats::aoi_move_force_bytes.fetch_add(static_cast<uint64_t>(frame_bytes > 0 ? frame_bytes : 0),
+                                                        std::memory_order_relaxed);
+        }
         if (legacy_)
             return;
         if (frame_bytes > 0) {
@@ -384,6 +400,7 @@ private:
     int window_budget_ = 0;
     int over_reported_ = 0;
     int charged_total_ = 0;
+    bool any_hard_pick_ = false;
     std::unordered_map<uint64_t, Entity> entities_;
     int64_t last_written_flush_ms_ = 0;
     int64_t budget_window_ms_ = 0;

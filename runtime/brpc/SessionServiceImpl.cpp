@@ -206,6 +206,12 @@ void SessionServiceImpl::CommitReconnect(::google::protobuf::RpcController *cont
     response->set_map_instance_id(out.map_instance_id);
     response->set_map_owner_epoch(out.map_owner_epoch);
     response->set_route_version(out.route_version);
+    if (ok && out.ok && !out.previous_gateway_instance_id.empty() &&
+        out.previous_connection_id != request->connection_id()) {
+        GatewayPushClient::Instance().KickConnectionAsync(
+            out.previous_gateway_instance_id, request->player_id(), out.previous_session_id,
+            out.previous_generation, "SESSION_REPLACED");
+    }
 }
 
 void SessionServiceImpl::AbortReconnect(::google::protobuf::RpcController *controller,

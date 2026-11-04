@@ -1,5 +1,7 @@
 #pragma once
 
+#include "MoveSendConfig.h"
+
 #include <cstdint>
 
 /**
@@ -13,9 +15,9 @@
  * 第 3 级覆盖的是：客户端还在发心跳（空闲计时被刷新），但一个字节都写不进内核。
  */
 struct SlowClientConfig {
-    int64_t degrade_ms = 10000;
-    int64_t clear_ms = 30000;
-    int64_t close_ms = 90000;
+    int64_t degrade_ms = SlowDegradeMs();
+    int64_t clear_ms = SlowClearMs();
+    int64_t close_ms = SlowCloseMs();
 };
 
 enum class SlowClientAction {
@@ -49,6 +51,13 @@ public:
     void NoteSnapshotSent() {
         needs_resync_ = false;
         snapshot_due_ = false;
+    }
+
+    /** 这轮没写是预算或发送间隔，不是对端收不动。不推进断开计时。 */
+    void NoteServerDeferred(int64_t now) {
+        seen_ = true;
+        if (last_move_ms_ < now)
+            last_move_ms_ = now;
     }
 
     bool needs_resync() const { return needs_resync_; }

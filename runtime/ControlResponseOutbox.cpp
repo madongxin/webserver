@@ -380,6 +380,16 @@ size_t ControlResponseOutbox::Depth(uint64_t conn_id) {
     return box->q.size();
 }
 
+size_t ControlResponseOutbox::QueuedBytes(uint64_t conn_id) {
+    auto box = Find(conn_id);
+    if (!box)
+        return 0;
+    std::lock_guard<std::mutex> lk(box->mu);
+    if (box->closed)
+        return 0;
+    return box->bytes;
+}
+
 bool ControlResponseOutbox::BlocksMove(uint64_t conn_id) {
     auto box = Find(conn_id);
     if (!box)

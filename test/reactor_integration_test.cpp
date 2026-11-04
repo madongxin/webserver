@@ -3,10 +3,13 @@
  */
 #include "Buffer.h"
 #include "EventLoop.h"
+#include "ServerStats.h"
 #include "TcpConnection.h"
 
+#include <algorithm>
 #include <arpa/inet.h>
 #include <cerrno>
+#include <cstdlib>
 #include <cstring>
 #include <fcntl.h>
 #include <chrono>
@@ -518,6 +521,219 @@ void TestFullKernelDoesNotStickTheSameMove() {
     ::close(lfd);
 }
 
+void TestReadBurstSyscallCount() {
+    int fds[2];
+    Expect(MakeNonBlockingPair(fds), "socketpair read burst");
+    EventLoop loop;
+    auto conn = std::make_shared<TcpConnection>(&loop, fds[0], 77);
+    conn->set_close_callback([](const std::shared_ptr<TcpConnection> &) {});
+    conn->set_message_callback([](const std::shared_ptr<TcpConnection> &) {});
+    conn->ConnectionEstablished();
+    const uint64_t calls_before = ServerStats::tcp_read_syscalls.load();
+    const uint64_t wakes_before = ServerStats::tcp_read_wakeups.load();
+    const std::string chunk(64 * 1024, 'r');
+    size_t written = 0;
+    const size_t total = 1024 * 1024;
+    int guard = 0;
+    while (written < total && guard < 64 && conn->state() == TcpConnection::Connected) {
+        while (written < total) {
+            const size_t n = std::min(chunk.size(), total - written);
+            const ssize_t w = ::write(fds[1], chunk.data(), n);
+            if (w > 0) {
+                written += static_cast<size_t>(w);
+                continue;
+            }
+            break;
+        }
+        conn->HandleMessage();
+        ++guard;
+    }
+    const uint64_t calls = ServerStats::tcp_read_syscalls.load() - calls_before;
+    const uint64_t wakes = ServerStats::tcp_read_wakeups.load() - wakes_before;
+    std::cout << "read burst bytes=" << written
+              << " app=" << (conn->read_buf() ? conn->read_buf()->readablebytes() : -1)
+              << " syscalls=" << calls << " wakeups=" << wakes
+              << " (1KB reads would be 1024)\n";
+    Expect(written == total, "1MB accepted by the peer socket");
+    Expect(conn->read_buf() && static_cast<size_t>(conn->read_buf()->readablebytes()) == total,
+           "1MB landed in the read buffer");
+    Expect(calls > 0 && calls <= 64, "1MB uses far fewer than 1024 one-kilobyte reads");
+    Expect(wakes > 0 && wakes <= 32, "wake cap keeps the burst to a handful of wakeups");
+    conn->HandleClose();
+    conn->ConnectionDestructor();
+    ::close(fds[1]);
+}
+
+std::string ReadAvailable(int fd) {
+    std::string out;
+    char buf[1024];
+    while (true) {
+        const ssize_t n = ::read(fd, buf, sizeof(buf));
+        if (n > 0) {
+            out.append(buf, static_cast<size_t>(n));
+            continue;
+        }
+        break;
+    }
+    return out;
+}
+
+std::string CaptureIdleSendOrder(bool v2) {
+    if (v2)
+        ::setenv("GAMEMESH_SENDBUF_V2", "1", 1);
+    else
+        ::unsetenv("GAMEMESH_SENDBUF_V2");
+    int fds[2];
+    if (!MakeNonBlockingPair(fds))
+        return {};
+    EventLoop loop;
+    auto conn = std::make_shared<TcpConnection>(&loop, fds[0], v2 ? 81 : 82);
+    conn->set_close_callback([](const std::shared_ptr<TcpConnection> &) {});
+    conn->set_message_callback([](const std::shared_ptr<TcpConnection> &) {});
+    conn->ConnectionEstablished();
+    conn->TrySendControl("CCCC");
+    conn->TrySendLatestMove(std::string(8, 'M'));
+    const std::string got = ReadAvailable(fds[1]);
+    conn->HandleClose();
+    conn->ConnectionDestructor();
+    ::close(fds[1]);
+    return got;
+}
+
+void TestSendBufV2MatchesIdleOrder() {
+    const std::string old_bytes = CaptureIdleSendOrder(false);
+    const std::string new_bytes = CaptureIdleSendOrder(true);
+    ::unsetenv("GAMEMESH_SENDBUF_V2");
+    std::cout << "idle send bytes old=" << old_bytes.size() << " v2=" << new_bytes.size() << "\n";
+    Expect(old_bytes == "CCCCMMMMMMMM", "old path writes control then the move");
+    Expect(new_bytes == old_bytes, "v2 idle byte stream matches the old path");
+}
+
+void TestSendBufV2LeaveDropsUnwrittenMove() {
+    ::setenv("GAMEMESH_SENDBUF_V2", "1", 1);
+    int lfd = ::socket(AF_INET, SOCK_STREAM, 0);
+    Expect(lfd >= 0, "tcp listen v2");
+    int yes = 1;
+    ::setsockopt(lfd, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(yes));
+    sockaddr_in addr{};
+    addr.sin_family = AF_INET;
+    addr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+    addr.sin_port = 0;
+    Expect(::bind(lfd, reinterpret_cast<sockaddr *>(&addr), sizeof(addr)) == 0, "bind v2");
+    Expect(::listen(lfd, 1) == 0, "listen v2");
+    socklen_t alen = sizeof(addr);
+    Expect(::getsockname(lfd, reinterpret_cast<sockaddr *>(&addr), &alen) == 0, "getsockname v2");
+    int cfd = ::socket(AF_INET, SOCK_STREAM, 0);
+    Expect(cfd >= 0, "tcp client v2");
+    Expect(::connect(cfd, reinterpret_cast<sockaddr *>(&addr), sizeof(addr)) == 0, "connect v2");
+    int afd = ::accept(lfd, nullptr, nullptr);
+    Expect(afd >= 0, "accept v2");
+    int flags = ::fcntl(cfd, F_GETFL, 0);
+    ::fcntl(cfd, F_SETFL, flags | O_NONBLOCK);
+    flags = ::fcntl(afd, F_GETFL, 0);
+    ::fcntl(afd, F_SETFL, flags | O_NONBLOCK);
+    const std::string block(4096, 'B');
+    while (::write(cfd, block.data(), block.size()) > 0) {
+    }
+
+    EventLoop loop;
+    auto conn = std::make_shared<TcpConnection>(&loop, cfd, 83);
+    int replaced = 0;
+    int committed = 0;
+    conn->set_close_callback([](const std::shared_ptr<TcpConnection> &) {});
+    conn->set_message_callback([](const std::shared_ptr<TcpConnection> &) {});
+    conn->set_latest_move_commit_callback(
+        [&](std::vector<TcpConnection::LatestMoveAck>, bool ok, int) {
+            if (ok)
+                ++committed;
+            else
+                ++replaced;
+        });
+    conn->ConnectionEstablished();
+    const std::string frame(64, 'M');
+    std::vector<TcpConnection::LatestMoveAck> acks(1);
+    acks[0].entity_id = 7;
+    acks[0].state_seq = 3;
+    Expect(conn->TrySendLatestMove(frame, acks), "v2 move accepted while the kernel queue is full");
+    Expect(conn->holding_latest_move(), "v2 move stays parked");
+    Expect(committed == 0, "parked v2 move is not committed");
+    const auto rc = conn->TrySendControl("LEAVE", true, std::vector<uint64_t>{7});
+    Expect(rc == TcpConnection::WrittenDirect || rc == TcpConnection::Buffered, "leave entered the v2 buffer");
+    Expect(replaced == 1, "leave drops the parked entity");
+    Expect(committed == 0, "dropped move was not committed");
+    const std::string queued = conn->CopySendBuf();
+    Expect(queued.find(frame) == std::string::npos, "dropped move is not in the app buffer");
+    ::unsetenv("GAMEMESH_SENDBUF_V2");
+    conn->HandleClose();
+    conn->ConnectionDestructor();
+    ::close(afd);
+    ::close(lfd);
+}
+
+void TestFiftyIdleReadsAfterBurst() {
+    EventLoop loop;
+    struct Idle {
+        int peer = -1;
+        std::shared_ptr<TcpConnection> conn;
+    };
+    std::vector<Idle> idles;
+    idles.reserve(50);
+    for (int i = 0; i < 50; ++i) {
+        int fds[2];
+        Expect(MakeNonBlockingPair(fds), "socketpair idle");
+        Idle item;
+        item.peer = fds[1];
+        item.conn = std::make_shared<TcpConnection>(&loop, fds[0], static_cast<uint64_t>(200 + i));
+        item.conn->set_close_callback([](const std::shared_ptr<TcpConnection> &) {});
+        item.conn->set_message_callback([](const std::shared_ptr<TcpConnection> &) {});
+        item.conn->ConnectionEstablished();
+        idles.push_back(std::move(item));
+    }
+    int burst_fds[2];
+    Expect(MakeNonBlockingPair(burst_fds), "socketpair burst beside idle");
+    auto burst = std::make_shared<TcpConnection>(&loop, burst_fds[0], 199);
+    burst->set_close_callback([](const std::shared_ptr<TcpConnection> &) {});
+    burst->set_message_callback([](const std::shared_ptr<TcpConnection> &) {});
+    burst->ConnectionEstablished();
+    const std::string chunk(64 * 1024, 'b');
+    size_t stuffed = 0;
+    while (stuffed < 256 * 1024) {
+        const ssize_t n = ::write(burst_fds[1], chunk.data(), chunk.size());
+        if (n > 0) {
+            stuffed += static_cast<size_t>(n);
+            continue;
+        }
+        break;
+    }
+    burst->HandleMessage();
+    int seen = 0;
+    int64_t worst_us = 0;
+    const char beat = 'h';
+    for (auto &item : idles) {
+        Expect(::write(item.peer, &beat, 1) == 1, "idle byte queued");
+        const auto t0 = std::chrono::steady_clock::now();
+        item.conn->HandleMessage();
+        const auto us = std::chrono::duration_cast<std::chrono::microseconds>(
+                            std::chrono::steady_clock::now() - t0)
+                            .count();
+        if (us > worst_us)
+            worst_us = us;
+        if (item.conn->read_buf() && item.conn->read_buf()->readablebytes() == 1)
+            ++seen;
+    }
+    std::cout << "idle reads after burst n=" << seen << " worst_us=" << worst_us << "\n";
+    Expect(seen == 50, "fifty idle connections were read");
+    Expect(worst_us < 20000, "an idle read stays under 20ms after a capped burst");
+    burst->HandleClose();
+    burst->ConnectionDestructor();
+    ::close(burst_fds[1]);
+    for (auto &item : idles) {
+        item.conn->HandleClose();
+        item.conn->ConnectionDestructor();
+        ::close(item.peer);
+    }
+}
+
 void TestParkedMoveDecisionReleasesDuringRetransmit() {
     Expect(DecideParkedMove(true, 0, 0) == ParkedMoveDecision::WriteRoom,
            "retransmit flag alone does not hold the move");
@@ -545,6 +761,10 @@ int main() {
     TestParkedMoveRetriesAfterKernelDrains();
     TestParkedMoveStaysUntilWritable();
     TestFullKernelDoesNotStickTheSameMove();
+    TestReadBurstSyscallCount();
+    TestFiftyIdleReadsAfterBurst();
+    TestSendBufV2MatchesIdleOrder();
+    TestSendBufV2LeaveDropsUnwrittenMove();
     TestParkedMoveDecisionReleasesDuringRetransmit();
     TestPartialControlDoesNotBlockLaterReplies();
     if (g_fail) {
