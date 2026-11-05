@@ -117,6 +117,17 @@ void TestBulkDeferLetsMoveOut() {
     Expect(!pinned_wrote, "without deferral the queue stays above 16KB");
 }
 
+void TestCongestedUnsentLimit() {
+    Expect(CongestedMoveUnsentLimit(20, 1424, 0, 0, 1000) == 16 * 1024,
+           "healthy window keeps the 16KB cap");
+    Expect(CongestedMoveUnsentLimit(1, 1424, 1, 4, 1200000) == 1424,
+           "cwnd 1 with loss keeps a single segment");
+    Expect(CongestedMoveUnsentLimit(3, 1424, 1, 2, 1200000) == 2848,
+           "loss keeps at most two segments");
+    Expect(CongestedMoveUnsentLimit(2, 1424, 0, 0, 1200000) == 2848,
+           "slow tiny window uses cwnd times mss");
+}
+
 void TestParkAgeIgnoresUnrelatedDrain() {
     ParkProbe::EndEpisode(7);
     ParkProbe::BeginFrame(7, 1000);
@@ -140,6 +151,7 @@ void TestParkAgeIgnoresUnrelatedDrain() {
 int main() {
     TestQueueStuckDoesNotFreezeSlot();
     TestBulkDeferLetsMoveOut();
+    TestCongestedUnsentLimit();
     TestParkAgeIgnoresUnrelatedDrain();
     if (g_fail) {
         std::printf("FAIL aoi_park_rotation_test failures=%d\n", g_fail);

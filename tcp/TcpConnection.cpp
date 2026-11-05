@@ -13,6 +13,7 @@
 #include "Logging.h"
 #include <algorithm>
 #include <chrono>
+#include <cstddef>
 #include <cstdlib>
 #include <memory>
 #include <unistd.h>
@@ -389,7 +390,7 @@ bool TcpConnection::TrySend(const std::string &msg) {
 
 bool TcpConnection::TrySend(const char *msg, int len) {
     outbound_cls_ = static_cast<int>(OutboundClass::Reliable);
-    if (DeferBulkWhileKernelParked(send_hold_move_ && UnsentBytes() > kLatestMoveKernelBudget, len))
+    if (DeferBulkWhileKernelParked(send_hold_move_ && UnsentBytes() > MoveUnsentLimit(), len))
         return false;
     return SendInternal(msg, len, true);
 }
@@ -400,7 +401,7 @@ bool TcpConnection::TrySendUrgent(const std::string &msg) {
 
 bool TcpConnection::TrySendUrgent(const char *msg, int len) {
     outbound_cls_ = static_cast<int>(OutboundClass::Snapshot);
-    if (DeferBulkWhileKernelParked(send_hold_move_ && UnsentBytes() > kLatestMoveKernelBudget, len))
+    if (DeferBulkWhileKernelParked(send_hold_move_ && UnsentBytes() > MoveUnsentLimit(), len))
         return false;
     // soft_drop=true 且 urgent：SendInternal 用 90% 水位。
     return SendInternal(msg, len, true, true);
@@ -456,7 +457,7 @@ TcpConnection::ControlSendResult TcpConnection::TrySendControl(const char *msg, 
         if (strip_buffered)
             ReleaseStuckMove();
         send_v2_.PushControl(std::string(msg, static_cast<size_t>(len)), strip_entities);
-        if (!FlushSendBufV2(UnsentBytes() <= kLatestMoveKernelBudget))
+        if (!FlushSendBufV2(UnsentBytes() <= MoveUnsentLimit()))
             return state_ == ConnectionState::Connected ? Blocked : Closed;
         if (!send_buf_ || send_buf_->readablebytes() == 0)
             return WrittenDirect;
@@ -477,8 +478,30 @@ TcpConnection::ControlSendResult TcpConnection::TrySendControl(const char *msg, 
     return control_hold_end_ > 0 ? Buffered : WrittenDirect;
 }
 
+int TcpConnection::MoveUnsentLimit() const {
+    const int64_t now = HoldNowMs();
+    if (unsent_limit_at_ms_ != 0 && now >= unsent_limit_at_ms_ && now - unsent_limit_at_ms_ < 200)
+        return unsent_limit_cached_;
+    int limit = kLatestMoveKernelBudget;
+    tcp_info info;
+    std::memset(&info, 0, sizeof(info));
+    socklen_t len = sizeof(info);
+    if (connfd_ >= 0 &&
+        ::getsockopt(connfd_, IPPROTO_TCP, TCP_INFO, &info, &len) == 0 &&
+        len >= static_cast<socklen_t>(offsetof(tcp_info, tcpi_snd_cwnd) + sizeof(info.tcpi_snd_cwnd))) {
+        limit = CongestedMoveUnsentLimit(static_cast<int>(info.tcpi_snd_cwnd),
+                                          static_cast<int>(info.tcpi_snd_mss),
+                                          static_cast<int>(info.tcpi_retrans),
+                                          static_cast<int>(info.tcpi_backoff),
+                                          static_cast<int>(info.tcpi_rtt));
+    }
+    unsent_limit_cached_ = limit;
+    unsent_limit_at_ms_ = now;
+    return limit;
+}
+
 bool TcpConnection::move_parked_on_kernel_queue() const {
-    return send_hold_move_ && UnsentBytes() > kLatestMoveKernelBudget;
+    return send_hold_move_ && UnsentBytes() > MoveUnsentLimit();
 }
 
 bool TcpConnection::TrySendLatestMove(const std::string &msg) {
@@ -701,7 +724,7 @@ bool TcpConnection::TrySendLatestMove(const std::string &msg, const std::vector<
         for (const auto &ack : acks)
             stamps.push_back(SendBufV2::Stamp{ack.entity_id, ack.state_seq});
         send_v2_.SetMove(msg, std::move(stamps));
-        return FlushSendBufV2(UnsentBytes() <= kLatestMoveKernelBudget);
+        return FlushSendBufV2(UnsentBytes() <= MoveUnsentLimit());
     }
     const int queued = send_buf_->readablebytes();
     // 非移动数据已经堆过 64KB，这一帧先不追加。调用方留着位置，200ms 后再试。
@@ -717,7 +740,7 @@ bool TcpConnection::TrySendLatestMove(const std::string &msg, const std::vector<
     // 调用方已经清掉缓冲里的旧移动帧。内核里还有没送出的字节时，不要再 write：
     // 回包插不到已经进内核的字节前面，客户端会一直读旧坐标，步子越来越慢直到停下。
     // 这一帧留在缓冲末尾。连接还在重传时可以换成更新的位置；交给写路径之后不能再删。
-    if (UnsentBytes() > kLatestMoveKernelBudget) {
+    if (UnsentBytes() > MoveUnsentLimit()) {
         send_buf_->Append(msg);
         ParkProbe::BeginFrame(connid_, HoldNowMs());
         ParkProbe::AddApp(connid_, static_cast<int>(OutboundClass::Move), static_cast<int>(msg.size()));
@@ -951,7 +974,14 @@ void TcpConnection::WriteNonBlocking() {
     while (send_buf_->readablebytes() > 0) {
         int writable = send_buf_->readablebytes();
         bool hold_limit = false;
-        if (send_hold_move_ && UnsentBytes() > kLatestMoveKernelBudget) {
+        if (send_hold_move_ && UnsentBytes() > MoveUnsentLimit()) {
+            const int limit = MoveUnsentLimit();
+            // 拥塞时回包也先留在应用缓冲里。写进内核会把未发送队列顶在门槛上，
+            // 位置帧的定时器就一直看到队列降不下来。
+            if (limit < kLatestMoveKernelBudget) {
+                ArmParkedMoveRetry();
+                break;
+            }
             const size_t front =
                 std::min(send_move_hold_off_, static_cast<size_t>(writable));
             // 前面没有回包或半帧时，最新移动先留着，等内核队列掉下来再写。
@@ -1052,12 +1082,12 @@ void TcpConnection::WriteNonBlocking() {
             channel_->DisableWrite();
         notify_drain();
         if (SendBufV2Enabled() && send_v2_.pending())
-            FlushSendBufV2(UnsentBytes() <= kLatestMoveKernelBudget);
+            FlushSendBufV2(UnsentBytes() <= MoveUnsentLimit());
         return;
     }
     // 只剩压住的最新移动帧时关掉写兴趣。水平触发下一直可写会空转。
     if (send_hold_move_ && send_move_hold_off_ == 0 &&
-        UnsentBytes() > kLatestMoveKernelBudget && channel_->IsWriting())
+        UnsentBytes() > MoveUnsentLimit() && channel_->IsWriting())
         channel_->DisableWrite();
     if (send_hold_move_)
         ArmParkedMoveRetry();
@@ -1085,9 +1115,7 @@ void TcpConnection::OnParkedMoveTimer() {
         return;
     NoteParkSample();
     const int unsent = UnsentBytes();
-    const int64_t age = send_hold_since_ms_ > 0 ? HoldNowMs() - send_hold_since_ms_ : 0;
-    const ParkedMoveDecision decision = DecideParkedMove(false, unsent, age);
-    if (decision == ParkedMoveDecision::SkipUnsent) {
+    if (unsent > MoveUnsentLimit()) {
         NoteAoiSkipUnsent();
         ArmParkedMoveRetry();
         return;
@@ -1129,11 +1157,15 @@ void TcpConnection::ArmWriteIfNeeded() {
             channel_->DisableWrite();
         return;
     }
-    if (send_hold_move_ && send_move_hold_off_ == 0 &&
-        UnsentBytes() > kLatestMoveKernelBudget) {
-        if (channel_->IsWriting())
-            channel_->DisableWrite();
-        return;
+    if (send_hold_move_ && UnsentBytes() > MoveUnsentLimit()) {
+        const int limit = MoveUnsentLimit();
+        // 拥塞时前面的回包也不注册写事件，避免水平触发把回包写进已经超限的队列。
+        if (limit < kLatestMoveKernelBudget || send_move_hold_off_ == 0) {
+            if (channel_->IsWriting())
+                channel_->DisableWrite();
+            ArmParkedMoveRetry();
+            return;
+        }
     }
     channel_->EnableWrite();
 }

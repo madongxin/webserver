@@ -43,6 +43,31 @@ inline bool DeferBulkWhileKernelParked(bool parked_over_16kb, int nbytes) {
     return parked_over_16kb && nbytes > 512;
 }
 
+/** 拥塞时位置帧最多在内核里留两个报文段，避免 16KB 旧坐标把客户端堵住。
+ *  健康连接仍用 16KB。cwnd、mss、重传段数、退避档、rtt 微秒来自 TCP_INFO。 */
+inline int CongestedMoveUnsentLimit(int cwnd, int mss, int retrans_segs, int backoff, int rtt_us) {
+    constexpr int kCap = 16 * 1024;
+    if (mss < 200)
+        mss = 536;
+    if (mss > 2000)
+        mss = 1460;
+    if (cwnd < 1)
+        cwnd = 1;
+    const bool loss = retrans_segs > 0 || backoff > 0;
+    const bool tiny = cwnd <= 4;
+    const bool slow = rtt_us > 200000;
+    if (!loss && !tiny && !slow)
+        return kCap;
+    int budget = cwnd * mss;
+    if (budget < mss)
+        budget = mss;
+    if (loss)
+        budget = budget < mss * 2 ? budget : mss * 2;
+    if (budget > kCap)
+        budget = kCap;
+    return budget;
+}
+
 inline bool ReplyQueueLow(size_t depth, size_t bytes) {
     const size_t low_frames =
         ControlResponseOutbox::kMaxFrames * static_cast<size_t>(ReadPauseLowPercent()) / 100;

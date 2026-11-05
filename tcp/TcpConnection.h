@@ -165,8 +165,10 @@ public:
     int unsent_bytes() const;
     /** 最新移动帧正压在应用缓冲末尾，还没 write。只在所属 EventLoop 上调用。 */
     bool holding_latest_move() const { return send_hold_move_; }
-    /** 位置帧停在应用缓冲里，是因为内核未发送队列还高于 16KB。这时不能把帧丢掉重选。 */
+    /** 位置帧停在应用缓冲里，是因为内核未发送队列还高于当前允许值。这时不能把帧丢掉重选。 */
     bool move_parked_on_kernel_queue() const;
+    /** 这条连接现在允许堆在内核里、还没交给网卡的位置字节。拥塞时小于 16KB。 */
+    int MoveUnsentLimit() const;
     uint64_t id() const;
     HttpContext *context() const;
     bool IsWriting() const;
@@ -221,6 +223,8 @@ private:
     bool flushing_v2_ = false;
     SendBufV2 send_v2_;
     std::vector<LatestMoveAck> move_commit_entities_;
+    mutable int unsent_limit_cached_ = 16 * 1024;
+    mutable int64_t unsent_limit_at_ms_ = 0;
     bool commit_penalize_ = true;
     int outbound_cls_ = 2;
     bool move_commit_pending_ = false;

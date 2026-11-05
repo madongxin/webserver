@@ -191,7 +191,23 @@ int MoveLayer(MoveCoalesceSlot *slot, uint64_t viewer, const game::AoiEvent &ev)
         return -1;
     const float dx = ent.position().x() - slot->viewer_x;
     const float dz = ent.position().z() - slot->viewer_z;
-    return (dx * dx + dz * dz) < (16.f * 16.f) ? 1 : 0;
+    // 和地图兴趣半径 32m 对齐。16m 会把视野里的人全部算成远层，近处名额用不上。
+    return (dx * dx + dz * dz) < (32.f * 32.f) ? 1 : 0;
+}
+
+void NoteViewerPose(uint64_t conn_id, float x, float z) {
+    std::shared_ptr<MoveCoalesceSlot> slot;
+    {
+        std::lock_guard<std::mutex> lk(g_move_slots_mu);
+        auto &found = g_move_slots[conn_id];
+        if (!found)
+            found = std::make_shared<MoveCoalesceSlot>();
+        slot = found;
+    }
+    std::lock_guard<std::mutex> lk(slot->mu);
+    slot->viewer_known = true;
+    slot->viewer_x = x;
+    slot->viewer_z = z;
 }
 
 bool IsMoveOnlyAoi(const game::GameResponse &gr) {
@@ -407,7 +423,16 @@ void FlushMoveSlot(const std::shared_ptr<MoveCoalesceSlot> &slot,
             return;
         }
     }
-    constexpr int kMaxMoveEntities = 40;
+    int max_move_entities = 40;
+    const int unsent_limit = live->MoveUnsentLimit();
+    if (unsent_limit < 16 * 1024) {
+        int fit = (unsent_limit - 66) / kAoiMoveEventBytes;
+        if (fit < 1)
+            fit = 1;
+        if (fit > 8)
+            fit = 8;
+        max_move_entities = fit;
+    }
     int64_t wait_ms = 0;
     bool leftover = false;
     bool close_for_slow = false;
@@ -463,7 +488,7 @@ void FlushMoveSlot(const std::shared_ptr<MoveCoalesceSlot> &slot,
                 conns = 1;
             const int per = std::max(
                 1, AoiMoveCoalesceLedger::EgressBudgetBytesPerSec() / static_cast<int>(conns));
-            picked = slot->ledger.Pick(now, per, kAoiMoveEventBytes, kMaxMoveEntities, &wait_ms);
+            picked = slot->ledger.Pick(now, per, kAoiMoveEventBytes, max_move_entities, &wait_ms);
             if (!picked.empty()) {
                 delta.set_map_instance_id(slot->map_instance_id);
                 for (const auto &stamp : picked) {
@@ -1348,6 +1373,8 @@ void GameTcpGateway::OnMessage(const std::shared_ptr<TcpConnection> &conn) {
             pkt_kind = "friend";
         else if (peek.has_push_ack())
             pkt_kind = "push_ack";
+        if (peek.has_move() && peek.move().has_position())
+            NoteViewerPose(conn->id(), peek.move().position().x(), peek.move().position().z());
         struct HandlerSpan {
             const char *kind = "other";
             uint64_t conn_id = 0;
