@@ -176,6 +176,8 @@ public:
     static void SetControlOutboxPrometheus(std::string (*fn)());
     static void SetAoiSilenceSampler(void (*fn)(std::vector<int64_t> *near, std::vector<int64_t> *far));
     static void SetConnSilenceSampler(void (*fn)(std::vector<int64_t> *per_conn));
+    static void SetAoiMotionSampler(void (*fn)(int64_t *moving, int64_t *stationary,
+                                               std::vector<int64_t> *interval_ms));
 
 private:
     OpsMetrics() = default;

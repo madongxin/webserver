@@ -3705,6 +3705,9 @@ const ::PROTOBUF_NAMESPACE_ID::uint32 TableStruct_game_2eproto::offsets[] PROTOB
   PROTOBUF_FIELD_OFFSET(::game::EntitySnapshot, hp_),
   PROTOBUF_FIELD_OFFSET(::game::EntitySnapshot, max_hp_),
   PROTOBUF_FIELD_OFFSET(::game::EntitySnapshot, state_seq_),
+  PROTOBUF_FIELD_OFFSET(::game::EntitySnapshot, vx_),
+  PROTOBUF_FIELD_OFFSET(::game::EntitySnapshot, vz_),
+  PROTOBUF_FIELD_OFFSET(::game::EntitySnapshot, move_start_ms_),
   ~0u,  // no _has_bits_
   PROTOBUF_FIELD_OFFSET(::game::GetSelfProfileReq, _internal_metadata_),
   ~0u,  // no _extensions_
@@ -4181,31 +4184,31 @@ static const ::PROTOBUF_NAMESPACE_ID::internal::MigrationSchema schemas[] PROTOB
   { 996, -1, sizeof(::game::Vec3)},
   { 1004, -1, sizeof(::game::PlayerAttributes)},
   { 1025, -1, sizeof(::game::EntitySnapshot)},
-  { 1037, -1, sizeof(::game::GetSelfProfileReq)},
-  { 1043, -1, sizeof(::game::GetSelfProfileRsp)},
-  { 1052, -1, sizeof(::game::PlayerBrief)},
-  { 1061, -1, sizeof(::game::GetPlayerBriefReq)},
-  { 1069, -1, sizeof(::game::GetPlayerBriefRsp)},
-  { 1078, -1, sizeof(::game::QueryOnlineStateReq)},
-  { 1085, -1, sizeof(::game::QueryOnlineStateRsp)},
-  { 1100, -1, sizeof(::game::MoveReq)},
-  { 1110, -1, sizeof(::game::MoveRsp)},
-  { 1122, -1, sizeof(::game::AoiEvent)},
-  { 1130, -1, sizeof(::game::AoiDelta)},
-  { 1137, -1, sizeof(::game::PlayerMailSendReq)},
-  { 1147, -1, sizeof(::game::PlayerMailSendRsp)},
-  { 1157, -1, sizeof(::game::MailboxChangedNotify)},
-  { 1165, -1, sizeof(::game::ClientHelloReq)},
-  { 1176, -1, sizeof(::game::PortalDef)},
-  { 1187, -1, sizeof(::game::MapManifestEntry)},
-  { 1199, -1, sizeof(::game::InteractPortalReq)},
-  { 1210, -1, sizeof(::game::InteractPortalRsp)},
-  { 1236, -1, sizeof(::game::ServerHelloRsp)},
-  { 1255, -1, sizeof(::game::SessionReplacedNotify)},
-  { 1263, -1, sizeof(::game::HeartbeatReq)},
-  { 1271, -1, sizeof(::game::HeartbeatRsp)},
-  { 1282, -1, sizeof(::game::GameRequest)},
-  { 1339, -1, sizeof(::game::GameResponse)},
+  { 1040, -1, sizeof(::game::GetSelfProfileReq)},
+  { 1046, -1, sizeof(::game::GetSelfProfileRsp)},
+  { 1055, -1, sizeof(::game::PlayerBrief)},
+  { 1064, -1, sizeof(::game::GetPlayerBriefReq)},
+  { 1072, -1, sizeof(::game::GetPlayerBriefRsp)},
+  { 1081, -1, sizeof(::game::QueryOnlineStateReq)},
+  { 1088, -1, sizeof(::game::QueryOnlineStateRsp)},
+  { 1103, -1, sizeof(::game::MoveReq)},
+  { 1113, -1, sizeof(::game::MoveRsp)},
+  { 1125, -1, sizeof(::game::AoiEvent)},
+  { 1133, -1, sizeof(::game::AoiDelta)},
+  { 1140, -1, sizeof(::game::PlayerMailSendReq)},
+  { 1150, -1, sizeof(::game::PlayerMailSendRsp)},
+  { 1160, -1, sizeof(::game::MailboxChangedNotify)},
+  { 1168, -1, sizeof(::game::ClientHelloReq)},
+  { 1179, -1, sizeof(::game::PortalDef)},
+  { 1190, -1, sizeof(::game::MapManifestEntry)},
+  { 1202, -1, sizeof(::game::InteractPortalReq)},
+  { 1213, -1, sizeof(::game::InteractPortalRsp)},
+  { 1239, -1, sizeof(::game::ServerHelloRsp)},
+  { 1258, -1, sizeof(::game::SessionReplacedNotify)},
+  { 1266, -1, sizeof(::game::HeartbeatReq)},
+  { 1274, -1, sizeof(::game::HeartbeatRsp)},
+  { 1285, -1, sizeof(::game::GameRequest)},
+  { 1342, -1, sizeof(::game::GameResponse)},
 };
 
 static ::PROTOBUF_NAMESPACE_ID::Message const * const file_default_instances[] = {
@@ -4656,228 +4659,229 @@ const char descriptor_table_protodef_game_2eproto[] PROTOBUF_SECTION_VARIABLE(pr
   "\n\020magic_resistance\030\n \001(\005\022\023\n\013crit_chance\030"
   "\013 \001(\002\022\023\n\013crit_damage\030\014 \001(\002\022\022\n\nmove_speed"
   "\030\r \001(\002\022\024\n\014attack_speed\030\016 \001(\002\022\025\n\rstats_ve"
-  "rsion\030\017 \001(\004\022\022\n\nlife_state\030\020 \001(\t\"\222\001\n\016Enti"
+  "rsion\030\017 \001(\004\022\022\n\nlife_state\030\020 \001(\t\"\301\001\n\016Enti"
   "tySnapshot\022\021\n\tplayer_id\030\001 \001(\004\022\023\n\013player_"
   "name\030\002 \001(\t\022\034\n\010position\030\003 \001(\0132\n.game.Vec3"
   "\022\013\n\003yaw\030\004 \001(\002\022\n\n\002hp\030\005 \001(\005\022\016\n\006max_hp\030\006 \001("
-  "\005\022\021\n\tstate_seq\030\007 \001(\004\"&\n\021GetSelfProfileRe"
-  "q\022\021\n\tplayer_id\030\001 \001(\004\"m\n\021GetSelfProfileRs"
-  "p\022\n\n\002ok\030\001 \001(\010\022\017\n\007message\030\002 \001(\t\022\022\n\nerror_"
-  "code\030\003 \001(\t\022\'\n\007profile\030\004 \001(\0132\026.game.Playe"
-  "rAttributes\"U\n\013PlayerBrief\022\021\n\tplayer_id\030"
-  "\001 \001(\004\022\023\n\013player_name\030\002 \001(\t\022\016\n\006max_hp\030\003 \001"
-  "(\005\022\016\n\006max_mp\030\004 \001(\005\"U\n\021GetPlayerBriefReq\022"
+  "\005\022\021\n\tstate_seq\030\007 \001(\004\022\n\n\002vx\030\010 \001(\002\022\n\n\002vz\030\t"
+  " \001(\002\022\025\n\rmove_start_ms\030\n \001(\003\"&\n\021GetSelfPr"
+  "ofileReq\022\021\n\tplayer_id\030\001 \001(\004\"m\n\021GetSelfPr"
+  "ofileRsp\022\n\n\002ok\030\001 \001(\010\022\017\n\007message\030\002 \001(\t\022\022\n"
+  "\nerror_code\030\003 \001(\t\022\'\n\007profile\030\004 \001(\0132\026.gam"
+  "e.PlayerAttributes\"U\n\013PlayerBrief\022\021\n\tpla"
+  "yer_id\030\001 \001(\004\022\023\n\013player_name\030\002 \001(\t\022\016\n\006max"
+  "_hp\030\003 \001(\005\022\016\n\006max_mp\030\004 \001(\005\"U\n\021GetPlayerBr"
+  "iefReq\022\021\n\tplayer_id\030\001 \001(\004\022\030\n\020target_play"
+  "er_id\030\002 \001(\004\022\023\n\013player_name\030\003 \001(\t\"f\n\021GetP"
+  "layerBriefRsp\022\n\n\002ok\030\001 \001(\010\022\017\n\007message\030\002 \001"
+  "(\t\022\022\n\nerror_code\030\003 \001(\t\022 \n\005brief\030\004 \001(\0132\021."
+  "game.PlayerBrief\"B\n\023QueryOnlineStateReq\022"
   "\021\n\tplayer_id\030\001 \001(\004\022\030\n\020target_player_id\030\002"
-  " \001(\004\022\023\n\013player_name\030\003 \001(\t\"f\n\021GetPlayerBr"
-  "iefRsp\022\n\n\002ok\030\001 \001(\010\022\017\n\007message\030\002 \001(\t\022\022\n\ne"
-  "rror_code\030\003 \001(\t\022 \n\005brief\030\004 \001(\0132\021.game.Pl"
-  "ayerBrief\"B\n\023QueryOnlineStateReq\022\021\n\tplay"
-  "er_id\030\001 \001(\004\022\030\n\020target_player_id\030\002 \001(\004\"\330\001"
-  "\n\023QueryOnlineStateRsp\022\n\n\002ok\030\001 \001(\010\022\017\n\007mes"
-  "sage\030\002 \001(\t\022\022\n\nerror_code\030\003 \001(\t\022\021\n\tplayer"
-  "_id\030\004 \001(\004\022\r\n\005state\030\005 \001(\t\022\027\n\017map_instance"
-  "_id\030\006 \001(\004\022\017\n\007line_no\030\007 \001(\r\022\027\n\017map_templa"
-  "te_id\030\010 \001(\004\022\014\n\004kind\030\t \001(\t\022\035\n\025gamelogic_i"
-  "nstance_id\030\n \001(\t\"x\n\007MoveReq\022\021\n\tplayer_id"
-  "\030\001 \001(\004\022\027\n\017map_instance_id\030\002 \001(\004\022\034\n\010posit"
-  "ion\030\003 \001(\0132\n.game.Vec3\022\013\n\003yaw\030\004 \001(\002\022\026\n\016cl"
-  "ient_time_ms\030\005 \001(\003\"\220\001\n\007MoveRsp\022\n\n\002ok\030\001 \001"
-  "(\010\022\017\n\007message\030\002 \001(\t\022\022\n\nerror_code\030\003 \001(\t\022"
-  "\034\n\010position\030\004 \001(\0132\n.game.Vec3\022\013\n\003yaw\030\005 \001"
-  "(\002\022\021\n\tstate_seq\030\006 \001(\004\022\026\n\016server_time_ms\030"
-  "\007 \001(\003\"T\n\010AoiEvent\022\n\n\002op\030\001 \001(\005\022$\n\006entity\030"
-  "\002 \001(\0132\024.game.EntitySnapshot\022\026\n\016server_ti"
-  "me_ms\030\003 \001(\003\"C\n\010AoiDelta\022\027\n\017map_instance_"
-  "id\030\001 \001(\004\022\036\n\006events\030\002 \003(\0132\016.game.AoiEvent"
-  "\"|\n\021PlayerMailSendReq\022\030\n\020sender_player_i"
-  "d\030\001 \001(\004\022\032\n\022receiver_player_id\030\002 \001(\004\022\r\n\005t"
-  "itle\030\003 \001(\t\022\014\n\004body\030\004 \001(\t\022\024\n\014operation_id"
-  "\030\005 \001(\t\"m\n\021PlayerMailSendRsp\022\n\n\002ok\030\001 \001(\010\022"
-  "\017\n\007message\030\002 \001(\t\022\022\n\nerror_code\030\003 \001(\t\022\017\n\007"
-  "mail_id\030\004 \001(\004\022\026\n\016idempotent_hit\030\005 \001(\010\"X\n"
-  "\024MailboxChangedNotify\022\021\n\tplayer_id\030\001 \001(\004"
-  "\022\027\n\017mailbox_version\030\002 \001(\003\022\024\n\014unread_coun"
-  "t\030\003 \001(\r\"\230\001\n\016ClientHelloReq\022\030\n\020protocol_v"
-  "ersion\030\001 \001(\r\022\025\n\rschema_sha256\030\002 \001(\t\022\026\n\016c"
-  "lient_version\030\003 \001(\t\022\020\n\010platform\030\004 \001(\t\022\025\n"
-  "\rbuild_channel\030\005 \001(\t\022\024\n\014capabilities\030\006 \003"
-  "(\t\"\233\001\n\tPortalDef\022\021\n\tportal_id\030\001 \001(\t\022\034\n\024f"
-  "rom_map_template_id\030\002 \001(\004\022\032\n\022to_map_temp"
-  "late_id\030\003 \001(\004\022\034\n\010position\030\004 \001(\0132\n.game.V"
-  "ec3\022\013\n\003yaw\030\005 \001(\002\022\026\n\016trigger_radius\030\006 \001(\002"
-  "\"\265\001\n\020MapManifestEntry\022\027\n\017map_template_id"
-  "\030\001 \001(\004\022\024\n\014data_version\030\002 \001(\004\022\016\n\006sha256\030\003"
-  " \001(\t\022\022\n\nscene_name\030\004 \001(\t\022\014\n\004kind\030\005 \001(\t\022\036"
-  "\n\026visual_map_template_id\030\006 \001(\004\022 \n\007portal"
-  "s\030\007 \003(\0132\017.game.PortalDef\"\224\001\n\021InteractPor"
-  "talReq\022\021\n\tplayer_id\030\001 \001(\004\022\020\n\010realm_id\030\002 "
-  "\001(\r\022\021\n\tportal_id\030\003 \001(\t\022\024\n\014operation_id\030\004"
-  " \001(\t\022\030\n\020map_data_version\030\005 \001(\004\022\027\n\017map_da"
-  "ta_sha256\030\006 \001(\t\"\202\004\n\021InteractPortalRsp\022\n\n"
+  " \001(\004\"\330\001\n\023QueryOnlineStateRsp\022\n\n\002ok\030\001 \001(\010"
+  "\022\017\n\007message\030\002 \001(\t\022\022\n\nerror_code\030\003 \001(\t\022\021\n"
+  "\tplayer_id\030\004 \001(\004\022\r\n\005state\030\005 \001(\t\022\027\n\017map_i"
+  "nstance_id\030\006 \001(\004\022\017\n\007line_no\030\007 \001(\r\022\027\n\017map"
+  "_template_id\030\010 \001(\004\022\014\n\004kind\030\t \001(\t\022\035\n\025game"
+  "logic_instance_id\030\n \001(\t\"x\n\007MoveReq\022\021\n\tpl"
+  "ayer_id\030\001 \001(\004\022\027\n\017map_instance_id\030\002 \001(\004\022\034"
+  "\n\010position\030\003 \001(\0132\n.game.Vec3\022\013\n\003yaw\030\004 \001("
+  "\002\022\026\n\016client_time_ms\030\005 \001(\003\"\220\001\n\007MoveRsp\022\n\n"
   "\002ok\030\001 \001(\010\022\017\n\007message\030\002 \001(\t\022\022\n\nerror_code"
-  "\030\003 \001(\t\022\027\n\017map_template_id\030\004 \001(\004\022\027\n\017map_i"
-  "nstance_id\030\005 \001(\004\022\035\n\025gamelogic_instance_i"
-  "d\030\006 \001(\t\022\023\n\013owner_epoch\030\007 \001(\004\022\025\n\rroute_ve"
-  "rsion\030\010 \001(\004\022\"\n\016spawn_position\030\t \001(\0132\n.ga"
-  "me.Vec3\022\021\n\tspawn_yaw\030\n \001(\002\022\030\n\020map_data_v"
-  "ersion\030\013 \001(\004\022\027\n\017map_data_sha256\030\014 \001(\t\022\"\n"
-  "\004self\030\r \001(\0132\024.game.EntitySnapshot\022*\n\014aoi"
-  "_snapshot\030\016 \003(\0132\024.game.EntitySnapshot\022\014\n"
-  "\004kind\030\017 \001(\t\022\017\n\007line_no\030\020 \001(\r\022\021\n\toccupanc"
-  "y\030\021 \001(\r\022\020\n\010soft_cap\030\022 \001(\r\022\020\n\010hard_cap\030\023 "
-  "\001(\r\022\021\n\tportal_id\030\024 \001(\t\022\034\n\024from_map_templ"
-  "ate_id\030\025 \001(\004\"\373\002\n\016ServerHelloRsp\022\n\n\002ok\030\001 "
-  "\001(\010\022\022\n\nerror_code\030\002 \001(\t\022\017\n\007message\030\003 \001(\t"
-  "\022\030\n\020protocol_version\030\004 \001(\r\022&\n\036min_suppor"
-  "ted_protocol_version\030\005 \001(\r\022\025\n\rschema_sha"
-  "256\030\006 \001(\t\022\024\n\014server_build\030\007 \001(\t\022\026\n\016serve"
-  "r_time_ms\030\010 \001(\003\022\035\n\025heartbeat_interval_ms"
-  "\030\t \001(\r\022\027\n\017idle_timeout_ms\030\n \001(\r\022\024\n\014capab"
-  "ilities\030\013 \003(\t\022\037\n\027gameplay_config_version"
-  "\030\014 \001(\r\022\034\n\024map_manifest_version\030\r \001(\r\022$\n\004"
-  "maps\030\016 \003(\0132\026.game.MapManifestEntry\"U\n\025Se"
-  "ssionReplacedNotify\022\023\n\013reason_code\030\001 \001(\t"
-  "\022\026\n\016server_time_ms\030\002 \001(\003\022\017\n\007message\030\003 \001("
-  "\t\"U\n\014HeartbeatReq\022\033\n\023client_monotonic_ms"
-  "\030\001 \001(\003\022\027\n\017last_server_seq\030\002 \001(\004\022\017\n\007echo_"
-  "ms\030\003 \001(\003\"\207\001\n\014HeartbeatRsp\022\n\n\002ok\030\001 \001(\010\022\022\n"
-  "\nerror_code\030\002 \001(\t\022\026\n\016server_time_ms\030\003 \001("
-  "\003\022\017\n\007echo_ms\030\004 \001(\003\022\026\n\016server_recv_ms\030\005 \001"
-  "(\003\022\026\n\016jitter_hint_ms\030\006 \001(\r\"\370\021\n\013GameReque"
-  "st\022\013\n\003seq\030\001 \001(\004\022\025\n\rsession_token\030\002 \001(\t\022,"
-  "\n\014consume_item\030\n \001(\0132\024.game.ConsumeItemR"
-  "eqH\000\022.\n\rrelease_skill\030\013 \001(\0132\025.game.Relea"
-  "seSkillReqH\000\022(\n\ngrant_item\030\014 \001(\0132\022.game."
-  "GrantItemReqH\000\022\037\n\005login\030\024 \001(\0132\016.game.Log"
-  "inReqH\000\0224\n\020validate_session\030\025 \001(\0132\030.game"
-  ".ValidateSessionReqH\000\022,\n\014check_online\030\026 "
-  "\001(\0132\024.game.CheckOnlineReqH\000\022!\n\006logout\030\027 "
-  "\001(\0132\017.game.LogoutReqH\000\022\'\n\treconnect\030\030 \001("
-  "\0132\022.game.ReconnectReqH\000\022%\n\010register\030\031 \001("
-  "\0132\021.game.RegisterReqH\000\022&\n\tflush_bag\030\032 \001("
-  "\0132\021.game.FlushBagReqH\000\0222\n\017mailbox_summar"
-  "y\030\036 \001(\0132\027.game.MailboxSummaryReqH\000\022&\n\tma"
-  "il_list\030\037 \001(\0132\021.game.MailListReqH\000\022$\n\010ma"
-  "il_get\030  \001(\0132\020.game.MailGetReqH\000\022&\n\tmail"
-  "_read\030! \001(\0132\021.game.MailReadReqH\000\022(\n\nmail"
-  "_claim\030\" \001(\0132\022.game.MailClaimReqH\000\0223\n\020ma"
-  "il_batch_claim\030# \001(\0132\027.game.MailBatchCla"
-  "imReqH\000\022.\n\rmail_favorite\030$ \001(\0132\025.game.Ma"
-  "ilFavoriteReqH\000\0221\n\017mail_batch_read\030% \001(\013"
-  "2\026.game.MailBatchReadReqH\000\0225\n\021mail_batch"
-  "_delete\030& \001(\0132\030.game.MailBatchDeleteReqH"
-  "\000\022,\n\014mail_deliver\030\' \001(\0132\024.game.MailDeliv"
-  "erReqH\000\022&\n\tenter_map\030( \001(\0132\021.game.EnterM"
-  "apReqH\000\022&\n\tleave_map\030) \001(\0132\021.game.LeaveM"
-  "apReqH\000\022$\n\010map_ping\030* \001(\0132\020.game.MapPing"
-  "ReqH\000\022&\n\tchat_send\0302 \001(\0132\021.game.ChatSend"
-  "ReqH\000\022*\n\013friend_list\0303 \001(\0132\023.game.Friend"
-  "ListReqH\000\022$\n\010push_ack\0304 \001(\0132\020.game.PushA"
-  "ckReqH\000\0223\n\020get_self_profile\030< \001(\0132\027.game"
-  ".GetSelfProfileReqH\000\022\035\n\004move\030= \001(\0132\r.gam"
-  "e.MoveReqH\000\0223\n\020player_mail_send\030\? \001(\0132\027."
-  "game.PlayerMailSendReqH\000\022,\n\014client_hello"
-  "\030F \001(\0132\024.game.ClientHelloReqH\000\022\'\n\theartb"
-  "eat\030G \001(\0132\022.game.HeartbeatReqH\000\0220\n\016world"
-  "_snapshot\030H \001(\0132\026.game.WorldSnapshotReqH"
-  "\000\022#\n\007respawn\030I \001(\0132\020.game.RespawnReqH\000\0223"
-  "\n\020get_player_brief\030J \001(\0132\027.game.GetPlaye"
-  "rBriefReqH\000\0227\n\022query_online_state\030K \001(\0132"
-  "\031.game.QueryOnlineStateReqH\000\0221\n\017query_ma"
-  "p_lines\030L \001(\0132\026.game.QueryMapLinesReqH\000\022"
-  "0\n\016create_dungeon\030M \001(\0132\026.game.CreateDun"
-  "geonReqH\000\022*\n\013switch_line\030N \001(\0132\023.game.Sw"
-  "itchLineReqH\000\022*\n\013enqueue_map\030O \001(\0132\023.gam"
-  "e.EnqueueMapReqH\000\0222\n\017interact_portal\030P \001"
-  "(\0132\027.game.InteractPortalReqH\000\022.\n\rfriend_"
-  "search\030Q \001(\0132\025.game.FriendSearchReqH\000\022,\n"
-  "\014friend_apply\030R \001(\0132\024.game.FriendApplyRe"
-  "qH\000\022.\n\rfriend_accept\030S \001(\0132\025.game.Friend"
-  "AcceptReqH\000\022.\n\rfriend_reject\030T \001(\0132\025.gam"
-  "e.FriendRejectReqH\000\022.\n\rfriend_delete\030U \001"
-  "(\0132\025.game.FriendDeleteReqH\000\0229\n\023friend_re"
-  "quest_list\030V \001(\0132\032.game.FriendRequestLis"
-  "tReqH\000\022,\n\014friend_block\030W \001(\0132\024.game.Frie"
-  "ndBlockReqH\000\0220\n\016friend_unblock\030X \001(\0132\026.g"
-  "ame.FriendUnblockReqH\000\0225\n\021friend_block_l"
-  "ist\030Y \001(\0132\030.game.FriendBlockListReqH\000B\006\n"
-  "\004body\"\240\026\n\014GameResponse\022\013\n\003seq\030\001 \001(\004\022\n\n\002o"
-  "k\030\002 \001(\010\022\017\n\007message\030\003 \001(\t\022\022\n\nerror_code\030\004"
-  " \001(\t\022\021\n\tretryable\030\005 \001(\010\022\026\n\016server_time_m"
-  "s\030\006 \001(\003\022\020\n\010trace_id\030\007 \001(\t\022,\n\014consume_ite"
-  "m\030\n \001(\0132\024.game.ConsumeItemRspH\000\022.\n\rrelea"
-  "se_skill\030\013 \001(\0132\025.game.ReleaseSkillRspH\000\022"
-  "(\n\ngrant_item\030\014 \001(\0132\022.game.GrantItemRspH"
-  "\000\022\037\n\005login\030\024 \001(\0132\016.game.LoginRspH\000\0224\n\020va"
-  "lidate_session\030\025 \001(\0132\030.game.ValidateSess"
-  "ionRspH\000\022,\n\014check_online\030\026 \001(\0132\024.game.Ch"
-  "eckOnlineRspH\000\022!\n\006logout\030\027 \001(\0132\017.game.Lo"
-  "goutRspH\000\022\'\n\treconnect\030\030 \001(\0132\022.game.Reco"
-  "nnectRspH\000\022%\n\010register\030\031 \001(\0132\021.game.Regi"
-  "sterRspH\000\022&\n\tflush_bag\030\032 \001(\0132\021.game.Flus"
-  "hBagRspH\000\0222\n\017mailbox_summary\030\036 \001(\0132\027.gam"
-  "e.MailboxSummaryRspH\000\022&\n\tmail_list\030\037 \001(\013"
-  "2\021.game.MailListRspH\000\022$\n\010mail_get\030  \001(\0132"
-  "\020.game.MailGetRspH\000\022&\n\tmail_read\030! \001(\0132\021"
-  ".game.MailReadRspH\000\022(\n\nmail_claim\030\" \001(\0132"
-  "\022.game.MailClaimRspH\000\0223\n\020mail_batch_clai"
-  "m\030# \001(\0132\027.game.MailBatchClaimRspH\000\022.\n\rma"
-  "il_favorite\030$ \001(\0132\025.game.MailFavoriteRsp"
-  "H\000\0221\n\017mail_batch_read\030% \001(\0132\026.game.MailB"
-  "atchReadRspH\000\0225\n\021mail_batch_delete\030& \001(\013"
-  "2\030.game.MailBatchDeleteRspH\000\022,\n\014mail_del"
-  "iver\030\' \001(\0132\024.game.MailDeliverRspH\000\022&\n\ten"
-  "ter_map\030( \001(\0132\021.game.EnterMapRspH\000\022&\n\tle"
-  "ave_map\030) \001(\0132\021.game.LeaveMapRspH\000\022$\n\010ma"
-  "p_ping\030* \001(\0132\020.game.MapPingRspH\000\022&\n\tchat"
-  "_send\0302 \001(\0132\021.game.ChatSendRspH\000\022*\n\013frie"
-  "nd_list\0303 \001(\0132\023.game.FriendListRspH\000\022$\n\010"
-  "push_ack\0304 \001(\0132\020.game.PushAckRspH\000\022/\n\013se"
-  "rver_push\0305 \001(\0132\030.game.ServerPushEnvelop"
-  "eH\000\0223\n\rfull_snapshot\0306 \001(\0132\032.game.FullSt"
-  "ateSnapshotRspH\000\0223\n\020get_self_profile\030< \001"
-  "(\0132\027.game.GetSelfProfileRspH\000\022\035\n\004move\030= "
-  "\001(\0132\r.game.MoveRspH\000\022#\n\taoi_delta\030> \001(\0132"
-  "\016.game.AoiDeltaH\000\0223\n\020player_mail_send\030\? "
-  "\001(\0132\027.game.PlayerMailSendRspH\000\0225\n\017mailbo"
-  "x_changed\030@ \001(\0132\032.game.MailboxChangedNot"
-  "ifyH\000\022,\n\014server_hello\030F \001(\0132\024.game.Serve"
-  "rHelloRspH\000\022\'\n\theartbeat\030G \001(\0132\022.game.He"
-  "artbeatRspH\000\022#\n\007respawn\030H \001(\0132\020.game.Res"
-  "pawnRspH\000\022\'\n\013chat_notify\030I \001(\0132\020.game.Ch"
-  "atNotifyH\000\0223\n\020get_player_brief\030J \001(\0132\027.g"
-  "ame.GetPlayerBriefRspH\000\0227\n\022query_online_"
-  "state\030K \001(\0132\031.game.QueryOnlineStateRspH\000"
-  "\0227\n\020session_replaced\030L \001(\0132\033.game.Sessio"
-  "nReplacedNotifyH\000\0221\n\017query_map_lines\030M \001"
-  "(\0132\026.game.QueryMapLinesRspH\000\0220\n\016create_d"
-  "ungeon\030N \001(\0132\026.game.CreateDungeonRspH\000\022*"
-  "\n\013switch_line\030O \001(\0132\023.game.SwitchLineRsp"
-  "H\000\022*\n\013enqueue_map\030P \001(\0132\023.game.EnqueueMa"
-  "pRspH\000\0222\n\017interact_portal\030Q \001(\0132\027.game.I"
-  "nteractPortalRspH\000\022,\n\014friend_apply\030R \001(\013"
-  "2\024.game.FriendApplyRspH\000\022.\n\rfriend_accep"
-  "t\030S \001(\0132\025.game.FriendAcceptRspH\000\022.\n\rfrie"
-  "nd_reject\030T \001(\0132\025.game.FriendRejectRspH\000"
-  "\022.\n\rfriend_delete\030U \001(\0132\025.game.FriendDel"
-  "eteRspH\000\0229\n\023friend_request_list\030V \001(\0132\032."
-  "game.FriendRequestListRspH\000\022,\n\014friend_bl"
-  "ock\030W \001(\0132\024.game.FriendBlockRspH\000\0220\n\016fri"
-  "end_unblock\030X \001(\0132\026.game.FriendUnblockRs"
-  "pH\000\0225\n\021friend_block_list\030Y \001(\0132\030.game.Fr"
-  "iendBlockListRspH\000\0226\n\023friend_request_pus"
-  "h\030Z \001(\0132\027.game.FriendRequestPushH\000\0222\n\021fr"
-  "iend_added_push\030[ \001(\0132\025.game.FriendAdded"
-  "PushH\000\0226\n\023friend_removed_push\030\\ \001(\0132\027.ga"
-  "me.FriendRemovedPushH\000\0228\n\024friend_presenc"
-  "e_push\030] \001(\0132\030.game.FriendPresencePushH\000"
-  "\022.\n\rfriend_search\030^ \001(\0132\025.game.FriendSea"
-  "rchRspH\000B\006\n\004body*\270\001\n\023FriendRelationState"
-  "\022\030\n\024FRIEND_RELATION_NONE\020\000\022\032\n\026FRIEND_REL"
-  "ATION_FRIEND\020\001\022 \n\034FRIEND_RELATION_SENT_P"
-  "ENDING\020\002\022$\n FRIEND_RELATION_RECEIVED_PEN"
-  "DING\020\003\022#\n\037FRIEND_RELATION_BLOCKED_BY_SEL"
-  "F\020\004B\024\252\002\021GameMesh.Protocolb\006proto3"
+  "\030\003 \001(\t\022\034\n\010position\030\004 \001(\0132\n.game.Vec3\022\013\n\003"
+  "yaw\030\005 \001(\002\022\021\n\tstate_seq\030\006 \001(\004\022\026\n\016server_t"
+  "ime_ms\030\007 \001(\003\"T\n\010AoiEvent\022\n\n\002op\030\001 \001(\005\022$\n\006"
+  "entity\030\002 \001(\0132\024.game.EntitySnapshot\022\026\n\016se"
+  "rver_time_ms\030\003 \001(\003\"C\n\010AoiDelta\022\027\n\017map_in"
+  "stance_id\030\001 \001(\004\022\036\n\006events\030\002 \003(\0132\016.game.A"
+  "oiEvent\"|\n\021PlayerMailSendReq\022\030\n\020sender_p"
+  "layer_id\030\001 \001(\004\022\032\n\022receiver_player_id\030\002 \001"
+  "(\004\022\r\n\005title\030\003 \001(\t\022\014\n\004body\030\004 \001(\t\022\024\n\014opera"
+  "tion_id\030\005 \001(\t\"m\n\021PlayerMailSendRsp\022\n\n\002ok"
+  "\030\001 \001(\010\022\017\n\007message\030\002 \001(\t\022\022\n\nerror_code\030\003 "
+  "\001(\t\022\017\n\007mail_id\030\004 \001(\004\022\026\n\016idempotent_hit\030\005"
+  " \001(\010\"X\n\024MailboxChangedNotify\022\021\n\tplayer_i"
+  "d\030\001 \001(\004\022\027\n\017mailbox_version\030\002 \001(\003\022\024\n\014unre"
+  "ad_count\030\003 \001(\r\"\230\001\n\016ClientHelloReq\022\030\n\020pro"
+  "tocol_version\030\001 \001(\r\022\025\n\rschema_sha256\030\002 \001"
+  "(\t\022\026\n\016client_version\030\003 \001(\t\022\020\n\010platform\030\004"
+  " \001(\t\022\025\n\rbuild_channel\030\005 \001(\t\022\024\n\014capabilit"
+  "ies\030\006 \003(\t\"\233\001\n\tPortalDef\022\021\n\tportal_id\030\001 \001"
+  "(\t\022\034\n\024from_map_template_id\030\002 \001(\004\022\032\n\022to_m"
+  "ap_template_id\030\003 \001(\004\022\034\n\010position\030\004 \001(\0132\n"
+  ".game.Vec3\022\013\n\003yaw\030\005 \001(\002\022\026\n\016trigger_radiu"
+  "s\030\006 \001(\002\"\265\001\n\020MapManifestEntry\022\027\n\017map_temp"
+  "late_id\030\001 \001(\004\022\024\n\014data_version\030\002 \001(\004\022\016\n\006s"
+  "ha256\030\003 \001(\t\022\022\n\nscene_name\030\004 \001(\t\022\014\n\004kind\030"
+  "\005 \001(\t\022\036\n\026visual_map_template_id\030\006 \001(\004\022 \n"
+  "\007portals\030\007 \003(\0132\017.game.PortalDef\"\224\001\n\021Inte"
+  "ractPortalReq\022\021\n\tplayer_id\030\001 \001(\004\022\020\n\010real"
+  "m_id\030\002 \001(\r\022\021\n\tportal_id\030\003 \001(\t\022\024\n\014operati"
+  "on_id\030\004 \001(\t\022\030\n\020map_data_version\030\005 \001(\004\022\027\n"
+  "\017map_data_sha256\030\006 \001(\t\"\202\004\n\021InteractPorta"
+  "lRsp\022\n\n\002ok\030\001 \001(\010\022\017\n\007message\030\002 \001(\t\022\022\n\nerr"
+  "or_code\030\003 \001(\t\022\027\n\017map_template_id\030\004 \001(\004\022\027"
+  "\n\017map_instance_id\030\005 \001(\004\022\035\n\025gamelogic_ins"
+  "tance_id\030\006 \001(\t\022\023\n\013owner_epoch\030\007 \001(\004\022\025\n\rr"
+  "oute_version\030\010 \001(\004\022\"\n\016spawn_position\030\t \001"
+  "(\0132\n.game.Vec3\022\021\n\tspawn_yaw\030\n \001(\002\022\030\n\020map"
+  "_data_version\030\013 \001(\004\022\027\n\017map_data_sha256\030\014"
+  " \001(\t\022\"\n\004self\030\r \001(\0132\024.game.EntitySnapshot"
+  "\022*\n\014aoi_snapshot\030\016 \003(\0132\024.game.EntitySnap"
+  "shot\022\014\n\004kind\030\017 \001(\t\022\017\n\007line_no\030\020 \001(\r\022\021\n\to"
+  "ccupancy\030\021 \001(\r\022\020\n\010soft_cap\030\022 \001(\r\022\020\n\010hard"
+  "_cap\030\023 \001(\r\022\021\n\tportal_id\030\024 \001(\t\022\034\n\024from_ma"
+  "p_template_id\030\025 \001(\004\"\373\002\n\016ServerHelloRsp\022\n"
+  "\n\002ok\030\001 \001(\010\022\022\n\nerror_code\030\002 \001(\t\022\017\n\007messag"
+  "e\030\003 \001(\t\022\030\n\020protocol_version\030\004 \001(\r\022&\n\036min"
+  "_supported_protocol_version\030\005 \001(\r\022\025\n\rsch"
+  "ema_sha256\030\006 \001(\t\022\024\n\014server_build\030\007 \001(\t\022\026"
+  "\n\016server_time_ms\030\010 \001(\003\022\035\n\025heartbeat_inte"
+  "rval_ms\030\t \001(\r\022\027\n\017idle_timeout_ms\030\n \001(\r\022\024"
+  "\n\014capabilities\030\013 \003(\t\022\037\n\027gameplay_config_"
+  "version\030\014 \001(\r\022\034\n\024map_manifest_version\030\r "
+  "\001(\r\022$\n\004maps\030\016 \003(\0132\026.game.MapManifestEntr"
+  "y\"U\n\025SessionReplacedNotify\022\023\n\013reason_cod"
+  "e\030\001 \001(\t\022\026\n\016server_time_ms\030\002 \001(\003\022\017\n\007messa"
+  "ge\030\003 \001(\t\"U\n\014HeartbeatReq\022\033\n\023client_monot"
+  "onic_ms\030\001 \001(\003\022\027\n\017last_server_seq\030\002 \001(\004\022\017"
+  "\n\007echo_ms\030\003 \001(\003\"\207\001\n\014HeartbeatRsp\022\n\n\002ok\030\001"
+  " \001(\010\022\022\n\nerror_code\030\002 \001(\t\022\026\n\016server_time_"
+  "ms\030\003 \001(\003\022\017\n\007echo_ms\030\004 \001(\003\022\026\n\016server_recv"
+  "_ms\030\005 \001(\003\022\026\n\016jitter_hint_ms\030\006 \001(\r\"\370\021\n\013Ga"
+  "meRequest\022\013\n\003seq\030\001 \001(\004\022\025\n\rsession_token\030"
+  "\002 \001(\t\022,\n\014consume_item\030\n \001(\0132\024.game.Consu"
+  "meItemReqH\000\022.\n\rrelease_skill\030\013 \001(\0132\025.gam"
+  "e.ReleaseSkillReqH\000\022(\n\ngrant_item\030\014 \001(\0132"
+  "\022.game.GrantItemReqH\000\022\037\n\005login\030\024 \001(\0132\016.g"
+  "ame.LoginReqH\000\0224\n\020validate_session\030\025 \001(\013"
+  "2\030.game.ValidateSessionReqH\000\022,\n\014check_on"
+  "line\030\026 \001(\0132\024.game.CheckOnlineReqH\000\022!\n\006lo"
+  "gout\030\027 \001(\0132\017.game.LogoutReqH\000\022\'\n\treconne"
+  "ct\030\030 \001(\0132\022.game.ReconnectReqH\000\022%\n\010regist"
+  "er\030\031 \001(\0132\021.game.RegisterReqH\000\022&\n\tflush_b"
+  "ag\030\032 \001(\0132\021.game.FlushBagReqH\000\0222\n\017mailbox"
+  "_summary\030\036 \001(\0132\027.game.MailboxSummaryReqH"
+  "\000\022&\n\tmail_list\030\037 \001(\0132\021.game.MailListReqH"
+  "\000\022$\n\010mail_get\030  \001(\0132\020.game.MailGetReqH\000\022"
+  "&\n\tmail_read\030! \001(\0132\021.game.MailReadReqH\000\022"
+  "(\n\nmail_claim\030\" \001(\0132\022.game.MailClaimReqH"
+  "\000\0223\n\020mail_batch_claim\030# \001(\0132\027.game.MailB"
+  "atchClaimReqH\000\022.\n\rmail_favorite\030$ \001(\0132\025."
+  "game.MailFavoriteReqH\000\0221\n\017mail_batch_rea"
+  "d\030% \001(\0132\026.game.MailBatchReadReqH\000\0225\n\021mai"
+  "l_batch_delete\030& \001(\0132\030.game.MailBatchDel"
+  "eteReqH\000\022,\n\014mail_deliver\030\' \001(\0132\024.game.Ma"
+  "ilDeliverReqH\000\022&\n\tenter_map\030( \001(\0132\021.game"
+  ".EnterMapReqH\000\022&\n\tleave_map\030) \001(\0132\021.game"
+  ".LeaveMapReqH\000\022$\n\010map_ping\030* \001(\0132\020.game."
+  "MapPingReqH\000\022&\n\tchat_send\0302 \001(\0132\021.game.C"
+  "hatSendReqH\000\022*\n\013friend_list\0303 \001(\0132\023.game"
+  ".FriendListReqH\000\022$\n\010push_ack\0304 \001(\0132\020.gam"
+  "e.PushAckReqH\000\0223\n\020get_self_profile\030< \001(\013"
+  "2\027.game.GetSelfProfileReqH\000\022\035\n\004move\030= \001("
+  "\0132\r.game.MoveReqH\000\0223\n\020player_mail_send\030\?"
+  " \001(\0132\027.game.PlayerMailSendReqH\000\022,\n\014clien"
+  "t_hello\030F \001(\0132\024.game.ClientHelloReqH\000\022\'\n"
+  "\theartbeat\030G \001(\0132\022.game.HeartbeatReqH\000\0220"
+  "\n\016world_snapshot\030H \001(\0132\026.game.WorldSnaps"
+  "hotReqH\000\022#\n\007respawn\030I \001(\0132\020.game.Respawn"
+  "ReqH\000\0223\n\020get_player_brief\030J \001(\0132\027.game.G"
+  "etPlayerBriefReqH\000\0227\n\022query_online_state"
+  "\030K \001(\0132\031.game.QueryOnlineStateReqH\000\0221\n\017q"
+  "uery_map_lines\030L \001(\0132\026.game.QueryMapLine"
+  "sReqH\000\0220\n\016create_dungeon\030M \001(\0132\026.game.Cr"
+  "eateDungeonReqH\000\022*\n\013switch_line\030N \001(\0132\023."
+  "game.SwitchLineReqH\000\022*\n\013enqueue_map\030O \001("
+  "\0132\023.game.EnqueueMapReqH\000\0222\n\017interact_por"
+  "tal\030P \001(\0132\027.game.InteractPortalReqH\000\022.\n\r"
+  "friend_search\030Q \001(\0132\025.game.FriendSearchR"
+  "eqH\000\022,\n\014friend_apply\030R \001(\0132\024.game.Friend"
+  "ApplyReqH\000\022.\n\rfriend_accept\030S \001(\0132\025.game"
+  ".FriendAcceptReqH\000\022.\n\rfriend_reject\030T \001("
+  "\0132\025.game.FriendRejectReqH\000\022.\n\rfriend_del"
+  "ete\030U \001(\0132\025.game.FriendDeleteReqH\000\0229\n\023fr"
+  "iend_request_list\030V \001(\0132\032.game.FriendReq"
+  "uestListReqH\000\022,\n\014friend_block\030W \001(\0132\024.ga"
+  "me.FriendBlockReqH\000\0220\n\016friend_unblock\030X "
+  "\001(\0132\026.game.FriendUnblockReqH\000\0225\n\021friend_"
+  "block_list\030Y \001(\0132\030.game.FriendBlockListR"
+  "eqH\000B\006\n\004body\"\240\026\n\014GameResponse\022\013\n\003seq\030\001 \001"
+  "(\004\022\n\n\002ok\030\002 \001(\010\022\017\n\007message\030\003 \001(\t\022\022\n\nerror"
+  "_code\030\004 \001(\t\022\021\n\tretryable\030\005 \001(\010\022\026\n\016server"
+  "_time_ms\030\006 \001(\003\022\020\n\010trace_id\030\007 \001(\t\022,\n\014cons"
+  "ume_item\030\n \001(\0132\024.game.ConsumeItemRspH\000\022."
+  "\n\rrelease_skill\030\013 \001(\0132\025.game.ReleaseSkil"
+  "lRspH\000\022(\n\ngrant_item\030\014 \001(\0132\022.game.GrantI"
+  "temRspH\000\022\037\n\005login\030\024 \001(\0132\016.game.LoginRspH"
+  "\000\0224\n\020validate_session\030\025 \001(\0132\030.game.Valid"
+  "ateSessionRspH\000\022,\n\014check_online\030\026 \001(\0132\024."
+  "game.CheckOnlineRspH\000\022!\n\006logout\030\027 \001(\0132\017."
+  "game.LogoutRspH\000\022\'\n\treconnect\030\030 \001(\0132\022.ga"
+  "me.ReconnectRspH\000\022%\n\010register\030\031 \001(\0132\021.ga"
+  "me.RegisterRspH\000\022&\n\tflush_bag\030\032 \001(\0132\021.ga"
+  "me.FlushBagRspH\000\0222\n\017mailbox_summary\030\036 \001("
+  "\0132\027.game.MailboxSummaryRspH\000\022&\n\tmail_lis"
+  "t\030\037 \001(\0132\021.game.MailListRspH\000\022$\n\010mail_get"
+  "\030  \001(\0132\020.game.MailGetRspH\000\022&\n\tmail_read\030"
+  "! \001(\0132\021.game.MailReadRspH\000\022(\n\nmail_claim"
+  "\030\" \001(\0132\022.game.MailClaimRspH\000\0223\n\020mail_bat"
+  "ch_claim\030# \001(\0132\027.game.MailBatchClaimRspH"
+  "\000\022.\n\rmail_favorite\030$ \001(\0132\025.game.MailFavo"
+  "riteRspH\000\0221\n\017mail_batch_read\030% \001(\0132\026.gam"
+  "e.MailBatchReadRspH\000\0225\n\021mail_batch_delet"
+  "e\030& \001(\0132\030.game.MailBatchDeleteRspH\000\022,\n\014m"
+  "ail_deliver\030\' \001(\0132\024.game.MailDeliverRspH"
+  "\000\022&\n\tenter_map\030( \001(\0132\021.game.EnterMapRspH"
+  "\000\022&\n\tleave_map\030) \001(\0132\021.game.LeaveMapRspH"
+  "\000\022$\n\010map_ping\030* \001(\0132\020.game.MapPingRspH\000\022"
+  "&\n\tchat_send\0302 \001(\0132\021.game.ChatSendRspH\000\022"
+  "*\n\013friend_list\0303 \001(\0132\023.game.FriendListRs"
+  "pH\000\022$\n\010push_ack\0304 \001(\0132\020.game.PushAckRspH"
+  "\000\022/\n\013server_push\0305 \001(\0132\030.game.ServerPush"
+  "EnvelopeH\000\0223\n\rfull_snapshot\0306 \001(\0132\032.game"
+  ".FullStateSnapshotRspH\000\0223\n\020get_self_prof"
+  "ile\030< \001(\0132\027.game.GetSelfProfileRspH\000\022\035\n\004"
+  "move\030= \001(\0132\r.game.MoveRspH\000\022#\n\taoi_delta"
+  "\030> \001(\0132\016.game.AoiDeltaH\000\0223\n\020player_mail_"
+  "send\030\? \001(\0132\027.game.PlayerMailSendRspH\000\0225\n"
+  "\017mailbox_changed\030@ \001(\0132\032.game.MailboxCha"
+  "ngedNotifyH\000\022,\n\014server_hello\030F \001(\0132\024.gam"
+  "e.ServerHelloRspH\000\022\'\n\theartbeat\030G \001(\0132\022."
+  "game.HeartbeatRspH\000\022#\n\007respawn\030H \001(\0132\020.g"
+  "ame.RespawnRspH\000\022\'\n\013chat_notify\030I \001(\0132\020."
+  "game.ChatNotifyH\000\0223\n\020get_player_brief\030J "
+  "\001(\0132\027.game.GetPlayerBriefRspH\000\0227\n\022query_"
+  "online_state\030K \001(\0132\031.game.QueryOnlineSta"
+  "teRspH\000\0227\n\020session_replaced\030L \001(\0132\033.game"
+  ".SessionReplacedNotifyH\000\0221\n\017query_map_li"
+  "nes\030M \001(\0132\026.game.QueryMapLinesRspH\000\0220\n\016c"
+  "reate_dungeon\030N \001(\0132\026.game.CreateDungeon"
+  "RspH\000\022*\n\013switch_line\030O \001(\0132\023.game.Switch"
+  "LineRspH\000\022*\n\013enqueue_map\030P \001(\0132\023.game.En"
+  "queueMapRspH\000\0222\n\017interact_portal\030Q \001(\0132\027"
+  ".game.InteractPortalRspH\000\022,\n\014friend_appl"
+  "y\030R \001(\0132\024.game.FriendApplyRspH\000\022.\n\rfrien"
+  "d_accept\030S \001(\0132\025.game.FriendAcceptRspH\000\022"
+  ".\n\rfriend_reject\030T \001(\0132\025.game.FriendReje"
+  "ctRspH\000\022.\n\rfriend_delete\030U \001(\0132\025.game.Fr"
+  "iendDeleteRspH\000\0229\n\023friend_request_list\030V"
+  " \001(\0132\032.game.FriendRequestListRspH\000\022,\n\014fr"
+  "iend_block\030W \001(\0132\024.game.FriendBlockRspH\000"
+  "\0220\n\016friend_unblock\030X \001(\0132\026.game.FriendUn"
+  "blockRspH\000\0225\n\021friend_block_list\030Y \001(\0132\030."
+  "game.FriendBlockListRspH\000\0226\n\023friend_requ"
+  "est_push\030Z \001(\0132\027.game.FriendRequestPushH"
+  "\000\0222\n\021friend_added_push\030[ \001(\0132\025.game.Frie"
+  "ndAddedPushH\000\0226\n\023friend_removed_push\030\\ \001"
+  "(\0132\027.game.FriendRemovedPushH\000\0228\n\024friend_"
+  "presence_push\030] \001(\0132\030.game.FriendPresenc"
+  "ePushH\000\022.\n\rfriend_search\030^ \001(\0132\025.game.Fr"
+  "iendSearchRspH\000B\006\n\004body*\270\001\n\023FriendRelati"
+  "onState\022\030\n\024FRIEND_RELATION_NONE\020\000\022\032\n\026FRI"
+  "END_RELATION_FRIEND\020\001\022 \n\034FRIEND_RELATION"
+  "_SENT_PENDING\020\002\022$\n FRIEND_RELATION_RECEI"
+  "VED_PENDING\020\003\022#\n\037FRIEND_RELATION_BLOCKED"
+  "_BY_SELF\020\004B\024\252\002\021GameMesh.Protocolb\006proto3"
   ;
 static const ::PROTOBUF_NAMESPACE_ID::internal::DescriptorTable*const descriptor_table_game_2eproto_deps[1] = {
 };
@@ -5011,7 +5015,7 @@ static ::PROTOBUF_NAMESPACE_ID::internal::SCCInfoBase*const descriptor_table_gam
 };
 static ::PROTOBUF_NAMESPACE_ID::internal::once_flag descriptor_table_game_2eproto_once;
 const ::PROTOBUF_NAMESPACE_ID::internal::DescriptorTable descriptor_table_game_2eproto = {
-  false, false, descriptor_table_protodef_game_2eproto, "game.proto", 21593,
+  false, false, descriptor_table_protodef_game_2eproto, "game.proto", 21640,
   &descriptor_table_game_2eproto_once, descriptor_table_game_2eproto_sccs, descriptor_table_game_2eproto_deps, 126, 0,
   schemas, file_default_instances, TableStruct_game_2eproto::offsets,
   file_level_metadata_game_2eproto, 126, file_level_enum_descriptors_game_2eproto, file_level_service_descriptors_game_2eproto,
@@ -38645,8 +38649,8 @@ EntitySnapshot::EntitySnapshot(const EntitySnapshot& from)
     position_ = nullptr;
   }
   ::memcpy(&player_id_, &from.player_id_,
-    static_cast<size_t>(reinterpret_cast<char*>(&max_hp_) -
-    reinterpret_cast<char*>(&player_id_)) + sizeof(max_hp_));
+    static_cast<size_t>(reinterpret_cast<char*>(&vz_) -
+    reinterpret_cast<char*>(&player_id_)) + sizeof(vz_));
   // @@protoc_insertion_point(copy_constructor:game.EntitySnapshot)
 }
 
@@ -38654,8 +38658,8 @@ void EntitySnapshot::SharedCtor() {
   ::PROTOBUF_NAMESPACE_ID::internal::InitSCC(&scc_info_EntitySnapshot_game_2eproto.base);
   player_name_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
   ::memset(&position_, 0, static_cast<size_t>(
-      reinterpret_cast<char*>(&max_hp_) -
-      reinterpret_cast<char*>(&position_)) + sizeof(max_hp_));
+      reinterpret_cast<char*>(&vz_) -
+      reinterpret_cast<char*>(&position_)) + sizeof(vz_));
 }
 
 EntitySnapshot::~EntitySnapshot() {
@@ -38697,8 +38701,8 @@ void EntitySnapshot::Clear() {
   }
   position_ = nullptr;
   ::memset(&player_id_, 0, static_cast<size_t>(
-      reinterpret_cast<char*>(&max_hp_) -
-      reinterpret_cast<char*>(&player_id_)) + sizeof(max_hp_));
+      reinterpret_cast<char*>(&vz_) -
+      reinterpret_cast<char*>(&player_id_)) + sizeof(vz_));
   _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
 }
 
@@ -38758,6 +38762,27 @@ const char* EntitySnapshot::_InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE
       case 7:
         if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 56)) {
           state_seq_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint64(&ptr);
+          CHK_(ptr);
+        } else goto handle_unusual;
+        continue;
+      // float vx = 8;
+      case 8:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 69)) {
+          vx_ = ::PROTOBUF_NAMESPACE_ID::internal::UnalignedLoad<float>(ptr);
+          ptr += sizeof(float);
+        } else goto handle_unusual;
+        continue;
+      // float vz = 9;
+      case 9:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 77)) {
+          vz_ = ::PROTOBUF_NAMESPACE_ID::internal::UnalignedLoad<float>(ptr);
+          ptr += sizeof(float);
+        } else goto handle_unusual;
+        continue;
+      // int64 move_start_ms = 10;
+      case 10:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 80)) {
+          move_start_ms_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint64(&ptr);
           CHK_(ptr);
         } else goto handle_unusual;
         continue;
@@ -38837,6 +38862,24 @@ failure:
     target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::WriteUInt64ToArray(7, this->_internal_state_seq(), target);
   }
 
+  // float vx = 8;
+  if (!(this->vx() <= 0 && this->vx() >= 0)) {
+    target = stream->EnsureSpace(target);
+    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::WriteFloatToArray(8, this->_internal_vx(), target);
+  }
+
+  // float vz = 9;
+  if (!(this->vz() <= 0 && this->vz() >= 0)) {
+    target = stream->EnsureSpace(target);
+    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::WriteFloatToArray(9, this->_internal_vz(), target);
+  }
+
+  // int64 move_start_ms = 10;
+  if (this->move_start_ms() != 0) {
+    target = stream->EnsureSpace(target);
+    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::WriteInt64ToArray(10, this->_internal_move_start_ms(), target);
+  }
+
   if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
     target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormat::InternalSerializeUnknownFieldsToArray(
         _internal_metadata_.unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(::PROTOBUF_NAMESPACE_ID::UnknownFieldSet::default_instance), target, stream);
@@ -38900,6 +38943,23 @@ size_t EntitySnapshot::ByteSizeLong() const {
         this->_internal_max_hp());
   }
 
+  // float vx = 8;
+  if (!(this->vx() <= 0 && this->vx() >= 0)) {
+    total_size += 1 + 4;
+  }
+
+  // int64 move_start_ms = 10;
+  if (this->move_start_ms() != 0) {
+    total_size += 1 +
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::Int64Size(
+        this->_internal_move_start_ms());
+  }
+
+  // float vz = 9;
+  if (!(this->vz() <= 0 && this->vz() >= 0)) {
+    total_size += 1 + 4;
+  }
+
   if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
     return ::PROTOBUF_NAMESPACE_ID::internal::ComputeUnknownFieldsSize(
         _internal_metadata_, total_size, &_cached_size_);
@@ -38952,6 +39012,15 @@ void EntitySnapshot::MergeFrom(const EntitySnapshot& from) {
   if (from.max_hp() != 0) {
     _internal_set_max_hp(from._internal_max_hp());
   }
+  if (!(from.vx() <= 0 && from.vx() >= 0)) {
+    _internal_set_vx(from._internal_vx());
+  }
+  if (from.move_start_ms() != 0) {
+    _internal_set_move_start_ms(from._internal_move_start_ms());
+  }
+  if (!(from.vz() <= 0 && from.vz() >= 0)) {
+    _internal_set_vz(from._internal_vz());
+  }
 }
 
 void EntitySnapshot::CopyFrom(const ::PROTOBUF_NAMESPACE_ID::Message& from) {
@@ -38977,8 +39046,8 @@ void EntitySnapshot::InternalSwap(EntitySnapshot* other) {
   _internal_metadata_.Swap<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(&other->_internal_metadata_);
   player_name_.Swap(&other->player_name_, &::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
   ::PROTOBUF_NAMESPACE_ID::internal::memswap<
-      PROTOBUF_FIELD_OFFSET(EntitySnapshot, max_hp_)
-      + sizeof(EntitySnapshot::max_hp_)
+      PROTOBUF_FIELD_OFFSET(EntitySnapshot, vz_)
+      + sizeof(EntitySnapshot::vz_)
       - PROTOBUF_FIELD_OFFSET(EntitySnapshot, position_)>(
           reinterpret_cast<char*>(&position_),
           reinterpret_cast<char*>(&other->position_));

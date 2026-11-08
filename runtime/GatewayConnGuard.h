@@ -24,6 +24,8 @@ public:
     std::string CheckNameQueryRate(uint64_t conn_id);
 
     bool IdleExpired(uint64_t conn_id, uint32_t idle_ms) const;
+    /** 从接入到现在的毫秒。连接已经不在表里时返回 0。 */
+    int64_t ConnectedAgeMs(uint64_t conn_id) const;
     /** 限流错误回复每条连接每秒最多放行一次。 */
     bool AllowRateError(uint64_t conn_id);
     /** 连续超限达到 ms 则应关连接。 */

@@ -33,6 +33,7 @@ std::string IpFromFd(int fd) {
 
 struct ConnState {
     bool hello_ok = false;
+    int64_t connected_ms = 0;
     int64_t last_rx_ms = 0;
     int64_t last_hb_ms = 0;
     int64_t frame_window_ms = 0;
@@ -70,7 +71,8 @@ std::unordered_map<std::string, IpBucket> g_ips;
 
 void GatewayConnGuard::OnConnected(uint64_t conn_id, int fd) {
     ConnState st;
-    st.last_rx_ms = NowMs();
+    st.connected_ms = NowMs();
+    st.last_rx_ms = st.connected_ms;
     st.frame_window_ms = st.last_rx_ms;
     st.auth_window_ms = st.last_rx_ms;
     st.ip = IpFromFd(fd);
@@ -258,6 +260,16 @@ std::string GatewayConnGuard::CheckNameQueryRate(uint64_t conn_id) {
     if (st.name_in_window > 8)
         return "ERR_RATE_LIMITED";
     return {};
+}
+
+int64_t GatewayConnGuard::ConnectedAgeMs(uint64_t conn_id) const {
+    const int64_t now = NowMs();
+    std::lock_guard<std::mutex> lk(g_mu);
+    auto it = g_conns.find(conn_id);
+    if (it == g_conns.end() || it->second.connected_ms <= 0)
+        return 0;
+    const int64_t age = now - it->second.connected_ms;
+    return age > 0 ? age : 0;
 }
 
 bool GatewayConnGuard::IdleExpired(uint64_t conn_id, uint32_t idle_ms) const {

@@ -20,6 +20,7 @@ std::string (*g_control_outbox_prom)() = nullptr;
 int64_t (*g_map_entity_count)() = nullptr;
 void (*g_aoi_silence_sampler)(std::vector<int64_t> *, std::vector<int64_t> *) = nullptr;
 void (*g_conn_silence_sampler)(std::vector<int64_t> *) = nullptr;
+void (*g_aoi_motion_sampler)(int64_t *, int64_t *, std::vector<int64_t> *) = nullptr;
 }  // namespace
 
 void OpsMetrics::SetReplyStagePrometheus(std::string (*fn)()) { g_reply_stage_prom = fn; }
@@ -32,6 +33,10 @@ void OpsMetrics::SetAoiSilenceSampler(void (*fn)(std::vector<int64_t> *, std::ve
 
 void OpsMetrics::SetConnSilenceSampler(void (*fn)(std::vector<int64_t> *)) {
     g_conn_silence_sampler = fn;
+}
+
+void OpsMetrics::SetAoiMotionSampler(void (*fn)(int64_t *, int64_t *, std::vector<int64_t> *)) {
+    g_aoi_motion_sampler = fn;
 }
 
 void OpsMetrics::SetControlOutboxPrometheus(std::string (*fn)()) { g_control_outbox_prom = fn; }
@@ -335,6 +340,14 @@ std::string OpsMetrics::PrometheusText() const {
     ctr("gamemesh_aoi_move_rate_limited_total",
         "AOI MOVE skipped because the watcher was updated inside the distance interval.",
         ServerStats::aoi_move_rate_limited.load(std::memory_order_relaxed));
+    if (ServerStats::aoi_stationary_skip.load(std::memory_order_relaxed) > 0)
+        ctr("gamemesh_aoi_stationary_skip_total",
+            "MOVE accepted for the mover but not broadcast because x,z did not change.",
+            ServerStats::aoi_stationary_skip.load(std::memory_order_relaxed));
+    if (ServerStats::aoi_keyframe.load(std::memory_order_relaxed) > 0)
+        ctr("gamemesh_aoi_keyframe_total",
+            "MOVE broadcast because silence reached the hard cap before the layer interval.",
+            ServerStats::aoi_keyframe.load(std::memory_order_relaxed));
     ctr("gamemesh_aoi_move_capped_total",
         "AOI MOVE entities left in the coalesce slot because the frame cap was full.",
         ServerStats::aoi_move_capped.load(std::memory_order_relaxed));
@@ -496,6 +509,36 @@ std::string OpsMetrics::PrometheusText() const {
             os << "gamemesh_aoi_move_conn_silence_ms{quantile=\"0.9\"} " << at(0.90) << "\n";
             os << "gamemesh_aoi_move_conn_silence_ms{quantile=\"0.99\"} " << at(0.99) << "\n";
             os << "gamemesh_aoi_move_conn_silence_ms{quantile=\"1\"} " << per_conn.back() << "\n";
+        }
+    }
+    if (g_aoi_motion_sampler) {
+        int64_t moving = 0;
+        int64_t stationary = 0;
+        std::vector<int64_t> intervals;
+        g_aoi_motion_sampler(&moving, &stationary, &intervals);
+        if (moving + stationary > 0) {
+            os << "# HELP gamemesh_aoi_moving_entities Connected entities whose x,z changed in the last 5 seconds.\n"
+                  "# TYPE gamemesh_aoi_moving_entities gauge\n";
+            os << "gamemesh_aoi_moving_entities " << moving << "\n";
+            os << "# HELP gamemesh_aoi_stationary_entities Connected entities with no x,z change in the last 5 seconds.\n"
+                  "# TYPE gamemesh_aoi_stationary_entities gauge\n";
+            os << "gamemesh_aoi_stationary_entities " << stationary << "\n";
+        }
+        if (!intervals.empty()) {
+            std::sort(intervals.begin(), intervals.end());
+            auto at = [&](double q) {
+                size_t idx = static_cast<size_t>(q * static_cast<double>(intervals.size() - 1));
+                if (idx >= intervals.size())
+                    idx = intervals.size() - 1;
+                const int64_t ms = intervals[idx];
+                return ms > 0 ? 1000.0 / static_cast<double>(ms) : 0.0;
+            };
+            os << "# HELP gamemesh_aoi_entity_event_hz Per-entity MOVE broadcast rate from the gap between sends. Unit: events per second.\n"
+                  "# TYPE gamemesh_aoi_entity_event_hz gauge\n";
+            os << "gamemesh_aoi_entity_event_hz{quantile=\"0.5\"} " << at(0.50) << "\n";
+            os << "gamemesh_aoi_entity_event_hz{quantile=\"0.9\"} " << at(0.90) << "\n";
+            os << "gamemesh_aoi_entity_event_hz{quantile=\"0.99\"} " << at(0.99) << "\n";
+            os << "gamemesh_aoi_entity_event_hz{quantile=\"1\"} " << at(1.0) << "\n";
         }
     }
     {

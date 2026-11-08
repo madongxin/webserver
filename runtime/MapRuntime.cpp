@@ -1,12 +1,14 @@
 #include "MapRuntime.h"
 
 #include "Logging.h"
+#include "MoveSendConfig.h"
 #include "OpsMetrics.h"
 #include "ServerStats.h"
 
 #include <algorithm>
 #include <chrono>
 #include <cmath>
+#include <mutex>
 #include <vector>
 
 namespace {
@@ -37,13 +39,158 @@ void MapRuntime::ResetClientSeq(uint64_t player_id) {
 
 namespace {
 int64_t MapEntityCountForMetrics() { return MapRuntime::Instance().TotalEntityCount(); }
+
+std::mutex g_rate_mu;
+std::vector<int64_t> g_move_intervals_ms;
+
+void NoteMoveInterval(int64_t delta_ms) {
+    if (delta_ms <= 0)
+        return;
+    std::lock_guard<std::mutex> lk(g_rate_mu);
+    if (g_move_intervals_ms.size() >= 512)
+        g_move_intervals_ms.erase(g_move_intervals_ms.begin());
+    g_move_intervals_ms.push_back(delta_ms);
+}
+
+void SampleAoiMotion(int64_t *moving, int64_t *stationary, std::vector<int64_t> *intervals_ms) {
+    if (moving)
+        *moving = 0;
+    if (stationary)
+        *stationary = 0;
+    MapRuntime::Instance().CopyMotionCounts(moving, stationary);
+    if (!intervals_ms)
+        return;
+    std::lock_guard<std::mutex> lk(g_rate_mu);
+    *intervals_ms = g_move_intervals_ms;
+}
 }  // namespace
 
 MapRuntime &MapRuntime::Instance() {
     static MapRuntime g;
-    static int wired = (OpsMetrics::SetMapEntityCount(&MapEntityCountForMetrics), 0);
+    static int wired = (OpsMetrics::SetMapEntityCount(&MapEntityCountForMetrics),
+                        OpsMetrics::SetAoiMotionSampler(&SampleAoiMotion), 0);
     (void)wired;
     return g;
+}
+
+void MapRuntime::CopyMotionCounts(int64_t *moving, int64_t *stationary) const {
+    std::vector<std::shared_ptr<InstanceState>> maps;
+    {
+        std::lock_guard<std::mutex> lk(mu_);
+        for (const auto &kv : maps_) {
+            if (kv.second)
+                maps.push_back(kv.second);
+        }
+    }
+    const int64_t now = NowMs();
+    int64_t mv = 0;
+    int64_t stn = 0;
+    for (const auto &st : maps) {
+        auto lock = LockInst(st);
+        for (const auto &kv : st->entities) {
+            if (!kv.second.connected)
+                continue;
+            const float gx = kv.second.x - kv.second.PresentedX();
+            const float gz = kv.second.z - kv.second.PresentedZ();
+            const bool gliding = kv.second.aoi_live && (gx * gx + gz * gz) >= 0.16f;
+            if (gliding || (kv.second.last_displace_ms > 0 && now >= kv.second.last_displace_ms &&
+                            now - kv.second.last_displace_ms < 5000))
+                ++mv;
+            else
+                ++stn;
+        }
+    }
+    if (moving)
+        *moving = mv;
+    if (stationary)
+        *stationary = stn;
+}
+
+void MapRuntime::AdvancePresented(std::vector<AoiPushBatch> *batches) {
+    if (!batches)
+        return;
+    std::vector<std::pair<uint64_t, std::shared_ptr<InstanceState>>> maps;
+    {
+        std::lock_guard<std::mutex> lk(mu_);
+        for (const auto &kv : maps_) {
+            if (kv.second)
+                maps.emplace_back(kv.first, kv.second);
+        }
+    }
+    constexpr float kTickSec = 0.2f;
+    for (const auto &item : maps) {
+        AoiPushBatch batch;
+        batch.map_instance_id = item.first;
+        auto lock = LockInst(item.second);
+        InstanceState *st = item.second.get();
+        if (!st->data)
+            continue;
+        for (auto &kv : st->entities) {
+            MapEntity &e = kv.second;
+            if (!e.connected || !e.aoi_live)
+                continue;
+            const float dx = e.x - e.aoi_x;
+            const float dz = e.z - e.aoi_z;
+            const float dist = std::sqrt(dx * dx + dz * dz);
+            if (dist < 0.4f) {
+                if (std::fabs(e.vx) > 0.05f || std::fabs(e.vz) > 0.05f) {
+                    e.vx = 0.f;
+                    e.vz = 0.f;
+                    e.move_start_ms = NowMs();
+                    e.aoi_x = e.x;
+                    e.aoi_z = e.z;
+                    auto wit = st->watchers.find(e.player_id);
+                    if (wit != st->watchers.end()) {
+                        for (uint64_t vid : wit->second) {
+                            auto rit = st->entities.find(vid);
+                            if (rit == st->entities.end() || !rit->second.connected)
+                                continue;
+                            if (!AllowMoveAoi(st, rit->second, e, NowMs()))
+                                continue;
+                            EmitTo(&batch, item.first, rit->second, 2, e);
+                            ServerStats::aoi_move_events.fetch_add(1, std::memory_order_relaxed);
+                        }
+                    }
+                }
+                continue;
+            }
+            const float speed = std::sqrt(e.vx * e.vx + e.vz * e.vz);
+            const float step = std::min(dist, (speed > 0.05f ? speed : 10.f) * kTickSec);
+            const float nx = e.aoi_x + dx / dist * step;
+            const float nz = e.aoi_z + dz / dist * step;
+            int ocx = 0, ocz = 0, ncx = 0, ncz = 0;
+            st->data->WorldToAoiCell(e.aoi_x, e.aoi_z, &ocx, &ocz);
+            st->data->WorldToAoiCell(nx, nz, &ncx, &ncz);
+            std::vector<uint64_t> viewers = NeighborhoodIds(*st, e.aoi_x, e.aoi_z);
+            RemoveFromCell(st, e);
+            e.aoi_x = nx;
+            e.aoi_z = nz;
+            PlaceInCell(st, e);
+            const int64_t tick_now = NowMs();
+            auto wit_move = st->watchers.find(e.player_id);
+            if (wit_move != st->watchers.end()) {
+                for (uint64_t vid : wit_move->second) {
+                    auto rit = st->entities.find(vid);
+                    if (rit == st->entities.end() || !rit->second.connected)
+                        continue;
+                    if (!AllowMoveAoi(st, rit->second, e, tick_now))
+                        continue;
+                    EmitTo(&batch, item.first, rit->second, 2, e);
+                    ServerStats::aoi_move_events.fetch_add(1, std::memory_order_relaxed);
+                }
+            }
+            if (ocx == ncx && ocz == ncz)
+                continue;
+            const auto arrived = NeighborhoodIds(*st, e.aoi_x, e.aoi_z);
+            viewers.insert(viewers.end(), arrived.begin(), arrived.end());
+            auto wit = st->watchers.find(e.player_id);
+            if (wit != st->watchers.end())
+                viewers.insert(viewers.end(), wit->second.begin(), wit->second.end());
+            RefreshViewers(st, viewers, e.player_id, 0, item.first, &batch);
+        }
+        if (!batch.events.empty())
+            batches->push_back(std::move(batch));
+    }
 }
 
 void MapRuntime::SetViewRadiusCells(int n) {
@@ -146,7 +293,7 @@ void MapRuntime::PlaceInCell(InstanceState *st, const MapEntity &e) {
     if (!st || !st->data)
         return;
     int cx = 0, cz = 0;
-    st->data->WorldToAoiCell(e.x, e.z, &cx, &cz);
+    st->data->WorldToAoiCell(e.PresentedX(), e.PresentedZ(), &cx, &cz);
     st->cells[CellKey(cx, cz)].insert(e.player_id);
 }
 
@@ -154,7 +301,7 @@ void MapRuntime::RemoveFromCell(InstanceState *st, const MapEntity &e) {
     if (!st || !st->data)
         return;
     int cx = 0, cz = 0;
-    st->data->WorldToAoiCell(e.x, e.z, &cx, &cz);
+    st->data->WorldToAoiCell(e.PresentedX(), e.PresentedZ(), &cx, &cz);
     auto it = st->cells.find(CellKey(cx, cz));
     if (it == st->cells.end())
         return;
@@ -175,7 +322,7 @@ std::unordered_set<uint64_t> MapRuntime::VisibleIds(const InstanceState &st,
     if (!st.data)
         return {};
     int cx = 0, cz = 0;
-    st.data->WorldToAoiCell(e.x, e.z, &cx, &cz);
+    st.data->WorldToAoiCell(e.PresentedX(), e.PresentedZ(), &cx, &cz);
     const int r = ResolvedRadius(st);
     for (int dx = -r; dx <= r; ++dx) {
         for (int dz = -r; dz <= r; ++dz) {
@@ -188,8 +335,8 @@ std::unordered_set<uint64_t> MapRuntime::VisibleIds(const InstanceState &st,
                 auto eit = st.entities.find(pid);
                 if (eit == st.entities.end() || !eit->second.connected)
                     continue;
-                const float ddx = eit->second.x - e.x;
-                const float ddz = eit->second.z - e.z;
+                const float ddx = eit->second.PresentedX() - e.PresentedX();
+                const float ddz = eit->second.PresentedZ() - e.PresentedZ();
                 cands.push_back(Cand{pid, ddx * ddx + ddz * ddz});
             }
         }
@@ -395,17 +542,67 @@ bool MapRuntime::AllowMoveAoi(InstanceState *st, const MapEntity &watcher, const
                               int64_t now_ms) const {
     if (!st || watcher.player_id == 0 || subject.player_id == 0)
         return false;
-    const float dx = watcher.x - subject.x;
-    const float dz = watcher.z - subject.z;
+    // 距离用正在显示的位置。权威坐标已经落到路点时，人还在半路上，不能按终点把近处收成远层。
+    const float dx = watcher.PresentedX() - subject.PresentedX();
+    const float dz = watcher.PresentedZ() - subject.PresentedZ();
     const float dist2 = dx * dx + dz * dz;
     constexpr float kNearM = 16.f;
-    const int64_t interval = dist2 < kNearM * kNearM ? 200 : 500;
-    int64_t &last = st->move_notify_ms[watcher.player_id][subject.player_id];
-    if (now_ms > 0 && last > 0 && now_ms - last < interval) {
-        ServerStats::aoi_move_rate_limited.fetch_add(1, std::memory_order_relaxed);
-        return false;
+    const bool far = !(dist2 < kNearM * kNearM);
+    auto &rec = st->move_notify_ms[watcher.player_id][subject.player_id];
+    const int64_t now = now_ms > 0 ? now_ms : 1;
+    if (AoiExtrapolateEnabled()) {
+        const bool moving = std::fabs(subject.vx) > 0.05f || std::fabs(subject.vz) > 0.05f;
+        bool vel_changed = true;
+        bool drifted = false;
+        bool keyframe = false;
+        if (rec.has) {
+            vel_changed = std::fabs(rec.vx - subject.vx) > 0.05f || std::fabs(rec.vz - subject.vz) > 0.05f;
+            const float elapsed = static_cast<float>(now - rec.ms) / 1000.f;
+            const float pred_x = rec.x + rec.vx * elapsed;
+            const float pred_z = rec.z + rec.vz * elapsed;
+            const float ex = pred_x - subject.x;
+            const float ez = pred_z - subject.z;
+            const float err_cm = std::sqrt(ex * ex + ez * ez) * 100.f;
+            drifted = err_cm > static_cast<float>(ExtrapErrorCm());
+            const int64_t age = now - rec.ms;
+            keyframe = moving && !far && age >= ExtrapKeyframeMs();
+            if (!vel_changed && !drifted && !keyframe) {
+                ServerStats::aoi_move_rate_limited.fetch_add(1, std::memory_order_relaxed);
+                return false;
+            }
+            if (keyframe && !vel_changed && !drifted)
+                ServerStats::aoi_keyframe.fetch_add(1, std::memory_order_relaxed);
+            NoteMoveInterval(age);
+        }
+        rec.ms = now;
+        rec.x = subject.x;
+        rec.z = subject.z;
+        rec.vx = subject.vx;
+        rec.vz = subject.vz;
+        rec.move_start_ms = subject.move_start_ms;
+        rec.has = true;
+        return true;
     }
-    last = now_ms > 0 ? now_ms : 1;
+    const int64_t interval = far ? FarMoveIntervalMs() : 200;
+    const int64_t hard = far ? FarHardSilenceMs() : NearHardSilenceMs();
+    const float walked_dx = subject.PresentedX() - rec.x;
+    const float walked_dz = subject.PresentedZ() - rec.z;
+    // 呈现点已经走出半米，这一步必须让观察者看到。间隔只拦住原地的重复包。
+    const bool walked = rec.has && (walked_dx * walked_dx + walked_dz * walked_dz) >= 0.25f;
+    if (rec.has && rec.ms > 0 && !walked) {
+        const int64_t age = now - rec.ms;
+        if (age < interval && age < hard) {
+            ServerStats::aoi_move_rate_limited.fetch_add(1, std::memory_order_relaxed);
+            return false;
+        }
+        if (age >= hard && age < interval)
+            ServerStats::aoi_keyframe.fetch_add(1, std::memory_order_relaxed);
+        NoteMoveInterval(age);
+    }
+    rec.ms = now;
+    rec.x = subject.PresentedX();
+    rec.z = subject.PresentedZ();
+    rec.has = true;
     return true;
 }
 
@@ -420,6 +617,13 @@ void MapRuntime::EmitTo(AoiPushBatch *pushes, uint64_t map_id, const MapEntity &
     ev.session_id = recipient.session_id;
     ev.op = op;
     ev.snapshot = snapshot;
+    if (ev.snapshot.aoi_live) {
+        ev.snapshot.x = ev.snapshot.aoi_x;
+        ev.snapshot.z = ev.snapshot.aoi_z;
+    }
+    // 这一跳位置的时间。实体上的 last_move_server_ms 仍是这次移动被接受的时刻，不能拿来给后续每一步盖章。
+    if (op == 2)
+        ev.snapshot.last_move_server_ms = NowMs();
     pushes->events.push_back(std::move(ev));
 }
 
@@ -645,11 +849,20 @@ MapMoveReject MapRuntime::Move(uint64_t map_instance_id, uint64_t player_id, flo
     if (walked_slide)
         ServerStats::move_walk_slide.fetch_add(1, std::memory_order_relaxed);
 
-    const float old_x = e.x;
-    const float old_z = e.z;
+    const float old_x = e.PresentedX();
+    const float old_z = e.PresentedZ();
     int old_cx = 0, old_cz = 0, new_cx = 0, new_cz = 0;
     st->data->WorldToAoiCell(old_x, old_z, &old_cx, &old_cz);
-    st->data->WorldToAoiCell(want_x, want_z, &new_cx, &new_cz);
+    const float step_dx = want_x - old_x;
+    const float step_dz = want_z - old_z;
+    const float step_dist = std::sqrt(step_dx * step_dx + step_dz * step_dz);
+    // 不到半米直接落到目标格。再远的步子留在现在的格子，按 move_speed 走过去。
+    // 以前 8 米才走，短步和被收短的步都会在 AOI 里瞬移一次然后站着。
+    const bool glide = step_dist >= 0.4f;
+    if (glide)
+        st->data->WorldToAoiCell(old_x, old_z, &new_cx, &new_cz);
+    else
+        st->data->WorldToAoiCell(want_x, want_z, &new_cx, &new_cz);
     RemoveFromCell(st.get(), e);
     e.x = want_x;
     e.y = want_y;
@@ -661,9 +874,34 @@ MapMoveReject MapRuntime::Move(uint64_t map_instance_id, uint64_t player_id, flo
     e.last_move_server_ms = t1;
     if (client_time_ms > 0)
         e.last_client_time_ms = client_time_ms;
+    const bool displaced = !(old_x == want_x && old_z == want_z);
+    if (displaced)
+        e.last_displace_ms = t1;
+    if (!glide) {
+        e.aoi_x = want_x;
+        e.aoi_z = want_z;
+        e.aoi_live = true;
+    } else if (!e.aoi_live) {
+        e.aoi_x = old_x;
+        e.aoi_z = old_z;
+        e.aoi_live = true;
+    }
+    float nvx = 0.f;
+    float nvz = 0.f;
+    if (displaced && step_dist > 1e-4f) {
+        // 呈现速度封顶在 move_speed。收包间隔只有几十毫秒时，用它做分母会在一帧里走到终点。
+        const float cap = e.move_speed > 0.f ? e.move_speed : 10.f;
+        nvx = step_dx / step_dist * cap;
+        nvz = step_dz / step_dist * cap;
+    }
+    const bool vel_changed = std::fabs(nvx - e.vx) > 0.05f || std::fabs(nvz - e.vz) > 0.05f;
+    e.vx = nvx;
+    e.vz = nvz;
+    if (vel_changed || e.move_start_ms == 0)
+        e.move_start_ms = t1;
     PlaceInCell(st.get(), e);
     const bool same_cell = old_cx == new_cx && old_cz == new_cz;
-    const auto neigh = NeighborhoodIds(*st, e.x, e.z);
+    const auto neigh = NeighborhoodIds(*st, e.PresentedX(), e.PresentedZ());
     auto self_vis = st->visible_targets.find(player_id);
     bool membership_stable = same_cell && neigh.size() <= static_cast<size_t>(st->max_visible) + 1 &&
                              self_vis != st->visible_targets.end();
@@ -680,7 +918,12 @@ MapMoveReject MapRuntime::Move(uint64_t map_instance_id, uint64_t player_id, flo
             membership_stable = false;
     }
     bool emitted_fast = false;
-    if (membership_stable) {
+    if (!displaced) {
+        // 坐标没变就不再给观察者发周期位置。自己的 Move 回包仍然带着权威坐标。
+        ServerStats::aoi_stationary_skip.fetch_add(1, std::memory_order_relaxed);
+        emitted_fast = true;
+    }
+    if (membership_stable && displaced) {
         auto wit = st->watchers.find(player_id);
         if (wit != st->watchers.end() && !wit->second.empty()) {
             emitted_fast = true;
@@ -1069,8 +1312,8 @@ bool MapRuntime::CollectFullView(uint64_t player_id, FullView *out) const {
     auto consider = [&](const MapEntity &other) {
         if (other.player_id == player_id || other.player_id == 0 || !other.connected)
             return;
-        const float dx = other.x - eit->second.x;
-        const float dz = other.z - eit->second.z;
+        const float dx = other.PresentedX() - eit->second.PresentedX();
+        const float dz = other.PresentedZ() - eit->second.PresentedZ();
         const float d2 = dx * dx + dz * dz;
         const bool in_push = ids.count(other.player_id) != 0;
         const bool within_32 = d2 <= out->radius_m * out->radius_m;
@@ -1080,7 +1323,12 @@ bool MapRuntime::CollectFullView(uint64_t player_id, FullView *out) const {
             if (n.id == other.player_id)
                 return;
         }
-        picked.push_back(Near{other.player_id, d2, other});
+        MapEntity shown = other;
+        if (shown.aoi_live) {
+            shown.x = shown.aoi_x;
+            shown.z = shown.aoi_z;
+        }
+        picked.push_back(Near{other.player_id, d2, shown});
     };
     for (uint64_t tid : ids) {
         auto tit = st->entities.find(tid);
@@ -1111,15 +1359,20 @@ bool MapRuntime::CollectFullView(uint64_t player_id, FullView *out) const {
         for (const auto &kv : st->entities) {
             if (kv.first == player_id || !kv.second.connected)
                 continue;
-            const float dx = kv.second.x - eit->second.x;
-            const float dz = kv.second.z - eit->second.z;
+            const float dx = kv.second.PresentedX() - eit->second.PresentedX();
+            const float dz = kv.second.PresentedZ() - eit->second.PresentedZ();
             if (dx * dx + dz * dz > out->radius_m * out->radius_m)
                 continue;
-            out->interest.push_back(kv.second);
+            MapEntity shown = kv.second;
+            if (shown.aoi_live) {
+                shown.x = shown.aoi_x;
+                shown.z = shown.aoi_z;
+            }
+            out->interest.push_back(shown);
         }
     }
     if (out->interest.empty()) {
-        const auto neigh = NeighborhoodIds(*st, eit->second.x, eit->second.z);
+        const auto neigh = NeighborhoodIds(*st, eit->second.PresentedX(), eit->second.PresentedZ());
         for (uint64_t id : neigh) {
             if (id == player_id)
                 continue;

@@ -866,6 +866,12 @@ message EntitySnapshot {
   int32 hp = 5;
   int32 max_hp = 6;
   uint64 state_seq = 7;
+  // 水平速度，米/秒。0 表示停住。旧客户端不读这两个字段时仍用 position。
+  float vx = 8;
+  float vz = 9;
+  // 这组速度开始生效的服务器时间，毫秒。与 AoiEvent.server_time_ms 同一时钟。
+  // 外推用 position + (vx,vz) * (现在 - server_time_ms)，不要用本字段当地点时间。
+  int64 move_start_ms = 10;
 }
 
 message GetSelfProfileReq {

@@ -38,9 +38,19 @@ struct MapEntity {
     std::string session_id;
     uint64_t last_client_seq = 0;
     int64_t last_move_server_ms = 0;
+    int64_t last_displace_ms = 0;
     int64_t disconnected_ms = 0;
     int64_t last_client_time_ms = 0;
     float move_speed = 10.f;
+    float vx = 0;
+    float vz = 0;
+    int64_t move_start_ms = 0;
+    // 别人看见的位置。大步移动时权威点先到终点，呈现点沿速度走过去，避免一帧离开视野。
+    float aoi_x = 0;
+    float aoi_z = 0;
+    bool aoi_live = false;
+    float PresentedX() const { return aoi_live ? aoi_x : x; }
+    float PresentedZ() const { return aoi_live ? aoi_z : z; }
 };
 
 struct AoiRecipientEvent {
@@ -123,6 +133,10 @@ public:
     std::vector<uint64_t> ListPlayers() const;
     int TotalEntityCount() const;
     void ClearForTest();
+    /** 最近 5 秒内坐标变过的算移动，其余在线实体算静止。没有人时两个输出都是 0。 */
+    void CopyMotionCounts(int64_t *moving, int64_t *stationary) const;
+    /** 把大步移动的呈现点朝权威坐标推进 0.2 秒，并补上因此产生的进出视野。 */
+    void AdvancePresented(std::vector<AoiPushBatch> *batches);
 
 private:
     MapRuntime() = default;
@@ -136,8 +150,17 @@ private:
         std::unordered_map<uint64_t, std::unordered_set<uint64_t>> visible_targets;
         // target -> viewers who subscribed to that target. MOVE uses this, not the mover's own set.
         std::unordered_map<uint64_t, std::unordered_set<uint64_t>> watchers;
-        // watcher -> target -> 上次发出 MOVE 的服务器时间。近处 200ms，远处 500ms。
-        std::unordered_map<uint64_t, std::unordered_map<uint64_t, int64_t>> move_notify_ms;
+        struct MoveNotify {
+            int64_t ms = 0;
+            float x = 0;
+            float z = 0;
+            float vx = 0;
+            float vz = 0;
+            int64_t move_start_ms = 0;
+            bool has = false;
+        };
+        // watcher -> target -> 上次发出的 MOVE。外推关掉时只用 ms。
+        std::unordered_map<uint64_t, std::unordered_map<uint64_t, MoveNotify>> move_notify_ms;
         int view_radius = -1;
         int max_visible = 200;  // frozen when the instance is created
         uint64_t epoch = 0;

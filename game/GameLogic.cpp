@@ -11,6 +11,7 @@
 #include "MapInstanceRegistry.h"
 #include "MapPlacement.h"
 #include "MapRuntime.h"
+#include "MoveSendConfig.h"
 #include "PublicError.h"
 #include "SceneKind.h"
 
@@ -162,6 +163,11 @@ void FillEntitySnapshot(const MapEntity &e, game::EntitySnapshot *out) {
     out->set_hp(e.hp);
     out->set_max_hp(e.max_hp);
     out->set_state_seq(e.state_seq);
+    if (AoiExtrapolateEnabled()) {
+        out->set_vx(e.vx);
+        out->set_vz(e.vz);
+        out->set_move_start_ms(e.move_start_ms);
+    }
 }
 
 #ifdef WEBSERVER_ENABLE_BRPC
@@ -169,11 +175,19 @@ void FillMoveSnapshot(const MapEntity &e, game::EntitySnapshot *out) {
     if (!out)
         return;
     out->set_player_id(e.player_id);
+    out->set_player_name(e.player_name);
     out->mutable_position()->set_x(e.x);
     out->mutable_position()->set_y(e.y);
     out->mutable_position()->set_z(e.z);
     out->set_yaw(e.yaw);
+    out->set_hp(e.hp);
+    out->set_max_hp(e.max_hp);
     out->set_state_seq(e.state_seq);
+    if (AoiExtrapolateEnabled()) {
+        out->set_vx(e.vx);
+        out->set_vz(e.vz);
+        out->set_move_start_ms(e.move_start_ms);
+    }
 }
 
 std::mutex g_aoi_mu;
@@ -441,6 +455,15 @@ void PublishAoiBatch(const AoiPushBatch &batch) {
 GameLogic &GameLogic::Instance() {
     static GameLogic g;
     return g;
+}
+
+void GameLogic::AdvancePresentedMotion() {
+    std::vector<AoiPushBatch> batches;
+    MapRuntime::Instance().AdvancePresented(&batches);
+    for (const auto &batch : batches) {
+        if (!batch.events.empty())
+            EmitAoi(batch);
+    }
 }
 
 void GameLogic::SweepDisconnected() {

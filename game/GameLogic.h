@@ -70,6 +70,7 @@ public:
     void EmitAoi(const AoiPushBatch &batch);
     /** 宽限到期后删掉断线实体，并再通知周围还在线的人。 */
     void SweepDisconnected();
+    void AdvancePresentedMotion();
     /** 进程退出前排空并收回 AOI 发布线程。没启动过则什么都不做。 */
     void StopAoiPublisher();
     /** 转移冻结期间暂存该玩家的 AOI，Commit/Import 后按原顺序重放。 */

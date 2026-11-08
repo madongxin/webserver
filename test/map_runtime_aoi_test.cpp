@@ -8,6 +8,7 @@
 
 #include <cmath>
 #include <cstdio>
+#include <cstdlib>
 #include <deque>
 #include <limits>
 #include <string>
@@ -75,6 +76,7 @@ int CountOp(const AoiPushBatch &b, uint64_t recipient, int op) {
 }  // namespace
 
 int main() {
+    ::setenv("GAMEMESH_AOI_EXTRAPOLATE", "0", 1);
     const auto lock_samples_before = ServerStats::aoi_lock_samples.load();
     const auto lock_hold_before = ServerStats::aoi_lock_hold_us_sum.load();
     auto data = MakeOpen();
@@ -104,11 +106,29 @@ int main() {
            "p2 move nearby");
     Expect(CountOp(pushes, 1, 2) == 1, "p1 got MOVE");
 
-    // 走出视野（cell 3：x=35）
+    // 走出视野（cell 3：x=35）。这一步先留在现在的位置，按 move_speed 走出去才 LEAVE。
     pushes = {};
     Expect(rt.Move(1, 2, 35, 0, 2, 0, 2, 4000, &conf, &pushes, &err) == MapMoveReject::Ok,
            "p2 leave view");
+    Expect(CountOp(pushes, 1, 3) == 0, "long step does not leave before the body walks out");
+    Expect(std::fabs(conf.x - 35.f) < 0.05f, "authority is the destination");
+    Expect(conf.aoi_live && conf.aoi_x < 16.f, "presented position stays on the path");
+    Expect(std::fabs(conf.vx - 10.f) < 0.2f, "long step walks at move_speed");
+    for (int step = 0; step < 40 && CountOp(pushes, 1, 3) == 0; ++step) {
+        std::vector<AoiPushBatch> more;
+        rt.AdvancePresented(&more);
+        for (const auto &b : more) {
+            for (const auto &ev : b.events)
+                pushes.events.push_back(ev);
+        }
+    }
     Expect(CountOp(pushes, 1, 3) == 1, "p1 got LEAVE");
+    float walked_x = 0.f;
+    for (const auto &ev : pushes.events) {
+        if (ev.op == 2 && ev.recipient_id == 1 && ev.snapshot.player_id == 2 && ev.snapshot.x > walked_x)
+            walked_x = ev.snapshot.x;
+    }
+    Expect(walked_x > 14.f && walked_x < 35.f, "AOI position walks toward the destination");
 
     // 跨地图隔离
     pushes = {};
@@ -305,11 +325,15 @@ int main() {
     pushes = {};
     Expect(rt.Move(31, 2, 25.4f, 0, 1, 0, 2, 8200, &conf, &pushes, &err, true) == MapMoveReject::Ok,
            "far move 2");
-    Expect(CountOp(pushes, 1, 2) == 0, "far move inside 500ms is not emitted");
+    Expect(CountOp(pushes, 1, 2) == 0, "far move inside the far interval is not emitted");
     pushes = {};
-    Expect(rt.Move(31, 2, 25.6f, 0, 1, 0, 3, 8500, &conf, &pushes, &err, true) == MapMoveReject::Ok,
+    Expect(rt.Move(31, 2, 25.6f, 0, 1, 0, 3, 11000, &conf, &pushes, &err, true) == MapMoveReject::Ok,
            "far move 3");
-    Expect(CountOp(pushes, 1, 2) == 1, "far move after 500ms is sent");
+    Expect(CountOp(pushes, 1, 2) == 1, "far move after 3000ms is sent");
+    pushes = {};
+    Expect(rt.Move(31, 2, 25.6f, 0, 1, 0, 4, 15000, &conf, &pushes, &err, true) == MapMoveReject::Ok,
+           "stationary move");
+    Expect(CountOp(pushes, 1, 2) == 0, "unchanged x,z is not broadcast");
 
     std::unordered_map<uint64_t, int64_t> last_sent;
     std::unordered_map<uint64_t, int> last_round;
@@ -343,6 +367,39 @@ int main() {
     }
     Expect(seen == 80, "every one of 80 movers gets a send slot");
     Expect(max_gap > 0 && max_gap <= 2, "no mover waits more than two frames");
+    ::setenv("GAMEMESH_AOI_EXTRAPOLATE", "1", 1);
+    rt.ClearForTest();
+    pushes = {};
+    Expect(rt.Enter(40, data, Ent(1, 1, 1), &self, &snap, &pushes, &err, 3), "extrap enter watcher");
+    Expect(rt.Enter(40, data, Ent(2, 10, 1), &self, &snap, &pushes, &err, 3), "extrap enter near");
+    pushes = {};
+    Expect(rt.Move(40, 2, 15.f, 0, 1, 0, 1, 1000, &conf, &pushes, &err, true) == MapMoveReject::Ok,
+           "extrap straight 1");
+    Expect(CountOp(pushes, 1, 2) == 1, "first straight step is broadcast");
+    Expect(std::fabs(conf.vx - 10.f) < 0.2f, "first step uses walk speed when there is no previous time");
+    pushes = {};
+    Expect(rt.Move(40, 2, 20.f, 0, 1, 0, 2, 1500, &conf, &pushes, &err, true) == MapMoveReject::Ok,
+           "extrap straight 2");
+    Expect(CountOp(pushes, 1, 2) == 0, "same velocity inside 4s is not broadcast");
+    pushes = {};
+    Expect(rt.Move(40, 2, 20.f, 0, 6, 0, 3, 2000, &conf, &pushes, &err, true) == MapMoveReject::Ok,
+           "extrap turn");
+    Expect(CountOp(pushes, 1, 2) == 1, "a velocity change is broadcast");
+
+    rt.ClearForTest();
+    pushes = {};
+    Expect(rt.Enter(41, data, Ent(1, 1, 1), &self, &snap, &pushes, &err, 4), "extrap far watcher");
+    Expect(rt.Enter(41, data, Ent(2, 1, 30), &self, &snap, &pushes, &err, 4), "extrap far subject");
+    pushes = {};
+    Expect(rt.Move(41, 2, 6.f, 0, 30, 0, 1, 1000, &conf, &pushes, &err, true) == MapMoveReject::Ok,
+           "extrap far 1");
+    Expect(CountOp(pushes, 1, 2) == 1, "far velocity start is broadcast");
+    pushes = {};
+    Expect(rt.Move(41, 2, 11.f, 0, 30, 0, 2, 1500, &conf, &pushes, &err, true) == MapMoveReject::Ok,
+           "extrap far 2");
+    Expect(CountOp(pushes, 1, 2) == 0, "far same velocity has no periodic keyframe");
+    ::unsetenv("GAMEMESH_AOI_EXTRAPOLATE");
+
     Expect(ServerStats::aoi_lock_samples.load() > lock_samples_before,
            "aoi lock samples increased");
     Expect(ServerStats::aoi_lock_hold_us_sum.load() > lock_hold_before,

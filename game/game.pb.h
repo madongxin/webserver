@@ -22385,6 +22385,9 @@ class EntitySnapshot PROTOBUF_FINAL :
     kHpFieldNumber = 5,
     kStateSeqFieldNumber = 7,
     kMaxHpFieldNumber = 6,
+    kVxFieldNumber = 8,
+    kMoveStartMsFieldNumber = 10,
+    kVzFieldNumber = 9,
   };
   // string player_name = 2;
   void clear_player_name();
@@ -22474,6 +22477,33 @@ class EntitySnapshot PROTOBUF_FINAL :
   void _internal_set_max_hp(::PROTOBUF_NAMESPACE_ID::int32 value);
   public:
 
+  // float vx = 8;
+  void clear_vx();
+  float vx() const;
+  void set_vx(float value);
+  private:
+  float _internal_vx() const;
+  void _internal_set_vx(float value);
+  public:
+
+  // int64 move_start_ms = 10;
+  void clear_move_start_ms();
+  ::PROTOBUF_NAMESPACE_ID::int64 move_start_ms() const;
+  void set_move_start_ms(::PROTOBUF_NAMESPACE_ID::int64 value);
+  private:
+  ::PROTOBUF_NAMESPACE_ID::int64 _internal_move_start_ms() const;
+  void _internal_set_move_start_ms(::PROTOBUF_NAMESPACE_ID::int64 value);
+  public:
+
+  // float vz = 9;
+  void clear_vz();
+  float vz() const;
+  void set_vz(float value);
+  private:
+  float _internal_vz() const;
+  void _internal_set_vz(float value);
+  public:
+
   // @@protoc_insertion_point(class_scope:game.EntitySnapshot)
  private:
   class _Internal;
@@ -22488,6 +22518,9 @@ class EntitySnapshot PROTOBUF_FINAL :
   ::PROTOBUF_NAMESPACE_ID::int32 hp_;
   ::PROTOBUF_NAMESPACE_ID::uint64 state_seq_;
   ::PROTOBUF_NAMESPACE_ID::int32 max_hp_;
+  float vx_;
+  ::PROTOBUF_NAMESPACE_ID::int64 move_start_ms_;
+  float vz_;
   mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
   friend struct ::TableStruct_game_2eproto;
 };
@@ -54211,6 +54244,66 @@ inline void EntitySnapshot::_internal_set_state_seq(::PROTOBUF_NAMESPACE_ID::uin
 inline void EntitySnapshot::set_state_seq(::PROTOBUF_NAMESPACE_ID::uint64 value) {
   _internal_set_state_seq(value);
   // @@protoc_insertion_point(field_set:game.EntitySnapshot.state_seq)
+}
+
+// float vx = 8;
+inline void EntitySnapshot::clear_vx() {
+  vx_ = 0;
+}
+inline float EntitySnapshot::_internal_vx() const {
+  return vx_;
+}
+inline float EntitySnapshot::vx() const {
+  // @@protoc_insertion_point(field_get:game.EntitySnapshot.vx)
+  return _internal_vx();
+}
+inline void EntitySnapshot::_internal_set_vx(float value) {
+  
+  vx_ = value;
+}
+inline void EntitySnapshot::set_vx(float value) {
+  _internal_set_vx(value);
+  // @@protoc_insertion_point(field_set:game.EntitySnapshot.vx)
+}
+
+// float vz = 9;
+inline void EntitySnapshot::clear_vz() {
+  vz_ = 0;
+}
+inline float EntitySnapshot::_internal_vz() const {
+  return vz_;
+}
+inline float EntitySnapshot::vz() const {
+  // @@protoc_insertion_point(field_get:game.EntitySnapshot.vz)
+  return _internal_vz();
+}
+inline void EntitySnapshot::_internal_set_vz(float value) {
+  
+  vz_ = value;
+}
+inline void EntitySnapshot::set_vz(float value) {
+  _internal_set_vz(value);
+  // @@protoc_insertion_point(field_set:game.EntitySnapshot.vz)
+}
+
+// int64 move_start_ms = 10;
+inline void EntitySnapshot::clear_move_start_ms() {
+  move_start_ms_ = PROTOBUF_LONGLONG(0);
+}
+inline ::PROTOBUF_NAMESPACE_ID::int64 EntitySnapshot::_internal_move_start_ms() const {
+  return move_start_ms_;
+}
+inline ::PROTOBUF_NAMESPACE_ID::int64 EntitySnapshot::move_start_ms() const {
+  // @@protoc_insertion_point(field_get:game.EntitySnapshot.move_start_ms)
+  return _internal_move_start_ms();
+}
+inline void EntitySnapshot::_internal_set_move_start_ms(::PROTOBUF_NAMESPACE_ID::int64 value) {
+  
+  move_start_ms_ = value;
+}
+inline void EntitySnapshot::set_move_start_ms(::PROTOBUF_NAMESPACE_ID::int64 value) {
+  _internal_set_move_start_ms(value);
+  // @@protoc_insertion_point(field_set:game.EntitySnapshot.move_start_ms)
 }
 
 // -------------------------------------------------------------------

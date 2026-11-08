@@ -2177,6 +2177,7 @@ int RunServer(const LaunchOpts &launch) {
         MapLeaseKeeper::Instance().SetLeaseSec(lease_sec);
         const double hb = std::max(5.0, static_cast<double>(lease_sec) / 3.0);
         loop.RunEvery(hb, []() { MapLeaseKeeper::Instance().Tick(); });
+        loop.RunEvery(0.2, []() { GameLogic::Instance().AdvancePresentedMotion(); });
         loop.RunEvery(5.0, []() { GameLogic::Instance().SweepDisconnected(); });
         LOG_INFO << "MapLeaseKeeper interval_sec=" << hb << " lease_sec=" << lease_sec;
     }

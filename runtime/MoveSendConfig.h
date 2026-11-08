@@ -21,6 +21,19 @@ inline int SlowCloseMs() { return MoveEnvInt("GAMEMESH_SLOW_CLOSE_MS", 90000, 10
 inline int NearQuotaPercent() { return MoveEnvInt("GAMEMESH_NEAR_QUOTA_PERCENT", 60, 0, 100); }
 inline int NearHardSilenceMs() { return MoveEnvInt("GAMEMESH_NEAR_SILENCE_MS", 3000, 200, 120000); }
 inline int FarHardSilenceMs() { return MoveEnvInt("GAMEMESH_FAR_SILENCE_MS", 15000, 200, 120000); }
+/** 远层（水平距离 ≥ 16 米）两次位置广播的最小间隔。待压测校准。
+ *  3 秒太稀，满员时视野里的人看起来是站着。500 毫秒仍低于近处的 200 毫秒。
+ *  静默达到 FarHardSilenceMs 时仍会补发。 */
+inline int FarMoveIntervalMs() { return MoveEnvInt("GAMEMESH_FAR_MOVE_INTERVAL_MS", 500, 200, 120000); }
+/** 只有显式 GAMEMESH_AOI_EXTRAPOLATE=1 才按速度扣广播。默认关，近处 200ms、远处按上面的间隔发坐标。 */
+inline bool AoiExtrapolateEnabled() {
+    const char *env = std::getenv("GAMEMESH_AOI_EXTRAPOLATE");
+    return env && env[0] == '1' && env[1] == '\0';
+}
+/** 近处移动实体的关键帧间隔。待压测校准。 */
+inline int ExtrapKeyframeMs() { return MoveEnvInt("GAMEMESH_EXTRAP_KEYFRAME_MS", 4000, 3000, 5000); }
+/** 外推误差超过这么多米才补发。待压测校准。 */
+inline int ExtrapErrorCm() { return MoveEnvInt("GAMEMESH_EXTRAP_ERROR_CM", 100, 10, 10000); }
 inline int MoveBatchMinEvents() { return MoveEnvInt("GAMEMESH_MOVE_BATCH_MIN", 8, 1, 40); }
 inline int FrameCapPreLogin() { return MoveEnvInt("GAMEMESH_FRAME_CAP_PRELOGIN", 16 * 1024, 1024, 1024 * 1024); }
 inline int FrameCapLogin() { return MoveEnvInt("GAMEMESH_FRAME_CAP_LOGIN", 64 * 1024, 1024, 4 * 1024 * 1024); }

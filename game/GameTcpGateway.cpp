@@ -463,7 +463,9 @@ void FlushMoveSlot(const std::shared_ptr<MoveCoalesceSlot> &slot,
                 conns = 1;
             const int per = std::max(
                 1, AoiMoveCoalesceLedger::EgressBudgetBytesPerSec() / static_cast<int>(conns));
-            picked = slot->ledger.Pick(now, per, kAoiMoveEventBytes, kMaxMoveEntities, &wait_ms);
+            const int event_bytes =
+                AoiExtrapolateEnabled() ? kAoiMoveExtrapEventBytes : kAoiMoveEventBytes;
+            picked = slot->ledger.Pick(now, per, event_bytes, kMaxMoveEntities, &wait_ms);
             if (!picked.empty()) {
                 delta.set_map_instance_id(slot->map_instance_id);
                 for (const auto &stamp : picked) {
@@ -892,6 +894,20 @@ void ScheduleIdleCheck(std::weak_ptr<TcpConnection> weak, uint64_t id) {
         uint32_t idle_ms = gameproto::IdleTimeoutMs();
         if (!hello_ok && ClientHelloRequired())
             idle_ms = gameproto::HelloDeadlineMs();
+        // 正式环境已绑定连接的空闲超时是 1 小时。没绑上玩家的重连套接字不能跟着留着，
+        // 否则 TCP 数会高于在线人数。20 秒够 Hello 和 Login，登录本身是几百毫秒。
+        bool bound = false;
+        {
+            std::lock_guard<std::mutex> lk(g_bind_mu);
+            auto bit = g_conn_bind.find(id);
+            bound = bit != g_conn_bind.end() && bit->second.player_id != 0;
+        }
+        if (!bound && GatewayConnGuard::Instance().ConnectedAgeMs(id) >= 20000) {
+            OpsMetrics::Instance().IncIdleTimeout();
+            LOG_WARN << "Gateway unbound timeout conn#" << id << " hello_ok=" << hello_ok;
+            c->HandleClose();
+            return;
+        }
         if (idle_ms < 200)
             idle_ms = 200;
         int unread = 0;

@@ -15,11 +15,12 @@ struct AoiMoveStamp {
 };
 
 /**
- * 40 个移动事件打成一帧后的平均字节，含 4 字节长度头和 GameResponse。
- * 实测 frame_bytes=1498，1498/40=37.45，向上取整 38。单事件帧是 54 字节。
- * 见 docs/perf_audit/aoi_move_egress.md。
+ * 位置包现在带上名字和血量，避免客户端把缺省的 0 画成 0/0 后停住。
+ * 原来 40 人一帧约 38 字节/人。名字和 hp、max_hp 大约再加 14 字节。
  */
-constexpr int kAoiMoveEventBytes = 38;
+constexpr int kAoiMoveEventBytes = 52;
+/** 带 vx、vz、move_start_ms 的粗算字节。待压测校准。预算不提高，估大只会少发。 */
+constexpr int kAoiMoveExtrapEventBytes = 58;
 /**
  * 一个 TCP 小段的线上开销：以太网头 14 + IPv4 头 20 + TCP 头 20 + 12 字节选项/填充余量。
  * 预算按 payload + 这个常量记账，避免 54 字节小帧把真实流量算少。

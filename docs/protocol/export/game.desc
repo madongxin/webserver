@@ -1,5 +1,5 @@
 
-ƒÏ
+àÌ
 
 game.protogame"∆
 LoginReq
@@ -747,7 +747,7 @@ move_speed (R	moveSpeed!
 attack_speed (RattackSpeed#
 stats_version (RstatsVersion
 
-life_state (	R	lifeState"Ã
+life_state (	R	lifeState"ê
 EntitySnapshot
 	player_id (RplayerId
 player_name (	R
@@ -757,7 +757,11 @@ playerName&
 yaw (Ryaw
 hp (Rhp
 max_hp (RmaxHp
-	state_seq (RstateSeq"0
+	state_seq (RstateSeq
+vx (Rvx
+vz	 (Rvz"
+move_start_ms
+ (RmoveStartMs"0
 GetSelfProfileReq
 	player_id (RplayerId"é
 GetSelfProfileRsp
