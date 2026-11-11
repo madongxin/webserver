@@ -6,6 +6,7 @@
 #include "GameTcpGateway.h"
 
 #include "AoiMoveCoalesceLedger.h"
+#include "AoiOutboundOrder.h"
 #include "AoiStrip.h"
 #include "InboundFrameBatch.h"
 #include "MoveSendConfig.h"
@@ -446,7 +447,7 @@ void FlushMoveSlot(const std::shared_ptr<MoveCoalesceSlot> &slot,
             close_for_slow = true;
         }
         if (slot->slow.snapshot_due() && !slot->resync.empty()) {
-            if (AoiV2VisibleSet()) {
+            if (!ReplayClearedMoves(AoiV2VisibleSet())) {
                 slot->resync.clear();
                 slot->slow.NoteSnapshotSent();
             } else {
@@ -648,7 +649,8 @@ bool OfferCoalescedMove(const std::shared_ptr<TcpConnection> &c, const std::stri
                 continue;
             auto &kept = slot->by_entity[id];
             // 序号不增加的移动客户端会整条丢掉。只保留更大的 state_seq。
-            if (kept.has_entity() && ev.entity().state_seq() < kept.entity().state_seq())
+            if (!KeepCoalescedMoveSeq(kept.has_entity(), kept.entity().state_seq(),
+                                      ev.entity().state_seq()))
                 continue;
             kept = ev;
             slot->ledger.Offer(id, ev.entity().state_seq(), now, MoveLayer(slot.get(), viewer, ev));
@@ -741,6 +743,28 @@ void RememberBind(uint64_t conn_id, uint64_t player_id, const std::string &token
                     }
                     if (!ok)
                         return 0;
+                    if (urgent) {
+                        std::shared_ptr<MoveCoalesceSlot> slot;
+                        {
+                            std::lock_guard<std::mutex> lk(g_move_slots_mu);
+                            auto it = g_move_slots.find(live->id());
+                            if (it != g_move_slots.end())
+                                slot = it->second;
+                        }
+                        if (slot) {
+                            std::string buf = frame;
+                            std::string payload;
+                            game::GameResponse gr;
+                            if (gameproto::DecodeOneFrame(&buf, &payload) ==
+                                    gameproto::FrameDecodeResult::Complete &&
+                                gr.ParseFromString(payload) && gr.has_aoi_delta()) {
+                                std::lock_guard<std::mutex> lk(slot->mu);
+                                for (const auto &ev : gr.aoi_delta().events())
+                                    ApplyUrgentToCoalesceSlot(&slot->by_entity, ev.op(),
+                                                              ev.entity().player_id());
+                            }
+                        }
+                    }
                     OpsMetrics::Instance().AddGatewayTxBytes(frame.size());
                     OpsMetrics::Instance().AddGatewayTxFrames(1);
                     return 1;
