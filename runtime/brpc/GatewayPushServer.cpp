@@ -121,7 +121,9 @@ void GatewayPushServiceImpl::PushBatch(::google::protobuf::RpcController *contro
                 inner_body = raw.substr(4);
             else
                 inner_body = raw;
-            if (seq != 0) {
+            // AOI 的 ENTER/LEAVE 必须和 MOVE 一样是顶层 aoi_delta。
+            // 包进 server_push 后，正在播坐标的那条路径看不到 op=3，模型就留在最后一点。
+            if (seq != 0 && message_type != "aoi.delta.v1") {
                 game::GameResponse env_msg;
                 env_msg.set_ok(true);
                 env_msg.set_message("server_push");
@@ -141,6 +143,10 @@ void GatewayPushServiceImpl::PushBatch(::google::protobuf::RpcController *contro
             return gameproto::EncodeFrame(inner_body, frame);
         };
         env.send = [&](const std::string &frame) {
+            // AOI 和 MOVE 走同一条能写进连接的急送。可靠队列在回包占满时会把 LEAVE 卡住，
+            // 观察者名单已经删掉，这一帧丢了客户端就一直留着旧坐标。
+            if (message_type == "aoi.delta.v1" && found && bind.send_frame_urgent)
+                return bind.send_frame_urgent(frame);
             if (reliable && found && order.q)
                 return ReliableOutboxHub::Instance().Accept(order, assigned_seq, frame);
             return GatewayConnRegistry::Instance().SendBySession(m.session_id(), frame, false);

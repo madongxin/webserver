@@ -108,7 +108,7 @@ int main() {
     std::string hash_1002;
     Expect(MapStaticData::ReadSha256File(dir + "/1002.grid.json.sha256", &hash_1002, &err),
            "read 1002.sha256");
-    Expect(hash_1002 == "46d5bb506de2f0418a85fce8d8e285dfec664023122b2692cecf818a26be75d9",
+    Expect(hash_1002 == "f1076df13fb228766ba36ad77447e1db47e6ea39729117db2e0b097ea00e18a0",
            "1002 sidecar hash");
     Expect(FileHasher::HashFile(dir + "/1002.grid.json") == hash_1002, "1002 file hash matches sidecar");
     std::shared_ptr<const MapStaticData> data1002;
@@ -119,7 +119,7 @@ int main() {
         Expect(data1002->data_version() == 1, "1002 data_version 1");
         Expect(data1002->scene_name() == "TerrainDemoScene", "1002 scene");
         Expect(data1002->grid_width() == 498 && data1002->grid_height() == 498, "498x498");
-        Expect(data1002->aoi_cell_size() == 32.f, "1002 aoi 32");
+        Expect(data1002->aoi_cell_size() == 16.f, "1002 aoi 16");
         Expect(data1002->nav_sample_step() == 8.f, "1002 step 8");
         Expect(data1002->default_spawn().id == "default", "1002 spawn id");
         Expect(data1002->IsWalkable(179.3f, 324.2f), "1002 spawn walkable");
@@ -138,7 +138,7 @@ int main() {
     Expect(MapCatalog::Instance().Get(1001)->aoi_cell_size() == 12.f, "catalog 1001 aoi");
     Expect(MapCatalog::Instance().Get(1002) != nullptr, "catalog has 1002");
     Expect(MapCatalog::Instance().Get(1002)->sha256() == hash_1002, "catalog 1002 hash");
-    Expect(MapCatalog::Instance().Get(1002)->aoi_cell_size() == 32.f, "catalog 1002 aoi");
+    Expect(MapCatalog::Instance().Get(1002)->aoi_cell_size() == 16.f, "catalog 1002 aoi");
     Expect(MapCatalog::Instance().Get(1002)->nav_sample_step() == 8.f, "catalog 1002 step");
     Expect(MapCatalog::Instance().ManifestEntries().size() == 5, "manifest 5 maps");
     {
@@ -148,7 +148,7 @@ int main() {
                "1001 legacy kind");
         Expect(MapCatalog::Instance().GetScenePolicy(1002, &pol) &&
                    pol.kind == SceneKind::Line && pol.soft_cap == 300 &&
-                   pol.hard_cap == 300 && pol.aoi_view_radius_cells == 1 &&
+                   pol.hard_cap == 300 && pol.aoi_view_radius_cells == 2 &&
                    pol.aoi_max_visible == 200 &&
                    pol.spawn_scatter_radius == 4.f,
                "1002 LINE 300/300 scatter 4");

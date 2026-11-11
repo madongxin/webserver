@@ -83,7 +83,7 @@ void StoreLocalReplay(const GatewayPushItem &item) {
 
 }  // namespace
 
-bool PushGrouped(std::vector<GatewayPushItem> items) {
+bool PushGrouped(std::vector<GatewayPushItem> items, std::unordered_map<uint64_t, bool> *written) {
     if (items.empty())
         return true;
     std::unordered_map<std::string, std::vector<GatewayPushItem>> by_gw;
@@ -153,8 +153,12 @@ bool PushGrouped(std::vector<GatewayPushItem> items) {
                     stored.server_seq = row.server_seq();
                     if (item.reliable)
                         StoreLocalReplay(stored);
+                    if (written)
+                        (*written)[item.player_id] = true;
                     continue;
                 }
+                if (written)
+                    (*written)[item.player_id] = false;
                 if (reason >= 1 && reason <= 10)
                     ++by_reason[static_cast<size_t>(reason)];
                 NoteReject(reason == 0 ? static_cast<int>(PushAdmitReason::SendFailed) : reason);

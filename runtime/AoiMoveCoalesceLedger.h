@@ -55,8 +55,17 @@ public:
     };
 
     void EnableLegacyAccountingForTest(bool on) { legacy_ = on; }
-    void SetSendIntervalMs(int ms) { coalesce_interval_ms_ = ms; }
+    void SetEnforceByteBudget(bool on) { enforce_budget_ = on; }
     void SetQuotaPercent(int pct) { quota_numerator_ = pct; }
+    void SetSendIntervalMs(int ms) { coalesce_interval_ms_ = ms; }
+    /** 慢客户端降级时只拉长远层发送间隔。1 是不额外拉长。 */
+    void SetFarIntervalScale(int scale) {
+        if (scale < 1)
+            scale = 1;
+        if (scale > 8)
+            scale = 8;
+        far_interval_scale_ = scale;
+    }
     int charged_total() const { return charged_total_; }
     void ClearPending() {
         for (auto &kv : entities_) {
@@ -138,6 +147,23 @@ public:
             if (limit > max_n)
                 limit = max_n;
         }
+        // 字节预算不够时也不能把已经走出约 200ms 的人留在槽里。客户端只播收到的坐标，
+        // 隔几秒才收到一个点就会停住，再一下子出现在几十米外。
+        // 分层开关打开时不抬人数，字节配额是硬上限，静默可以变长。
+        if (!legacy_ && !enforce_budget_) {
+            int due = 0;
+            for (const auto &kv : entities_) {
+                if (kv.second.in_flight || kv.second.pending_since_ms <= 0)
+                    continue;
+                const int64_t gap = kv.second.last_written_ms <= 0
+                                        ? 1000000
+                                        : now - kv.second.last_written_ms;
+                if (gap >= 200)
+                    ++due;
+            }
+            if (due > limit)
+                limit = due < max_n ? due : max_n;
+        }
         if (limit <= 0) {
             if (wait_ms) {
                 *wait_ms = 1000 - (now - budget_window_ms_);
@@ -199,6 +225,12 @@ public:
                 const int64_t age = pend > 0 ? now - pend : 0;
                 c.layer = layer;
                 c.hard = layer == 1 ? age >= NearHardSilenceMs() : age >= FarHardSilenceMs();
+                if (far_interval_scale_ > 1 && layer != 1 && !c.hard) {
+                    const int64_t need =
+                        static_cast<int64_t>(AoiV2FarIntervalMs()) * far_interval_scale_;
+                    if (c.gap < need)
+                        continue;
+                }
                 if (layer == 1)
                     near.push_back(c);
                 else
@@ -416,6 +448,8 @@ public:
 
 private:
     bool legacy_ = false;
+    bool enforce_budget_ = false;
+    int far_interval_scale_ = 1;
     int coalesce_interval_ms_ = 200;
     int quota_numerator_ = 100;
     int window_budget_ = 0;

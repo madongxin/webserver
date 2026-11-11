@@ -6,12 +6,14 @@
 #include "MapStaticData.h"
 #include "ServerStats.h"
 
+#include <chrono>
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
 #include <deque>
 #include <limits>
 #include <string>
+#include <thread>
 #include <unordered_map>
 #include <vector>
 
@@ -106,7 +108,7 @@ int main() {
            "p2 move nearby");
     Expect(CountOp(pushes, 1, 2) == 1, "p1 got MOVE");
 
-    // 走出视野（cell 3：x=35）。这一步先留在现在的位置，按 move_speed 走出去才 LEAVE。
+    // 进入半径 1，外圈再多 1 格。x=35 是 cell 3，已经走出外圈。
     pushes = {};
     Expect(rt.Move(1, 2, 35, 0, 2, 0, 2, 4000, &conf, &pushes, &err) == MapMoveReject::Ok,
            "p2 leave view");
@@ -115,6 +117,7 @@ int main() {
     Expect(conf.aoi_live && conf.aoi_x < 16.f, "presented position stays on the path");
     Expect(std::fabs(conf.vx - 10.f) < 0.2f, "long step walks at move_speed");
     for (int step = 0; step < 40 && CountOp(pushes, 1, 3) == 0; ++step) {
+        std::this_thread::sleep_for(std::chrono::milliseconds(200));
         std::vector<AoiPushBatch> more;
         rt.AdvancePresented(&more);
         for (const auto &b : more) {
@@ -179,6 +182,18 @@ int main() {
            "too fast clamped ok");
     Expect(conf.x > 2.f && conf.x < 9.f, "clamped x between start and target");
     Expect(std::fabs(conf.z - 1.f) < 1e-3f, "clamped z unchanged");
+    // 没有上一次时间的长路点按整段接受，不能收成 1 秒后停在十几米处。
+    rt.ClearForTest();
+    Expect(rt.Enter(4, data, Ent(9, 1, 1), &self, &snap, &pushes, &err), "enter long leg");
+    Expect(rt.Move(4, 9, 35, 0, 1, 0, 1, 1000, &conf, &pushes, &err) == MapMoveReject::Ok,
+           "first long leg accepted");
+    Expect(conf.x > 30.f, "first long leg is not clamped to one second");
+    // 上一个点 50 毫秒后的下一段终点仍是整段，不能收成 1 米。
+    Expect(rt.Move(4, 9, 5, 0, 1, 0, 2, 2000, &conf, &pushes, &err) == MapMoveReject::Ok,
+           "settle before the next route");
+    Expect(rt.Move(4, 9, 35, 0, 1, 0, 3, 2050, &conf, &pushes, &err) == MapMoveReject::Ok,
+           "route 50ms later accepted");
+    Expect(conf.x > 30.f, "route is not clamped to the 50ms budget");
 
     // 每实例 AOI 半径 + Unload
     rt.ClearForTest();
@@ -323,17 +338,54 @@ int main() {
            "far move 1");
     Expect(CountOp(pushes, 1, 2) == 1, "first far move is sent");
     pushes = {};
-    Expect(rt.Move(31, 2, 25.4f, 0, 1, 0, 2, 8200, &conf, &pushes, &err, true) == MapMoveReject::Ok,
+    Expect(rt.Move(31, 2, 25.4f, 0, 1, 0, 2, 8100, &conf, &pushes, &err, true) == MapMoveReject::Ok,
            "far move 2");
-    Expect(CountOp(pushes, 1, 2) == 0, "far move inside the far interval is not emitted");
+    Expect(CountOp(pushes, 1, 2) == 0, "far move inside 200ms is not emitted");
     pushes = {};
-    Expect(rt.Move(31, 2, 25.6f, 0, 1, 0, 3, 11000, &conf, &pushes, &err, true) == MapMoveReject::Ok,
+    Expect(rt.Move(31, 2, 25.6f, 0, 1, 0, 3, 8200, &conf, &pushes, &err, true) == MapMoveReject::Ok,
            "far move 3");
-    Expect(CountOp(pushes, 1, 2) == 1, "far move after 3000ms is sent");
+    Expect(CountOp(pushes, 1, 2) == 1, "far move after about 200ms is sent");
     pushes = {};
     Expect(rt.Move(31, 2, 25.6f, 0, 1, 0, 4, 15000, &conf, &pushes, &err, true) == MapMoveReject::Ok,
            "stationary move");
     Expect(CountOp(pushes, 1, 2) == 0, "unchanged x,z is not broadcast");
+
+    // 换格后离开格子视野：给旧观察者一次 LEAVE，不再按额外距离留着。采样时间严格往前。
+    rt.ClearForTest();
+    rt.SetViewRadiusCells(1);
+    pushes = {};
+    Expect(rt.Enter(32, data, Ent(1, 1, 1), &self, &snap, &pushes, &err), "keep enter watcher");
+    Expect(rt.Enter(32, data, Ent(2, 15, 1), &self, &snap, &pushes, &err), "keep enter subject");
+    pushes = {};
+    Expect(rt.Move(32, 2, 35.f, 0, 1, 0, 1, 1000, &conf, &pushes, &err, true) == MapMoveReject::Ok,
+           "glide across the outer cell");
+    int64_t prev_sample = 0;
+    bool time_forward = true;
+    int keep_moves = 0;
+    auto note = [&](const AoiPushBatch &b) {
+        for (const auto &ev : b.events) {
+            if (ev.recipient_id != 1 || ev.snapshot.player_id != 2 || ev.op != 2)
+                continue;
+            ++keep_moves;
+            if (prev_sample != 0 && ev.snapshot.last_move_server_ms <= prev_sample)
+                time_forward = false;
+            if (ev.snapshot.last_move_server_ms > 0)
+                prev_sample = ev.snapshot.last_move_server_ms;
+        }
+    };
+    note(pushes);
+    for (int step = 0; step < 8; ++step) {
+        std::vector<AoiPushBatch> more;
+        rt.AdvancePresented(&more);
+        for (const auto &b : more) {
+            note(b);
+            for (const auto &ev : b.events)
+                pushes.events.push_back(ev);
+        }
+    }
+    Expect(CountOp(pushes, 1, 3) == 1, "leaving the cell window sends one LEAVE");
+    Expect(CountOp(pushes, 1, 1) == 0, "leaving the cell window does not re-enter");
+    Expect(keep_moves > 0 && time_forward, "walk samples advance server time");
 
     std::unordered_map<uint64_t, int64_t> last_sent;
     std::unordered_map<uint64_t, int> last_round;
@@ -399,6 +451,28 @@ int main() {
            "extrap far 2");
     Expect(CountOp(pushes, 1, 2) == 0, "far same velocity has no periodic keyframe");
     ::unsetenv("GAMEMESH_AOI_EXTRAPOLATE");
+
+    // 没订阅过的人不能收到 LEAVE。走出视野的人仍然要收到一次。
+    rt.ClearForTest();
+    rt.SetViewRadiusCells(1);
+    pushes = {};
+    Expect(rt.Enter(42, data, Ent(1, 1, 1), &self, &snap, &pushes, &err), "leave-scope watcher");
+    Expect(rt.Enter(42, data, Ent(2, 2, 1), &self, &snap, &pushes, &err), "leave-scope mover");
+    Expect(rt.Enter(42, data, Ent(3, 1, 35), &self, &snap, &pushes, &err), "leave-scope bystander");
+    pushes = {};
+    Expect(rt.Move(42, 2, 35, 0, 1, 0, 1, 1000, &conf, &pushes, &err) == MapMoveReject::Ok,
+           "mover walks away from the watcher");
+    for (int step = 0; step < 40 && CountOp(pushes, 1, 3) == 0; ++step) {
+        std::this_thread::sleep_for(std::chrono::milliseconds(200));
+        std::vector<AoiPushBatch> more;
+        rt.AdvancePresented(&more);
+        for (const auto &b : more) {
+            for (const auto &ev : b.events)
+                pushes.events.push_back(ev);
+        }
+    }
+    Expect(CountOp(pushes, 1, 3) == 1, "watcher who had the model gets LEAVE");
+    Expect(CountOp(pushes, 3, 3) == 0, "bystander who never subscribed gets no LEAVE");
 
     Expect(ServerStats::aoi_lock_samples.load() > lock_samples_before,
            "aoi lock samples increased");

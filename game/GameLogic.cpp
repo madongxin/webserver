@@ -417,6 +417,17 @@ void PublishAoiBatch(const AoiPushBatch &batch) {
     }
     std::vector<GameLogicPush::GatewayPushItem> items;
     items.reserve(by_player.size());
+    struct ElNote {
+        uint64_t viewer = 0;
+        uint64_t subject = 0;
+        int op = 0;
+        uint64_t version = 0;
+    };
+    std::vector<ElNote> el_notes;
+    for (const auto &ev : live.events) {
+        if (ev.op == 1 || ev.op == 3)
+            el_notes.push_back(ElNote{ev.recipient_id, ev.snapshot.player_id, ev.op, ev.notify_version});
+    }
     for (auto &kv : by_player) {
         bool has_el = false;
         bool has_move = false;
@@ -445,8 +456,17 @@ void PublishAoiBatch(const AoiPushBatch &batch) {
         item.coalescable = has_move && !has_el;
         items.push_back(std::move(item));
     }
-    if (!items.empty())
-        GameLogicPush::PushGrouped(std::move(items));
+    if (!items.empty()) {
+        std::unordered_map<uint64_t, bool> written;
+        GameLogicPush::PushGrouped(std::move(items), &written);
+        for (const auto &note : el_notes) {
+            bool ok = false;
+            auto it = written.find(note.viewer);
+            if (it != written.end())
+                ok = it->second;
+            MapRuntime::Instance().NoteAoiWrite(note.viewer, note.subject, note.op, ok, note.version);
+        }
+    }
 }
 #endif
 

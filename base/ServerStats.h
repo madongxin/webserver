@@ -74,6 +74,17 @@ struct ServerStats {
     static inline std::atomic<uint64_t> aoi_refresh_viewers_sum{0};
     static inline std::atomic<uint64_t> aoi_sub_enter{0};
     static inline std::atomic<uint64_t> aoi_sub_leave{0};
+    static inline std::atomic<uint64_t> aoi_cap_evict{0};
+    static inline std::atomic<uint64_t> aoi_edge_flap{0};
+    static inline std::atomic<int64_t> aoi_leave_pending{-1};
+    static inline std::atomic<int64_t> aoi_leave_age_p50_ms{-1};
+    static inline std::atomic<int64_t> aoi_leave_age_p95_ms{-1};
+    static inline std::atomic<int64_t> aoi_leave_age_p99_ms{-1};
+    static inline std::atomic<int64_t> aoi_leave_age_max_ms{-1};
+    static inline std::atomic<int64_t> aoi_visible_p50{-1};
+    static inline std::atomic<int64_t> aoi_visible_p95{-1};
+    static inline std::atomic<int64_t> aoi_visible_p99{-1};
+    static inline std::atomic<int64_t> aoi_visible_max{-1};
     static inline std::atomic<uint64_t> aoi_move_events{0};
     static inline std::atomic<uint64_t> aoi_fast_move{0};
     static inline std::atomic<uint64_t> aoi_move_rate_limited{0};

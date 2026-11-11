@@ -5,7 +5,7 @@
   "data_version": 1,
   "bounds_min": [-1992, -38, -1992],
   "bounds_max": [1992, 536, 1992],
-  "aoi_cell_size": 32.0,
+  "aoi_cell_size": 16.0,
   "nav_sample_step": 8.0,
   "grid_width": 498,
   "grid_height": 498,

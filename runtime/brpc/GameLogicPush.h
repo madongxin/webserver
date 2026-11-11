@@ -3,6 +3,7 @@
 #include "gateway_push.pb.h"
 
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 /** GameLogic → 按 gateway_instance_id 选择目标 Gateway，非广播。 */
@@ -27,7 +28,8 @@ bool PushToBoundGateway(const std::string &gateway_instance_id, uint64_t player_
                        uint64_t server_seq, const std::string &fence_token = "",
                        uint64_t generation = 0);
 
-/** 同一 Gateway 的多名收件人一次 PushBatch。单条失败只计入 rejected，不拆成多次 RPC。 */
-bool PushGrouped(std::vector<GatewayPushItem> items);
+/** 同一 Gateway 的多名收件人一次 PushBatch。written 记录每个 player 是否已写入发送缓冲。 */
+bool PushGrouped(std::vector<GatewayPushItem> items,
+                 std::unordered_map<uint64_t, bool> *written = nullptr);
 
 }  // namespace GameLogicPush

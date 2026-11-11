@@ -187,11 +187,15 @@ int MoveLayer(MoveCoalesceSlot *slot, uint64_t viewer, const game::AoiEvent &ev)
         slot->viewer_z = ent.position().z();
         return 1;
     }
-    if (!slot->viewer_known)
-        return -1;
-    const float dx = ent.position().x() - slot->viewer_x;
-    const float dz = ent.position().z() - slot->viewer_z;
-    return (dx * dx + dz * dz) < (16.f * 16.f) ? 1 : 0;
+    // 兴趣内的人同一档。分层打开时，32 米外是远层。
+    if (AoiV2Layers() && viewer != 0 && slot->viewer_known && ent.has_position()) {
+        const float dx = ent.position().x() - slot->viewer_x;
+        const float dz = ent.position().z() - slot->viewer_z;
+        const float near_m = static_cast<float>(AoiV2NearMeters());
+        if (dx * dx + dz * dz > near_m * near_m)
+            return 0;
+    }
+    return 1;
 }
 
 bool IsMoveOnlyAoi(const game::GameResponse &gr) {
@@ -407,7 +411,7 @@ void FlushMoveSlot(const std::shared_ptr<MoveCoalesceSlot> &slot,
             return;
         }
     }
-    constexpr int kMaxMoveEntities = 40;
+    constexpr int kMaxMoveEntities = 200;
     int64_t wait_ms = 0;
     bool leftover = false;
     bool close_for_slow = false;
@@ -419,9 +423,13 @@ void FlushMoveSlot(const std::shared_ptr<MoveCoalesceSlot> &slot,
         const bool overflow =
             ControlResponseOutbox::Instance().Depth(conn_id) >= ControlResponseOutbox::kMaxFrames;
         const SlowClientAction slow_action = slot->slow.Evaluate(now, overflow);
+        if (AoiV2Layers())
+            slot->ledger.SetFarIntervalScale(slot->slow.degraded() ? 2 : 1);
         if (slow_action == SlowClientAction::Degrade) {
-            slot->ledger.SetQuotaPercent(50);
-            slot->ledger.SetSendIntervalMs(1000);
+            if (!AoiV2Layers()) {
+                slot->ledger.SetQuotaPercent(50);
+                slot->ledger.SetSendIntervalMs(1000);
+            }
             ServerStats::aoi_move_slow_degrade.fetch_add(1, std::memory_order_relaxed);
             LOG_INFO << "slow client degrade conn#" << conn_id;
         } else if (slow_action == SlowClientAction::ClearSlot) {
@@ -438,6 +446,10 @@ void FlushMoveSlot(const std::shared_ptr<MoveCoalesceSlot> &slot,
             close_for_slow = true;
         }
         if (slot->slow.snapshot_due() && !slot->resync.empty()) {
+            if (AoiV2VisibleSet()) {
+                slot->resync.clear();
+                slot->slow.NoteSnapshotSent();
+            } else {
             for (const auto &ev : slot->resync) {
                 const uint64_t id = ev.entity().player_id();
                 if (id == 0)
@@ -448,6 +460,7 @@ void FlushMoveSlot(const std::shared_ptr<MoveCoalesceSlot> &slot,
             slot->resync.clear();
             slot->slow.NoteSnapshotSent();
             ServerStats::aoi_move_snapshot_resync.fetch_add(1, std::memory_order_relaxed);
+            }
         }
         if (slot->by_entity.empty()) {
             slot->scheduled = false;
@@ -465,6 +478,7 @@ void FlushMoveSlot(const std::shared_ptr<MoveCoalesceSlot> &slot,
                 1, AoiMoveCoalesceLedger::EgressBudgetBytesPerSec() / static_cast<int>(conns));
             const int event_bytes =
                 AoiExtrapolateEnabled() ? kAoiMoveExtrapEventBytes : kAoiMoveEventBytes;
+            slot->ledger.SetEnforceByteBudget(AoiV2Layers());
             picked = slot->ledger.Pick(now, per, event_bytes, kMaxMoveEntities, &wait_ms);
             if (!picked.empty()) {
                 delta.set_map_instance_id(slot->map_instance_id);
@@ -745,6 +759,10 @@ void RememberBind(uint64_t conn_id, uint64_t player_id, const std::string &token
                 });
                 if (done->timed_wait(butil::milliseconds_from_now(200)) != 0) {
                     OpsMetrics::Instance().IncPushSendDeferred();
+                    // 急送超时还没写进缓冲。返回 0，调用方继续把 LEAVE 留在差集里。
+                    // 已经入队的回调仍会写；写失败时下一轮再发，重复的 LEAVE 可以再收一次。
+                    if (urgent)
+                        return 0;
                     return 1;
                 }
                 return queued->load(std::memory_order_acquire);
@@ -769,8 +787,8 @@ void RememberBind(uint64_t conn_id, uint64_t player_id, const std::string &token
             if (!live || live->state() != TcpConnection::Connected || !live->loop() ||
                 !live->loop()->IsInLoopThread())
                 return -1;
-            if (ControlResponseOutbox::Instance().BlocksMove(live->id()))
-                return 0;
+            // 回包队列不空时不能直接放弃。MOVE 可以等回包，ENTER/LEAVE 不行：
+            // 观察者名单已经删了，这一帧写不出去客户端就一直留着旧模型。
             MakeRoomForControl(live.get());
             // ENTER/LEAVE 走控制发送流，插在 MOVE 前面。32KB 的紧急水位会在回包已经占满缓冲时一直失败，
             // 可靠队列不空又会禁止 AOI MOVE，位置更新就会停住。
@@ -803,9 +821,9 @@ void RememberBind(uint64_t conn_id, uint64_t player_id, const std::string &token
                     }
                 }
                 // 已进入发送流的控制帧不挡住队列里还没写进去的下一条。
+                // ENTER/LEAVE 跟在回包后面继续写，不能等回包队列清空。
                 ControlResponseOutbox::Instance().OnBufferDrained(conn_id);
-                if (!ControlResponseOutbox::Instance().BlocksMove(conn_id))
-                    ReliableOutboxHub::Instance().OnBufferDrained(conn_id);
+                ReliableOutboxHub::Instance().OnBufferDrained(conn_id);
             });
         }
         gb.close_conn = [weak_conn]() {

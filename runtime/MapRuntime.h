@@ -59,6 +59,7 @@ struct AoiRecipientEvent {
     std::string session_id;
     int op = 0;  // 1=ENTER 2=MOVE 3=LEAVE
     MapEntity snapshot;
+    uint64_t notify_version = 0;
 };
 
 struct AoiPushBatch {
@@ -137,6 +138,9 @@ public:
     void CopyMotionCounts(int64_t *moving, int64_t *stationary) const;
     /** 把大步移动的呈现点朝权威坐标推进 0.2 秒，并补上因此产生的进出视野。 */
     void AdvancePresented(std::vector<AoiPushBatch> *batches);
+    /** 网关把 ENTER/LEAVE 写入发送缓冲后回调。ok=false 时差集保留。 */
+    void NoteAoiWrite(uint64_t viewer_id, uint64_t subject_id, int op, bool ok, uint64_t version);
+    int LeavePendingCountForTest(uint64_t viewer_id) const;
 
 private:
     MapRuntime() = default;
@@ -150,6 +154,24 @@ private:
         std::unordered_map<uint64_t, std::unordered_set<uint64_t>> visible_targets;
         // target -> viewers who subscribed to that target. MOVE uses this, not the mover's own set.
         std::unordered_map<uint64_t, std::unordered_set<uint64_t>> watchers;
+        // 离开后 LEAVE 还没被网关确认。最多再补两次，间隔 1 秒，避免把出口打满。
+        struct LeaveAgain {
+            int64_t last_ms = 0;
+            uint64_t version = 0;
+            int tries = 0;
+            MapEntity snap;
+        };
+        std::unordered_map<uint64_t, std::unordered_map<uint64_t, LeaveAgain>> leave_again;
+        uint64_t next_leave_version = 1;
+        enum class AoiPending : uint8_t { None = 0, Enter = 1, Leave = 2 };
+        struct NotifiedItem {
+            uint64_t version = 0;
+            AoiPending pending = AoiPending::None;
+            int64_t since_ms = 0;
+        };
+        // 观察者 -> 实体。pending=Leave 表示客户端还应删掉，网关还没写入。
+        std::unordered_map<uint64_t, std::unordered_map<uint64_t, NotifiedItem>> notified;
+        std::unordered_map<uint64_t, std::unordered_map<uint64_t, int64_t>> last_left_ms;
         struct MoveNotify {
             int64_t ms = 0;
             float x = 0;
@@ -159,8 +181,10 @@ private:
             int64_t move_start_ms = 0;
             bool has = false;
         };
-        // watcher -> target -> 上次发出的 MOVE。外推关掉时只用 ms。
+        // watcher -> target -> 上次发出的 MOVE。外推关掉时只用 ms、x、z。
         std::unordered_map<uint64_t, std::unordered_map<uint64_t, MoveNotify>> move_notify_ms;
+        // 该实体已经发出的 AOI 事件时间。下一条不能更早，同一条 state_seq 沿途也要往前走。
+        std::unordered_map<uint64_t, int64_t> last_aoi_event_ms;
         int view_radius = -1;
         int max_visible = 200;  // frozen when the instance is created
         uint64_t epoch = 0;
@@ -182,8 +206,14 @@ private:
     void FillSnapshot(const InstanceState &st, uint64_t viewer_id, std::vector<MapEntity> *aoi_snapshot) const;
     void PlaceInCell(InstanceState *st, const MapEntity &e);
     void RemoveFromCell(InstanceState *st, const MapEntity &e);
-    void EmitTo(AoiPushBatch *pushes, uint64_t map_id, const MapEntity &recipient, int op,
-                const MapEntity &snapshot) const;
+    void EmitTo(InstanceState *st, AoiPushBatch *pushes, uint64_t map_id, const MapEntity &recipient,
+                int op, const MapEntity &snapshot);
+    void RememberLeave(InstanceState *st, AoiPushBatch *batch, const MapEntity &subject, int64_t now_ms);
+    void RetryPendingLeaves(InstanceState *st, uint64_t map_id, int64_t now_ms, AoiPushBatch *batch);
+    void SyncVisibleSubject(InstanceState *st, MapEntity &subject, int64_t now_ms, uint64_t map_id,
+                            AoiPushBatch *batch);
+    std::vector<uint64_t> NeighborhoodIdsRadius(const InstanceState &st, float x, float z, int radius) const;
+    bool InCellRadius(const InstanceState &st, float x0, float z0, float x1, float z1, int radius) const;
     bool AllowMoveAoi(InstanceState *st, const MapEntity &watcher, const MapEntity &subject,
                       int64_t now_ms) const;
 

@@ -21,15 +21,39 @@ inline int SlowCloseMs() { return MoveEnvInt("GAMEMESH_SLOW_CLOSE_MS", 90000, 10
 inline int NearQuotaPercent() { return MoveEnvInt("GAMEMESH_NEAR_QUOTA_PERCENT", 60, 0, 100); }
 inline int NearHardSilenceMs() { return MoveEnvInt("GAMEMESH_NEAR_SILENCE_MS", 3000, 200, 120000); }
 inline int FarHardSilenceMs() { return MoveEnvInt("GAMEMESH_FAR_SILENCE_MS", 15000, 200, 120000); }
-/** 远层（水平距离 ≥ 16 米）两次位置广播的最小间隔。待压测校准。
- *  3 秒太稀，满员时视野里的人看起来是站着。500 毫秒仍低于近处的 200 毫秒。
- *  静默达到 FarHardSilenceMs 时仍会补发。 */
-inline int FarMoveIntervalMs() { return MoveEnvInt("GAMEMESH_FAR_MOVE_INTERVAL_MS", 500, 200, 120000); }
+/** 外推打开时，远层速度没变才用这个间隔。外推关闭时，兴趣内的人不论远近都按约 200ms 发坐标。 */
+inline int FarMoveIntervalMs() { return MoveEnvInt("GAMEMESH_FAR_MOVE_INTERVAL_MS", 200, 200, 120000); }
 /** 只有显式 GAMEMESH_AOI_EXTRAPOLATE=1 才按速度扣广播。默认关，近处 200ms、远处按上面的间隔发坐标。 */
 inline bool AoiExtrapolateEnabled() {
     const char *env = std::getenv("GAMEMESH_AOI_EXTRAPOLATE");
     return env && env[0] == '1' && env[1] == '\0';
 }
+
+inline bool AoiV2Flag(const char *name) {
+    const char *env = std::getenv(name);
+    return env && env[0] == '1' && env[1] == '\0';
+}
+
+/** 未设置时返回 -1，表示不覆盖图实例上的半径。 */
+inline int AoiV2RadiusOverride() {
+    const char *env = std::getenv("GAMEMESH_AOI_V2_RADIUS_CELLS");
+    if (!env || !*env)
+        return -1;
+    int v = std::atoi(env);
+    if (v < 0)
+        return -1;
+    if (v > 8)
+        v = 8;
+    return v;
+}
+
+inline bool AoiV2Layers() { return AoiV2Flag("GAMEMESH_AOI_V2_LAYERS"); }
+inline bool AoiV2VisibleSet() { return AoiV2Flag("GAMEMESH_AOI_V2_VISIBLE_SET"); }
+inline bool AoiV2Hysteresis() { return AoiV2Flag("GAMEMESH_AOI_V2_HYSTERESIS"); }
+inline int AoiV2NearMeters() { return MoveEnvInt("GAMEMESH_AOI_V2_NEAR_METERS", 32, 1, 512); }
+inline int AoiV2FarIntervalMs() { return MoveEnvInt("GAMEMESH_AOI_V2_FAR_INTERVAL_MS", 1000, 200, 120000); }
+inline int AoiV2CapSlack() { return MoveEnvInt("GAMEMESH_AOI_V2_CAP_SLACK", 8, 0, 64); }
+inline int AoiV2LeaveExtraCells() { return MoveEnvInt("GAMEMESH_AOI_V2_LEAVE_EXTRA_CELLS", 1, 0, 4); }
 /** 近处移动实体的关键帧间隔。待压测校准。 */
 inline int ExtrapKeyframeMs() { return MoveEnvInt("GAMEMESH_EXTRAP_KEYFRAME_MS", 4000, 3000, 5000); }
 /** 外推误差超过这么多米才补发。待压测校准。 */

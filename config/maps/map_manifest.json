@@ -32,7 +32,7 @@
       "max_lines": 8,
       "min_lines": 1,
       "empty_close_delay": 300,
-      "aoi_view_radius_cells": 1,
+      "aoi_view_radius_cells": 2,
       "aoi_max_visible": 200,
       "spawn_scatter_radius": 4
     },

@@ -335,6 +335,76 @@ std::string OpsMetrics::PrometheusText() const {
         ServerStats::aoi_sub_enter.load(std::memory_order_relaxed));
     ctr("gamemesh_aoi_sub_leave_total", "AOI subscription LEAVE events.",
         ServerStats::aoi_sub_leave.load(std::memory_order_relaxed));
+    if (ServerStats::aoi_cap_evict.load(std::memory_order_relaxed) > 0)
+        ctr("gamemesh_aoi_cap_evict_total",
+            "Times a visible entity was evicted by the interest cap. Unit: events.",
+            ServerStats::aoi_cap_evict.load(std::memory_order_relaxed));
+    if (ServerStats::aoi_edge_flap.load(std::memory_order_relaxed) > 0)
+        ctr("gamemesh_aoi_edge_flap_10s",
+            "ENTER within 10s after a delivered LEAVE for the same pair. Unit: events.",
+            ServerStats::aoi_edge_flap.load(std::memory_order_relaxed));
+    if (ServerStats::aoi_leave_pending.load(std::memory_order_relaxed) >= 0) {
+        os << "# HELP gamemesh_aoi_leave_pending LEAVE events not yet accepted by the gateway. Unit: events.\n"
+              "# TYPE gamemesh_aoi_leave_pending gauge\n"
+           << "gamemesh_aoi_leave_pending "
+           << ServerStats::aoi_leave_pending.load(std::memory_order_relaxed) << "\n";
+        const int64_t age_p50 = ServerStats::aoi_leave_age_p50_ms.load(std::memory_order_relaxed);
+        const int64_t age_max = ServerStats::aoi_leave_age_max_ms.load(std::memory_order_relaxed);
+        if (age_p50 >= 0 && age_max >= 0) {
+            os << "# HELP gamemesh_aoi_leave_pending_age_ms Age of undelivered LEAVE. Unit: milliseconds.\n"
+                  "# TYPE gamemesh_aoi_leave_pending_age_ms gauge\n"
+               << "gamemesh_aoi_leave_pending_age_ms{quantile=\"0.5\"} " << age_p50 << "\n"
+               << "gamemesh_aoi_leave_pending_age_ms{quantile=\"0.95\"} "
+               << ServerStats::aoi_leave_age_p95_ms.load(std::memory_order_relaxed) << "\n"
+               << "gamemesh_aoi_leave_pending_age_ms{quantile=\"0.99\"} "
+               << ServerStats::aoi_leave_age_p99_ms.load(std::memory_order_relaxed) << "\n"
+               << "gamemesh_aoi_leave_pending_age_ms{quantile=\"1\"} " << age_max << "\n";
+        }
+    }
+    const int64_t vis_p50 = ServerStats::aoi_visible_p50.load(std::memory_order_relaxed);
+    const int64_t vis_max = ServerStats::aoi_visible_max.load(std::memory_order_relaxed);
+    if (vis_p50 >= 0 && vis_max >= 0) {
+        os << "# HELP gamemesh_aoi_visible_count Notified entities that are not pending LEAVE. Unit: entities.\n"
+              "# TYPE gamemesh_aoi_visible_count gauge\n"
+           << "gamemesh_aoi_visible_count{quantile=\"0.5\"} " << vis_p50 << "\n"
+           << "gamemesh_aoi_visible_count{quantile=\"0.95\"} "
+           << ServerStats::aoi_visible_p95.load(std::memory_order_relaxed) << "\n"
+           << "gamemesh_aoi_visible_count{quantile=\"0.99\"} "
+           << ServerStats::aoi_visible_p99.load(std::memory_order_relaxed) << "\n"
+           << "gamemesh_aoi_visible_count{quantile=\"1\"} " << vis_max << "\n";
+    }
+    {
+        static uint64_t prev_enter = 0;
+        static uint64_t prev_leave = 0;
+        static int64_t prev_ms = 0;
+        static bool have_rate = false;
+        const uint64_t enter_now = ServerStats::aoi_sub_enter.load(std::memory_order_relaxed);
+        const uint64_t leave_now = ServerStats::aoi_sub_leave.load(std::memory_order_relaxed);
+        const int64_t now_ms = std::chrono::duration_cast<std::chrono::milliseconds>(
+                                   std::chrono::steady_clock::now().time_since_epoch())
+                                   .count();
+        if (have_rate && now_ms > prev_ms) {
+            const double dt = static_cast<double>(now_ms - prev_ms) / 1000.0;
+            if (dt > 0 && enter_now > 0) {
+                os << "# HELP gamemesh_aoi_sub_enter_per_sec ENTER events since the previous scrape. Unit: events per second.\n"
+                      "# TYPE gamemesh_aoi_sub_enter_per_sec gauge\n"
+                   << "gamemesh_aoi_sub_enter_per_sec "
+                   << (static_cast<double>(enter_now - prev_enter) / dt) << "\n";
+            }
+            if (dt > 0 && leave_now > 0) {
+                os << "# HELP gamemesh_aoi_sub_leave_per_sec LEAVE events since the previous scrape. Unit: events per second.\n"
+                      "# TYPE gamemesh_aoi_sub_leave_per_sec gauge\n"
+                   << "gamemesh_aoi_sub_leave_per_sec "
+                   << (static_cast<double>(leave_now - prev_leave) / dt) << "\n";
+            }
+        }
+        if (enter_now > 0 || leave_now > 0) {
+            prev_enter = enter_now;
+            prev_leave = leave_now;
+            prev_ms = now_ms;
+            have_rate = true;
+        }
+    }
     ctr("gamemesh_aoi_move_events_total", "AOI MOVE events emitted.",
         ServerStats::aoi_move_events.load(std::memory_order_relaxed));
     ctr("gamemesh_aoi_move_rate_limited_total",
