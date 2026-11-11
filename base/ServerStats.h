@@ -75,6 +75,8 @@ struct ServerStats {
     static inline std::atomic<uint64_t> aoi_sub_enter{0};
     static inline std::atomic<uint64_t> aoi_sub_leave{0};
     static inline std::atomic<uint64_t> aoi_leave_retry_expired{0};
+    static inline std::atomic<uint64_t> aoi_leave_by_reason[7]{};
+    static inline std::atomic<uint64_t> aoi_unexpected_leave{0};
     static inline std::atomic<uint64_t> aoi_cap_evict{0};
     static inline std::atomic<uint64_t> aoi_edge_flap{0};
     static inline std::atomic<int64_t> aoi_leave_pending{-1};

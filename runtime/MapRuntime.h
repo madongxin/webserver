@@ -223,6 +223,9 @@ private:
     void RetryPendingLeaves(InstanceState *st, uint64_t map_id, int64_t now_ms, AoiPushBatch *batch);
     void SyncVisibleSubject(InstanceState *st, MapEntity &subject, int64_t now_ms, uint64_t map_id,
                             AoiPushBatch *batch);
+    void SyncSubjectUnified(InstanceState *st, MapEntity &subject, int64_t now_ms, uint64_t map_id,
+                            AoiPushBatch *batch);
+    std::unordered_set<uint64_t> DesiredVisible(const InstanceState &st, const MapEntity &viewer) const;
     std::vector<uint64_t> NeighborhoodIdsRadius(const InstanceState &st, float x, float z, int radius) const;
     bool InCellRadius(const InstanceState &st, float x0, float z0, float x1, float z1, int radius) const;
     bool AllowMoveAoi(InstanceState *st, const MapEntity &watcher, const MapEntity &subject,

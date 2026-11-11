@@ -603,8 +603,22 @@ bool RunExpiry() {
 
 int main() {
     Logger::setLogLevel(Logger::ERROR);
+    ::unsetenv("GAMEMESH_AOI_MEMBERSHIP_UNIFIED");
+    const uint64_t base = ServerStats::aoi_unexpected_leave.load(std::memory_order_relaxed);
     if (!RunSeed(kSeed) || !RunExpiry()) {
         std::printf("FAIL aoi_client_model_test seed=%u\n", kSeed);
+        return 1;
+    }
+    const uint64_t off = ServerStats::aoi_unexpected_leave.load(std::memory_order_relaxed) - base;
+    ::setenv("GAMEMESH_AOI_MEMBERSHIP_UNIFIED", "1", 1);
+    const uint64_t mid = ServerStats::aoi_unexpected_leave.load(std::memory_order_relaxed);
+    const bool unified_ok = RunSeed(kSeed);
+    const uint64_t on = ServerStats::aoi_unexpected_leave.load(std::memory_order_relaxed) - mid;
+    ::unsetenv("GAMEMESH_AOI_MEMBERSHIP_UNIFIED");
+    std::printf("unexpected_leave unified_off=%llu unified_on=%llu\n",
+                static_cast<unsigned long long>(off), static_cast<unsigned long long>(on));
+    if (!unified_ok) {
+        std::printf("FAIL aoi_client_model_test unified seed=%u\n", kSeed);
         return 1;
     }
     std::printf("OK aoi_client_model_test seed=%u\n", kSeed);

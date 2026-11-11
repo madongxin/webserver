@@ -1,3 +1,4 @@
+#include "AoiLeaveReason.h"
 #include "OpsMetrics.h"
 
 #include "ParkProbe.h"
@@ -338,6 +339,18 @@ std::string OpsMetrics::PrometheusText() const {
     ctr("gamemesh_aoi_leave_retry_expired_total",
         "LEAVE retries dropped after the configured maximum age. Unit: events.",
         ServerStats::aoi_leave_retry_expired.load(std::memory_order_relaxed));
+    os << "# HELP gamemesh_aoi_leave_total AOI LEAVE events by reason. Unit: events.\n"
+          "# TYPE gamemesh_aoi_leave_total counter\n";
+    for (int i = 0; i < static_cast<int>(AoiLeaveReason::Count); ++i) {
+        const auto reason = static_cast<AoiLeaveReason>(i);
+        os << "gamemesh_aoi_leave_total{reason=\"" << AoiLeaveReasonName(reason) << "\"} "
+           << ServerStats::aoi_leave_by_reason[i].load(std::memory_order_relaxed) << "\n";
+    }
+    os << "# HELP gamemesh_aoi_unexpected_leave_total "
+          "LEAVE while the subject is still inside the enter radius and still connected. Unit: events.\n"
+          "# TYPE gamemesh_aoi_unexpected_leave_total counter\n"
+       << "gamemesh_aoi_unexpected_leave_total "
+       << ServerStats::aoi_unexpected_leave.load(std::memory_order_relaxed) << "\n";
     if (ServerStats::aoi_cap_evict.load(std::memory_order_relaxed) > 0)
         ctr("gamemesh_aoi_cap_evict_total",
             "Times a visible entity was evicted by the interest cap. Unit: events.",
