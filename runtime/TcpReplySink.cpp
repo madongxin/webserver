@@ -10,6 +10,7 @@
 #include "ProtoFraming.h"
 #include "ReplyStage.h"
 #include "TcpConnection.h"
+#include "AoiStrip.h"
 #include "game.pb.h"
 
 #include <algorithm>
@@ -119,6 +120,45 @@ size_t DropQueuedAoiMoveFrames(TcpConnection *c, bool keep_newest) {
     if (dropped != 0)
         c->ReplaceQueuedAfterPrefix(keep);
     return dropped;
+}
+
+size_t FilterQueuedAoiEntities(TcpConnection *c, const std::vector<uint64_t> &drop_ids) {
+    if (!c || drop_ids.empty() || c->move_bytes_entered_kernel())
+        return 0;
+    const std::string raw = c->CopySendBuf();
+    if (raw.empty())
+        return 0;
+    const size_t prefix = std::min(c->send_partial_prefix(), raw.size());
+    const std::string tail = raw.substr(prefix);
+    std::string keep;
+    size_t removed = 0;
+    bool changed = false;
+    size_t off = 0;
+    while (off < tail.size()) {
+        std::string payload;
+        size_t consumed = 0;
+        const auto dr = gameproto::DecodeOneFrameFrom(tail, off, &payload, &consumed);
+        if (dr != gameproto::FrameDecodeResult::Complete || consumed == 0) {
+            keep.append(tail, off, std::string::npos);
+            break;
+        }
+        const std::string frame = tail.substr(off, consumed);
+        std::string rewritten;
+        bool empty = false;
+        int n = 0;
+        if (RewriteAoiFrameDroppingEntities(frame, drop_ids, &rewritten, &empty, &n) && n > 0) {
+            removed += static_cast<size_t>(n);
+            changed = true;
+            if (!empty)
+                keep.append(rewritten);
+        } else {
+            keep.append(frame);
+        }
+        off += consumed;
+    }
+    if (changed)
+        c->ReplaceQueuedAfterPrefix(keep);
+    return removed;
 }
 
 void MakeRoomForControl(TcpConnection *c) {

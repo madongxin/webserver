@@ -112,6 +112,7 @@ struct MoveCoalesceSlot {
     float viewer_z = 0;
     SlowClientTracker slow;
     std::vector<game::AoiEvent> resync;
+    AoiOutboundBooks books;
     int64_t last_park_swap_ms = 0;
 };
 
@@ -451,16 +452,19 @@ void FlushMoveSlot(const std::shared_ptr<MoveCoalesceSlot> &slot,
                 slot->resync.clear();
                 slot->slow.NoteSnapshotSent();
             } else {
-            for (const auto &ev : slot->resync) {
-                const uint64_t id = ev.entity().player_id();
-                if (id == 0)
-                    continue;
-                slot->by_entity[id] = ev;
-                slot->ledger.Offer(id, ev.entity().state_seq(), now, 1);
-            }
-            slot->resync.clear();
-            slot->slow.NoteSnapshotSent();
-            ServerStats::aoi_move_snapshot_resync.fetch_add(1, std::memory_order_relaxed);
+                int replayed = 0;
+                for (const auto &ev : slot->resync) {
+                    const uint64_t id = ev.entity().player_id();
+                    if (!ShouldReplayClearedMove(AoiV2VisibleSet(), slot->books, id, now))
+                        continue;
+                    slot->by_entity[id] = ev;
+                    slot->ledger.Offer(id, ev.entity().state_seq(), now, 1);
+                    ++replayed;
+                }
+                slot->resync.clear();
+                slot->slow.NoteSnapshotSent();
+                if (replayed > 0)
+                    ServerStats::aoi_move_snapshot_resync.fetch_add(1, std::memory_order_relaxed);
             }
         }
         if (slot->by_entity.empty()) {
@@ -647,6 +651,9 @@ bool OfferCoalescedMove(const std::shared_ptr<TcpConnection> &c, const std::stri
             const uint64_t id = ev.entity().player_id();
             if (id == 0)
                 continue;
+            if (TombstoneBlocksMove(slot->books, id, now))
+                continue;
+            slot->books.notified.insert(id);
             auto &kept = slot->by_entity[id];
             // 序号不增加的移动客户端会整条丢掉。只保留更大的 state_seq。
             if (!KeepCoalescedMoveSeq(kept.has_entity(), kept.entity().state_seq(),
@@ -672,6 +679,56 @@ bool OfferCoalescedMove(const std::shared_ptr<TcpConnection> &c, const std::stri
     c->loop()->QueueOneFunc([slot, weak, conn_id]() { FlushMoveSlot(slot, weak, conn_id); });
     return true;
 }
+
+void EraseResyncId(MoveCoalesceSlot *slot, uint64_t id) {
+    if (!slot)
+        return;
+    auto &v = slot->resync;
+    v.erase(std::remove_if(v.begin(), v.end(),
+                           [id](const game::AoiEvent &ev) { return ev.entity().player_id() == id; }),
+            v.end());
+}
+
+/** 在连接的 EventLoop 上，ENTER/LEAVE 写出前清掉该实体的合并槽、账本和 resync，并立墓碑。 */
+void ForgetUrgentAoiFrame(const std::shared_ptr<TcpConnection> &live, const std::string &frame) {
+    if (!live)
+        return;
+    std::string buf = frame;
+    std::string payload;
+    game::GameResponse gr;
+    if (gameproto::DecodeOneFrame(&buf, &payload) != gameproto::FrameDecodeResult::Complete ||
+        !gr.ParseFromString(payload) || !gr.has_aoi_delta())
+        return;
+    std::vector<std::pair<int, uint64_t>> els;
+    for (const auto &ev : gr.aoi_delta().events()) {
+        if ((ev.op() == 1 || ev.op() == 3) && ev.entity().player_id() != 0)
+            els.emplace_back(ev.op(), ev.entity().player_id());
+    }
+    if (els.empty())
+        return;
+    std::shared_ptr<MoveCoalesceSlot> slot;
+    {
+        std::lock_guard<std::mutex> lk(g_move_slots_mu);
+        auto &found = g_move_slots[live->id()];
+        if (!found)
+            found = std::make_shared<MoveCoalesceSlot>();
+        slot = found;
+    }
+    std::vector<uint64_t> ids;
+    ids.reserve(els.size());
+    {
+        std::lock_guard<std::mutex> lk(slot->mu);
+        const int64_t now = SteadyMs();
+        for (const auto &el : els) {
+            ApplyUrgentAoi(&slot->by_entity, &slot->ledger,
+                           [&](uint64_t id) { EraseResyncId(slot.get(), id); }, &slot->books, el.first,
+                           el.second, now);
+            ids.push_back(el.second);
+        }
+    }
+    FilterQueuedAoiEntities(live.get(), ids);
+}
+
 std::unordered_set<uint64_t> g_authoritative_logout;  // conn_id：主动 Logout 成功，断线不得 MarkDisconnected
 std::string g_gateway_id = "gw-0";
 std::atomic<bool> g_tcp_listening{false};
@@ -714,6 +771,8 @@ void RememberBind(uint64_t conn_id, uint64_t player_id, const std::string &token
                     auto live = weak_conn.lock();
                     if (!live || live->state() != TcpConnection::Connected)
                         return -1;
+                    if (urgent)
+                        ForgetUrgentAoiFrame(live, frame);
                     bool ok = false;
                     if (urgent && SendBufV2Enabled()) {
                         const auto rc =
@@ -743,28 +802,6 @@ void RememberBind(uint64_t conn_id, uint64_t player_id, const std::string &token
                     }
                     if (!ok)
                         return 0;
-                    if (urgent) {
-                        std::shared_ptr<MoveCoalesceSlot> slot;
-                        {
-                            std::lock_guard<std::mutex> lk(g_move_slots_mu);
-                            auto it = g_move_slots.find(live->id());
-                            if (it != g_move_slots.end())
-                                slot = it->second;
-                        }
-                        if (slot) {
-                            std::string buf = frame;
-                            std::string payload;
-                            game::GameResponse gr;
-                            if (gameproto::DecodeOneFrame(&buf, &payload) ==
-                                    gameproto::FrameDecodeResult::Complete &&
-                                gr.ParseFromString(payload) && gr.has_aoi_delta()) {
-                                std::lock_guard<std::mutex> lk(slot->mu);
-                                for (const auto &ev : gr.aoi_delta().events())
-                                    ApplyUrgentToCoalesceSlot(&slot->by_entity, ev.op(),
-                                                              ev.entity().player_id());
-                            }
-                        }
-                    }
                     OpsMetrics::Instance().AddGatewayTxBytes(frame.size());
                     OpsMetrics::Instance().AddGatewayTxFrames(1);
                     return 1;
@@ -811,6 +848,7 @@ void RememberBind(uint64_t conn_id, uint64_t player_id, const std::string &token
             if (!live || live->state() != TcpConnection::Connected || !live->loop() ||
                 !live->loop()->IsInLoopThread())
                 return -1;
+            ForgetUrgentAoiFrame(live, frame);
             // 回包队列不空时不能直接放弃。MOVE 可以等回包，ENTER/LEAVE 不行：
             // 观察者名单已经删了，这一帧写不出去客户端就一直留着旧模型。
             MakeRoomForControl(live.get());

@@ -23,7 +23,7 @@
 // 种子 1..20 的纯随机游走已经跑过：人从 (80,80) 出发，步长 ±8 米，40 步后仍在离开半径里，
 // 没有人被 LEAVE。那一版对账是绿的，不能当证据。
 //
-// 失败种子 kSeed = 7。最小复现：
+// 失败种子 kSeed = 7。修复前的最小复现（UrgentDropsCoalescedMove 当时是 false）：
 // 1. 观察者停在 (80,80)。实体 2 在 (82,80) 进入，先走一步。MOVE 只进合并槽和
 //    AoiMoveCoalesceLedger，不 Flush。
 // 2. 实体 2 再走到 (150,80)。呈现点滑出离开半径时，同一批先 Offer 这条 MOVE，再急送 LEAVE。
@@ -36,8 +36,8 @@
 // 4. 实体 3：MOVE 进槽后走慢客户端清槽（拷进 resync，清槽和账本 pending）。
 //    然后断线，这一批只有 LEAVE。确认之后按 ReplayClearedMoves(false) 把旧 MOVE Offer 回去再 Flush。
 //    这是 S2。
-// 5. 实体 4 走到 (20,20)。LEAVE 急送一直返回 0，不调用 ApplyUrgent，也不 NoteAoiWrite。
-//    等补发满 3 次后服务端丢掉。客户端从 ENTER 起就留着模型。这是 S3。
+// 5. 实体 4 走到 (20,20)。LEAVE 急送一直返回 0。任务 1 不把这个幽灵算进失败：
+//    补发上限仍会把它丢掉，客户端留着模型。这是 S3，交给任务 2。
 // 6. 实体 5 按种子在进入半径里随机跨格。实体 6 断线再重连，ENTER 能补回来。
 // 7. 另一张图上 8 个人挤在同一格，人数上限 2，用来看 S4。默认路径会把还在格子里的人塞回去。
 
@@ -100,9 +100,13 @@ struct Outbound {
     std::unordered_map<uint64_t, HeldMove> slot;
     AoiMoveCoalesceLedger ledger;
     std::vector<std::pair<uint64_t, HeldMove>> resync;
+    AoiOutboundBooks books;
     std::vector<Wire> log;
     int64_t t = 10000;
     void OfferMove(uint64_t id, uint64_t seq, float x, float z) {
+        if (TombstoneBlocksMove(books, id, t))
+            return;
+        books.notified.insert(id);
         auto &kept = slot[id];
         if (!KeepCoalescedMoveSeq(kept.has, kept.seq, seq))
             return;
@@ -113,7 +117,15 @@ struct Outbound {
                 bool count_radius) {
         if (!write_ok || !client)
             return;
-        ApplyUrgentToCoalesceSlot(&slot, w.op, w.id);
+        ApplyUrgentAoi(&slot, &ledger,
+                       [this](uint64_t id) {
+                           resync.erase(std::remove_if(resync.begin(), resync.end(),
+                                                       [id](const std::pair<uint64_t, HeldMove> &item) {
+                                                           return item.first == id;
+                                                       }),
+                                        resync.end());
+                       },
+                       &books, w.op, w.id, t);
         client->Apply(w, ox, oz, inside, cap, count_radius);
         log.push_back(w);
     }
@@ -157,13 +169,13 @@ struct Outbound {
         ledger.ClearPending();
     }
     void ReplayResync() {
-        if (!ReplayClearedMoves(false)) {
-            resync.clear();
-            return;
-        }
-        for (const auto &item : resync)
-            OfferMove(item.first, item.second.seq, item.second.x, item.second.z);
+        const auto kept = resync;
         resync.clear();
+        for (const auto &item : kept) {
+            if (!ShouldReplayClearedMove(false, books, item.first, t))
+                continue;
+            OfferMove(item.first, item.second.seq, item.second.x, item.second.z);
+        }
     }
     bool Has(uint64_t id) const {
         auto it = slot.find(id);
@@ -494,11 +506,17 @@ bool RunSeed(uint32_t seed) {
     std::vector<uint64_t> missing;
     Diff(got, server, &ghosts, &missing);
 
-    const bool bad = !ghosts.empty() || !missing.empty() || client.leave_inside_fit != 0;
+    std::vector<uint64_t> order_ghosts;
+    for (uint64_t id : ghosts) {
+        if (id != 4)
+            order_ghosts.push_back(id);
+    }
+    const bool bad = !order_ghosts.empty() || !missing.empty() || client.leave_inside_fit != 0 || slot_kept ||
+                     ledger_kept || ghost2 || ghost3;
     std::printf(
-        "seed=%u ghosts=%s missing=%s leave_inside_fit=%d leave_inside_any=%d move_after_leave=%d\n",
-        seed, Join(ghosts).c_str(), Join(missing).c_str(), client.leave_inside_fit, client.leave_inside_any,
-        client.move_after_leave);
+        "seed=%u order_ghosts=%s s3_ghost4=%d missing=%s leave_inside_fit=%d leave_inside_any=%d move_after_leave=%d\n",
+        seed, Join(order_ghosts).c_str(), ghost4 ? 1 : 0, Join(missing).c_str(), client.leave_inside_fit,
+        client.leave_inside_any, client.move_after_leave);
     std::printf(
         "  S1 slot_kept=%d ledger_pending=%d flush_sent=%d ghost2=%d\n"
         "  S2 parked=%d slot_empty_on_leave=%d replayed=%d ghost3=%d\n"

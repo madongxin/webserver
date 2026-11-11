@@ -547,6 +547,20 @@ target_include_directories(aoi_client_model_test PRIVATE
 target_link_libraries(aoi_client_model_test
   ${CMAKE_THREAD_LIBS_INIT} ${OPENSSL_CRYPTO_LIB} ${JSONCPP_LIBRARIES})
 
+add_executable(aoi_leave_slot_test
+  test/aoi_leave_slot_test.cpp
+  game/ProtoFraming.cpp
+  game/game.pb.cc
+  base/CurrentThread.cpp
+  log/Logging.cpp
+  log/LogStream.cpp
+  log/LogFile.cpp
+  log/AsyncLogging.cpp)
+target_include_directories(aoi_leave_slot_test PRIVATE
+  runtime base log timer game ${OPENSSL_INCLUDE_DIR} ${Protobuf_INCLUDE_DIRS})
+target_link_libraries(aoi_leave_slot_test
+  ${CMAKE_THREAD_LIBS_INIT} ${OPENSSL_CRYPTO_LIB} ${Protobuf_LIBRARIES})
+
 add_executable(aoi_subscription_invariant_test
   test/aoi_subscription_invariant_test.cpp
   runtime/MapRuntime.cpp

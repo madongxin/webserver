@@ -144,6 +144,8 @@ public:
     int64_t parked_move_age_ms() const;
     /** 最新移动帧已经交给写路径，但还没全部写进内核。这时不能从缓冲里删掉它。 */
     bool latest_move_awaiting_write() const { return send_move_sticky_; }
+    /** 这一帧已经有字节进了内核，剩下的半帧不能改、也不能撤回。 */
+    bool move_bytes_entered_kernel() const { return MoveBytesAlreadyEntered(); }
     void SendFile(int filefd, int size);
 
     /** epoll 读就绪：读 socket -> 调 on_message_ */

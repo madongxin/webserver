@@ -74,6 +74,13 @@ public:
         }
     }
 
+    /** 这个人已经 ENTER/LEAVE。在途标记、等待时间和条目一起删掉，避免以后再被 Pick 选中。 */
+    void Forget(uint64_t id) {
+        if (id == 0)
+            return;
+        entities_.erase(id);
+    }
+
     void Offer(uint64_t id, uint64_t seq, int64_t now, int layer, float x = 0, float z = 0,
                bool has_pos = false) {
         if (id == 0)

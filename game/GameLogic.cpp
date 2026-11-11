@@ -1,5 +1,6 @@
 #include "GameLogic.h"
 
+#include "AoiHoldGate.h"
 #include "AoiPublishQueue.h"
 #include "CommandSpec.h"
 #include "FormalMode.h"
@@ -190,9 +191,11 @@ void FillMoveSnapshot(const MapEntity &e, game::EntitySnapshot *out) {
     }
 }
 
-std::mutex g_aoi_mu;
-std::unordered_set<uint64_t> g_aoi_held;
-std::unordered_map<uint64_t, AoiPushBatch> g_aoi_held_batch;
+struct AoiHeldItem {
+    uint64_t map_instance_id = 0;
+    AoiRecipientEvent event;
+};
+AoiHoldGate<AoiHeldItem> g_aoi_hold;
 struct AoiLane {
     std::mutex mu;
     std::condition_variable cv;
@@ -380,17 +383,12 @@ void PublishAoiBatch(const AoiPushBatch &batch) {
         return;
     AoiPushBatch live;
     live.map_instance_id = batch.map_instance_id;
-    {
-        std::lock_guard<std::mutex> lk(g_aoi_mu);
-        for (const auto &ev : batch.events) {
-            if (g_aoi_held.count(ev.recipient_id) != 0) {
-                auto &held = g_aoi_held_batch[ev.recipient_id];
-                held.map_instance_id = batch.map_instance_id;
-                held.events.push_back(ev);
-            } else {
-                live.events.push_back(ev);
-            }
-        }
+    for (const auto &ev : batch.events) {
+        AoiHeldItem item;
+        item.map_instance_id = batch.map_instance_id;
+        item.event = ev;
+        if (!g_aoi_hold.Admit(ev.recipient_id, item))
+            live.events.push_back(ev);
     }
     if (live.events.empty())
         return;
@@ -520,21 +518,20 @@ void GameLogic::SetAoiHold(uint64_t player_id, bool hold) {
 #ifdef WEBSERVER_ENABLE_BRPC
     if (player_id == 0)
         return;
-    AoiPushBatch flushed;
-    {
-        std::lock_guard<std::mutex> lk(g_aoi_mu);
-        if (hold) {
-            g_aoi_held.insert(player_id);
-            return;
-        }
-        g_aoi_held.erase(player_id);
-        auto it = g_aoi_held_batch.find(player_id);
-        if (it == g_aoi_held_batch.end())
-            return;
-        flushed = std::move(it->second);
-        g_aoi_held_batch.erase(it);
+    if (hold) {
+        g_aoi_hold.Hold(player_id);
+        return;
     }
-    EnqueueAoi(std::move(flushed));
+    g_aoi_hold.Release(player_id, [](std::vector<AoiHeldItem> items) {
+        if (items.empty())
+            return;
+        AoiPushBatch flushed;
+        for (auto &item : items) {
+            flushed.map_instance_id = item.map_instance_id;
+            flushed.events.push_back(std::move(item.event));
+        }
+        EnqueueAoi(std::move(flushed));
+    });
 #else
     (void)player_id;
     (void)hold;

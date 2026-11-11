@@ -4,6 +4,7 @@
 
 #include <memory>
 #include <string>
+#include <vector>
 
 class EventLoop;
 class TcpConnection;
@@ -13,6 +14,12 @@ class TcpConnection;
  * keep_newest 为真时留下最后一帧移动，避免观察者停在进图那一帧。
  */
 size_t DropQueuedAoiMoveFrames(TcpConnection *conn, bool keep_newest = false);
+/**
+ * 还没写出第一个字节的 AOI 帧里，去掉这些实体的事件并重编码。
+ * 其它实体留下。半帧前缀和已经进内核的字节不动。
+ * 返回删掉的事件数。必须在连接自己的 EventLoop 上调用。
+ */
+size_t FilterQueuedAoiEntities(TcpConnection *conn, const std::vector<uint64_t> &drop_ids);
 /**
  * 心跳和 RPC 回包写出前调用。应答插到队首；多出来的旧移动帧丢掉，
  * 但至少留一帧最新位置。不因为发送缓冲积压关连接。

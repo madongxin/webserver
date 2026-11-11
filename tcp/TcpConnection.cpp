@@ -11,7 +11,11 @@
 #include "ServerStats.h"
 #include "TimeStamp.h"
 #include "Logging.h"
+#ifdef WEBSERVER_ENABLE_GAME_PROTOBUF
+#include "AoiStrip.h"
+#endif
 #include <algorithm>
+#include <unordered_set>
 #include <chrono>
 #include <cstdlib>
 #include <memory>
@@ -443,6 +447,39 @@ TcpConnection::ControlSendResult TcpConnection::TrySendControl(const char *msg, 
         return Closed;
     if (SendBufV2Enabled()) {
         InstallSendBufV2Callback();
+#ifdef WEBSERVER_ENABLE_GAME_PROTOBUF
+        if (!strip_entities.empty() && !MoveBytesAlreadyEntered()) {
+            auto piece = send_v2_.DetachMove();
+            if (!piece.frame.empty()) {
+                std::string rewritten;
+                bool empty = false;
+                int removed = 0;
+                if (RewriteAoiFrameDroppingEntities(piece.frame, strip_entities, &rewritten, &empty,
+                                                    &removed) &&
+                    removed > 0) {
+                    std::unordered_set<uint64_t> drop(strip_entities.begin(), strip_entities.end());
+                    std::vector<SendBufV2::Stamp> kept;
+                    std::vector<LatestMoveAck> dropped_acks;
+                    for (const auto &st : piece.stamps) {
+                        if (drop.count(st.entity_id) != 0) {
+                            LatestMoveAck ack;
+                            ack.entity_id = st.entity_id;
+                            ack.state_seq = st.state_seq;
+                            dropped_acks.push_back(ack);
+                        } else {
+                            kept.push_back(st);
+                        }
+                    }
+                    if (move_commit_cb_ && !dropped_acks.empty())
+                        move_commit_cb_(std::move(dropped_acks), false, 0);
+                    if (!empty)
+                        send_v2_.SetMove(rewritten, std::move(kept));
+                } else {
+                    send_v2_.SetMove(piece.frame, std::move(piece.stamps));
+                }
+            }
+        }
+#endif
         bool strip_buffered = false;
         if (!strip_entities.empty() && move_commit_pending_ && !MoveBytesAlreadyEntered() &&
             !send_move_sticky_) {
