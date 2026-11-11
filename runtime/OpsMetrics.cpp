@@ -346,6 +346,12 @@ std::string OpsMetrics::PrometheusText() const {
         os << "gamemesh_aoi_leave_total{reason=\"" << AoiLeaveReasonName(reason) << "\"} "
            << ServerStats::aoi_leave_by_reason[i].load(std::memory_order_relaxed) << "\n";
     }
+    if (ServerStats::aoi_present_slice_us_max.load(std::memory_order_relaxed) > 0) {
+        os << "# HELP gamemesh_aoi_present_slice_us_max Longest AdvancePresented lock slice in this process. Unit: microseconds.\n"
+              "# TYPE gamemesh_aoi_present_slice_us_max gauge\n"
+           << "gamemesh_aoi_present_slice_us_max "
+           << ServerStats::aoi_present_slice_us_max.load(std::memory_order_relaxed) << "\n";
+    }
     os << "# HELP gamemesh_aoi_unexpected_leave_total "
           "LEAVE while the subject is still inside the enter radius and still connected. Unit: events.\n"
           "# TYPE gamemesh_aoi_unexpected_leave_total counter\n"

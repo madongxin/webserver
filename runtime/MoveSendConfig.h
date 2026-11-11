@@ -54,6 +54,15 @@ inline int AoiV2NearMeters() { return MoveEnvInt("GAMEMESH_AOI_V2_NEAR_METERS", 
 inline int AoiV2FarIntervalMs() { return MoveEnvInt("GAMEMESH_AOI_V2_FAR_INTERVAL_MS", 1000, 200, 120000); }
 inline int AoiV2CapSlack() { return MoveEnvInt("GAMEMESH_AOI_V2_CAP_SLACK", 8, 0, 64); }
 inline int AoiV2LeaveExtraCells() { return MoveEnvInt("GAMEMESH_AOI_V2_LEAVE_EXTRA_CELLS", 1, 0, 4); }
+/** 呈现线程一次持锁最多处理这么多人。待压测校准。 */
+inline int AoiPresentSliceEntities() { return MoveEnvInt("GAMEMESH_AOI_PRESENT_SLICE_N", 64, 1, 100000); }
+/** 呈现线程一次持锁最多这么久，到点就放开锁。单位微秒。待压测校准。 */
+inline int AoiPresentSliceUs() { return MoveEnvInt("GAMEMESH_AOI_PRESENT_SLICE_US", 2000, 200, 50000); }
+/**
+ * 两片之间停一下，让正在等这把锁的 Move 进去。
+ * 只调用 yield 时，本机调度会让呈现线程立刻把锁拿回来。待压测校准。
+ */
+inline int AoiPresentSlicePauseUs() { return MoveEnvInt("GAMEMESH_AOI_PRESENT_SLICE_PAUSE_US", 200, 0, 5000); }
 /** LEAVE 未确认时最长补发这么久，然后记指标并放弃。默认 10 分钟。 */
 inline int AoiLeaveRetryMaxMs() { return MoveEnvInt("GAMEMESH_AOI_LEAVE_RETRY_MAX_MS", 600000, 1000, 3600000); }
 /** 近处移动实体的关键帧间隔。待压测校准。 */

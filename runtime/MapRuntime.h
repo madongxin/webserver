@@ -45,6 +45,7 @@ struct MapEntity {
     float vx = 0;
     float vz = 0;
     int64_t move_start_ms = 0;
+    uint64_t membership_epoch = 0;
     // 别人看见的位置。大步移动时权威点先到终点，呈现点沿速度走过去，避免一帧离开视野。
     float aoi_x = 0;
     float aoi_z = 0;
@@ -199,6 +200,7 @@ private:
         int view_radius = -1;
         int max_visible = 200;  // frozen when the instance is created
         uint64_t epoch = 0;
+        uint64_t cell_epoch = 1;
         std::atomic<bool> unloaded{false};
         std::atomic<int> entity_count{0};
     };

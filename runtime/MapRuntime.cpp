@@ -14,6 +14,7 @@
 #include <cmath>
 #include <cstdio>
 #include <mutex>
+#include <thread>
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
@@ -167,10 +168,14 @@ void MapRuntime::AdvancePresented(std::vector<AoiPushBatch> *batches) {
     for (const auto &item : maps) {
         AoiPushBatch batch;
         batch.map_instance_id = item.first;
-        auto lock = LockInst(item.second);
         InstanceState *st = item.second.get();
-        if (!st->data)
-            continue;
+        {
+            auto lock = LockInst(item.second);
+            if (!st->data)
+                continue;
+        }
+        // 一次持锁最多 N 个人或 2ms。放锁后 Move 才能把自己的回包写出去。
+        // 复杂度：每一片 O(片内人数 × 该人的观察者数)，不是一整张图。
         // 在 AOI 内的人同步当前坐标。离开 AOI 的人发 LEAVE，客户端不能留着旧坐标的模型。
         auto sync_pose = [&](MapEntity &subject, int64_t now_ms) {
             if (AoiV2VisibleSet()) {
@@ -275,8 +280,34 @@ void MapRuntime::AdvancePresented(std::vector<AoiPushBatch> *batches) {
             if (live.empty())
                 st->watchers.erase(subject.player_id);
         };
-        for (auto &kv : st->entities) {
-            MapEntity &e = kv.second;
+        std::vector<uint64_t> order;
+        {
+            auto snap = LockInst(item.second);
+            order.reserve(st->entities.size());
+            for (const auto &kv : st->entities)
+                order.push_back(kv.first);
+        }
+        const int slice_n = AoiPresentSliceEntities();
+        const int slice_us = AoiPresentSliceUs();
+        size_t cursor = 0;
+        while (cursor < order.size()) {
+            {
+            auto lock = LockInst(item.second);
+            const auto slice_t0 = std::chrono::steady_clock::now();
+            int processed = 0;
+            for (; cursor < order.size(); ++cursor) {
+                if (processed > 0) {
+                    const auto used = std::chrono::duration_cast<std::chrono::microseconds>(
+                                          std::chrono::steady_clock::now() - slice_t0)
+                                          .count();
+                    if (processed >= slice_n || used >= slice_us)
+                        break;
+                }
+                ++processed;
+                auto found = st->entities.find(order[cursor]);
+                if (found == st->entities.end())
+                    continue;
+                MapEntity &e = found->second;
             if (!e.connected || !e.aoi_live)
                 continue;
             const float dx = e.x - e.aoi_x;
@@ -337,11 +368,23 @@ void MapRuntime::AdvancePresented(std::vector<AoiPushBatch> *batches) {
             if (wit != st->watchers.end())
                 viewers.insert(viewers.end(), wit->second.begin(), wit->second.end());
             RefreshViewers(st, viewers, e.player_id, 0, item.first, &batch);
-        }
-        RetryPendingLeaves(st, item.first, NowMs(), &batch);
-        if (!batch.events.empty())
-            batches->push_back(std::move(batch));
-        if (AoiV2VisibleSet()) {
+            }
+            const bool last = cursor >= order.size();
+            if (last)
+                RetryPendingLeaves(st, item.first, NowMs(), &batch);
+            const auto used = std::chrono::duration_cast<std::chrono::microseconds>(
+                                  std::chrono::steady_clock::now() - slice_t0)
+                                  .count();
+            int64_t prev = ServerStats::aoi_present_slice_us_max.load(std::memory_order_relaxed);
+            while (used > prev &&
+                   !ServerStats::aoi_present_slice_us_max.compare_exchange_weak(
+                       prev, used, std::memory_order_relaxed)) {
+            }
+            if (!batch.events.empty()) {
+                batches->push_back(std::move(batch));
+                batch.map_instance_id = item.first;
+            }
+            if (last && AoiV2VisibleSet()) {
             scanned = true;
             const int64_t now = NowMs();
             for (const auto &book : st->notified) {
@@ -357,6 +400,21 @@ void MapRuntime::AdvancePresented(std::vector<AoiPushBatch> *batches) {
                 }
                 visible_counts.push_back(vis);
             }
+            }
+            }
+            if (cursor < order.size()) {
+                const int pause_us = AoiPresentSlicePauseUs();
+                if (pause_us > 0)
+                    std::this_thread::sleep_for(std::chrono::microseconds(pause_us));
+                else
+                    std::this_thread::yield();
+            }
+        }
+        if (order.empty()) {
+            auto lock = LockInst(item.second);
+            RetryPendingLeaves(st, item.first, NowMs(), &batch);
+            if (!batch.events.empty())
+                batches->push_back(std::move(batch));
         }
     }
     if (scanned) {
@@ -490,7 +548,9 @@ void MapRuntime::PlaceInCell(InstanceState *st, const MapEntity &e) {
         return;
     int cx = 0, cz = 0;
     st->data->WorldToAoiCell(e.PresentedX(), e.PresentedZ(), &cx, &cz);
-    st->cells[CellKey(cx, cz)].insert(e.player_id);
+    auto &cell = st->cells[CellKey(cx, cz)];
+    if (cell.insert(e.player_id).second)
+        ++st->cell_epoch;
 }
 
 void MapRuntime::RemoveFromCell(InstanceState *st, const MapEntity &e) {
@@ -501,7 +561,8 @@ void MapRuntime::RemoveFromCell(InstanceState *st, const MapEntity &e) {
     auto it = st->cells.find(CellKey(cx, cz));
     if (it == st->cells.end())
         return;
-    it->second.erase(e.player_id);
+    if (it->second.erase(e.player_id) != 0)
+        ++st->cell_epoch;
     if (it->second.empty())
         st->cells.erase(it);
 }
@@ -1681,10 +1742,16 @@ MapMoveReject MapRuntime::Move(uint64_t map_instance_id, uint64_t player_id, flo
         e.move_start_ms = t1;
     PlaceInCell(st.get(), e);
     const bool same_cell = old_cx == new_cx && old_cz == new_cz;
-    const auto neigh = NeighborhoodIds(*st, e.PresentedX(), e.PresentedZ());
+    // 格子占用版本没变时，成员关系和上次算的一样。不用再扫邻居，Move 持锁是 O(1)。
+    // 有人进出格子才会 ++cell_epoch，下一次再重算。
+    std::vector<uint64_t> neigh;
     bool membership_stable = false;
-    if (!AoiMembershipUnified()) {
     auto self_vis = st->visible_targets.find(player_id);
+    if (!AoiMembershipUnified() && same_cell && e.membership_epoch != 0 &&
+        e.membership_epoch == st->cell_epoch && self_vis != st->visible_targets.end()) {
+        membership_stable = true;
+    } else if (!AoiMembershipUnified()) {
+    neigh = NeighborhoodIds(*st, e.PresentedX(), e.PresentedZ());
     membership_stable = same_cell && neigh.size() <= static_cast<size_t>(st->max_visible) + 1 &&
                         self_vis != st->visible_targets.end();
     if (membership_stable) {
@@ -1699,6 +1766,8 @@ MapMoveReject MapRuntime::Move(uint64_t map_instance_id, uint64_t player_id, flo
         if (self_vis->second.size() + 1 != neigh.size())
             membership_stable = false;
     }
+    if (membership_stable)
+        e.membership_epoch = st->cell_epoch;
     }
     bool emitted_fast = false;
     if (!displaced) {

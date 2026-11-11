@@ -513,6 +513,23 @@ target_include_directories(map_runtime_aoi_test PRIVATE
 target_link_libraries(map_runtime_aoi_test
   ${CMAKE_THREAD_LIBS_INIT} ${OPENSSL_CRYPTO_LIB} ${JSONCPP_LIBRARIES})
 
+add_executable(aoi_present_slice_test
+  test/aoi_present_slice_test.cpp
+  runtime/MapRuntime.cpp
+  runtime/OpsMetrics.cpp
+  runtime/MapStaticData.cpp
+  runtime/MapCatalog.cpp
+  base/FileHash.cpp
+  base/CurrentThread.cpp
+  log/Logging.cpp
+  log/LogStream.cpp
+  log/LogFile.cpp
+  log/AsyncLogging.cpp)
+target_include_directories(aoi_present_slice_test PRIVATE
+  runtime base log timer ${OPENSSL_INCLUDE_DIR} ${JSONCPP_INCLUDE_DIRS})
+target_link_libraries(aoi_present_slice_test
+  ${CMAKE_THREAD_LIBS_INIT} ${OPENSSL_CRYPTO_LIB} ${JSONCPP_LIBRARIES})
+
 add_executable(aoi_fanout_v2_test
   test/aoi_fanout_v2_test.cpp
   runtime/MapRuntime.cpp
