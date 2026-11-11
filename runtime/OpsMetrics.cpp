@@ -335,6 +335,9 @@ std::string OpsMetrics::PrometheusText() const {
         ServerStats::aoi_sub_enter.load(std::memory_order_relaxed));
     ctr("gamemesh_aoi_sub_leave_total", "AOI subscription LEAVE events.",
         ServerStats::aoi_sub_leave.load(std::memory_order_relaxed));
+    ctr("gamemesh_aoi_leave_retry_expired_total",
+        "LEAVE retries dropped after the configured maximum age. Unit: events.",
+        ServerStats::aoi_leave_retry_expired.load(std::memory_order_relaxed));
     if (ServerStats::aoi_cap_evict.load(std::memory_order_relaxed) > 0)
         ctr("gamemesh_aoi_cap_evict_total",
             "Times a visible entity was evicted by the interest cap. Unit: events.",

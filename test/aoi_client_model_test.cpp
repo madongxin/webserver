@@ -3,6 +3,7 @@
 #include "Logging.h"
 #include "MapRuntime.h"
 #include "MapStaticData.h"
+#include "ServerStats.h"
 
 #include <algorithm>
 #include <chrono>
@@ -36,8 +37,8 @@
 // 4. 实体 3：MOVE 进槽后走慢客户端清槽（拷进 resync，清槽和账本 pending）。
 //    然后断线，这一批只有 LEAVE。确认之后按 ReplayClearedMoves(false) 把旧 MOVE Offer 回去再 Flush。
 //    这是 S2。
-// 5. 实体 4 走到 (20,20)。LEAVE 急送一直返回 0。任务 1 不把这个幽灵算进失败：
-//    补发上限仍会把它丢掉，客户端留着模型。这是 S3，交给任务 2。
+// 5. 实体 4 走到 (20,20)。LEAVE 急送失败约 30 秒（测试时钟），然后恢复。
+//    补发按 1s、2s、4s、5s 继续，恢复后的那次 LEAVE 把模型删掉。
 // 6. 实体 5 按种子在进入半径里随机跨格。实体 6 断线再重连，ENTER 能补回来。
 // 7. 另一张图上 8 个人挤在同一格，人数上限 2，用来看 S4。默认路径会把还在格子里的人塞回去。
 
@@ -451,6 +452,7 @@ bool RunSeed(uint32_t seed) {
     opt.drop_leave.insert(4);
     opt.watch = 4;
     opt.watched_leaves = 0;
+    MapRuntime::SetNowMsForTest(100000);
     if (!MoveTo(rt, 1, 4, 20.f, 20.f, &seq, &now, &pushes, &err)) {
         std::printf("FAIL seed=%u step=entity 4 move\n", seed);
         return false;
@@ -461,8 +463,11 @@ bool RunSeed(uint32_t seed) {
         return false;
     }
     int quiet = 0;
-    for (int i = 0; i < 4; ++i) {
-        std::this_thread::sleep_for(std::chrono::milliseconds(1100));
+    const int64_t gaps[] = {1000, 2000, 4000, 5000, 5000, 5000, 8000};
+    int64_t clock = 100000;
+    for (int64_t gap : gaps) {
+        clock += gap;
+        MapRuntime::SetNowMsForTest(clock);
         const int before = opt.watched_leaves;
         std::vector<AoiPushBatch> more;
         rt.AdvancePresented(&more);
@@ -470,7 +475,15 @@ bool RunSeed(uint32_t seed) {
         if (opt.watched_leaves == before)
             ++quiet;
     }
-    out.slot.erase(4);
+    opt.drop_leave.erase(4);
+    clock += 5000;
+    MapRuntime::SetNowMsForTest(clock);
+    {
+        std::vector<AoiPushBatch> more;
+        rt.AdvancePresented(&more);
+        FeedAll(rt, more, kObs, &out, &client, 80.f, 80.f, &opt);
+    }
+    out.Flush(&client, 80.f, 80.f);
     const bool ghost4 = client.body.count(4) != 0 && ServerView(rt, kObs).count(4) == 0;
 
     if (!MoveTo(rt, 1, 6, 84.f, 83.f, &seq, &now, &pushes, &err)) {
@@ -512,7 +525,7 @@ bool RunSeed(uint32_t seed) {
             order_ghosts.push_back(id);
     }
     const bool bad = !order_ghosts.empty() || !missing.empty() || client.leave_inside_fit != 0 || slot_kept ||
-                     ledger_kept || ghost2 || ghost3;
+                     ledger_kept || ghost2 || ghost3 || ghost4;
     std::printf(
         "seed=%u order_ghosts=%s s3_ghost4=%d missing=%s leave_inside_fit=%d leave_inside_any=%d move_after_leave=%d\n",
         seed, Join(order_ghosts).c_str(), ghost4 ? 1 : 0, Join(missing).c_str(), client.leave_inside_fit,
@@ -530,11 +543,67 @@ bool RunSeed(uint32_t seed) {
     return !bad;
 }
 
+bool RunExpiry() {
+    ::unsetenv("GAMEMESH_AOI_V2_VISIBLE_SET");
+    auto data = MakeMap();
+    if (!data)
+        return false;
+    auto &rt = MapRuntime::Instance();
+    rt.ClearForTest();
+    rt.SetViewRadiusCells(kEnterCells);
+    rt.SetMaxVisible(kCap);
+    MapRuntime::SetNowMsForTest(300000);
+    Outbound out;
+    Client client;
+    FeedOpt opt;
+    opt.drop_leave.insert(2);
+    opt.watch = 2;
+    std::string err;
+    uint64_t seq = 1;
+    int64_t now = 1;
+    for (int i = 0; i < 2; ++i) {
+        AoiPushBatch pushes;
+        MapEntity self;
+        std::vector<MapEntity> snap;
+        const uint64_t id = static_cast<uint64_t>(i + 1);
+        if (!rt.Enter(1, data, Ent(id, id == 1 ? 80.f : 82.f, 80.f), &self, &snap, &pushes, &err,
+                      kEnterCells, kCap))
+            return false;
+        Feed(rt, pushes, kObs, &out, &client, 80.f, 80.f, &opt);
+    }
+    AoiPushBatch pushes;
+    if (!MoveTo(rt, 1, 2, 150.f, 80.f, &seq, &now, &pushes, &err))
+        return false;
+    Feed(rt, pushes, kObs, &out, &client, 80.f, 80.f, &opt);
+    if (!GlideUntilLeave(rt, 2, &out, &client, &opt)) {
+        std::printf("FAIL expiry never left\n");
+        return false;
+    }
+    const int leaves = opt.watched_leaves;
+    const uint64_t before = ServerStats::aoi_leave_retry_expired.load(std::memory_order_relaxed);
+    MapRuntime::SetNowMsForTest(300000 + 600000);
+    std::vector<AoiPushBatch> more;
+    rt.AdvancePresented(&more);
+    FeedAll(rt, more, kObs, &out, &client, 80.f, 80.f, &opt);
+    const uint64_t after = ServerStats::aoi_leave_retry_expired.load(std::memory_order_relaxed);
+    more.clear();
+    rt.AdvancePresented(&more);
+    const int mid = opt.watched_leaves;
+    FeedAll(rt, more, kObs, &out, &client, 80.f, 80.f, &opt);
+    const bool stopped = opt.watched_leaves == mid;
+    const bool still = client.body.count(2) != 0;
+    std::printf("expiry before=%llu after=%llu leaves=%d stopped=%d still=%d\n",
+                static_cast<unsigned long long>(before), static_cast<unsigned long long>(after), leaves,
+                stopped ? 1 : 0, still ? 1 : 0);
+    rt.ClearForTest();
+    return after > before && stopped && still;
+}
+
 }  // namespace
 
 int main() {
     Logger::setLogLevel(Logger::ERROR);
-    if (!RunSeed(kSeed)) {
+    if (!RunSeed(kSeed) || !RunExpiry()) {
         std::printf("FAIL aoi_client_model_test seed=%u\n", kSeed);
         return 1;
     }

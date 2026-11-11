@@ -7,6 +7,7 @@
 #include "ServerStats.h"
 
 #include <algorithm>
+#include <atomic>
 #include <chrono>
 #include <cmath>
 #include <cstdio>
@@ -452,7 +453,16 @@ uint64_t MapRuntime::CellKey(int cx, int cz) {
            static_cast<uint32_t>(cz);
 }
 
+namespace {
+std::atomic<int64_t> g_debug_now_ms{0};
+}
+
+void MapRuntime::SetNowMsForTest(int64_t ms) { g_debug_now_ms.store(ms, std::memory_order_relaxed); }
+
 int64_t MapRuntime::NowMs() {
+    const int64_t forced = g_debug_now_ms.load(std::memory_order_relaxed);
+    if (forced > 0)
+        return forced;
     using namespace std::chrono;
     return duration_cast<milliseconds>(steady_clock::now().time_since_epoch()).count();
 }
@@ -732,83 +742,148 @@ void MapRuntime::RememberLeave(InstanceState *st, AoiPushBatch *batch, const Map
             st->next_leave_version = 1;
         again.version = st->next_leave_version++;
         again.tries = 1;
+        again.first_ms = now_ms;
     } else {
         again.tries += 1;
     }
     again.last_ms = now_ms;
     again.snap = subject;
     ev.notify_version = again.version;
+    st->interest_version[subject.player_id][ev.recipient_id] = again.version;
 }
+
+namespace {
+
+int64_t LeaveRetryGapMs(int tries_sent) {
+    if (tries_sent <= 1)
+        return 1000;
+    if (tries_sent == 2)
+        return 2000;
+    if (tries_sent == 3)
+        return 4000;
+    return 5000;
+}
+
+}  // namespace
 
 void MapRuntime::RetryPendingLeaves(InstanceState *st, uint64_t map_id, int64_t now_ms,
                                     AoiPushBatch *batch) {
     if (!st || !batch)
         return;
-    std::vector<uint64_t> subjects;
-    subjects.reserve(st->leave_again.size());
-    for (const auto &kv : st->leave_again)
-        subjects.push_back(kv.first);
-    int sent = 0;
-    for (uint64_t sid : subjects) {
-        auto sit = st->leave_again.find(sid);
-        if (sit == st->leave_again.end())
-            continue;
+    struct Due {
+        int64_t last_ms = 0;
+        uint64_t sid = 0;
+        uint64_t vid = 0;
+        bool correct = false;
+    };
+    std::vector<Due> due;
+    std::vector<std::pair<uint64_t, uint64_t>> drop;
+    const int enter_r = ResolvedRadius(*st);
+    const int leave_r = enter_r + std::max(0, AoiV2LeaveExtraCells());
+    const int64_t max_age = AoiLeaveRetryMaxMs();
+    for (const auto &sk : st->leave_again) {
+        const uint64_t sid = sk.first;
         auto eit = st->entities.find(sid);
         const bool live = eit != st->entities.end() && eit->second.connected;
-        std::vector<uint64_t> viewers;
-        viewers.reserve(sit->second.size());
-        for (const auto &vk : sit->second)
-            viewers.push_back(vk.first);
-        std::vector<uint64_t> drop;
-        for (uint64_t vid : viewers) {
-            auto ait = sit->second.find(vid);
-            if (ait == sit->second.end())
-                continue;
+        for (const auto &vk : sk.second) {
+            const uint64_t vid = vk.first;
+            const auto &again = vk.second;
             auto vit = st->entities.find(vid);
             if (vit == st->entities.end() || !vit->second.connected) {
-                drop.push_back(vid);
+                drop.emplace_back(sid, vid);
+                continue;
+            }
+            auto known = st->interest_version[sid].find(vid);
+            if (known != st->interest_version[sid].end() && known->second > again.version) {
+                drop.emplace_back(sid, vid);
+                continue;
+            }
+            const int64_t first = again.first_ms > 0 ? again.first_ms : again.last_ms;
+            if (first > 0 && now_ms - first >= max_age) {
+                LOG_WARN << "AOI leave retry expired viewer=" << vid << " subject=" << sid
+                         << " age_ms=" << (now_ms - first);
+                ServerStats::aoi_leave_retry_expired.fetch_add(1, std::memory_order_relaxed);
+                drop.emplace_back(sid, vid);
                 continue;
             }
             if (live) {
-                bool back = false;
-                const int leave_r = ResolvedRadius(*st) + std::max(0, AoiV2LeaveExtraCells());
+                bool in_window = false;
                 for (uint64_t id : NeighborhoodIdsRadius(*st, eit->second.PresentedX(),
                                                          eit->second.PresentedZ(), leave_r)) {
                     if (id == vid) {
-                        back = true;
+                        in_window = true;
                         break;
                     }
                 }
-                if (back) {
-                    drop.push_back(vid);
+                if (in_window) {
+                    Due d;
+                    d.last_ms = again.last_ms;
+                    d.sid = sid;
+                    d.vid = vid;
+                    d.correct = true;
+                    due.push_back(d);
                     continue;
                 }
             }
-            // 第一次已经发出。没确认时最多再补两次，并且至少隔 1 秒。
-            if (ait->second.tries >= 3) {
-                drop.push_back(vid);
+            if (now_ms - again.last_ms < LeaveRetryGapMs(again.tries))
                 continue;
+            Due d;
+            d.last_ms = again.last_ms;
+            d.sid = sid;
+            d.vid = vid;
+            due.push_back(d);
+        }
+    }
+    std::sort(due.begin(), due.end(), [](const Due &a, const Due &b) {
+        if (a.last_ms != b.last_ms)
+            return a.last_ms < b.last_ms;
+        if (a.sid != b.sid)
+            return a.sid < b.sid;
+        return a.vid < b.vid;
+    });
+    int sent = 0;
+    for (const auto &d : due) {
+        if (sent >= 32)
+            break;
+        auto sit = st->leave_again.find(d.sid);
+        if (sit == st->leave_again.end() || sit->second.count(d.vid) == 0)
+            continue;
+        auto vit = st->entities.find(d.vid);
+        auto eit = st->entities.find(d.sid);
+        if (vit == st->entities.end() || !vit->second.connected)
+            continue;
+        const bool live = eit != st->entities.end() && eit->second.connected;
+        MapEntity snap = live ? eit->second : sit->second[d.vid].snap;
+        if (snap.player_id == 0)
+            snap.player_id = d.sid;
+        if (d.correct) {
+            EmitTo(st, batch, map_id, vit->second, 1, snap);
+            if (!batch->events.empty() && batch->events.back().op == 1 &&
+                batch->events.back().snapshot.player_id == d.sid) {
+                if (st->next_leave_version == 0)
+                    st->next_leave_version = 1;
+                const uint64_t ver = st->next_leave_version++;
+                batch->events.back().notify_version = ver;
+                st->interest_version[d.sid][d.vid] = ver;
             }
-            if (now_ms - ait->second.last_ms < 1000)
-                continue;
-            if (sent >= 32)
-                continue;
-            MapEntity snap = live ? eit->second : ait->second.snap;
-            if (snap.player_id == 0)
-                snap.player_id = sid;
+            st->watchers[d.sid].insert(d.vid);
+            st->visible_targets[d.vid].insert(d.sid);
+            ServerStats::aoi_sub_enter.fetch_add(1, std::memory_order_relaxed);
+            drop.emplace_back(d.sid, d.vid);
+        } else {
             EmitTo(st, batch, map_id, vit->second, 3, snap);
             ServerStats::aoi_sub_leave.fetch_add(1, std::memory_order_relaxed);
             RememberLeave(st, batch, snap, now_ms);
-            ++sent;
         }
-        for (uint64_t vid : drop) {
-            auto cur = st->leave_again.find(sid);
-            if (cur == st->leave_again.end())
-                break;
-            cur->second.erase(vid);
-            if (cur->second.empty())
-                st->leave_again.erase(cur);
-        }
+        ++sent;
+    }
+    for (const auto &pair : drop) {
+        auto cur = st->leave_again.find(pair.first);
+        if (cur == st->leave_again.end())
+            continue;
+        cur->second.erase(pair.second);
+        if (cur->second.empty())
+            st->leave_again.erase(cur);
     }
 }
 
@@ -2028,6 +2103,7 @@ std::vector<uint64_t> MapRuntime::ListPlayers() const {
 }
 
 void MapRuntime::ClearForTest() {
+    SetNowMsForTest(0);
     std::vector<std::shared_ptr<InstanceState>> all;
     {
         std::lock_guard<std::mutex> lk(mu_);

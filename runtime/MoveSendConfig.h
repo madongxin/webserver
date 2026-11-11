@@ -54,6 +54,8 @@ inline int AoiV2NearMeters() { return MoveEnvInt("GAMEMESH_AOI_V2_NEAR_METERS", 
 inline int AoiV2FarIntervalMs() { return MoveEnvInt("GAMEMESH_AOI_V2_FAR_INTERVAL_MS", 1000, 200, 120000); }
 inline int AoiV2CapSlack() { return MoveEnvInt("GAMEMESH_AOI_V2_CAP_SLACK", 8, 0, 64); }
 inline int AoiV2LeaveExtraCells() { return MoveEnvInt("GAMEMESH_AOI_V2_LEAVE_EXTRA_CELLS", 1, 0, 4); }
+/** LEAVE 未确认时最长补发这么久，然后记指标并放弃。默认 10 分钟。 */
+inline int AoiLeaveRetryMaxMs() { return MoveEnvInt("GAMEMESH_AOI_LEAVE_RETRY_MAX_MS", 600000, 1000, 3600000); }
 /** 近处移动实体的关键帧间隔。待压测校准。 */
 inline int ExtrapKeyframeMs() { return MoveEnvInt("GAMEMESH_EXTRAP_KEYFRAME_MS", 4000, 3000, 5000); }
 /** 外推误差超过这么多米才补发。待压测校准。 */

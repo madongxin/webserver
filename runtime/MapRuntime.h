@@ -134,11 +134,19 @@ public:
     std::vector<uint64_t> ListPlayers() const;
     int TotalEntityCount() const;
     void ClearForTest();
+    /** 测试里推进服务器时钟。0 表示用真实单调钟。 */
+    static void SetNowMsForTest(int64_t ms);
     /** 最近 5 秒内坐标变过的算移动，其余在线实体算静止。没有人时两个输出都是 0。 */
     void CopyMotionCounts(int64_t *moving, int64_t *stationary) const;
     /** 把大步移动的呈现点朝权威坐标推进 0.2 秒，并补上因此产生的进出视野。 */
     void AdvancePresented(std::vector<AoiPushBatch> *batches);
-    /** 网关把 ENTER/LEAVE 写入发送缓冲后回调。ok=false 时差集保留。 */
+    /**
+     * 网关接受 ENTER/LEAVE 之后回调。
+     * ok 表示这一帧进了网关的应用发送缓冲，或当场 write 返回成功。
+     * 它不是内核写完，也不是客户端 ACK。逻辑进程没有每个 AOI 帧的内核完成回调，所以没有改成内核确认。
+     * 200ms 入队超时后回调仍可能写出，同一版本的 LEAVE 会再来一次；客户端应忽略删除一个已经不存在的实体。
+     * 更新的 ENTER 记下更大的版本后，更老的 LEAVE 在交给网关之前丢掉。
+     */
     void NoteAoiWrite(uint64_t viewer_id, uint64_t subject_id, int op, bool ok, uint64_t version);
     int LeavePendingCountForTest(uint64_t viewer_id) const;
 
@@ -154,14 +162,17 @@ private:
         std::unordered_map<uint64_t, std::unordered_set<uint64_t>> visible_targets;
         // target -> viewers who subscribed to that target. MOVE uses this, not the mover's own set.
         std::unordered_map<uint64_t, std::unordered_set<uint64_t>> watchers;
-        // 离开后 LEAVE 还没被网关确认。最多再补两次，间隔 1 秒，避免把出口打满。
+        // 离开后 LEAVE 还没被网关确认。按 1s、2s、4s、最大 5s 退避，直到确认、断线、回到视野或超过总时长。
         struct LeaveAgain {
+            int64_t first_ms = 0;
             int64_t last_ms = 0;
             uint64_t version = 0;
             int tries = 0;
             MapEntity snap;
         };
         std::unordered_map<uint64_t, std::unordered_map<uint64_t, LeaveAgain>> leave_again;
+        // subject -> viewer -> 已经交给网关的最新 ENTER/LEAVE 版本。更老的 LEAVE 不再发。
+        std::unordered_map<uint64_t, std::unordered_map<uint64_t, uint64_t>> interest_version;
         uint64_t next_leave_version = 1;
         enum class AoiPending : uint8_t { None = 0, Enter = 1, Leave = 2 };
         struct NotifiedItem {
