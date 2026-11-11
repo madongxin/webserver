@@ -150,8 +150,10 @@ int main() {
                    pol.kind == SceneKind::Line && pol.soft_cap == 300 &&
                    pol.hard_cap == 300 && pol.aoi_view_radius_cells == 2 &&
                    pol.aoi_max_visible == 200 &&
-                   pol.spawn_scatter_radius == 4.f,
-               "1002 LINE 300/300 scatter 4");
+                   pol.spawn_scatter_radius == 4.f &&
+                   pol.bot_spawn_x == 160.f && pol.bot_spawn_z == 658.f &&
+                   pol.bot_spawn_radius == 800.f,
+               "1002 LINE 300/300 scatter 4 bot disk");
         Expect(MapCatalog::Instance().GetScenePolicy(1001, &pol) &&
                    pol.spawn_scatter_radius == 4.f,
                "1001 scatter 4");
@@ -245,6 +247,39 @@ int main() {
         Expect(farthest > 80, "nearby spawn reaches past the old 80-cell box");
         Expect(stable, "same player same nearby point");
         Expect(varied, "different players can land on different cells");
+        bool disk_ok = true;
+        bool disk_inside = true;
+        bool disk_stable = true;
+        bool disk_varied = false;
+        float disk_x0 = 0.f, disk_z0 = 0.f;
+        float disk_far = 0.f;
+        for (uint64_t id = 1; id <= 64; ++id) {
+            float x = 0.f, yy = 0.f, z = 0.f;
+            if (!luna->FindDiskSpawn(id, 160.f, y, 658.f, 400.f, &x, &yy, &z)) {
+                disk_ok = false;
+                break;
+            }
+            const float dx = x - 160.f;
+            const float dz = z - 658.f;
+            const float dist = std::sqrt(dx * dx + dz * dz);
+            if (dist > 400.f || !luna->IsWalkable(x, z))
+                disk_inside = false;
+            disk_far = std::max(disk_far, dist);
+            if (id == 1) {
+                disk_x0 = x;
+                disk_z0 = z;
+            } else if (x != disk_x0 || z != disk_z0) {
+                disk_varied = true;
+            }
+            float x2 = 0.f, y2 = 0.f, z2 = 0.f;
+            if (!luna->FindDiskSpawn(id, 160.f, y, 658.f, 400.f, &x2, &y2, &z2) || x2 != x || z2 != z)
+                disk_stable = false;
+        }
+        Expect(disk_ok, "disk spawn points");
+        Expect(disk_inside, "disk spawn inside 400m and walkable");
+        Expect(disk_stable, "same player same disk point");
+        Expect(disk_varied, "disk spawn varies by player");
+        Expect(disk_far > 20.f, "disk spawn is not a single cell");
         float sx = 0.f, sy = 0.f, sz = 0.f;
         Expect(luna && luna->FindScatteredSpawn(179.30f, y, 324.20f, 4.f, 7, &sx, &sy, &sz),
                "1002 local scatter still local");

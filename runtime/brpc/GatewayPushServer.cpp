@@ -98,8 +98,12 @@ void GatewayPushServiceImpl::PushBatch(::google::protobuf::RpcController *contro
         const bool reliable = m.reliable();
         const bool coalescable = m.coalescable();
         uint64_t assigned_seq = m.server_seq();
+        // AOI 的进入/离开走连接上的急送，不进可靠队列。这里若先锁住队列再等事件循环，
+        // 循环里的写完成回调也要这把锁，两个人也会互相等满 200 毫秒。
+        const bool urgent_aoi =
+            m.message_type() == "aoi.delta.v1" && found && static_cast<bool>(bind.send_frame_urgent);
         ReliableOutboxHub::Order order;
-        if (reliable && found)
+        if (reliable && found && !urgent_aoi)
             order = ReliableOutboxHub::Instance().Lock(bind.connection_id);
         PushAdmitEnv env;
         env.local_gateway_id = local_gw;

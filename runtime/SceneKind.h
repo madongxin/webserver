@@ -49,6 +49,10 @@ struct MapScenePolicy {
     int aoi_view_radius_cells = -1;  // <0 用进程默认
     int aoi_max_visible = 200;       // 1..200，实例创建时冻结
     float spawn_scatter_radius = 0.f;
+    // 名字以 Bot 开头的人进这张图时，落在这个圆里，不再使用上次安全点。半径 <=0 表示关闭。
+    float bot_spawn_x = 0.f;
+    float bot_spawn_z = 0.f;
+    float bot_spawn_radius = 0.f;
     bool portal_gated = false;  // true：Hello 下发传送门；公网仍允许 CreateDungeon
 };
 

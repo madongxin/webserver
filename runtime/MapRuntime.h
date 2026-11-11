@@ -145,7 +145,7 @@ public:
      * 网关接受 ENTER/LEAVE 之后回调。
      * ok 表示这一帧进了网关的应用发送缓冲，或当场 write 返回成功。
      * 它不是内核写完，也不是客户端 ACK。逻辑进程没有每个 AOI 帧的内核完成回调，所以没有改成内核确认。
-     * 200ms 入队超时后回调仍可能写出，同一版本的 LEAVE 会再来一次；客户端应忽略删除一个已经不存在的实体。
+     * 200ms 入队超时后回调仍可能写出。没确认的 ENTER 和 LEAVE 都会再发；客户端应忽略删除一个已经不存在的实体。
      * 更新的 ENTER 记下更大的版本后，更老的 LEAVE 在交给网关之前丢掉。
      */
     void NoteAoiWrite(uint64_t viewer_id, uint64_t subject_id, int op, bool ok, uint64_t version);
@@ -172,6 +172,8 @@ private:
             MapEntity snap;
         };
         std::unordered_map<uint64_t, std::unordered_map<uint64_t, LeaveAgain>> leave_again;
+        // 进入后 ENTER 还没被网关确认。退避再发，直到确认、断线、离开视野或超过总时长。
+        std::unordered_map<uint64_t, std::unordered_map<uint64_t, LeaveAgain>> enter_again;
         // subject -> viewer -> 已经交给网关的最新 ENTER/LEAVE 版本。更老的 LEAVE 不再发。
         std::unordered_map<uint64_t, std::unordered_map<uint64_t, uint64_t>> interest_version;
         uint64_t next_leave_version = 1;
@@ -222,7 +224,9 @@ private:
     void EmitTo(InstanceState *st, AoiPushBatch *pushes, uint64_t map_id, const MapEntity &recipient,
                 int op, const MapEntity &snapshot);
     void RememberLeave(InstanceState *st, AoiPushBatch *batch, const MapEntity &subject, int64_t now_ms);
+    void StampEnter(InstanceState *st, AoiPushBatch *batch, const MapEntity &subject);
     void RetryPendingLeaves(InstanceState *st, uint64_t map_id, int64_t now_ms, AoiPushBatch *batch);
+    void RetryPendingEnters(InstanceState *st, uint64_t map_id, int64_t now_ms, AoiPushBatch *batch);
     void SyncVisibleSubject(InstanceState *st, MapEntity &subject, int64_t now_ms, uint64_t map_id,
                             AoiPushBatch *batch);
     void SyncSubjectUnified(InstanceState *st, MapEntity &subject, int64_t now_ms, uint64_t map_id,

@@ -95,6 +95,19 @@ void ApplyTemplateSpawn(uint64_t map_template_id, float *x, float *y, float *z) 
     *z = 324.20f;
 }
 
+// 观察者 819 每次进 1002 都落在 (160, 658)，不用上次安全点，断线重进也不留在原地。
+bool PinObserverSpawn(uint64_t player_id, uint64_t map_template_id, float *x, float *y, float *z) {
+    if (player_id != 819 || map_template_id != 1002)
+        return false;
+    if (x)
+        *x = 160.f;
+    if (y)
+        *y = -18.62f;
+    if (z)
+        *z = 658.f;
+    return true;
+}
+
 #ifdef WEBSERVER_ENABLE_REDIS
 bool FetchAuthorityPlacement(uint64_t map_instance_id, PlacementRecord *out, std::string *err) {
     if (!out || map_instance_id == 0) {
@@ -2445,8 +2458,9 @@ bool GameLogic::HandleEnterMap(const game::EnterMapReq &req, game::GameResponse 
         const MapSpawnPoint &sp = static_data->default_spawn();
         float sx = sp.position.x, sy = sp.position.y, sz = sp.position.z, syaw = sp.yaw;
         std::string recovery = "SPAWN_FALLBACK";
-        if (MapRuntime::Instance().HasPlayer(place.map_instance_id, req.player_id()) ||
-            MapRuntime::Instance().PlayerMap(req.player_id()) == place.map_instance_id) {
+        if (!PinObserverSpawn(req.player_id(), place.map_template_id, nullptr, nullptr, nullptr) &&
+            (MapRuntime::Instance().HasPlayer(place.map_instance_id, req.player_id()) ||
+             MapRuntime::Instance().PlayerMap(req.player_id()) == place.map_instance_id)) {
             MapEntity self_now;
             std::vector<MapEntity> aoi_now;
             uint64_t mid_now = 0;
@@ -2539,9 +2553,23 @@ bool GameLogic::HandleEnterMap(const game::EnterMapReq &req, game::GameResponse 
         }
         MapScenePolicy pol;
         const bool have_pol = MapCatalog::Instance().GetScenePolicy(place.map_template_id, &pol);
-        // 1002 没有可走安全点时，Y 用模板出生高度，XZ 落在出生点周围 250 格内。
-        // 250 格 × 8 米，大约 2 公里。已经有可走的安全点时不再拉回模板出生点。
-        if (place.map_template_id == 1002 && recovery != "REENTER_FROM_SAFE_POS") {
+        // 地图清单里 bot_spawn_radius > 0 时，名字以 Bot 开头的人落在该圆内，不用上次安全点。
+        // 真人有可走安全点时仍回到那个点。
+        const std::string &pname = attrs.player_name();
+        const bool load_bot = pname.size() >= 3 && pname.compare(0, 3, "Bot") == 0;
+        if (load_bot && have_pol && pol.bot_spawn_radius > 0.f) {
+            const float y = static_data->default_spawn().position.y;
+            float nx = pol.bot_spawn_x, ny = y, nz = pol.bot_spawn_z;
+            if (static_data->FindDiskSpawn(req.player_id(), pol.bot_spawn_x, y, pol.bot_spawn_z,
+                                           pol.bot_spawn_radius, &nx, &ny, &nz)) {
+                sx = nx;
+                sy = ny;
+                sz = nz;
+            }
+            recovery = "SPAWN_BOT_DISK";
+        } else if (place.map_template_id == 1002 && recovery != "REENTER_FROM_SAFE_POS") {
+            // 没有可走安全点时，Y 用模板出生高度，XZ 落在模板出生点周围 250 格内。
+            // 250 格 × 8 米，大约 2 公里。
             ApplyTemplateSpawn(place.map_template_id, &sx, &sy, &sz);
             recovery = "SPAWN_FALLBACK";
         }
@@ -2561,6 +2589,8 @@ bool GameLogic::HandleEnterMap(const game::EnterMapReq &req, game::GameResponse 
                 sz = nz;
             }
         }
+        if (PinObserverSpawn(req.player_id(), place.map_template_id, &sx, &sy, &sz))
+            recovery = "SPAWN_FIXED_819";
         const int view_r = (have_pol && pol.aoi_view_radius_cells >= 0) ? pol.aoi_view_radius_cells
                                                                        : -1;
         const int max_vis = have_pol ? pol.aoi_max_visible : -1;
@@ -3293,6 +3323,7 @@ bool GameLogic::HandleRespawn(const game::RespawnReq &req, game::GameResponse *r
         z = sp.position.z;
         yaw = sp.yaw;
         ApplyTemplateSpawn(tpl, &x, &y, &z);
+        PinObserverSpawn(req.player_id(), tpl, &x, &y, &z);
     }
     MapEntity confirmed;
     AoiPushBatch pushes;

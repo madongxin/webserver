@@ -443,6 +443,50 @@ bool MapStaticData::FindNearbySpawn(uint64_t player_id, float cx, float cy, floa
     return true;
 }
 
+bool MapStaticData::FindDiskSpawn(uint64_t player_id, float cx, float cy, float cz, float radius_m,
+                                  float *ox, float *oy, float *oz) const {
+    if (!(radius_m > 0.f) || !(nav_sample_step_ > 0.f) || grid_width_ <= 0 || grid_height_ <= 0)
+        return false;
+    int scol = 0;
+    int srow = 0;
+    if (!WorldToWalkableCell(cx, cz, &scol, &srow)) {
+        scol = static_cast<int>(std::floor((cx - bounds_min_.x) / nav_sample_step_));
+        srow = static_cast<int>(std::floor((cz - bounds_min_.z) / nav_sample_step_));
+    }
+    const int cells = static_cast<int>(std::ceil(radius_m / nav_sample_step_));
+    const float r2 = radius_m * radius_m;
+    std::vector<std::pair<float, float>> points;
+    const float step = nav_sample_step_;
+    for (int dr = -cells; dr <= cells; ++dr) {
+        for (int dc = -cells; dc <= cells; ++dc) {
+            const int col = scol + dc;
+            const int row = srow + dr;
+            if (!CellWalkable(col, row))
+                continue;
+            const float x = bounds_min_.x + (static_cast<float>(col) + 0.5f) * step;
+            const float z = bounds_min_.z + (static_cast<float>(row) + 0.5f) * step;
+            const float dx = x - cx;
+            const float dz = z - cz;
+            if (dx * dx + dz * dz > r2)
+                continue;
+            if (!InBounds(x, cy, z) || !IsWalkable(x, z))
+                continue;
+            points.emplace_back(x, z);
+        }
+    }
+    if (points.empty())
+        return false;
+    const size_t index =
+        static_cast<size_t>(MixPlayer(player_id == 0 ? 1 : player_id) % points.size());
+    if (ox)
+        *ox = points[index].first;
+    if (oy)
+        *oy = cy;
+    if (oz)
+        *oz = points[index].second;
+    return true;
+}
+
 bool MapStaticData::FindSpreadSpawn(uint64_t player_id, float y,
                                     const std::vector<std::pair<float, float>> &occupied,
                                     float min_sep, float *ox, float *oy, float *oz) const {

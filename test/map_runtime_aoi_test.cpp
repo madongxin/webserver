@@ -474,6 +474,106 @@ int main() {
     Expect(CountOp(pushes, 1, 3) == 1, "watcher who had the model gets LEAVE");
     Expect(CountOp(pushes, 3, 3) == 0, "bystander who never subscribed gets no LEAVE");
 
+    // 网关没收下 ENTER 时，下一次呈现要再发。收下之后不再发。
+    rt.ClearForTest();
+    rt.SetViewRadiusCells(1);
+    rt.SetMaxVisible(50);
+    MapRuntime::SetNowMsForTest(100000);
+    pushes = {};
+    Expect(rt.Enter(43, data, Ent(1, 1, 1), &self, &snap, &pushes, &err), "enter retry watcher");
+    pushes = {};
+    Expect(rt.Enter(43, data, Ent(2, 2, 1), &self, &snap, &pushes, &err), "enter retry subject");
+    uint64_t enter_ver = 0;
+    for (const auto &ev : pushes.events) {
+        if (ev.recipient_id == 1 && ev.op == 1 && ev.snapshot.player_id == 2)
+            enter_ver = ev.notify_version;
+    }
+    Expect(enter_ver != 0, "enter carries a notify version");
+    rt.NoteAoiWrite(1, 2, 1, false, enter_ver);
+    MapRuntime::SetNowMsForTest(100200);
+    std::vector<AoiPushBatch> resent;
+    rt.AdvancePresented(&resent);
+    int resent_enter = 0;
+    for (const auto &b : resent)
+        resent_enter += CountOp(b, 1, 1);
+    Expect(resent_enter == 1, "unacked enter is resent");
+    rt.NoteAoiWrite(1, 2, 1, true, enter_ver);
+    MapRuntime::SetNowMsForTest(120000);
+    resent.clear();
+    rt.AdvancePresented(&resent);
+    resent_enter = 0;
+    for (const auto &b : resent)
+        resent_enter += CountOp(b, 1, 1);
+    Expect(resent_enter == 0, "acked enter is not resent");
+    MapRuntime::SetNowMsForTest(0);
+
+    // 离开后再回来：外圈不能当成已经可见，走进进入范围必须再发 ENTER。
+    rt.ClearForTest();
+    rt.SetViewRadiusCells(1);
+    rt.SetMaxVisible(50);
+    int64_t now = 2000000;
+    MapRuntime::SetNowMsForTest(now);
+    uint64_t seq = 1;
+    auto ack_all = [&](const AoiPushBatch &b) {
+        for (const auto &ev : b.events) {
+            if ((ev.op == 1 || ev.op == 3) && ev.notify_version != 0)
+                rt.NoteAoiWrite(ev.recipient_id, ev.snapshot.player_id, ev.op, true, ev.notify_version);
+        }
+    };
+    pushes = {};
+    Expect(rt.Enter(44, data, Ent(1, 5, 1), &self, &snap, &pushes, &err), "return watcher");
+    ack_all(pushes);
+    pushes = {};
+    Expect(rt.Enter(44, data, Ent(2, 5, 1), &self, &snap, &pushes, &err), "return subject");
+    Expect(CountOp(pushes, 1, 1) == 1, "first enter");
+    ack_all(pushes);
+    auto step_x = [&](float x) {
+        now += 50;
+        MapRuntime::SetNowMsForTest(now);
+        pushes = {};
+        Expect(rt.Move(44, 2, x, 0, 1, 0, seq++, now, &conf, &pushes, &err, true) == MapMoveReject::Ok,
+               "step back into view");
+        ack_all(pushes);
+        std::vector<AoiPushBatch> more;
+        rt.AdvancePresented(&more);
+        for (const auto &b : more) {
+            ack_all(b);
+            for (const auto &ev : b.events)
+                pushes.events.push_back(ev);
+        }
+        return CountOp(pushes, 1, 1);
+    };
+    int saw_leave_1 = 0;
+    int saw_leave_2 = 0;
+    for (float x = 5.3f; x <= 35.f; x += 0.3f) {
+        now += 50;
+        MapRuntime::SetNowMsForTest(now);
+        pushes = {};
+        Expect(rt.Move(44, 2, x, 0, 1, 0, seq++, now, &conf, &pushes, &err, true) == MapMoveReject::Ok,
+               "step out of view");
+        saw_leave_1 += CountOp(pushes, 1, 3);
+        saw_leave_2 += CountOp(pushes, 2, 3);
+        ack_all(pushes);
+        std::vector<AoiPushBatch> more;
+        rt.AdvancePresented(&more);
+        for (const auto &b : more) {
+            saw_leave_1 += CountOp(b, 1, 3);
+            saw_leave_2 += CountOp(b, 2, 3);
+            ack_all(b);
+        }
+    }
+    Expect(saw_leave_1 > 0, "walker leaving tells the watcher");
+    Expect(saw_leave_2 > 0, "walker leaving tells the walker too");
+    int outer_enter = 0;
+    for (float x = 34.7f; x >= 25.f; x -= 0.3f)
+        outer_enter += step_x(x);
+    Expect(outer_enter == 0, "outer ring does not send ENTER");
+    int inner_enter = 0;
+    for (float x = 24.7f; x >= 15.f; x -= 0.3f)
+        inner_enter += step_x(x);
+    Expect(inner_enter > 0, "crossing back into enter radius sends ENTER");
+    MapRuntime::SetNowMsForTest(0);
+
     Expect(ServerStats::aoi_lock_samples.load() > lock_samples_before,
            "aoi lock samples increased");
     Expect(ServerStats::aoi_lock_hold_us_sum.load() > lock_hold_before,

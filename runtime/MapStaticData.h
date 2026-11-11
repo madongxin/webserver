@@ -67,6 +67,12 @@ public:
     bool FindNearbySpawn(uint64_t player_id, float cx, float cy, float cz, int cells, float *ox,
                          float *oy, float *oz) const;
     /**
+     * 以 (cx,cz) 为圆心、radius_m 为半径的圆里，用 player_id 稳定选一个可走格心。
+     * 圆外的格子不要。Y 原样返回。
+     */
+    bool FindDiskSpawn(uint64_t player_id, float cx, float cy, float cz, float radius_m, float *ox,
+                       float *oy, float *oz) const;
+    /**
      * 用 player_id 把落点铺到整张可走图上。大约 200 米一格，再取该格里离格心最近的可走格中心。
      * occupied 是本实例已有人的 XZ。不足 min_sep 米就按固定顺序试下一格。Y 原样返回。
      */

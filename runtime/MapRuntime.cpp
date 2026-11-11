@@ -206,7 +206,8 @@ void MapRuntime::AdvancePresented(std::vector<AoiPushBatch> *batches) {
             if (pend != st->leave_again.end()) {
                 std::vector<uint64_t> drop_pend;
                 for (const auto &kv : pend->second) {
-                    if (keep.count(kv.first) != 0)
+                    // 只在走进进入范围时停掉离开重发。外圈还没发 ENTER，不能把离开补发也停掉。
+                    if (fresh.count(kv.first) != 0)
                         drop_pend.push_back(kv.first);
                 }
                 for (uint64_t vid : drop_pend)
@@ -224,6 +225,34 @@ void MapRuntime::AdvancePresented(std::vector<AoiPushBatch> *batches) {
             }
             std::unordered_set<uint64_t> still;
             int left = 0;
+            // 一边走出窗口时，两边的客户端都要收到 LEAVE。只告诉观察者「主体走了」，
+            // 主体自己的屏幕上会留下观察者的模型。
+            auto notify_leave = [&](const MapEntity &gone, const MapEntity &seer) {
+                EmitTo(st, &batch, item.first, seer, 2, gone);
+                ServerStats::aoi_move_events.fetch_add(1, std::memory_order_relaxed);
+                EmitTo(st, &batch, item.first, seer, 3, gone);
+                ServerStats::aoi_sub_leave.fetch_add(1, std::memory_order_relaxed);
+                CountAoiLeave(AoiLeaveReason::OutOfWindow,
+                              InCellRadius(*st, seer.PresentedX(), seer.PresentedZ(),
+                                           gone.PresentedX(), gone.PresentedZ(), enter_r));
+                RememberLeave(st, &batch, gone, now_ms);
+            };
+            auto erase_visible = [&](uint64_t viewer, uint64_t target) {
+                auto vis = st->visible_targets.find(viewer);
+                if (vis == st->visible_targets.end())
+                    return;
+                vis->second.erase(target);
+                if (vis->second.empty())
+                    st->visible_targets.erase(vis);
+            };
+            auto erase_watcher = [&](uint64_t target, uint64_t viewer) {
+                auto w = st->watchers.find(target);
+                if (w == st->watchers.end())
+                    return;
+                w->second.erase(viewer);
+                if (w->second.empty())
+                    st->watchers.erase(w);
+            };
             for (uint64_t vid : old) {
                 if (keep.count(vid) != 0) {
                     still.insert(vid);
@@ -232,28 +261,12 @@ void MapRuntime::AdvancePresented(std::vector<AoiPushBatch> *batches) {
                 auto rit = st->entities.find(vid);
                 if (rit == st->entities.end() || !rit->second.connected)
                     continue;
-                // 先把已经走出窗口的坐标发给这个观察者，再 LEAVE。否则客户端还停在格子内的旧点，模型会在身边被删掉。
-                EmitTo(st, &batch, item.first, rit->second, 2, subject);
-                ServerStats::aoi_move_events.fetch_add(1, std::memory_order_relaxed);
-                EmitTo(st, &batch, item.first, rit->second, 3, subject);
-                ServerStats::aoi_sub_leave.fetch_add(1, std::memory_order_relaxed);
-                CountAoiLeave(AoiLeaveReason::OutOfWindow,
-                              InCellRadius(*st, rit->second.PresentedX(), rit->second.PresentedZ(),
-                                           subject.PresentedX(), subject.PresentedZ(), enter_r));
+                notify_leave(subject, rit->second);
+                notify_leave(rit->second, subject);
                 ++left;
-                RememberLeave(st, &batch, subject, now_ms);
-                auto vis = st->visible_targets.find(vid);
-                if (vis != st->visible_targets.end()) {
-                    vis->second.erase(subject.player_id);
-                    if (vis->second.empty())
-                        st->visible_targets.erase(vis);
-                }
-                auto self_vis = st->visible_targets.find(subject.player_id);
-                if (self_vis != st->visible_targets.end()) {
-                    self_vis->second.erase(vid);
-                    if (self_vis->second.empty())
-                        st->visible_targets.erase(self_vis);
-                }
+                erase_visible(vid, subject.player_id);
+                erase_visible(subject.player_id, vid);
+                erase_watcher(vid, subject.player_id);
             }
             if (left > 0)
                 LogMoveTrace("leave", subject, subject.PresentedX(), subject.PresentedZ(), 0.f, 0.f,
@@ -266,13 +279,29 @@ void MapRuntime::AdvancePresented(std::vector<AoiPushBatch> *batches) {
                 auto rit = st->entities.find(vid);
                 if (rit == st->entities.end() || !rit->second.connected)
                     continue;
+                auto vis = st->visible_targets.find(vid);
+                const bool known =
+                    vis != st->visible_targets.end() && vis->second.count(subject.player_id) != 0;
+                // 外圈只继续发给已经在看的人。离开后再回来，要走进进入范围才重新发 ENTER。
+                // 原先在看、现在却接不上的，先给两边发 LEAVE，不能把链接悄悄丢掉。
+                if (!known && fresh.count(vid) == 0) {
+                    if (old.count(vid) != 0) {
+                        notify_leave(subject, rit->second);
+                        notify_leave(rit->second, subject);
+                        ++left;
+                        erase_visible(vid, subject.player_id);
+                        erase_visible(subject.player_id, vid);
+                        erase_watcher(vid, subject.player_id);
+                    }
+                    continue;
+                }
                 live.insert(vid);
-                const bool known = st->visible_targets[vid].count(subject.player_id) != 0;
                 st->visible_targets[vid].insert(subject.player_id);
-                if (!known && fresh.count(vid) != 0) {
+                if (!known) {
                     EmitTo(st, &batch, item.first, rit->second, 1, subject);
+                    StampEnter(st, &batch, subject);
                     ServerStats::aoi_sub_enter.fetch_add(1, std::memory_order_relaxed);
-                } else if (known && AllowMoveAoi(st, rit->second, subject, now_ms)) {
+                } else if (AllowMoveAoi(st, rit->second, subject, now_ms)) {
                     EmitTo(st, &batch, item.first, rit->second, 2, subject);
                     ServerStats::aoi_move_events.fetch_add(1, std::memory_order_relaxed);
                 }
@@ -370,8 +399,11 @@ void MapRuntime::AdvancePresented(std::vector<AoiPushBatch> *batches) {
             RefreshViewers(st, viewers, e.player_id, 0, item.first, &batch);
             }
             const bool last = cursor >= order.size();
-            if (last)
-                RetryPendingLeaves(st, item.first, NowMs(), &batch);
+            if (last) {
+                const int64_t now_ms = NowMs();
+                RetryPendingEnters(st, item.first, now_ms, &batch);
+                RetryPendingLeaves(st, item.first, now_ms, &batch);
+            }
             const auto used = std::chrono::duration_cast<std::chrono::microseconds>(
                                   std::chrono::steady_clock::now() - slice_t0)
                                   .count();
@@ -412,7 +444,9 @@ void MapRuntime::AdvancePresented(std::vector<AoiPushBatch> *batches) {
         }
         if (order.empty()) {
             auto lock = LockInst(item.second);
-            RetryPendingLeaves(st, item.first, NowMs(), &batch);
+            const int64_t now_ms = NowMs();
+            RetryPendingEnters(st, item.first, now_ms, &batch);
+            RetryPendingLeaves(st, item.first, now_ms, &batch);
             if (!batch.events.empty())
                 batches->push_back(std::move(batch));
         }
@@ -792,6 +826,12 @@ void MapRuntime::SyncVisibleSubject(InstanceState *st, MapEntity &subject, int64
             EmitTo(st, batch, map_id, viewer, 3, entity_of(id));
             ServerStats::aoi_sub_leave.fetch_add(1, std::memory_order_relaxed);
             stamp(it->second.version);
+            auto entered = st->enter_again.find(id);
+            if (entered != st->enter_again.end()) {
+                entered->second.erase(viewer_id);
+                if (entered->second.empty())
+                    st->enter_again.erase(entered);
+            }
         }
         for (uint64_t id : desired) {
             auto it = book.find(id);
@@ -810,6 +850,7 @@ void MapRuntime::SyncVisibleSubject(InstanceState *st, MapEntity &subject, int64
                 EmitTo(st, batch, map_id, viewer, 1, entity_of(id));
                 ServerStats::aoi_sub_enter.fetch_add(1, std::memory_order_relaxed);
                 stamp(item.version);
+                StampEnter(st, batch, entity_of(id));
             } else if (id == subject.player_id) {
                 link_id(id);
                 if (AllowMoveAoi(st, viewer, subject, now_ms))
@@ -874,11 +915,15 @@ void MapRuntime::SyncSubjectUnified(InstanceState *st, MapEntity &subject, int64
         const bool want = desired.count(subject.player_id) != 0;
         auto vis = st->visible_targets.find(vid);
         const bool known = vis != st->visible_targets.end() && vis->second.count(subject.player_id) != 0;
-        if (want) {
+        const bool in_enter = InCellRadius(*st, rit->second.PresentedX(), rit->second.PresentedZ(),
+                                           subject.PresentedX(), subject.PresentedZ(), enter_r);
+        // 外圈不把没看过的人记成已可见，否则走进进入范围时不会再发 ENTER。
+        if (want && (known || in_enter)) {
             st->watchers[subject.player_id].insert(vid);
             st->visible_targets[vid].insert(subject.player_id);
             if (!known) {
                 EmitTo(st, batch, map_id, rit->second, 1, subject);
+                StampEnter(st, batch, subject);
                 ServerStats::aoi_sub_enter.fetch_add(1, std::memory_order_relaxed);
             } else if (AllowMoveAoi(st, rit->second, subject, now_ms)) {
                 EmitTo(st, batch, map_id, rit->second, 2, subject);
@@ -914,6 +959,12 @@ void MapRuntime::RememberLeave(InstanceState *st, AoiPushBatch *batch, const Map
     auto &ev = batch->events.back();
     if (ev.op != 3 || ev.snapshot.player_id != subject.player_id || ev.recipient_id == 0)
         return;
+    auto entered = st->enter_again.find(subject.player_id);
+    if (entered != st->enter_again.end()) {
+        entered->second.erase(ev.recipient_id);
+        if (entered->second.empty())
+            st->enter_again.erase(entered);
+    }
     auto &again = st->leave_again[subject.player_id][ev.recipient_id];
     if (again.version == 0) {
         if (st->next_leave_version == 0)
@@ -930,6 +981,32 @@ void MapRuntime::RememberLeave(InstanceState *st, AoiPushBatch *batch, const Map
     st->interest_version[subject.player_id][ev.recipient_id] = again.version;
 }
 
+void MapRuntime::StampEnter(InstanceState *st, AoiPushBatch *batch, const MapEntity &subject) {
+    if (!st || !batch || batch->events.empty() || subject.player_id == 0)
+        return;
+    auto &ev = batch->events.back();
+    if (ev.op != 1 || ev.snapshot.player_id != subject.player_id || ev.recipient_id == 0)
+        return;
+    uint64_t ver = ev.notify_version;
+    if (ver == 0) {
+        auto pending = st->enter_again.find(subject.player_id);
+        if (pending != st->enter_again.end()) {
+            auto it = pending->second.find(ev.recipient_id);
+            if (it != pending->second.end() && it->second.version != 0)
+                ver = it->second.version;
+        }
+    }
+    if (ver == 0) {
+        if (st->next_leave_version == 0)
+            st->next_leave_version = 1;
+        ver = st->next_leave_version++;
+    }
+    ev.notify_version = ver;
+    auto &cur = st->interest_version[subject.player_id][ev.recipient_id];
+    if (ver > cur)
+        cur = ver;
+}
+
 namespace {
 
 int64_t LeaveRetryGapMs(int tries_sent) {
@@ -939,6 +1016,16 @@ int64_t LeaveRetryGapMs(int tries_sent) {
         return 2000;
     if (tries_sent == 3)
         return 4000;
+    return 5000;
+}
+
+int64_t EnterRetryGapMs(int tries_sent) {
+    if (tries_sent <= 1)
+        return 200;
+    if (tries_sent == 2)
+        return 1000;
+    if (tries_sent == 3)
+        return 2000;
     return 5000;
 }
 
@@ -1036,14 +1123,7 @@ void MapRuntime::RetryPendingLeaves(InstanceState *st, uint64_t map_id, int64_t 
             snap.player_id = d.sid;
         if (d.correct) {
             EmitTo(st, batch, map_id, vit->second, 1, snap);
-            if (!batch->events.empty() && batch->events.back().op == 1 &&
-                batch->events.back().snapshot.player_id == d.sid) {
-                if (st->next_leave_version == 0)
-                    st->next_leave_version = 1;
-                const uint64_t ver = st->next_leave_version++;
-                batch->events.back().notify_version = ver;
-                st->interest_version[d.sid][d.vid] = ver;
-            }
+            StampEnter(st, batch, snap);
             st->watchers[d.sid].insert(d.vid);
             st->visible_targets[d.vid].insert(d.sid);
             ServerStats::aoi_sub_enter.fetch_add(1, std::memory_order_relaxed);
@@ -1066,6 +1146,111 @@ void MapRuntime::RetryPendingLeaves(InstanceState *st, uint64_t map_id, int64_t 
     }
 }
 
+void MapRuntime::RetryPendingEnters(InstanceState *st, uint64_t map_id, int64_t now_ms,
+                                    AoiPushBatch *batch) {
+    if (!st || !batch)
+        return;
+    struct Due {
+        int64_t last_ms = 0;
+        uint64_t sid = 0;
+        uint64_t vid = 0;
+    };
+    std::vector<Due> due;
+    std::vector<std::pair<uint64_t, uint64_t>> drop;
+    const int leave_r = ResolvedRadius(*st) + std::max(0, AoiV2LeaveExtraCells());
+    const int64_t max_age = AoiLeaveRetryMaxMs();
+    for (const auto &sk : st->enter_again) {
+        const uint64_t sid = sk.first;
+        auto eit = st->entities.find(sid);
+        const bool live = eit != st->entities.end() && eit->second.connected;
+        for (const auto &vk : sk.second) {
+            const uint64_t vid = vk.first;
+            const auto &again = vk.second;
+            auto vit = st->entities.find(vid);
+            if (!live || vit == st->entities.end() || !vit->second.connected) {
+                drop.emplace_back(sid, vid);
+                continue;
+            }
+            auto versions = st->interest_version.find(sid);
+            if (versions != st->interest_version.end()) {
+                auto known = versions->second.find(vid);
+                if (known != versions->second.end() && known->second > again.version) {
+                    drop.emplace_back(sid, vid);
+                    continue;
+                }
+            }
+            auto vis = st->visible_targets.find(vid);
+            if (vis == st->visible_targets.end() || vis->second.count(sid) == 0) {
+                drop.emplace_back(sid, vid);
+                continue;
+            }
+            bool in_window = false;
+            for (uint64_t id :
+                 NeighborhoodIdsRadius(*st, eit->second.PresentedX(), eit->second.PresentedZ(), leave_r)) {
+                if (id == vid) {
+                    in_window = true;
+                    break;
+                }
+            }
+            if (!in_window) {
+                drop.emplace_back(sid, vid);
+                continue;
+            }
+            const int64_t first = again.first_ms > 0 ? again.first_ms : again.last_ms;
+            if (first > 0 && now_ms - first >= max_age) {
+                LOG_WARN << "AOI enter retry expired viewer=" << vid << " subject=" << sid
+                         << " age_ms=" << (now_ms - first);
+                drop.emplace_back(sid, vid);
+                continue;
+            }
+            if (again.last_ms > 0 && now_ms - again.last_ms < EnterRetryGapMs(again.tries))
+                continue;
+            Due d;
+            d.last_ms = again.last_ms;
+            d.sid = sid;
+            d.vid = vid;
+            due.push_back(d);
+        }
+    }
+    std::sort(due.begin(), due.end(), [](const Due &a, const Due &b) {
+        if (a.last_ms != b.last_ms)
+            return a.last_ms < b.last_ms;
+        if (a.sid != b.sid)
+            return a.sid < b.sid;
+        return a.vid < b.vid;
+    });
+    int sent = 0;
+    for (const auto &d : due) {
+        if (sent >= 32)
+            break;
+        auto sit = st->enter_again.find(d.sid);
+        if (sit == st->enter_again.end() || sit->second.count(d.vid) == 0)
+            continue;
+        auto vit = st->entities.find(d.vid);
+        auto eit = st->entities.find(d.sid);
+        if (vit == st->entities.end() || eit == st->entities.end() || !vit->second.connected ||
+            !eit->second.connected)
+            continue;
+        const size_t before = batch->events.size();
+        EmitTo(st, batch, map_id, vit->second, 1, eit->second);
+        if (batch->events.size() == before)
+            continue;
+        auto &again = sit->second[d.vid];
+        again.tries += 1;
+        again.last_ms = now_ms;
+        StampEnter(st, batch, eit->second);
+        ++sent;
+    }
+    for (const auto &pair : drop) {
+        auto cur = st->enter_again.find(pair.first);
+        if (cur == st->enter_again.end())
+            continue;
+        cur->second.erase(pair.second);
+        if (cur->second.empty())
+            st->enter_again.erase(cur);
+    }
+}
+
 void MapRuntime::NoteAoiWrite(uint64_t viewer_id, uint64_t subject_id, int op, bool ok,
                               uint64_t version) {
     if (viewer_id == 0 || subject_id == 0 || version == 0)
@@ -1084,6 +1269,34 @@ void MapRuntime::NoteAoiWrite(uint64_t viewer_id, uint64_t subject_id, int op, b
     auto inst = LockInst(st);
     if (!st || st->unloaded)
         return;
+    if (op == 1) {
+        auto pend = st->enter_again.find(subject_id);
+        if (ok) {
+            if (pend != st->enter_again.end()) {
+                auto it = pend->second.find(viewer_id);
+                if (it != pend->second.end() && it->second.version == version) {
+                    pend->second.erase(it);
+                    if (pend->second.empty())
+                        st->enter_again.erase(pend);
+                }
+            }
+        } else {
+            const bool older = st->enter_again[subject_id].count(viewer_id) != 0 &&
+                               st->enter_again[subject_id][viewer_id].version > version;
+            if (!older) {
+                auto &again = st->enter_again[subject_id][viewer_id];
+                if (again.first_ms == 0)
+                    again.first_ms = NowMs();
+                if (again.tries == 0)
+                    again.tries = 1;
+                again.version = version;
+                again.last_ms = NowMs();
+                auto eit = st->entities.find(subject_id);
+                if (eit != st->entities.end())
+                    again.snap = eit->second;
+            }
+        }
+    }
     if (ok && op == 3) {
         auto pend = st->leave_again.find(subject_id);
         if (pend != st->leave_again.end()) {
@@ -1232,6 +1445,7 @@ void MapRuntime::RefreshViewers(InstanceState *st, const std::vector<uint64_t> &
             auto tit = st->entities.find(tid);
             if (tit != st->entities.end()) {
                 EmitTo(st, pushes, map_instance_id, viewer, 1, tit->second);
+                StampEnter(st, pushes, tit->second);
                 ServerStats::aoi_sub_enter.fetch_add(1, std::memory_order_relaxed);
             }
         }
@@ -1304,6 +1518,14 @@ void MapRuntime::RemovePlayerInterest(InstanceState *st, uint64_t map_instance_i
     }
     ForgetViewer(st, player_id);
     st->watchers.erase(player_id);
+    st->enter_again.erase(player_id);
+    for (auto it = st->enter_again.begin(); it != st->enter_again.end();) {
+        it->second.erase(player_id);
+        if (it->second.empty())
+            it = st->enter_again.erase(it);
+        else
+            ++it;
+    }
     for (auto &kv : st->leave_again)
         kv.second.erase(player_id);
     for (auto it = st->notified.begin(); it != st->notified.end();) {
@@ -2044,8 +2266,10 @@ bool MapRuntime::Reconnect(uint64_t player_id, const std::string &gateway_instan
     RefreshViewers(st.get(), viewers, 0, player_id, mid, pushes);
     FillSnapshot(*st, player_id, aoi_snapshot);
     if (pushes && aoi_snapshot) {
-        for (const auto &other : *aoi_snapshot)
+        for (const auto &other : *aoi_snapshot) {
             EmitTo(st.get(), pushes, mid, e, 1, other);
+            StampEnter(st.get(), pushes, other);
+        }
     }
     if (self_out)
         *self_out = e;
@@ -2325,6 +2549,7 @@ void MapRuntime::ClearForTest() {
         st->visible_targets.clear();
         st->watchers.clear();
         st->leave_again.clear();
+        st->enter_again.clear();
         st->notified.clear();
         st->last_left_ms.clear();
         st->entity_count.store(0, std::memory_order_relaxed);
@@ -2355,6 +2580,7 @@ bool MapRuntime::Unload(uint64_t map_instance_id) {
         st->visible_targets.clear();
         st->watchers.clear();
         st->leave_again.clear();
+        st->enter_again.clear();
         st->notified.clear();
         st->last_left_ms.clear();
         st->entity_count.store(0, std::memory_order_relaxed);

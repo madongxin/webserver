@@ -138,6 +138,9 @@ bool MapCatalog::LoadDirectory(const std::string &dir, std::string *err) {
         if (ent.policy.aoi_max_visible > 200)
             ent.policy.aoi_max_visible = 200;
         ent.policy.spawn_scatter_radius = m.get("spawn_scatter_radius", 0).asFloat();
+        ent.policy.bot_spawn_x = m.get("bot_spawn_x", 0).asFloat();
+        ent.policy.bot_spawn_z = m.get("bot_spawn_z", 0).asFloat();
+        ent.policy.bot_spawn_radius = m.get("bot_spawn_radius", 0).asFloat();
         ent.policy.portal_gated = m.get("portal_gated", false).asBool();
         if (ent.policy.kind == SceneKind::Line) {
             if (ent.policy.soft_cap == 0)
