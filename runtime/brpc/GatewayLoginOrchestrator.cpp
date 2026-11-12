@@ -3,6 +3,7 @@
 
 #include "GatewayAuthClients.h"
 #include "GatewayConnRegistry.h"
+#include "BotLoginWave.h"
 #include "Logging.h"
 #include "PacketTiming.h"
 #include "LoginAdmission.h"
@@ -796,10 +797,16 @@ bool BeginOrchestrateGatewayLogin(const std::string &gateway_instance_id, uint64
                                         shard_key, done = std::move(done)]() mutable {
         std::string out;
         GatewayLoginRoute route;
+        std::string device_id;
+        game::GameRequest wave_req;
+        if (wave_req.ParseFromString(request_payload) && wave_req.has_login())
+            device_id = wave_req.login().device_id();
+        NoteLoadTestBotLogin(device_id, BotLoginWaveEvent::Start);
         const auto rpc_t0 = std::chrono::steady_clock::now();
         const bool ok =
             OrchestrateGatewayLogin(gateway_instance_id, connection_id, request_payload, &out,
                                     &route);
+        NoteLoadTestBotLogin(device_id, ok ? BotLoginWaveEvent::FinishOk : BotLoginWaveEvent::FinishFail);
         NotePktStage("login", "rpc",
                      std::chrono::duration_cast<std::chrono::milliseconds>(
                          std::chrono::steady_clock::now() - rpc_t0)

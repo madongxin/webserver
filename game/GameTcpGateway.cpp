@@ -5,6 +5,7 @@
 
 #include "GameTcpGateway.h"
 
+#include "BotLoginWave.h"
 #include "AoiMoveCoalesceLedger.h"
 #include "AoiOutboundOrder.h"
 #include "AoiStrip.h"
@@ -1273,7 +1274,10 @@ void GameTcpGateway::Run() {
         LOG_INFO << "Gateway disconnect conn#" << c->id() << " player_id=" << bind.player_id
                  << " generation=" << bind.generation;
     });
-    loop.RunEvery(1.0, []() { RefreshLiveAges(); });
+    loop.RunEvery(1.0, []() {
+        RefreshLiveAges();
+        PollLoadTestBotLoginWave();
+    });
     LOG_INFO << "GameTcpGateway ready on " << ip_ << ":" << port_
              << " id=" << g_gateway_id << " (session bind + grace disconnect)"
              << " egress_bytes_per_sec=" << AoiMoveCoalesceLedger::EgressBudgetBytesPerSec()

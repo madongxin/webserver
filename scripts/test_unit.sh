@@ -24,6 +24,7 @@ run_one map_runtime_aoi_test
 run_one aoi_subscription_invariant_test
 run_one aoi200_subscription_test
 run_one login_admission_test
+run_one bot_login_wave_test
 run_one player_serial_queue_test
 run_one player_serial_shutdown_test
 run_one secure_random_test

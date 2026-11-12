@@ -258,6 +258,7 @@ if(ENABLE_BRPC)
     runtime/brpc/SessionRpcClient.cpp
     runtime/brpc/GatewayAuthClients.cpp
     runtime/brpc/GatewayLoginOrchestrator.cpp
+    runtime/BotLoginWave.cpp
     runtime/brpc/GatewayEnterMapOrchestrator.cpp
     runtime/brpc/gamelogic_rpc.pb.cc
     runtime/brpc/gateway_push.pb.cc
@@ -563,6 +564,9 @@ target_include_directories(aoi_client_model_test PRIVATE
   runtime base log timer ${OPENSSL_INCLUDE_DIR} ${JSONCPP_INCLUDE_DIRS})
 target_link_libraries(aoi_client_model_test
   ${CMAKE_THREAD_LIBS_INIT} ${OPENSSL_CRYPTO_LIB} ${JSONCPP_LIBRARIES})
+
+add_executable(bot_login_wave_test test/bot_login_wave_test.cpp)
+target_include_directories(bot_login_wave_test PRIVATE runtime)
 
 add_executable(aoi_leave_slot_test
   test/aoi_leave_slot_test.cpp
