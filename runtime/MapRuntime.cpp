@@ -14,6 +14,7 @@
 #include <chrono>
 #include <cmath>
 #include <cstdio>
+#include <cstring>
 #include <mutex>
 #include <thread>
 #include <unordered_map>
@@ -1698,6 +1699,7 @@ bool MapRuntime::AllowMoveAoi(InstanceState *st, const MapEntity &watcher, const
         bool vel_changed = true;
         bool drifted = false;
         bool keyframe = false;
+        const char *reason = "first";
         if (rec.has) {
             vel_changed = std::fabs(rec.vx - subject.vx) > 0.05f || std::fabs(rec.vz - subject.vz) > 0.05f;
             const float elapsed = static_cast<float>(now - rec.ms) / 1000.f;
@@ -1716,7 +1718,26 @@ bool MapRuntime::AllowMoveAoi(InstanceState *st, const MapEntity &watcher, const
             if (keyframe && !vel_changed && !drifted)
                 ServerStats::aoi_keyframe.fetch_add(1, std::memory_order_relaxed);
             NoteMoveInterval(age);
+            if (vel_changed)
+                reason = "vel_changed";
+            else if (drifted)
+                reason = "drifted";
+            else if (keyframe)
+                reason = "keyframe";
+            else
+                reason = "interval";
         }
+        // reason 下标：0 first 1 vel_changed 2 drifted 3 keyframe 4 arrival_stop 5 interval
+        int ri = 0;
+        if (std::strcmp(reason, "vel_changed") == 0)
+            ri = 1;
+        else if (std::strcmp(reason, "drifted") == 0)
+            ri = 2;
+        else if (std::strcmp(reason, "keyframe") == 0)
+            ri = 3;
+        else if (std::strcmp(reason, "interval") == 0)
+            ri = 5;
+        ServerStats::aoi_move_emit_reason[ri].fetch_add(1, std::memory_order_relaxed);
         rec.ms = now;
         rec.x = subject.x;
         rec.z = subject.z;

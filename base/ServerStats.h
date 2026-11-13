@@ -135,6 +135,8 @@ struct ServerStats {
     static inline std::atomic<uint64_t> egress_hard_silence_warn{0};
     /** 已确认进内核的位置帧线上字节（payload+66）。 */
     static inline std::atomic<uint64_t> egress_move_wire_bytes{0};
+    /** AllowMoveAoi 允许发送的原因计数。下标见 AoiEmitReason。 */
+    static inline std::atomic<uint64_t> aoi_move_emit_reason[8]{};
     /** 进程启动以来，一个实体的最新位置在合并槽里等待的最长时间。 */
     static inline std::atomic<uint64_t> aoi_move_pending_oldest_ms{0};
     /** 进程启动以来，同一观察者对同一实体两次 MOVE 写出的最大间隔。 */

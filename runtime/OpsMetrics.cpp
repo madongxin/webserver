@@ -441,6 +441,16 @@ std::string OpsMetrics::PrometheusText() const {
         ctr("gamemesh_aoi_keyframe_total",
             "MOVE broadcast because silence reached the hard cap before the layer interval.",
             ServerStats::aoi_keyframe.load(std::memory_order_relaxed));
+    {
+        static const char *kReasons[] = {"first",     "vel_changed", "drifted",
+                                         "keyframe",  "arrival_stop", "interval"};
+        os << "# HELP gamemesh_aoi_move_emit_reason_total Why AllowMoveAoi allowed a position emit. Unit: events.\n"
+              "# TYPE gamemesh_aoi_move_emit_reason_total counter\n";
+        for (int i = 0; i < 6; ++i) {
+            os << "gamemesh_aoi_move_emit_reason_total{reason=\"" << kReasons[i] << "\"} "
+               << ServerStats::aoi_move_emit_reason[i].load(std::memory_order_relaxed) << "\n";
+        }
+    }
     ctr("gamemesh_aoi_move_capped_total",
         "AOI MOVE entities left in the coalesce slot because the frame cap was full.",
         ServerStats::aoi_move_capped.load(std::memory_order_relaxed));

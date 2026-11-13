@@ -1852,6 +1852,11 @@ add_executable(reply_classify_test
 target_include_directories(reply_classify_test PRIVATE runtime base)
 target_link_libraries(reply_classify_test ${CMAKE_THREAD_LIBS_INIT})
 
+add_executable(aoi_extrapolate_tick_test
+  test/aoi_extrapolate_tick_test.cpp)
+target_include_directories(aoi_extrapolate_tick_test PRIVATE runtime base)
+target_link_libraries(aoi_extrapolate_tick_test ${CMAKE_THREAD_LIBS_INIT})
+
 add_executable(stalled_conn_test
   test/stalled_conn_test.cpp
   runtime/AoiEvidence.cpp)

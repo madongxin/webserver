@@ -26,6 +26,7 @@ run_one stalled_conn_test
 run_one egress_frame_metrics_test
 run_one egress_enforce_test
 run_one reply_classify_test
+run_one aoi_extrapolate_tick_test
 run_one aoi_subscription_invariant_test
 run_one aoi200_subscription_test
 run_one login_admission_test
