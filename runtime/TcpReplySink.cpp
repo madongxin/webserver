@@ -6,6 +6,7 @@
 #include "GatewayConnRegistry.h"
 #include "Logging.h"
 #include "OpsMetrics.h"
+#include "AoiEvidence.h"
 #include "PacketTiming.h"
 #include "ProtoFraming.h"
 #include "ReplyStage.h"
@@ -16,6 +17,7 @@
 #include <algorithm>
 #include <atomic>
 #include <chrono>
+#include <cstring>
 
 namespace {
 
@@ -262,9 +264,32 @@ void TcpReplySink::SendFrame(const std::string &response_frame) {
         const int app = c->send_buf() ? c->send_buf()->readablebytes() : 0;
         const int unsent = c->unsent_bytes();
         NoteSendPending(app, unsent);
+        AoiObserveBusySocket(c->id(), c->fd(), app, unsent);
+        const bool piled = unsent > 16 * 1024;
         NotePktStage(kind, "reply_queue", wait_ms, c->id(), player, seq, app, unsent);
+        if (std::strcmp(kind, "move") == 0) {
+            AoiNoteMoveStage(AoiMoveStage::ReplyQueue, wait_ms * 1000, piled, true);
+        }
         OpsMetrics::Instance().IncReplyGenerated();
+        const auto send_t0 = std::chrono::steady_clock::now();
         const int rc = SubmitControlOnLoop(c, seq, kind, response_frame);
+        if (std::strcmp(kind, "move") == 0) {
+            const auto send_us = std::chrono::duration_cast<std::chrono::microseconds>(
+                                     std::chrono::steady_clock::now() - send_t0)
+                                     .count();
+            AoiNoteMoveStage(AoiMoveStage::ReplySend, send_us, piled, true);
+        }
+        if (rc < 0) {
+            const bool heart = std::strcmp(kind, "heartbeat") == 0;
+            AoiNoteFrameWrite(c->id(), response_frame, false,
+                              rc < 0 ? AoiWriteFailReason::Closed : AoiWriteFailReason::QueueFull, heart);
+        } else if (std::strcmp(kind, "heartbeat") == 0) {
+            AoiNoteTxBytes(AoiWriteFrame::Heartbeat, response_frame.size(), c->id());
+        } else if (snapshot) {
+            AoiNoteTxBytes(AoiWriteFrame::Snapshot, response_frame.size(), c->id());
+        } else {
+            AoiNoteTxBytes(AoiWriteFrame::Reply, response_frame.size(), c->id());
+        }
         if (rc < 0 && snapshot) {
             LOG_WARN << "TcpReplySink full snapshot not queued conn#" << c->id()
                      << " bytes=" << response_frame.size();

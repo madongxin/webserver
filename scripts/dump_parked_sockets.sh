@@ -1,107 +1,136 @@
 #!/usr/bin/env bash
-# 压测进行时抓 Gateway 游戏口上 Send-Q 超过 16KB 的连接。
-# 保存 ss -tinm 原文，用来区分：对端窗口为 0、重传/拥塞退避，还是本机仍在写入。
-# 本机没有机器人进程时，CPU 和接收缓冲写「无数据」，并列出对端地址。
+# 网关机上盯着游戏口。任一连接 Send-Q 连续超过阈值达到 hold 秒，就存一份快照。
+# 全机共享冷却（默认 120s），不按对端逐条落盘。摘要只写热点连接；目录自动轮转。
 #
-# 用法：
-#   ./scripts/dump_parked_sockets.sh [秒数] [输出目录]
-# 可选：GAMEMESH_ROBOT_SSH=user@host  到压测机上取机器人进程的 CPU 和 ss。
+#   ./scripts/dump_parked_sockets.sh --watch [输出目录]
+# start_formal.sh 会以后台方式启动 --watch。停止集群时一起停。
+#
+# 环境变量（可选）:
+#   GAMEMESH_GAME_PORTS        默认 "8081 8083"
+#   GAMEMESH_PARK_SENDQ        默认 16384
+#   GAMEMESH_PARK_HOLD_S       默认 5
+#   GAMEMESH_PARK_DUMP_GAP_S   默认 120（全机冷却）
+#   GAMEMESH_PARK_MAX_DUMPS    默认 20（每组 3 个文件，超出删最旧）
+#   GAMEMESH_PARK_SUMMARY_TOP  默认 64（摘要最多写多少条热点）
 set -u
-
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-SECS="${1:-30}"
-OUT="${2:-$ROOT/run/formal/parked-ss}"
-PORTS="${GAMEMESH_GAME_PORTS:-8081 8083}"
-THRESH="${GAMEMESH_PARK_SENDQ:-16384}"
-mkdir -p "$OUT"
-STAMP="$(date +%Y%m%d-%H%M%S)"
-RAW="$OUT/ss-$STAMP.txt"
-FILT="$OUT/sendq-over-${THRESH}-$STAMP.txt"
-META="$OUT/meta-$STAMP.txt"
+MODE="${1:-}"
+if [[ "$MODE" == "--watch" ]]; then
+  OUT="${2:-${GAMEMESH_PARKED_SS_DIR:-$ROOT/run/formal/parked-ss}}"
+  exec python3 - "$OUT" <<'PY'
+import os, subprocess, time, sys, glob
+out = sys.argv[1]
+ports = set(os.environ.get("GAMEMESH_GAME_PORTS", "8081 8083").split())
+thresh = int(os.environ.get("GAMEMESH_PARK_SENDQ", "16384"))
+hold_s = float(os.environ.get("GAMEMESH_PARK_HOLD_S", "5"))
+gap_s = float(os.environ.get("GAMEMESH_PARK_DUMP_GAP_S", "120"))
+max_dumps = int(os.environ.get("GAMEMESH_PARK_MAX_DUMPS", "20"))
+summary_top = int(os.environ.get("GAMEMESH_PARK_SUMMARY_TOP", "64"))
+poll_s = float(os.environ.get("GAMEMESH_PARK_POLL_S", "2"))
+os.makedirs(out, exist_ok=True)
+episode_start = None
+last_dump = 0.0
 
-: >"$RAW"
-end=$((SECONDS + SECS))
-n=0
-while (( SECONDS < end )); do
-  n=$((n + 1))
-  {
-    echo "===== sample $n $(date -Is 2>/dev/null || date) ====="
-    ss -tinm 2>/dev/null || ss -tin 2>/dev/null || true
-  } >>"$RAW"
-  sleep 2
-done
+def run(args):
+    try:
+        return subprocess.check_output(args, stderr=subprocess.STDOUT)
+    except Exception as exc:
+        return ("无数据 %s\n" % exc).encode("utf-8", "replace")
 
-python3 - "$RAW" "$FILT" "$THRESH" $PORTS <<'PY'
-import sys
-raw, filt, thresh = sys.argv[1], sys.argv[2], int(sys.argv[3])
-ports = set(sys.argv[4:])
-lines = open(raw, "r", errors="replace").read().splitlines()
-out = []
-i = 0
-while i < len(lines):
-    line = lines[i]
-    if line.startswith("====="):
-        out.append(line)
-        i += 1
-        continue
-    parts = line.split()
-    info = ""
-    if i + 1 < len(lines) and lines[i + 1].startswith((" ", "\t")):
-        info = lines[i + 1].strip()
-    if len(parts) >= 5 and parts[0] not in ("State", "Recv-Q"):
+def records(text):
+    rows = []
+    cur = None
+    for line in text.splitlines():
+        if not line or line.startswith("State"):
+            continue
+        if line[0] in " \t":
+            if cur is not None:
+                cur["info"].append(line)
+            continue
+        parts = line.split()
+        if len(parts) < 5:
+            continue
+        cur = {"recv": parts[1], "send": parts[2], "local": parts[3], "peer": parts[4],
+               "info": [], "raw": line}
+        rows.append(cur)
+    return rows
+
+def port_of(addr):
+    return addr.rsplit(":", 1)[-1]
+
+def stamp():
+    return time.strftime("%Y%m%d-%H%M%S")
+
+def rotate():
+    if max_dumps <= 0:
+        return
+    raws = sorted(glob.glob(os.path.join(out, "ss-tinm-*.txt")))
+    while len(raws) > max_dumps:
+        old = raws.pop(0)
+        base = os.path.basename(old)
+        # ss-tinm-TS.txt or legacy ss-tinm-TS-peer.txt
+        ts = base[len("ss-tinm-"):].rsplit(".", 1)[0]
+        siblings = set(glob.glob(os.path.join(out, "ss-tinm-%s*.txt" % ts)))
+        siblings.update(glob.glob(os.path.join(out, "sendq-summary-%s*.txt" % ts)))
+        siblings.update(glob.glob(os.path.join(out, "nstat-%s*.txt" % ts)))
+        for path in siblings:
+            try:
+                os.remove(path)
+            except OSError:
+                pass
+        raws = sorted(glob.glob(os.path.join(out, "ss-tinm-*.txt")))
+
+def save(hot_rows):
+    ts = stamp()
+    raw_path = os.path.join(out, "ss-tinm-%s.txt" % ts)
+    sum_path = os.path.join(out, "sendq-summary-%s.txt" % ts)
+    ns_path = os.path.join(out, "nstat-%s.txt" % ts)
+    with open(raw_path, "wb") as f:
+        f.write(run(["ss", "-tinm"]))
+    hot_sorted = sorted(hot_rows, key=lambda r: int(r["send"]), reverse=True)
+    if summary_top > 0:
+        hot_sorted = hot_sorted[:summary_top]
+    with open(sum_path, "w") as f:
+        f.write("time=%s\nthreshold=%s\nhot_count=%d\nshown=%d\n" % (
+            ts, thresh, len(hot_rows), len(hot_sorted)))
+        f.write("recv_q send_q local peer\n")
+        for row in hot_sorted:
+            f.write("%s %s %s %s\n" % (row["recv"], row["send"], row["local"], row["peer"]))
+    ns = run(["nstat", "-a", "TcpRetransSegs", "TcpOutSegs", "TcpExtTCPLostRetransmit"])
+    with open(ns_path, "wb") as f:
+        f.write(b"# nstat -a (not -z; -z would clear kernel counters)\n")
+        f.write(ns)
+    rotate()
+    sys.stdout.write("saved %s hot=%d\n" % (raw_path, len(hot_rows)))
+    sys.stdout.flush()
+
+while True:
+    text = run(["ss", "-tin"]).decode("utf-8", "replace")
+    rows = records(text)
+    now = time.time()
+    hot = []
+    for row in rows:
+        if port_of(row["local"]) not in ports:
+            continue
         try:
-            sq = int(parts[2])
+            send_q = int(row["send"])
         except ValueError:
-            sq = -1
-        local = parts[3]
-        port = local.rsplit(":", 1)[-1]
-        if sq > thresh and port in ports:
-            out.append(line)
-            if info:
-                out.append(info)
-            out.append("peer=%s sendq=%s recvq=%s" % (parts[4], parts[2], parts[1]))
-        if info:
-            i += 1
-    i += 1
-open(filt, "w").write("\n".join(out) + ("\n" if out else ""))
-print("filtered_lines", len(out))
+            continue
+        if send_q > thresh:
+            hot.append(row)
+    if hot:
+        if episode_start is None:
+            episode_start = now
+        if now - episode_start >= hold_s and now - last_dump >= gap_s:
+            save(hot)
+            last_dump = now
+            episode_start = now
+    else:
+        episode_start = None
+    time.sleep(poll_s)
 PY
+fi
 
-{
-  echo "time=$(date -Is 2>/dev/null || date)"
-  echo "ports=$PORTS"
-  echo "sendq_threshold=$THRESH"
-  echo "seconds=$SECS"
-  echo "samples=$n"
-  echo "raw=$RAW"
-  echo "filtered=$FILT"
-  robots="$(ps -eo pid,pcpu,pmem,rss,nlwp,cmd 2>/dev/null | grep -E -i 'robot|loadtest|botclient|gameclient' | grep -v grep || true)"
-  if [[ -z "$robots" ]]; then
-    echo "local_robot_cpu=无数据"
-    echo "local_robot_recv=无数据"
-  else
-    echo "local_robot_cpu:"
-    echo "$robots"
-  fi
-  if [[ -z "${GAMEMESH_ROBOT_SSH:-}" ]] || ! command -v ssh >/dev/null 2>&1; then
-    echo "remote_robot_cpu=无数据"
-    echo "remote_robot_recv=无数据"
-  else
-    remote="$(ssh -o BatchMode=yes -o ConnectTimeout=3 "$GAMEMESH_ROBOT_SSH" \
-      'ps -eo pid,pcpu,pmem,rss,nlwp,cmd | grep -E -i "robot|loadtest|botclient|gameclient" | grep -v grep; echo ---SS---; ss -tinm' \
-      2>/dev/null || true)"
-    if [[ -z "$remote" ]]; then
-      echo "remote_robot_cpu=无数据"
-      echo "remote_robot_recv=无数据"
-    else
-      echo "remote:"
-      echo "$remote"
-    fi
-  fi
-  echo "peers:"
-  grep -E '^peer=' "$FILT" | sed 's/ sendq=.*//' | sort | uniq -c | sort -nr | head -40 || true
-} >"$META"
-
-echo "wrote $META"
-echo "raw ss: $RAW"
-echo "sendq>$THRESH: $FILT"
+echo "usage: $0 --watch [output-dir]" >&2
+echo "start_formal.sh launches --watch. Do not ssh to the load generator." >&2
+exit 2

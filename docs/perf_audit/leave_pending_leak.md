@@ -1,4 +1,4 @@
-# LEAVE pending 泄漏（2026-11-13，修之前）
+# LEAVE pending 泄漏：根因与修复（2026-11-13）
 
 指标名是 `gamemesh_aoi_leave_write_pending`。下面按代码回答，再写放弃后重连可能多出实体的设计。设计等确认，本轮不改协议。
 
@@ -29,13 +29,15 @@
 
 `notified[viewer]` 在 `ForgetViewer` 里整表删掉。默认配置下指标不读这张表。
 
-## 3. 10 分钟放弃为什么没生效
+## 3. 根因与修复
 
-根因：放弃判断只在观察者**仍 connected** 时执行，比较的是 `leave_again.first_ms`，而且这条记录一旦被删掉重建，`first_ms` 会换成新的 `now_ms`。证据表的时间不会被补发改掉，也几乎不会被删掉。
+根因：放弃判断只在观察者**仍 connected** 时执行，比较的是 `leave_again.first_ms`，而且这条记录一旦被删掉重建，`first_ms` 会换成新的 `now_ms`。证据表的时间不会被补发改掉，也几乎不会被删掉。上面第 2 节的表是修之前的状态。
 
 `RetryPendingLeaves` 里，观察者缺失或 `connected==false` 时直接 `drop` 并 `continue`，排在 `now_ms - first >= AoiLeaveRetryMaxMs()`（默认 600000）之前。下线后的条目走不到放弃。`given_up` 因此保持 0，而 `pending_oldest_ms` 按证据表的首次失败时间继续涨。
 
 补发本身不重置证据表时间（`AoiNoteLeaveWriteFail` 见 `at != 0` 就跳过）。`RememberLeave` 只在 `version==0`（新记录）时写 `first_ms`。同一条记录上的补发只改 `last_ms` 和 `tries`。记录被删掉再创建时，`leave_again` 的年龄从头算，证据表的年龄不重置。线上 `given_up=0` 且最老超过 12 分钟，对得上「下线分支提前返回，证据表没人删」。
+
+修复后：凡是从 `leave_again` 删掉 `(viewer, subject)`，都经过 `MapRuntime::DropPendingLeave`，同时删掉 `g_leave_fail_since` 里的同一对。原因分成 `viewer_offline`、`back_in_window`、`version_superseded`、`acked`、`given_up`。观察者离线（含宽限期内 `connected==false`）时立即丢弃，补发前再查一次，不在线就不 `EmitTo`。放弃按证据表里第一次写失败的时间计算，补发不改这个时间；没有证据行时才用 `leave_again.first_ms`。放弃记 `given_up`，日志最多 1 条/秒。同一观察者上次 LEAVE 写失败，或测试里登记的未发送字节超过 16KB 时，补发按 1s、2s、4s 退避，上限 30 秒。ENTER 写成功且证据表里还有这一对时，按 `back_in_window` 删掉证据行；这一步不删补发队列。每轮 `AdvancePresented` 放开地图锁之后计算 `gamemesh_aoi_leave_pending_inconsistent`。
 
 ## 4. 重连后 `AoiRecipientGate::Suppress` 会不会清
 
@@ -64,3 +66,6 @@
 - 放弃年龄用证据表的首次失败时间。没有证据行时用 `leave_again.first_ms`。补发只改 `last_ms`，不改这两个时间。放弃仍记 `gamemesh_aoi_leave_write_given_up_total`，日志最多 1 条/秒，带观察者、实体、年龄。
 - 同一观察者上次 LEAVE 写失败，或 `AoiViewerUnsentBytes` > 16384 时，补发按 1s、2s、4s…退避，上限 30 秒，这期间不把 LEAVE 放进推送批次。逻辑服的推送回包没有 Send-Q，生产上这个字节数是无数据，退避靠写失败返回值。测试可注册 `AoiSetViewerUnsentFnForTest`。
 - `pending_oldest_ms` 增加 `{viewer="online"}` / `{viewer="offline"}`。某一侧没有 pending 时不输出该序列。
+- 从 `leave_again` 删掉 `(viewer, subject)` 都走 `DropPendingLeave`，同时删 `g_leave_fail_since` 里的同一对。计数是 `gamemesh_aoi_leave_pending_drop_total{reason=...}`：`viewer_offline`、`back_in_window`、`version_superseded`、`acked`、`given_up`。
+- ENTER 写成功时，如果证据表里还有这一对，按 `back_in_window` 删掉。
+- 每轮 `AdvancePresented` 在放开地图锁之后统计 `gamemesh_aoi_leave_pending_inconsistent`：证据表有、补发队列没有的对数。正常是 0。

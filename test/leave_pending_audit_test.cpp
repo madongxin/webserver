@@ -321,6 +321,139 @@ void TestUnsentSkipsRetry(const std::shared_ptr<const MapStaticData> &data) {
     AoiSetViewerUnsentFnForTest(nullptr);
 }
 
+bool FailOneLeave(MapRuntime *rt, const std::shared_ptr<const MapStaticData> &data, int64_t now,
+                  uint64_t *version) {
+    rt->ClearForTest();
+    AoiResetEvidenceForTest();
+    rt->SetViewRadiusCells(1);
+    rt->SetMaxVisible(50);
+    MapRuntime::SetNowMsForTest(now);
+    AoiSetEvidenceNowMsForTest(now);
+    MapEntity self;
+    std::vector<MapEntity> snap;
+    AoiPushBatch pushes;
+    std::string err;
+    if (!rt->Enter(1, data, Ent(1, 5.f, 5.f), &self, &snap, &pushes, &err))
+        return false;
+    if (!rt->Enter(1, data, Ent(2, 6.f, 5.f), &self, &snap, &pushes, &err))
+        return false;
+    MapEntity conf;
+    if (rt->Move(1, 2, 70.f, 0.f, 5.f, 0.f, 1, now, &conf, &pushes, &err, true) != MapMoveReject::Ok)
+        return false;
+    std::vector<AoiPushBatch> more;
+    rt->AdvancePresented(&more);
+    AoiPushBatch all;
+    Collect(more, &all);
+    uint64_t ver = 0;
+    int noted = 0;
+    for (const auto &ev : all.events) {
+        if (ev.op != 3 || ev.recipient_id != 1 || ev.snapshot.player_id != 2 || ev.notify_version == 0)
+            continue;
+        rt->NoteAoiWrite(1, 2, 3, false, ev.notify_version);
+        ver = ev.notify_version;
+        ++noted;
+    }
+    if (version)
+        *version = ver;
+    return noted >= 1 && AoiLeavePendingForViewer(1) == 1;
+}
+
+int CountEnter(const AoiPushBatch &batch, uint64_t viewer, uint64_t subject) {
+    int n = 0;
+    for (const auto &ev : batch.events) {
+        if (ev.op == 1 && ev.recipient_id == viewer && ev.snapshot.player_id == subject)
+            ++n;
+    }
+    return n;
+}
+
+void TestBackInWindowClearsEvidence(const std::shared_ptr<const MapStaticData> &data) {
+    auto &rt = MapRuntime::Instance();
+    const int64_t now = 4000000;
+    Expect(FailOneLeave(&rt, data, now, nullptr), "window setup");
+    Expect(rt.ViewerConnected(1), "window viewer online before return");
+    const int before = AoiLeavePendingCount();
+    MapEntity conf;
+    AoiPushBatch pushes;
+    std::string err;
+    Expect(rt.Move(1, 2, 6.f, 0.f, 5.f, 0.f, 2, now, &conf, &pushes, &err, true) == MapMoveReject::Ok,
+           "window move back");
+    std::vector<AoiPushBatch> more;
+    rt.AdvancePresented(&more);
+    AoiPushBatch all;
+    Collect(more, &all);
+    Expect(CountEnter(all, 1, 2) >= 1, "window sent ENTER");
+    Expect(AoiLeavePendingForViewer(1) == 0, "window evidence cleared");
+    Expect(AoiLeavePendingCount() == before - 1, "window pending decreased by one");
+    Expect(rt.ViewerConnected(1), "window viewer stays online");
+    Expect(AoiLeaveDropCount(AoiLeaveDropReason::BackInWindow) >= 1, "window counted back_in_window");
+}
+
+void TestVersionSupersededClearsEvidence(const std::shared_ptr<const MapStaticData> &data) {
+    auto &rt = MapRuntime::Instance();
+    const int64_t now = 5000000;
+    Expect(FailOneLeave(&rt, data, now, nullptr), "version setup");
+    Expect(AoiLeavePendingForViewer(1) == 1, "version pending before supersede");
+    MapEntity conf;
+    AoiPushBatch pushes;
+    std::string err;
+    Expect(rt.Move(1, 1, 68.f, 0.f, 5.f, 0.f, 1, now, &conf, &pushes, &err, true) == MapMoveReject::Ok,
+           "version viewer walks back");
+    std::vector<AoiPushBatch> more;
+    rt.AdvancePresented(&more);
+    AoiPushBatch all;
+    Collect(more, &all);
+    Expect(CountEnter(all, 1, 2) >= 1, "version sent ENTER");
+    Expect(AoiLeavePendingForViewer(1) == 0, "version evidence cleared");
+    Expect(rt.ViewerConnected(1), "version viewer stays online");
+    Expect(AoiLeaveDropCount(AoiLeaveDropReason::VersionSuperseded) >= 1, "version counted");
+}
+
+void TestLeaveAckClearsEvidence(const std::shared_ptr<const MapStaticData> &data) {
+    auto &rt = MapRuntime::Instance();
+    uint64_t ver = 0;
+    Expect(FailOneLeave(&rt, data, 6000000, &ver), "ack setup");
+    Expect(ver != 0, "ack version");
+    rt.NoteAoiWrite(1, 2, 3, true, ver);
+    Expect(AoiLeavePendingForViewer(1) == 0, "ack evidence cleared");
+    Expect(rt.ViewerConnected(1), "ack viewer stays online");
+    Expect(AoiLeaveDropCount(AoiLeaveDropReason::Acked) >= 1, "ack counted");
+}
+
+void TestEnterAckClearsEvidence(const std::shared_ptr<const MapStaticData> &data) {
+    auto &rt = MapRuntime::Instance();
+    uint64_t ver = 0;
+    Expect(FailOneLeave(&rt, data, 7000000, &ver), "enter-ack setup");
+    Expect(ver != 0, "enter-ack version");
+    rt.NoteAoiWrite(1, 2, 1, true, ver);
+    Expect(AoiLeavePendingForViewer(1) == 0, "enter ack clears failed leave");
+    Expect(rt.ViewerConnected(1), "enter ack viewer stays online");
+    Expect(AoiLeaveDropCount(AoiLeaveDropReason::BackInWindow) >= 1, "enter ack counted");
+}
+
+void TestInconsistentGauge(const std::shared_ptr<const MapStaticData> &data) {
+    auto &rt = MapRuntime::Instance();
+    rt.ClearForTest();
+    AoiResetEvidenceForTest();
+    AoiNoteLeaveWriteFail(42, 43, 1000);
+    std::vector<AoiPushBatch> more;
+    rt.AdvancePresented(&more);
+    std::ostringstream os;
+    AoiEvidenceWritePrometheus(os);
+    const std::string text = os.str();
+    Expect(text.find("gamemesh_aoi_leave_pending_inconsistent 1") != std::string::npos,
+           "orphan evidence is inconsistent");
+    uint64_t ver = 0;
+    Expect(FailOneLeave(&rt, data, 8000000, &ver), "consistent setup");
+    more.clear();
+    rt.AdvancePresented(&more);
+    os.str("");
+    os.clear();
+    AoiEvidenceWritePrometheus(os);
+    Expect(os.str().find("gamemesh_aoi_leave_pending_inconsistent 0") != std::string::npos,
+           "queued leave is consistent");
+}
+
 void TestOldestSplit() {
     AoiResetEvidenceForTest();
     AoiSetEvidenceNowMsForTest(5000);
@@ -353,6 +486,11 @@ int main() {
     TestGiveUpUsesFirstFail(data);
     TestRetryBackoff(data);
     TestUnsentSkipsRetry(data);
+    TestBackInWindowClearsEvidence(data);
+    TestVersionSupersededClearsEvidence(data);
+    TestLeaveAckClearsEvidence(data);
+    TestEnterAckClearsEvidence(data);
+    TestInconsistentGauge(data);
     TestOldestSplit();
     MapRuntime::SetNowMsForTest(0);
     AoiSetEvidenceNowMsForTest(0);

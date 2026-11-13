@@ -261,6 +261,14 @@ wait_log gateway1 "$RUN_DIR/logs/gw1.log" 'GameTcpGateway ready|Game protobuf TC
 wait_log gw0_push "$RUN_DIR/logs/gw0.log" 'GatewayPushServer listening'
 wait_log gw1_push "$RUN_DIR/logs/gw1.log" 'GatewayPushServer listening'
 
+if [[ -x "$ROOT/scripts/dump_parked_sockets.sh" ]]; then
+  mkdir -p "$RUN_DIR/parked-ss" "$RUN_DIR/logs"
+  nohup "$ROOT/scripts/dump_parked_sockets.sh" --watch "$RUN_DIR/parked-ss" \
+    >>"$RUN_DIR/logs/parked-ss.log" 2>&1 &
+  echo $! >>"$RUN_DIR/pids"
+  echo "  parked socket watcher pid=$! dir=$RUN_DIR/parked-ss"
+fi
+
 if [[ -x "$ROOT/scripts/sync_prometheus_sd.sh" ]]; then
   "$ROOT/scripts/sync_prometheus_sd.sh" || true
 fi

@@ -1,3 +1,4 @@
+#include "AoiEvidence.h"
 #include "GameLogicPush.h"
 
 #include "AoiRecipientGate.h"
@@ -98,6 +99,7 @@ bool PushGrouped(std::vector<GatewayPushItem> items, std::unordered_map<uint64_t
             NoteReject(static_cast<int>(PushAdmitReason::NoSession));
             LogRejectSample(item.player_id, static_cast<int>(PushAdmitReason::NoSession), 0, 0);
             AoiRecipientGate::Instance().Suppress(item.player_id);
+            AoiNoteWriteFail(0, AoiWriteFrame::Reliable, AoiWriteFailReason::Suppress);
             ++dropped;
             continue;
         }
@@ -165,8 +167,10 @@ bool PushGrouped(std::vector<GatewayPushItem> items, std::unordered_map<uint64_t
                 LogRejectSample(row.player_id() != 0 ? row.player_id() : item.player_id, reason,
                                 row.server_seq(), 0);
                 if (reason == static_cast<int>(PushAdmitReason::NoSession) ||
-                    reason == static_cast<int>(PushAdmitReason::Closed))
+                    reason == static_cast<int>(PushAdmitReason::Closed)) {
                     AoiRecipientGate::Instance().Suppress(item.player_id);
+                    AoiNoteWriteFail(0, AoiWriteFrame::Reliable, AoiWriteFailReason::Suppress);
+                }
             }
         } else if (rsp.rejected() > 0) {
             for (uint32_t i = 0; i < rsp.rejected(); ++i)

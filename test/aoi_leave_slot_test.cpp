@@ -95,6 +95,18 @@ void TestMixedFrame() {
            "a frame with only the stripped entities becomes empty");
 }
 
+void TestEnterFailDoesNotKeepTombstone() {
+    std::unordered_map<uint64_t, int> slot;
+    AoiMoveCoalesceLedger ledger;
+    AoiOutboundBooks books;
+    NoteLeaveVisible(&books, 9, 1000);
+    Expect(TombstoneBlocksMove(books, 9, 2000), "MOVE is blocked one second after LEAVE");
+    ApplyUrgentAoi(&slot, &ledger, [](uint64_t) {}, &books, 1, 9, 2000);
+    Expect(!TombstoneBlocksMove(books, 9, 2000), "preparing ENTER lifts the tombstone before the write result");
+    Expect(!TombstoneBlocksMove(books, 9, 2000 + 4000),
+           "a failed ENTER write does not keep rejecting MOVE for the rest of the 5 seconds");
+}
+
 void TestHoldOrder() {
     for (int trial = 0; trial < 200; ++trial) {
         AoiHoldGate<int> gate;
@@ -135,6 +147,7 @@ void TestHoldOrder() {
 int main() {
     TestSlotAndTombstone();
     TestMixedFrame();
+    TestEnterFailDoesNotKeepTombstone();
     TestHoldOrder();
     if (g_fail) {
         std::printf("FAIL aoi_leave_slot_test failures=%d\n", g_fail);

@@ -1,5 +1,6 @@
 #include "GameLogicServiceImpl.h"
 
+#include "AoiEvidence.h"
 #include "AoiRecipientGate.h"
 #include "ClientSeqGate.h"
 #include "FormalMode.h"
@@ -23,6 +24,7 @@
 #include <bthread/countdown_event.h>
 
 #include <atomic>
+#include <chrono>
 #include <condition_variable>
 #include <cstdio>
 #include <functional>
@@ -536,11 +538,17 @@ void GameLogicServiceImpl::Dispatch(::google::protobuf::RpcController *controlle
     auto *closure = done;
     done_guard.release();
     const uint64_t pid = cmd->player_id();
-    const bool posted = PlayerSerialQueue::Instance().TryPost(pid, [cmd, rsp, closure]() {
+    const auto queued_at = std::chrono::steady_clock::now();
+    const bool posted = PlayerSerialQueue::Instance().TryPost(pid, [cmd, rsp, closure, queued_at]() {
+        const auto queued_us = std::chrono::duration_cast<std::chrono::microseconds>(
+                                   std::chrono::steady_clock::now() - queued_at)
+                                   .count();
         // MailClaim：真异步 GameDB，不阻塞同 shard 其他玩家
         game::GameRequest greq;
-        if (greq.ParseFromString(cmd->payload()) &&
-            (greq.has_mail_claim() || greq.has_mail_batch_claim())) {
+        const bool parsed = greq.ParseFromString(cmd->payload());
+        if (parsed && greq.has_move())
+            AoiNoteMoveStage(AoiMoveStage::SerialQueue, queued_us, false, false);
+        if (parsed && (greq.has_mail_claim() || greq.has_mail_batch_claim())) {
             std::string err;
             if (!LocalLogicOk(cmd->gamelogic_instance_id(), &err) ||
                 !FenceOk(cmd->player_id(), cmd->session_id(), cmd->fence_token(), cmd->generation(),

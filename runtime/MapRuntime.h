@@ -1,5 +1,6 @@
 #pragma once
 
+#include "AoiEvidence.h"
 #include "MapStaticData.h"
 
 #include <atomic>
@@ -236,6 +237,8 @@ private:
     void RememberLeave(InstanceState *st, AoiPushBatch *batch, const MapEntity &subject, int64_t now_ms);
     void StampEnter(InstanceState *st, AoiPushBatch *batch, const MapEntity &subject);
     void RetryPendingLeaves(InstanceState *st, uint64_t map_id, int64_t now_ms, AoiPushBatch *batch);
+    /** 从补发队列删掉这一对时，同时删掉证据表里的同一对。 */
+    void DropPendingLeave(InstanceState *st, uint64_t viewer, uint64_t subject, AoiLeaveDropReason reason);
     void RetryPendingEnters(InstanceState *st, uint64_t map_id, int64_t now_ms, AoiPushBatch *batch);
     void SyncVisibleSubject(InstanceState *st, MapEntity &subject, int64_t now_ms, uint64_t map_id,
                             AoiPushBatch *batch);

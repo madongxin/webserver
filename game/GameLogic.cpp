@@ -1,5 +1,6 @@
 #include "GameLogic.h"
 
+#include "AoiEvidence.h"
 #include "AoiHoldGate.h"
 #include "AoiPublishQueue.h"
 #include "CommandSpec.h"
@@ -3193,10 +3194,18 @@ bool GameLogic::HandleMove(const game::MoveReq &req, game::GameResponse *rsp) {
     MapEntity confirmed;
     AoiPushBatch pushes;
     std::string code;
+    AoiEnterMoveTiming();
+    const auto move_exec_t0 = std::chrono::steady_clock::now();
     const MapMoveReject st = MapRuntime::Instance().Move(
         req.map_instance_id(), req.player_id(), req.position().x(), req.position().y(),
         req.position().z(), req.yaw(), rsp->seq(), NowMs(), &confirmed, &pushes, &code, false,
         req.client_time_ms());
+    AoiLeaveMoveTiming();
+    AoiNoteMoveStage(AoiMoveStage::MoveExec,
+                     std::chrono::duration_cast<std::chrono::microseconds>(
+                         std::chrono::steady_clock::now() - move_exec_t0)
+                         .count(),
+                     false, false);
     if (st != MapMoveReject::Ok) {
         body->set_error_code(code.empty() ? "ERR_MOVE_REJECTED" : code);
         body->set_message(body->error_code());
