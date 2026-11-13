@@ -1846,6 +1846,12 @@ add_executable(egress_enforce_test
 target_include_directories(egress_enforce_test PRIVATE runtime base)
 target_link_libraries(egress_enforce_test ${CMAKE_THREAD_LIBS_INIT})
 
+add_executable(reply_classify_test
+  test/reply_classify_test.cpp
+  runtime/AoiEvidence.cpp)
+target_include_directories(reply_classify_test PRIVATE runtime base)
+target_link_libraries(reply_classify_test ${CMAKE_THREAD_LIBS_INIT})
+
 add_executable(stalled_conn_test
   test/stalled_conn_test.cpp
   runtime/AoiEvidence.cpp)

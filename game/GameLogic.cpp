@@ -3206,6 +3206,33 @@ bool GameLogic::HandleMove(const game::MoveReq &req, game::GameResponse *rsp) {
                          std::chrono::steady_clock::now() - move_exec_t0)
                          .count(),
                      false, false);
+    {
+        const char *result = "other";
+        switch (st) {
+        case MapMoveReject::Ok:
+            result = "ok";
+            break;
+        case MapMoveReject::StaleSeq:
+            result = "stale_seq";
+            break;
+        case MapMoveReject::TooFast:
+            result = "too_fast";
+            break;
+        case MapMoveReject::OutOfBounds:
+            result = "out_of_bounds";
+            break;
+        case MapMoveReject::NotOnMap:
+            result = "not_on_map";
+            break;
+        case MapMoveReject::Disconnected:
+            result = "disconnected";
+            break;
+        default:
+            result = "other";
+            break;
+        }
+        AoiNoteMoveRequest(result, req.player_id());
+    }
     if (st != MapMoveReject::Ok) {
         body->set_error_code(code.empty() ? "ERR_MOVE_REJECTED" : code);
         body->set_message(body->error_code());

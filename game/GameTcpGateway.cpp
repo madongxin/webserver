@@ -1602,6 +1602,7 @@ void GameTcpGateway::OnMessage(const std::shared_ptr<TcpConnection> &conn) {
         }
 
         if (peek.has_heartbeat()) {
+            AoiNoteHeartbeatRequest();
             if (ClientHelloRequired() && !GatewayConnGuard::Instance().HelloOk(conn->id())) {
                 SendPublicErr(tcp_sink, conn->id(), peek.seq(), gameproto::kErrUnauthenticated,
                               "hello required");

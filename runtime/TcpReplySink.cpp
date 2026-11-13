@@ -285,6 +285,9 @@ void TcpReplySink::SendFrame(const std::string &response_frame) {
                               rc < 0 ? AoiWriteFailReason::Closed : AoiWriteFailReason::QueueFull, heart);
         } else if (std::strcmp(kind, "heartbeat") == 0) {
             AoiNoteTxBytes(AoiWriteFrame::Heartbeat, response_frame.size(), c->id());
+        } else if (std::strcmp(kind, "move") == 0) {
+            // MoveRsp 以前误记进 reply，导致 heartbeat 看起来恒为 0、reply 虚高。
+            AoiNoteTxBytes(AoiWriteFrame::MoveReply, response_frame.size(), c->id());
         } else if (snapshot) {
             AoiNoteTxBytes(AoiWriteFrame::Snapshot, response_frame.size(), c->id());
         } else {

@@ -16,6 +16,7 @@ enum class AoiWriteFrame : int {
     Leave,
     Move,
     Reply,
+    MoveReply,  // MoveRsp 回包（不是 AOI 位置推送）
     Heartbeat,
     Snapshot,
     Reliable,
@@ -64,6 +65,12 @@ void AoiSetControlBudgetFn(AoiControlBudgetFn fn);
 void AoiNoteMoveSilenceMs(int64_t silence_ms);
 /** 每观察者可见实体数样本。 */
 void AoiNoteVisiblePerViewer(int n);
+
+/** MOVE 请求结果。result 用短名：ok、stale_seq、too_fast、out_of_bounds、not_on_map、
+ *  duplicate_target、disconnected、other。 */
+void AoiNoteMoveRequest(const char *result, uint64_t conn_or_player_key);
+void AoiNoteHeartbeatRequest();
+void AoiNoteDuplicateMoveTarget();
 
 /** 一帧里每种 op 各记一次。解析不了就记 Other。 */
 void AoiNoteFrameWrite(uint64_t conn_id, const std::string &frame, bool ok, AoiWriteFailReason reason,

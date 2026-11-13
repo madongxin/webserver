@@ -1993,6 +1993,9 @@ MapMoveReject MapRuntime::Move(uint64_t map_instance_id, uint64_t player_id, flo
     }
     const float dx = want_x - e.x, dy = want_y - e.y, dz = want_z - e.z;
     const float dist = std::sqrt(dx * dx + dy * dy + dz * dz);
+    // 统计：与权威坐标几乎重合的重复目标（含 2s 超时重发）。只计数，本轮不改发送路径。
+    if (dist < 0.05f)
+        AoiNoteDuplicateMoveTarget();
     const int64_t t1 = now_ms > 0 ? now_ms : NowMs();
     float dt_server = 0.f;
     if (e.last_move_server_ms > 0 && t1 > e.last_move_server_ms)

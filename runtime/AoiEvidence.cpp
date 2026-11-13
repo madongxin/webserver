@@ -8,6 +8,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <string>
 #include <mutex>
 #include <type_traits>
 #include <unordered_map>
@@ -255,6 +256,8 @@ const char *AoiWriteFrameName(AoiWriteFrame frame) {
         return "move";
     case AoiWriteFrame::Reply:
         return "reply";
+    case AoiWriteFrame::MoveReply:
+        return "move_reply";
     case AoiWriteFrame::Heartbeat:
         return "heartbeat";
     case AoiWriteFrame::Snapshot:
@@ -332,6 +335,7 @@ int FrameBucket(AoiWriteFrame frame) {
     case AoiWriteFrame::Move:
         return 0;
     case AoiWriteFrame::Reply:
+    case AoiWriteFrame::MoveReply:
         return 1;
     case AoiWriteFrame::Enter:
         return 2;
@@ -377,6 +381,63 @@ void AoiNoteVisiblePerViewer(int n) {
     std::lock_guard<std::mutex> lk(g_mu);
     g_visible_per_viewer.push_back(n);
     KeepTail(&g_visible_per_viewer, 4096);
+}
+
+std::atomic<uint64_t> g_move_req_ok{0};
+std::atomic<uint64_t> g_move_req_stale{0};
+std::atomic<uint64_t> g_move_req_too_fast{0};
+std::atomic<uint64_t> g_move_req_oob{0};
+std::atomic<uint64_t> g_move_req_not_on_map{0};
+std::atomic<uint64_t> g_move_req_dup_target{0};
+std::atomic<uint64_t> g_move_req_disconnected{0};
+std::atomic<uint64_t> g_move_req_other{0};
+std::atomic<uint64_t> g_heartbeat_req{0};
+std::vector<int64_t> g_move_req_per_conn;
+std::mutex g_move_req_mu;
+std::unordered_map<uint64_t, uint64_t> g_move_req_window;
+int64_t g_move_req_window_ms = 0;
+
+void AoiNoteMoveRequest(const char *result, uint64_t conn_or_player_key) {
+    if (!result)
+        result = "other";
+    if (std::strcmp(result, "ok") == 0)
+        g_move_req_ok.fetch_add(1, std::memory_order_relaxed);
+    else if (std::strcmp(result, "stale_seq") == 0)
+        g_move_req_stale.fetch_add(1, std::memory_order_relaxed);
+    else if (std::strcmp(result, "too_fast") == 0)
+        g_move_req_too_fast.fetch_add(1, std::memory_order_relaxed);
+    else if (std::strcmp(result, "out_of_bounds") == 0)
+        g_move_req_oob.fetch_add(1, std::memory_order_relaxed);
+    else if (std::strcmp(result, "not_on_map") == 0)
+        g_move_req_not_on_map.fetch_add(1, std::memory_order_relaxed);
+    else if (std::strcmp(result, "duplicate_target") == 0)
+        g_move_req_dup_target.fetch_add(1, std::memory_order_relaxed);
+    else if (std::strcmp(result, "disconnected") == 0)
+        g_move_req_disconnected.fetch_add(1, std::memory_order_relaxed);
+    else
+        g_move_req_other.fetch_add(1, std::memory_order_relaxed);
+    if (conn_or_player_key == 0)
+        return;
+    const int64_t now = std::chrono::duration_cast<std::chrono::milliseconds>(
+                            std::chrono::steady_clock::now().time_since_epoch())
+                            .count();
+    std::lock_guard<std::mutex> lk(g_move_req_mu);
+    if (g_move_req_window_ms == 0 || now - g_move_req_window_ms >= 1000) {
+        for (const auto &kv : g_move_req_window)
+            g_move_req_per_conn.push_back(static_cast<int64_t>(kv.second));
+        KeepTail(&g_move_req_per_conn, 4096);
+        g_move_req_window.clear();
+        g_move_req_window_ms = now;
+    }
+    g_move_req_window[conn_or_player_key] += 1;
+}
+
+void AoiNoteHeartbeatRequest() {
+    g_heartbeat_req.fetch_add(1, std::memory_order_relaxed);
+}
+
+void AoiNoteDuplicateMoveTarget() {
+    g_move_req_dup_target.fetch_add(1, std::memory_order_relaxed);
 }
 
 void AoiNoteTxBytes(AoiWriteFrame frame, uint64_t bytes, uint64_t conn_id) {
@@ -939,6 +1000,30 @@ void AoiEvidenceWritePrometheus(std::ostream &os) {
                   silence);
     EmitQuantiles(os, "gamemesh_aoi_visible_per_viewer",
                   "Visible entity count per viewer sample. Unit: entities.", visible);
+    os << "# HELP gamemesh_move_requests_total MOVE requests by result. Unit: requests.\n"
+          "# TYPE gamemesh_move_requests_total counter\n"
+       << "gamemesh_move_requests_total{result=\"ok\"} " << g_move_req_ok.load() << "\n"
+       << "gamemesh_move_requests_total{result=\"stale_seq\"} " << g_move_req_stale.load() << "\n"
+       << "gamemesh_move_requests_total{result=\"too_fast\"} " << g_move_req_too_fast.load() << "\n"
+       << "gamemesh_move_requests_total{result=\"out_of_bounds\"} " << g_move_req_oob.load() << "\n"
+       << "gamemesh_move_requests_total{result=\"not_on_map\"} " << g_move_req_not_on_map.load()
+       << "\n"
+       << "gamemesh_move_requests_total{result=\"duplicate_target\"} "
+       << g_move_req_dup_target.load() << "\n"
+       << "gamemesh_move_requests_total{result=\"disconnected\"} "
+       << g_move_req_disconnected.load() << "\n"
+       << "gamemesh_move_requests_total{result=\"other\"} " << g_move_req_other.load() << "\n";
+    os << "# HELP gamemesh_heartbeat_requests_total Heartbeat requests handled. Unit: requests.\n"
+          "# TYPE gamemesh_heartbeat_requests_total counter\n"
+       << "gamemesh_heartbeat_requests_total " << g_heartbeat_req.load() << "\n";
+    std::vector<int64_t> req_per;
+    {
+        std::lock_guard<std::mutex> lk(g_move_req_mu);
+        req_per = g_move_req_per_conn;
+    }
+    EmitQuantiles(os, "gamemesh_move_requests_per_conn",
+                  "MOVE requests per connection (or player key) in one-second windows. Unit: requests per second.",
+                  req_per);
     os << "# HELP gamemesh_aoi_leave_write_fail_total LEAVE pushes the gateway did not accept. Unit: events.\n"
           "# TYPE gamemesh_aoi_leave_write_fail_total counter\n"
        << "gamemesh_aoi_leave_write_fail_total " << g_leave_fail.load(std::memory_order_relaxed) << "\n";
