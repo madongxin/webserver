@@ -259,6 +259,9 @@ if(ENABLE_BRPC)
     runtime/brpc/GatewayAuthClients.cpp
     runtime/brpc/GatewayLoginOrchestrator.cpp
     runtime/BotLoginWave.cpp
+    runtime/AoiEvidence.cpp
+    runtime/AoiEvidenceFrame.cpp
+    runtime/AoiEvidenceVisible.cpp
     runtime/brpc/GatewayEnterMapOrchestrator.cpp
     runtime/brpc/gamelogic_rpc.pb.cc
     runtime/brpc/gateway_push.pb.cc
@@ -1829,6 +1832,68 @@ if(ENABLE_MYSQL AND ENABLE_GAME_PROTOBUF)
     ${CMAKE_THREAD_LIBS_INIT} ${MYSQL_CLIENT_LIB} ${Protobuf_LIBRARIES} ${JSONCPP_LIBRARIES}
     ${OPENSSL_CRYPTO_LIB})
 endif()
+
+add_executable(stalled_conn_test
+  test/stalled_conn_test.cpp
+  runtime/AoiEvidence.cpp)
+target_include_directories(stalled_conn_test PRIVATE runtime)
+target_link_libraries(stalled_conn_test ${CMAKE_THREAD_LIBS_INIT})
+
+add_executable(leave_pending_audit_test
+  test/leave_pending_audit_test.cpp
+  runtime/MapRuntime.cpp
+  runtime/AoiEvidence.cpp
+  runtime/OpsMetrics.cpp
+  runtime/MapStaticData.cpp
+  runtime/MapCatalog.cpp
+  base/FileHash.cpp
+  base/CurrentThread.cpp
+  log/Logging.cpp
+  log/LogStream.cpp
+  log/LogFile.cpp
+  log/AsyncLogging.cpp)
+target_include_directories(leave_pending_audit_test PRIVATE
+  runtime base log timer ${OPENSSL_INCLUDE_DIR} ${JSONCPP_INCLUDE_DIRS})
+target_link_libraries(leave_pending_audit_test
+  ${CMAKE_THREAD_LIBS_INIT} ${OPENSSL_CRYPTO_LIB} ${JSONCPP_LIBRARIES})
+
+set(_gamemesh_evidence_users
+  player_serial_queue_test
+  player_serial_shutdown_test
+  map_runtime_aoi_test
+  aoi_present_slice_test
+  aoi_fanout_v2_test
+  aoi_client_model_test
+  aoi_subscription_invariant_test
+  aoi_interest_bench
+  aoi200_subscription_test
+  auth_session_boundary_test
+  asset_dirty_consistency_test
+  phase1_correctness_test
+  protocol_handshake_test
+  gateway_overload_test
+  phase2_transfer_snapshot_test
+  world_snapshot_test
+  player_serial_async_test
+  reliable_outbox_test
+  control_outbox_test
+  placement_recovery_test
+  healthy_logic_refresh_test
+  recv_policy_test
+  reactor_integration_test
+  phase3_gamedb_asset_test
+  gamedb_snapshot_idempotency_test
+  gamedb_mutation_idempotency_test
+  gamedb_mutation_atomicity_test
+  gamedb_unknown_result_test
+  mail_claim_integration_test
+  gamedb_mail_claim_test
+  player_mail_send_test)
+foreach(_t ${_gamemesh_evidence_users})
+  if(TARGET ${_t})
+    target_sources(${_t} PRIVATE ${CMAKE_SOURCE_DIR}/runtime/AoiEvidence.cpp)
+  endif()
+endforeach()
 
 enable_testing()
 get_property(_gamemesh_targets DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}" PROPERTY BUILDSYSTEM_TARGETS)

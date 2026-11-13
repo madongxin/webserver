@@ -21,6 +21,7 @@
 #include "HealthProbe.h"
 #include "MapLeaseKeeper.h"
 #include "PlacementRecoveryScheduler.h"
+#include "AoiEvidence.h"
 #include "OpsMetrics.h"
 #include "PacketTiming.h"
 #include "ServiceHealth.h"
@@ -47,6 +48,7 @@
 #include "GameLogic.h"
 #include "GatewayConnRegistry.h"
 #include "MapCatalog.h"
+#include "MapRuntime.h"
 #endif
 #ifdef WEBSERVER_ENABLE_REDIS
 #include "PlacementStore.h"
@@ -1044,6 +1046,22 @@ void HttpResponseCallback(const HttpRequest &request, HttpResponse *response) {
         SendPrometheusMetrics(response, BuildPrometheusMetricsText(), head_only);
         return;
     }
+    if (url == "/aoi/visible") {
+        SendPlain(response, AoiVisibleJson());
+        return;
+    }
+    if (url == "/conn/stalled") {
+        int n = std::atoi(UrlParam(request, "n").c_str());
+        SendPlain(response, AoiStalledJson(n));
+        return;
+    }
+    if (url == "/aoi/trace") {
+        const uint64_t viewer = std::strtoull(UrlParam(request, "viewer").c_str(), nullptr, 10);
+        const uint64_t subject = std::strtoull(UrlParam(request, "subject").c_str(), nullptr, 10);
+        int limit = std::atoi(UrlParam(request, "n").c_str());
+        SendPlain(response, AoiTraceJson(viewer, subject, limit));
+        return;
+    }
     if (url == "/api/prometheus/query") {
         HandlePrometheusInstant(request, response, head_only);
         return;
@@ -1408,6 +1426,25 @@ int RunServer(const LaunchOpts &launch) {
 
     const std::string &role = opts.role;
     g_process_role = role;
+#ifdef WEBSERVER_ENABLE_GAME_PROTOBUF
+    if (role == "gateway" || role == "all") {
+        AoiSetConnPlayerFn([](uint64_t conn, uint64_t *player) {
+            GatewayConnRegistry::Bind bind;
+            if (!GatewayConnRegistry::Instance().FindByConnection(conn, &bind))
+                return false;
+            if (player)
+                *player = bind.player_id;
+            return true;
+        });
+    }
+    if (role == "gamelogic" || role == "all") {
+        AoiSetViewerOnlineFn([](uint64_t id, bool *online) {
+            if (online)
+                *online = MapRuntime::Instance().ViewerConnected(id);
+            return true;
+        });
+    }
+#endif
 #ifdef WEBSERVER_ENABLE_GAME_PROTOBUF
     if (role == "gamelogic" && FormalModeEnabled())
         GameLogic::Instance().SetFriendCommandsEnabled(false);

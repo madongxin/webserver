@@ -1,5 +1,6 @@
 #include "MapRuntime.h"
 
+#include "AoiEvidence.h"
 #include "AoiFanoutV2.h"
 #include "AoiLeaveReason.h"
 #include "AoiMembership.h"
@@ -27,6 +28,17 @@ void CountAoiLeave(AoiLeaveReason reason, bool unexpected) {
         ServerStats::aoi_leave_by_reason[idx].fetch_add(1, std::memory_order_relaxed);
     if (unexpected)
         ServerStats::aoi_unexpected_leave.fetch_add(1, std::memory_order_relaxed);
+}
+
+int LeaveCells(const MapStaticData *data, float x0, float z0, float x1, float z1) {
+    if (!data)
+        return -1;
+    int ax = 0, az = 0, bx = 0, bz = 0;
+    data->WorldToAoiCell(x0, z0, &ax, &az);
+    data->WorldToAoiCell(x1, z1, &bx, &bz);
+    const int dx = ax > bx ? ax - bx : bx - ax;
+    const int dz = az > bz ? az - bz : bz - az;
+    return dx > dz ? dx : dz;
 }
 
 bool Finite4(float a, float b, float c, float d) {
@@ -235,6 +247,9 @@ void MapRuntime::AdvancePresented(std::vector<AoiPushBatch> *batches) {
                 CountAoiLeave(AoiLeaveReason::OutOfWindow,
                               InCellRadius(*st, seer.PresentedX(), seer.PresentedZ(),
                                            gone.PresentedX(), gone.PresentedZ(), enter_r));
+                AoiNoteLeaveCells(static_cast<int>(AoiLeaveReason::OutOfWindow),
+                                  LeaveCells(st->data.get(), seer.PresentedX(), seer.PresentedZ(),
+                                             gone.PresentedX(), gone.PresentedZ()));
                 RememberLeave(st, &batch, gone, now_ms);
             };
             auto erase_visible = [&](uint64_t viewer, uint64_t target) {
@@ -407,6 +422,7 @@ void MapRuntime::AdvancePresented(std::vector<AoiPushBatch> *batches) {
             const auto used = std::chrono::duration_cast<std::chrono::microseconds>(
                                   std::chrono::steady_clock::now() - slice_t0)
                                   .count();
+            AoiNotePresentSlice(used, processed);
             int64_t prev = ServerStats::aoi_present_slice_us_max.load(std::memory_order_relaxed);
             while (used > prev &&
                    !ServerStats::aoi_present_slice_us_max.compare_exchange_weak(
@@ -498,6 +514,8 @@ void MapRuntime::InstLock::Release() noexcept {
                         .count();
     ServerStats::aoi_lock_hold_us_sum.fetch_add(static_cast<uint64_t>(us < 0 ? 0 : us),
                                                 std::memory_order_relaxed);
+    if (AoiInMoveTiming())
+        AoiNoteMoveStage(AoiMoveStage::LockHold, us < 0 ? 0 : us, false, false);
     if (lk_.owns_lock())
         lk_.unlock();
 }
@@ -533,6 +551,8 @@ MapRuntime::InstLock MapRuntime::LockInst(const std::shared_ptr<InstanceState> &
     ServerStats::aoi_lock_wait_us_sum.fetch_add(static_cast<uint64_t>(us < 0 ? 0 : us),
                                                 std::memory_order_relaxed);
     ServerStats::aoi_lock_samples.fetch_add(1, std::memory_order_relaxed);
+    if (AoiInMoveTiming())
+        AoiNoteMoveStage(AoiMoveStage::LockWait, us < 0 ? 0 : us, false, false);
     return InstLock(std::move(lk));
 }
 
@@ -816,8 +836,12 @@ void MapRuntime::SyncVisibleSubject(InstanceState *st, MapEntity &subject, int64
                     inside = InCellRadius(*st, viewer.PresentedX(), viewer.PresentedZ(),
                                           eit->second.PresentedX(), eit->second.PresentedZ(),
                                           ResolvedRadius(*st));
-                CountAoiLeave(in_window(id) ? AoiLeaveReason::CapEvict : AoiLeaveReason::OutOfWindow,
-                              inside);
+                const auto why = in_window(id) ? AoiLeaveReason::CapEvict : AoiLeaveReason::OutOfWindow;
+                CountAoiLeave(why, inside);
+                if (eit != st->entities.end())
+                    AoiNoteLeaveCells(static_cast<int>(why),
+                                      LeaveCells(st->data.get(), viewer.PresentedX(), viewer.PresentedZ(),
+                                                 eit->second.PresentedX(), eit->second.PresentedZ()));
             }
             unlink_id(id);
             it->second.pending = InstanceState::AoiPending::Leave;
@@ -1019,6 +1043,19 @@ int64_t LeaveRetryGapMs(int tries_sent) {
     return 5000;
 }
 
+int64_t ViewerLeaveBackoffMs(int streak) {
+    int64_t gap = 1000;
+    const int n = streak < 1 ? 1 : streak;
+    for (int i = 1; i < n; ++i) {
+        if (gap >= 30000)
+            return 30000;
+        gap *= 2;
+    }
+    if (gap > 30000)
+        gap = 30000;
+    return gap;
+}
+
 int64_t EnterRetryGapMs(int tries_sent) {
     if (tries_sent <= 1)
         return 200;
@@ -1055,6 +1092,7 @@ void MapRuntime::RetryPendingLeaves(InstanceState *st, uint64_t map_id, int64_t 
             const auto &again = vk.second;
             auto vit = st->entities.find(vid);
             if (vit == st->entities.end() || !vit->second.connected) {
+                AoiNoteLeaveDroppedOffline(vid, sid);
                 drop.emplace_back(sid, vid);
                 continue;
             }
@@ -1063,14 +1101,37 @@ void MapRuntime::RetryPendingLeaves(InstanceState *st, uint64_t map_id, int64_t 
                 drop.emplace_back(sid, vid);
                 continue;
             }
-            const int64_t first = again.first_ms > 0 ? again.first_ms : again.last_ms;
-            if (first > 0 && now_ms - first >= max_age) {
-                LOG_WARN << "AOI leave retry expired viewer=" << vid << " subject=" << sid
-                         << " age_ms=" << (now_ms - first);
+            int64_t first = AoiLeaveFailSince(vid, sid);
+            if (first <= 0)
+                first = again.first_ms > 0 ? again.first_ms : again.last_ms;
+            if (first > 0 && now_ms >= first && now_ms - first >= max_age) {
+                static int64_t leave_giveup_log_ms = 0;
+                if (leave_giveup_log_ms == 0 || now_ms < leave_giveup_log_ms ||
+                    now_ms - leave_giveup_log_ms >= 1000) {
+                    leave_giveup_log_ms = now_ms;
+                    LOG_WARN << "AOI leave retry expired viewer=" << vid << " subject=" << sid
+                             << " age_ms=" << (now_ms - first);
+                }
                 ServerStats::aoi_leave_retry_expired.fetch_add(1, std::memory_order_relaxed);
+                AoiNoteLeaveGiveUp(vid, sid);
                 drop.emplace_back(sid, vid);
                 continue;
             }
+            const int unsent = AoiViewerUnsentBytes(vid);
+            if (unsent > 16384) {
+                auto &b = st->leave_backoff[vid];
+                if (b.next_ms <= now_ms) {
+                    if (b.streak < 16)
+                        ++b.streak;
+                    if (b.streak < 1)
+                        b.streak = 1;
+                    b.next_ms = now_ms + ViewerLeaveBackoffMs(b.streak);
+                }
+                continue;
+            }
+            auto bit = st->leave_backoff.find(vid);
+            if (bit != st->leave_backoff.end() && bit->second.next_ms > now_ms)
+                continue;
             if (live) {
                 bool in_window = false;
                 for (uint64_t id : NeighborhoodIdsRadius(*st, eit->second.PresentedX(),
@@ -1269,6 +1330,18 @@ void MapRuntime::NoteAoiWrite(uint64_t viewer_id, uint64_t subject_id, int op, b
     auto inst = LockInst(st);
     if (!st || st->unloaded)
         return;
+    if (op == 3) {
+        if (ok) {
+            AoiNoteLeaveWriteOk(viewer_id, subject_id, NowMs());
+            st->leave_backoff.erase(viewer_id);
+        } else {
+            AoiNoteLeaveWriteFail(viewer_id, subject_id, NowMs());
+            auto &b = st->leave_backoff[viewer_id];
+            if (b.streak < 16)
+                ++b.streak;
+            b.next_ms = NowMs() + ViewerLeaveBackoffMs(b.streak);
+        }
+    }
     if (op == 1) {
         auto pend = st->enter_again.find(subject_id);
         if (ok) {
@@ -1526,8 +1599,15 @@ void MapRuntime::RemovePlayerInterest(InstanceState *st, uint64_t map_instance_i
         else
             ++it;
     }
-    for (auto &kv : st->leave_again)
-        kv.second.erase(player_id);
+    for (auto it = st->leave_again.begin(); it != st->leave_again.end();) {
+        it->second.erase(player_id);
+        if (it->second.empty())
+            it = st->leave_again.erase(it);
+        else
+            ++it;
+    }
+    st->leave_backoff.erase(player_id);
+    AoiDropViewerLeavePending(player_id);
     for (auto it = st->notified.begin(); it != st->notified.end();) {
         if (it->first == player_id) {
             it = st->notified.erase(it);
@@ -1663,6 +1743,15 @@ void MapRuntime::EmitTo(InstanceState *st, AoiPushBatch *pushes, uint64_t map_id
         last = sample;
     }
     ev.snapshot.last_move_server_ms = sample;
+    if (AoiTraceEnabled()) {
+        AoiTraceFields tr;
+        tr.viewer = ev.recipient_id;
+        tr.subject = ev.snapshot.player_id;
+        tr.op = ev.op;
+        tr.version = ev.notify_version != 0 ? ev.notify_version : ev.snapshot.state_seq;
+        tr.offer_ms = sample;
+        AoiTrace(tr);
+    }
     pushes->events.push_back(std::move(ev));
 }
 
@@ -2510,6 +2599,31 @@ bool MapRuntime::SnapshotView(uint64_t player_id, MapEntity *self_out,
     return true;
 }
 
+void MapRuntime::CopyVisibleSets(std::vector<std::pair<uint64_t, std::vector<uint64_t>>> *out) const {
+    if (!out)
+        return;
+    out->clear();
+    std::vector<std::shared_ptr<InstanceState>> maps;
+    {
+        std::lock_guard<std::mutex> reg(mu_);
+        maps.reserve(maps_.size());
+        for (const auto &kv : maps_) {
+            if (kv.second)
+                maps.push_back(kv.second);
+        }
+    }
+    for (const auto &st : maps) {
+        auto inst = LockInst(st);
+        if (!st || st->unloaded)
+            continue;
+        for (const auto &kv : st->visible_targets) {
+            std::vector<uint64_t> ids(kv.second.begin(), kv.second.end());
+            std::sort(ids.begin(), ids.end());
+            out->emplace_back(kv.first, std::move(ids));
+        }
+    }
+}
+
 int MapRuntime::TotalEntityCount() const {
     std::lock_guard<std::mutex> lk(mu_);
     int n = 0;
@@ -2518,6 +2632,23 @@ int MapRuntime::TotalEntityCount() const {
             n += kv.second->entity_count.load(std::memory_order_relaxed);
     }
     return n;
+}
+
+bool MapRuntime::ViewerConnected(uint64_t player_id) const {
+    std::shared_ptr<InstanceState> st;
+    {
+        std::lock_guard<std::mutex> reg(mu_);
+        auto pit = player_map_.find(player_id);
+        if (pit == player_map_.end())
+            return false;
+        auto mit = maps_.find(pit->second);
+        if (mit == maps_.end() || !mit->second)
+            return false;
+        st = mit->second;
+    }
+    auto inst = LockInst(st);
+    auto eit = st->entities.find(player_id);
+    return eit != st->entities.end() && eit->second.connected;
 }
 
 std::vector<uint64_t> MapRuntime::ListPlayers() const {
@@ -2549,6 +2680,7 @@ void MapRuntime::ClearForTest() {
         st->visible_targets.clear();
         st->watchers.clear();
         st->leave_again.clear();
+        st->leave_backoff.clear();
         st->enter_again.clear();
         st->notified.clear();
         st->last_left_ms.clear();
@@ -2580,6 +2712,7 @@ bool MapRuntime::Unload(uint64_t map_instance_id) {
         st->visible_targets.clear();
         st->watchers.clear();
         st->leave_again.clear();
+        st->leave_backoff.clear();
         st->enter_again.clear();
         st->notified.clear();
         st->last_left_ms.clear();

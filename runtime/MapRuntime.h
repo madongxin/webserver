@@ -114,6 +114,8 @@ public:
     uint64_t PlayerMap(uint64_t player_id) const;
     bool SnapshotView(uint64_t player_id, MapEntity *self_out, std::vector<MapEntity> *aoi_snapshot,
                       uint64_t *map_instance_id) const;
+    /** 管理接口用。复制每个观察者当前的可见实体，不改兴趣。 */
+    void CopyVisibleSets(std::vector<std::pair<uint64_t, std::vector<uint64_t>>> *out) const;
 
     /**
      * 全量快照用的兴趣集合，与 AOI 推送的 VisibleIds 同一套规则。
@@ -133,6 +135,8 @@ public:
     };
     bool CollectFullView(uint64_t player_id, FullView *out) const;
     std::vector<uint64_t> ListPlayers() const;
+    /** 管理口拆 pending 用。断线后实体还在，connected 为 false。 */
+    bool ViewerConnected(uint64_t player_id) const;
     int TotalEntityCount() const;
     void ClearForTest();
     /** 测试里推进服务器时钟。0 表示用真实单调钟。 */
@@ -172,6 +176,12 @@ private:
             MapEntity snap;
         };
         std::unordered_map<uint64_t, std::unordered_map<uint64_t, LeaveAgain>> leave_again;
+        // 同一个观察者的 LEAVE 补发。上次写失败或未发送字节超过 16KB 时按这个时间退避，上限 30 秒。
+        struct LeaveBackoff {
+            int64_t next_ms = 0;
+            int streak = 0;
+        };
+        std::unordered_map<uint64_t, LeaveBackoff> leave_backoff;
         // 进入后 ENTER 还没被网关确认。退避再发，直到确认、断线、离开视野或超过总时长。
         std::unordered_map<uint64_t, std::unordered_map<uint64_t, LeaveAgain>> enter_again;
         // subject -> viewer -> 已经交给网关的最新 ENTER/LEAVE 版本。更老的 LEAVE 不再发。

@@ -1,4 +1,5 @@
 #include "AoiLeaveReason.h"
+#include "AoiEvidence.h"
 #include "OpsMetrics.h"
 
 #include "ParkProbe.h"
@@ -638,6 +639,7 @@ std::string OpsMetrics::PrometheusText() const {
                                 std::chrono::steady_clock::now().time_since_epoch())
                                 .count();
         ParkProbe::WritePrometheus(os, now);
+        AoiEvidenceWritePrometheus(os);
     }
     auto emit_recent = [&](const char *name, const char *unit, RecentSamples &samples) {
         if (samples.Empty())
