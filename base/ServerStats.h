@@ -129,6 +129,12 @@ struct ServerStats {
     static inline std::atomic<uint64_t> aoi_move_repicked_samples{0};
     static inline std::atomic<int64_t> egress_budget_bytes_per_sec{0};
     static inline std::atomic<uint64_t> egress_admitted_bytes{0};
+    /** 位置帧预算耗尽导致 Pick 返回空的次数。 */
+    static inline std::atomic<uint64_t> egress_budget_exhausted{0};
+    /** 硬静默触发但未突破预算时的告警次数。 */
+    static inline std::atomic<uint64_t> egress_hard_silence_warn{0};
+    /** 已确认进内核的位置帧线上字节（payload+66）。 */
+    static inline std::atomic<uint64_t> egress_move_wire_bytes{0};
     /** 进程启动以来，一个实体的最新位置在合并槽里等待的最长时间。 */
     static inline std::atomic<uint64_t> aoi_move_pending_oldest_ms{0};
     /** 进程启动以来，同一观察者对同一实体两次 MOVE 写出的最大间隔。 */

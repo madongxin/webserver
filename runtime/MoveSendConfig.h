@@ -70,6 +70,25 @@ inline int ExtrapKeyframeMs() { return MoveEnvInt("GAMEMESH_EXTRAP_KEYFRAME_MS",
 /** 外推误差超过这么多米才补发。待压测校准。 */
 inline int ExtrapErrorCm() { return MoveEnvInt("GAMEMESH_EXTRAP_ERROR_CM", 100, 10, 10000); }
 inline int MoveBatchMinEvents() { return MoveEnvInt("GAMEMESH_MOVE_BATCH_MIN", 8, 1, 40); }
+
+/** 独立出口预算强制开关。默认关；不依赖 AOI_V2_*。 */
+inline bool EgressEnforce() { return AoiV2Flag("GAMEMESH_EGRESS_ENFORCE"); }
+/** tc 共用游戏类 ceil（kbit）。未设置时走 GAMEMESH_EGRESS_BUDGET_MBPS。0 表示未设置。 */
+inline int EgressSharedClassKbit() {
+    const char *env = std::getenv("GAMEMESH_EGRESS_SHARED_CLASS_KBIT");
+    if (!env || !*env)
+        return 0;
+    return MoveEnvInt("GAMEMESH_EGRESS_SHARED_CLASS_KBIT", 0, 1, 1000000);
+}
+inline int EgressHeadroomPercent() { return MoveEnvInt("GAMEMESH_EGRESS_HEADROOM_PERCENT", 85, 1, 100); }
+inline int EgressMoveFloorPercent() { return MoveEnvInt("GAMEMESH_EGRESS_MOVE_FLOOR_PERCENT", 20, 0, 100); }
+/** 重传预留：可用额度乘 (100-该值)%。默认 5。 */
+inline int EgressRetransReservePercent() {
+    return MoveEnvInt("GAMEMESH_EGRESS_RETRANS_RESERVE_PERCENT", 5, 0, 90);
+}
+inline int EgressGatewayInstances() {
+    return MoveEnvInt("GAMEMESH_GATEWAY_INSTANCES", 2, 1, 64);
+}
 inline int FrameCapPreLogin() { return MoveEnvInt("GAMEMESH_FRAME_CAP_PRELOGIN", 16 * 1024, 1024, 1024 * 1024); }
 inline int FrameCapLogin() { return MoveEnvInt("GAMEMESH_FRAME_CAP_LOGIN", 64 * 1024, 1024, 4 * 1024 * 1024); }
 inline int FramesPerWake() { return MoveEnvInt("GAMEMESH_FRAMES_PER_WAKE", 64, 1, 1024); }

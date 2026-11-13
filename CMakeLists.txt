@@ -1416,8 +1416,9 @@ target_link_libraries(password_hash_test ${OPENSSL_CRYPTO_LIB})
   target_include_directories(aoi_move_rotate_test PRIVATE runtime base)
   add_executable(aoi_park_rotation_test test/aoi_park_rotation_test.cpp)
   target_include_directories(aoi_park_rotation_test PRIVATE runtime base)
-  add_executable(aoi_send_policy_test test/aoi_send_policy_test.cpp)
+  add_executable(aoi_send_policy_test test/aoi_send_policy_test.cpp runtime/AoiEvidence.cpp)
   target_include_directories(aoi_send_policy_test PRIVATE runtime base)
+  target_link_libraries(aoi_send_policy_test ${CMAKE_THREAD_LIBS_INIT})
   add_executable(sendbuf_v2_test test/sendbuf_v2_test.cpp)
   target_include_directories(sendbuf_v2_test PRIVATE runtime)
   add_executable(recv_policy_test
@@ -1838,6 +1839,12 @@ add_executable(egress_frame_metrics_test
   runtime/AoiEvidence.cpp)
 target_include_directories(egress_frame_metrics_test PRIVATE runtime)
 target_link_libraries(egress_frame_metrics_test ${CMAKE_THREAD_LIBS_INIT})
+
+add_executable(egress_enforce_test
+  test/egress_enforce_test.cpp
+  runtime/AoiEvidence.cpp)
+target_include_directories(egress_enforce_test PRIVATE runtime base)
+target_link_libraries(egress_enforce_test ${CMAKE_THREAD_LIBS_INIT})
 
 add_executable(stalled_conn_test
   test/stalled_conn_test.cpp

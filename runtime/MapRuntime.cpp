@@ -483,6 +483,8 @@ void MapRuntime::AdvancePresented(std::vector<AoiPushBatch> *batches) {
                                            std::memory_order_relaxed);
         ServerStats::aoi_visible_max.store(PercentileOf(visible_counts, 1.0),
                                            std::memory_order_relaxed);
+        for (int64_t n : visible_counts)
+            AoiNoteVisiblePerViewer(static_cast<int>(n));
     }
     std::vector<std::pair<uint64_t, uint64_t>> queued_leaves;
     std::vector<std::shared_ptr<InstanceState>> held;

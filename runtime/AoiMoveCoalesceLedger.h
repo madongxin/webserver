@@ -1,9 +1,11 @@
 #pragma once
 
+#include "AoiEvidence.h"
 #include "MoveSendConfig.h"
 #include "ServerStats.h"
 
 #include <algorithm>
+#include <atomic>
 #include <cstdint>
 #include <cstdlib>
 #include <unordered_map>
@@ -57,6 +59,25 @@ public:
     void EnableLegacyAccountingForTest(bool on) { legacy_ = on; }
     void SetEnforceByteBudget(bool on) { enforce_budget_ = on; }
     void SetQuotaPercent(int pct) { quota_numerator_ = pct; }
+
+    /**
+     * 控制帧按线上口径计入本连接本秒 control 窗口，位置额度相应减少。
+     * 控制帧本身不在这里被挡住（永远返回 true）。payload 为帧字节，函数内加 kOnWireHeaderBytes。
+     */
+    bool NoteControlWire(AoiWriteFrame frame, int payload_bytes, int64_t now) {
+        if (payload_bytes < 0)
+            payload_bytes = 0;
+        if (budget_window_ms_ == 0 || now - budget_window_ms_ >= 1000) {
+            budget_window_ms_ = now;
+            budget_bytes_ = 0;
+            control_bytes_ = 0;
+            over_reported_ = 0;
+        }
+        const int wire = payload_bytes + kOnWireHeaderBytes;
+        control_bytes_ += wire;
+        (void)frame;
+        return true;
+    }
     void SetSendIntervalMs(int ms) { coalesce_interval_ms_ = ms; }
     /** 慢客户端降级时只拉长远层发送间隔。1 是不额外拉长。 */
     void SetFarIntervalScale(int scale) {
@@ -115,16 +136,16 @@ public:
                 *wait_ms = interval - (now - last_written_flush_ms_);
             return {};
         }
-            if (budget_window_ms_ == 0 || now - budget_window_ms_ >= 1000) {
+        if (budget_window_ms_ == 0 || now - budget_window_ms_ >= 1000) {
             budget_window_ms_ = now;
             budget_bytes_ = 0;
+            control_bytes_ = 0;
             over_reported_ = 0;
         }
         window_budget_ = per_conn_budget > 0 ? per_conn_budget : 16 * 1024;
         int budget = per_conn_budget > 0 ? per_conn_budget : 16 * 1024;
         if (quota_numerator_ > 0 && quota_numerator_ < 100)
             max_n = std::max(1, max_n * quota_numerator_ / 100);
-        const int normal_budget = budget * (100 - kBudgetReservePercent) / 100;
         bool any_hard = false;
         if (!legacy_) {
             for (const auto &kv : entities_) {
@@ -136,8 +157,30 @@ public:
                     any_hard = true;
             }
         }
-        const int ceiling = any_hard ? budget : normal_budget;
+        int ceiling = budget;
+        if (enforce_budget_) {
+            // 重传预留：整份额度先乘 (100-reserve)%。硬静默只告警，不突破这份额度。
+            const int reserve = EgressRetransReservePercent();
+            ceiling = budget * (100 - reserve) / 100;
+            if (ceiling < 1)
+                ceiling = 1;
+            if (any_hard)
+                ServerStats::egress_hard_silence_warn.fetch_add(1, std::memory_order_relaxed);
+        } else {
+            const int normal_budget = budget * (100 - kBudgetReservePercent) / 100;
+            ceiling = any_hard ? budget : normal_budget;
+        }
         int remain = ceiling - budget_bytes_;
+        if (enforce_budget_) {
+            // 控制帧占用同窗口；位置额度不低于 floor%。
+            const int floor = budget * EgressMoveFloorPercent() / 100;
+            int after_control = ceiling - control_bytes_ - budget_bytes_;
+            if (after_control < floor - budget_bytes_)
+                after_control = floor - budget_bytes_;
+            if (after_control < 0)
+                after_control = 0;
+            remain = after_control;
+        }
         if (remain < 0)
             remain = 0;
         int limit = 0;
@@ -156,7 +199,7 @@ public:
         }
         // 字节预算不够时也不能把已经走出约 200ms 的人留在槽里。客户端只播收到的坐标，
         // 隔几秒才收到一个点就会停住，再一下子出现在几十米外。
-        // 分层开关打开时不抬人数，字节配额是硬上限，静默可以变长。
+        // EGRESS_ENFORCE / 分层强制时不抬人数，字节配额是硬上限，静默可以变长。
         if (!legacy_ && !enforce_budget_) {
             int due = 0;
             for (const auto &kv : entities_) {
@@ -178,6 +221,8 @@ public:
                     *wait_ms = 50;
             }
             ServerStats::aoi_move_budget_defer.fetch_add(1, std::memory_order_relaxed);
+            if (enforce_budget_)
+                ServerStats::egress_budget_exhausted.fetch_add(1, std::memory_order_relaxed);
             return {};
         }
 
@@ -274,8 +319,9 @@ public:
             // 只在人还没到、而且预算装得下更大的一帧时，才等一个发送间隔。
             const int batch_min = MoveBatchMinEvents();
             const int have = static_cast<int>(cands.size());
-            const bool batch_wait = !any_hard && have < batch_min && have < limit &&
-                                    oldest < static_cast<int64_t>(interval);
+            // 预算强制时不凑批：名额本来就紧，再等 8 人会把单实体连接饿死。
+            const bool batch_wait = !enforce_budget_ && !any_hard && have < batch_min &&
+                                    have < limit && oldest < static_cast<int64_t>(interval);
             if (batch_wait) {
                 if (wait_ms) {
                     *wait_ms = static_cast<int64_t>(interval) - oldest;
@@ -372,6 +418,8 @@ public:
             charged_total_ += wire;
             ServerStats::egress_admitted_bytes.fetch_add(static_cast<uint64_t>(wire),
                                                          std::memory_order_relaxed);
+            ServerStats::egress_move_wire_bytes.fetch_add(static_cast<uint64_t>(wire),
+                                                          std::memory_order_relaxed);
             if (window_budget_ > 0 && budget_bytes_ > window_budget_) {
                 const int over = budget_bytes_ - window_budget_;
                 if (over > over_reported_) {
@@ -386,6 +434,8 @@ public:
             auto it = entities_.find(stamp.entity_id);
             if (it == entities_.end())
                 continue;
+            if (it->second.last_written_ms > 0 && now >= it->second.last_written_ms)
+                AoiNoteMoveSilenceMs(now - it->second.last_written_ms);
             it->second.in_flight = false;
             it->second.last_written_ms = now;
             it->second.unwritten_attempts = 0;
@@ -433,27 +483,57 @@ public:
         return it != entities_.end() && it->second.in_flight;
     }
 
+    static void ResetEgressBudgetCacheForTest() {
+        Cache().store(0, std::memory_order_relaxed);
+    }
+
     static int EgressBudgetBytesPerSec() {
-        static int bytes = [] {
+        int cached = Cache().load(std::memory_order_relaxed);
+        if (cached > 0)
+            return cached;
+        const int instances = EgressGatewayInstances();
+        int v = 0;
+        const int shared_kbit = EgressSharedClassKbit();
+        if (shared_kbit > 0) {
+            // 共用类 ceil（kbit）× 余量 ÷ 实例数 → 每网关字节/秒（线上口径）。
+            const double bytes =
+                static_cast<double>(shared_kbit) * 1000.0 / 8.0 *
+                static_cast<double>(EgressHeadroomPercent()) / 100.0 /
+                static_cast<double>(instances);
+            v = static_cast<int>(bytes);
+        } else {
             const char *env = std::getenv("GAMEMESH_EGRESS_BUDGET_MBPS");
             double mbps = (env && *env) ? std::atof(env) : 2.4;
             if (mbps < 0.1)
                 mbps = 0.1;
-            const char *inst_env = std::getenv("GAMEMESH_GATEWAY_INSTANCES");
-            int instances = (inst_env && *inst_env) ? std::atoi(inst_env) : 2;
-            if (instances < 1)
-                instances = 1;
-            int v = static_cast<int>(mbps * 1000000.0 / 8.0);
+            v = static_cast<int>(mbps * 1000000.0 / 8.0);
             v /= instances;
-            if (v < 1)
-                v = 1;
-            ServerStats::egress_budget_bytes_per_sec.store(v, std::memory_order_relaxed);
-            return v;
-        }();
-        return bytes;
+        }
+        if (v < 1)
+            v = 1;
+        ServerStats::egress_budget_bytes_per_sec.store(v, std::memory_order_relaxed);
+        Cache().store(v, std::memory_order_relaxed);
+        return v;
+    }
+
+    /** 旧 MBPS 预算换成线上字节/秒（整机，未按实例拆）便于启动 WARN。 */
+    static int LegacyBudgetBytesPerSecWholeHost() {
+        const char *env = std::getenv("GAMEMESH_EGRESS_BUDGET_MBPS");
+        double mbps = (env && *env) ? std::atof(env) : 2.4;
+        if (mbps < 0.1)
+            mbps = 0.1;
+        int v = static_cast<int>(mbps * 1000000.0 / 8.0);
+        if (v < 1)
+            v = 1;
+        return v;
     }
 
 private:
+    static std::atomic<int> &Cache() {
+        static std::atomic<int> cache{0};
+        return cache;
+    }
+
     bool legacy_ = false;
     bool enforce_budget_ = false;
     int far_interval_scale_ = 1;
@@ -467,4 +547,5 @@ private:
     int64_t last_written_flush_ms_ = 0;
     int64_t budget_window_ms_ = 0;
     int budget_bytes_ = 0;
+    int control_bytes_ = 0;
 };

@@ -281,6 +281,20 @@ void DiscardCoalescedAoiMoves(uint64_t conn_id) { EraseMoveSlot(conn_id); }
 struct RegisterMoveDiscard {
     RegisterMoveDiscard() {
         ControlResponseOutbox::SetPendingMoveDiscard(&DiscardCoalescedAoiMoves);
+        AoiSetControlBudgetFn([](uint64_t conn_id, AoiWriteFrame frame, int payload_bytes) {
+            std::shared_ptr<MoveCoalesceSlot> slot;
+            {
+                std::lock_guard<std::mutex> lk(g_move_slots_mu);
+                auto it = g_move_slots.find(conn_id);
+                if (it == g_move_slots.end())
+                    return;
+                slot = it->second;
+            }
+            if (!slot)
+                return;
+            std::lock_guard<std::mutex> lk(slot->mu);
+            slot->ledger.NoteControlWire(frame, payload_bytes, SteadyMs());
+        });
     }
 };
 RegisterMoveDiscard g_register_move_discard;
@@ -485,7 +499,7 @@ void FlushMoveSlot(const std::shared_ptr<MoveCoalesceSlot> &slot,
                 1, AoiMoveCoalesceLedger::EgressBudgetBytesPerSec() / static_cast<int>(conns));
             const int event_bytes =
                 AoiExtrapolateEnabled() ? kAoiMoveExtrapEventBytes : kAoiMoveEventBytes;
-            slot->ledger.SetEnforceByteBudget(AoiV2Layers());
+            slot->ledger.SetEnforceByteBudget(EgressEnforce() || AoiV2Layers());
             picked = slot->ledger.Pick(now, per, event_bytes, kMaxMoveEntities, &wait_ms);
             if (!picked.empty()) {
                 delta.set_map_instance_id(slot->map_instance_id);
@@ -1303,11 +1317,36 @@ void GameTcpGateway::Run() {
         RefreshLiveAges();
         PollLoadTestBotLoginWave();
     });
-    LOG_INFO << "GameTcpGateway ready on " << ip_ << ":" << port_
-             << " id=" << g_gateway_id << " (session bind + grace disconnect)"
-             << " egress_bytes_per_sec=" << AoiMoveCoalesceLedger::EgressBudgetBytesPerSec()
-             << " sendbuf_v2=" << (SendBufV2Enabled() ? 1 : 0)
-             << " read_backpressure=" << (ReadBackpressureEnabled() ? 1 : 0);
+    {
+        const int shared = EgressSharedClassKbit();
+        const int headroom = EgressHeadroomPercent();
+        const int instances = EgressGatewayInstances();
+        const int per_gw = AoiMoveCoalesceLedger::EgressBudgetBytesPerSec();
+        const int floor = EgressMoveFloorPercent();
+        const int retrans = EgressRetransReservePercent();
+        const bool enforce = EgressEnforce() || AoiV2Layers();
+        LOG_INFO << "GameTcpGateway ready on " << ip_ << ":" << port_
+                 << " id=" << g_gateway_id << " (session bind + grace disconnect)"
+                 << " egress_shared_class_kbit=" << (shared > 0 ? shared : -1)
+                 << " egress_headroom_percent=" << headroom
+                 << " egress_gateway_instances=" << instances
+                 << " egress_bytes_per_sec=" << per_gw
+                 << " egress_move_floor_percent=" << floor
+                 << " egress_retrans_reserve_percent=" << retrans
+                 << " egress_enforce=" << (enforce ? 1 : 0)
+                 << " sendbuf_v2=" << (SendBufV2Enabled() ? 1 : 0)
+                 << " read_backpressure=" << (ReadBackpressureEnabled() ? 1 : 0);
+        if (shared > 0) {
+            const int class_cap =
+                static_cast<int>(static_cast<double>(shared) * 1000.0 / 8.0 * headroom / 100.0);
+            const int legacy = AoiMoveCoalesceLedger::LegacyBudgetBytesPerSecWholeHost();
+            if (legacy > class_cap) {
+                LOG_WARN << "egress legacy GAMEMESH_EGRESS_BUDGET_MBPS on-wire (" << legacy
+                         << " B/s host) exceeds shared class " << headroom << "% cap (" << class_cap
+                         << " B/s)";
+            }
+        }
+    }
     g_tcp_listening.store(true, std::memory_order_release);
     HealthProbeStore::SetGatewayTcpListening(true);
     server->Start();

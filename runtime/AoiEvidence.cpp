@@ -1,4 +1,5 @@
 #include "AoiEvidence.h"
+#include "ServerStats.h"
 
 #include <algorithm>
 #include <atomic>
@@ -54,6 +55,10 @@ std::atomic<uint64_t> g_leave_drop[static_cast<int>(AoiLeaveDropReason::Count)];
 std::atomic<uint64_t> g_leave_inconsistent{0};
 std::vector<int64_t> g_move_frame_events;
 std::vector<int64_t> g_move_frame_payload;
+std::vector<int64_t> g_move_silence_ms;
+std::vector<int64_t> g_visible_per_viewer;
+std::atomic<uint64_t> g_egress_control[static_cast<int>(AoiWriteFrame::Count)];
+AoiControlBudgetFn g_control_budget_fn = nullptr;
 AoiViewerUnsentFn g_unsent_fn = nullptr;
 std::atomic<uint64_t> g_tomb_reject{0};
 std::atomic<uint64_t> g_tomb_then_enter{0};
@@ -230,6 +235,7 @@ void EmitQuantiles(std::ostream &os, const char *name, const char *help, std::ve
     os << "# HELP " << name << " " << help << "\n# TYPE " << name << " gauge\n";
         os << name << "{quantile=\"0.5\"} " << At(s, 0.50) << "\n";
         os << name << "{quantile=\"0.9\"} " << At(s, 0.90) << "\n";
+        os << name << "{quantile=\"0.95\"} " << At(s, 0.95) << "\n";
         os << name << "{quantile=\"0.99\"} " << At(s, 0.99) << "\n";
         os << name << "{quantile=\"1\"} " << s.back() << "\n";
         os << "# HELP " << name << "_count Samples behind the quantiles. Unit: samples.\n";
@@ -346,6 +352,33 @@ void AoiNoteMoveFrameSample(int events, int payload_bytes) {
     KeepTail(&g_move_frame_payload, 4096);
 }
 
+void AoiSetControlBudgetFn(AoiControlBudgetFn fn) { g_control_budget_fn = fn; }
+
+void AoiNoteEgressControlWire(AoiWriteFrame frame, uint64_t wire_bytes) {
+    const int f = static_cast<int>(frame);
+    if (f < 0 || f >= static_cast<int>(AoiWriteFrame::Count) || wire_bytes == 0)
+        return;
+    if (frame == AoiWriteFrame::Move)
+        return;
+    g_egress_control[f].fetch_add(wire_bytes, std::memory_order_relaxed);
+}
+
+void AoiNoteMoveSilenceMs(int64_t silence_ms) {
+    if (silence_ms < 0)
+        return;
+    std::lock_guard<std::mutex> lk(g_mu);
+    g_move_silence_ms.push_back(silence_ms);
+    KeepTail(&g_move_silence_ms, 4096);
+}
+
+void AoiNoteVisiblePerViewer(int n) {
+    if (n < 0)
+        return;
+    std::lock_guard<std::mutex> lk(g_mu);
+    g_visible_per_viewer.push_back(n);
+    KeepTail(&g_visible_per_viewer, 4096);
+}
+
 void AoiNoteTxBytes(AoiWriteFrame frame, uint64_t bytes, uint64_t conn_id) {
     const int f = static_cast<int>(frame);
     if (f < 0 || f >= static_cast<int>(AoiWriteFrame::Count) || bytes == 0)
@@ -353,6 +386,11 @@ void AoiNoteTxBytes(AoiWriteFrame frame, uint64_t bytes, uint64_t conn_id) {
     g_tx[f].fetch_add(bytes, std::memory_order_relaxed);
     g_tx_frames[f].fetch_add(1, std::memory_order_relaxed);
     g_wire[f].fetch_add(bytes + static_cast<uint64_t>(kWireHeaderBytes), std::memory_order_relaxed);
+    if (frame != AoiWriteFrame::Move) {
+        AoiNoteEgressControlWire(frame, bytes + static_cast<uint64_t>(kWireHeaderBytes));
+        if (g_control_budget_fn && conn_id != 0)
+            g_control_budget_fn(conn_id, frame, static_cast<int>(bytes));
+    }
     if (conn_id == 0)
         return;
     std::lock_guard<std::mutex> lk(g_mu);
@@ -872,6 +910,35 @@ void AoiEvidenceWritePrometheus(std::ostream &os) {
     EmitQuantiles(os, "gamemesh_move_frame_payload_bytes",
                   "Payload bytes of one MOVE frame accepted by the connection, including the 4 byte length prefix. One sample is one frame. Capped at 4096. Unit: bytes.",
                   move_payload);
+    os << "# HELP gamemesh_egress_control_bytes_total Control-frame on-wire bytes charged against the per-connection egress window (payload plus 66). Unit: bytes.\n"
+          "# TYPE gamemesh_egress_control_bytes_total counter\n";
+    for (int f = 0; f < static_cast<int>(AoiWriteFrame::Count); ++f) {
+        if (static_cast<AoiWriteFrame>(f) == AoiWriteFrame::Move)
+            continue;
+        const uint64_t n = g_egress_control[f].load(std::memory_order_relaxed);
+        os << "gamemesh_egress_control_bytes_total{frame=\"" << AoiWriteFrameName(static_cast<AoiWriteFrame>(f))
+           << "\"} " << n << "\n";
+    }
+    os << "# HELP gamemesh_egress_budget_exhausted_total Times Pick returned empty because the per-connection move budget was exhausted. Unit: events.\n"
+          "# TYPE gamemesh_egress_budget_exhausted_total counter\n"
+       << "gamemesh_egress_budget_exhausted_total "
+       << ServerStats::egress_budget_exhausted.load(std::memory_order_relaxed) << "\n";
+    os << "# HELP gamemesh_egress_move_wire_bytes_total On-wire bytes for AOI MOVE confirmed into the kernel (payload plus 66). Unit: bytes.\n"
+          "# TYPE gamemesh_egress_move_wire_bytes_total counter\n"
+       << "gamemesh_egress_move_wire_bytes_total "
+       << ServerStats::egress_move_wire_bytes.load(std::memory_order_relaxed) << "\n";
+    std::vector<int64_t> silence;
+    std::vector<int64_t> visible;
+    {
+        std::lock_guard<std::mutex> lk(g_mu);
+        silence = g_move_silence_ms;
+        visible = g_visible_per_viewer;
+    }
+    EmitQuantiles(os, "gamemesh_egress_move_silence_ms",
+                  "Silence between two kernel-confirmed position writes for the same entity on one connection. Unit: milliseconds.",
+                  silence);
+    EmitQuantiles(os, "gamemesh_aoi_visible_per_viewer",
+                  "Visible entity count per viewer sample. Unit: entities.", visible);
     os << "# HELP gamemesh_aoi_leave_write_fail_total LEAVE pushes the gateway did not accept. Unit: events.\n"
           "# TYPE gamemesh_aoi_leave_write_fail_total counter\n"
        << "gamemesh_aoi_leave_write_fail_total " << g_leave_fail.load(std::memory_order_relaxed) << "\n";
@@ -1366,6 +1433,8 @@ void AoiResetEvidenceForTest() {
         g_leave_fail_since.clear();
         g_move_frame_events.clear();
         g_move_frame_payload.clear();
+        g_move_silence_ms.clear();
+        g_visible_per_viewer.clear();
         g_leave_recover_ms.clear();
         g_busy_unacked.clear();
         g_busy_retrans_v.clear();
@@ -1385,9 +1454,14 @@ void AoiResetEvidenceForTest() {
         g_tx[f].store(0, std::memory_order_relaxed);
         g_tx_frames[f].store(0, std::memory_order_relaxed);
         g_wire[f].store(0, std::memory_order_relaxed);
+        g_egress_control[f].store(0, std::memory_order_relaxed);
         for (int r = 0; r < static_cast<int>(AoiWriteFailReason::Count); ++r)
             g_fail[f][r].store(0, std::memory_order_relaxed);
     }
+    ServerStats::egress_budget_exhausted.store(0, std::memory_order_relaxed);
+    ServerStats::egress_hard_silence_warn.store(0, std::memory_order_relaxed);
+    ServerStats::egress_move_wire_bytes.store(0, std::memory_order_relaxed);
+    ServerStats::egress_admitted_bytes.store(0, std::memory_order_relaxed);
     g_leave_fail.store(0, std::memory_order_relaxed);
     g_leave_recovered.store(0, std::memory_order_relaxed);
     g_leave_give_up.store(0, std::memory_order_relaxed);

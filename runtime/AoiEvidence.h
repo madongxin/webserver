@@ -55,6 +55,15 @@ void AoiNoteWriteFail(uint64_t conn_id, AoiWriteFrame frame, AoiWriteFailReason 
 void AoiNoteTxBytes(AoiWriteFrame frame, uint64_t bytes, uint64_t conn_id);
 /** 一个已被连接接受的 MOVE 帧。只记事件数和 payload 字节，不改变是否发送。 */
 void AoiNoteMoveFrameSample(int events, int payload_bytes);
+/** 控制帧线上字节（已含 kOnWireHeaderBytes）。不挡发送。 */
+void AoiNoteEgressControlWire(AoiWriteFrame frame, uint64_t wire_bytes);
+/** 网关注册：把控制帧计入该连接的位置预算窗口。payload 不含 66。 */
+using AoiControlBudgetFn = void (*)(uint64_t conn_id, AoiWriteFrame frame, int payload_bytes);
+void AoiSetControlBudgetFn(AoiControlBudgetFn fn);
+/** 一条连接上某个实体两次位置写出之间的静默。单位：毫秒。 */
+void AoiNoteMoveSilenceMs(int64_t silence_ms);
+/** 每观察者可见实体数样本。 */
+void AoiNoteVisiblePerViewer(int n);
 
 /** 一帧里每种 op 各记一次。解析不了就记 Other。 */
 void AoiNoteFrameWrite(uint64_t conn_id, const std::string &frame, bool ok, AoiWriteFailReason reason,

@@ -655,6 +655,16 @@ void TcpConnection::FinishMoveCommit(bool committed) {
         bytes = -1;
     if (committed)
         ParkProbe::EndEpisode(connid_);
+    // admitted 只在「确认进内核」后累加。压测时若帧一直停放并被换掉，FinishMoveCommit(true)
+    // 可能长期不触发，于是 tx_frames（接受进连接时记账）涨而 admitted 为 0——这是口径差异。
+    // 无回调时补记，避免钩子丢失时指标永久为 0；有回调则由 NoteKernelWrite 记账，避免双计。
+    if (committed && bytes > 0 && !move_commit_cb_) {
+        constexpr int kHdr = 66;
+        ServerStats::egress_admitted_bytes.fetch_add(static_cast<uint64_t>(bytes + kHdr),
+                                                     std::memory_order_relaxed);
+        ServerStats::egress_move_wire_bytes.fetch_add(static_cast<uint64_t>(bytes + kHdr),
+                                                      std::memory_order_relaxed);
+    }
     std::vector<LatestMoveAck> ents;
     ents.swap(move_commit_entities_);
     if (move_commit_cb_)
