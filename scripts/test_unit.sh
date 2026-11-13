@@ -23,6 +23,7 @@ run_one map_static_data_test
 run_one map_runtime_aoi_test
 run_one leave_pending_audit_test
 run_one stalled_conn_test
+run_one egress_frame_metrics_test
 run_one aoi_subscription_invariant_test
 run_one aoi200_subscription_test
 run_one login_admission_test

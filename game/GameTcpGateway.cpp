@@ -5,6 +5,7 @@
 
 #include "GameTcpGateway.h"
 
+#include "AoiEvidence.h"
 #include "BotLoginWave.h"
 #include "AoiMoveCoalesceLedger.h"
 #include "AoiOutboundOrder.h"
@@ -563,8 +564,18 @@ void FlushMoveSlot(const std::shared_ptr<MoveCoalesceSlot> &slot,
     }
     const bool sent = live->TrySendLatestMove(frame, acks);
     const bool held = sent && live->holding_latest_move();
-    if (live->send_buf())
-        NoteSendPending(live->send_buf()->readablebytes(), live->unsent_bytes());
+    if (live->send_buf()) {
+        const int app = live->send_buf()->readablebytes();
+        const int unsent = live->unsent_bytes();
+        NoteSendPending(app, unsent);
+        AoiObserveBusySocket(conn_id, live->fd(), app, unsent);
+    }
+    if (sent) {
+        AoiNoteTxBytes(AoiWriteFrame::Move, frame.size(), conn_id);
+        AoiNoteMoveFrameSample(event_n, static_cast<int>(frame.size()));
+    }
+    else
+        AoiNoteWriteFail(conn_id, AoiWriteFrame::Move, AoiWriteFailReason::QueueFull);
     if (!sent) {
         NoteMoveFlush(false, event_n);
         ServerStats::aoi_move_buffer_hold.fetch_add(1, std::memory_order_relaxed);
@@ -652,8 +663,10 @@ bool OfferCoalescedMove(const std::shared_ptr<TcpConnection> &c, const std::stri
             const uint64_t id = ev.entity().player_id();
             if (id == 0)
                 continue;
-            if (TombstoneBlocksMove(slot->books, id, now))
+            if (TombstoneBlocksMove(slot->books, id, now)) {
+                AoiNoteTombstoneReject(id);
                 continue;
+            }
             slot->books.notified.insert(id);
             auto &kept = slot->by_entity[id];
             // 序号不增加的移动客户端会整条丢掉。只保留更大的 state_seq。
@@ -724,6 +737,8 @@ void ForgetUrgentAoiFrame(const std::shared_ptr<TcpConnection> &live, const std:
             ApplyUrgentAoi(&slot->by_entity, &slot->ledger,
                            [&](uint64_t id) { EraseResyncId(slot.get(), id); }, &slot->books, el.first,
                            el.second, now);
+            if (el.first == 1)
+                AoiNoteTombstoneEnter(el.second);
             ids.push_back(el.second);
         }
     }
@@ -764,14 +779,19 @@ void RememberBind(uint64_t conn_id, uint64_t player_id, const std::string &token
         auto make_try_send = [weak_conn](bool urgent) {
             return [weak_conn, urgent](const std::string &frame) -> int {
                 auto c = weak_conn.lock();
-                if (!c || !c->loop())
+                if (!c || !c->loop()) {
+                    AoiNoteFrameWrite(0, frame, false, AoiWriteFailReason::Closed, false);
                     return -1;
+                }
+                const uint64_t conn_id = c->id();
                 // 推送路径用 TrySend：队列满丢帧，禁止背压关连接（否则 MarkDisconnected 雪崩）。
                 // 1 = 进了应用缓冲或当场 write。不是内核写完，也不是客户端已应用。
-                auto do_send = [weak_conn, frame, urgent]() -> int {
+                auto do_send = [weak_conn, frame, urgent, conn_id]() -> int {
                     auto live = weak_conn.lock();
-                    if (!live || live->state() != TcpConnection::Connected)
+                    if (!live || live->state() != TcpConnection::Connected) {
+                        AoiNoteFrameWrite(conn_id, frame, false, AoiWriteFailReason::Closed, false);
                         return -1;
+                    }
                     if (urgent)
                         ForgetUrgentAoiFrame(live, frame);
                     bool ok = false;
@@ -801,10 +821,13 @@ void RememberBind(uint64_t conn_id, uint64_t player_id, const std::string &token
                             ok = true;
                         }
                     }
-                    if (!ok)
+                    if (!ok) {
+                        AoiNoteFrameWrite(live->id(), frame, false, AoiWriteFailReason::QueueFull, false);
                         return 0;
+                    }
                     OpsMetrics::Instance().AddGatewayTxBytes(frame.size());
                     OpsMetrics::Instance().AddGatewayTxFrames(1);
+                    AoiNoteFrameWrite(live->id(), frame, true, AoiWriteFailReason::QueueFull, false);
                     return 1;
                 };
                 if (c->loop()->IsInLoopThread())
@@ -823,8 +846,10 @@ void RememberBind(uint64_t conn_id, uint64_t player_id, const std::string &token
                     OpsMetrics::Instance().IncPushSendDeferred();
                     // 急送超时还没写进缓冲。返回 0，调用方继续把 LEAVE 留在差集里。
                     // 已经入队的回调仍会写；写失败时下一轮再发，重复的 LEAVE 可以再收一次。
-                    if (urgent)
+                    if (urgent) {
+                        AoiNoteFrameWrite(conn_id, frame, false, AoiWriteFailReason::TimedWait, false);
                         return 0;
+                    }
                     return 1;
                 }
                 return queued->load(std::memory_order_acquire);

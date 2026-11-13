@@ -1833,6 +1833,12 @@ if(ENABLE_MYSQL AND ENABLE_GAME_PROTOBUF)
     ${OPENSSL_CRYPTO_LIB})
 endif()
 
+add_executable(egress_frame_metrics_test
+  test/egress_frame_metrics_test.cpp
+  runtime/AoiEvidence.cpp)
+target_include_directories(egress_frame_metrics_test PRIVATE runtime)
+target_link_libraries(egress_frame_metrics_test ${CMAKE_THREAD_LIBS_INIT})
+
 add_executable(stalled_conn_test
   test/stalled_conn_test.cpp
   runtime/AoiEvidence.cpp)

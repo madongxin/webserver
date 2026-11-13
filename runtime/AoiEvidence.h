@@ -3,6 +3,8 @@
 #include <cstdint>
 #include <ostream>
 #include <string>
+#include <utility>
+#include <vector>
 
 /**
  * 压测取证。只计数、采样和导出，不决定一帧发不发。
@@ -51,12 +53,33 @@ bool AoiTraceEnabled();
 
 void AoiNoteWriteFail(uint64_t conn_id, AoiWriteFrame frame, AoiWriteFailReason reason);
 void AoiNoteTxBytes(AoiWriteFrame frame, uint64_t bytes, uint64_t conn_id);
+/** 一个已被连接接受的 MOVE 帧。只记事件数和 payload 字节，不改变是否发送。 */
+void AoiNoteMoveFrameSample(int events, int payload_bytes);
 
 /** 一帧里每种 op 各记一次。解析不了就记 Other。 */
 void AoiNoteFrameWrite(uint64_t conn_id, const std::string &frame, bool ok, AoiWriteFailReason reason,
                        bool heartbeat);
 
+enum class AoiLeaveDropReason : uint8_t {
+    ViewerOffline = 0,
+    BackInWindow,
+    VersionSuperseded,
+    Acked,
+    GivenUp,
+    Count
+};
+
 void AoiNoteLeaveWriteFail(uint64_t viewer_id, uint64_t subject_id, int64_t now_ms);
+/** 证据表里有这一对就删掉。删掉了返回 true。Acked 时记恢复耗时。 */
+bool AoiTakeLeaveFail(uint64_t viewer_id, uint64_t subject_id, int64_t now_ms, bool record_recovery);
+void AoiCountLeaveDrop(AoiLeaveDropReason reason);
+uint64_t AoiLeaveDropCount(AoiLeaveDropReason reason);
+/**
+ * queued 是 (viewer, subject)，调用方已经放开地图锁。
+ * 统计证据表里有、队列里没有的对数。
+ */
+void AoiMeasureLeaveInconsistent(const std::vector<std::pair<uint64_t, uint64_t>> &queued_viewer_subject);
+uint64_t AoiLeavePendingInconsistent();
 /** 这条失败是什么时候开始的。没有记录返回 0。补发不会改这个时间。 */
 int64_t AoiLeaveFailSince(uint64_t viewer_id, uint64_t subject_id);
 /** 观察者已下线。删掉以他为接收者的失败记录，并计入 viewer_offline。 */

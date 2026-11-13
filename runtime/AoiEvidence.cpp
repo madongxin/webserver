@@ -50,6 +50,10 @@ std::atomic<uint64_t> g_leave_fail{0};
 std::atomic<uint64_t> g_leave_recovered{0};
 std::atomic<uint64_t> g_leave_give_up{0};
 std::atomic<uint64_t> g_leave_dropped_offline{0};
+std::atomic<uint64_t> g_leave_drop[static_cast<int>(AoiLeaveDropReason::Count)];
+std::atomic<uint64_t> g_leave_inconsistent{0};
+std::vector<int64_t> g_move_frame_events;
+std::vector<int64_t> g_move_frame_payload;
 AoiViewerUnsentFn g_unsent_fn = nullptr;
 std::atomic<uint64_t> g_tomb_reject{0};
 std::atomic<uint64_t> g_tomb_then_enter{0};
@@ -332,6 +336,16 @@ int FrameBucket(AoiWriteFrame frame) {
     }
 }
 
+void AoiNoteMoveFrameSample(int events, int payload_bytes) {
+    if (events <= 0 || payload_bytes < 0)
+        return;
+    std::lock_guard<std::mutex> lk(g_mu);
+    g_move_frame_events.push_back(events);
+    g_move_frame_payload.push_back(payload_bytes);
+    KeepTail(&g_move_frame_events, 4096);
+    KeepTail(&g_move_frame_payload, 4096);
+}
+
 void AoiNoteTxBytes(AoiWriteFrame frame, uint64_t bytes, uint64_t conn_id) {
     const int f = static_cast<int>(frame);
     if (f < 0 || f >= static_cast<int>(AoiWriteFrame::Count) || bytes == 0)
@@ -371,26 +385,70 @@ void AoiNoteLeaveWriteFail(uint64_t viewer_id, uint64_t subject_id, int64_t now_
         at = now_ms > 0 ? now_ms : 1;
 }
 
-void AoiNoteLeaveWriteOk(uint64_t viewer_id, uint64_t subject_id, int64_t now_ms) {
+bool AoiTakeLeaveFail(uint64_t viewer_id, uint64_t subject_id, int64_t now_ms, bool record_recovery) {
     if (viewer_id == 0 || subject_id == 0)
-        return;
+        return false;
     std::lock_guard<std::mutex> lk(g_mu);
     auto it = g_leave_fail_since.find(PairKey{viewer_id, subject_id});
     if (it == g_leave_fail_since.end())
-        return;
-    const int64_t dt = now_ms > it->second ? now_ms - it->second : 0;
+        return false;
+    if (record_recovery) {
+        const int64_t dt = now_ms > it->second ? now_ms - it->second : 0;
+        g_leave_recovered.fetch_add(1, std::memory_order_relaxed);
+        g_leave_recover_ms.push_back(dt);
+        KeepTail(&g_leave_recover_ms, 4096);
+    }
     g_leave_fail_since.erase(it);
-    g_leave_recovered.fetch_add(1, std::memory_order_relaxed);
-    g_leave_recover_ms.push_back(dt);
-    KeepTail(&g_leave_recover_ms, 4096);
+    return true;
+}
+
+void AoiCountLeaveDrop(AoiLeaveDropReason reason) {
+    const int idx = static_cast<int>(reason);
+    if (idx < 0 || idx >= static_cast<int>(AoiLeaveDropReason::Count))
+        return;
+    g_leave_drop[idx].fetch_add(1, std::memory_order_relaxed);
+    if (reason == AoiLeaveDropReason::ViewerOffline)
+        g_leave_dropped_offline.fetch_add(1, std::memory_order_relaxed);
+    if (reason == AoiLeaveDropReason::GivenUp)
+        g_leave_give_up.fetch_add(1, std::memory_order_relaxed);
+}
+
+uint64_t AoiLeaveDropCount(AoiLeaveDropReason reason) {
+    const int idx = static_cast<int>(reason);
+    if (idx < 0 || idx >= static_cast<int>(AoiLeaveDropReason::Count))
+        return 0;
+    return g_leave_drop[idx].load(std::memory_order_relaxed);
+}
+
+void AoiMeasureLeaveInconsistent(const std::vector<std::pair<uint64_t, uint64_t>> &queued_viewer_subject) {
+    std::unordered_set<PairKey, PairHash> queued;
+    queued.reserve(queued_viewer_subject.size());
+    for (const auto &row : queued_viewer_subject)
+        queued.insert(PairKey{row.first, row.second});
+    uint64_t missing = 0;
+    {
+        std::lock_guard<std::mutex> lk(g_mu);
+        for (const auto &kv : g_leave_fail_since) {
+            if (queued.count(kv.first) == 0)
+                ++missing;
+        }
+    }
+    g_leave_inconsistent.store(missing, std::memory_order_relaxed);
+}
+
+uint64_t AoiLeavePendingInconsistent() { return g_leave_inconsistent.load(std::memory_order_relaxed); }
+
+void AoiNoteLeaveWriteOk(uint64_t viewer_id, uint64_t subject_id, int64_t now_ms) {
+    if (!AoiTakeLeaveFail(viewer_id, subject_id, now_ms, true))
+        return;
+    AoiCountLeaveDrop(AoiLeaveDropReason::Acked);
 }
 
 void AoiNoteLeaveGiveUp(uint64_t viewer_id, uint64_t subject_id) {
-    g_leave_give_up.fetch_add(1, std::memory_order_relaxed);
     if (viewer_id == 0 || subject_id == 0)
         return;
-    std::lock_guard<std::mutex> lk(g_mu);
-    g_leave_fail_since.erase(PairKey{viewer_id, subject_id});
+    AoiTakeLeaveFail(viewer_id, subject_id, 0, false);
+    AoiCountLeaveDrop(AoiLeaveDropReason::GivenUp);
 }
 
 int64_t AoiLeaveFailSince(uint64_t viewer_id, uint64_t subject_id) {
@@ -404,31 +462,26 @@ int64_t AoiLeaveFailSince(uint64_t viewer_id, uint64_t subject_id) {
 }
 
 void AoiNoteLeaveDroppedOffline(uint64_t viewer_id, uint64_t subject_id) {
-    if (viewer_id == 0 || subject_id == 0)
+    if (!AoiTakeLeaveFail(viewer_id, subject_id, 0, false))
         return;
-    std::lock_guard<std::mutex> lk(g_mu);
-    auto it = g_leave_fail_since.find(PairKey{viewer_id, subject_id});
-    if (it == g_leave_fail_since.end())
-        return;
-    g_leave_fail_since.erase(it);
-    g_leave_dropped_offline.fetch_add(1, std::memory_order_relaxed);
+    AoiCountLeaveDrop(AoiLeaveDropReason::ViewerOffline);
 }
 
 void AoiDropViewerLeavePending(uint64_t viewer_id) {
     if (viewer_id == 0)
         return;
-    std::lock_guard<std::mutex> lk(g_mu);
-    uint64_t n = 0;
-    for (auto it = g_leave_fail_since.begin(); it != g_leave_fail_since.end();) {
-        if (it->first.viewer != viewer_id) {
-            ++it;
-            continue;
+    std::vector<uint64_t> subjects;
+    {
+        std::lock_guard<std::mutex> lk(g_mu);
+        for (const auto &kv : g_leave_fail_since) {
+            if (kv.first.viewer == viewer_id)
+                subjects.push_back(kv.first.subject);
         }
-        it = g_leave_fail_since.erase(it);
-        ++n;
     }
-    if (n > 0)
-        g_leave_dropped_offline.fetch_add(n, std::memory_order_relaxed);
+    for (uint64_t subject : subjects) {
+        if (AoiTakeLeaveFail(viewer_id, subject, 0, false))
+            AoiCountLeaveDrop(AoiLeaveDropReason::ViewerOffline);
+    }
 }
 
 void AoiSetViewerUnsentFnForTest(AoiViewerUnsentFn fn) { g_unsent_fn = fn; }
@@ -806,6 +859,19 @@ void AoiEvidenceWritePrometheus(std::ostream &os) {
         os << "gamemesh_egress_wire_bytes_estimate{frame=\"" << name << "\"} "
            << g_wire[f].load(std::memory_order_relaxed) << "\n";
     }
+    std::vector<int64_t> move_events;
+    std::vector<int64_t> move_payload;
+    {
+        std::lock_guard<std::mutex> lk(g_mu);
+        move_events = g_move_frame_events;
+        move_payload = g_move_frame_payload;
+    }
+    EmitQuantiles(os, "gamemesh_move_frame_events",
+                  "Events in one MOVE frame accepted by the connection. One sample is one frame. Capped at 4096. Unit: events.",
+                  move_events);
+    EmitQuantiles(os, "gamemesh_move_frame_payload_bytes",
+                  "Payload bytes of one MOVE frame accepted by the connection, including the 4 byte length prefix. One sample is one frame. Capped at 4096. Unit: bytes.",
+                  move_payload);
     os << "# HELP gamemesh_aoi_leave_write_fail_total LEAVE pushes the gateway did not accept. Unit: events.\n"
           "# TYPE gamemesh_aoi_leave_write_fail_total counter\n"
        << "gamemesh_aoi_leave_write_fail_total " << g_leave_fail.load(std::memory_order_relaxed) << "\n";
@@ -820,6 +886,17 @@ void AoiEvidenceWritePrometheus(std::ostream &os) {
           "# TYPE gamemesh_aoi_leave_write_dropped_total counter\n"
        << "gamemesh_aoi_leave_write_dropped_total{reason=\"viewer_offline\"} "
        << g_leave_dropped_offline.load(std::memory_order_relaxed) << "\n";
+    os << "# HELP gamemesh_aoi_leave_pending_drop_total LEAVE pending pairs removed from the retry queue and the evidence table. Unit: pairs.\n"
+          "# TYPE gamemesh_aoi_leave_pending_drop_total counter\n";
+    const char *drop_names[] = {"viewer_offline", "back_in_window", "version_superseded", "acked", "given_up"};
+    for (int i = 0; i < static_cast<int>(AoiLeaveDropReason::Count); ++i) {
+        os << "gamemesh_aoi_leave_pending_drop_total{reason=\"" << drop_names[i] << "\"} "
+           << g_leave_drop[i].load(std::memory_order_relaxed) << "\n";
+    }
+    os << "# HELP gamemesh_aoi_leave_pending_inconsistent Evidence rows whose pair is absent from the leave retry queue. Unit: pairs.\n"
+          "# TYPE gamemesh_aoi_leave_pending_inconsistent gauge\n"
+       << "gamemesh_aoi_leave_pending_inconsistent " << g_leave_inconsistent.load(std::memory_order_relaxed)
+       << "\n";
     os << "# HELP gamemesh_aoi_tombstone_move_reject_total MOVE dropped by the post-LEAVE tombstone. Unit: events.\n"
           "# TYPE gamemesh_aoi_tombstone_move_reject_total counter\n"
        << "gamemesh_aoi_tombstone_move_reject_total " << g_tomb_reject.load(std::memory_order_relaxed) << "\n";
@@ -1287,6 +1364,8 @@ void AoiResetEvidenceForTest() {
         g_stall.clear();
         g_stalled_seen.clear();
         g_leave_fail_since.clear();
+        g_move_frame_events.clear();
+        g_move_frame_payload.clear();
         g_leave_recover_ms.clear();
         g_busy_unacked.clear();
         g_busy_retrans_v.clear();
@@ -1313,6 +1392,9 @@ void AoiResetEvidenceForTest() {
     g_leave_recovered.store(0, std::memory_order_relaxed);
     g_leave_give_up.store(0, std::memory_order_relaxed);
     g_leave_dropped_offline.store(0, std::memory_order_relaxed);
+    for (int i = 0; i < static_cast<int>(AoiLeaveDropReason::Count); ++i)
+        g_leave_drop[i].store(0, std::memory_order_relaxed);
+    g_leave_inconsistent.store(0, std::memory_order_relaxed);
     g_unsent_fn = nullptr;
     g_busy_samples.store(0, std::memory_order_relaxed);
     g_busy_retrans.store(0, std::memory_order_relaxed);
