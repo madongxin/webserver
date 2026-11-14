@@ -1,5 +1,6 @@
 #include "AoiEvidence.h"
 #include "AoiMoveCoalesceLedger.h"
+#include "AoiPushSendRoute.h"
 #include "MoveSendConfig.h"
 #include "ServerStats.h"
 
@@ -235,6 +236,16 @@ void TestG_ScaleInterval() {
               << "\n";
 }
 
+// h: pure MOVE must use coalesce path; ENTER/LEAVE must not.
+void TestH_AoiPushRoute() {
+    Expect(AoiDeltaUsesCoalescePath("aoi.delta.v1", true),
+           "h: coalescable aoi.delta.v1 uses coalesce/send_frame");
+    Expect(!AoiDeltaUsesCoalescePath("aoi.delta.v1", false),
+           "h: non-coalescable aoi.delta.v1 stays urgent");
+    Expect(!AoiDeltaUsesCoalescePath("item_changed", true),
+           "h: non-aoi message never uses AOI coalesce path");
+}
+
 }  // namespace
 
 int main() {
@@ -245,6 +256,7 @@ int main() {
     TestE_IndependentShares();
     TestF_RetransReserve();
     TestG_ScaleInterval();
+    TestH_AoiPushRoute();
     ClearEnv();
     if (fails != 0) {
         std::cerr << fails << " failed\n";

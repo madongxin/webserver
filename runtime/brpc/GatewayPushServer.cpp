@@ -1,5 +1,6 @@
 #include "GatewayPushServer.h"
 
+#include "AoiPushSendRoute.h"
 #include "GatewayConnRegistry.h"
 #include "Logging.h"
 #include "OpsMetrics.h"
@@ -98,10 +99,11 @@ void GatewayPushServiceImpl::PushBatch(::google::protobuf::RpcController *contro
         const bool reliable = m.reliable();
         const bool coalescable = m.coalescable();
         uint64_t assigned_seq = m.server_seq();
-        // AOI 的进入/离开走连接上的急送，不进可靠队列。这里若先锁住队列再等事件循环，
-        // 循环里的写完成回调也要这把锁，两个人也会互相等满 200 毫秒。
-        const bool urgent_aoi =
-            m.message_type() == "aoi.delta.v1" && found && static_cast<bool>(bind.send_frame_urgent);
+        // ENTER/LEAVE 走急送、不进可靠队列（否则写完成回调与队列锁互相等满 200ms）。
+        // 纯 MOVE（coalescable）走合并槽，不走这条急送旁路。
+        const bool urgent_aoi = message_type == "aoi.delta.v1" && found &&
+                                !AoiDeltaUsesCoalescePath(message_type, coalescable) &&
+                                static_cast<bool>(bind.send_frame_urgent);
         ReliableOutboxHub::Order order;
         if (reliable && found && !urgent_aoi)
             order = ReliableOutboxHub::Instance().Lock(bind.connection_id);
@@ -147,10 +149,14 @@ void GatewayPushServiceImpl::PushBatch(::google::protobuf::RpcController *contro
             return gameproto::EncodeFrame(inner_body, frame);
         };
         env.send = [&](const std::string &frame) {
-            // AOI 和 MOVE 走同一条能写进连接的急送。可靠队列在回包占满时会把 LEAVE 卡住，
-            // 观察者名单已经删掉，这一帧丢了客户端就一直留着旧坐标。
-            if (message_type == "aoi.delta.v1" && found && bind.send_frame_urgent)
-                return bind.send_frame_urgent(frame);
+            // 纯 MOVE（coalescable）：走 send_frame → 合并槽 + 出口字节预算。
+            // ENTER/LEAVE：急送，避免被可靠队列/回包堵住后观察者名单已删却发不出离开。
+            if (message_type == "aoi.delta.v1" && found) {
+                if (AoiDeltaUsesCoalescePath(message_type, coalescable) && bind.send_frame)
+                    return bind.send_frame(frame);
+                if (bind.send_frame_urgent)
+                    return bind.send_frame_urgent(frame);
+            }
             if (reliable && found && order.q)
                 return ReliableOutboxHub::Instance().Accept(order, assigned_seq, frame);
             return GatewayConnRegistry::Instance().SendBySession(m.session_id(), frame, false);

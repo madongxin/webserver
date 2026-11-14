@@ -46,9 +46,14 @@
 
 满员 906、ceil 2600 时，若每观察者约 1.3 个活动实体，平均更新间隔约 0.5s；5 个活动实体时约 2s，仍低于 3s 上限（测试 g 的约束）。
 
-## admitted 为什么曾一直是 0（代码推断 + 19:20 对照）
+## admitted 为什么曾一直是 0（已由 P0 订正）
 
-- `gamemesh_tx_frames_by_frame{move}` / `egress_wire_bytes_estimate`：在 `TrySendLatestMove` **接受进连接**时记账。
-- `gamemesh_egress_admitted_bytes_total`：只在 `NoteKernelWrite`（`FinishMoveCommit(true)` 回调）里，对**已确认写入内核**的帧加 payload+66。
-- 19:20 满员段实测对照：move 接受帧很多，但 `aoi_move_commit_callbacks_total` / `aoi_move_park_written` 为 0 → 大量帧停放后被换帧，从未走到内核确认，故 admitted 为 0。这是口径差异，不是计数器坏了。
+**主因（2026-11-14）：** Push 层把所有 `aoi.delta.v1` 送进 `send_frame_urgent`，纯 MOVE 从未进入 `OfferCoalescedMove`。  
+故 `move_offer_total` / `commit_callbacks` / `admitted` / `budget_defer` 全 0，而 `tx_frames{move}` 仍涨（急送路径的 `AoiNoteFrameWrite`）。详见 `p0_egress_enforce_rootcause_20261114.md`。
+
+次要口径（合并槽接通后仍可能出现）：
+
+- `tx_frames` / wire 估算：接受进连接时记账。
+- `egress_admitted_bytes_total`：只在 `NoteKernelWrite`（`FinishMoveCommit(true)`）对已确认进内核的帧加 payload+66。
+- 若接通后大量停放换帧、长期无内核确认，admitted 仍可能远低于 tx_frames——那是送达口径差异，不是「计数器坏了」。
 - D1：无回调时 `FinishMoveCommit(true)` 补记；有回调仍走 `NoteKernelWrite`，避免双计。
