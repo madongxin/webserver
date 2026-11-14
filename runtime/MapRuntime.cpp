@@ -1695,30 +1695,40 @@ bool MapRuntime::AllowMoveAoi(InstanceState *st, const MapEntity &watcher, const
     auto &rec = st->move_notify_ms[watcher.player_id][subject.player_id];
     const int64_t now = now_ms > 0 ? now_ms : 1;
     if (AoiExtrapolateEnabled()) {
+        // C1：记录与误差一律用呈现坐标（EmitTo 实际发出的点），禁止用权威点算 pred 再和权威比。
+        // 否则权威已到点、呈现仍滑行且 vx≠0 时，每个 tick 都会 drifted，外推省不了流量。
+        const float cur_x = subject.PresentedX();
+        const float cur_z = subject.PresentedZ();
         const bool moving = std::fabs(subject.vx) > 0.05f || std::fabs(subject.vz) > 0.05f;
         bool vel_changed = true;
         bool drifted = false;
         bool keyframe = false;
+        bool arrival_stop = false;
         const char *reason = "first";
         if (rec.has) {
             vel_changed = std::fabs(rec.vx - subject.vx) > 0.05f || std::fabs(rec.vz - subject.vz) > 0.05f;
+            const bool was_moving = std::fabs(rec.vx) > 0.05f || std::fabs(rec.vz) > 0.05f;
+            arrival_stop = was_moving && !moving;
             const float elapsed = static_cast<float>(now - rec.ms) / 1000.f;
             const float pred_x = rec.x + rec.vx * elapsed;
             const float pred_z = rec.z + rec.vz * elapsed;
-            const float ex = pred_x - subject.x;
-            const float ez = pred_z - subject.z;
+            const float ex = pred_x - cur_x;
+            const float ez = pred_z - cur_z;
             const float err_cm = std::sqrt(ex * ex + ez * ez) * 100.f;
             drifted = err_cm > static_cast<float>(ExtrapErrorCm());
             const int64_t age = now - rec.ms;
-            keyframe = moving && !far && age >= ExtrapKeyframeMs();
-            if (!vel_changed && !drifted && !keyframe) {
+            const int64_t key_ms = far ? ExtrapFarKeyframeMs() : ExtrapKeyframeMs();
+            keyframe = moving && age >= key_ms;
+            if (!vel_changed && !drifted && !keyframe && !arrival_stop) {
                 ServerStats::aoi_move_rate_limited.fetch_add(1, std::memory_order_relaxed);
                 return false;
             }
-            if (keyframe && !vel_changed && !drifted)
+            if (keyframe && !vel_changed && !drifted && !arrival_stop)
                 ServerStats::aoi_keyframe.fetch_add(1, std::memory_order_relaxed);
             NoteMoveInterval(age);
-            if (vel_changed)
+            if (arrival_stop)
+                reason = "arrival_stop";
+            else if (vel_changed)
                 reason = "vel_changed";
             else if (drifted)
                 reason = "drifted";
@@ -1735,12 +1745,14 @@ bool MapRuntime::AllowMoveAoi(InstanceState *st, const MapEntity &watcher, const
             ri = 2;
         else if (std::strcmp(reason, "keyframe") == 0)
             ri = 3;
+        else if (std::strcmp(reason, "arrival_stop") == 0)
+            ri = 4;
         else if (std::strcmp(reason, "interval") == 0)
             ri = 5;
         ServerStats::aoi_move_emit_reason[ri].fetch_add(1, std::memory_order_relaxed);
         rec.ms = now;
-        rec.x = subject.x;
-        rec.z = subject.z;
+        rec.x = cur_x;
+        rec.z = cur_z;
         rec.vx = subject.vx;
         rec.vz = subject.vz;
         rec.move_start_ms = subject.move_start_ms;

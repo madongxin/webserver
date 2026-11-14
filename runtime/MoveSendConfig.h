@@ -67,7 +67,14 @@ inline int AoiPresentSlicePauseUs() { return MoveEnvInt("GAMEMESH_AOI_PRESENT_SL
 inline int AoiLeaveRetryMaxMs() { return MoveEnvInt("GAMEMESH_AOI_LEAVE_RETRY_MAX_MS", 600000, 1000, 3600000); }
 /** 近处移动实体的关键帧间隔。待压测校准。 */
 inline int ExtrapKeyframeMs() { return MoveEnvInt("GAMEMESH_EXTRAP_KEYFRAME_MS", 4000, 3000, 5000); }
-/** 外推误差超过这么多米才补发。待压测校准。 */
+/**
+ * 远处移动实体关键帧间隔（C1）。默认 10s；比近处稀，避免远层刷满预算。
+ * 环境变量：GAMEMESH_AOI_FAR_KEYFRAME_MS。
+ */
+inline int ExtrapFarKeyframeMs() {
+    return MoveEnvInt("GAMEMESH_AOI_FAR_KEYFRAME_MS", 10000, 3000, 60000);
+}
+/** 外推误差超过这么多厘米才补发。待压测校准。 */
 inline int ExtrapErrorCm() { return MoveEnvInt("GAMEMESH_EXTRAP_ERROR_CM", 100, 10, 10000); }
 inline int MoveBatchMinEvents() { return MoveEnvInt("GAMEMESH_MOVE_BATCH_MIN", 8, 1, 40); }
 

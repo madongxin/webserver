@@ -1,6 +1,6 @@
 # AOI MOVE 降流量：从原因到方案（评估稿，2026-11-13）
 
-状态：**阶段 A（P0）已通过。** 根因 `p0_egress_enforce_rootcause_20261114.md`；验收 `p0_egress_enforce_acceptance_20261114.md`（客户端 `docs/export-20261114-231805`，timeout 16.8%→2.65%）。下一刀评估 P1。  
+状态：**阶段 A（P0）已通过；阶段 B（P1/C1）已开工。** P0 验收 `p0_egress_enforce_acceptance_20261114.md`；P1 客户端清单 `p1_extrapolate_client_checklist_20261114.md`；C1 改呈现坐标误差，**默认仍关外推**。  
 关联实测：`egress_enforce_acceptance_20261113.md`、`client_bots_appear_frozen_20261113.md`、`egress_enforce_budget.md`、`extrapolate_audit.md`。
 
 ---
@@ -292,7 +292,7 @@
 | 1 | 是否批准阶段 A（P0 admitted/defer）为下一刀？ | 是 / 否 | **是**（2026-11-14） |
 | 2 | P0 目标更看重「timeout 降」还是「总 Mbps 降」？ | timeout / Mbps / 两者 | **timeout** |
 | 3 | 客户端外推是否已具备联调条件？ | 已具备 / 排期中 / 不具备 | （P0 不依赖） |
-| 4 | 是否允许阶段 B 合并 C1 + 灰度 EXTRAPOLATE？ | 是 / 否 / 仅 C1 不开开关 | 后定 |
+| 4 | 是否允许阶段 B 合并 C1 + 灰度 EXTRAPOLATE？ | 是 / 否 / 仅 C1 不开开关 | **先 C1 不开开关**；灰度等客户端确认 |
 | 5 | P2 远间隔初始值？ | 1000 / 2000 / 5000 / 其它 | 后定 |
 | 6 | 是否允许压测对照降 N / 改 cluster？ | 是 / 否 | 后定 |
 | 7 | 带宽上调（P5）？ | 否 / 走 B1 | **否** |
