@@ -70,6 +70,8 @@ void HttpServer::onMessage(const TcpConnectionPtr &conn){
             conn->UpdateTimeStamp(TimeStamp::Now());
 
         HttpContext *context = conn->context();
+        if (conn->read_buf()->readablebytes() <= 0)
+            return;
         if (!context->ParaseRequest(conn->read_buf()->RetrieveAllAsString())) 
         {
             LOG_INFO << "HttpServer::onMessage : Receive non HTTP message";

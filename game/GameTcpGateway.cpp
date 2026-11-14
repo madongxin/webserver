@@ -1437,7 +1437,10 @@ void GameTcpGateway::OnMessage(const std::shared_ptr<TcpConnection> &conn) {
                 putback.append(encoded);
         }
         if (!putback.empty()) {
-            const std::string tail = rb->RetrieveAllAsString();
+            // offset 已消费完整帧后，缓冲可能为空（无半包尾巴）；空缓冲不得当作错误。
+            std::string tail;
+            if (rb->readablebytes() > 0)
+                tail = rb->RetrieveAllAsString();
             rb->Append(putback);
             if (!tail.empty())
                 rb->Append(tail);

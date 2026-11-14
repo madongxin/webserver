@@ -93,7 +93,9 @@ std::string Buffer::RetrieveUtilAsString(const char *end){
 }
 
 std::string Buffer::RetrieveAllAsString(){
-    assert(readablebytes() > 0);
+    // 可读为空时返回空串，避免网关 putback 等路径在「整批帧已 Retrieve 完」时 assert 崩进程。
+    if (readablebytes() <= 0)
+        return std::string();
     std::string ret = PeekAllAsString();
     RetrieveAll();
     return ret;

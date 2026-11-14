@@ -61,6 +61,27 @@ void TestBufferExactConsume() {
     Expect(buf.prependablebytes() == kPrePendIndex, "reset prepend");
 }
 
+/** 对应 gw-0 宕机：整批帧 Retrieve 后 putback 再 RetrieveAllAsString，空缓冲不得 abort。 */
+void TestBufferRetrieveAllAsStringEmpty() {
+    Buffer buf;
+    Expect(buf.readablebytes() == 0, "empty start");
+    const std::string empty = buf.RetrieveAllAsString();
+    Expect(empty.empty(), "empty RetrieveAllAsString returns empty");
+    Expect(buf.readablebytes() == 0, "still empty");
+
+    // 模拟 OnMessage：先吃光完整帧，再把超额帧 putback 到空缓冲前取 tail。
+    std::string batch = MakeFrame("a") + MakeFrame("b") + MakeFrame("c");
+    buf.Append(batch);
+    Expect(buf.readablebytes() == static_cast<int>(batch.size()), "batch readable");
+    buf.Retrieve(static_cast<int>(batch.size()));
+    Expect(buf.readablebytes() == 0, "all frames consumed");
+    const std::string tail = buf.RetrieveAllAsString();
+    Expect(tail.empty(), "tail empty after full consume");
+    const std::string putback = MakeFrame("b") + MakeFrame("c");
+    buf.Append(putback);
+    Expect(buf.readablebytes() == static_cast<int>(putback.size()), "putback restored");
+}
+
 void TestHalfPacketThenComplete() {
     const std::string payload = "abc";
     const std::string frame = MakeFrame(payload);
@@ -137,6 +158,7 @@ void TestOversizeFramePolicy() {
 int main() {
     TestConnIdMonotonic();
     TestBufferExactConsume();
+    TestBufferRetrieveAllAsStringEmpty();
     TestHalfPacketThenComplete();
     TestCoalescedPackets();
     TestFramesPlusTrailingHalf();
